@@ -1,0 +1,258 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="cpprest">
+      <UniqueIdentifier>{c3573459-6056-459f-9ac9-9d77efa2aced}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpprest\Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="cpprest\Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="nmos">
+      <UniqueIdentifier>{ee6ea24c-978c-4537-b15e-6f71b245b0b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="nmos\Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="nmos\Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="slog">
+      <UniqueIdentifier>{e8a29dbf-eee3-4c36-be72-787d7ee0767e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="slog\Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="slog\Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="NuGet Dependencies">
+      <UniqueIdentifier>{76b8e51b-ef8f-4b2e-8c41-1393b1324368}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rql">
+      <UniqueIdentifier>{3a7d5184-59f4-4df7-ad63-9f69428f2383}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rql\Header Files">
+      <UniqueIdentifier>{0856bc75-ccf0-4df7-8051-db9d2262160d}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="rql\Source Files">
+      <UniqueIdentifier>{914ff167-5547-428c-aa35-5786ea8be7e8}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\nmos\model.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\registration_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\api_router.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\slog\all_in_one.h">
+      <Filter>slog\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\slog.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\query_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\basic_utils.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\json_utils.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\regex_utils.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\logging_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="main_gate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\settings_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\api_utils.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\admin_ui.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\filesystem_route.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\http_utils.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\node_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\settings.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\logging_utils.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\mdns_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\query_ws_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\query_utils.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\resources.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\log_manip.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\log_gate.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\api_downgrade.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpprest\host_utils.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\connection_api.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\server_resources.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rql\rql.h">
+      <Filter>rql\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\activation_mode.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\api_version.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\health.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\id.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\json_fields.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\rational.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\resource.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\tai.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\type.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\version.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="..\cpprest\ws_listener.h">
+      <Filter>cpprest\Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="..\nmos\admin_ui.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\logging_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\registration_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\settings_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\filesystem_route.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\query_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpprest\api_router.cpp">
+      <Filter>cpprest\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpprest\http_utils.cpp">
+      <Filter>cpprest\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpprest\json_utils.cpp">
+      <Filter>cpprest\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\node_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\api_utils.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpprest\ws_listener_impl.cpp">
+      <Filter>cpprest\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\mdns_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\query_ws_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\query_utils.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\resources.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\api_downgrade.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpprest\host_utils.cpp">
+      <Filter>cpprest\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\connection_api.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\server_resources.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\rql\rql.cpp">
+      <Filter>rql\Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>NuGet Dependencies</Filter>
+    </None>
+  </ItemGroup>
+</Project>
