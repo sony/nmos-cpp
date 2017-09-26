@@ -154,10 +154,10 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
     <ClInclude Include="..\nmos\json_fields.h" />
     <ClInclude Include="..\nmos\logging_api.h" />
     <ClInclude Include="..\nmos\mdns_api.h" />
-    <ClInclude Include="..\nmos\log_gate.h" />
     <ClInclude Include="..\nmos\log_manip.h" />
     <ClInclude Include="..\nmos\model.h" />
     <ClInclude Include="..\nmos\node_api.h" />
+    <ClInclude Include="..\nmos\paging_utils.h" />
     <ClInclude Include="..\nmos\query_api.h" />
     <ClInclude Include="..\nmos\query_utils.h" />
     <ClInclude Include="..\nmos\query_ws_api.h" />

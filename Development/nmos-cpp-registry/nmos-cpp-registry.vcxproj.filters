@@ -130,9 +130,6 @@
     <ClInclude Include="..\nmos\log_manip.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\nmos\log_gate.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\nmos\api_downgrade.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
@@ -176,6 +173,9 @@
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\nmos\version.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\nmos\paging_utils.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
