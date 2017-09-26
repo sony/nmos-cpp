@@ -154,7 +154,21 @@ namespace web
             return result;
         }
 
-        // construct a query/exemplar object from a parameters object, by constructing nested objects from '.'-separated field names
+        // construct a query string of '&' separated terms from a parameters object
+        // field names will be URI-encoded, but values will be left as-is!
+        utility::string_t query_from_value(const web::json::value& params)
+        {
+            utility::ostringstream_t query;
+            bool first = true;
+            for (auto& param : params.as_object())
+            {
+                if (first) first = false; else query << U('&');
+                query << uri::encode_uri(param.first, uri::components::query) << U('=') << param.second.as_string();
+            }
+            return query.str();
+        }
+
+        // construct a query/exemplar object from a parameters object, by constructing nested sub-objects from '.'-separated field names
         web::json::value unflatten(const web::json::value& params)
         {
             web::json::value result = web::json::value::object();

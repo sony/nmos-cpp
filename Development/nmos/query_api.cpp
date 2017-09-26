@@ -5,6 +5,7 @@
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/slog.h"
+#include "nmos/version.h"
 
 namespace nmos
 {
@@ -41,6 +42,84 @@ namespace nmos
         return query_api;
     }
 
+    namespace details
+    {
+        web::uri make_query_uri_with_no_paging(const web::http::http_request& req, const nmos::settings& settings)
+        {
+            // could rebuild the query parameters from the decoded and parsed resource query, rather than individually deleting the paging parameters from the request?
+            auto query_params = web::json::value_from_query(req.request_uri().query());
+            if (query_params.has_field(U("paging.order")))
+            {
+                query_params.erase(U("paging.order"));
+            }
+            if (query_params.has_field(U("paging.since")))
+            {
+                query_params.erase(U("paging.since"));
+            }
+            if (query_params.has_field(U("paging.until")))
+            {
+                query_params.erase(U("paging.until"));
+            }
+            if (query_params.has_field(U("paging.limit")))
+            {
+                query_params.erase(U("paging.limit"));
+            }
+
+            // RFC 5988 allows relative URLs, but NMOS specification examples are all absolute URLs
+            // See https://tools.ietf.org/html/rfc5988#section-5
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/2.5.%20APIs%20-%20Query%20Parameters.md
+
+            // get the request host
+            auto req_host = web::http::get_host_port(req).first;
+            if (req_host.empty())
+            {
+                req_host = nmos::fields::host_address(settings);
+            }
+
+            return web::uri_builder()
+                .set_scheme(U("http")) // for now, no means to detect the API protocol?
+                .set_host(req_host)
+                .set_port(nmos::fields::query_port(settings)) // could also get from the request?
+                .set_path(req.request_uri().path()) // could also build from the route parameters, version and resourceType?
+                .set_query(web::json::query_from_value(query_params))
+                .to_uri();
+        }
+
+        void add_paging_headers(web::http::http_headers& headers, const nmos::resource_paging& paging, const web::uri& base_link)
+        {
+            // X-Paging-Limit "identifies the current limit being used for paging. This may not match the requested value if the requested value was too high for the implementation"
+            headers.add(U("X-Paging-Limit"), paging.limit);
+
+            // X-Paging-Since "identifies the current value of the query parameter 'paging.since' in use, or if not specified identifies what value it would have had to return this data set.
+            // This value may be re-used as the paging.until value of a query to return the previous page of results."
+            headers.add(U("X-Paging-Since"), make_version(paging.since));
+
+            // X-Paging-Until "identifies the current value of the query parameter 'paging.until' in use, or if not specified identifies what value it would have had to return this data set.
+            // This value may be re-used as the paging.since value of a query to return the next page of results."
+            headers.add(U("X-Paging-Until"), make_version(paging.until));
+
+            // Link header "provides references to cursors for paging. The 'rel' attribute may be one of 'next', 'prev', 'first' or 'last'"
+
+            auto link = web::uri_builder(base_link)
+                .append_query(U("paging.order=") + (paging.order_by_created ? US("create") : US("update")))
+                .append_query(U("paging.limit=") + utility::ostringstreamed(paging.limit))
+                .to_string();
+
+            // "The Link header identifies the 'next' and 'prev' cursors which an application may use to make its next requests."
+            // (though note, both the 'next' and 'prev' cursors may return empty responses)
+
+            headers.add(U("Link"), U("<") + link + U("&paging.until=") + make_version(paging.since) + U(">; rel=\"prev\""));
+
+            headers.add(U("Link"), U("<") + link + U("&paging.since=") + make_version(paging.until) + U(">; rel=\"next\""));
+
+            // "An implementation may also provide 'first' and 'last' cursors to identify the beginning and end of a collection of this can be addressed via a consistent URL."
+
+            headers.add(U("Link"), U("<") + link + U("&paging.since=") + make_version(nmos::tai_min()) + U(">; rel=\"first\""));
+
+            headers.add(U("Link"), U("<") + link + U(">; rel=\"last\""));
+        }
+    }
+
     inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, std::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -69,19 +148,37 @@ namespace nmos
                 param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
             }
 
+            // Configure the query predicate
+
             const resource_query match(version, U('/') + resourceType, flat_query_params);
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Querying " << resourceType;
 
-            size_t count = 0;
+            // Configure the paging parameters
 
-            set_reply(res, status_codes::OK,
-                web::json::serialize_if(model.resources,
-                    match,
-                    [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }),
-                U("application/json"));
+            // Limit queries to the current resources (although tai_now() would also be an option?) and use the paging limit from the setings
+            resource_paging paging(flat_query_params, most_recent_update(model.resources), (size_t)nmos::fields::query_paging_limit(model.settings));
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
+            if (paging.valid())
+            {
+                // Get the payload and update the paging parameters
+                auto page = paging.page(model.resources, std::cref(match));
+
+                size_t count = 0;
+
+                set_reply(res, status_codes::OK,
+                    web::json::serialize(page,
+                        [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }),
+                    U("application/json"));
+
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
+
+                details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req, model.settings));
+            }
+            else
+            {
+                set_reply(res, status_codes::BadRequest);
+            }
 
             return true;
         });

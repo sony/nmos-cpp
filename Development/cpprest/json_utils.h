@@ -271,6 +271,10 @@ namespace web
         // cf. web::uri::split_query
         web::json::value value_from_query(const utility::string_t& query);
 
+        // construct a query string of '&' separated terms from a parameters object
+        // field names will be URI-encoded, but values will be left as-is!
+        utility::string_t query_from_value(const web::json::value& value);
+
         // construct a query/exemplar object from a parameters object, by constructing nested sub-objects from '.'-separated field names
         web::json::value unflatten(const web::json::value& value);
 

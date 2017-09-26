@@ -61,6 +61,21 @@ namespace nmos
     {
         return tai_from_time_point(tai_clock::now());
     }
+
+    inline tai tai_min()
+    {
+        // equivalent to tai_from_time_point(tai_clock::time_point())
+        return{ 0, 0 };
+        // not using tai_from_time_point((tai_clock::time_point::min)())
+        // since that is negative, and invalid according to the NMOS schema
+    }
+
+    inline tai tai_max()
+    {
+        return tai_from_time_point((tai_clock::time_point::max)());
+        // not using e.g. { (std::numeric_limits<std::int64_t>::max)(), 999999999 }
+        // since such values cannot be represented as tai_clock::time_point
+    }
 }
 
 #endif

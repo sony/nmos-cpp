@@ -1,64 +1,12 @@
 #ifndef NMOS_QUERY_UTILS_H
 #define NMOS_QUERY_UTILS_H
 
-#include "cpprest/basic_utils.h" // for utility::ostringstreamed, etc.
-#include "cpprest/json_utils.h" // for web::json::field_as_string_or, etc.
-#include "nmos/resources.h" // for nmos::resources
+#include <boost/range/any_range.hpp>
+#include "nmos/paging_utils.h"
+#include "nmos/resources.h"
 
 namespace nmos
 {
-    // Helpers for paged APIs
-
-    // Offset-limit paging is the traditional kind, which works well for relatively static data
-    template <typename Predicate, typename ArgT = typename Predicate::argument_type>
-    struct offset_limit_paged
-    {
-        typedef ArgT argument_type;
-        typedef bool result_type;
-
-        Predicate pred;
-        size_t offset;
-        size_t limit;
-        size_t count;
-
-        offset_limit_paged(const Predicate& pred, size_t offset, size_t limit)
-            : pred(pred)
-            , offset(offset)
-            , limit(limit)
-            , count(0)
-        {}
-
-        bool operator()(argument_type arg)
-        {
-            const bool in_page = offset <= count && count - offset < limit;
-            const bool match = pred(arg);
-            if (match) ++count;
-            return in_page && match;
-        }
-    };
-
-    template <typename ArgT, typename Predicate>
-    inline offset_limit_paged<Predicate, ArgT> paged(Predicate pred, size_t offset = 0, size_t limit = (std::numeric_limits<size_t>::max)())
-    {
-        return{ pred, offset, limit };
-    }
-
-    namespace fields
-    {
-        // why not use web::json::field_as_integer_or?
-        struct paging_integer_field
-        {
-            utility::string_t field;
-            int or;
-            int operator()(const web::json::value& value) const
-            {
-                return utility::istringstreamed<int>(web::json::field_as_string_or{ field, utility::ostringstreamed(or) }(value));
-            }
-        };
-        const paging_integer_field offset{ U("offset"), 0 };
-        const paging_integer_field limit{ U("limit"), 30 };
-    }
-
     // Helpers for advanced query options
 
     namespace experimental
@@ -72,20 +20,76 @@ namespace nmos
         typedef const nmos::resource& argument_type;
         typedef bool result_type;
 
-        // resource_path may be empty (matching all resource types) or e.g. "/nodes"
         resource_query(const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& flat_query_params);
 
         result_type operator()(argument_type resource) const { return (*this)(resource.version, resource.type, resource.data); }
 
         result_type operator()(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
 
+        // the Query API version (since a registry being queried may contain resources of more than one version of IS-04 Discovery and Registration)
         nmos::api_version version;
+
+        // resource_path may be empty (matching all resource types) or e.g. "/nodes"
         utility::string_t resource_path;
+
+        // the query/exemplar object for a Basic Query
         web::json::value basic_query;
+
+        // the client's minimum supported version of IS-04 Discovery and Registration
         nmos::api_version downgrade_version;
+
+        // a representation of the RQL abstract syntax tree for an Advanced Query
         web::json::value rql_query;
+
+        // flags that affect the Basic Query (experimental)
         web::json::match_flag_type match_flags;
     };
+
+    // Cursor-based paging parameters
+    struct resource_paging
+    {
+        explicit resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until = nmos::tai_max(), size_t max_limit = (std::numeric_limits<size_t>::max)());
+
+        // determine if the range [until, since) and limit are valid
+        bool valid() const;
+
+        // "Specify whether paging should be based upon initial resource creation time, or when it was last modified"
+        bool order_by_created;
+
+        // "Return only the results which were created/updated up until the time specified (inclusive)"
+        nmos::tai until;
+
+        // "Return only the results which have been created/updated since the time specified (non-inclusive)"
+        nmos::tai since;
+
+        // "Restrict the response to the specified number of results"
+        size_t limit;
+
+        // "Where both 'since' and 'until' parameters are specified, the 'since' value takes precedence
+        // where a resulting data set is constrained by the server's value of 'limit'"
+        bool since_specified;
+
+        template <typename Predicate>
+        boost::any_range<nmos::resource, boost::bidirectional_traversal_tag> page(const nmos::resources& resources, Predicate match)
+        {
+            if (order_by_created)
+            {
+                return paging::cursor_based_page(resources.get<tags::created>(), match, until, since, limit, !since_specified);
+            }
+            else
+            {
+                return paging::cursor_based_page(resources.get<tags::updated>(), match, until, since, limit, !since_specified);
+            }
+        }
+    };
+
+    // Cursor-based paging customisation points
+
+    inline nmos::tai extract_cursor(const nmos::resources::index<tags::created>::type&, nmos::resources::index_iterator<tags::created>::type it) { return it->created; }
+    inline nmos::tai extract_cursor(const nmos::resources::index<tags::updated>::type&, nmos::resources::index_iterator<tags::updated>::type it) { return it->updated; }
+
+    inline nmos::resources::index_iterator<tags::created>::type lower_bound(const nmos::resources::index<tags::created>::type& index, nmos::tai timestamp) { return index.lower_bound(timestamp); }
+    inline nmos::resources::index_iterator<tags::updated>::type lower_bound(const nmos::resources::index<tags::updated>::type& index, nmos::tai timestamp) { return index.lower_bound(timestamp); }
 
     // Helpers for constructing /subscriptions websocket grains
 

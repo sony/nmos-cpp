@@ -24,13 +24,15 @@ namespace nmos
         struct health;
     }
 
+    // the created/updated indices are in descending order to simplify Query API cursor-based paging
+
     typedef boost::multi_index_container<
         resource,
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, boost::multi_index::member<resource, const id, &resource::id>>,
             boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::type>, boost::multi_index::member<resource, const type, &resource::type>>,
-            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::created>, boost::multi_index::member<resource, const tai, &resource::created>>,
-            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::updated>, boost::multi_index::member<resource, tai, &resource::updated>>,
+            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::created>, boost::multi_index::member<resource, const tai, &resource::created>, std::greater<>>,
+            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::updated>, boost::multi_index::member<resource, tai, &resource::updated>, std::greater<>>,
             boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::health>, boost::multi_index::member<resource, health, &resource::health>>
         >
     > resources;
@@ -40,7 +42,7 @@ namespace nmos
     inline tai most_recent_update(const resources& resources)
     {
         auto& by_updated = resources.get<tags::updated>();
-        return (by_updated.empty() ? tai{} : by_updated.rbegin()->updated);
+        return (by_updated.empty() ? tai{} : by_updated.begin()->updated);
     }
 
     inline tai strictly_increasing_update(const resources& resources, tai update = tai_now())

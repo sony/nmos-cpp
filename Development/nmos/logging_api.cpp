@@ -42,11 +42,21 @@ namespace nmos
                 value basic_query = web::json::unflatten(flat_query_params);
                 value rql_query;
 
-                const bool paging = basic_query.has_field(U("paging"));
-                const size_t offset = paging ? nmos::fields::offset(basic_query.at(U("paging"))) : 0;
-                const size_t limit = paging ? nmos::fields::limit(basic_query.at(U("paging"))) : (std::numeric_limits<size_t>::max)();
+                size_t offset = 0;
+                size_t limit = (std::numeric_limits<size_t>::max)(); // i.e. no limit
+
+                // extract the supported paging options
                 if (basic_query.has_field(U("paging")))
                 {
+                    auto& paging = basic_query.at(U("paging"));
+                    if (paging.has_field(U("offset")))
+                    {
+                        offset = utility::istringstreamed<size_t>(web::json::field_as_string{ U("offset") }(paging));
+                    }
+                    if (paging.has_field(U("limit")))
+                    {
+                        limit = utility::istringstreamed<size_t>(web::json::field_as_string{ U("limit") }(paging));
+                    }
                     basic_query.erase(U("paging"));
                 }
                 if (basic_query.has_field(U("query")))
@@ -59,7 +69,7 @@ namespace nmos
                     basic_query.erase(U("query"));
                 }
 
-                auto paged = nmos::paged<event>(
+                auto paged = paging::paged<event>(
                     [&basic_query, &rql_query](const event& event)
                     {
                         return web::json::match_query(event.data, basic_query, web::json::match_icase | web::json::match_substr)

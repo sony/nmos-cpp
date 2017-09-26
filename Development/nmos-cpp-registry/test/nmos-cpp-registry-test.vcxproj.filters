@@ -110,7 +110,7 @@
     <ClCompile Include="..\..\nmos\api_utils.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\nmos\test\query_utils_test.cpp">
+    <ClCompile Include="..\..\nmos\test\paging_utils_test.cpp">
       <Filter>nmos\test\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\cpprest\test\http_utils_test.cpp">

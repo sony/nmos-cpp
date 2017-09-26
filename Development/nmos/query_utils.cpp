@@ -30,7 +30,7 @@ namespace nmos
         , downgrade_version(version)
         , match_flags(web::json::match_default)
     {
-        // extract the supported paging and advanced query options
+        // extract the supported advanced query options
         if (basic_query.has_field(U("paging")))
         {
             basic_query.erase(U("paging"));
@@ -53,6 +53,53 @@ namespace nmos
             }
             basic_query.erase(U("query"));
         }
+    }
+
+    resource_paging::resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until, size_t max_limit)
+        : order_by_created(false) // i.e. order by updated timestamp
+        , until(max_until)
+        , since(nmos::tai_min())
+        , limit(max_limit)
+        , since_specified(false)
+    {
+        auto query_params = web::json::unflatten(flat_query_params);
+
+        // extract the supported paging options
+        if (query_params.has_field(U("paging")))
+        {
+            auto& paging = query_params.at(U("paging"));
+            if (paging.has_field(U("order")))
+            {
+                // paging.order is "create" or "update"
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/QueryAPI.raml#L40
+                order_by_created = U("create") == web::json::field_as_string{ U("order") }(paging);
+            }
+            if (paging.has_field(U("until")))
+            {
+                until = nmos::parse_version(web::json::field_as_string{ U("until") }(paging));
+                // "These parameters may be used to construct a URL which would return the same set of bounded data on consecutive requests"
+                // therefore the response to a request with 'until' in the future should be fixed up...
+                if (until > max_until) until = max_until;
+            }
+            if (paging.has_field(U("since")))
+            {
+                since = nmos::parse_version(web::json::field_as_string{ U("since") }(paging));
+                since_specified = true;
+                // how should a request with 'since' in the future be fixed up?
+                if (since > until && until == max_until) until = since;
+            }
+            if (paging.has_field(U("limit")))
+            {
+                // "If the client had requested a page size which the server is unable to honour, the actual page size would be returned"
+                limit = utility::istringstreamed<size_t>(web::json::field_as_string{ U("limit") }(paging));
+                if (limit > max_limit) limit = max_limit;
+            }
+        }
+    }
+
+    bool resource_paging::valid() const
+    {
+        return since <= until;
     }
 
     // Extend RQL with some NMOS-specific types

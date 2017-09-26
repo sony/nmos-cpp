@@ -112,7 +112,7 @@
     <ClCompile Include="..\..\cpprest\test\regex_utils_test.cpp" />
     <ClCompile Include="..\..\nmos\api_utils.cpp" />
     <ClCompile Include="..\..\nmos\test\api_utils_test.cpp" />
-    <ClCompile Include="..\..\nmos\test\query_utils_test.cpp" />
+    <ClCompile Include="..\..\nmos\test\paging_utils_test.cpp" />
     <ClCompile Include="..\..\mdns\test\mdns_test.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
