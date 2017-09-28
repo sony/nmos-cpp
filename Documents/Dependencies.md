@@ -44,7 +44,7 @@ A copy of WebSocket++ v0.5.1 is included in the C++ REST SDK, so no installation
 
 ### Catch
 
-A copy of the single header version (v1.0 build 53) is included in this repository.
+A copy of the single header version (v1.10.0) is included in this repository.
 
 ### Boost C++ Libraries
 
