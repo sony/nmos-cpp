@@ -110,4 +110,15 @@ namespace detail
 
 //- https://gist.github.com/dabrahams/1528856
 
+// when that's not enough, e.g. for unit tests of private implementation
+namespace detail
+{
+    template <typename Context> void private_access(Context);
+    template <typename Tag> void private_access();
+}
+
+#define DETAIL_PRIVATE_ACCESS_DECLARATION \
+    template <typename Context> friend void ::detail::private_access(Context); \
+    template <typename Tag> friend void ::detail::private_access();
+
 #endif

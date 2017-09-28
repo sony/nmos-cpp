@@ -8,7 +8,7 @@
 #include "cpprest/http_utils.h" // hmm, only for names used in using declarations
 #include "cpprest/json_utils.h" // hmm, only for names used in using declarations
 #include "cpprest/regex_utils.h" // hmm, only for types used in private static functions
-#include "detail/private_test.h"
+#include "detail/private_access.h"
 
 // api_router is an extension to http_listener that uses regexes to define route patterns
 namespace web
@@ -36,7 +36,7 @@ namespace web
 
                 class api_router
                 {
-                    DETAIL_PRIVATE_TEST_DECLARATION
+                    DETAIL_PRIVATE_ACCESS_DECLARATION
                 public:
                     api_router();
 
