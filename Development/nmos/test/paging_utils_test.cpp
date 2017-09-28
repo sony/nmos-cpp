@@ -631,3 +631,70 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE(page.empty());
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Cursor-based paging concepts implementations using a poor (easily invalidated) cursor
+namespace
+{
+    struct person { std::string name; };
+    typedef std::vector<person> people;
+    typedef people::const_iterator people_iterator;
+    typedef people::size_type people_cursor;
+
+    // customisation points
+
+    people_cursor extract_cursor(const people& p, people_iterator it)
+    {
+        return it - p.begin();
+    }
+
+    people_iterator lower_bound(const people& p, people_cursor cursor)
+    {
+        return p.begin() + (std::min)(cursor, p.size());
+    }
+
+    // test set up
+
+    const auto all_people = [](const person&) { return true; };
+    typedef std::pair<people_cursor, people_cursor> people_cursors;
+    auto people_page(const people& people, people_cursors& cursors)
+        -> decltype(nmos::paging::cursor_based_page(people, all_people, cursors.first, cursors.second, 10, true))
+    {
+        return nmos::paging::cursor_based_page(people, all_people, cursors.first, cursors.second, 10, true);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testCursorBasedPagingUsingIndicesAsPoorCursors)
+{
+    people abc{ { "Alice" }, { "Bob" }, { "Charlie" } };
+
+    {
+        people_cursors cursors{ 0, 10000 };
+        auto page = people_page(abc, cursors);
+
+        BST_REQUIRE_EQUAL(3, std::distance(page.begin(), page.end()));
+        BST_REQUIRE_EQUAL(0, cursors.first);
+        BST_REQUIRE_EQUAL(10000, cursors.second);
+        BST_REQUIRE_STRING_EQUAL("Alice", page.begin()->name);
+    }
+
+    {
+        people_cursors cursors{ 2, 3 };
+        auto page = people_page(abc, cursors);
+
+        BST_REQUIRE_EQUAL(1, std::distance(page.begin(), page.end()));
+        BST_REQUIRE_EQUAL(2, cursors.first);
+        BST_REQUIRE_EQUAL(3, cursors.second);
+        BST_REQUIRE_STRING_EQUAL("Charlie", page.begin()->name);
+    }
+
+    {
+        people_cursors cursors{ 42, 10000 };
+        auto page = people_page(abc, cursors);
+
+        BST_REQUIRE(page.empty());
+        BST_REQUIRE_EQUAL(42, cursors.first);
+        BST_REQUIRE_EQUAL(10000, cursors.second);
+    }
+}

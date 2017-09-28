@@ -3,7 +3,6 @@
 
 #include <boost/range/algorithm/lower_bound.hpp>
 #include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/sub_range.hpp>
 
 namespace nmos
@@ -70,13 +69,12 @@ namespace nmos
             {
                 using std::begin;
                 using std::end;
-                auto reversed = range | boost::adaptors::reversed;
-                auto b = begin(reversed);
-                for (typename boost::range_size<Range>::type i = 0; end(reversed) != b && n > i; ++i)
+                auto b = end(range);
+                for (typename boost::range_size<Range>::type i = 0; begin(range) != b && n > i; ++i)
                 {
-                    ++b;
+                    --b;
                 }
-                return{ b.base(), end(range) };
+                return{ b, end(range) };
             }
 
             // return a range bounded by the lower cursor (inclusive) and upper cursor (exclusive)
