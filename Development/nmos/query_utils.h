@@ -93,29 +93,30 @@ namespace nmos
 
     // Helpers for constructing /subscriptions websocket grains
 
-    // resource_path may be empty (matching all resource types) or e.g. "/nodes"
-    web::json::value make_resource_event(const utility::string_t& resource_path, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
+    // make the initial 'sync' resource events for a new grain, including all resources that match the specified version, resource path and flat query parameters
+    web::json::value make_resource_events(const nmos::resources& resources, const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& params);
 
+    // insert 'added', 'removed' or 'modified' resource events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
     void insert_resource_events(nmos::resources& resources, const nmos::api_version& version, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
 
-    inline web::json::value& websocket_message(nmos::resource& websocket)
+    namespace fields
     {
-        return websocket.data[U("message")];
+        const web::json::field_as_value message{ U("message") };
+        const web::json::field_path<web::json::value> message_grain_data{ { U("message"), U("grain"), U("data") } };
     }
 
-    inline const web::json::value& websocket_message(const nmos::resource& websocket)
+    namespace details
     {
-        return websocket.data.at(U("message"));
-    }
+        // resource_path may be empty (matching all resource types) or e.g. "/nodes"
+        web::json::value make_resource_event(const utility::string_t& resource_path, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
 
-    inline web::json::value& websocket_resource_events(nmos::resource& websocket)
-    {
-        return websocket_message(websocket)[U("grain")][U("data")];
-    }
+        // set all three timestamps in the message
+        void set_grain_timestamp(web::json::value& message, const nmos::tai& tai);
 
-    inline const web::json::value& websocket_resource_events(const nmos::resource& websocket)
-    {
-        return websocket_message(websocket).at(U("grain")).at(U("data"));
+        nmos::tai get_grain_timestamp(const web::json::value& message);
+
+        // make an empty grain
+        web::json::value make_grain(const nmos::id& source_id, const nmos::id& flow_id, const utility::string_t& topic);
     }
 }
 

@@ -104,7 +104,7 @@ namespace nmos
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Route not found";
                 }
 
-                if (400 <= res.status_code() && res.status_code() <= 599)
+                if (web::http::is_error_status_code(res.status_code()))
                 {
                     // don't replace an existing response body which might contain richer error information
                     if (!res.body())

@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::resourceType_from_type
+#include "nmos/rational.h"
 #include "nmos/version.h"
 #include "rql/rql.h"
 
@@ -178,25 +179,89 @@ namespace nmos
 
     // Helpers for constructing /subscriptions websocket grains
 
-    web::json::value make_resource_event(const utility::string_t& resource_path, const nmos::type& type, const web::json::value& pre, const web::json::value& post)
+    namespace details
     {
-        // !resource_path.empty() must imply resource_path == U('/') + nmos::resourceType_from_type(type)
+        bool is_queryable_resource(const nmos::type& type)
+        {
+            return type != types::subscription && type != types::grain;
+        }
 
-        // seems worthwhile to keep_order for simple visualisation
-        web::json::value result = web::json::value::object(true);
+        void set_grain_timestamp(web::json::value& message, const nmos::tai& tai)
+        {
+            const auto timestamp = web::json::value::string(nmos::make_version(tai));
+            message[U("origin_timestamp")] = timestamp;
+            message[U("sync_timestamp")] = timestamp;
+            message[U("creation_timestamp")] = timestamp;
+        }
 
-        const auto id = (!pre.is_null() ? pre : post).at(U("id")).as_string();
-        result[U("path")] = web::json::value::string(resource_path.empty() ? nmos::resourceType_from_type(type) + U('/') + id : id);
-        if (!pre.is_null()) result[U("pre")] = pre;
-        if (!post.is_null()) result[U("post")] = post;
+        nmos::tai get_grain_timestamp(const web::json::value& message)
+        {
+            return parse_version(nmos::fields::sync_timestamp(message));
+        }
 
-        return result;
+        web::json::value make_grain(const nmos::id& source_id, const nmos::id& flow_id, const utility::string_t& topic)
+        {
+            using web::json::value;
+
+            // seems worthwhile to keep_order for simple visualisation
+            value result = value::object(true);
+
+            result[U("grain_type")] = JU("event");
+            result[U("source_id")] = value::string(source_id);
+            result[U("flow_id")] = value::string(flow_id);
+            set_grain_timestamp(result, {});
+            result[U("rate")] = make_rational();
+            result[U("duration")] = make_rational();
+            value& grain = result[U("grain")] = value::object(true);
+            grain[U("type")] = JU("urn:x-nmos:format:data.event");
+            grain[U("topic")] = value::string(topic);
+            grain[U("data")] = value::array();
+
+            return result;
+        }
+
+        web::json::value make_resource_event(const utility::string_t& resource_path, const nmos::type& type, const web::json::value& pre, const web::json::value& post)
+        {
+            // !resource_path.empty() must imply resource_path == U('/') + nmos::resourceType_from_type(type)
+
+            // seems worthwhile to keep_order for simple visualisation
+            web::json::value result = web::json::value::object(true);
+
+            const auto id = (!pre.is_null() ? pre : post).at(U("id")).as_string();
+            result[U("path")] = web::json::value::string(resource_path.empty() ? nmos::resourceType_from_type(type) + U('/') + id : id);
+            if (!pre.is_null()) result[U("pre")] = pre;
+            if (!post.is_null()) result[U("post")] = post;
+
+            return result;
+        }
     }
 
+    // make the initial 'sync' resource events for a new grain, including all resources that match the specified version, resource path and flat query parameters
+    web::json::value make_resource_events(const nmos::resources& resources, const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& params)
+    {
+        const resource_query match(version, resource_path, params);
+
+        std::vector<web::json::value> events;
+        for (const auto& resource : resources)
+        {
+            if (!details::is_queryable_resource(resource.type)) continue;
+
+            if (match(resource))
+            {
+                events.push_back(details::make_resource_event(resource_path, resource.type, resource.data, resource.data));
+            }
+        }
+
+        return web::json::value_from_elements(events);
+    }
+
+    // insert 'added', 'removed' or 'modified' resource events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
     void insert_resource_events(nmos::resources& resources, const nmos::api_version& version, const nmos::type& type, const web::json::value& pre, const web::json::value& post)
     {
         using utility::string_t;
         using web::json::value;
+
+        if (!details::is_queryable_resource(type)) return;
 
         for (const auto& subscription : resources)
         {
@@ -213,20 +278,20 @@ namespace nmos
 
             if (!pre_match && !post_match) continue;
 
-            // add the event for each websocket connection to this subscription
+            // add the event to the grain for each websocket connection to this subscription
 
-            const value event = make_resource_event(resource_path, type, pre_match ? pre : value::null(), post_match ? post : value::null());
+            const value event = details::make_resource_event(resource_path, type, pre_match ? pre : value::null(), post_match ? post : value::null());
 
             for (const auto& id : subscription.sub_resources)
             {
-                auto websocket = resources.find(id);
-                if (resources.end() == websocket) continue; // check connection is still open
+                auto grain = resources.find(id);
+                if (resources.end() == grain) continue; // check websocket connection is still open
 
-                resources.modify(websocket, [&resources, &event](nmos::resource& websocket)
+                resources.modify(grain, [&resources, &event](nmos::resource& grain)
                 {
-                    auto& events = websocket_resource_events(websocket);
+                    auto& events = nmos::fields::message_grain_data(grain.data);
                     web::json::push_back(events, event);
-                    websocket.updated = strictly_increasing_update(resources);
+                    grain.updated = strictly_increasing_update(resources);
                 });
             }
         }

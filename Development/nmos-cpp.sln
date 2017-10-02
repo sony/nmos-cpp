@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdns", "mdns\mdns.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpprestsdk120", "..\..\cpprestsdk\Release\src\build\vs12\casablanca120.vcxproj", "{01A76234-E6E8-4332-9FE2-1E12C34621BE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nmos-cpp-node", "nmos-cpp-node\nmos-cpp-node.vcxproj", "{B318D3C6-3335-473D-B4A4-E2C444270D93}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\..\cpprestsdk\Release\src\build\win32.vcxitems*{01a76234-e6e8-4332-9fe2-1e12c34621be}*SharedItemsImports = 4
@@ -40,6 +42,10 @@ Global
 		{01A76234-E6E8-4332-9FE2-1E12C34621BE}.Debug|x64.Build.0 = Debug|x64
 		{01A76234-E6E8-4332-9FE2-1E12C34621BE}.Release|x64.ActiveCfg = Release|x64
 		{01A76234-E6E8-4332-9FE2-1E12C34621BE}.Release|x64.Build.0 = Release|x64
+		{B318D3C6-3335-473D-B4A4-E2C444270D93}.Debug|x64.ActiveCfg = Debug|x64
+		{B318D3C6-3335-473D-B4A4-E2C444270D93}.Debug|x64.Build.0 = Debug|x64
+		{B318D3C6-3335-473D-B4A4-E2C444270D93}.Release|x64.ActiveCfg = Release|x64
+		{B318D3C6-3335-473D-B4A4-E2C444270D93}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -40,10 +40,15 @@ namespace nmos
 
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version)
     {
-        if (!is_permitted_downgrade(resource.version, resource.type, version, downgrade_version)) return web::json::value::null();
+        return downgrade(resource.version, resource.type, resource.data, version, downgrade_version);
+    }
+
+    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+    {
+        if (!is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)) return web::json::value::null();
 
         // optimisation for the common case (old-versioned resources, if being permitted, do not get upgraded)
-        if (resource.version <= version) return resource.data;
+        if (resource_version <= version) return resource_data;
 
         web::json::value result;
 
@@ -110,16 +115,16 @@ namespace nmos
             }
         };
 
-        auto& resource_versions = resources_versions.at(resource.type);
+        auto& resource_versions = resources_versions.at(resource_type);
         auto version_first = resource_versions.cbegin();
         auto version_last = resource_versions.upper_bound(version);
         for (auto version_properties = version_first; version_last != version_properties; ++version_properties)
         {
             for (auto& property : version_properties->second)
             {
-                if (resource.data.has_field(property))
+                if (resource_data.has_field(property))
                 {
-                    result[property] = resource.data.at(property);
+                    result[property] = resource_data.at(property);
                 }
             }
         }

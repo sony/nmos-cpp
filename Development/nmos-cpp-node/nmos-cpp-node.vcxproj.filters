@@ -46,22 +46,17 @@
       <UniqueIdentifier>{76b8e51b-ef8f-4b2e-8c41-1393b1324368}</UniqueIdentifier>
     </Filter>
     <Filter Include="rql">
-      <UniqueIdentifier>{3a7d5184-59f4-4df7-ad63-9f69428f2383}</UniqueIdentifier>
+      <UniqueIdentifier>{3be34137-f2c4-4061-a039-53ce9a14ab71}</UniqueIdentifier>
     </Filter>
     <Filter Include="rql\Header Files">
-      <UniqueIdentifier>{0856bc75-ccf0-4df7-8051-db9d2262160d}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <UniqueIdentifier>{c50d5a01-7c74-45b9-8ea5-2de766d781b4}</UniqueIdentifier>
     </Filter>
     <Filter Include="rql\Source Files">
-      <UniqueIdentifier>{914ff167-5547-428c-aa35-5786ea8be7e8}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+      <UniqueIdentifier>{0198ac51-af1f-486c-83f2-a82884fd0aa2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\nmos\model.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\nmos\registration_api.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\cpprest\api_router.h">
@@ -71,9 +66,6 @@
       <Filter>slog\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\nmos\slog.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\nmos\query_api.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\cpprest\basic_utils.h">
@@ -97,12 +89,6 @@
     <ClInclude Include="..\nmos\api_utils.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\nmos\admin_ui.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\nmos\filesystem_route.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\cpprest\http_utils.h">
       <Filter>cpprest\Header Files</Filter>
     </ClInclude>
@@ -114,12 +100,6 @@
     </ClInclude>
     <ClInclude Include="..\cpprest\logging_utils.h">
       <Filter>cpprest\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\nmos\mdns_api.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\nmos\query_ws_api.h">
-      <Filter>nmos\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\nmos\query_utils.h">
       <Filter>nmos\Header Files</Filter>
@@ -139,7 +119,7 @@
     <ClInclude Include="..\nmos\connection_api.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\nmos\server_resources.h">
+    <ClInclude Include="..\nmos\node_resources.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\rql\rql.h">
@@ -178,6 +158,9 @@
     <ClInclude Include="..\nmos\paging_utils.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\nmos\node_registration.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\nmos\thread_utils.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
@@ -186,25 +169,10 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClInclude Include="..\cpprest\ws_listener.h">
-      <Filter>cpprest\Header Files</Filter>
-    </ClInclude>
-    <ClCompile Include="..\nmos\admin_ui.cpp">
-      <Filter>nmos\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\nmos\logging_api.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\nmos\registration_api.cpp">
-      <Filter>nmos\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\nmos\settings_api.cpp">
-      <Filter>nmos\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\nmos\filesystem_route.cpp">
-      <Filter>nmos\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\nmos\query_api.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\cpprest\api_router.cpp">
@@ -222,15 +190,6 @@
     <ClCompile Include="..\nmos\api_utils.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpprest\ws_listener_impl.cpp">
-      <Filter>cpprest\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\nmos\mdns_api.cpp">
-      <Filter>nmos\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\nmos\query_ws_api.cpp">
-      <Filter>nmos\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\nmos\query_utils.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
@@ -246,11 +205,14 @@
     <ClCompile Include="..\nmos\connection_api.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\nmos\server_resources.cpp">
+    <ClCompile Include="..\nmos\node_resources.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\rql\rql.cpp">
       <Filter>rql\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\node_registration.cpp">
+      <Filter>nmos\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -51,19 +51,69 @@ namespace web
 {
     namespace json
     {
-        template <typename T> T as(const web::json::value& value) { return{ value }; }
-        template <> inline web::json::value as<web::json::value>(const web::json::value& value) { return value; }
-        template <> inline web::json::object as<web::json::object>(const web::json::value& value) { return value.as_object(); }
-        template <> inline web::json::array as<web::json::array>(const web::json::value& value) { return value.as_array(); }
-        template <> inline utility::string_t as<utility::string_t>(const web::json::value& value) { return value.as_string(); }
-        template <> inline bool as<bool>(const web::json::value& value) { return value.as_bool(); }
-        template <> inline int as<int>(const web::json::value& value) { return value.as_integer(); }
+        namespace details
+        {
+            // the 'as' accessor is implemented by means of a value_as function object template
+            // in order to pass through the various const-ref, ref or value return types
+            template <typename T> struct value_as;
+
+            template <> struct value_as<web::json::value>
+            {
+                const web::json::value& operator()(const web::json::value& value) const { return value; }
+                web::json::value& operator()(web::json::value& value) const { return value; }
+            };
+            template <> struct value_as<web::json::object>
+            {
+                const web::json::object& operator()(const web::json::value& value) const { return value.as_object(); }
+                web::json::object& operator()(web::json::value& value) const { return value.as_object(); }
+            };
+            template <> struct value_as<web::json::array>
+            {
+                const web::json::array& operator()(const web::json::value& value) const { return value.as_array(); }
+                web::json::array& operator()(web::json::value& value) const { return value.as_array(); }
+            };
+            template <> struct value_as<utility::string_t>
+            {
+                const utility::string_t& operator()(const web::json::value& value) const { return value.as_string(); }
+            };
+            template <> struct value_as<bool>
+            {
+                bool operator()(const web::json::value& value) const { return value.as_bool(); }
+            };
+            template <> struct value_as<int>
+            {
+                int operator()(const web::json::value& value) const { return value.as_integer(); }
+            };
+        }
+
+        template <typename T, typename V>
+        inline auto as(V& value) -> decltype(details::value_as<T>{}(value))
+        {
+            return details::value_as<T>{}(value);
+        }
 
         template <typename T> struct field
         {
             utility::string_t key;
             operator const utility::string_t&() const { return key; }
-            T operator()(const web::json::value& value) const { return as<T>(value.at(key)); }
+            template <typename V> auto operator()(V& value) const -> decltype(as<T>(value))
+            {
+                return as<T>(value.at(key));
+            }
+        };
+
+        template <typename T> struct field_path
+        {
+            std::vector<utility::string_t> key_path;
+            template <typename V> auto operator()(V& value) const -> decltype(as<T>(value))
+            {
+                auto pv = &value;
+                for (auto& key : key_path)
+                {
+                    pv = &pv->at(key);
+                }
+                return as<T>(*pv);
+            }
         };
 
         typedef field<web::json::value> field_as_value;
@@ -78,7 +128,7 @@ namespace web
             utility::string_t key;
             T or;
             operator const utility::string_t&() const { return key; }
-            T operator()(const web::json::value& value) const
+            template <typename V> auto operator()(V& value) const -> decltype(as<T>(value))
             {
                 web::json::object::const_iterator it;
                 return value.is_object() && value.as_object().end() != (it = value.as_object().find(key)) ? as<T>(it->second) : or;

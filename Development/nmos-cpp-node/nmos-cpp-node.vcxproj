@@ -4,6 +4,7 @@
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -11,10 +12,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{8E8E6218-3692-431E-82E9-1BFC53D26627}</ProjectGuid>
+    <ProjectGuid>{B318D3C6-3335-473D-B4A4-E2C444270D93}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>nmos-cpp-registry</RootNamespace>
-    <ProjectName>nmos-cpp-registry</ProjectName>
+    <RootNamespace>nmos-cpp-node</RootNamespace>
+    <ProjectName>nmos-cpp-node</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -58,7 +59,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>CPPREST_FORCE_PPLX;SLOG_STATIC;SLOG_LOGGING_SEVERITY=slog::max_verbosity;WIN32;_DEBUG;_CONSOLE;DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..;..\..\..\cpprestsdk\Release\include;..\..\..\cpprestsdk\Release\libs\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\..\cpprestsdk\Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>detail/vc_disable_warnings.h;detail/vc_disable_dll_warnings.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -70,8 +71,7 @@
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy /D /S /I /Y ..\..\..\cpprestsdk\Binaries\x64\Debug\cpprest120d_2_9.dll "$(TargetDir)"
-if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "$(SolutionDir)admin"</Command>
+      <Command>xcopy /D /S /I /Y ..\..\..\cpprestsdk\Binaries\x64\Debug\cpprest120d_2_9.dll "$(TargetDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -83,7 +83,7 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>CPPREST_FORCE_PPLX;SLOG_STATIC;SLOG_LOGGING_SEVERITY=slog::max_verbosity;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..;..\..\..\cpprestsdk\Release\include;..\..\..\cpprestsdk\Release\libs\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\..\cpprestsdk\Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>detail/vc_disable_warnings.h;detail/vc_disable_dll_warnings.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -97,8 +97,7 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy /D /S /I /Y ..\..\..\cpprestsdk\Binaries\x64\Release\cpprest120_2_9.dll "$(TargetDir)"
-if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "$(SolutionDir)admin"</Command>
+      <Command>xcopy /D /S /I /Y ..\..\..\cpprestsdk\Binaries\x64\Release\cpprest120_2_9.dll "$(TargetDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -106,21 +105,15 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
     <ClCompile Include="..\cpprest\host_utils.cpp" />
     <ClCompile Include="..\cpprest\http_utils.cpp" />
     <ClCompile Include="..\cpprest\json_utils.cpp" />
-    <ClCompile Include="..\cpprest\ws_listener_impl.cpp" />
-    <ClCompile Include="..\nmos\admin_ui.cpp" />
     <ClCompile Include="..\nmos\api_downgrade.cpp" />
     <ClCompile Include="..\nmos\api_utils.cpp" />
     <ClCompile Include="..\nmos\connection_api.cpp" />
-    <ClCompile Include="..\nmos\filesystem_route.cpp" />
     <ClCompile Include="..\nmos\logging_api.cpp" />
-    <ClCompile Include="..\nmos\mdns_api.cpp" />
     <ClCompile Include="..\nmos\node_api.cpp" />
-    <ClCompile Include="..\nmos\query_api.cpp" />
+    <ClCompile Include="..\nmos\node_registration.cpp" />
+    <ClCompile Include="..\nmos\node_resources.cpp" />
     <ClCompile Include="..\nmos\query_utils.cpp" />
-    <ClCompile Include="..\nmos\query_ws_api.cpp" />
-    <ClCompile Include="..\nmos\registration_api.cpp" />
     <ClCompile Include="..\nmos\resources.cpp" />
-    <ClCompile Include="..\nmos\server_resources.cpp" />
     <ClCompile Include="..\nmos\settings_api.cpp" />
     <ClCompile Include="..\rql\rql.cpp" />
     <ClCompile Include="main.cpp" />
@@ -141,31 +134,25 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
     <ClInclude Include="..\cpprest\json_utils.h" />
     <ClInclude Include="..\cpprest\logging_utils.h" />
     <ClInclude Include="..\cpprest\regex_utils.h" />
-    <ClInclude Include="..\cpprest\ws_listener.h" />
     <ClInclude Include="..\nmos\activation_mode.h" />
-    <ClInclude Include="..\nmos\admin_ui.h" />
     <ClInclude Include="..\nmos\api_downgrade.h" />
     <ClInclude Include="..\nmos\api_utils.h" />
     <ClInclude Include="..\nmos\api_version.h" />
     <ClInclude Include="..\nmos\connection_api.h" />
-    <ClInclude Include="..\nmos\filesystem_route.h" />
     <ClInclude Include="..\nmos\health.h" />
     <ClInclude Include="..\nmos\id.h" />
     <ClInclude Include="..\nmos\json_fields.h" />
     <ClInclude Include="..\nmos\logging_api.h" />
-    <ClInclude Include="..\nmos\mdns_api.h" />
     <ClInclude Include="..\nmos\log_manip.h" />
     <ClInclude Include="..\nmos\model.h" />
     <ClInclude Include="..\nmos\node_api.h" />
+    <ClInclude Include="..\nmos\node_registration.h" />
+    <ClInclude Include="..\nmos\node_resources.h" />
     <ClInclude Include="..\nmos\paging_utils.h" />
-    <ClInclude Include="..\nmos\query_api.h" />
     <ClInclude Include="..\nmos\query_utils.h" />
-    <ClInclude Include="..\nmos\query_ws_api.h" />
     <ClInclude Include="..\nmos\rational.h" />
-    <ClInclude Include="..\nmos\registration_api.h" />
     <ClInclude Include="..\nmos\resource.h" />
     <ClInclude Include="..\nmos\resources.h" />
-    <ClInclude Include="..\nmos\server_resources.h" />
     <ClInclude Include="..\nmos\settings.h" />
     <ClInclude Include="..\nmos\settings_api.h" />
     <ClInclude Include="..\nmos\slog.h" />

@@ -35,9 +35,9 @@ namespace nmos
         // exposed from the Query API in the same way), and can largely be managed identically
         const type subscription{ U("subscription") };
 
-        // similarly, the information about a specific websocket connection to a subscription isn't
-        // even exposed from the Query API but is easily managed as a sub-resource of a subscription
-        const type websocket{ U("websocket") };
+        // similarly, the information about the next grain for each specific websocket connection
+        // to a subscription is managed as a sub-resource of the subscription
+        const type grain{ U("grain") };
     }
 }
 

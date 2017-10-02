@@ -85,7 +85,7 @@ namespace nmos
             { nmos::types::sender, U("senders") },
             { nmos::types::receiver, U("receivers") },
             { nmos::types::subscription, U("subscriptions") },
-            { nmos::types::websocket, {} } // subscription websocket connections aren't exposed via the Query API
+            { nmos::types::grain, {} } // subscription websocket grains aren't exposed via the Query API
         };
         return map.at(type);
     }

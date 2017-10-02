@@ -51,8 +51,14 @@ namespace nmos
         return update > most_recent ? update : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
     }
 
-    // insert a resource
-    std::pair<resources::iterator, bool> insert_resource(resources& resources, resource&& resource);
+    inline health next_potential_expiry(const nmos::resources& resources)
+    {
+        auto& by_health = resources.get<tags::health>();
+        return (by_health.empty() || health_forever == by_health.begin()->health ? health_now() : by_health.begin()->health);
+    }
+
+    // insert a resource (join_sub_resources can be false if related resources are known to be inserted in order)
+    std::pair<resources::iterator, bool> insert_resource(resources& resources, resource&& resource, bool join_sub_resources = false);
 
     // modify a resource
     bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier);
@@ -77,6 +83,9 @@ namespace nmos
 
     // only need a non-const version so far...
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type);
+
+    // get the id of each resource with the specified super-resource
+    std::set<nmos::id> get_sub_resources(const resources& resources, const std::pair<id, type>& id_type);
 }
 
 #endif

@@ -7,12 +7,6 @@
 
 namespace nmos
 {
-    inline health next_potential_expiry(nmos::resources& resources)
-    {
-        auto& by_health = resources.get<tags::health>();
-        return (by_health.empty() || health_forever == by_health.begin()->health ? health_now() : by_health.begin()->health);
-    }
-
     void erase_expired_resources_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, std::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
         std::unique_lock<std::mutex> lock(mutex);
@@ -200,31 +194,7 @@ namespace nmos
                 {
                     nmos::resource created_resource{ version, type, data, false };
 
-                    if (allow_invalid_resources)
-                    {
-                        // join this resource to any sub-resources which were inserted out-of-order
-                        const auto id_type = std::make_pair(id, type);
-                        for (const auto& sub_resource : model.resources)
-                        {
-                            if (id_type == get_super_resource(sub_resource.data, sub_resource.type))
-                            {
-                                created_resource.sub_resources.insert(sub_resource.id);
-                            }
-                        }
-                    }
-
-                    insert_resource(model.resources, std::move(created_resource));
-
-                    // all types (other than nodes, and subscriptions) must* be a sub-resource of an existing resource (*assuming not out-of-order insertion by allow_invalid_resources)
-                    if (super_resource != model.resources.end())
-                    {
-                        // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
-                        // hence model.resources.modify(...) rather than modify_resource(model.resources, ...)
-                        model.resources.modify(super_resource, [&id](nmos::resource& super_resource)
-                        {
-                            super_resource.sub_resources.insert(id);
-                        });
-                    }
+                    insert_resource(model.resources, std::move(created_resource), allow_invalid_resources);
                 }
                 else
                 {
@@ -259,7 +229,7 @@ namespace nmos
             {
                 if (methods::POST == req.method())
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
 
                     const auto health = nmos::health_now();
                     set_resource_health(model.resources, resourceId, health);
