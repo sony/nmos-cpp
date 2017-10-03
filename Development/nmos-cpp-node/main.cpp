@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     // Settings can be passed on the command-line, and changed dynamically by POST to /settings/all on the Settings API
     //
     // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
-    // * "allow_invalid_resources": boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
+    // * "registry_address": string value, e.g. "127.0.0.1" (instead of using mDNS service discovery)
     //
     // E.g.
     //
@@ -63,7 +63,6 @@ int main(int argc, char* argv[])
         // Prepare initial settings (different than defaults)
         node_model.settings = web::json::value::object();
         node_model.settings[nmos::fields::logging_level] = web::json::value::number(level);
-        node_model.settings[nmos::fields::allow_invalid_resources] = web::json::value::boolean(true);
         node_model.settings[nmos::fields::host_name] = web::json::value::string(web::http::experimental::host_name());
         node_model.settings[nmos::fields::host_address] = web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0]);
     }
