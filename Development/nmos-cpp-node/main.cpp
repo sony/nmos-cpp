@@ -157,6 +157,8 @@ int main(int argc, char* argv[])
 
     shutdown = true;
     node_model_condition.notify_all();
+    node_heartbeat.join();
+    node_registration.join();
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
 
