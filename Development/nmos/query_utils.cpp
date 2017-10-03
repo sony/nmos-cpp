@@ -242,8 +242,13 @@ namespace nmos
         const resource_query match(version, resource_path, params);
 
         std::vector<web::json::value> events;
-        for (const auto& resource : resources)
+
+        // resources are traversed in order of increasing creation timestamp, so that events for super-resources are inserted before events for sub-resources
+        auto& by_created = resources.get<tags::created>();
+        for (auto it = by_created.rbegin(); by_created.rend() != it; ++it)
         {
+            const auto& resource = *it;
+
             if (!details::is_queryable_resource(resource.type)) continue;
 
             if (match(resource))
