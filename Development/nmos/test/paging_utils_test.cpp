@@ -275,7 +275,8 @@ BST_TEST_CASE(testCursorBasedPagingBasecampExamples)
         resource_paging paging(resources);
 
         // Response
-        auto page = paging.page(resources, [](const resource& r){ return 10 == r.cursor; });
+        const auto match_one = [](const resource& r){ return 10 == r.cursor; };
+        auto page = paging.page(resources, match_one);
 
         // Headers
         BST_REQUIRE_EQUAL(10, paging.limit);
@@ -293,7 +294,8 @@ BST_TEST_CASE(testCursorBasedPagingBasecampExamples)
         resource_paging paging(resources);
 
         // Response
-        auto page = paging.page(resources, [](const resource&){ return false; });
+        const auto match_none = [](const resource& r){ return -42 == r.cursor; };
+        auto page = paging.page(resources, match_none);
 
         // Headers
         BST_REQUIRE_EQUAL(10, paging.limit);
