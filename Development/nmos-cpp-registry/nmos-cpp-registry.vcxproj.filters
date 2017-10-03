@@ -136,9 +136,6 @@
     <ClInclude Include="..\cpprest\host_utils.h">
       <Filter>cpprest\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\nmos\connection_api.h">
-      <Filter>nmos\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\nmos\server_resources.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
@@ -242,9 +239,6 @@
     </ClCompile>
     <ClCompile Include="..\cpprest\host_utils.cpp">
       <Filter>cpprest\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\nmos\connection_api.cpp">
-      <Filter>nmos\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\nmos\server_resources.cpp">
       <Filter>nmos\Source Files</Filter>
