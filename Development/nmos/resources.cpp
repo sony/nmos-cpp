@@ -101,11 +101,10 @@ namespace nmos
     // erase all resources which expired at or before the specified time from the specified model
     void erase_expired_resources(resources& resources, const health& expiration_health)
     {
-        typedef resources::index<tags::health>::type by_health;
-        by_health& healths = resources.get<tags::health>();
-        by_health::const_iterator unexpired = healths.lower_bound(expiration_health);
+        auto& by_health = resources.get<tags::health>();
+        auto unexpired = by_health.lower_bound(expiration_health);
 
-        for (auto resource = healths.begin(); unexpired != resource; ++resource)
+        for (auto resource = by_health.begin(); unexpired != resource; ++resource)
         {
             const auto version = resource->version;
             const auto type = resource->type;
@@ -117,7 +116,7 @@ namespace nmos
         // should remove each of these resources from their super-resource's sub-resources
         // but this is unnecessary because health is propagated from nodes (and subscriptions)
         // which don't have a super-resource
-        healths.erase(healths.begin(), unexpired);
+        by_health.erase(by_health.begin(), unexpired);
     }
 
     // find the resource with the specified id in the specified resources (if present) and

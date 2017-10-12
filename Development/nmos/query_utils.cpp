@@ -245,7 +245,9 @@ namespace nmos
 
         // resources are traversed in order of increasing creation timestamp, so that events for super-resources are inserted before events for sub-resources
         auto& by_created = resources.get<tags::created>();
-        for (auto it = by_created.rbegin(); by_created.rend() != it; ++it)
+        using std::rbegin;
+        using std::rend;
+        for (auto it = rbegin(by_created); rend(by_created) != it; ++it)
         {
             const auto& resource = *it;
 

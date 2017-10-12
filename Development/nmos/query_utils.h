@@ -88,8 +88,8 @@ namespace nmos
     inline nmos::tai extract_cursor(const nmos::resources::index<tags::created>::type&, nmos::resources::index_iterator<tags::created>::type it) { return it->created; }
     inline nmos::tai extract_cursor(const nmos::resources::index<tags::updated>::type&, nmos::resources::index_iterator<tags::updated>::type it) { return it->updated; }
 
-    inline nmos::resources::index_iterator<tags::created>::type lower_bound(const nmos::resources::index<tags::created>::type& index, nmos::tai timestamp) { return index.lower_bound(timestamp); }
-    inline nmos::resources::index_iterator<tags::updated>::type lower_bound(const nmos::resources::index<tags::updated>::type& index, nmos::tai timestamp) { return index.lower_bound(timestamp); }
+    inline nmos::resources::index_iterator<tags::created>::type lower_bound(const nmos::resources::index<tags::created>::type& index, const nmos::tai& timestamp) { return index.lower_bound(timestamp); }
+    inline nmos::resources::index_iterator<tags::updated>::type lower_bound(const nmos::resources::index<tags::updated>::type& index, const nmos::tai& timestamp) { return index.lower_bound(timestamp); }
 
     // Helpers for constructing /subscriptions websocket grains
 
