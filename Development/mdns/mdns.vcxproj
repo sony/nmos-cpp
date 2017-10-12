@@ -79,6 +79,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bonjour_dns_impl.cpp" />
+    <ClCompile Include="core.cpp" />
     <ClCompile Include="service_advertiser.cpp" />
     <ClCompile Include="service_discovery.cpp" />
   </ItemGroup>
