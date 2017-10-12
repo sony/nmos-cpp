@@ -36,7 +36,7 @@ namespace nmos
         const api_version v1_0{ 1, 0 };
     }
 
-    inline utility::string_t make_api_version(api_version version)
+    inline utility::string_t make_api_version(const api_version& version)
     {
         utility::ostringstream_t os;
         os << U('v') << version.major << U('.') << version.minor;

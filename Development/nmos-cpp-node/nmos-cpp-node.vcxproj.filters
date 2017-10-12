@@ -164,6 +164,9 @@
     <ClInclude Include="..\nmos\thread_utils.h">
       <Filter>nmos\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\nmos\mdns.h">
+      <Filter>nmos\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -212,6 +215,9 @@
       <Filter>rql\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\nmos\node_registration.cpp">
+      <Filter>nmos\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nmos\mdns.cpp">
       <Filter>nmos\Source Files</Filter>
     </ClCompile>
   </ItemGroup>

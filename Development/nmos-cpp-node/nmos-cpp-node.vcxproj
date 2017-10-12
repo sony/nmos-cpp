@@ -109,6 +109,7 @@
     <ClCompile Include="..\nmos\api_utils.cpp" />
     <ClCompile Include="..\nmos\connection_api.cpp" />
     <ClCompile Include="..\nmos\logging_api.cpp" />
+    <ClCompile Include="..\nmos\mdns.cpp" />
     <ClCompile Include="..\nmos\node_api.cpp" />
     <ClCompile Include="..\nmos\node_registration.cpp" />
     <ClCompile Include="..\nmos\node_resources.cpp" />
@@ -144,6 +145,7 @@
     <ClInclude Include="..\nmos\json_fields.h" />
     <ClInclude Include="..\nmos\logging_api.h" />
     <ClInclude Include="..\nmos\log_manip.h" />
+    <ClInclude Include="..\nmos\mdns.h" />
     <ClInclude Include="..\nmos\model.h" />
     <ClInclude Include="..\nmos\node_api.h" />
     <ClInclude Include="..\nmos\node_registration.h" />

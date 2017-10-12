@@ -10,7 +10,7 @@ namespace slog
 }
 
 // Node Registration behaviour 
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.1.x/docs/4.1.%20Behaviour%20-%20Registration.md
+// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/4.1.%20Behaviour%20-%20Registration.md
 namespace nmos
 {
     struct model;

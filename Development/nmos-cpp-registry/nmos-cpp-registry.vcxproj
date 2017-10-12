@@ -112,6 +112,7 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
     <ClCompile Include="..\nmos\api_utils.cpp" />
     <ClCompile Include="..\nmos\filesystem_route.cpp" />
     <ClCompile Include="..\nmos\logging_api.cpp" />
+    <ClCompile Include="..\nmos\mdns.cpp" />
     <ClCompile Include="..\nmos\mdns_api.cpp" />
     <ClCompile Include="..\nmos\node_api.cpp" />
     <ClCompile Include="..\nmos\query_api.cpp" />
@@ -151,6 +152,7 @@ if exist ..\..\..\nmos-js xcopy /D /S /I /Y ..\..\..\nmos-js\Development\admin "
     <ClInclude Include="..\nmos\id.h" />
     <ClInclude Include="..\nmos\json_fields.h" />
     <ClInclude Include="..\nmos\logging_api.h" />
+    <ClInclude Include="..\nmos\mdns.h" />
     <ClInclude Include="..\nmos\mdns_api.h" />
     <ClInclude Include="..\nmos\log_manip.h" />
     <ClInclude Include="..\nmos\model.h" />

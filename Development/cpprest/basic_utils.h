@@ -28,9 +28,9 @@ namespace utility
     }
 
     template <typename T>
-    inline T istringstreamed(const string_t& value)
+    inline T istringstreamed(const string_t& value, const T& default_value = {})
     {
-        return [&]{ T result{}; istringstream_t is(value); is >> result; return result; }();
+        return [&]{ T result{ default_value }; istringstream_t is(value); is >> result; return result; }();
     }
 }
 

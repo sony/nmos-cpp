@@ -1,9 +1,11 @@
 #include "cpprest/host_utils.h"
 #include "cpprest/ws_listener.h"
+#include "mdns/service_advertiser.h"
 #include "nmos/api_utils.h"
 #include "nmos/admin_ui.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
+#include "nmos/mdns.h"
 #include "nmos/mdns_api.h"
 #include "nmos/node_api.h"
 #include "nmos/query_api.h"
@@ -11,7 +13,6 @@
 #include "nmos/registration_api.h"
 #include "nmos/settings_api.h"
 #include "nmos/server_resources.h"
-#include "mdns/service_advertiser.h"
 #include "main_gate.h"
 
 int main(int argc, char* argv[])
@@ -74,6 +75,10 @@ int main(int argc, char* argv[])
         registry_model.settings[nmos::fields::host_address] = web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0]);
     }
 
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
+
     // Configure the mDNS API
 
     web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(registry_mutex, level, gate);
@@ -127,8 +132,6 @@ int main(int argc, char* argv[])
     web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(registry_model.settings)));
     nmos::support_api(node_listener, node_api);
 
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry as node on: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
-
     // set up the node resources
     nmos::experimental::make_server_resources(self_resources, registry_model.settings);
 
@@ -145,17 +148,10 @@ int main(int argc, char* argv[])
 
     // Configure the mDNS advertisements for our APIs
     
-    std::unique_ptr< mdns::service_advertiser > advertiser = mdns::make_advertiser(gate); 
-    const std::vector<std::string> txt_records
-    {
-        "api_proto=http",
-        "api_ver=v1.0,v1.1,v1.2",
-        "pri=100"
-    };
-
-    advertiser->register_service("nmos-cpp_query", "_nmos-query._tcp", (uint16_t)nmos::fields::query_port(registry_model.settings), {}, txt_records);
-    advertiser->register_service("nmos-cpp_registration", "_nmos-registration._tcp", (uint16_t)nmos::fields::registration_port(registry_model.settings), {}, txt_records);
-    advertiser->register_service("nmos-cpp_node", "_nmos-node._tcp", (uint16_t)nmos::fields::node_port(registry_model.settings), {}, txt_records);
+    std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate); 
+    nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::query, registry_model.settings);
+    nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::registration, registry_model.settings);
+    nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::node, registry_model.settings);
 
     // Advertise our APIs
 

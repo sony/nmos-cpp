@@ -176,6 +176,7 @@ namespace nmos
             });
 
             const auto base_uri = details::make_registration_uri_with_no_version(model.settings);
+            const auto registry_version = nmos::parse_api_version(nmos::fields::registry_version(model.settings));
 
             // issue the registration requests, without the lock on the resources and settings
             details::reverse_lock_guard<std::unique_lock<std::mutex>> unlock{ lock };
@@ -185,7 +186,7 @@ namespace nmos
                 // for the moment, just log and ignore http exceptions... should really retry, or select an alternative registry
                 try
                 {
-                    details::request_registration(client, nmos::is04_versions::v1_2, event, gate);
+                    details::request_registration(client, registry_version, event, gate);
                 }
                 catch (const web::http::http_exception& e)
                 {
@@ -213,6 +214,7 @@ namespace nmos
             set_resource_health(model.resources, id);
 
             const auto base_uri = details::make_registration_uri_with_no_version(model.settings);
+            const auto registry_version = nmos::parse_api_version(nmos::fields::registry_version(model.settings));
 
             // issue the registration heartbeat, without the lock on the resources and settings
             details::reverse_lock_guard<std::unique_lock<std::mutex>> unlock{ lock };
@@ -220,7 +222,7 @@ namespace nmos
             // for the moment, just log and ignore http exceptions... should really retry, and/or force re-registration
             try
             {
-                details::update_node_health(client, nmos::is04_versions::v1_2, id, gate);
+                details::update_node_health(client, registry_version, id, gate);
             }
             catch (const web::http::http_exception& e)
             {
