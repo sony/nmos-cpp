@@ -122,7 +122,12 @@ int main(int argc, char* argv[])
     // Configure the mDNS advertisements for our APIs
     
     std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
-    nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::node, node_model.settings);
+    const auto pri = nmos::fields::pri(node_model.settings);
+    if (nmos::mdns::no_priority != pri) // no_priority allows the node to run unadvertised
+    {
+        const auto records = nmos::mdns::make_txt_records(pri);
+        nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::node, node_model.settings);
+    }
 
     // Advertise our APIs
 

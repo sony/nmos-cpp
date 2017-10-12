@@ -23,6 +23,9 @@ namespace nmos
         // host_address [registry, node]: used to construct response headers and URL fields
         const web::json::field_as_string_or host_address{ U("host_address"), U("127.0.0.1") };
 
+        // pri [registry, node]: used for the 'pri' TXT record
+        const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
+
         // registry_address [node]: used to make requests on registry APIs
         const web::json::field_as_string_or registry_address{ U("registry_address"), U("127.0.0.1") };
 
