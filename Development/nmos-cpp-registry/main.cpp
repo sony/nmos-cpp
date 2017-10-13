@@ -150,17 +150,13 @@ int main(int argc, char* argv[])
     
     std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
     const auto pri = nmos::fields::pri(registry_model.settings);
-    if (nmos::mdns::no_priority != pri) // no_priority allows the registry to run unadvertised
+    if (nmos::service_priorities::no_priority != pri) // no_priority allows the registry to run unadvertised
     {
-        const auto records = nmos::mdns::make_txt_records(pri);
-        nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::query, registry_model.settings, records);
-        nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::registration, registry_model.settings, records);
-        nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::node, registry_model.settings, records);
+        const auto records = nmos::make_txt_records(pri);
+        nmos::experimental::register_service(*advertiser, nmos::service_types::query, registry_model.settings, records);
+        nmos::experimental::register_service(*advertiser, nmos::service_types::registration, registry_model.settings, records);
+        nmos::experimental::register_service(*advertiser, nmos::service_types::node, registry_model.settings, records);
     }
-
-    // Advertise our APIs
-
-    advertiser->start();  
 
     try
     {
@@ -180,6 +176,8 @@ int main(int argc, char* argv[])
 
         mdns_listener.open().wait();
 
+        advertiser->start();  
+
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
         std::string command;
@@ -192,6 +190,8 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
 
         // close in reverse order
+
+        advertiser->stop();
 
         mdns_listener.close().wait();
 
@@ -209,8 +209,6 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
     }
-
-    advertiser->stop();
 
     shutdown = true;
     registration_expiration_condition.notify_all();

@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     // Discover a Registration API
 
     std::unique_ptr<mdns::service_discovery> discovery = mdns::make_discovery(gate);
-    web::uri registration_uri = nmos::mdns::experimental::resolve_service(*discovery, nmos::mdns::services::registration);
+    web::uri registration_uri = nmos::experimental::resolve_service(*discovery, nmos::service_types::registration);
 
     if (!registration_uri.is_empty())
     {
@@ -123,15 +123,11 @@ int main(int argc, char* argv[])
     
     std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
     const auto pri = nmos::fields::pri(node_model.settings);
-    if (nmos::mdns::no_priority != pri) // no_priority allows the node to run unadvertised
+    if (nmos::service_priorities::no_priority != pri) // no_priority allows the node to run unadvertised
     {
-        const auto records = nmos::mdns::make_txt_records(pri);
-        nmos::mdns::experimental::register_service(*advertiser, nmos::mdns::services::node, node_model.settings);
+        const auto records = nmos::make_txt_records(pri);
+        nmos::experimental::register_service(*advertiser, nmos::service_types::node, node_model.settings);
     }
-
-    // Advertise our APIs
-
-    advertiser->start();  
 
     try
     {
@@ -144,6 +140,8 @@ int main(int argc, char* argv[])
 
         node_listener.open().wait();
         connection_listener.open().wait();
+
+        advertiser->start();  
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
@@ -158,6 +156,8 @@ int main(int argc, char* argv[])
 
         // close in reverse order
 
+        advertiser->stop();
+
         connection_listener.close().wait();
         node_listener.close().wait();
 
@@ -168,8 +168,6 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
     }
-
-    advertiser->stop();
 
     shutdown = true;
     node_model_condition.notify_all();

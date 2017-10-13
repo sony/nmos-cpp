@@ -47,9 +47,9 @@ namespace nmos
                 // rather than return a misleading list?
                 set_reply(res, status_codes::OK, value_of(
                 {
-                    value::string(utility::s2us(nmos::mdns::services::query) + U("/")),
-                    value::string(utility::s2us(nmos::mdns::services::registration) + U("/")),
-                    value::string(utility::s2us(nmos::mdns::services::node) + U("/"))
+                    value::string(utility::s2us(nmos::service_types::query) + U("/")),
+                    value::string(utility::s2us(nmos::service_types::registration) + U("/")),
+                    value::string(utility::s2us(nmos::service_types::node) + U("/"))
                 }));
                 return true;
             });
