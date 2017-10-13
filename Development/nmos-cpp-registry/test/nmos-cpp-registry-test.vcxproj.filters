@@ -119,6 +119,9 @@
     <ClCompile Include="..\..\cpprest\host_utils.cpp">
       <Filter>cpprest\Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\mdns\test\core_test.cpp">
+      <Filter>mdns\test\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bst\test\test.h">

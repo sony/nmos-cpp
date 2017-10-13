@@ -110,6 +110,7 @@
     <ClCompile Include="..\..\cpprest\test\api_router_test.cpp" />
     <ClCompile Include="..\..\cpprest\test\http_utils_test.cpp" />
     <ClCompile Include="..\..\cpprest\test\regex_utils_test.cpp" />
+    <ClCompile Include="..\..\mdns\test\core_test.cpp" />
     <ClCompile Include="..\..\nmos\api_utils.cpp" />
     <ClCompile Include="..\..\nmos\test\api_utils_test.cpp" />
     <ClCompile Include="..\..\nmos\test\paging_utils_test.cpp" />

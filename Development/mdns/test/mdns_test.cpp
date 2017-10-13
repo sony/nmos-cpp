@@ -1,3 +1,7 @@
+// The first "test" is of course whether the headers compile standalone
+#include "mdns/service_advertiser.h"
+#include "mdns/service_discovery.h"
+
 #include <chrono>
 #include <thread>
 
@@ -5,9 +9,6 @@
 #include "cpprest/basic_utils.h" // for utility::us2s, utility::s2us
 #include "cpprest/host_utils.h" // for host_name
 #include "slog/all_in_one.h"
-
-#include "mdns/service_advertiser.h"
-#include "mdns/service_discovery.h"
 
 static unsigned int sleepSeconds = 2;
 

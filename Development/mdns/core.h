@@ -32,7 +32,7 @@ namespace mdns
     // "If there is no '=' in a DNS-SD TXT record string, then it is a boolean attribute, simply identified as being
     // present, with no value." (RFC 6763)
 
-    template <typename Parser, typename Value>
+    template <typename Value, typename Parser>
     inline Value parse_txt_record(const structured_txt_records& records, const std::string& key, Parser parse, const Value& default_value = {})
     {
         auto found = std::find_if(records.begin(), records.end(), [&](const structured_txt_record& record)
