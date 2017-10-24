@@ -9,7 +9,7 @@ namespace slog
     class base_gate;
 }
 
-// Node Registration behaviour 
+// Node Registration behaviour
 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/4.1.%20Behaviour%20-%20Registration.md
 namespace nmos
 {

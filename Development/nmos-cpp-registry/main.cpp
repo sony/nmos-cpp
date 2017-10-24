@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
     nmos::support_api(admin_listener, admin_ui);
 
     // Configure the mDNS advertisements for our APIs
-    
+
     std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
     const auto pri = nmos::fields::pri(registry_model.settings);
     if (nmos::service_priorities::no_priority != pri) // no_priority allows the registry to run unadvertised

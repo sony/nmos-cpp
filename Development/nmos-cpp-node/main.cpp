@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     nmos::support_api(connection_listener, connection_api);
 
     // Configure the mDNS advertisements for our APIs
-    
+
     std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
     const auto pri = nmos::fields::pri(node_model.settings);
     if (nmos::service_priorities::no_priority != pri) // no_priority allows the node to run unadvertised
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
         node_listener.open().wait();
         connection_listener.open().wait();
 
-        advertiser->start();  
+        advertiser->start();
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

@@ -24,7 +24,7 @@ namespace nmos
         const service_type query{ "_nmos-query._tcp" };
         const service_type registration{ "_nmos-registration._tcp" };
     }
-        
+
     // "The DNS-SD advertisement MUST be accompanied by a TXT record of name 'api_proto' with a value
     // of either 'http' or 'https' dependent on the protocol in use by the [...] server."
     // (However, v1.0 did not include this record, so when it is omitted, "http" should be assumed.)

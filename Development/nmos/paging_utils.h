@@ -100,7 +100,7 @@ namespace nmos
             -> boost::sub_range<decltype(details::make_bounded_range(range, lower, upper) | boost::adaptors::filtered(match))>
         {
             // note: since only the bounded range is used, the total count of matching values in the range cannot be calculated
-            // optimisation opportunity: if no filter predicate is being applied, the bounded range could be used directly 
+            // optimisation opportunity: if no filter predicate is being applied, the bounded range could be used directly
             auto matching = details::make_bounded_range(range, lower, upper) | boost::adaptors::filtered(match);
             // optimisation opportunity: if the limit is greater than the size of the (filtered) range, taking a first/last sub-range is unnecessary and evaluating the filter predicate for all values could be avoided
             auto page = take_lower ? details::take_first(matching, limit) : details::take_last(matching, limit);

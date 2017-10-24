@@ -21,7 +21,7 @@ namespace web
                 return false;
             using std::begin;
             using std::end;
-            // equality respects keep_order 
+            // equality respects keep_order
             return std::equal(begin(lhs), end(lhs), begin(rhs));
         }
 

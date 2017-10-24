@@ -58,7 +58,7 @@ namespace xregex
     {
         using namespace regex_specials;
         enum state_t { normal, escaped, sub_match, extended_sub_match, named_sub_match, unknown_extension };
-                        
+
         regex_named_sub_matches_t<Char> result;
 
         smatch_t<Char>::size_type sub_match_count = 0;

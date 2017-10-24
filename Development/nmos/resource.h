@@ -38,7 +38,7 @@ namespace nmos
         type type;
 
         // resource data is stored directly as json rather than e.g. being deserialized to a class hierarchy to allow quick
-        // prototyping; json validation at the API boundary would ensure the data met the schema for the specified version 
+        // prototyping; json validation at the API boundary would ensure the data met the schema for the specified version
         web::json::value data;
 
         // could use fields::id(data) but the id is such an important index...
