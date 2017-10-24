@@ -19,7 +19,7 @@ __pragma(warning(disable:4267)) // e.g. conversion from 'size_t' to 'uint32_t', 
 #include "websocketpp/server.hpp"
 PRAGMA_WARNING_POP
 
-#include "cpprest/basic_utils.h" // for utility::s2us
+#include "cpprest/asyncrt_utils.h" // for utility::conversions
 
 // websocket_listener is an experimental server-side implementation of WebSockets
 namespace web
@@ -274,7 +274,7 @@ namespace web
 
                         utility::string_t resource_from_hdl(websocketpp::connection_hdl hdl)
                         {
-                            return utility::s2us(server.get_con_from_hdl(hdl)->get_resource());
+                            return utility::conversions::to_string_t(server.get_con_from_hdl(hdl)->get_resource());
                         }
 
                         static connection_id id_from_hdl(websocketpp::connection_hdl hdl)
