@@ -234,6 +234,18 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
     }
+    catch (const web::websockets::experimental::listener::websocket_exception& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
+    }
+    catch (const std::exception& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
+    }
+    catch (...)
+    {
+        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
+    }
 
     shutdown = true;
     registration_expiration_condition.notify_all();

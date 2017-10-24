@@ -199,43 +199,61 @@ namespace web
 
                         pplx::task<void> open(int port)
                         {
-                            server.init_asio();
-                            server.start_perpetual();
-                            // hmm, is one thread enough?
-                            thread = std::thread(&server_t::run, &server);
+                            try
+                            {
+                                server.init_asio();
+                                server.start_perpetual();
+                                // hmm, is one thread enough?
+                                thread = std::thread(&server_t::run, &server);
 
-                            using websocketpp::lib::bind;
-                            using websocketpp::lib::placeholders::_1;
+                                using websocketpp::lib::bind;
+                                using websocketpp::lib::placeholders::_1;
 
-                            server.set_validate_handler(bind(&websocket_listener_impl::handle_validate, this, _1));
-                            server.set_open_handler(bind(&websocket_listener_impl::handle_open, this, _1));
-                            server.set_close_handler(bind(&websocket_listener_impl::handle_close, this, _1));
+                                server.set_validate_handler(bind(&websocket_listener_impl::handle_validate, this, _1));
+                                server.set_open_handler(bind(&websocket_listener_impl::handle_open, this, _1));
+                                server.set_close_handler(bind(&websocket_listener_impl::handle_close, this, _1));
 
-                            server.listen((uint16_t)port);
-                            server.start_accept();
+                                server.listen((uint16_t)port);
+                                server.start_accept();
+                            }
+                            catch (const websocketpp::exception& e)
+                            {
+                                return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "open")));
+                            }
 
                             return pplx::task_from_result();
                         }
 
                         pplx::task<void> close()
                         {
-                            server.stop_listening();
-
+                            try
                             {
-                                std::lock_guard<std::mutex> lock(mutex);
-                                for (auto& hdl : connections)
+                                server.stop_listening();
+
                                 {
-                                    server.close(hdl, websocketpp::close::status::going_away, "server going down");
+                                    std::lock_guard<std::mutex> lock(mutex);
+                                    for (auto& hdl : connections)
+                                    {
+                                        server.close(hdl, websocketpp::close::status::going_away, "server going down");
+                                    }
+                                    connections.clear();
                                 }
-                                connections.clear();
+
+                                server.stop_perpetual();
+                            }
+                            catch (const websocketpp::exception& e)
+                            {
+                                if (thread.joinable())
+                                {
+                                    thread.join();
+                                }
+                                return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "close")));
                             }
 
-                            server.stop_perpetual();
                             if (thread.joinable())
                             {
                                 thread.join();
                             }
-
                             return pplx::task_from_result();
                         }
 
