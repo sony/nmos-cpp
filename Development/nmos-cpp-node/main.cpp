@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
     if (nmos::service_priorities::no_priority != pri) // no_priority allows the node to run unadvertised
     {
         const auto records = nmos::make_txt_records(pri);
-        nmos::experimental::register_service(*advertiser, nmos::service_types::node, node_model.settings);
+        nmos::experimental::register_service(*advertiser, nmos::service_types::node, node_model.settings, records);
     }
 
     try
