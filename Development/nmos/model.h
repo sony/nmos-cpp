@@ -9,8 +9,8 @@ namespace nmos
 {
     struct model
     {
-        resources resources;
-        settings settings;
+        nmos::resources resources;
+        nmos::settings settings;
     };
 }
 

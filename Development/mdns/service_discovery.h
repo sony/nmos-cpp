@@ -36,7 +36,7 @@ namespace mdns
             std::string host_name;
             std::string ip_address;
             std::uint16_t port;
-            txt_records txt_records;
+            mdns::txt_records txt_records;
         };
 
         virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain = {}, unsigned int timeout_seconds = default_timeout_seconds) = 0;

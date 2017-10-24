@@ -51,7 +51,7 @@ namespace nmos
 
         struct log_model
         {
-            events events;
+            nmos::experimental::events events;
         };
 
         web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, std::mutex& mutex, slog::base_gate& gate);

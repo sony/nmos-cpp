@@ -381,9 +381,11 @@ namespace rql
         }
     }
 
-    namespace logical_operators
+    // Other helpers
+
+    namespace details
     {
-        web::json::value not(const web::json::value& arg)
+        web::json::value logical_not(const web::json::value& arg)
         {
             if (!arg.is_boolean())
             {
@@ -394,7 +396,7 @@ namespace rql
         }
 
         template <typename ThreeStatePredicate>
-        inline web::json::value any(const web::json::value& args, ThreeStatePredicate predicate)
+        inline web::json::value logical_or(const web::json::value& args, ThreeStatePredicate predicate)
         {
             if (!args.is_array())
             {
@@ -417,22 +419,17 @@ namespace rql
         }
 
         template <typename ThreeStatePredicate>
-        inline web::json::value all(const web::json::value& args, ThreeStatePredicate predicate)
+        inline web::json::value logical_and(const web::json::value& args, ThreeStatePredicate predicate)
         {
             // all elements satisfy the predicate if none of the arguments do not satisfy the predicate
-            return logical_operators::not(logical_operators::any(args, std::bind(logical_operators::not, std::bind(predicate, std::placeholders::_1))));
+            return logical_not(logical_or(args, std::bind(logical_not, std::bind(predicate, std::placeholders::_1))));
         }
-    }
 
-    // Other helpers
-
-    namespace details
-    {
         template <typename ThreeStateBinaryPredicate>
         inline web::json::value includes(const web::json::value& lhs, const web::json::value& rhs, ThreeStateBinaryPredicate predicate)
         {
             // if all comparisons are indeterminate, return false
-            return logical_operators::any(lhs, std::bind(predicate, std::placeholders::_1, rhs)) == value_true ? value_true : value_false;
+            return logical_or(lhs, std::bind(predicate, std::placeholders::_1, rhs)) == value_true ? value_true : value_false;
         }
 
         inline web::json::value matches(const web::json::value& target, const utility::string_t& pattern, bool icase)
@@ -457,21 +454,21 @@ namespace rql
         // See https://doc.apsstandard.org/6.0/spec/rql/#logical-operators
 
         // and(<call-operator>, <call-operator>, ...) - Short-circuit conjunction
-        web::json::value all(const evaluator& eval, const web::json::value& args)
+        web::json::value logical_and(const evaluator& eval, const web::json::value& args)
         {
-            return logical_operators::all(args, eval);
+            return details::logical_and(args, eval);
         }
 
         // or(<call-operator>, <call-operator>, ...) - Short-circuit disjunction
-        web::json::value any(const evaluator& eval, const web::json::value& args)
+        web::json::value logical_or(const evaluator& eval, const web::json::value& args)
         {
-            return logical_operators::any(args, eval);
+            return details::logical_or(args, eval);
         }
 
         // not(<call-operator>) - Negation
-        web::json::value not(const evaluator& eval, const web::json::value& args)
+        web::json::value logical_not(const evaluator& eval, const web::json::value& args)
         {
-            return logical_operators::not(eval(args.at(0)));
+            return details::logical_not(eval(args.at(0)));
         }
 
         // Relational operators
@@ -488,7 +485,7 @@ namespace rql
         template <typename ThreeStateBinaryPredicate>
         web::json::value ne(const evaluator& eval, const web::json::value& args, ThreeStateBinaryPredicate predicate)
         {
-            return logical_operators::not(predicate(eval(args.at(0), true), eval(args.at(1))));
+            return details::logical_not(predicate(eval(args.at(0), true), eval(args.at(1))));
         }
 
         template <typename ThreeStateCompare>
@@ -500,7 +497,7 @@ namespace rql
         template <typename ThreeStateCompare>
         web::json::value ge(const evaluator& eval, const web::json::value& args, ThreeStateCompare compare)
         {
-            return logical_operators::not(compare(eval(args.at(0), true), eval(args.at(1))));
+            return details::logical_not(compare(eval(args.at(0), true), eval(args.at(1))));
         }
 
         template <typename ThreeStateCompare>
@@ -512,7 +509,7 @@ namespace rql
         template <typename ThreeStateCompare>
         web::json::value le(const evaluator& eval, const web::json::value& args, ThreeStateCompare compare)
         {
-            return logical_operators::not(compare(eval(args.at(1)), eval(args.at(0), true)));
+            return details::logical_not(compare(eval(args.at(1)), eval(args.at(0), true)));
         }
 
         // Array-friendly relational operators
@@ -521,37 +518,37 @@ namespace rql
         template <typename ThreeStateBinaryPredicate>
         web::json::value any_eq(const evaluator& eval, const web::json::value& args, ThreeStateBinaryPredicate predicate)
         {
-            return logical_operators::any(eval(args.at(0), true), std::bind(predicate, std::placeholders::_1, eval(args.at(1))));
+            return details::logical_or(eval(args.at(0), true), std::bind(predicate, std::placeholders::_1, eval(args.at(1))));
         }
 
         template <typename ThreeStateBinaryPredicate>
         web::json::value any_ne(const evaluator& eval, const web::json::value& args, ThreeStateBinaryPredicate predicate)
         {
-            return logical_operators::any(eval(args.at(0), true), std::bind(logical_operators::not, std::bind(predicate, std::placeholders::_1, eval(args.at(1)))));
+            return details::logical_or(eval(args.at(0), true), std::bind(details::logical_not, std::bind(predicate, std::placeholders::_1, eval(args.at(1)))));
         }
 
         template <typename ThreeStateCompare>
         web::json::value any_gt(const evaluator& eval, const web::json::value& args, ThreeStateCompare compare)
         {
-            return logical_operators::any(eval(args.at(0), true), std::bind(compare, eval(args.at(1)), std::placeholders::_1));
+            return details::logical_or(eval(args.at(0), true), std::bind(compare, eval(args.at(1)), std::placeholders::_1));
         }
 
         template <typename ThreeStateCompare>
         web::json::value any_ge(const evaluator& eval, const web::json::value& args, ThreeStateCompare compare)
         {
-            return logical_operators::any(eval(args.at(0), true), std::bind(logical_operators::not, std::bind(compare, std::placeholders::_1, eval(args.at(1)))));
+            return details::logical_or(eval(args.at(0), true), std::bind(details::logical_not, std::bind(compare, std::placeholders::_1, eval(args.at(1)))));
         }
 
         template <typename ThreeStateCompare>
         web::json::value any_lt(const evaluator& eval, const web::json::value& args, ThreeStateCompare compare)
         {
-            return logical_operators::any(eval(args.at(0), true), std::bind(compare, std::placeholders::_1, eval(args.at(1))));
+            return details::logical_or(eval(args.at(0), true), std::bind(compare, std::placeholders::_1, eval(args.at(1))));
         }
 
         template <typename ThreeStateCompare>
         web::json::value any_le(const evaluator& eval, const web::json::value& args, ThreeStateCompare compare)
         {
-            return logical_operators::any(eval(args.at(0), true), std::bind(logical_operators::not, std::bind(compare, eval(args.at(1)), std::placeholders::_1)));
+            return details::logical_or(eval(args.at(0), true), std::bind(details::logical_not, std::bind(compare, eval(args.at(1)), std::placeholders::_1)));
         }
 
         // Set relation functions
@@ -569,7 +566,7 @@ namespace rql
         template <typename ThreeStateBinaryPredicate>
         web::json::value out(const evaluator& eval, const web::json::value& args, ThreeStateBinaryPredicate predicate)
         {
-            return logical_operators::not(details::includes(eval(args.at(1)), eval(args.at(0), true), predicate));
+            return details::logical_not(details::includes(eval(args.at(1)), eval(args.at(0), true), predicate));
         }
 
         // contains(<property>, <value>) - Filters for objects where the specified property's value is an array and the array contains the provided value
@@ -583,7 +580,7 @@ namespace rql
         template <typename ThreeStateBinaryPredicate>
         web::json::value excludes(const evaluator& eval, const web::json::value& args, ThreeStateBinaryPredicate predicate)
         {
-            return logical_operators::not(details::includes(eval(args.at(0), true), eval(args.at(1)), predicate));
+            return details::logical_not(details::includes(eval(args.at(0), true), eval(args.at(1)), predicate));
         }
 
         // Additional filter functions
@@ -627,7 +624,7 @@ namespace rql
             // throws web::json::json_exception if pattern or options are not strings
             auto pattern = eval(args.at(1)).as_string();
             auto icase = args.size() > 2 ? args.at(2).as_string() == U("i") : false;
-            return logical_operators::any(target, std::bind(details::matches, std::placeholders::_1, pattern, icase));
+            return details::logical_or(target, std::bind(details::matches, std::placeholders::_1, pattern, icase));
         }
 
         // Other helpers
@@ -664,9 +661,9 @@ namespace rql
             using namespace std::placeholders;
             return
             {
-                { U("and"), functions::all },
-                { U("or"), functions::any },
-                { U("not"), functions::not },
+                { U("and"), functions::logical_and },
+                { U("or"), functions::logical_or },
+                { U("not"), functions::logical_not },
                 { U("eq"), std::bind(functions::eq<ThreeStateBinaryPredicate>, _1, _2, equal_to) },
                 { U("ne"), std::bind(functions::ne<ThreeStateBinaryPredicate>, _1, _2, equal_to) },
                 { U("gt"), std::bind(functions::gt<ThreeStateCompare>, _1, _2, less) },
@@ -691,9 +688,9 @@ namespace rql
             using namespace std::placeholders;
             return
             {
-                { U("and"), functions::all },
-                { U("or"), functions::any },
-                { U("not"), functions::not },
+                { U("and"), functions::logical_and },
+                { U("or"), functions::logical_or },
+                { U("not"), functions::logical_not },
                 { U("eq"), std::bind(functions::any_eq<ThreeStateBinaryPredicate>, _1, _2, equal_to) },
                 { U("ne"), std::bind(functions::any_ne<ThreeStateBinaryPredicate>, _1, _2, equal_to) },
                 { U("gt"), std::bind(functions::any_gt<ThreeStateCompare>, _1, _2, less) },

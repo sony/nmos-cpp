@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
     nmos::experimental::log_model log_model;
     std::mutex log_mutex;
-    std::atomic<slog::severity> level = slog::severities::more_info;
+    std::atomic<slog::severity> level{ slog::severities::more_info };
 
     bool shutdown = false;
 

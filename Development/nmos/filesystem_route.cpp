@@ -1,14 +1,20 @@
 #include "nmos/filesystem_route.h"
 
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+#include <experimental/filesystem>
+#else
 #include <filesystem>
+#endif
 #include "cpprest/filestream.h"
 #include "nmos/slog.h"
 
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+namespace filesystem = std::experimental::filesystem;
+typedef filesystem::path path_t;
+#else
 namespace filesystem = std::tr2::sys;
-namespace utility
-{
-    typedef filesystem::wpath path_t; // upath
-}
+typedef filesystem::wpath path_t;
+#endif
 
 namespace nmos
 {
@@ -35,11 +41,11 @@ namespace nmos
                 {
                     const auto filesystem_path = filesystem_root + relative_path;
 
-                    if (filesystem::exists(utility::path_t(filesystem_path)))
+                    if (filesystem::exists(path_t(filesystem_path)))
                     {
                         // this was written as a continuation on the task from open_istream, but api_router can now call multiple handlers
                         // to modify the response, so the asynchronicity needs more consideration...
-                        const utility::size64_t content_length = filesystem::file_size(utility::path_t(filesystem_path));
+                        const utility::size64_t content_length = filesystem::file_size(path_t(filesystem_path));
                         pplx::task<concurrency::streams::istream> tis = concurrency::streams::fstream::open_istream(filesystem_path, std::ios::in);
                         concurrency::streams::istream is = tis.get();
                         set_reply(res, status_codes::OK, is, content_length, content_type);

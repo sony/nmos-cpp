@@ -5,12 +5,16 @@
 #include "cpprest/host_utils.h"
 #include "slog/all_in_one.h"
 
+#ifdef __linux__
+#include <arpa/inet.h> // for htons
+#endif
+
 namespace mdns
 {
     bonjour_dns_impl::bonjour_dns_impl(slog::base_gate& gate)
         : m_gate(gate)
     {
-        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) <<  "Discovery/advertiser instance constructed";
+        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "Discovery/advertiser instance constructed";
     }
 
     bonjour_dns_impl::~bonjour_dns_impl()
@@ -18,7 +22,7 @@ namespace mdns
         // de-register all registered services
         stop();
 
-        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) <<  "Discovery/advertiser instance destructed";
+        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "Discovery/advertiser instance destructed";
     }
 
     static std::vector<unsigned char> make_txt_records(const txt_records& records)
@@ -70,7 +74,7 @@ namespace mdns
 
             m_services.push_back({ name, type, domain, sdRef });
 
-            slog::log<slog::severities::info>(m_gate, SLOG_FLF) <<  "Registered: " << name << "." << type << (domain.empty() ? "" : "." + domain);
+            slog::log<slog::severities::info>(m_gate, SLOG_FLF) << "Registered: " << name << "." << type << (domain.empty() ? "" : "." + domain);
         }
         else
         {
@@ -316,7 +320,7 @@ PRAGMA_WARNING_POP
 
     void bonjour_dns_impl::start()
     {
-        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) <<  "Advertisement started for " << m_services.size() << " service(s)";
+        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "Advertisement started for " << m_services.size() << " service(s)";
     }
 
     void bonjour_dns_impl::stop()
@@ -325,7 +329,7 @@ PRAGMA_WARNING_POP
         for (const auto& service : m_services)
         {
             DNSServiceRefDeallocate(service.sdRef);
-            slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) <<  "Advertisement stopped for: " << service.name;
+            slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "Advertisement stopped for: " << service.name;
         }
 
         m_services.clear();

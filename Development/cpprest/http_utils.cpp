@@ -108,9 +108,7 @@ namespace web
         namespace details
         {
             struct http_request_impl { typedef std::shared_ptr<web::http::details::_http_request>(web::http::http_request::*type); };
-            template struct detail::stow_private<http_request_impl, &web::http::http_request::_m_impl>;
             struct http_request_initiated_response { typedef pplx::details::atomic_long(web::http::details::_http_request::*type); };
-            template struct detail::stow_private<http_request_initiated_response, &web::http::details::_http_request::m_initiated_response>;
         }
 
         bool has_initiated_response(const web::http::http_request& req)
@@ -119,3 +117,7 @@ namespace web
         }
     }
 }
+
+// Sigh. "An explicit instantiation shall appear in an enclosing namespace of its template."
+template struct detail::stow_private<web::http::details::http_request_impl, &web::http::http_request::_m_impl>;
+template struct detail::stow_private<web::http::details::http_request_initiated_response, &web::http::details::_http_request::m_initiated_response>;

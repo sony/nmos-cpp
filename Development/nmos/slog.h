@@ -6,13 +6,13 @@
 #include "cpprest/logging_utils.h"
 #include "slog/all_in_one.h"
 
-// Enable logging of cpprestsdk's utility::string_t (which is a wide string on Windows)
-inline slog::log_statement& operator<<(slog::log_statement& s, const utility::string_t& us)
+// Enable logging of cpprestsdk's utility::string_t when it's an alias for std::wstring (as on Windows) rather than std::string
+inline slog::log_statement& operator<<(slog::log_statement& s, const utf16string& u16s)
 {
-    return s << utility::us2s(us);
+    return s << utility::conversions::to_utf8string(u16s);
 }
 // hmmm, this shouldn't be necessary?
-inline const slog::nolog_statement& operator<<(const slog::nolog_statement& s, const utility::string_t&)
+inline const slog::nolog_statement& operator<<(const slog::nolog_statement& s, const utf16string&)
 {
     return s;
 }

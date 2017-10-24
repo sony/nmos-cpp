@@ -61,7 +61,7 @@ namespace xregex
 
         regex_named_sub_matches_t<Char> result;
 
-        smatch_t<Char>::size_type sub_match_count = 0;
+        typename smatch_t<Char>::size_type sub_match_count = 0;
         string_t<Char> sub_match_name;
         state_t state = normal;
 

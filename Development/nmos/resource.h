@@ -35,14 +35,14 @@ namespace nmos
         api_version version;
 
         // see nmos/type.h
-        type type;
+        nmos::type type;
 
         // resource data is stored directly as json rather than e.g. being deserialized to a class hierarchy to allow quick
         // prototyping; json validation at the API boundary would ensure the data met the schema for the specified version
         web::json::value data;
 
         // could use fields::id(data) but the id is such an important index...
-        id id;
+        nmos::id id;
 
         // sub-resources are tracked in order to optimise resource expiry and deletion
         std::set<nmos::id> sub_resources;
@@ -52,7 +52,7 @@ namespace nmos
         tai updated;
 
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
-        health health;
+        nmos::health health;
     };
 }
 

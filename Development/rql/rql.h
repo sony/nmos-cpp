@@ -40,7 +40,7 @@ namespace rql
         web::json::value operator()(const web::json::value& arg, bool extract_value = false) const;
 
         extractor extract;
-        operators operators;
+        rql::operators operators;
     };
 
     // Construct a set of RQL call-operators, using default json value comparison

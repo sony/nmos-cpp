@@ -126,12 +126,12 @@ namespace web
         template <typename T> struct field_with_default
         {
             utility::string_t key;
-            T or;
+            T default_value;
             operator const utility::string_t&() const { return key; }
             template <typename V> auto operator()(V& value) const -> decltype(as<T>(value))
             {
                 web::json::object::const_iterator it;
-                return value.is_object() && value.as_object().end() != (it = value.as_object().find(key)) ? as<T>(it->second) : or;
+                return value.is_object() && value.as_object().end() != (it = value.as_object().find(key)) ? as<T>(it->second) : default_value;
             }
         };
 
@@ -184,6 +184,8 @@ namespace web
             return result;
         }
 
+        // this function allows terse construction of object values using a braced-init-list
+        // e.g. value_of({ { U("foo"), 42 }, { U("bar"), 57 } })
         inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, value>> fields, bool keep_order = false)
         {
             web::json::value result = web::json::value::object(keep_order);
@@ -194,6 +196,10 @@ namespace web
             return result;
         }
 
+        // this function allows terse construction of array values using a braced-init-list
+        // (it is a template specialization to resolve ambiguous calls in favour of the non-template function,
+        // since gcc considers the explicit two-arg value constructors for elements of the braced-init-list)
+        template <typename = void>
         inline web::json::value value_of(std::initializer_list<value> elements)
         {
             web::json::value result = web::json::value::array();

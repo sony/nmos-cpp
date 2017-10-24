@@ -1,8 +1,7 @@
 #ifndef CPPREST_BASIC_UTILS_H
 #define CPPREST_BASIC_UTILS_H
 
-#include <codecvt>
-#include "cpprest/details/basic_types.h"
+#include "cpprest/asyncrt_utils.h" // for cpprest/details/basic_types.h and utility::conversions
 
 #ifndef _TURN_OFF_PLATFORM_STRING
 #define US(x) utility::string_t{U(x)}
@@ -13,12 +12,12 @@ namespace utility
 {
     inline std::string us2s(const string_t& us)
     {
-        return std::wstring_convert<std::codecvt_utf8<utility::char_t>, utility::char_t>().to_bytes(us);
+        return conversions::to_utf8string(us);
     }
 
     inline string_t s2us(const std::string& s)
     {
-        return std::wstring_convert<std::codecvt_utf8<utility::char_t>, utility::char_t>().from_bytes(s);
+        return conversions::to_string_t(s);
     }
 
     template <typename T>
