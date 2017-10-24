@@ -8,6 +8,18 @@ namespace nmos
 {
     namespace experimental
     {
+        bool match_logging_rql(const web::json::value& value, const web::json::value& query)
+        {
+            return query.is_null() || rql::evaluator
+            {
+                [&value](web::json::value& results, const web::json::value& key)
+                {
+                    return web::json::extract(value.as_object(), results, key.as_string());
+                },
+                rql::default_any_operators()
+            }(query) == web::json::value::boolean(true);
+        }
+
         web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, std::mutex& mutex, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -73,14 +85,7 @@ namespace nmos
                     [&basic_query, &rql_query](const event& event)
                     {
                         return web::json::match_query(event.data, basic_query, web::json::match_icase | web::json::match_substr)
-                            && rql_query.is_null() || rql::evaluator
-                            {
-                                [&event](web::json::value& results, const web::json::value& key)
-                                {
-                                    return web::json::extract(event.data.as_object(), results, key.as_string());
-                                },
-                                rql::default_any_operators()
-                            }(rql_query) == web::json::value::boolean(true);
+                            && match_logging_rql(event.data, rql_query);
                     },
                     offset, limit);
                 size_t& count = paged.count;
