@@ -113,7 +113,7 @@ namespace web
             template struct detail::stow_private<http_request_initiated_response, &web::http::details::_http_request::m_initiated_response>;
         }
 
-        bool has_initiated_response(web::http::http_request req)
+        bool has_initiated_response(const web::http::http_request& req)
         {
             return 0 < *(req.*detail::stowed<details::http_request_impl>::value).*detail::stowed<details::http_request_initiated_response>::value;
         }

@@ -115,6 +115,8 @@ namespace nmos
 
                 nmos::details::add_cors_headers(res);
 
+                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_category(nmos::categories::access) << nmos::common_log_stash(req, res) << "Sending response";
+
                 req.reply(res);
                 return false; // don't continue matching routes
             };

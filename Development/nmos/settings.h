@@ -11,6 +11,12 @@ namespace nmos
     // Field accessors simplify access to fields in the settings
     namespace fields
     {
+        // error_log [registry, node]: filename for the error log or an empty string to write to stderr
+        const web::json::field_as_string_or error_log{ U("error_log"), U("") };
+
+        // access_log [registry, node]: filename for the access log (in Common Log Format) or an empty string to discard
+        const web::json::field_as_string_or access_log{ U("access_log"), U("") };
+
         // logging_level [registry, node]: integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
         const web::json::field_as_integer_or logging_level{ U("logging_level"), 0 }; // 0, rather than slog::severities::info or slog::nil_severity, just to avoid a #include
 

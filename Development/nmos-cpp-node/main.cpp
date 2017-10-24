@@ -1,3 +1,4 @@
+#include <iostream>
 #include "cpprest/host_utils.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
@@ -27,12 +28,18 @@ int main(int argc, char* argv[])
 
     bool shutdown = false;
 
+    // Streams for logging, initially configured to write errors to stderr and to discard the access log
+    std::filebuf error_log_buf;
+    std::ostream error_log(std::cerr.rdbuf());
+    std::filebuf access_log_buf;
+    std::ostream access_log(&access_log_buf);
+
     // Logging should all go through this logging gateway
-    main_gate gate(log_model, log_mutex, level);
+    main_gate gate(error_log, access_log, log_model, log_mutex, level);
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting nmos-cpp node";
 
-    // Settings can be passed on the command-line, and changed dynamically by POST to /settings/all on the Settings API
+    // Settings can be passed on the command-line, and some may be changed dynamically by POST to /settings/all on the Settings API
     //
     // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
     // * "registry_address": string value, e.g. "127.0.0.1" (instead of using mDNS service discovery)
@@ -69,6 +76,22 @@ int main(int argc, char* argv[])
         node_model.settings[nmos::fields::host_address] = web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0]);
     }
 
+    // Reconfigure the logging streams according to settings
+
+    if (!nmos::fields::error_log(node_model.settings).empty())
+    {
+        error_log_buf.open(nmos::fields::error_log(node_model.settings), std::ios_base::out | std::ios_base::ate);
+        std::lock_guard<std::mutex> lock(log_mutex);
+        error_log.rdbuf(&error_log_buf);
+    }
+
+    if (!nmos::fields::access_log(node_model.settings).empty())
+    {
+        access_log_buf.open(nmos::fields::access_log(node_model.settings), std::ios_base::out | std::ios_base::ate);
+        std::lock_guard<std::mutex> lock(log_mutex);
+        access_log.rdbuf(&access_log_buf);
+    }
+
     // Discover a Registration API
 
     std::unique_ptr<mdns::service_discovery> discovery = mdns::make_discovery(gate);
@@ -84,6 +107,8 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via mDNS";
     }
+
+    // Log the API addresses we'll be using
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << nmos::fields::registry_address(node_model.settings) << ":" << nmos::fields::registration_port(node_model.settings);

@@ -19,21 +19,33 @@ inline const slog::nolog_statement& operator<<(const slog::nolog_statement& s, c
 
 namespace nmos
 {
+    // Log message categories
+    typedef std::string category;
+
+    namespace categories
+    {
+        const category unknown{};
+        const category access{ "access" };
+        // other categories may be defined ad-hoc
+    }
+
 #define DEFINE_STASH_FUNCTIONS(name, stash_type) \
     namespace detail { struct name##_tag : slog::stash_tag<stash_type> {}; } \
     inline slog::ios_stasher<detail::name##_tag> stash_##name(const detail::name##_tag::type& name) \
     { \
         return slog::ios_stasher<detail::name##_tag>(name); \
     } \
-    inline detail::name##_tag::type get_##name##_stash(const std::ostream& os) \
+    inline detail::name##_tag::type get_##name##_stash(const std::ostream& os, const detail::name##_tag::type& default_value = {}) \
     { \
-        return slog::get_stash<detail::name##_tag>(os, detail::name##_tag::type{}); \
+        return slog::get_stash<detail::name##_tag>(os, default_value); \
     }
 
+    DEFINE_STASH_FUNCTIONS(category, category)
     DEFINE_STASH_FUNCTIONS(http_method, web::http::method)
     DEFINE_STASH_FUNCTIONS(request_uri, web::uri)
     DEFINE_STASH_FUNCTIONS(route_parameters, web::http::experimental::listener::route_parameters)
-    DEFINE_STASH_FUNCTIONS(status_code_tag, web::http::status_code)
+    DEFINE_STASH_FUNCTIONS(status_code, web::http::status_code)
+    DEFINE_STASH_FUNCTIONS(response_length, utility::size64_t)
 #undef DEFINE_STASH_FUNCTIONS
 
     inline slog::omanip_function api_stash(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters)
@@ -41,6 +53,52 @@ namespace nmos
         return slog::omanip([&](std::ostream& os)
         {
             os << stash_http_method(req.method()) << stash_request_uri(req.request_uri()) << stash_route_parameters(parameters);
+        });
+    }
+
+    inline slog::omanip_function common_log_format(const slog::async_log_message& message)
+    {
+        return slog::omanip([&](std::ostream& os)
+        {
+            // Produce a line in the Common Log Format, i.e.
+            // remotehost rfc931 authuser [date] "request" status bytes
+            // E.g.
+            // 127.0.0.1 - - [18/Oct/2017:09:07:36 +0100] "GET /x-nmos/query/v1.2/nodes/ HTTP/1.1" 200 2326
+            // (where the two '-' characters indicate the user identifiers are unknown)
+            // See https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format
+            // and https://httpd.apache.org/docs/1.3/logs.html#common
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+            static const char* time_format = "%d/%b/%Y:%T %z";
+#else
+            // %T isn't supported by VS2013, and it also treats %z as %Z; both issues are resolved in VS2015
+            static const char* time_format = "%d/%b/%Y:%H:%M:%S";
+#endif
+
+            os
+                << "- "
+                << "- "
+                << "- "
+                << "[" << slog::put_timestamp(message.timestamp(), time_format) << "] "
+                << "\"" << utility::us2s(get_http_method_stash(message.stream())) << " "
+                << utility::us2s(get_request_uri_stash(message.stream()).to_string()) << " "
+                << "HTTP/?.?\" "
+                << get_status_code_stash(message.stream()) << " "
+                << get_response_length_stash(message.stream()) // output "-" for 0 or unknown?
+                << std::endl;
+        });
+    }
+
+    inline slog::omanip_function common_log_stash(const web::http::http_request& req, const web::http::http_response& res)
+    {
+        return slog::omanip([&](std::ostream& os)
+        {
+            // Stash fields for the Common Log Format
+            os
+                << stash_http_method(req.method())
+                << stash_request_uri(req.request_uri())
+                << stash_status_code(res.status_code())
+                << stash_response_length(res.headers().content_length());
         });
     }
 
@@ -73,8 +131,7 @@ namespace nmos
             // run-time equivalent of slog::detail::select_pertinent
             if ((SLOG_LOGGING_SEVERITY) <= level)
             {
-                // category could be stashed instead?
-                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, level, "", 0, "") << (category.empty() ? category : category + ": ") << message;
+                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, level, "", 0, "") << stash_category(category) << message;
             }
             // run-time equivalent of slog::detail::select_terminate
             if ((SLOG_TERMINATING_SEVERITY) <= level)

@@ -51,7 +51,7 @@ namespace web
         utility::string_t get_default_reason_phrase(web::http::status_code code);
 
         // Determine whether http_request::reply() has been called already
-        bool has_initiated_response(web::http::http_request req);
+        bool has_initiated_response(const web::http::http_request& req);
     }
 }
 

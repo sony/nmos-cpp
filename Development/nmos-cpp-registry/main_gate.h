@@ -2,25 +2,32 @@
 #define NMOS_CPP_REGISTRY_MAIN_GATE_H
 
 #include <atomic>
-#include <iostream>
+#include <ostream>
+#include <boost/algorithm/string/replace.hpp>
 #include "nmos/logging_api.h"
 
 namespace
 {
-    inline void log_to_ostream(std::ostream& os, const slog::async_log_message& message)
+    inline slog::omanip_function error_log_format(const slog::async_log_message& message)
     {
-        os
-            << slog::put_timestamp(message.timestamp()) << ": "
-            << slog::put_severity_name(message.level()) << ": "
-            << message.thread_id() << ": "
-            << message.str()
-            << std::endl;
+        return slog::omanip([&](std::ostream& os)
+        {
+            auto category = nmos::get_category_stash(message.stream());
+            os
+                << slog::put_timestamp(message.timestamp()) << ": "
+                << slog::put_severity_name(message.level()) << ": "
+                << message.thread_id() << ": "
+                << (category.empty() ? "" : category + ": ")
+                << boost::replace_all_copy(message.str(), "\n", "\n\t") // indent multi-line messages
+                << std::endl;
+        });
     }
 
     class main_gate : public slog::base_gate
     {
     public:
-        main_gate(nmos::experimental::log_model& model, std::mutex& mutex, std::atomic<slog::severity>& level) : service({ model, mutex }), level(level) {}
+        main_gate(std::ostream& error_log, std::ostream& access_log, nmos::experimental::log_model& model, std::mutex& mutex, std::atomic<slog::severity>& level)
+            : service({ error_log, access_log, model, mutex }), level(level) {}
         virtual ~main_gate() {}
 
         virtual bool pertinent(slog::severity level) const { return this->level <= level; }
@@ -29,6 +36,8 @@ namespace
     private:
         struct service_function
         {
+            std::ostream& error_log;
+            std::ostream& access_log;
             nmos::experimental::log_model& model;
             std::mutex& mutex;
 
@@ -36,7 +45,11 @@ namespace
             void operator()(argument_type message) const
             {
                 std::lock_guard<std::mutex> lock(mutex);
-                log_to_ostream(std::cout, message);
+                error_log << error_log_format(message);
+                if (nmos::categories::access == nmos::get_category_stash(message.stream()))
+                {
+                    access_log << nmos::common_log_format(message);
+                }
                 nmos::experimental::log_to_model(model, message);
             }
         };
