@@ -213,7 +213,15 @@ namespace web
                                 server.set_open_handler(bind(&websocket_listener_impl::handle_open, this, _1));
                                 server.set_close_handler(bind(&websocket_listener_impl::handle_close, this, _1));
 
-                                server.listen((uint16_t)port);
+                                websocketpp::lib::error_code ec;
+                                server.listen((uint16_t)port, ec);
+                                // if the error is "Underlying Transport Error" (pass_through), this might be a platform that doesn't support IPv6
+                                // (and we can't detect boost::asio::error::address_family_not_supported directly)
+                                if (websocketpp::transport::asio::error::make_error_code(websocketpp::transport::asio::error::pass_through) == ec)
+                                {
+                                    // retry, limiting ourselves to IPv4
+                                    server.listen(boost::asio::ip::tcp::v4(), (uint16_t)port);
+                                }
                                 server.start_accept();
                             }
                             catch (const websocketpp::exception& e)
