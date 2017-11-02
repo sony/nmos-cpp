@@ -150,10 +150,20 @@ namespace web
 {
     namespace json
     {
+        // insert a field into the specified value (which must be an object or null),
+        // only if the value doesn't already contain a field with that key
         template <typename KeyValuePair>
-        inline void insert(web::json::value& value, const KeyValuePair& field)
+        inline bool insert(web::json::value& value, const KeyValuePair& field)
         {
-            value[field.first] = web::json::value{ field.second };
+            if (!value.has_field(field.first))
+            {
+                value[field.first] = web::json::value{ field.second };
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         template <typename KeyValuePairs>
@@ -186,7 +196,7 @@ namespace web
 
         // this function allows terse construction of object values using a braced-init-list
         // e.g. value_of({ { U("foo"), 42 }, { U("bar"), 57 } })
-        inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, value>> fields, bool keep_order = false)
+        inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, web::json::value>> fields, bool keep_order = false)
         {
             web::json::value result = web::json::value::object(keep_order);
             for (auto& field : fields)
@@ -200,7 +210,7 @@ namespace web
         // (it is a template specialization to resolve ambiguous calls in favour of the non-template function,
         // since gcc considers the explicit two-arg value constructors for elements of the braced-init-list)
         template <typename = void>
-        inline web::json::value value_of(std::initializer_list<value> elements)
+        inline web::json::value value_of(std::initializer_list<web::json::value> elements)
         {
             web::json::value result = web::json::value::array();
             for (auto& element : elements)
@@ -304,11 +314,12 @@ namespace web
 {
     namespace json
     {
-        // insert a value into an object, splitting the key path on '.' and inserting sub-objects as necessary
-        void insert(web::json::object& object, const utility::string_t key_path, const web::json::value& value);
+        // insert a field into the specified object at the specified key path (splitting it on '.' and inserting sub-objects as necessary)
+        // only if the object doesn't already contain a field matching that key path (except for the required sub-objects or null values)
+        bool insert(web::json::object& object, const utility::string_t& key_path, const web::json::value& field_value);
 
-        // find a value or values from an object, splitting the key path on '.' and searching arrays as necessary
-        // returns true if the object matches the key path
+        // find the value of a field or fields from the specified object, splitting the key path on '.' and searching arrays as necessary
+        // returns true if the object has at least one field matching the key path
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
         bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path);
 

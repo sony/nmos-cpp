@@ -16,8 +16,9 @@ namespace web
             }
         }
 
-        // insert a value into an object, splitting the key path on '.' and inserting sub-objects as necessary
-        void insert(web::json::object& object, const utility::string_t key_path, const web::json::value& value)
+        // insert a field into the specified object at the specified key path (splitting it on '.' and inserting sub-objects as necessary)
+        // only if the value doesn't already contain a field matching that key path (except for the required sub-objects or null values)
+        bool insert(web::json::object& object, const utility::string_t& key_path, const web::json::value& field_value)
         {
             web::json::object* pobject = &object;
             utility::string_t::size_type key_first = 0;
@@ -28,21 +29,25 @@ namespace web
                 if (utility::string_t::npos != key_last)
                 {
                     auto& field = (*pobject)[key];
-                    // replace value for duplicate leaf keys; other policies (ignore, promote to array, or throw) would be possible...
-                    if (!field.is_object()) field = web::json::value::object();
+                    // do not replace (non-null) values for duplicate keys; other policies (replace, promote to array, or throw) would be possible...
+                    if (field.is_null()) field = web::json::value::object();
+                    else if (!field.is_object()) return false;
                     pobject = &field.as_object();
                 }
                 else
                 {
-                    // replace value for duplicate leaf keys; other policies (ignore, promote to array, or throw) would be possible...
-                    (*pobject)[key] = value;
+                    auto& field = (*pobject)[key];
+                    // do not replace (non-null) values for duplicate keys; other policies (replace, promote to array, or throw) would be possible...
+                    if (field.is_null()) field = field_value;
+                    else return false;
                 }
                 key_first = utility::string_t::npos != key_last ? key_last + 1 : key_last;
             } while (utility::string_t::npos != key_first);
+            return true;
         }
 
-        // find a value or values from an object, splitting the key path on '.' and searching arrays as necessary
-        // returns true if the object matches the key path
+        // find the value of a field or fields from the specified object, splitting the key path on '.' and searching arrays as necessary
+        // returns true if the value has at least one field matching the key path
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
         bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path)
         {
@@ -174,7 +179,7 @@ namespace web
             web::json::value result = web::json::value::object();
             for (auto& param : params.as_object())
             {
-                // later duplicate query terms override earlier ones, as a result of current insert policy above
+                // later duplicate query terms are ignored, as a result of current insert policy above
                 insert(result.as_object(), param.first, param.second);
             }
             return result;
