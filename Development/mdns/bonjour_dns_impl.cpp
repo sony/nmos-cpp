@@ -158,6 +158,7 @@ namespace mdns
         if (errorCode == kDNSServiceErr_NoError)
         {
             int socketId = DNSServiceRefSockFD(client);
+            int nfds = socketId + 1; // ignored parameter on Windows but required e.g. on Linux
 
             fd_set readfds;
             FD_ZERO(&readfds);
@@ -175,7 +176,7 @@ PRAGMA_WARNING_POP
 
                     // wait for up to timeout seconds for a response
                     struct timeval tv{ wait_secs, 0 };
-                    int res = select(0, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
+                    int res = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
 
                     if (res <= 0)
                     {
@@ -281,6 +282,7 @@ PRAGMA_WARNING_POP
         if (errorCode == kDNSServiceErr_NoError)
         {
             int socketId = DNSServiceRefSockFD(client);
+            int nfds = socketId + 1; // ignored parameter on Windows but required e.g. on Linux
 
             fd_set readfds;
             FD_ZERO(&readfds);
@@ -291,7 +293,7 @@ PRAGMA_WARNING_POP
 
             // wait for up to timeout seconds for a response
             struct timeval tv{ timeout_secs, 0 };
-            int res = select(0, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
+            int res = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
 
             if (res > 0)
             {
