@@ -74,11 +74,11 @@ namespace mdns
 
             m_services.push_back({ name, type, domain, sdRef });
 
-            slog::log<slog::severities::info>(m_gate, SLOG_FLF) << "Registered: " << name << "." << type << (domain.empty() ? "" : "." + domain);
+            slog::log<slog::severities::info>(m_gate, SLOG_FLF) << "Registered advertisement for: " << name << "." << type << (domain.empty() ? "" : "." + domain);
         }
         else
         {
-            slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceRegister reported error: " << errorCode << " while registering: " << name << "." << type << (domain.empty() ? "" : "." + domain);
+            slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceRegister reported error: " << errorCode << " while registering advertisement for: " << name << "." << type << (domain.empty() ? "" : "." + domain);
         }
 
         return result;

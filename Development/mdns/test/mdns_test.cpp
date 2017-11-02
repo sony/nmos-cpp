@@ -114,9 +114,9 @@ BST_TEST_CASE(testMdnsAdvertiseAPIs)
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement started for 3 service(s)"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_query._nmos-query._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_registration._nmos-registration._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_node._nmos-node._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_query._nmos-query._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_registration._nmos-registration._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_node._nmos-node._tcp"));
 
     advertiser->stop();
 }
@@ -150,9 +150,9 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement started for 3 service(s)"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_query._nmos-query._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_registration._nmos-registration._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_node._nmos-node._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_query._nmos-query._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_registration._nmos-registration._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_node._nmos-node._tcp"));
     gate.clearLogMessages();
 
     // Now discover the APIs
@@ -241,7 +241,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement started for 1 service(s)"));
-    BST_REQUIRE(gate.hasLogMessage("Registered: sea-lion-test_query._nmos-query._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_query._nmos-query._tcp"));
     gate.clearLogMessages();
 
     // Now discover an API
