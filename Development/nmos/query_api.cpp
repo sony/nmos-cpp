@@ -162,7 +162,8 @@ namespace nmos
             if (paging.valid())
             {
                 // Get the payload and update the paging parameters
-                auto page = paging.page(model.resources, std::cref(match));
+                struct default_constructible_resource_query_wrapper { const resource_query* impl; bool operator()(const nmos::resource& r) const { return (*impl)(r); } };
+                auto page = paging.page(model.resources, default_constructible_resource_query_wrapper{ &match }); // std::cref(match) is OK from Boost.Range 1.56.0
 
                 size_t count = 0;
 

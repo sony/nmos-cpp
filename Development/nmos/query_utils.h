@@ -70,7 +70,7 @@ namespace nmos
         bool since_specified;
 
         template <typename Predicate>
-        boost::any_range<nmos::resource, boost::bidirectional_traversal_tag> page(const nmos::resources& resources, Predicate match)
+        boost::any_range<const nmos::resource, boost::bidirectional_traversal_tag, const nmos::resource&, std::ptrdiff_t> page(const nmos::resources& resources, Predicate match)
         {
             if (order_by_created)
             {

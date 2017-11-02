@@ -2,6 +2,7 @@
 
 #include <set>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::resourceType_from_type
 #include "nmos/rational.h"
@@ -245,12 +246,8 @@ namespace nmos
 
         // resources are traversed in order of increasing creation timestamp, so that events for super-resources are inserted before events for sub-resources
         auto& by_created = resources.get<tags::created>();
-        using std::rbegin;
-        using std::rend;
-        for (auto it = rbegin(by_created); rend(by_created) != it; ++it)
+        for (const auto& resource : by_created | boost::adaptors::reversed)
         {
-            const auto& resource = *it;
-
             if (!details::is_queryable_resource(resource.type)) continue;
 
             if (match(resource))
