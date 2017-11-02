@@ -72,15 +72,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    if (registry_model.settings.is_null())
-    {
-        // Prepare initial settings (different than defaults)
-        registry_model.settings = web::json::value::object();
-        registry_model.settings[nmos::fields::logging_level] = web::json::value::number(level);
-        registry_model.settings[nmos::fields::allow_invalid_resources] = web::json::value::boolean(true);
-        registry_model.settings[nmos::fields::host_name] = web::json::value::string(web::http::experimental::host_name());
-        registry_model.settings[nmos::fields::host_address] = web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0]);
-    }
+    // Prepare run-time default settings (different than header defaults)
+    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
+    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::allow_invalid_resources, web::json::value::boolean(true)));
+    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
+    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0])));
 
     // Reconfigure the logging streams according to settings
 

@@ -67,14 +67,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    if (node_model.settings.is_null())
-    {
-        // Prepare initial settings (different than defaults)
-        node_model.settings = web::json::value::object();
-        node_model.settings[nmos::fields::logging_level] = web::json::value::number(level);
-        node_model.settings[nmos::fields::host_name] = web::json::value::string(web::http::experimental::host_name());
-        node_model.settings[nmos::fields::host_address] = web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0]);
-    }
+    // Prepare run-time default settings (different than header defaults)
+    web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
+    web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
+    web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0])));
+    web::json::insert(node_model.settings, std::make_pair(nmos::fields::registry_address, nmos::fields::host_address(node_model.settings)));
 
     // Reconfigure the logging streams according to settings
 
