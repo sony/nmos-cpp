@@ -41,9 +41,11 @@ namespace nmos
     }
 
     DEFINE_STASH_FUNCTIONS(category, category)
+    DEFINE_STASH_FUNCTIONS(remote_address, utility::string_t)
     DEFINE_STASH_FUNCTIONS(http_method, web::http::method)
     DEFINE_STASH_FUNCTIONS(request_uri, web::uri)
     DEFINE_STASH_FUNCTIONS(route_parameters, web::http::experimental::listener::route_parameters)
+    DEFINE_STASH_FUNCTIONS(http_version, web::http::http_version)
     DEFINE_STASH_FUNCTIONS(status_code, web::http::status_code)
     DEFINE_STASH_FUNCTIONS(response_length, utility::size64_t)
 #undef DEFINE_STASH_FUNCTIONS
@@ -54,6 +56,13 @@ namespace nmos
         {
             os << stash_http_method(req.method()) << stash_request_uri(req.request_uri()) << stash_route_parameters(parameters);
         });
+    }
+
+    inline utility::string_t make_http_protocol(const web::http::http_version& http_version)
+    {
+        utility::ostringstream_t result;
+        result << U("HTTP/") << http_version.first << U(".") << http_version.second;
+        return result.str();
     }
 
     inline slog::omanip_function common_log_format(const slog::async_log_message& message)
@@ -76,13 +85,13 @@ namespace nmos
 #endif
 
             os
-                << "- "
+                << utility::us2s(get_remote_address_stash(message.stream(), U("-"))) << " "
                 << "- "
                 << "- "
                 << "[" << slog::put_timestamp(message.timestamp(), time_format) << "] "
                 << "\"" << utility::us2s(get_http_method_stash(message.stream())) << " "
                 << utility::us2s(get_request_uri_stash(message.stream()).to_string()) << " "
-                << "HTTP/?.?\" "
+                << utility::us2s(make_http_protocol(get_http_version_stash(message.stream()))) << "\" "
                 << get_status_code_stash(message.stream()) << " "
                 << get_response_length_stash(message.stream()) // output "-" for 0 or unknown?
                 << std::endl;
@@ -95,8 +104,10 @@ namespace nmos
         {
             // Stash fields for the Common Log Format
             os
+                << stash_remote_address(req.remote_address())
                 << stash_http_method(req.method())
                 << stash_request_uri(req.request_uri())
+                << stash_http_version(req.http_version())
                 << stash_status_code(res.status_code())
                 << stash_response_length(res.headers().content_length());
         });
