@@ -182,7 +182,7 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
         return br.name == "sea-lion-test_node";
     });
     BST_REQUIRE(browseResult >= 1);
-        
+
     gate.clearLogMessages();
 
     // stop all the advertising
@@ -211,7 +211,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     textRecords.push_back("api_proto=http");
     textRecords.push_back("api_ver=v1.0,v1.1,v1.2");
     textRecords.push_back("pri=100");
-   
+
     // get the hostname
     std::string hostname = utility::us2s(web::http::experimental::host_name());
     std::string ipAddress = utility::us2s(web::http::experimental::host_addresses(utility::s2us(hostname))[0]);
@@ -246,7 +246,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     // Now resolve the ip address and port
     mdns::service_discovery::resolve_result resolved;
-        
+
     gate.clearLogMessages();
 
     BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
