@@ -105,9 +105,9 @@ BST_TEST_CASE(testMdnsAdvertiseAPIs)
         "pri=100"
     };
 
-    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, textRecords);
-    advertiser->register_service("sea-lion-test_registration", "_nmos-registration._tcp", registrationPort, {}, textRecords);
-    advertiser->register_service("sea-lion-test_node", "_nmos-node._tcp", nodePort, {}, textRecords);
+    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
+    advertiser->register_service("sea-lion-test_registration", "_nmos-registration._tcp", registrationPort, {}, {}, textRecords);
+    advertiser->register_service("sea-lion-test_node", "_nmos-node._tcp", nodePort, {}, {}, textRecords);
 
     // Advertise our APIs
     advertiser->start();
@@ -141,9 +141,9 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
         "pri=100"
     };
 
-    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, textRecords);
-    advertiser->register_service("sea-lion-test_registration", "_nmos-registration._tcp", registrationPort, {}, textRecords);
-    advertiser->register_service("sea-lion-test_node", "_nmos-node._tcp", nodePort, {}, textRecords);
+    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
+    advertiser->register_service("sea-lion-test_registration", "_nmos-registration._tcp", registrationPort, {}, {}, textRecords);
+    advertiser->register_service("sea-lion-test_node", "_nmos-node._tcp", nodePort, {}, {}, textRecords);
 
     // Advertise our APIs
     advertiser->start();
@@ -161,44 +161,26 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
 
     browser->browse(found, "_nmos-query._tcp");
 
-    unsigned int browseResult = 0;
-
-    for (int i = 0; i < found.size(); i++)
+    auto browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
     {
-        if (found[i].name == "sea-lion-test_query")
-        {
-            browseResult++;
-        }
-    }
-
+        return br.name == "sea-lion-test_query";
+    });
     BST_REQUIRE(browseResult >= 1);
 
-    browseResult = 0;
-    found.clear();
     browser->browse(found, "_nmos-registration._tcp");
 
-    for (int i = 0; i < found.size(); i++)
+    browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
     {
-        if (found[i].name == "sea-lion-test_registration")
-        {
-            browseResult++;
-        }
-    }
-
+        return br.name == "sea-lion-test_registration";
+    });
     BST_REQUIRE(browseResult >= 1);
 
-    browseResult = 0;
-    found.clear();
     browser->browse(found, "_nmos-node._tcp");
 
-    for (int i = 0; i < found.size(); i++)
+    browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
     {
-        if (found[i].name == "sea-lion-test_node")
-        {
-            browseResult++;
-        }
-    }
-
+        return br.name == "sea-lion-test_node";
+    });
     BST_REQUIRE(browseResult >= 1);
         
     gate.clearLogMessages();
@@ -234,7 +216,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     std::string hostname = utility::us2s(web::http::experimental::host_name());
     std::string ipAddress = utility::us2s(web::http::experimental::host_addresses(utility::s2us(hostname))[0]);
 
-    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, textRecords);
+    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
 
     // Advertise our APIs
     advertiser->start();
@@ -251,7 +233,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     resolver->browse(found, "_nmos-query._tcp");
 
-    for (int i = 0; i < found.size(); i++)
+    for (size_t i = 0; i < found.size(); i++)
     {
         if (found[i].name == "sea-lion-test_query")
         {
@@ -274,7 +256,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     BST_REQUIRE(resolved.txt_records.size() == textRecords.size());
 
     size_t count = 0;
-    for (int i = 0; i < textRecords.size(); i++)
+    for (size_t i = 0; i < textRecords.size(); i++)
     {
         if (resolved.txt_records.end() != std::find(resolved.txt_records.begin(), resolved.txt_records.end(), textRecords[i]))
         {
@@ -297,7 +279,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     BST_REQUIRE(resolved.txt_records.size() == textRecords.size());
 
     count = 0;
-    for (int i = 0; i < textRecords.size(); i++)
+    for (size_t i = 0; i < textRecords.size(); i++)
     {
         if (resolved.txt_records.end() != std::find(resolved.txt_records.begin(), resolved.txt_records.end(), textRecords[i]))
         {

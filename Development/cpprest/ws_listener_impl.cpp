@@ -10,6 +10,7 @@ PRAGMA_WARNING_PUSH
 PRAGMA_WARNING_DISABLE_CONDITIONAL_EXPRESSION_IS_CONSTANT
 #ifdef _MSC_VER
 __pragma(warning(disable:4267)) // e.g. conversion from 'size_t' to 'uint32_t', possible loss of data
+__pragma(warning(disable:4701)) // e.g. potentially uninitialized local variable 'key' used
 #endif
 // it seems impossible to get rid of the dependencies of Boost.Asio on Boost.System and Boost.Date_Time
 #define BOOST_ASIO_DISABLE_BOOST_REGEX
@@ -62,6 +63,7 @@ namespace web
                         case websocketpp::log::alevel::debug_handshake: return levels::devel;
                         case websocketpp::log::alevel::debug_close:     return levels::devel;
                         case websocketpp::log::alevel::devel:           return levels::devel;
+                        case websocketpp::log::alevel::app:             return levels::info;
                         case websocketpp::log::alevel::fail:            return levels::warning;
                         default:                                        return levels::verbose;
                         }
@@ -220,6 +222,7 @@ namespace web
                                 if (websocketpp::transport::asio::error::make_error_code(websocketpp::transport::asio::error::pass_through) == ec)
                                 {
                                     // retry, limiting ourselves to IPv4
+                                    server.get_alog().write(websocketpp::log::alevel::app, "listening with IPv6 failed; retrying with IPv4 only");
                                     server.listen(boost::asio::ip::tcp::v4(), (uint16_t)port);
                                 }
                                 server.start_accept();

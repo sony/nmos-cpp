@@ -7,7 +7,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testMakeListenerUri)
 {
+#ifdef _WIN32
     BST_REQUIRE_STRING_EQUAL("http://*:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(42).to_string()));
+#else
+    BST_REQUIRE_STRING_EQUAL("http://0.0.0.0:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(42).to_string()));
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

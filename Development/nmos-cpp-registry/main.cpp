@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::allow_invalid_resources, web::json::value::boolean(true)));
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
-    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(web::http::experimental::host_addresses(web::http::experimental::host_name())[0])));
+    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(web::http::experimental::host_addresses(nmos::fields::host_name(registry_model.settings))[0])));
 
     // Reconfigure the logging streams according to settings
 

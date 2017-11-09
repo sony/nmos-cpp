@@ -18,7 +18,7 @@ namespace mdns
     public:
         virtual ~service_advertiser() {}
 
-        virtual bool register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain = {}, const txt_records& txt_records = {}) = 0;
+        virtual bool register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain = {}, const std::string& host_name = {}, const txt_records& txt_records = {}) = 0;
         virtual bool update_record(const std::string& name, const std::string& type, const std::string& domain = {}, const txt_records& txt_records = {}) = 0;
 
         virtual void stop() = 0;

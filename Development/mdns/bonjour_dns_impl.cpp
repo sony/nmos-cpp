@@ -44,10 +44,12 @@ namespace mdns
             txt.insert(txt.end(), record.begin(), record.end());
         }
 
+        // although a completely empty txt record is invalid, DNSServiceRegister handles this case
+
         return txt;
     }
 
-    bool bonjour_dns_impl::register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const txt_records& records)
+    bool bonjour_dns_impl::register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& records)
     {
         bool result = false;
 
@@ -61,10 +63,10 @@ namespace mdns
             !name.empty() ? name.c_str() : NULL,
             type.c_str(),
             !domain.empty() ? domain.c_str() : NULL,
-            NULL,
+            !host_name.empty() ? host_name.c_str() : NULL,
             htons(port),
             (std::uint16_t)txt_records.size(),
-            &txt_records[0],
+            !txt_records.empty() ? &txt_records[0] : NULL,
             NULL,
             NULL);
 

@@ -124,7 +124,8 @@ namespace nmos
         // helper function for registering the specified service (API)
         void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
         {
-            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, mdns::make_txt_records(records));
+            // explicitly specify a host_name to enable running on a Mininet host
+            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, utility::us2s(nmos::fields::host_name(settings)), mdns::make_txt_records(records));
         }
 
         // helper function for resolving the highest priority instance of the specified service (API)

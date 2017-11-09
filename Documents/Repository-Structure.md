@@ -14,7 +14,9 @@
       A simple API for mDNS Service Discovery (DNS-SD) and an implementation using the Bonjour SDK
     - [nmos](../Development/nmos)  
       Implementations of the **NMOS Node, Registration and Query APIs, and the NMOS Connection API**
-    - [nmos-cpp-registry](../Development/nmos-cpp-registry)
+    - [nmos-cpp-node](../Development/nmos-cpp-node)  
+      An example **NMOS Node**, utilising the nmos module
+    - [nmos-cpp-registry](../Development/nmos-cpp-registry)  
       A simple but functional instance of an **NMOS Registration & Discovery System (RDS)**, utilising the nmos module
     - [rql](../Development/rql)  
       An implementation of the [Resource Query Language](https://github.com/persvr/rql)

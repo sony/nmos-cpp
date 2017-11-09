@@ -73,7 +73,7 @@ BST_TEST_CASE(testParseTxtRecord)
         { "baz", "buzz" }
     };
 
-    auto parse = [](const std::string& v){ int p = -1; std::istringstream is(v); is >> p; return p; };
+    auto parse = [](const std::string& v){ int p; std::istringstream is(v); is >> p; return is.fail() ? -1 : p; };
 
     // find and parse successfully
     BST_REQUIRE_EQUAL(42, mdns::parse_txt_record<int>(structuredRecords, "bar", parse));

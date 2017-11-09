@@ -11,17 +11,17 @@ This software is a **work in progress**, tracking the ongoing development of the
 
 - The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, and the NMOS Connection API.
 - The [nmos-cpp-registry application](Development/nmos-cpp-registry) provides a simple but functional instance of an NMOS Registration & Discovery System (RDS), utilising the nmos module.
+- The [nmos-cpp-node application](Development/nmos-cpp-node) provides an example NMOS Node, also utilising the nmos module.
 
 The [repository structure](Documents/Repository-Structure.md), and the [external dependencies](Documents/Dependencies.md), are outlined in the documentation.
 
 ### Getting Started
 
-Windows users with Visual Studio 2013 currently have the easiest means to build and run the nmos-cpp applications.
+The codebase is intended to be portable, and the nmos-cpp [CMake project](Development/CMakeLists.txt) can be built on at least Windows and Linux.
 
-1. Follow these [Preparation](Documents/Dependencies.md#preparation) instructions
-2. Open and build the provided [nmos-cpp Visual Studio Solution](Development/nmos-cpp.sln)
+After setting up the dependencies, follow these [instructions](Documents/Getting-Started.md) to build nmos-cpp on your platform, and run the test suite.
 
-The codebase is intended to be portable, and Mac OS X (Xcode) and Linux (Makefile) projects will be provided *soon*.
+Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
 ## Work In Progress
 
@@ -36,10 +36,10 @@ Other open-source NMOS implementations:
 
 ### Active Development
 
+The **nmos-cpp-node** example application has been recently added, as well as cross-platform build support using CMake.
+
 In the next few weeks, we intend to bring to this repository:
 
-- An **nmos-cpp-node** application providing an example implementation of an NMOS Node utilising the [nmos module](Development/nmos)
-- The aforementioned project/build files for Mac OS X and Linux
 - More of a unit test suite, and automated integration testing (the [AMWA NMOS Automated Testing](https://github.com/AMWA-TV/nmos-automated-testing) Activity is also a work in progress)
 - Additional documentation
 - Back-end enhancements as part of the NMOS Scalability Activity

@@ -1,6 +1,7 @@
 // The first "test" is of course whether the header compiles standalone
 #include "nmos/paging_utils.h"
 
+#include <functional> // for std::ref
 #include "bst/test/test.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
