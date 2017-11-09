@@ -47,11 +47,11 @@ namespace nmos
         // sub-resources are tracked in order to optimise resource expiry and deletion
         std::set<nmos::id> sub_resources;
 
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/2.5.%20APIs%20-%20Query%20Parameters.md#pagination
+        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#pagination
         tai created;
         tai updated;
 
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         nmos::health health;
     };
 }

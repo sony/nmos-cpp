@@ -14,7 +14,7 @@ namespace mdns
 namespace nmos
 {
     // "APIs MUST produce an mDNS advertisement [...] accompanied by DNS TXT records"
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/RegistrationAPI.raml#L17 etc.
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L17 etc.
 
     typedef std::string service_type;
 

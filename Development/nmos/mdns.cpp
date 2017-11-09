@@ -12,7 +12,7 @@
 namespace nmos
 {
     // "APIs MUST produce an mDNS advertisement [...] accompanied by DNS TXT records"
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/RegistrationAPI.raml#L17 etc.
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L17 etc.
 
     // For now, the TXT record keys and the functions to make/parse the values are kept as implementation details
 
@@ -136,7 +136,7 @@ namespace nmos
 
             // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri),
             // filtering out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#registration
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#registration
             std::multimap<service_priority, web::uri> by_priority;
             for (auto& resolving : browsed)
             {

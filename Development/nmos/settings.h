@@ -49,12 +49,12 @@ namespace nmos
 
         // registration_heartbeat_interval [node]:
         // "Nodes are expected to peform a heartbeat every 5 seconds by default."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         const web::json::field_as_integer_or registration_heartbeat_interval{ U("registration_heartbeat_interval"), 5 };
 
         // registration_expiry_interval [registry]:
         // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
 
         // query_paging_limit [registry]: maximum number of results per "page" when using the Query API (a client may request a lower limit)

@@ -5,7 +5,7 @@
 
 // "Downgrade queries permit old-versioned responses to be provided to clients which are confident
 // that they can handle any missing attributes between the specified API versions."
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
+// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
 namespace nmos
 {
     struct api_version;

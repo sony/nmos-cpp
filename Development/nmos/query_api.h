@@ -11,7 +11,7 @@ namespace slog
 }
 
 // Query API implementation
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/QueryAPI.raml
+// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml
 namespace nmos
 {
     struct model;

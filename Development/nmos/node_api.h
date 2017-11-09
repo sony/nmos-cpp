@@ -11,7 +11,7 @@ namespace slog
 }
 
 // Node API implementation
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/NodeAPI.raml
+// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/NodeAPI.raml
 namespace nmos
 {
     web::http::experimental::listener::api_router make_node_api(nmos::resources& resources, std::mutex& mutex, slog::base_gate& gate);

@@ -10,7 +10,7 @@ namespace slog
 }
 
 // Registration API implementation
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/RegistrationAPI.raml
+// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml
 namespace nmos
 {
     struct model;

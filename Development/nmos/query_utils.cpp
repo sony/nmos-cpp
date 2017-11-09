@@ -73,7 +73,7 @@ namespace nmos
             if (paging.has_field(U("order")))
             {
                 // paging.order is "create" or "update"
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/APIs/QueryAPI.raml#L40
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml#L40
                 order_by_created = U("create") == web::json::field_as_string{ U("order") }(paging);
             }
             if (paging.has_field(U("until")))

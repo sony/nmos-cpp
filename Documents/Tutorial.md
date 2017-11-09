@@ -59,7 +59,7 @@ Press return to quit.
 
 This shows the nmos-cpp-node starting up and advertising its Node API via DNS Service Discovery.
 
-It selects an NMOS Registry to use, and registers itself, according to the NMOS [Discovery: Registered Operation](https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2-dev/docs/3.1.%20Discovery%20-%20Registered%20Operation.md) procedure.
+It selects an NMOS Registry to use, and registers itself, according to the NMOS [Discovery: Registered Operation](https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md) procedure.
 
 On the other side, this operation should be reflected in the nmos-cpp-registry output something like this:
 
