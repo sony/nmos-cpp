@@ -1,6 +1,7 @@
 #include "mdns/bonjour_dns_impl.h"
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/erase.hpp>
 #include "cpprest/basic_utils.h"
 #include "cpprest/host_utils.h"
 #include "slog/all_in_one.h"
@@ -228,12 +229,18 @@ PRAGMA_WARNING_POP
         return records;
     }
 
-    static const std::string suffix_local(".local.");
-    static std::string without_suffix_local(const std::string& host_name)
+    inline std::string ierase_tail_copy(const std::string& input, const std::string& tail)
     {
-        return boost::algorithm::iends_with(host_name, suffix_local)
-            ? host_name.substr(0, host_name.size() - suffix_local.size())
-            : host_name;
+        return boost::algorithm::iends_with(input, tail)
+            ? boost::algorithm::erase_tail_copy(input, tail.size())
+            : input;
+    }
+
+    static const std::string suffix_absolute(".");
+    static const std::string suffix_local(".local");
+    static std::string without_suffix(const std::string& host_name)
+    {
+        return ierase_tail_copy(ierase_tail_copy(host_name, suffix_absolute), suffix_local);
     }
 
     static void DNSSD_API resolve_reply(
@@ -255,7 +262,8 @@ PRAGMA_WARNING_POP
         if (errorCode == kDNSServiceErr_NoError)
         {
             resolved.host_name = hosttarget;
-            const auto& ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix_local(resolved.host_name)));
+            slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceResolve, get address for host: " << resolved.host_name;
+            const auto& ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(resolved.host_name)));
             if (!ip_addresses.empty())
             {
                 resolved.ip_address = utility::us2s(ip_addresses[0]);
