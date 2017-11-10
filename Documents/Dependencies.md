@@ -51,7 +51,7 @@ Note: WebSocket++ v0.7.0 (latest release) has also been tested.
      - Set ``CPPREST_PPLX_IMPL`` (STRING) to ``winpplx`` to solve a performance issue
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
-   - If required, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), and WebSocket++, for example:
+   - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_65_1`` to match the suggested ``b2`` command
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_65_1/x64/lib`` to match the suggested ``b2`` command
 4. Use CMake to generate project files  

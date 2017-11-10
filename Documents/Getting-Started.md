@@ -13,11 +13,12 @@ On Linux and other platforms, the steps vary slightly.
    - Set CMake variables to control building nmos-cpp:
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
-   - If required, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), and C++ REST SDK and WebSocket++, for example:
+   - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_65_1`` to match the suggested ``b2`` command
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_65_1/x64/lib`` to match the suggested ``b2`` command
-     - Set ``cpprestsdk_DIR`` (PATH) to the location of cpprestsdk-config.cmake, e.g. ``C:/Program Files/cpprest/lib/cpprestsdk``
-     - *Either* set ``websocketpp_DIR`` (PATH) to the location of websocketpp-config.cmake, e.g. ``C:/Program Files/websocketpp/cmake``
+   - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
+     - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed cpprestsdk-config.cmake
+     - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
      - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. ``.../Release/libs/websocketpp`` within the C++ REST SDK source tree
 2. Use CMake to generate project files  
    The "Visual Studio 12 2013 Win64" generator has been tested
