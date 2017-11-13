@@ -232,7 +232,7 @@ PRAGMA_WARNING_POP
     inline std::string ierase_tail_copy(const std::string& input, const std::string& tail)
     {
         return boost::algorithm::iends_with(input, tail)
-            ? boost::algorithm::erase_tail_copy(input, tail.size())
+            ? boost::algorithm::erase_tail_copy(input, (int)tail.size())
             : input;
     }
 
