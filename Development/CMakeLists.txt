@@ -169,6 +169,7 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/node_api.cpp
     nmos/node_registration.cpp
     nmos/node_resources.cpp
+    nmos/process_utils.cpp
     nmos/query_utils.cpp
     nmos/resources.cpp
     nmos/settings_api.cpp
@@ -184,11 +185,13 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/json_fields.h
     nmos/log_manip.h
     nmos/logging_api.h
-    nmos/mdns.h nmos/model.h
+    nmos/mdns.h
+    nmos/model.h
     nmos/node_api.h
     nmos/node_registration.h
     nmos/node_resources.h
     nmos/paging_utils.h
+    nmos/process_utils.h
     nmos/query_utils.h
     nmos/rational.h
     nmos/resource.h
@@ -282,6 +285,7 @@ set(NMOS_CPP_REGISTRY_NMOS_SOURCES
     nmos/mdns.cpp
     nmos/mdns_api.cpp
     nmos/node_api.cpp
+    nmos/process_utils.cpp
     nmos/query_api.cpp
     nmos/query_utils.cpp
     nmos/query_ws_api.cpp
@@ -307,6 +311,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/model.h
     nmos/node_api.h
     nmos/paging_utils.h
+    nmos/process_utils.h
     nmos/query_api.h
     nmos/query_utils.h
     nmos/query_ws_api.h

@@ -27,35 +27,45 @@ namespace
     {
     public:
         main_gate(std::ostream& error_log, std::ostream& access_log, nmos::experimental::log_model& model, std::mutex& mutex, std::atomic<slog::severity>& level)
-            : service({ error_log, access_log, model, mutex }), level(level) {}
+            : error_log(error_log), access_log(access_log), model(model), mutex(mutex), level(level), async_service({ *this }) {}
         virtual ~main_gate() {}
 
         virtual bool pertinent(slog::severity level) const { return this->level <= level; }
-        virtual void log(const slog::log_message& message) const { service(message); }
+        virtual void log(const slog::log_message& message) const { async_service(message); }
 
     private:
+        std::ostream& error_log;
+        std::ostream& access_log;
+        nmos::experimental::log_model& model;
+        std::mutex& mutex;
+        std::atomic<slog::severity>& level;
+
         struct service_function
         {
-            std::ostream& error_log;
-            std::ostream& access_log;
-            nmos::experimental::log_model& model;
-            std::mutex& mutex;
+            main_gate& gate;
 
             typedef const slog::async_log_message& argument_type;
             void operator()(argument_type message) const
             {
-                std::lock_guard<std::mutex> lock(mutex);
-                error_log << error_log_format(message);
-                if (nmos::categories::access == nmos::get_category_stash(message.stream()))
-                {
-                    access_log << nmos::common_log_format(message);
-                }
-                nmos::experimental::log_to_model(model, message);
+                gate.service(message);
             }
         };
 
-        mutable slog::async_log_service<service_function> service;
-        std::atomic<slog::severity>& level;
+        void service(const slog::async_log_message& message)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (pertinent(message.level()))
+            {
+                error_log << error_log_format(message);
+            }
+            if (nmos::categories::access == nmos::get_category_stash(message.stream()))
+            {
+                access_log << nmos::common_log_format(message);
+            }
+            nmos::experimental::log_to_model(model, message);
+        }
+
+        mutable slog::async_log_service<service_function> async_service;
     };
 }
 

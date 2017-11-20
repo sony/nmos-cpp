@@ -11,6 +11,7 @@
 #include "nmos/node_api.h"
 #include "nmos/node_resources.h"
 #include "nmos/node_registration.h"
+#include "nmos/process_utils.h" // for nmos::details::get_process_id() and nmos::details::wait_term_signal()
 #include "nmos/settings_api.h"
 #include "main_gate.h"
 
@@ -70,7 +71,11 @@ int main(int argc, char* argv[])
     // Prepare run-time default settings (different than header defaults)
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
-    web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(web::http::experimental::host_addresses(nmos::fields::host_name(node_model.settings))[0])));
+    const auto host_addresses = web::http::experimental::host_addresses(nmos::fields::host_name(node_model.settings));
+    if (!host_addresses.empty())
+    {
+        web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(host_addresses[0])));
+    }
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::registry_address, nmos::fields::host_address(node_model.settings)));
 
     // Reconfigure the logging streams according to settings
@@ -105,8 +110,9 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via mDNS";
     }
 
-    // Log the API addresses we'll be using
+    // Log the process ID and the API addresses we'll be using
 
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << nmos::fields::registry_address(node_model.settings) << ":" << nmos::fields::registration_port(node_model.settings);
 
@@ -167,12 +173,8 @@ int main(int argc, char* argv[])
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
-        std::string command;
-        {
-            std::lock_guard<std::mutex> lock(log_mutex);
-            std::cout << "Press return to quit." << std::endl;
-        }
-        std::cin >> std::noskipws >> command;
+        // Wait for a process termination signal
+        nmos::details::wait_term_signal();
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
 

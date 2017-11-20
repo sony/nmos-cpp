@@ -212,9 +212,11 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     textRecords.push_back("api_ver=v1.0,v1.1,v1.2");
     textRecords.push_back("pri=100");
 
-    // get the hostname
+    // get the ip address
     std::string hostname = utility::us2s(web::http::experimental::host_name());
-    std::string ipAddress = utility::us2s(web::http::experimental::host_addresses(utility::s2us(hostname))[0]);
+    auto ipAddresses = web::http::experimental::host_addresses(utility::s2us(hostname));
+    BST_REQUIRE(!ipAddresses.empty());
+    std::string ipAddress = utility::us2s(ipAddresses[0]);
 
     advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
 

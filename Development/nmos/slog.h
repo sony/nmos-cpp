@@ -30,14 +30,14 @@ namespace nmos
     }
 
 #define DEFINE_STASH_FUNCTIONS(name, stash_type) \
-    namespace detail { struct name##_tag : slog::stash_tag<stash_type> {}; } \
-    inline slog::ios_stasher<detail::name##_tag> stash_##name(const detail::name##_tag::type& name) \
+    namespace details { struct name##_tag : slog::stash_tag<stash_type> {}; } \
+    inline slog::ios_stasher<details::name##_tag> stash_##name(const details::name##_tag::type& name) \
     { \
-        return slog::ios_stasher<detail::name##_tag>(name); \
+        return slog::ios_stasher<details::name##_tag>(name); \
     } \
-    inline detail::name##_tag::type get_##name##_stash(const std::ostream& os, const detail::name##_tag::type& default_value = {}) \
+    inline details::name##_tag::type get_##name##_stash(const std::ostream& os, const details::name##_tag::type& default_value = {}) \
     { \
-        return slog::get_stash<detail::name##_tag>(os, default_value); \
+        return slog::get_stash<details::name##_tag>(os, default_value); \
     }
 
     DEFINE_STASH_FUNCTIONS(category, category)
@@ -113,7 +113,7 @@ namespace nmos
         });
     }
 
-    namespace detail
+    namespace details
     {
         inline slog::severity severity_from_level(web::logging::experimental::level level)
         {
@@ -138,7 +138,7 @@ namespace nmos
     {
         return [&gate](web::logging::experimental::level level_, const std::string& message, const std::string& category)
         {
-            const slog::severity level = detail::severity_from_level(level_);
+            const slog::severity level = details::severity_from_level(level_);
             // run-time equivalent of slog::detail::select_pertinent
             if ((SLOG_LOGGING_SEVERITY) <= level)
             {

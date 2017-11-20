@@ -9,6 +9,7 @@
 #include "nmos/mdns.h"
 #include "nmos/mdns_api.h"
 #include "nmos/node_api.h"
+#include "nmos/process_utils.h"
 #include "nmos/query_api.h"
 #include "nmos/query_ws_api.h"
 #include "nmos/registration_api.h"
@@ -76,7 +77,11 @@ int main(int argc, char* argv[])
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::allow_invalid_resources, web::json::value::boolean(true)));
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
-    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(web::http::experimental::host_addresses(nmos::fields::host_name(registry_model.settings))[0])));
+    const auto host_addresses = web::http::experimental::host_addresses(nmos::fields::host_name(registry_model.settings));
+    if (!host_addresses.empty())
+    {
+        web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(host_addresses[0])));
+    }
 
     // Reconfigure the logging streams according to settings
 
@@ -94,8 +99,9 @@ int main(int argc, char* argv[])
         access_log.rdbuf(&access_log_buf);
     }
 
-    // Log the API addresses we'll be using
+    // Log the process ID and the API addresses we'll be using
 
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
@@ -201,12 +207,8 @@ int main(int argc, char* argv[])
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
-        std::string command;
-        {
-            std::lock_guard<std::mutex> lock(log_mutex);
-            std::cout << "Press return to quit." << std::endl;
-        }
-        std::cin >> std::noskipws >> command;
+        // Wait for a process termination signal
+        nmos::details::wait_term_signal();
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
 
