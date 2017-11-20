@@ -5,6 +5,6 @@ namespace mdns
 {
     std::unique_ptr<service_discovery> make_discovery(slog::base_gate& gate)
     {
-        return std::make_unique<mdns::bonjour_dns_impl>(gate);
+        return std::unique_ptr<service_discovery>(new mdns::bonjour_dns_impl(gate));
     }
 }

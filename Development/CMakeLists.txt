@@ -4,9 +4,9 @@ cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 # project name
 project(nmos-cpp)
 
-# enable C++14
+# enable C++11
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -56,7 +56,10 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set (BONJOUR_LIB libdns_sd.so)
 
     # add dependency required by nmos/filesystem_route.cpp
-    set (PLATFORM_LIBS -lstdc++fs)
+    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
+        set (PLATFORM_LIBS -lstdc++fs)
+    endif()
+    # otherwise may need find_package(Boost REQUIRED COMPONENTS filesystem)?
 endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find bonjour (for mdns_static)
@@ -84,6 +87,12 @@ endif()
 # set most compiler warnings on
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wstrict-aliasing -fstrict-aliasing -Wextra -Wno-unused-parameter -pedantic -Wno-long-long")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")	
+    endif()
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -D_GLIBCXX_USE_NANOSLEEP -DBOOST_RESULT_OF_USE_DECLTYPE -DSLOG_DETAIL_NO_REF_QUALIFIERS")	
+    endif()
 elseif(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
         string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -142,6 +151,12 @@ set(NMOS_CPP_NODE_SOURCES
     )
 set(NMOS_CPP_NODE_HEADERS
     nmos-cpp-node/main_gate.h
+    )
+
+set(NMOS_CPP_NODE_BST_SOURCES
+    )
+set(NMOS_CPP_NODE_BST_HEADERS
+    bst/regex.h
     )
 
 set(NMOS_CPP_NODE_CPPREST_SOURCES
@@ -220,6 +235,8 @@ add_executable(
     nmos-cpp-node
     ${NMOS_CPP_NODE_SOURCES}
     ${NMOS_CPP_NODE_HEADERS}
+    ${NMOS_CPP_NODE_BST_SOURCES}
+    ${NMOS_CPP_NODE_BST_HEADERS}
     ${NMOS_CPP_NODE_CPPREST_SOURCES}
     ${NMOS_CPP_NODE_CPPREST_HEADERS}
     ${NMOS_CPP_NODE_NMOS_SOURCES}
@@ -230,11 +247,13 @@ add_executable(
     )
 
 source_group("Source Files" FILES ${NMOS_CPP_NODE_SOURCES})
+source_group("bst\\Source Files" FILES ${NMOS_CPP_NODE_BST_SOURCES})
 source_group("cpprest\\Source Files" FILES ${NMOS_CPP_NODE_CPPREST_SOURCES})
 source_group("nmos\\Source Files" FILES ${NMOS_CPP_NODE_NMOS_SOURCES})
 source_group("rql\\Source Files" FILES ${NMOS_CPP_NODE_RQL_SOURCES})
 
 source_group("Header Files" FILES ${NMOS_CPP_NODE_HEADERS})
+source_group("bst\\Header Files" FILES ${NMOS_CPP_NODE_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_NODE_CPPREST_HEADERS})
 source_group("nmos\\Header Files" FILES ${NMOS_CPP_NODE_NMOS_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_NODE_RQL_HEADERS})
@@ -256,6 +275,13 @@ set(NMOS_CPP_REGISTRY_SOURCES
     )
 set(NMOS_CPP_REGISTRY_HEADERS
     nmos-cpp-registry/main_gate.h
+    )
+
+set(NMOS_CPP_REGISTRY_BST_SOURCES
+    )
+set(NMOS_CPP_REGISTRY_BST_HEADERS
+    bst/filesystem.h
+    bst/regex.h
     )
 
 set(NMOS_CPP_REGISTRY_CPPREST_SOURCES
@@ -344,6 +370,8 @@ add_executable(
     nmos-cpp-registry
     ${NMOS_CPP_REGISTRY_SOURCES}
     ${NMOS_CPP_REGISTRY_HEADERS}
+    ${NMOS_CPP_REGISTRY_BST_SOURCES}
+    ${NMOS_CPP_REGISTRY_BST_HEADERS}
     ${NMOS_CPP_REGISTRY_CPPREST_SOURCES}
     ${NMOS_CPP_REGISTRY_CPPREST_HEADERS}
     ${NMOS_CPP_REGISTRY_NMOS_SOURCES}
@@ -354,11 +382,13 @@ add_executable(
     )
 
 source_group("Source Files" FILES ${NMOS_CPP_REGISTRY_SOURCES})
+source_group("bst\\Source Files" FILES ${NMOS_CPP_REGISTRY_BST_SOURCES})
 source_group("cpprest\\Source Files" FILES ${NMOS_CPP_REGISTRY_CPPREST_SOURCES})
 source_group("nmos\\Source Files" FILES ${NMOS_CPP_REGISTRY_NMOS_SOURCES})
 source_group("rql\\Source Files" FILES ${NMOS_CPP_REGISTRY_RQL_SOURCES})
 
 source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
+source_group("bst\\Header Files" FILES ${NMOS_CPP_REGISTRY_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_REGISTRY_CPPREST_HEADERS})
 source_group("nmos\\Header Files" FILES ${NMOS_CPP_REGISTRY_NMOS_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_REGISTRY_RQL_HEADERS})

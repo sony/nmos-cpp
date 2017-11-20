@@ -142,7 +142,7 @@ namespace web
                     exception_handler = handler;
                 }
 
-                api_router::const_iterator api_router::insert(const_iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
+                api_router::iterator api_router::insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
                 {
                     return routes.insert(where, { flags, utility::parse_regex_named_sub_matches(route_pattern), method, handler });
                 }
@@ -171,8 +171,8 @@ namespace web
                 bool api_router::route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags)
                 {
                     return match_prefix == flags
-                        ? std::regex_search(path, route_match, route_regex, std::regex_constants::match_continuous)
-                        : std::regex_match(path, route_match, route_regex);
+                        ? bst::regex_search(path, route_match, route_regex, bst::regex_constants::match_continuous)
+                        : bst::regex_match(path, route_match, route_regex);
                 }
             }
         }

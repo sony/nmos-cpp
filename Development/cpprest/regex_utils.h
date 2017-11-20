@@ -2,12 +2,12 @@
 #define CPPREST_REGEX_UTILS_H
 
 #include <map>
-#include <regex>
+#include "bst/regex.h"
 
 // An implementation of named capture on top of std::basic_regex (could be extracted from the cpprest module)
 namespace xregex
 {
-    // parse_regex_named_sub_matches parses a regular expression that is appropriate for std::regex_match, etc.
+    // parse_regex_named_sub_matches parses a regular expression that is appropriate for bst::regex_match, etc.
     // with the addition of handling the common extension to specify named sub_matches of the form (?<name>...)
     // returning a regex with the name-specifier removed, and a map from each name to its sub_match index
     // See http://xregexp.com/syntax/named_capture_comparison/
@@ -19,11 +19,11 @@ namespace xregex
     using ostringstream_t = std::basic_ostringstream<Char>;
 
     template <typename Char>
-    using regex_t = std::basic_regex<Char>;
+    using regex_t = bst::basic_regex<Char>;
     template <typename Char>
-    using smatch_t = std::match_results<typename string_t<Char>::const_iterator>;
+    using smatch_t = bst::match_results<typename string_t<Char>::const_iterator>;
     template <typename Char>
-    using sub_match_t = std::sub_match<typename string_t<Char>::const_iterator>;
+    using sub_match_t = bst::sub_match<typename string_t<Char>::const_iterator>;
 
     template <typename Char>
     using named_sub_matches_t = std::map<string_t<Char>, typename smatch_t<Char>::size_type>;

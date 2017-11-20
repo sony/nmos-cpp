@@ -212,7 +212,7 @@ namespace rql
             {
                 utility::string_t token;
 
-                if (std::regex_search(first, query.end(), match, name, std::regex_constants::match_continuous))
+                if (bst::regex_search(first, query.end(), match, name, bst::regex_constants::match_continuous))
                 {
                     token = match.str();
                     first = match[0].second;
@@ -440,10 +440,10 @@ namespace rql
             }
             else
             {
-                // throws std::regex_error if the pattern is not valid
+                // throws bst::regex_error if the pattern is not valid
                 utility::regex_t regex(pattern, icase ? utility::regex_t::icase : utility::regex_t::flag_type{});
 
-                return std::regex_search(target.as_string(), regex) ? value_true : value_false;
+                return bst::regex_search(target.as_string(), regex) ? value_true : value_false;
             }
         }
     }

@@ -81,6 +81,6 @@ BST_TEST_CASE_PRIVATE(testGetParameters)
     expected[U("D")] = U("D");
 
     utility::smatch_t route_match;
-    BST_REQUIRE(std::regex_match(path, route_match, route_regex));
+    BST_REQUIRE(bst::regex_match(path, route_match, route_regex));
     BST_REQUIRE(expected == api_router::get_parameters(parameter_sub_matches, route_match));
 }

@@ -5,6 +5,6 @@ namespace mdns
 {
     std::unique_ptr<service_advertiser> make_advertiser(slog::base_gate& gate)
     {
-        return std::make_unique<mdns::bonjour_dns_impl>(gate);
+        return std::unique_ptr<service_advertiser>(new mdns::bonjour_dns_impl(gate));
     }
 }

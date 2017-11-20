@@ -31,8 +31,8 @@ namespace nmos
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, boost::multi_index::member<resource, id, &resource::id>>,
             boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::type>, boost::multi_index::member<resource, type, &resource::type>>,
-            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::created>, boost::multi_index::member<resource, tai, &resource::created>, std::greater<>>,
-            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::updated>, boost::multi_index::member<resource, tai, &resource::updated>, std::greater<>>,
+            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::created>, boost::multi_index::member<resource, tai, &resource::created>, std::greater<tai>>,
+            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::updated>, boost::multi_index::member<resource, tai, &resource::updated>, std::greater<tai>>,
             boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::health>, boost::multi_index::member<resource, health, &resource::health>>
         >
     > resources;

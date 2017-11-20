@@ -67,12 +67,12 @@
 #include "detail/private_access.h"
 
 #define BST_TEST_CASE_PRIVATE(symbol) \
-  namespace { struct symbol ## _private_tag; } \
-  namespace detail { template <> void private_access<symbol ## _private_tag>(); } \
-  BST_TEST_CASE(symbol) \
-  { \
-    ::detail::private_access<symbol ## _private_tag>(); \
-  } \
-  template <> void ::detail::private_access<symbol ## _private_tag>()
+    namespace { struct symbol ## _private_tag; } \
+    namespace detail { template <> void private_access<symbol ## _private_tag>(); } \
+    BST_TEST_CASE(symbol) \
+    { \
+        ::detail::private_access<symbol ## _private_tag>(); \
+    } \
+    template <> void ::detail::private_access<symbol ## _private_tag>()
 
 #endif

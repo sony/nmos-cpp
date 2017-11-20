@@ -1,25 +1,23 @@
 #include "nmos/filesystem_route.h"
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-#include <experimental/filesystem>
-#else
-#include <filesystem>
-#endif
+#include "bst/filesystem.h"
+
 #include "cpprest/filestream.h"
 #include "nmos/slog.h"
-
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-namespace filesystem = std::experimental::filesystem;
-typedef filesystem::path path_t;
-#else
-namespace filesystem = std::tr2::sys;
-typedef filesystem::wpath path_t;
-#endif
 
 namespace nmos
 {
     namespace experimental
     {
+        namespace details
+        {
+#if !defined(BST_FILESYSTEM_MICROSOFT_TR2)
+            using native_path = bst_filesystem::path;
+#else
+            using native_path = bst_filesystem::wpath;
+#endif
+        }
+
         web::http::experimental::listener::api_router make_filesystem_route(const utility::string_t& filesystem_root, const relative_path_content_type_validator& validate, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -41,11 +39,11 @@ namespace nmos
                 {
                     const auto filesystem_path = filesystem_root + relative_path;
 
-                    if (filesystem::exists(path_t(filesystem_path)))
+                    if (bst::filesystem::exists(details::native_path(filesystem_path)))
                     {
                         // this was written as a continuation on the task from open_istream, but api_router can now call multiple handlers
                         // to modify the response, so the asynchronicity needs more consideration...
-                        const utility::size64_t content_length = filesystem::file_size(path_t(filesystem_path));
+                        const utility::size64_t content_length = bst::filesystem::file_size(details::native_path(filesystem_path));
                         pplx::task<concurrency::streams::istream> tis = concurrency::streams::fstream::open_istream(filesystem_path, std::ios::in);
                         concurrency::streams::istream is = tis.get();
                         set_reply(res, status_codes::OK, is, content_length, content_type);

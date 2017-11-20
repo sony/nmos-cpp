@@ -66,7 +66,7 @@ namespace web
                     enum match_flag_type { match_entire = 0, match_prefix = 1 };
                     struct route { match_flag_type flags; utility::regex_named_sub_matches_t route_pattern; web::http::method method; route_handler handler; };
                     typedef std::list<route> route_handlers;
-                    typedef route_handlers::const_iterator const_iterator;
+                    typedef route_handlers::iterator iterator;
 
                     static utility::string_t get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path);
                     static void handle_method_not_allowed(const route& route, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters);
@@ -74,8 +74,8 @@ namespace web
                     static route_parameters insert(route_parameters&& into, const route_parameters& range);
                     static bool route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags);
 
-                    // to allow routes to be added out-of-order, support() and mount() could easily be given overloads that accept and return a const_iterator
-                    const_iterator insert(const_iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler);
+                    // to allow routes to be added out-of-order, support() and mount() could easily be given overloads that accept and return an iterator (const_iterator in C++11)
+                    iterator insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler);
 
                     route_handlers routes;
                     route_handler exception_handler;
