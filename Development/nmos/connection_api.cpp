@@ -146,14 +146,16 @@ namespace nmos
 
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&resources, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
         {
+            // block and wait for the request body
+            value body = req.extract_json().get();
+
             std::lock_guard<std::mutex> lock(mutex);
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            // Extract request body
+            // Validate request?
 
-            value body = req.extract_json().get();
             const auto master_enable = nmos::fields::master_enable(body);
             const auto activation = nmos::fields::activation(body);
             const auto mode = nmos::fields::mode(activation);

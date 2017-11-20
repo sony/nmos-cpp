@@ -33,10 +33,14 @@ namespace nmos
 
             settings_api.support(U("/settings/all/?"), methods::POST, [&settings, &mutex, &logging_level](const http_request& req, http_response& res, const string_t&, const route_parameters&)
             {
+                // block and wait for the request body
+                value body = req.extract_json().get();
+
                 std::lock_guard<std::mutex> lock(mutex);
 
-                // should probably use a .then() continuation, bound to settings and the mutex, but pah
-                settings = req.extract_json().get();
+                // Validate request?
+
+                settings = body;
 
                 // for the moment, logging_level is a special case because we want to turn it into an atomic value
                 // that can be read by logging statements without locking the mutex protecting the settings

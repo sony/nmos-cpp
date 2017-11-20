@@ -84,13 +84,13 @@ namespace nmos
 
         registration_api.support(U("/resource/?"), methods::POST, [&model, &mutex, &query_ws_events_condition, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
         {
+            // block and wait for the request body
+            value body = req.extract_json().get();
+
             std::lock_guard<std::mutex> lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
-            // Extract request body
-
-            value body = req.extract_json().get();
             nmos::type type = { nmos::fields::type(body) };
             value data = nmos::fields::data(body);
             nmos::id id = nmos::fields::id(data);

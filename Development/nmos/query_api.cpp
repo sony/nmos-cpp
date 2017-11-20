@@ -215,15 +215,14 @@ namespace nmos
 
         query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
         {
+            // block and wait for the request body
+            value data = req.extract_json().get();
+
             std::lock_guard<std::mutex> lock(mutex);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested";
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
-
-            // Extract request body
-
-            value data = req.extract_json().get();
 
             // Validate request
 
