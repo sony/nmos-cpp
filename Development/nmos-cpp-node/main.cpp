@@ -11,8 +11,9 @@
 #include "nmos/node_api.h"
 #include "nmos/node_resources.h"
 #include "nmos/node_registration.h"
-#include "nmos/process_utils.h" // for nmos::details::get_process_id() and nmos::details::wait_term_signal()
+#include "nmos/process_utils.h"
 #include "nmos/settings_api.h"
+#include "nmos/thread_utils.h"
 #include "main_gate.h"
 
 int main(int argc, char* argv[])
@@ -138,8 +139,6 @@ int main(int argc, char* argv[])
     nmos::experimental::make_node_resources(node_model.resources, node_model.settings);
 
     std::condition_variable node_model_condition; // associated with node_mutex; notify on any change to node_model, and on shutdown
-    std::thread node_registration([&] { nmos::node_registration_thread(node_model, node_mutex, node_model_condition, shutdown, gate); });
-    std::thread node_heartbeat([&] { nmos::node_registration_heartbeat_thread(node_model, node_mutex, node_model_condition, shutdown, gate); });
 
     // Configure the Connection API
 
@@ -163,13 +162,18 @@ int main(int argc, char* argv[])
 
         // open in an order that means NMOS APIs don't expose references to others that aren't open yet
 
-        logging_listener.open().wait();
-        settings_listener.open().wait();
+        web::http::experimental::listener::http_listener_guard logging_guard(logging_listener);
+        web::http::experimental::listener::http_listener_guard settings_guard(settings_listener);
 
-        node_listener.open().wait();
-        connection_listener.open().wait();
+        web::http::experimental::listener::http_listener_guard node_guard(node_listener);
+        web::http::experimental::listener::http_listener_guard connection_guard(connection_listener);
 
-        advertiser->start();
+        mdns::service_advertiser_guard advertiser_guard(*advertiser);
+
+        // start up communication with the registry once all NMOS APIs are open
+
+        auto node_registration = nmos::details::make_thread_guard([&] { nmos::node_registration_thread(node_model, node_mutex, node_model_condition, shutdown, gate); }, [&] { shutdown = true; node_model_condition.notify_all(); });
+        auto node_heartbeat = nmos::details::make_thread_guard([&] { nmos::node_registration_heartbeat_thread(node_model, node_mutex, node_model_condition, shutdown, gate); }, [&] { shutdown = true; node_model_condition.notify_all(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
@@ -177,20 +181,14 @@ int main(int argc, char* argv[])
         nmos::details::wait_term_signal();
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
-
-        // close in reverse order
-
-        advertiser->stop();
-
-        connection_listener.close().wait();
-        node_listener.close().wait();
-
-        settings_listener.close().wait();
-        logging_listener.close().wait();
     }
     catch (const web::http::http_exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
+    }
+    catch (const std::system_error& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.code() << "]";
     }
     catch (const std::exception& e)
     {
@@ -200,11 +198,6 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
     }
-
-    shutdown = true;
-    node_model_condition.notify_all();
-    node_heartbeat.join();
-    node_registration.join();
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
 

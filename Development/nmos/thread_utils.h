@@ -2,6 +2,7 @@
 #define NMOS_THREAD_UTILS_H
 
 #include <condition_variable> // for std::condition_variable, std::mutex, etc.
+#include <thread>
 
 namespace nmos
 {
@@ -35,6 +36,28 @@ namespace nmos
             {
                 return condition.wait_until(lock, tp, predicate);
             }
+        }
+
+        // RAII helper for starting and later joining threads which may require unblocking before join
+        template <typename Function, typename PreJoin>
+        class thread_guard
+        {
+        public:
+            thread_guard(Function f, PreJoin pre_join) : thread(f), pre_join(pre_join) {}
+            thread_guard(thread_guard&& rhs) : thread(std::move(rhs.thread)), pre_join(std::move(rhs.pre_join)) {}
+            ~thread_guard() { pre_join(); if (thread.joinable()) thread.join(); }
+            thread_guard(const thread_guard&) = delete;
+            thread_guard& operator=(const thread_guard&) = delete;
+            thread_guard& operator=(thread_guard&&) = delete;
+        private:
+            std::thread thread;
+            PreJoin pre_join;
+        };
+
+        template <typename Function, typename PreJoin>
+        inline thread_guard<Function, PreJoin> make_thread_guard(Function f, PreJoin pj)
+        {
+            return{ f, pj };
         }
     }
 }

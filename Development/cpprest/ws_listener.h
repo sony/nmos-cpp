@@ -81,6 +81,14 @@ namespace web
                     std::unique_ptr<details::websocket_listener_impl> impl;
                     int port;
                 };
+
+                // RAII helper for websocket_listener sessions (could be extracted to another header)
+                struct websocket_listener_guard
+                {
+                    websocket_listener_guard(web::websockets::experimental::listener::websocket_listener& listener) : listener(listener) { listener.open().wait(); }
+                    ~websocket_listener_guard() { listener.close().wait(); }
+                    web::websockets::experimental::listener::websocket_listener& listener;
+                };
             }
         }
     }

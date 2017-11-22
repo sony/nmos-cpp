@@ -25,6 +25,14 @@ namespace mdns
         virtual void start() = 0;
     };
 
+    // RAII helper for service advertisement sessions
+    struct service_advertiser_guard
+    {
+        service_advertiser_guard(service_advertiser& advertiser) : advertiser(advertiser) { advertiser.start(); }
+        ~service_advertiser_guard() { advertiser.stop(); }
+        service_advertiser& advertiser;
+    };
+
     // make a default implementation of the mDNS Service Discovery advertisement interface 
     std::unique_ptr<service_advertiser> make_advertiser(slog::base_gate& gate);
 }

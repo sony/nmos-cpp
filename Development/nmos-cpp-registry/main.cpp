@@ -15,6 +15,7 @@
 #include "nmos/registration_api.h"
 #include "nmos/settings_api.h"
 #include "nmos/server_resources.h"
+#include "nmos/thread_utils.h"
 #include "main_gate.h"
 
 int main(int argc, char* argv[])
@@ -142,8 +143,6 @@ int main(int argc, char* argv[])
     query_ws_listener.set_open_handler(std::ref(query_ws_open_handler));
     query_ws_listener.set_close_handler(std::ref(query_ws_close_handler));
 
-    std::thread query_ws_events_sending([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, registry_mutex, query_ws_events_condition, shutdown, gate); });
-
     // Configure the Registration API
 
     web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, registry_mutex, query_ws_events_condition, gate);
@@ -151,7 +150,6 @@ int main(int argc, char* argv[])
     nmos::support_api(registration_listener, registration_api);
 
     std::condition_variable registration_expiration_condition; // associated with registry_mutex; notify on shutdown
-    std::thread registration_expiration([&] { nmos::erase_expired_resources_thread(registry_model, registry_mutex, registration_expiration_condition, shutdown, query_ws_events_condition, gate); });
 
     // Configure the Node API
 
@@ -189,21 +187,26 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
+        // start up registry management before any NMOS APIs are open
+
+        auto query_ws_events_sending = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, registry_mutex, query_ws_events_condition, shutdown, gate); }, [&] { shutdown = true; query_ws_events_condition.notify_all(); });
+        auto registration_expiration = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, registry_mutex, registration_expiration_condition, shutdown, query_ws_events_condition, gate); }, [&] { shutdown = true; registration_expiration_condition.notify_all(); });
+
         // open in an order that means NMOS APIs don't expose references to others that aren't open yet
 
-        logging_listener.open().wait();
-        settings_listener.open().wait();
+        web::http::experimental::listener::http_listener_guard logging_guard(logging_listener);
+        web::http::experimental::listener::http_listener_guard settings_guard(settings_listener);
 
-        node_listener.open().wait();
-        query_ws_listener.open().wait();
-        query_listener.open().wait();
-        registration_listener.open().wait();
+        web::http::experimental::listener::http_listener_guard node_guard(node_listener);
+        web::websockets::experimental::listener::websocket_listener_guard query_ws_guard(query_ws_listener);
+        web::http::experimental::listener::http_listener_guard query_guard(query_listener);
+        web::http::experimental::listener::http_listener_guard registration_guard(registration_listener);
 
-        admin_listener.open().wait();
+        web::http::experimental::listener::http_listener_guard admin_guard(admin_listener);
 
-        mdns_listener.open().wait();
+        web::http::experimental::listener::http_listener_guard mdns_guard(mdns_listener);
 
-        advertiser->start();  
+        mdns::service_advertiser_guard advertiser_guard(*advertiser);
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
@@ -211,22 +214,6 @@ int main(int argc, char* argv[])
         nmos::details::wait_term_signal();
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
-
-        // close in reverse order
-
-        advertiser->stop();
-
-        mdns_listener.close().wait();
-
-        admin_listener.close().wait();
-
-        registration_listener.close().wait();
-        query_listener.close().wait();
-        query_ws_listener.close().wait();
-        node_listener.close().wait();
-
-        settings_listener.close().wait();
-        logging_listener.close().wait();
     }
     catch (const web::http::http_exception& e)
     {
@@ -236,6 +223,10 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
     }
+    catch (const std::system_error& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.code() << "]";
+    }
     catch (const std::exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
@@ -244,12 +235,6 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
     }
-
-    shutdown = true;
-    registration_expiration_condition.notify_all();
-    query_ws_events_condition.notify_all();
-    registration_expiration.join();
-    query_ws_events_sending.join();
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp registry";
 

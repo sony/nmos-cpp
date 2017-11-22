@@ -231,6 +231,10 @@ namespace web
                             {
                                 return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "open")));
                             }
+                            catch (const std::system_error& e)
+                            {
+                                return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "open")));
+                            }
 
                             return pplx::task_from_result();
                         }
