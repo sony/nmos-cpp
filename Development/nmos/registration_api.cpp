@@ -125,21 +125,24 @@ namespace nmos
                 else
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " on node: " << nmos::fields::node_id(data);
 
+                // "The 'senders' and 'receivers' arrays in a Device have been deprecated, but will continue to be present until v2.0."
+                // Therefore, issue warnings rather than errors here and don't worry too much about other issues such as whether to
                 // merge senders and receivers with existing device if present?
                 // or remove previous senders and receivers?
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/24
 
                 for (auto& sender_id : nmos::fields::senders(data))
                 {
-                    const bool valid_senders = nmos::has_resource(model.resources, { sender_id.as_string(), nmos::types::sender });
-                    valid = valid && valid_senders;
-                    if (!valid_senders) slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown sender: " << sender_id.as_string();
+                    const bool valid_sender = nmos::has_resource(model.resources, { sender_id.as_string(), nmos::types::sender });
+                    valid = valid && valid_sender;
+                    if (!valid_sender) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown sender: " << sender_id.as_string();
                 }
 
                 for (auto& receiver_id : nmos::fields::receivers(data))
                 {
-                    const bool valid_receivers = nmos::has_resource(model.resources, { receiver_id.as_string(), nmos::types::receiver });
-                    valid = valid && valid_receivers;
-                    if (!valid_receivers) slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown receiver: " << receiver_id.as_string();
+                    const bool valid_receiver = nmos::has_resource(model.resources, { receiver_id.as_string(), nmos::types::receiver });
+                    valid = valid && valid_receiver;
+                    if (!valid_receiver) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown receiver: " << receiver_id.as_string();
                 }
             }
             else if (nmos::types::source == type)
