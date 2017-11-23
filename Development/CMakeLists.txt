@@ -18,6 +18,7 @@ enable_testing()
 # location of additional cmake modules
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake
     )
 
@@ -105,6 +106,7 @@ endif()
 # location of header files (should be using specific target_include_directories?)
 include_directories(
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/third_party
     ${CPPREST_INCLUDE_DIR} # defined above from target cpprestsdk::cpprest of find_package(cpprestsdk)
     ${WEBSOCKETPP_INCLUDE_DIR} # defined by find_package(websocketpp)
     ${Boost_INCLUDE_DIRS} # defined by find_package(Boost) 
@@ -496,4 +498,6 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     )
 
-add_test(NAME nmos-cpp-registry-test COMMAND nmos-cpp-registry-test -r compact)
+include(Catch)
+
+catch_discover_tests(nmos-cpp-registry-test EXTRA_ARGS -r compact)

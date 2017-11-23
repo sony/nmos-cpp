@@ -6,7 +6,7 @@ The codebase utilizes a number of great open-source projects (licenses vary).
 
 - The [CMake](https://cmake.org/) build tools.
 - The [C++ REST SDK](https://github.com/Microsoft/cpprestsdk), for client-server communication over REST APIs
-    - This library incorporates some third party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and OpenSSL.
+  - This library incorporates some third-party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and OpenSSL.
 - The [Bonjour SDK](https://developer.apple.com/bonjour/), to implement DNS Service Discovery (DNS-SD)
 - The [WebSocket++](https://github.com/zaphoyd/websocketpp) header-only C++ websocket client/server library, to implement Query API websocket subscriptions
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
@@ -20,7 +20,9 @@ On Linux and other platforms, the steps to install these dependencies vary sligh
 ### CMake
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
-   Note: C++ REST SDK currently requires CMake 3.9 or higher
+   Notes:
+   - C++ REST SDK currently requires CMake 3.9 or higher
+   - Some CMake modules derived from third-party sources are included in the [third_party/cmake](../Development/third_party/cmake) directory
 
 ### Boost C++ Libraries
 
@@ -71,7 +73,7 @@ Note: WebSocket++ v0.7.0 (latest release) has also been tested.
 
 ### Catch
 
-A copy of the single header version (v1.10.0) is included in this repository.
+A copy of the single header version (v1.10.0) is included in the [third_party/catch](../Development/third_party/catch) directory.
 
 # What Next?
 

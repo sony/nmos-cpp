@@ -2,7 +2,7 @@
 #define SLOG_ALL_IN_ONE_H
 ////////////////////////////////////////////////////////////////////////////////////////////
 // AUTO-GENERATED AMALGAMATED HEADER
-// Generated at r344; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
+// Generated at r347; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "slog/config.h"
 #ifndef SLOG_CONFIG_H
@@ -520,50 +520,22 @@ namespace slog
 #ifndef BST_FUNCTION_H
 #define BST_FUNCTION_H
 
+// Provide bst::bind, bst::placeholders::_1, etc. using either std:: or boost:: symbols
+
 // Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
 #ifndef BST_THREAD_BOOST
 
 #include <functional>
-
-namespace bst
-{
-  using std::bind;
-  using std::ref;
-  using std::cref;
-  using std::reference_wrapper;
-
-  namespace placeholders
-  {
-    using std::placeholders::_1;
-    using std::placeholders::_2;
-    using std::placeholders::_3;
-    using std::placeholders::_4;
-    using std::placeholders::_5;
-    using std::placeholders::_6;
-    using std::placeholders::_7;
-    using std::placeholders::_8;
-    using std::placeholders::_9;
-  }
-}
-
-namespace bst
-{
-  using std::function;
-}
+namespace bst_functional = std;
+namespace bst_placeholders = std::placeholders;
 
 #else
 
 #include <boost/bind.hpp>
-
-namespace bst
+#include <boost/function.hpp>
+namespace bst_functional = std;
+namespace bst_placeholders // can't alias the global namespace!
 {
-  using boost::bind;
-  using boost::ref;
-  using boost::cref;
-  using boost::reference_wrapper;
-
-  namespace placeholders
-  {
     using ::_1;
     using ::_2;
     using ::_3;
@@ -573,17 +545,25 @@ namespace bst
     using ::_7;
     using ::_8;
     using ::_9;
-  }
-}
-
-#include <boost/function.hpp>
-
-namespace bst
-{
-  using boost::function;
 }
 
 #endif
+
+namespace bst
+{
+    using bst_functional::bind;
+    using bst_functional::ref;
+    using bst_functional::cref;
+    using bst_functional::reference_wrapper;
+
+    namespace placeholders
+    {
+	    // could replace using-directive with using-declarations for symbols
+		using namespace bst_placeholders;
+    }
+
+    using bst_functional::function;
+}
 
 #endif
 
@@ -940,25 +920,24 @@ namespace slog
 #ifndef BST_ATOMIC_H
 #define BST_ATOMIC_H
 
+// Provide bst::array, using either std:: or boost:: symbols
+
 #ifndef BST_ATOMIC_BOOST
 
 #include <atomic>
-
-namespace bst
-{
-  using std::atomic;
-}
+namespace bst_atomic = std;
 
 #else
 
 #include <boost/atomic.hpp>
+namespace bst_atomic = boost;
+
+#endif
 
 namespace bst
 {
-  using boost::atomic;
+    using bst_atomic::atomic;
 }
-
-#endif
 
 #endif
 
@@ -1464,25 +1443,24 @@ namespace slog
 #ifndef BST_ARRAY_H
 #define BST_ARRAY_H
 
+// Provide bst::array, using either std:: or boost:: symbols
+
 #ifndef BST_ARRAY_BOOST
 
 #include <array>
-
-namespace bst
-{
-  using std::array;
-}
+namespace bst_array = std;
 
 #else
 
 #include <boost/array.hpp>
+namespace bst_array = boost;
+
+#endif
 
 namespace bst
 {
-  using boost::array;
+    using bst_array::array;
 }
-
-#endif
 
 #endif
 
@@ -2397,31 +2375,29 @@ namespace slog
 #ifndef BST_CHRONO_H
 #define BST_CHRONO_H
 
+// Provide bst::chrono::duration, etc. using either std:: or boost:: symbols
+
+// Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
 #ifndef BST_THREAD_BOOST
 
 #include <chrono>
-
-namespace bst
-{
-  namespace chrono
-  {
-    using namespace std::chrono;
-  }
-}
+namespace bst_chrono = std::chrono;
 
 #else
 
 #include <boost/chrono/chrono.hpp>
+namespace bst_chrono = boost::chrono;
+
+#endif
 
 namespace bst
 {
-  namespace chrono
-  {
-    using namespace boost::chrono;
-  }
+    namespace chrono
+    {
+	    // should replace using-directive with using-declarations for compatible symbols
+        using namespace bst_chrono;
+    }
 }
-
-#endif
 
 #endif
 
@@ -2430,33 +2406,31 @@ namespace bst
 #ifndef BST_THREAD_H
 #define BST_THREAD_H
 
+// Provide bst::thread, etc. using either std:: or boost:: symbols
+
 #ifndef BST_THREAD_BOOST
 
 #include <thread>
-
-namespace bst
-{
-  namespace this_thread
-  {
-    using namespace std::this_thread;
-  }
-  using std::thread;
-}
+namespace bst_thread = std;
+namespace bst_this_thread = std::this_thread;
 
 #else
 
 #include <boost/thread/thread.hpp>
+namespace bst_thread = boost;
+namespace bst_this_thread = boost::this_thread;
+
+#endif
 
 namespace bst
 {
-  namespace this_thread
-  {
-    using namespace boost::this_thread;
-  }
-  using boost::thread;
+    namespace this_thread
+    {
+        // should replace using-directive with using-declarations for compatible symbols
+        using namespace bst_this_thread;
+    }
+    using bst_thread::thread;
 }
-
-#endif
 
 #endif
 
@@ -2559,33 +2533,30 @@ namespace slog
 #ifndef BST_CONDITION_VARIABLE_H
 #define BST_CONDITION_VARIABLE_H
 
+// Provide bst::condition_variable, etc. using either std:: or boost:: symbols
+
 // Amalgamated: #include "bst/chrono.h"
 
+// Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
 #ifndef BST_THREAD_BOOST
 
 #include <condition_variable>
-
-namespace bst
-{
-  using std::condition_variable;
-  using std::lock_guard;
-  using std::mutex;
-  using std::unique_lock;
-}
+namespace bst_thread = std;
 
 #else
 
 #include <boost/thread/condition_variable.hpp>
+namespace bst_thread = boost;
+
+#endif
 
 namespace bst
 {
-  using boost::condition_variable;
-  using boost::lock_guard;
-  using boost::mutex;
-  using boost::unique_lock;
+    using bst_thread::condition_variable;
+    using bst_thread::lock_guard;
+    using bst_thread::mutex;
+    using bst_thread::unique_lock;
 }
-
-#endif
 
 #endif
 

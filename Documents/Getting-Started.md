@@ -33,11 +33,12 @@ All the tests are currently packaged into a single test suite, as the **nmos-cpp
 This may be run automatically by building RUN_TESTS, but note that to see the output of any failed tests,
 it is necessary to set ``CTEST_OUTPUT_ON_FAILURE`` to ``1`` in the environment first.
 
-The output should be similar to the following:
+The output should conclude something like this:
 
 ```
-===============================================================================
-All tests passed (250 assertions in 29 test cases)
+  100% tests passed, 0 tests failed out of 29
+  
+  Total Test time (real) =  38.08 sec
 ```
 
 Note: The correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120d_2_10.dll) needs to be on the ``PATH`` or copied into the output directory.

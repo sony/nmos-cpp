@@ -1,11 +1,9 @@
 # Repository Structure
 
 - [Development](../Development)  
-    C++ source code for the software
+    C++ source code and build files for the software
     - [bst](../Development/bst)  
       Facades and adaptors to handle different C++ Standard Library implementations and Testing Frameworks
-    - [catch](../Development/catch)  
-      The [Catch](https://github.com/philsquared/Catch) (automated test framework) single header version
     - [cpprest](../Development/cpprest)  
       Extensions to the [C++ REST SDK](https://github.com/Microsoft/cpprestsdk)
     - [detail](../Development/detail)  
@@ -22,7 +20,10 @@
       An implementation of the [Resource Query Language](https://github.com/persvr/rql)
     - [slog](../Development/slog)  
       The slog Logging Library single header version
+    - [third_party](../Development/third_party)
+      - [catch](../Development/third_party/catch)  
+        The [Catch](https://github.com/philsquared/Catch) (automated test framework) single header version
+      - [cmake](../Development/third_party/cmake)  
+        CMake modules derived from third-party sources
 - [Documents](../Documents)  
   Documentation
-- [Downloads](../Downloads)  
-  Patches for external dependencies
