@@ -440,8 +440,11 @@ namespace rql
             }
             else
             {
+                // verbose conditional expression avoids compiler warnings on all platforms
+                const auto flags = icase ? utility::regex_t::flag_type(utility::regex_t::icase) : utility::regex_t::flag_type(0);
+
                 // throws bst::regex_error if the pattern is not valid
-                utility::regex_t regex(pattern, utility::regex_t::flag_type(icase ? utility::regex_t::icase : 0));
+                utility::regex_t regex(pattern, flags);
 
                 return bst::regex_search(target.as_string(), regex) ? value_true : value_false;
             }
