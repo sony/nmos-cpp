@@ -32,7 +32,7 @@ namespace web
 
                 inline web::uri make_listener_uri(int port)
                 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
                     auto host_wildcard = U("*"); // "weak wildcard"
 #else
                     auto host_wildcard = U("0.0.0.0");
