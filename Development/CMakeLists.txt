@@ -68,6 +68,16 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set (BONJOUR_LIB_DIR "${PROJECT_SOURCE_DIR}/../../Bonjour SDK/Lib/x64")
     set (BONJOUR_LIB dnssd)
 
+    # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
+    # notes:
+    #   cpprestsdk adds /D_WIN32_WINNT=0x0600 (Windows Vista) explicitly...
+    #   calculating the value from CMAKE_SYSTEM_VERSION might be better?
+    #   adding a force include for <ssdkddkver.h> could be another option
+    # see:
+    #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
+    #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
+    add_definitions(/D_WIN32_WINNT=0x0600)
+
     # force cpprestsdk to use pplx (for nmos-cpp-node and nmos-cpp-registry)
     # note: don't actually need this since target_link_libraries(cpprestsdk::cpprest) does this if it's been configured correctly
     add_definitions(/DCPPREST_FORCE_PPLX=1)

@@ -1,8 +1,5 @@
 #include "cpprest/host_utils.h"
 
-#ifdef _WIN32
-#include <sdkddkver.h> // for _WIN32_WINNT... maybe there's a more appropriate way?
-#endif
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include "cpprest/basic_utils.h" // for utility::s2us, etc.

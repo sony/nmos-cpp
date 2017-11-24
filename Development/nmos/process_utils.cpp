@@ -1,8 +1,5 @@
 #include "nmos/process_utils.h"
 
-#ifdef _WIN32
-#include <sdkddkver.h> // for _WIN32_WINNT... maybe there's a more appropriate way?
-#endif
 #include <boost/asio/signal_set.hpp>
 
 // boost::this_process::get_id() would be perfect, except that Boost.Process was only introduced in Boost 1.64.0
