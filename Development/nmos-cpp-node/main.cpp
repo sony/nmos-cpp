@@ -62,15 +62,12 @@ int main(int argc, char* argv[])
             node_model.settings = web::json::value::null();
             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bad command-line settings [" << error << "]";
         }
-        else
-        {
-            // Logging level is a special case (see nmos/settings_api.h)
-            level = nmos::fields::logging_level(node_model.settings);
-        }
     }
 
     // Prepare run-time default settings (different than header defaults)
+
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
+    level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
     const auto host_addresses = web::http::experimental::host_addresses(nmos::fields::host_name(node_model.settings));
     if (!host_addresses.empty())
