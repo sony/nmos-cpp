@@ -3,6 +3,7 @@
 
 #include "nmos/slog.h"
 #include "nmos/model.h"
+#include "nmos/version.h"
 
 namespace nmos
 {
@@ -13,7 +14,7 @@ namespace nmos
         {
             for (auto& resource : model.resources)
             {
-                s << resource.type << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << '\n';
+                s << resource.type.name << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << '\n';
                 for (auto& sub_resource : resource.sub_resources)
                 {
                     s << "  " << sub_resource.substr(0, 6) << '\n';
