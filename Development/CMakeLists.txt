@@ -78,10 +78,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
     add_definitions(/D_WIN32_WINNT=0x0600)
 
-    # force cpprestsdk to use pplx (for nmos-cpp-node and nmos-cpp-registry)
-    # note: don't actually need this since target_link_libraries(cpprestsdk::cpprest) does this if it's been configured correctly
-    add_definitions(/DCPPREST_FORCE_PPLX=1)
-
     # does one of our dependencies result in needing to do this?
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
 endif()
