@@ -98,11 +98,11 @@ namespace nmos
         return count;
     }
 
-    // erase all resources which expired at or before the specified time from the specified model
-    void erase_expired_resources(resources& resources, const health& expiration_health)
+    // erase all resources which expired *before* the specified time from the specified model
+    void erase_expired_resources(resources& resources, const health& until_health)
     {
         auto& by_health = resources.get<tags::health>();
-        auto unexpired = by_health.lower_bound(expiration_health);
+        auto unexpired = by_health.lower_bound(until_health);
 
         for (auto resource = by_health.begin(); unexpired != resource; ++resource)
         {
