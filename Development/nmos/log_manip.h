@@ -2,19 +2,21 @@
 #define NMOS_LOG_MANIP_H
 
 #include "nmos/slog.h"
-#include "nmos/model.h"
+#include "nmos/resources.h"
 #include "nmos/version.h"
 
 namespace nmos
 {
-    // Log a model in abbreviated form (relying on logging of utility::string_t, from nmos/slog.h)
-    inline slog::log_statement::manip_function put_model(const model& model)
+    // Log resources in abbreviated form (relying on logging of utility::string_t, from nmos/slog.h)
+    // where the argument may be nmos::resources, any of its indices, or other range of nmos::resource
+    template <typename Resources>
+    inline slog::log_statement::manip_function put_resources(const Resources& resources)
     {
         return slog::log_manip([&](slog::log_statement& s)
         {
-            for (auto& resource : model.resources)
+            for (auto& resource : resources)
             {
-                s << resource.type.name << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << '\n';
+                s << resource.type.name << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << ' ' << resource.health << '\n';
                 for (auto& sub_resource : resource.sub_resources)
                 {
                     s << "  " << sub_resource.substr(0, 6) << '\n';
