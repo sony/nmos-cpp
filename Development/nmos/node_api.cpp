@@ -15,22 +15,22 @@ namespace nmos
 
         api_router node_api;
 
-        node_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        node_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("x-nmos/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/x-nmos/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        node_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("node/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        node_api.support(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("v1.0/"), JU("v1.1/"), JU("v1.2/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
         node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(resources, mutex, gate));
@@ -46,13 +46,13 @@ namespace nmos
 
         api_router node_api;
 
-        node_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        node_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("self/"), JU("devices/"), JU("sources/"), JU("flows/"), JU("senders/"), JU("receivers/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/self/?"), methods::GET, [&resources, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/self/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -70,10 +70,10 @@ namespace nmos
                 set_reply(res, status_codes::NotFound);
             }
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -92,10 +92,10 @@ namespace nmos
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -121,10 +121,10 @@ namespace nmos
                 set_reply(res, status_codes::NotFound);
             }
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::GET, [&resources, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -148,7 +148,7 @@ namespace nmos
                 set_reply(res, status_codes::NotFound);
             }
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
         return node_api;

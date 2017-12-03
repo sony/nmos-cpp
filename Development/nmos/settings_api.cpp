@@ -12,43 +12,43 @@ namespace nmos
 
             api_router settings_api;
 
-            settings_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            settings_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, value_of({ JU("settings/") }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            settings_api.support(U("/settings/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, value_of({ JU("all/") }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/all/?"), methods::GET, [&settings, &mutex](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            settings_api.support(U("/settings/all/?"), methods::GET, [&settings, &mutex](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 set_reply(res, status_codes::OK, settings);
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/all/?"), methods::POST, [&settings, &mutex, &logging_level](const http_request& req, http_response& res, const string_t&, const route_parameters&)
+            settings_api.support(U("/settings/all/?"), methods::POST, [&settings, &mutex, &logging_level](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                // block and wait for the request body
-                value body = req.extract_json().get();
+                return req.extract_json().then([&, req, res](const value& body) mutable
+                {
+                    std::lock_guard<std::mutex> lock(mutex);
 
-                std::lock_guard<std::mutex> lock(mutex);
+                    // Validate request?
 
-                // Validate request?
+                    settings = body;
 
-                settings = body;
+                    // for the moment, logging_level is a special case because we want to turn it into an atomic value
+                    // that can be read by logging statements without locking the mutex protecting the settings
+                    logging_level = nmos::fields::logging_level(settings);
 
-                // for the moment, logging_level is a special case because we want to turn it into an atomic value
-                // that can be read by logging statements without locking the mutex protecting the settings
-                logging_level = nmos::fields::logging_level(settings);
+                    set_reply(res, status_codes::OK, settings);
 
-                set_reply(res, status_codes::OK, settings);
-
-                return true;
+                    return pplx::task_from_result(true);
+                });
             });
 
             nmos::add_api_finally_handler(settings_api, gate);

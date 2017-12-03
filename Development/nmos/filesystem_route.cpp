@@ -24,7 +24,7 @@ namespace nmos
 
             api_router filesystem_route;
 
-            filesystem_route.support(U("(?<filesystem-relative-path>/.+)"), web::http::methods::GET, [filesystem_root, validate, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+            filesystem_route.support(U("(?<filesystem-relative-path>/.+)"), web::http::methods::GET, [filesystem_root, validate, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Filesystem request received";
                 const auto relative_path = web::uri::decode(parameters.at(U("filesystem-relative-path")));
@@ -41,12 +41,12 @@ namespace nmos
 
                     if (bst::filesystem::exists(details::native_path(filesystem_path)))
                     {
-                        // this was written as a continuation on the task from open_istream, but api_router can now call multiple handlers
-                        // to modify the response, so the asynchronicity needs more consideration...
                         const utility::size64_t content_length = bst::filesystem::file_size(details::native_path(filesystem_path));
-                        pplx::task<concurrency::streams::istream> tis = concurrency::streams::fstream::open_istream(filesystem_path, std::ios::in);
-                        concurrency::streams::istream is = tis.get();
-                        set_reply(res, status_codes::OK, is, content_length, content_type);
+                        return concurrency::streams::fstream::open_istream(filesystem_path, std::ios::in).then([res, content_length, content_type](concurrency::streams::istream is) mutable
+                        {
+                            set_reply(res, status_codes::OK, is, content_length, content_type);
+                            return true;
+                        });
                     }
                     else
                     {
@@ -56,7 +56,7 @@ namespace nmos
                     }
                 }
 
-                return true;
+                return pplx::task_from_result(true);
             });
 
             return filesystem_route;

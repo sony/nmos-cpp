@@ -19,18 +19,18 @@ namespace nmos
 
             api_router admin_ui;
 
-            admin_ui.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            admin_ui.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, value_of({ JU("admin/") }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            admin_ui.support(U("/") + nmos::experimental::patterns::admin_ui.pattern + U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            admin_ui.support(U("/") + nmos::experimental::patterns::admin_ui.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 // temporarily hard-coded hack to redirect admin root to the index.html
                 set_reply(res, status_codes::TemporaryRedirect);
                 res.headers().add(web::http::header_names::location, U("/admin/index.html"));
-                return true;
+                return pplx::task_from_result(true);
             });
 
             // To serve the admin UI, only a few HTML, JavaScript and CSS files are necessary

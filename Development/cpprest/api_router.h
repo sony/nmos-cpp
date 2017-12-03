@@ -44,7 +44,7 @@ namespace web
 
                 // route handlers have access to the request, and a mutable response object, the route path and parameters extracted from it by the matched route pattern;
                 // a handler may e.g. reply to the request or initiate asynchronous processing, and returns a flag indicating whether to continue matching routes or not
-                typedef std::function<bool(const web::http::http_request&, web::http::http_response&, const utility::string_t&, const route_parameters&)> route_handler;
+                typedef std::function<pplx::task<bool>(web::http::http_request, web::http::http_response, const utility::string_t&, const route_parameters&)> route_handler;
 
                 class api_router
                 {
@@ -55,7 +55,7 @@ namespace web
                     // allow use as a handler with http_listener
                     void operator()(web::http::http_request req);
                     // allow use as a mounted handler in another api_router
-                    bool operator()(const web::http::http_request& req, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters);
+                    pplx::task<bool> operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters);
 
                     // add a method-specific handler to support requests for this route
                     void support(const utility::string_t& route_pattern, const web::http::method& method, route_handler handler);
@@ -77,10 +77,13 @@ namespace web
                     typedef route_handlers::iterator iterator;
 
                     static utility::string_t get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path);
+                    static pplx::task<bool> call(const route_handler& handler, const route_handler& exception_handler, web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters);
                     static void handle_method_not_allowed(const route& route, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters);
                     static route_parameters get_parameters(const utility::named_sub_matches_t& parameter_sub_matches, const utility::smatch_t& route_match);
                     static route_parameters insert(route_parameters&& into, const route_parameters& range);
                     static bool route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags);
+
+                    pplx::task<bool> operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters, iterator route);
 
                     // to allow routes to be added out-of-order, support() and mount() could easily be given overloads that accept and return an iterator (const_iterator in C++11)
                     iterator insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler);

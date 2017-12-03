@@ -70,7 +70,7 @@ namespace nmos
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
-            return [&gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+            return [&gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 if (web::http::empty_status_code == res.status_code())
                 {
@@ -118,7 +118,7 @@ namespace nmos
                 slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_category(nmos::categories::access) << nmos::common_log_stash(req, res) << "Sending response";
 
                 req.reply(res);
-                return false; // don't continue matching routes
+                return pplx::task_from_result(false); // don't continue matching routes
             };
         }
 
@@ -134,7 +134,7 @@ namespace nmos
 
         api.support(U(".*"), details::make_api_finally_handler(gate));
 
-        api.set_exception_handler([&gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        api.set_exception_handler([&gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             try
             {
@@ -157,7 +157,7 @@ namespace nmos
                 details::set_error_reply(res, status_codes::InternalError);
             }
 
-            return true; // continue matching routes, e.g. the 'finally' handler
+            return pplx::task_from_result(true); // continue matching routes, e.g. the 'finally' handler
         });
     }
 

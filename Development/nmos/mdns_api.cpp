@@ -35,13 +35,13 @@ namespace nmos
 
             api_router mdns_api;
 
-            mdns_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, value_of({ JU("x-mdns/") }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/x-mdns/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 // the list of available service types cannot easily be enumerated so it might be better to respond with status_codes::NoContent
                 // rather than return a misleading list?
@@ -51,10 +51,10 @@ namespace nmos
                     value::string(utility::s2us(nmos::service_types::registration) + U("/")),
                     value::string(utility::s2us(nmos::service_types::node) + U("/"))
                 }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&mutex, &gate](const http_request&, http_response& res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&mutex, &gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -97,10 +97,10 @@ namespace nmos
                     set_reply(res, status_codes::NotFound);
                 }
 
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&mutex, &gate](const http_request&, http_response& res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&mutex, &gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -123,7 +123,7 @@ namespace nmos
                     set_reply(res, status_codes::NotFound);
                 }
 
-                return true;
+                return pplx::task_from_result(true);
             });
 
             nmos::add_api_finally_handler(mdns_api, gate);

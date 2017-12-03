@@ -17,22 +17,22 @@ namespace nmos
 
         api_router query_api;
 
-        query_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("x-nmos/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/x-nmos/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        query_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("query/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("v1.0/"), JU("v1.1/"), JU("v1.2/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
         query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_query_api(model, mutex, gate));
@@ -126,13 +126,13 @@ namespace nmos
 
         api_router query_api;
 
-        query_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+        query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, value_of({ JU("nodes/"), JU("devices/"), JU("sources/"), JU("flows/"), JU("senders/"), JU("receivers/"), JU("subscriptions/") }));
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -181,10 +181,10 @@ namespace nmos
                 set_reply(res, status_codes::BadRequest);
             }
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -210,113 +210,113 @@ namespace nmos
                 set_reply(res, status_codes::NotFound);
             }
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            // block and wait for the request body
-            value data = req.extract_json().get();
-
-            std::lock_guard<std::mutex> lock(mutex);
-
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested";
-
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
-
-            // Validate request
-
-            bool valid = true;
-
-            // all of these fields are required - should validate their types too, really
-            const bool valid_required_fields = data.has_field(nmos::fields::max_update_rate_ms) && data.has_field(nmos::fields::persist) && data.has_field(nmos::fields::resource_path) && data.has_field(nmos::fields::params);
-            valid = valid && valid_required_fields;
-
-            // clients aren't allowed to modify an existing subscription, so check for the fields forbidden in a request
-            const bool valid_forbidden_fields = !data.has_field(nmos::fields::id) && !data.has_field(nmos::fields::ws_href);
-            valid = valid && valid_forbidden_fields;
-
-            // v1.1 introduced support for secure websockets
-            if (nmos::is04_versions::v1_0 != version)
+            return req.extract_json().then([&, req, res, parameters](value data) mutable
             {
-                // "NB: Default should be 'false' if the API is being presented via HTTP, and 'true' for HTTPS"
-                if (!data.has_field(nmos::fields::secure))
+                std::lock_guard<std::mutex> lock(mutex);
+
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested";
+
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+
+                // Validate request
+
+                bool valid = true;
+
+                // all of these fields are required - should validate their types too, really
+                const bool valid_required_fields = data.has_field(nmos::fields::max_update_rate_ms) && data.has_field(nmos::fields::persist) && data.has_field(nmos::fields::resource_path) && data.has_field(nmos::fields::params);
+                valid = valid && valid_required_fields;
+
+                // clients aren't allowed to modify an existing subscription, so check for the fields forbidden in a request
+                const bool valid_forbidden_fields = !data.has_field(nmos::fields::id) && !data.has_field(nmos::fields::ws_href);
+                valid = valid && valid_forbidden_fields;
+
+                // v1.1 introduced support for secure websockets
+                if (nmos::is04_versions::v1_0 != version)
                 {
-                    data[nmos::fields::secure] = false; // for now, no means to detect the API protocol?
+                    // "NB: Default should be 'false' if the API is being presented via HTTP, and 'true' for HTTPS"
+                    if (!data.has_field(nmos::fields::secure))
+                    {
+                        data[nmos::fields::secure] = false; // for now, no means to detect the API protocol?
+                    }
+
+                    // for now, only support HTTP
+                    const bool valid_secure_field = false == nmos::fields::secure(data);
+                    valid = valid && valid_secure_field;
                 }
 
-                // for now, only support HTTP
-                const bool valid_secure_field = false == nmos::fields::secure(data);
-                valid = valid && valid_secure_field;
-            }
-
-            if (valid)
-            {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested on " << nmos::fields::resource_path(data) << ", to be " << (nmos::fields::persist(data) ? "persistent" : "non-persistent");
-
-                // get the request host
-                auto req_host = web::http::get_host_port(req).first;
-                if (req_host.empty())
+                if (valid)
                 {
-                    req_host = nmos::fields::host_address(model.settings);
-                }
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested on " << nmos::fields::resource_path(data) << ", to be " << (nmos::fields::persist(data) ? "persistent" : "non-persistent");
 
-                // search for a matching existing subscription
-                resources::iterator resource = std::find_if(model.resources.begin(), model.resources.end(), [&req_host, &version, &data](const resources::value_type& resource)
-                {
-                    return version == resource.version
-                        && nmos::types::subscription == resource.type
-                        && nmos::fields::max_update_rate_ms(data) == nmos::fields::max_update_rate_ms(resource.data)
-                        && nmos::fields::persist(data) == nmos::fields::persist(resource.data)
-                        && (nmos::is04_versions::v1_0 == version || nmos::fields::secure(data) == nmos::fields::secure(resource.data))
-                        && nmos::fields::resource_path(data) == nmos::fields::resource_path(resource.data)
-                        && nmos::fields::params(data) == nmos::fields::params(resource.data)
-                        // and finally, a matching subscription must be being served via the same interface as this request
-                        // (which, let's approximate by checking the host matches)
-                        && req_host == web::uri(nmos::fields::ws_href(resource.data)).host();
-                });
-                const bool creating = model.resources.end() == resource;
+                    // get the request host
+                    auto req_host = web::http::get_host_port(req).first;
+                    if (req_host.empty())
+                    {
+                        req_host = nmos::fields::host_address(model.settings);
+                    }
 
-                if (creating)
-                {
-                    // unlike registration, it's the server's responsibility to create the subscription id
-                    nmos::id id = nmos::make_id();
+                    // search for a matching existing subscription
+                    resources::iterator resource = std::find_if(model.resources.begin(), model.resources.end(), [&req_host, &version, &data](const resources::value_type& resource)
+                    {
+                        return version == resource.version
+                            && nmos::types::subscription == resource.type
+                            && nmos::fields::max_update_rate_ms(data) == nmos::fields::max_update_rate_ms(resource.data)
+                            && nmos::fields::persist(data) == nmos::fields::persist(resource.data)
+                            && (nmos::is04_versions::v1_0 == version || nmos::fields::secure(data) == nmos::fields::secure(resource.data))
+                            && nmos::fields::resource_path(data) == nmos::fields::resource_path(resource.data)
+                            && nmos::fields::params(data) == nmos::fields::params(resource.data)
+                            // and finally, a matching subscription must be being served via the same interface as this request
+                            // (which, let's approximate by checking the host matches)
+                            && req_host == web::uri(nmos::fields::ws_href(resource.data)).host();
+                    });
+                    const bool creating = model.resources.end() == resource;
 
-                    data[nmos::fields::id] = value::string(id);
+                    if (creating)
+                    {
+                        // unlike registration, it's the server's responsibility to create the subscription id
+                        nmos::id id = nmos::make_id();
 
-                    // generate the websocket url
-                    data[nmos::fields::ws_href] = value::string(web::uri_builder()
-                        .set_scheme(U("ws"))
-                        .set_host(req_host)
-                        .set_port(nmos::fields::query_ws_port(model.settings))
-                        .set_path(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + id)
-                        .to_string());
+                        data[nmos::fields::id] = value::string(id);
 
-                    // never expire persistent subscriptions, they are only deleted when explicitly requested
-                    nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
+                        // generate the websocket url
+                        data[nmos::fields::ws_href] = value::string(web::uri_builder()
+                            .set_scheme(U("ws"))
+                            .set_host(req_host)
+                            .set_port(nmos::fields::query_ws_port(model.settings))
+                            .set_path(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + id)
+                            .to_string());
 
-                    insert_resource(model.resources, std::move(subscription));
+                        // never expire persistent subscriptions, they are only deleted when explicitly requested
+                        nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
+
+                        insert_resource(model.resources, std::move(subscription));
+                    }
+                    else
+                    {
+                        // just return the existing subscription
+                        // downgrade doesn't apply to subscriptions; at this point, version must be equal to resource->version
+                        data = resource->data;
+                    }
+
+                    set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
+                    const string_t location(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + nmos::fields::id(data));
+                    res.headers().add(web::http::header_names::location, location);
                 }
                 else
                 {
-                    // just return the existing subscription
-                    // downgrade doesn't apply to subscriptions; at this point, version must be equal to resource->version
-                    data = resource->data;
+                    set_reply(res, status_codes::BadRequest);
                 }
 
-                set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
-                const string_t location(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + nmos::fields::id(data));
-                res.headers().add(web::http::header_names::location, location);
-            }
-            else
-            {
-                set_reply(res, status_codes::BadRequest);
-            }
-
-            return true;
+                return true;
+            });
         });
 
-        query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -352,7 +352,7 @@ namespace nmos
                 set_reply(res, status_codes::NotFound);
             }
 
-            return true;
+            return pplx::task_from_result(true);
         });
 
         return query_api;

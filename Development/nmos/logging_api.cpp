@@ -26,19 +26,19 @@ namespace nmos
 
             api_router logging_api;
 
-            logging_api.support(U("/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            logging_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, value_of({ JU("log/") }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/?"), methods::GET, [](const http_request&, http_response& res, const string_t&, const route_parameters&)
+            logging_api.support(U("/log/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, value_of({ JU("events/") }));
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/events/?"), methods::GET, [&model, &mutex, &gate](const http_request& req, http_response& res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/log/events/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -99,10 +99,10 @@ namespace nmos
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << (count < offset ? 0 : count < offset + limit ? count - offset : limit) << " matching log events";
 
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/events/?"), methods::DEL, [&model, &mutex](const http_request& req, http_response& res, const string_t&, const route_parameters&)
+            logging_api.support(U("/log/events/?"), methods::DEL, [&model, &mutex](http_request req, http_response res, const string_t&, const route_parameters&)
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -116,10 +116,10 @@ namespace nmos
                     set_reply(res, status_codes::NotImplemented);
                 }
 
-                return true;
+                return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex](const http_request&, http_response& res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/log/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -138,7 +138,7 @@ namespace nmos
                     set_reply(res, status_codes::NotFound);
                 }
 
-                return true;
+                return pplx::task_from_result(true);
             });
 
             nmos::add_api_finally_handler(logging_api, gate);
