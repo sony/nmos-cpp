@@ -21,7 +21,6 @@ namespace nmos
         {
             resource.health = resource.created.seconds;
         }
-        auto result = resources.insert(std::move(resource));
 
         // all types (other than nodes, and subscriptions) must* be a sub-resource of an existing resource
         // (*assuming not out-of-order insertion by the allow_invalid_resources setting)
@@ -34,6 +33,8 @@ namespace nmos
                 super_resource.sub_resources.insert(resource.id);
             });
         }
+
+        auto result = resources.insert(std::move(resource));
 
         if (result.second)
         {
