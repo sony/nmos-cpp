@@ -243,7 +243,22 @@ namespace web
                         {
                             try
                             {
-                                server.stop_listening();
+                                // This seems to be the recommended technique for stopping a websocketpp::server
+                                // although it results in quite a bit of noise in the error and access logs, for example:
+                                // info: Error getting remote endpoint: system:10009 (The file handle supplied is not valid)
+                                // warning: WebSocket Connection Unknown - "" - 0 websocketpp:26 Operation canceled
+                                // info: asio async_shutdown error: system:10009 (The file handle supplied is not valid)
+                                // info: handle_accept error: Operation canceled
+                                // info: Stopping acceptance of new connections because the underlying transport is no longer listening.
+                                // The author of WebSocket++ says:
+                                // "Is the error actually causing problems? or are you just worried about the messages in the log?
+                                // Unless there is specific problem I believe that this is the currently expected behavior."
+                                // See https://github.com/zaphoyd/websocketpp/issues/556#issuecomment-221563661
+
+                                if (server.is_listening())
+                                {
+                                    server.stop_listening();
+                                }
 
                                 {
                                     std::lock_guard<std::mutex> lock(mutex);
