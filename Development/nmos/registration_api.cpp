@@ -1,6 +1,7 @@
 #include "nmos/registration_api.h"
 
 #include "nmos/api_utils.h"
+#include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/slog.h"
 #include "nmos/query_utils.h"
@@ -12,7 +13,7 @@ namespace nmos
         std::unique_lock<std::mutex> lock(mutex);
         // wait until the next node could potentially expire, or the server is being shut down
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
-        while (!condition.wait_until(lock, time_point_from_health(next_potential_expiry(model.resources) + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
+        while (!condition.wait_until(lock, time_point_from_health(least_health(model.resources) + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
         {
             auto before = model.resources.size();
 
@@ -24,6 +25,8 @@ namespace nmos
             if (before != after)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << (before - after) << " resources have expired, " << after << " remain";
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread";
                 query_ws_events_condition.notify_all();
@@ -206,6 +209,8 @@ namespace nmos
                             resource.data = data;
                         });
                     }
+
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
                     query_ws_events_condition.notify_all();

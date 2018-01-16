@@ -100,6 +100,7 @@ int main(int argc, char* argv[])
     // Log the process ID and the API addresses we'll be using
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << registry_model.settings.serialize();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
@@ -122,10 +123,15 @@ int main(int argc, char* argv[])
     web::http::experimental::listener::http_listener logging_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::logging_port(registry_model.settings)));
     nmos::support_api(logging_listener, logging_api);
 
+    // Configure the NMOS APIs
+
+    web::http::experimental::listener::http_listener_config listener_config;
+    listener_config.set_backlog(nmos::fields::listen_backlog(registry_model.settings));
+
     // Configure the Query API
 
     web::http::experimental::listener::api_router query_api = nmos::make_query_api(registry_model, registry_mutex, gate);
-    web::http::experimental::listener::http_listener query_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::query_port(registry_model.settings)));
+    web::http::experimental::listener::http_listener query_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::query_port(registry_model.settings)), listener_config);
     nmos::support_api(query_listener, query_api);
 
     nmos::websockets registry_websockets;
@@ -143,7 +149,7 @@ int main(int argc, char* argv[])
     // Configure the Registration API
 
     web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, registry_mutex, query_ws_events_condition, gate);
-    web::http::experimental::listener::http_listener registration_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::registration_port(registry_model.settings)));
+    web::http::experimental::listener::http_listener registration_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::registration_port(registry_model.settings)), listener_config);
     nmos::support_api(registration_listener, registration_api);
 
     std::condition_variable registration_expiration_condition; // associated with registry_mutex; notify on shutdown
@@ -151,7 +157,7 @@ int main(int argc, char* argv[])
     // Configure the Node API
 
     web::http::experimental::listener::api_router node_api = nmos::make_node_api(self_resources, self_mutex, gate);
-    web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(registry_model.settings)));
+    web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(registry_model.settings)), listener_config);
     nmos::support_api(node_listener, node_api);
 
     // set up the node resources

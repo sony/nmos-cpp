@@ -24,6 +24,24 @@ namespace nmos
             }
         });
     }
+
+    inline slog::log_statement::manip_function put_resources_statistics(const nmos::resources& resources)
+    {
+        return slog::log_manip([&](slog::log_statement& s)
+        {
+            auto& by_type = resources.get<tags::type>();
+            s << by_type.size() << " resources ("
+                << by_type.count(types::node) << " nodes, "
+                << by_type.count(types::device) << " devices, "
+                << by_type.count(types::source) << " sources, "
+                << by_type.count(types::flow) << " flows, "
+                << by_type.count(types::sender) << " senders, "
+                << by_type.count(types::receiver) << " receivers, "
+                << by_type.count(types::subscription) << " subscriptions, "
+                << by_type.count(types::grain) << " grains), "
+                << "most recent update: " << make_version(most_recent_update(resources)) << ", least health: " << least_health(resources);
+        });
+    }
 }
 
 #endif

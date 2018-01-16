@@ -51,7 +51,7 @@ namespace nmos
         return update > most_recent ? update : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
     }
 
-    inline health next_potential_expiry(const nmos::resources& resources)
+    inline health least_health(const nmos::resources& resources)
     {
         auto& by_health = resources.get<tags::health>();
         return (by_health.empty() || health_forever == by_health.begin()->health ? health_now() : by_health.begin()->health);

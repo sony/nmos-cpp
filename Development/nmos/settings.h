@@ -47,6 +47,9 @@ namespace nmos
         const web::json::field_as_integer_or node_port{ U("node_port"), 3212 };
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
 
+        // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
+        const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };
+
         // registration_heartbeat_interval [node]:
         // "Nodes are expected to peform a heartbeat every 5 seconds by default."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
@@ -57,8 +60,9 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
 
-        // query_paging_limit [registry]: maximum number of results per "page" when using the Query API (a client may request a lower limit)
-        const web::json::field_as_integer_or query_paging_limit{ U("query_paging_limit"), 10 };
+        // query_paging_default/query_paging_limit [registry]: default/maximum number of results per "page" when using the Query API (a client may request a lower limit)
+        const web::json::field_as_integer_or query_paging_default{ U("query_paging_default"), 10 };
+        const web::json::field_as_integer_or query_paging_limit{ U("query_paging_limit"), 100 };
     }
 }
 

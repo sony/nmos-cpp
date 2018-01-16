@@ -200,7 +200,7 @@ namespace nmos
     {
         std::unique_lock<std::mutex> lock(mutex);
         // wait until the next node heartbeat, or the server is being shut down
-        while (!condition.wait_until(lock, time_point_from_health(next_potential_expiry(model.resources) + nmos::fields::registration_heartbeat_interval(model.settings)), [&]{ return shutdown; }))
+        while (!condition.wait_until(lock, time_point_from_health(least_health(model.resources) + nmos::fields::registration_heartbeat_interval(model.settings)), [&]{ return shutdown; }))
         {
             auto& by_health = model.resources.get<tags::health>();
             auto resource = std::find_if(by_health.begin(), by_health.end(), [&model](const nmos::resource& resource)

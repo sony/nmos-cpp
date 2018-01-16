@@ -156,8 +156,8 @@ namespace nmos
 
             // Configure the paging parameters
 
-            // Limit queries to the current resources (although tai_now() would also be an option?) and use the paging limit from the setings
-            resource_paging paging(flat_query_params, most_recent_update(model.resources), (size_t)nmos::fields::query_paging_limit(model.settings));
+            // Limit queries to the current resources (although tai_now() would also be an option?) and use the paging limit (default and max) from the setings
+            resource_paging paging(flat_query_params, most_recent_update(model.resources), (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
 
             if (paging.valid())
             {

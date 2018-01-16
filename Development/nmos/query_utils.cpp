@@ -57,11 +57,11 @@ namespace nmos
         }
     }
 
-    resource_paging::resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until, size_t max_limit)
+    resource_paging::resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until, size_t default_limit, size_t max_limit)
         : order_by_created(false) // i.e. order by updated timestamp
         , until(max_until)
         , since(nmos::tai_min())
-        , limit(max_limit)
+        , limit(default_limit)
         , since_specified(false)
     {
         auto query_params = web::json::unflatten(flat_query_params);

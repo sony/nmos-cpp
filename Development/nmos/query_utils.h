@@ -48,7 +48,7 @@ namespace nmos
     // Cursor-based paging parameters
     struct resource_paging
     {
-        explicit resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until = nmos::tai_max(), size_t max_limit = (std::numeric_limits<size_t>::max)());
+        explicit resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until = nmos::tai_max(), size_t default_limit = (std::numeric_limits<size_t>::max)(), size_t max_limit = (std::numeric_limits<size_t>::max)());
 
         // determine if the range [until, since) and limit are valid
         bool valid() const;
