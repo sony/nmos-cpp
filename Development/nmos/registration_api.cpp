@@ -103,16 +103,16 @@ namespace nmos
 
                 bool valid = true;
 
-                resources::iterator resource = model.resources.find(id);
+                // a modification request must not change the existing type (hence not using find_resource)
+                auto resource = model.resources.find(id);
                 const bool creating = model.resources.end() == resource;
-
-                // a modification request must not change the existing type
                 valid = valid && (creating || resource->type == type);
+
                 // it shouldn't change the super-resource either
                 const auto super_id_type = nmos::get_super_resource(data, type);
                 valid = valid && (creating || nmos::get_super_resource(resource->data, resource->type) == super_id_type);
 
-                resources::iterator super_resource = nmos::find_resource(model.resources, super_id_type);
+                auto super_resource = nmos::find_resource(model.resources, super_id_type);
                 const bool valid_super_resource = model.resources.end() != super_resource;
 
                 if (nmos::types::node == type)
@@ -234,7 +234,8 @@ namespace nmos
 
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            if (nmos::has_resource(model.resources, { resourceId, nmos::types::node }))
+            auto resource = find_resource(model.resources, { resourceId, nmos::types::node });
+            if (model.resources.end() != resource)
             {
                 if (methods::POST == req.method())
                 {
@@ -247,7 +248,7 @@ namespace nmos
                 }
                 else if (methods::GET == req.method())
                 {
-                    set_reply(res, web::http::status_codes::OK, make_health_response_body(model.resources.find(resourceId)->health));
+                    set_reply(res, web::http::status_codes::OK, make_health_response_body(resource->health));
                 }
                 else
                 {
@@ -269,48 +270,41 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = model.resources.find(resourceId);
+            auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
             if (model.resources.end() != resource)
             {
-                if (resource->type == nmos::type_from_resourceType(resourceType))
+                if (methods::GET == req.method())
                 {
-                    if (methods::GET == req.method())
-                    {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                        set_reply(res, status_codes::OK, resource->data);
-                    }
-                    else if (methods::DEL == req.method())
-                    {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    set_reply(res, status_codes::OK, resource->data);
+                }
+                else if (methods::DEL == req.method())
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
 
-                        // remove this resource from its super-resource's sub-resources
-                        resources::iterator super_resource = nmos::find_resource(model.resources, nmos::get_super_resource(resource->data, resource->type));
-                        if (super_resource != model.resources.end())
+                    // remove this resource from its super-resource's sub-resources
+                    auto super_resource = nmos::find_resource(model.resources, nmos::get_super_resource(resource->data, resource->type));
+                    if (super_resource != model.resources.end())
+                    {
+                        // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
+                        // hence model.resources.modify(...) rather than modify_resource(model.resources, ...)
+                        model.resources.modify(super_resource, [&resource](nmos::resource& super_resource)
                         {
-                            // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
-                            // hence model.resources.modify(...) rather than modify_resource(model.resources, ...)
-                            model.resources.modify(super_resource, [&resource](nmos::resource& super_resource)
-                            {
-                                super_resource.sub_resources.erase(resource->id);
-                            });
-                        }
-
-                        // not sure if we're responsible for erasing sub-resources or whether the client is... play safe?
-                        erase_resource(model.resources, resource->id);
-
-                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
-                        query_ws_events_condition.notify_all();
-
-                        set_reply(res, status_codes::NoContent);
+                            super_resource.sub_resources.erase(resource->id);
+                        });
                     }
-                    else
-                    {
-                        set_reply(res, status_codes::MethodNotAllowed);
-                    }
+
+                    // not sure if we're responsible for erasing sub-resources or whether the client is... play safe?
+                    erase_resource(model.resources, resource->id);
+
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
+                    query_ws_events_condition.notify_all();
+
+                    set_reply(res, status_codes::NoContent);
                 }
                 else
                 {
-                    set_reply(res, status_codes::NotFound);
+                    set_reply(res, status_codes::MethodNotAllowed);
                 }
             }
             else

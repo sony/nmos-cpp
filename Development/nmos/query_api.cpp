@@ -192,18 +192,11 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = model.resources.find(resourceId);
-            if (model.resources.end() != resource)
+            auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (model.resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
             {
-                if (resource->type == nmos::type_from_resourceType(resourceType) && nmos::is_permitted_downgrade(*resource, version))
-                {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                    set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
-                }
-                else
-                {
-                    set_reply(res, status_codes::NotFound);
-                }
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
             }
             else
             {
@@ -323,28 +316,21 @@ namespace nmos
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t subscriptionId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto subscription = model.resources.find(subscriptionId);
-            if (model.resources.end() != subscription)
+            auto subscription = find_resource(model.resources, { subscriptionId, nmos::types::subscription });
+            // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
+            if (model.resources.end() != subscription && subscription->version == version)
             {
-                // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
-                if (subscription->type == nmos::types::subscription && subscription->version == version)
+                if (nmos::fields::persist(subscription->data))
                 {
-                    if (nmos::fields::persist(subscription->data))
-                    {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
-                        erase_resource(model.resources, subscription->id);
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
+                    erase_resource(model.resources, subscription->id);
 
-                        set_reply(res, status_codes::NoContent);
-                    }
-                    else
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
-                        set_reply(res, status_codes::Forbidden, nmos::make_error_response_body(status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted")));
-                    }
+                    set_reply(res, status_codes::NoContent);
                 }
                 else
                 {
-                    set_reply(res, status_codes::NotFound);
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
+                    set_reply(res, status_codes::Forbidden, nmos::make_error_response_body(status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted")));
                 }
             }
             else

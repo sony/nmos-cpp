@@ -288,7 +288,7 @@ namespace nmos
 
             for (const auto& id : subscription.sub_resources)
             {
-                auto grain = resources.find(id);
+                auto grain = find_resource(resources, { id, nmos::types::grain });
                 if (resources.end() == grain) continue; // check websocket connection is still open
 
                 resources.modify(grain, [&resources, &event](nmos::resource& grain)

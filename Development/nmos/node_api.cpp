@@ -103,18 +103,11 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = resources.find(resourceId);
-            if (resources.end() != resource)
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
             {
-                if (resource->type == nmos::type_from_resourceType(resourceType) && nmos::is_permitted_downgrade(*resource, version))
-                {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                    set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
-                }
-                else
-                {
-                    set_reply(res, status_codes::NotFound);
-                }
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
             }
             else
             {
@@ -131,17 +124,10 @@ namespace nmos
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = resources.find(resourceId);
-            if (resources.end() != resource)
+            auto resource = find_resource(resources, { resourceId, nmos::types::receiver });
+            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
             {
-                if (types::receiver == resource->type && nmos::is_permitted_downgrade(*resource, version))
-                {
-                    set_reply(res, status_codes::NotImplemented);
-                }
-                else
-                {
-                    set_reply(res, status_codes::NotFound);
-                }
+                set_reply(res, status_codes::NotImplemented);
             }
             else
             {

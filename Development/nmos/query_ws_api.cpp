@@ -158,7 +158,7 @@ namespace nmos
                 // for each websocket connection that has valid grain and subscription resources
                 const auto grain = find_resource(model.resources, { websocket.first, nmos::types::grain });
                 if (model.resources.end() == grain) continue;
-                const auto subscription = model.resources.find(nmos::fields::subscription_id(grain->data));
+                const auto subscription = find_resource(model.resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
                 if (model.resources.end() == subscription) continue;
                 // and has events to send
                 if (0 == nmos::fields::message_grain_data(grain->data).size()) continue;

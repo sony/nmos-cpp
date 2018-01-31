@@ -105,23 +105,16 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = resources.find(resourceId);
-            if (resources.end() != resource)
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
             {
-                if (resource->type == nmos::type_from_resourceType(resourceType) && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
+                if (nmos::types::sender == resource->type)
                 {
-                    if (nmos::types::sender == resource->type)
-                    {
-                        set_reply(res, status_codes::OK, value_of({ JU("constraints/"), JU("staged/"), JU("active/"), JU("transportfile/") }));
-                    }
-                    else // if (nmos::types::receiver == resource->type)
-                    {
-                        set_reply(res, status_codes::OK, value_of({ JU("constraints/"), JU("staged/"), JU("active/") }));
-                    }
+                    set_reply(res, status_codes::OK, value_of({ JU("constraints/"), JU("staged/"), JU("active/"), JU("transportfile/") }));
                 }
-                else
+                else // if (nmos::types::receiver == resource->type)
                 {
-                    set_reply(res, status_codes::NotFound);
+                    set_reply(res, status_codes::OK, value_of({ JU("constraints/"), JU("staged/"), JU("active/") }));
                 }
             }
             else
@@ -160,39 +153,32 @@ namespace nmos
             const auto activation = nmos::fields::activation(body);
             const auto mode = nmos::fields::mode(activation);
 
-            auto resource = resources.find(resourceId);
-            if (resources.end() != resource)
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
             {
-                if (resource->type == nmos::type_from_resourceType(resourceType) && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
+                if (nmos::activation_modes::activate_immediate == mode)
                 {
-                    if (nmos::activation_modes::activate_immediate == mode)
+                    modify_resource(resources, resourceId, [&](nmos::resource& resource)
                     {
-                        modify_resource(resources, resourceId, [&](nmos::resource& resource)
+                        resource.data[U("version")] = value::string(nmos::make_version(resource.updated));
+
+                        auto& subscription = resource.data[U("subscription")];
+                        subscription[U("active")] = value::boolean(master_enable);
+                        if (nmos::types::sender == resource.type)
                         {
-                            resource.data[U("version")] = value::string(nmos::make_version(resource.updated));
+                            subscription[U("receiver_id")] = master_enable ? body[U("receiver_id")] : value::null();
+                        }
+                        else // if (nmos::types::receiver == resource.type)
+                        {
+                            subscription[U("sender_id")] = master_enable ? body[U("sender_id")] : value::null();
+                        }
+                    });
 
-                            auto& subscription = resource.data[U("subscription")];
-                            subscription[U("active")] = value::boolean(master_enable);
-                            if (nmos::types::sender == resource.type)
-                            {
-                                subscription[U("receiver_id")] = master_enable ? body[U("receiver_id")] : value::null();
-                            }
-                            else // if (nmos::types::receiver == resource.type)
-                            {
-                                subscription[U("sender_id")] = master_enable ? body[U("sender_id")] : value::null();
-                            }
-                        });
-
-                        set_reply(res, status_codes::OK, value{});
-                    }
-                    else
-                    {
-                        set_reply(res, status_codes::NotImplemented);
-                    }
+                    set_reply(res, status_codes::OK, value{});
                 }
                 else
                 {
-                    set_reply(res, status_codes::NotFound);
+                    set_reply(res, status_codes::NotImplemented);
                 }
             }
             else

@@ -24,7 +24,7 @@ namespace nmos
 
         // all types (other than nodes, and subscriptions) must* be a sub-resource of an existing resource
         // (*assuming not out-of-order insertion by the allow_invalid_resources setting)
-        resources::iterator super_resource = find_resource(resources, get_super_resource(resource.data, resource.type));
+        auto super_resource = find_resource(resources, get_super_resource(resource.data, resource.type));
         if (super_resource != resources.end())
         {
             // this isn't modifying the visible data of the super_resouce, so no resource events need to be generated
