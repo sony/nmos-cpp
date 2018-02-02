@@ -29,7 +29,7 @@ namespace nmos
             return result;
         }
 
-        web::http::experimental::listener::api_router make_mdns_api(std::mutex& mutex, std::atomic<slog::severity>& logging_level, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_mdns_api(slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -54,10 +54,8 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&mutex, &gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
-                std::lock_guard<std::mutex> lock(mutex);
-
                 const std::string serviceType = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceType.name));
 
                 std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
@@ -100,10 +98,8 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&mutex, &gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
-                std::lock_guard<std::mutex> lock(mutex);
-
                 const std::string serviceType = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceType.name));
                 const std::string serviceName = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceName.name));
 

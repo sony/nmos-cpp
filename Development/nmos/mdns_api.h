@@ -1,8 +1,6 @@
 #ifndef NMOS_MDNS_API_H
 #define NMOS_MDNS_API_H
 
-#include <atomic>
-#include <mutex>
 #include "nmos/api_utils.h" // for web::http::experimental::listener::api_router and nmos::route_pattern
 #include "nmos/slog.h" // for slog::base_gate and slog::severity, etc.
 
@@ -11,7 +9,7 @@ namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_mdns_api(std::mutex& mutex, std::atomic<slog::severity>& logging_level, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_mdns_api(slog::base_gate& gate);
 
         namespace patterns
         {

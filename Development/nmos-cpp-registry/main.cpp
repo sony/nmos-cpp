@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 
     // Configure the mDNS API
 
-    web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(registry_mutex, level, gate);
+    web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(gate);
     web::http::experimental::listener::http_listener mdns_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::mdns_port(registry_model.settings)));
     nmos::support_api(mdns_listener, mdns_api);
 
