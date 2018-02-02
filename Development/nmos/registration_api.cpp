@@ -3,15 +3,16 @@
 #include "nmos/api_utils.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
-#include "nmos/slog.h"
 #include "nmos/query_utils.h"
+#include "nmos/slog.h"
+#include "nmos/thread_utils.h"
 
 namespace nmos
 {
     void erase_expired_resources_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
-        // could start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource is actually deleted from the resources
-        nmos::write_lock lock(mutex);
+        // start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource actually needs to be deleted from the resources
+        nmos::read_lock lock(mutex);
 
         auto least_health = nmos::least_health(model.resources);
 
@@ -25,7 +26,13 @@ namespace nmos
             least_health = nmos::least_health(model.resources);
             if (least_health >= until_health) continue;
 
-            // otherwise, there's actually work to  do...
+            // otherwise, there's actually work to do...
+
+            details::reverse_lock_guard<nmos::read_lock> unlock(lock);
+            // note, without atomic upgrade, another thread may preempt hence the need to recalculate until_health and least_health
+            nmos::write_lock upgrade(mutex);
+
+            until_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
 
             auto before = model.resources.size();
 
@@ -43,6 +50,8 @@ namespace nmos
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread";
                 query_ws_events_condition.notify_all();
             }
+
+            least_health = nmos::least_health(model.resources);
         }
     }
 
