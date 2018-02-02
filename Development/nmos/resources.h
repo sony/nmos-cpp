@@ -21,7 +21,6 @@ namespace nmos
         struct type;
         struct created;
         struct updated;
-        struct health;
     }
 
     // the created/updated indices are in descending order to simplify Query API cursor-based paging
@@ -29,11 +28,10 @@ namespace nmos
     typedef boost::multi_index_container<
         resource,
         boost::multi_index::indexed_by<
-            boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, boost::multi_index::member<resource, id, &resource::id>>,
-            boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::type>, boost::multi_index::member<resource, type, &resource::type>>,
-            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::created>, boost::multi_index::member<resource, tai, &resource::created>, std::greater<tai>>,
-            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::updated>, boost::multi_index::member<resource, tai, &resource::updated>, std::greater<tai>>,
-            boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::health>, boost::multi_index::member<resource, health, &resource::health>>
+            boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, boost::multi_index::member<resource_core, id, &resource_core::id>>,
+            boost::multi_index::ordered_non_unique<boost::multi_index::tag<tags::type>, boost::multi_index::member<resource_core, type, &resource_core::type>>,
+            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::created>, boost::multi_index::member<resource_core, tai, &resource_core::created>, std::greater<tai>>,
+            boost::multi_index::ordered_unique<boost::multi_index::tag<tags::updated>, boost::multi_index::member<resource_core, tai, &resource_core::updated>, std::greater<tai>>
         >
     > resources;
 
@@ -51,11 +49,8 @@ namespace nmos
         return update > most_recent ? update : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
     }
 
-    inline health least_health(const nmos::resources& resources)
-    {
-        auto& by_health = resources.get<tags::health>();
-        return (by_health.empty() || health_forever == by_health.begin()->health ? health_now() : by_health.begin()->health);
-    }
+    // note, this is now O(N), not O(1), since resource health is mutable and therefore unindexed
+    health least_health(const resources& resources);
 
     // insert a resource (join_sub_resources can be false if related resources are known to be inserted in order)
     std::pair<resources::iterator, bool> insert_resource(resources& resources, resource&& resource, bool join_sub_resources = false);
@@ -83,6 +78,9 @@ namespace nmos
 
     // only need a non-const version so far...
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type);
+
+    // strictly, this just returns a node (or the end iterator)
+    resources::iterator find_self_resource(resources& resources);
 
     // get the id of each resource with the specified super-resource
     std::set<nmos::id> get_sub_resources(const resources& resources, const std::pair<id, type>& id_type);

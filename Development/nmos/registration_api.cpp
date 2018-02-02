@@ -11,14 +11,25 @@ namespace nmos
     void erase_expired_resources_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, std::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
         std::unique_lock<std::mutex> lock(mutex);
+
+        auto least_health = nmos::least_health(model.resources);
+
         // wait until the next node could potentially expire, or the server is being shut down
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
-        while (!condition.wait_until(lock, time_point_from_health(least_health(model.resources) + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
+        while (!condition.wait_until(lock, time_point_from_health(least_health + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
         {
+            // most nodes will have had a heartbeat during the wait, so the least health will have been increased
+            // so this thread will be able to go straight back to waiting
+            auto until_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
+            least_health = nmos::least_health(model.resources);
+            if (least_health >= until_health) continue;
+
+            // otherwise, there's actually work to  do...
+
             auto before = model.resources.size();
 
             // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
-            erase_expired_resources(model.resources, health_now() - nmos::fields::registration_expiry_interval(model.settings));
+            erase_expired_resources(model.resources, until_health);
 
             auto after = model.resources.size();
 

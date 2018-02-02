@@ -58,7 +58,7 @@ namespace nmos
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
-            auto resource = std::find_if(resources.begin(), resources.end(), [](const nmos::resources::value_type& resource){ return nmos::types::node == resource.type; });
+            auto resource = nmos::find_self_resource(resources);
             if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning self resource: " << resource->id;

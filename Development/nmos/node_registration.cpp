@@ -207,16 +207,16 @@ namespace nmos
         const auto registry_version = nmos::parse_api_version(nmos::fields::registry_version(model.settings));
         web::http::client::http_client client(base_uri);
 
-        // wait until the next node heartbeat, or the server is being shut down
-        while (!condition.wait_until(lock, time_point_from_health(least_health(model.resources) + nmos::fields::registration_heartbeat_interval(model.settings)), [&]{ return shutdown; }))
-        {
-            auto& by_health = model.resources.get<tags::health>();
-            auto resource = std::find_if(by_health.begin(), by_health.end(), [&model](const nmos::resource& resource)
-            {
-                return nmos::types::node == resource.type || resource.health + nmos::fields::registration_heartbeat_interval(model.settings) > health_now();
-            });
+        auto resource = nmos::find_self_resource(model.resources);
+        auto self_health = model.resources.end() == resource || nmos::health_forever == resource->health ? health_now() : resource->health.load();
 
-            if (by_health.end() == resource || nmos::types::node != resource->type) continue;
+        // wait until the next node heartbeat, or the server is being shut down
+        while (!condition.wait_until(lock, time_point_from_health(self_health + nmos::fields::registration_heartbeat_interval(model.settings)), [&]{ return shutdown; }))
+        {
+            auto heartbeat_health = health_now() - nmos::fields::registration_heartbeat_interval(model.settings);
+            resource = nmos::find_self_resource(model.resources);
+            self_health = model.resources.end() == resource || nmos::health_forever == resource->health ? health_now() : resource->health.load();
+            if (self_health > heartbeat_health) continue;
 
             const auto id = resource->id;
             set_resource_health(model.resources, id);

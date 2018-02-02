@@ -52,7 +52,7 @@ namespace nmos
             // need to populate this... each interface needs chassis_id, port_id and a name which can be referenced by senders and receivers
             data[U("interfaces")] = value::array();
 
-            return{ is04_versions::v1_2, types::node, data, true };
+            return{ is04_versions::v1_2, types::node, data, false };
         }
 
         nmos::resource make_device(const nmos::id& id, const nmos::id& node_id, const std::vector<nmos::id>& senders, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
@@ -89,7 +89,7 @@ namespace nmos
             control[U("type")] = JU("urn:x-nmos:control:sr-ctrl/v1.0");
             data[U("controls")][0] = control;
 
-            return{ is04_versions::v1_2, types::device, data, true };
+            return{ is04_versions::v1_2, types::device, data, false };
         }
 
         nmos::resource make_source(const nmos::id& id, const nmos::id& device_id, const nmos::settings& settings)
@@ -120,7 +120,7 @@ namespace nmos
 
             data[U("format")] = JU("urn:x-nmos:format:video");
 
-            return{ is04_versions::v1_2, types::source, data, true };
+            return{ is04_versions::v1_2, types::source, data, false };
         }
 
         nmos::resource make_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
@@ -156,7 +156,7 @@ namespace nmos
             data[U("colorspace")] = JU("BT709");
             data[U("transfer_characteristic")] = JU("SDR"); // optional
 
-            return{ is04_versions::v1_2, types::flow, data, true };
+            return{ is04_versions::v1_2, types::flow, data, false };
         }
 
         nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::id& device_id, const nmos::settings& settings)
@@ -198,7 +198,7 @@ namespace nmos
             subscription[U("active")] = false;
             data[U("subscription")] = subscription;
 
-            return{ is04_versions::v1_2, types::sender, data, true };
+            return{ is04_versions::v1_2, types::sender, data, false };
         }
 
         nmos::resource make_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::settings& settings)
@@ -235,7 +235,7 @@ namespace nmos
 
             data[U("caps")][U("media_types")][0] = JU("video/raw");
 
-            return{ is04_versions::v1_2, types::receiver, data, true };
+            return{ is04_versions::v1_2, types::receiver, data, false };
         }
 
         void make_node_resources(nmos::resources& resources, const nmos::settings& settings)

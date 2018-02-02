@@ -6,6 +6,23 @@ namespace nmos
 {
     // Resource creation/update/deletion operations
 
+    // note, this is now O(N), not O(1), since resource health is mutable and therefore unindexed
+    health least_health(const resources& resources)
+    {
+        auto result = health_now();
+        for (const auto& resource : resources)
+        {
+            // since health is mutable, the snapshot may be immediately out of date
+            // but it is reasonable to rely on it not being modified to be *less*
+            const auto health_snapshot = resource.health.load();
+            if (health_snapshot < result)
+            {
+                result = health_snapshot;
+            }
+        }
+        return result;
+    }
+
     // insert a resource
     std::pair<resources::iterator, bool> insert_resource(resources& resources, resource&& resource, bool join_sub_resources)
     {
@@ -102,22 +119,27 @@ namespace nmos
     // erase all resources which expired *before* the specified time from the specified model
     void erase_expired_resources(resources& resources, const health& until_health)
     {
-        auto& by_health = resources.get<tags::health>();
-        auto unexpired = by_health.lower_bound(until_health);
-
-        for (auto resource = by_health.begin(); unexpired != resource; ++resource)
+        auto resource = resources.begin();
+        while (resources.end() != resource)
         {
+            if (until_health <= resource->health)
+            {
+                ++resource;
+                continue;
+            }
+
+            // should also erase all sub-resources of this resource, and remove this resource's id
+            // from its super-resource's sub-resources, but this is effectively achieved anyway since
+            // health is propagated from nodes (and subscriptions) which don't have a super-resource
+
             const auto version = resource->version;
             const auto type = resource->type;
             const auto pre = resource->data;
 
+            resource = resources.erase(resource);
+
             insert_resource_events(resources, version, type, pre, web::json::value::null());
         }
-
-        // should remove each of these resources from their super-resource's sub-resources
-        // but this is unnecessary because health is propagated from nodes (and subscriptions)
-        // which don't have a super-resource
-        by_health.erase(by_health.begin(), unexpired);
     }
 
     // find the resource with the specified id in the specified resources (if present) and
@@ -192,6 +214,14 @@ namespace nmos
         if (no_resource == id_type) return resources.end();
         auto resource = resources.find(id_type.first);
         return resources.end() != resource && id_type.second == resource->type ? resource : resources.end();
+    }
+
+    // strictly, this just returns a node (or the end iterator)
+    resources::iterator find_self_resource(resources& resources)
+    {
+        auto& by_type = resources.get<tags::type>();
+        auto resource = by_type.lower_bound(nmos::types::node);
+        return by_type.upper_bound(nmos::types::node) != resource ? resources.iterator_to(*resource) : resources.end();
     }
 
     // get the id of each resource with the specified super-resource

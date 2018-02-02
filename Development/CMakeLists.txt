@@ -202,6 +202,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
+    nmos/copyable_atomic.h
     nmos/connection_api.h
     nmos/health.h
     nmos/id.h
@@ -334,6 +335,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
+    nmos/copyable_atomic.h
     nmos/filesystem_route.h
     nmos/health.h
     nmos/id.h
