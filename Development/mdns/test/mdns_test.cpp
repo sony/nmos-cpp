@@ -3,6 +3,7 @@
 #include "mdns/service_discovery.h"
 
 #include <chrono>
+#include <mutex>
 #include <thread>
 
 #include "bst/test/test.h"

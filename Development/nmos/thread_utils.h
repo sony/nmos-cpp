@@ -1,7 +1,6 @@
 #ifndef NMOS_THREAD_UTILS_H
 #define NMOS_THREAD_UTILS_H
 
-#include <condition_variable> // for std::condition_variable, std::mutex, etc.
 #include <thread>
 
 namespace nmos
@@ -24,10 +23,11 @@ namespace nmos
         };
 
         // std::condition_variable::wait_until when max time_point is specified seems unreliable
-        template<typename Clock, typename Duration, typename Predicate>
-        inline bool wait_until(std::condition_variable& condition, std::unique_lock<std::mutex>& lock, const std::chrono::time_point<Clock, Duration>& tp, Predicate predicate)
+        // note, all parameters are template parameters in order to also handle e.g. boost::condition_variable_any
+        template <typename ConditionVariable, typename Lock, typename TimePoint, typename Predicate>
+        inline bool wait_until(ConditionVariable& condition, Lock& lock, const TimePoint& tp, Predicate predicate)
         {
-            if ((std::chrono::time_point<Clock, Duration>::max)() == tp)
+            if ((TimePoint::max)() == tp)
             {
                 condition.wait(lock, predicate);
                 return true;

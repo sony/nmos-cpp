@@ -19,11 +19,11 @@ namespace nmos
         return resource;
     }
 
-    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::model& model, std::mutex& mutex, slog::base_gate& gate)
+    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate)
     {
         return [&model, &mutex, &gate](const utility::string_t& ws_resource_path)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating websocket connection to: " << ws_resource_path;
 
@@ -34,7 +34,7 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(nmos::model& model, nmos::websockets& websockets, std::mutex& mutex, std::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
@@ -44,7 +44,7 @@ namespace nmos
 
         return [source_id, &model, &websockets, &mutex, &query_ws_events_condition, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::write_lock lock(mutex);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Opening websocket connection to: " << ws_resource_path;
 
@@ -95,11 +95,11 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::model& model, nmos::websockets& websockets, std::mutex& mutex, slog::base_gate& gate)
+    web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, slog::base_gate& gate)
     {
         return [&model, &websockets, &mutex, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::write_lock lock(mutex);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing websocket connection to: " << ws_resource_path;
 
@@ -130,12 +130,13 @@ namespace nmos
         };
     }
 
-    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::model& model, nmos::websockets& websockets, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
+    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
 
-        std::unique_lock<std::mutex> lock(mutex);
+        // could start out as a shared/read lock, only upgraded to an exclusive/write lock when a grain in the resources is actually modified
+        nmos::write_lock lock(mutex);
         tai most_recent_message{};
         auto earliest_necessary_update = (tai_clock::time_point::max)();
 

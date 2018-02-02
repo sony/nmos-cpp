@@ -115,12 +115,13 @@ namespace nmos
         }
     }
 
-    void node_registration_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
+    void node_registration_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
 
-        std::unique_lock<std::mutex> lock(mutex);
+        // could start out as a shared/read lock, only upgraded to an exclusive/write lock when a grain in the resources is actually modified
+        nmos::write_lock lock(mutex);
 
         const auto base_uri = details::make_registration_uri_with_no_version(model.settings);
         const auto registry_version = nmos::parse_api_version(nmos::fields::registry_version(model.settings));
@@ -183,7 +184,7 @@ namespace nmos
             // this would be the place to handle the registration uri in the settings having changed...
 
             // issue the registration requests, without the lock on the resources and settings
-            details::reverse_lock_guard<std::unique_lock<std::mutex>> unlock{ lock };
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
             for (auto& event : events.as_array())
             {
                 // for the moment, just log and ignore http exceptions... should really retry, or select an alternative registry
@@ -199,9 +200,10 @@ namespace nmos
         }
     }
 
-    void node_registration_heartbeat_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
+    void node_registration_heartbeat_thread(const nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
     {
-        std::unique_lock<std::mutex> lock(mutex);
+        // since health is mutable, no need to get an exclusive/write lock
+        nmos::read_lock lock(mutex);
 
         const auto base_uri = details::make_registration_uri_with_no_version(model.settings);
         const auto registry_version = nmos::parse_api_version(nmos::fields::registry_version(model.settings));
@@ -224,7 +226,7 @@ namespace nmos
             // this would be the place to handle the registration uri in the settings having changed...
 
             // issue the registration heartbeat, without the lock on the resources and settings
-            details::reverse_lock_guard<std::unique_lock<std::mutex>> unlock{ lock };
+            details::reverse_lock_guard<nmos::read_lock> unlock{ lock };
             // for the moment, just log and ignore http exceptions... should really retry, and/or force re-registration
             try
             {

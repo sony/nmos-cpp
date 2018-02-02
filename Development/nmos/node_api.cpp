@@ -7,9 +7,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, std::mutex & mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, nmos::mutex & mutex, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_node_api(nmos::resources& resources, std::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -40,7 +40,7 @@ namespace nmos
         return node_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, std::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -54,7 +54,7 @@ namespace nmos
 
         node_api.support(U("/self/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
@@ -75,7 +75,7 @@ namespace nmos
 
         node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
@@ -97,7 +97,7 @@ namespace nmos
 
         node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
@@ -119,7 +119,7 @@ namespace nmos
 
         node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);

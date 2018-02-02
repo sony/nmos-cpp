@@ -20,7 +20,7 @@ namespace nmos
             }(query) == web::json::value::boolean(true);
         }
 
-        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, std::mutex& mutex, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -40,7 +40,7 @@ namespace nmos
 
             logging_api.support(U("/log/events/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                nmos::read_lock lock(mutex);
 
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 for (auto& param : flat_query_params.as_object())
@@ -104,7 +104,7 @@ namespace nmos
 
             logging_api.support(U("/log/events/?"), methods::DEL, [&model, &mutex](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                nmos::write_lock lock(mutex);
 
                 if (req.request_uri().query().empty())
                 {
@@ -121,7 +121,7 @@ namespace nmos
 
             logging_api.support(U("/log/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                nmos::read_lock lock(mutex);
 
                 const string_t eventId = parameters.at(nmos::patterns::resourceId.name);
 

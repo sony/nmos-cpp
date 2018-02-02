@@ -8,9 +8,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, std::mutex & mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex & mutex, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::resources& resources, std::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -41,7 +41,7 @@ namespace nmos
         return connection_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, std::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -79,7 +79,7 @@ namespace nmos
 
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
 
@@ -100,7 +100,7 @@ namespace nmos
 
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -141,7 +141,8 @@ namespace nmos
         {
             return req.extract_json().then([&, req, res, parameters](value body) mutable
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
+                nmos::write_lock lock(mutex);
 
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);

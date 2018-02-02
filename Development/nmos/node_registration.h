@@ -1,7 +1,7 @@
 #ifndef NMOS_NODE_REGISTRATION_H
 #define NMOS_NODE_REGISTRATION_H
 
-#include <mutex>
+#include "nmos/mutex.h"
 #include "nmos/resources.h"
 
 namespace slog
@@ -22,9 +22,8 @@ namespace nmos
         nmos::resource make_node_registration_grain(const nmos::id& id, const nmos::id& subscription_id);
     }
 
-    void node_registration_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, slog::base_gate& gate);
-    void node_registration_heartbeat_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, slog::base_gate& gate);
-
+    void node_registration_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate);
+    void node_registration_heartbeat_thread(const nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate);
 }
 
 #endif

@@ -211,6 +211,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/logging_api.h
     nmos/mdns.h
     nmos/model.h
+    nmos/mutex.h
     nmos/node_api.h
     nmos/node_registration.h
     nmos/node_resources.h
@@ -345,6 +346,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/mdns.h
     nmos/mdns_api.h
     nmos/model.h
+    nmos/mutex.h
     nmos/node_api.h
     nmos/paging_utils.h
     nmos/process_utils.h

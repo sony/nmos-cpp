@@ -6,7 +6,7 @@ namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_settings_api(nmos::settings& settings, std::mutex& mutex, std::atomic<slog::severity>& logging_level, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_settings_api(nmos::settings& settings, nmos::mutex& mutex, std::atomic<slog::severity>& logging_level, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -26,7 +26,7 @@ namespace nmos
 
             settings_api.support(U("/settings/all/?"), methods::GET, [&settings, &mutex](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                nmos::read_lock lock(mutex);
                 set_reply(res, status_codes::OK, settings);
                 return pplx::task_from_result(true);
             });
@@ -35,7 +35,7 @@ namespace nmos
             {
                 return req.extract_json().then([&, req, res](value body) mutable
                 {
-                    std::lock_guard<std::mutex> lock(mutex);
+                    nmos::write_lock lock(mutex);
 
                     // Validate request?
 

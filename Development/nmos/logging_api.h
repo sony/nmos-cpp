@@ -1,13 +1,13 @@
 #ifndef NMOS_LOGGING_API_H
 #define NMOS_LOGGING_API_H
 
-#include <mutex>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include "cpprest/api_router.h"
 #include "nmos/json_fields.h" // only for nmos::fields::id
 #include "nmos/id.h"
+#include "nmos/mutex.h"
 #include "nmos/slog.h" // for slog::base_gate and slog::async_log_message
 
 // This is an experimental extension to expose logging via a REST API
@@ -54,7 +54,7 @@ namespace nmos
             nmos::experimental::events events;
         };
 
-        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, std::mutex& mutex, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate);
 
         // push a log event into the model keeping a maximum size (lock the mutex before calling this)
         void log_to_model(log_model& model, const slog::async_log_message& message);

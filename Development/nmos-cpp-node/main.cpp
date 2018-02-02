@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
     // plus variables to signal when the server is stopping
 
     nmos::model node_model;
-    std::mutex node_mutex;
+    nmos::mutex node_mutex;
 
     nmos::experimental::log_model log_model;
-    std::mutex log_mutex;
+    nmos::mutex log_mutex;
     std::atomic<slog::severity> level{ slog::severities::more_info };
 
     bool shutdown = false;
@@ -81,14 +81,14 @@ int main(int argc, char* argv[])
     if (!nmos::fields::error_log(node_model.settings).empty())
     {
         error_log_buf.open(nmos::fields::error_log(node_model.settings), std::ios_base::out | std::ios_base::ate);
-        std::lock_guard<std::mutex> lock(log_mutex);
+        nmos::write_lock lock(log_mutex);
         error_log.rdbuf(&error_log_buf);
     }
 
     if (!nmos::fields::access_log(node_model.settings).empty())
     {
         access_log_buf.open(nmos::fields::access_log(node_model.settings), std::ios_base::out | std::ios_base::ate);
-        std::lock_guard<std::mutex> lock(log_mutex);
+        nmos::write_lock lock(log_mutex);
         access_log.rdbuf(&access_log_buf);
     }
 
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
     // set up the node resources
     nmos::experimental::make_node_resources(node_model.resources, node_model.settings);
 
-    std::condition_variable node_model_condition; // associated with node_mutex; notify on any change to node_model, and on shutdown
+    nmos::condition_variable node_model_condition; // associated with node_mutex; notify on any change to node_model, and on shutdown
 
     // Configure the Connection API
 

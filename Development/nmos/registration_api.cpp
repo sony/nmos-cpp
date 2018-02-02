@@ -8,9 +8,10 @@
 
 namespace nmos
 {
-    void erase_expired_resources_thread(nmos::model& model, std::mutex& mutex, std::condition_variable& condition, bool& shutdown, std::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    void erase_expired_resources_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
-        std::unique_lock<std::mutex> lock(mutex);
+        // could start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource is actually deleted from the resources
+        nmos::write_lock lock(mutex);
 
         auto least_health = nmos::least_health(model.resources);
 
@@ -45,9 +46,9 @@ namespace nmos
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, std::mutex& mutex, std::condition_variable& query_ws_events_condition, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, std::mutex& mutex, std::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -85,7 +86,7 @@ namespace nmos
         return result;
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, std::mutex& mutex, std::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -101,7 +102,8 @@ namespace nmos
         {
             return req.extract_json().then([&, req, res, parameters](value body) mutable
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually modified or inserted into resources
+                nmos::write_lock lock(mutex);
 
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
@@ -241,7 +243,8 @@ namespace nmos
 
         registration_api.support(U("/health/nodes/") + nmos::patterns::resourceId.pattern + U("/?"), [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            // since health is mutable, no need to get an exclusive/write lock even to handle a POST request
+            nmos::read_lock lock(mutex);
 
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -274,9 +277,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), [&model, &mutex, &query_ws_events_condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -284,39 +287,49 @@ namespace nmos
             auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
             if (model.resources.end() != resource)
             {
-                if (methods::GET == req.method())
-                {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                    set_reply(res, status_codes::OK, resource->data);
-                }
-                else if (methods::DEL == req.method())
-                {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                set_reply(res, status_codes::OK, resource->data);
+            }
+            else
+            {
+                set_reply(res, status_codes::NotFound);
+            }
 
-                    // remove this resource from its super-resource's sub-resources
-                    auto super_resource = nmos::find_resource(model.resources, nmos::get_super_resource(resource->data, resource->type));
-                    if (super_resource != model.resources.end())
+            return pplx::task_from_result(true);
+        });
+
+        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &query_ws_events_condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually deleted from resources
+            nmos::write_lock lock(mutex);
+
+            const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+            auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (model.resources.end() != resource)
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
+
+                // remove this resource from its super-resource's sub-resources
+                auto super_resource = nmos::find_resource(model.resources, nmos::get_super_resource(resource->data, resource->type));
+                if (super_resource != model.resources.end())
+                {
+                    // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
+                    // hence model.resources.modify(...) rather than modify_resource(model.resources, ...)
+                    model.resources.modify(super_resource, [&resource](nmos::resource& super_resource)
                     {
-                        // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
-                        // hence model.resources.modify(...) rather than modify_resource(model.resources, ...)
-                        model.resources.modify(super_resource, [&resource](nmos::resource& super_resource)
-                        {
-                            super_resource.sub_resources.erase(resource->id);
-                        });
-                    }
-
-                    // not sure if we're responsible for erasing sub-resources or whether the client is... play safe?
-                    erase_resource(model.resources, resource->id);
-
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
-                    query_ws_events_condition.notify_all();
-
-                    set_reply(res, status_codes::NoContent);
+                        super_resource.sub_resources.erase(resource->id);
+                    });
                 }
-                else
-                {
-                    set_reply(res, status_codes::MethodNotAllowed);
-                }
+
+                // not sure if we're responsible for erasing sub-resources or whether the client is... play safe?
+                erase_resource(model.resources, resource->id);
+
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
+                query_ws_events_condition.notify_all();
+
+                set_reply(res, status_codes::NoContent);
             }
             else
             {

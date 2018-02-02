@@ -24,13 +24,13 @@ int main(int argc, char* argv[])
     // plus variables to signal when the server is stopping
 
     nmos::resources self_resources;
-    std::mutex self_mutex;
+    nmos::mutex self_mutex;
 
     nmos::model registry_model;
-    std::mutex registry_mutex;
+    nmos::mutex registry_mutex;
 
     nmos::experimental::log_model log_model;
-    std::mutex log_mutex;
+    nmos::mutex log_mutex;
     std::atomic<slog::severity> level{ slog::severities::more_info };
 
     bool shutdown = false;
@@ -86,14 +86,14 @@ int main(int argc, char* argv[])
     if (!nmos::fields::error_log(registry_model.settings).empty())
     {
         error_log_buf.open(nmos::fields::error_log(registry_model.settings), std::ios_base::out | std::ios_base::ate);
-        std::lock_guard<std::mutex> lock(log_mutex);
+        nmos::write_lock lock(log_mutex);
         error_log.rdbuf(&error_log_buf);
     }
 
     if (!nmos::fields::access_log(registry_model.settings).empty())
     {
         access_log_buf.open(nmos::fields::access_log(registry_model.settings), std::ios_base::out | std::ios_base::ate);
-        std::lock_guard<std::mutex> lock(log_mutex);
+        nmos::write_lock lock(log_mutex);
         access_log.rdbuf(&access_log_buf);
     }
 
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 
     nmos::websockets registry_websockets;
 
-    std::condition_variable query_ws_events_condition; // associated with registry_mutex; notify on any change to registry_model, and on shutdown
+    nmos::condition_variable query_ws_events_condition; // associated with registry_mutex; notify on any change to registry_model, and on shutdown
 
     web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, registry_mutex, gate);
     web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(registry_model, registry_websockets, registry_mutex, query_ws_events_condition, gate);
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
     web::http::experimental::listener::http_listener registration_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::registration_port(registry_model.settings)), listener_config);
     nmos::support_api(registration_listener, registration_api);
 
-    std::condition_variable registration_expiration_condition; // associated with registry_mutex; notify on shutdown
+    nmos::condition_variable registration_expiration_condition; // associated with registry_mutex; notify on shutdown
 
     // Configure the Node API
 

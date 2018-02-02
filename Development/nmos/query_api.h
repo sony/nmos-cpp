@@ -1,8 +1,8 @@
 #ifndef NMOS_QUERY_API_H
 #define NMOS_QUERY_API_H
 
-#include <mutex>
 #include "cpprest/api_router.h"
+#include "nmos/mutex.h"
 #include "nmos/settings.h"
 
 namespace slog
@@ -16,7 +16,7 @@ namespace nmos
 {
     struct model;
 
-    web::http::experimental::listener::api_router make_query_api(nmos::model& model, std::mutex& mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate);
 
     struct resource_paging;
 

@@ -9,9 +9,9 @@
 
 namespace nmos
 {
-    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, std::mutex& mutex, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_query_api(nmos::model& model, std::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -120,7 +120,7 @@ namespace nmos
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, std::mutex& mutex, slog::base_gate& gate)
+    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -134,7 +134,7 @@ namespace nmos
 
         query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
@@ -186,7 +186,7 @@ namespace nmos
 
         query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::read_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
@@ -210,7 +210,8 @@ namespace nmos
         {
             return req.extract_json().then([&, req, res, parameters](value data) mutable
             {
-                std::lock_guard<std::mutex> lock(mutex);
+                // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually inserted into resources
+                nmos::write_lock lock(mutex);
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested";
 
@@ -311,7 +312,8 @@ namespace nmos
 
         query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually deleted from resources
+            nmos::write_lock lock(mutex);
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t subscriptionId = parameters.at(nmos::patterns::resourceId.name);

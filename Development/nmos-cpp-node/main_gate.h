@@ -26,7 +26,7 @@ namespace
     class main_gate : public slog::base_gate
     {
     public:
-        main_gate(std::ostream& error_log, std::ostream& access_log, nmos::experimental::log_model& model, std::mutex& mutex, std::atomic<slog::severity>& level)
+        main_gate(std::ostream& error_log, std::ostream& access_log, nmos::experimental::log_model& model, nmos::mutex& mutex, std::atomic<slog::severity>& level)
             : error_log(error_log), access_log(access_log), model(model), mutex(mutex), level(level), async_service({ *this }) {}
         virtual ~main_gate() {}
 
@@ -37,7 +37,7 @@ namespace
         std::ostream& error_log;
         std::ostream& access_log;
         nmos::experimental::log_model& model;
-        std::mutex& mutex;
+        nmos::mutex& mutex;
         std::atomic<slog::severity>& level;
 
         struct service_function
@@ -53,7 +53,7 @@ namespace
 
         void service(const slog::async_log_message& message)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            nmos::write_lock lock(mutex);
             if (pertinent(message.level()))
             {
                 error_log << error_log_format(message);
