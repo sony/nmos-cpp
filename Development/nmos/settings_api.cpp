@@ -33,7 +33,7 @@ namespace nmos
 
             settings_api.support(U("/settings/all/?"), methods::POST, [&settings, &mutex, &logging_level](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                return req.extract_json().then([&, req, res](const value& body) mutable
+                return req.extract_json().then([&, req, res](value body) mutable
                 {
                     std::lock_guard<std::mutex> lock(mutex);
 
