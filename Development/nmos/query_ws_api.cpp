@@ -75,11 +75,11 @@ namespace nmos
                 resource grain{ subscription->version, nmos::types::grain, data, true };
 
                 insert_resource(model.resources, std::move(grain));
-                model.resources.modify(subscription, [&id](nmos::resource& subscription)
-                {
-                    // never expire a subscription while it has connections
-                    subscription.health = health_forever;
-                });
+
+                // never expire a subscription while it has connections
+                // note, since health is mutable, no need for:
+                // model.resources.modify(subscription, [](nmos::resource& subscription){ subscription.health = health_forever; });
+                subscription->health = health_forever;
 
                 websockets.insert({ id, connection_id });
 

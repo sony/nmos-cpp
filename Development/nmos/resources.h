@@ -67,7 +67,8 @@ namespace nmos
 
     // find the resource with the specified id in the specified resources (if present) and
     // set the health of the resource and all of its sub-resources, to prevent them expiring
-    void set_resource_health(resources& resources, const id& id, health health = health_now());
+    // note, since health is mutable, no need for the resources parameter to be non-const
+    void set_resource_health(const resources& resources, const id& id, health health = health_now());
 
     // Other helper functions for resources
 
@@ -76,10 +77,11 @@ namespace nmos
 
     bool has_resource(const resources& resources, const std::pair<id, type>& id_type);
 
-    // only need a non-const version so far...
+    resources::const_iterator find_resource(const resources& resources, const std::pair<id, type>& id_type);
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type);
 
     // strictly, this just returns a node (or the end iterator)
+    resources::const_iterator find_self_resource(const resources& resources);
     resources::iterator find_self_resource(resources& resources);
 
     // get the id of each resource with the specified super-resource

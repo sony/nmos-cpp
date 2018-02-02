@@ -144,7 +144,8 @@ namespace nmos
 
     // find the resource with the specified id in the specified resources (if present) and
     // set the health of the resource and all of its sub-resources, to prevent them expiring
-    void set_resource_health(resources& resources, const id& id, health health)
+    // note, since health is mutable, no need for the resources parameter to be non-const
+    void set_resource_health(const resources& resources, const id& id, health health)
     {
         auto resource = resources.find(id);
         if (resources.end() != resource)
@@ -154,7 +155,9 @@ namespace nmos
                 set_resource_health(resources, sub_resource, health);
             }
 
-            resources.modify(resource, [&health](nmos::resource& resource){ resource.health = health; });
+            // since health is mutable, no need for:
+            // resources.modify(resource, [&health](nmos::resource& resource){ resource.health = health; });
+            resource->health = health;
         }
     }
 
@@ -208,12 +211,26 @@ namespace nmos
         return resources.end() != resource && id_type.second == resource->type;
     }
 
-    // only need a non-const version so far...
+    resources::const_iterator find_resource(const resources& resources, const std::pair<id, type>& id_type)
+    {
+        if (no_resource == id_type) return resources.end();
+        auto resource = resources.find(id_type.first);
+        return resources.end() != resource && id_type.second == resource->type ? resource : resources.end();
+    }
+
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type)
     {
         if (no_resource == id_type) return resources.end();
         auto resource = resources.find(id_type.first);
         return resources.end() != resource && id_type.second == resource->type ? resource : resources.end();
+    }
+
+    // strictly, this just returns a node (or the end iterator)
+    resources::const_iterator find_self_resource(const resources& resources)
+    {
+        auto& by_type = resources.get<tags::type>();
+        auto resource = by_type.lower_bound(nmos::types::node);
+        return by_type.upper_bound(nmos::types::node) != resource ? resources.iterator_to(*resource) : resources.end();
     }
 
     // strictly, this just returns a node (or the end iterator)
