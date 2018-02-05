@@ -69,7 +69,7 @@ namespace web
                     for (; routes.end() != route; ++route)
                     {
                         utility::smatch_t route_match;
-                        if (route_regex_match(path, route_match, utility::regex_t(route->route_pattern.first), route->flags))
+                        if (route_regex_match(path, route_match, route->route_pattern.first, route->flags))
                         {
                             // route_path for this route handler is constructed by appending the entire matching expression
                             const auto merged_path = route_path + route_match.str();
@@ -173,7 +173,8 @@ namespace web
 
                 api_router::iterator api_router::insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
                 {
-                    return routes.insert(where, { flags, utility::parse_regex_named_sub_matches(route_pattern), method, handler });
+                    auto parsed = utility::parse_regex_named_sub_matches(route_pattern);
+                    return routes.insert(where, { flags, { utility::regex_t(parsed.first), parsed.second }, method, handler });
                 }
 
                 route_parameters api_router::get_parameters(const utility::named_sub_matches_t& parameter_sub_matches, const utility::smatch_t& route_match)

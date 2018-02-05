@@ -72,7 +72,8 @@ namespace web
 
                 private:
                     enum match_flag_type { match_entire = 0, match_prefix = 1 };
-                    struct route { match_flag_type flags; utility::regex_named_sub_matches_t route_pattern; web::http::method method; route_handler handler; };
+                    typedef std::pair<utility::regex_t, utility::named_sub_matches_t> regex_named_sub_matches_type;
+                    struct route { match_flag_type flags; regex_named_sub_matches_type route_pattern; web::http::method method; route_handler handler; };
                     typedef std::list<route> route_handlers;
                     typedef route_handlers::iterator iterator;
 

@@ -19,7 +19,7 @@ namespace nmos
             // See https://tools.ietf.org/html/rfc6335#section-5.1
             // "The transport protocol(s) [...] is currently limited to one or more of TCP, UDP, SCTP, and DCCP."
             // See https://tools.ietf.org/html/rfc6335#section-8.1.1
-            const nmos::route_pattern mdnsServiceType = make_route_pattern(U("mdnsServiceType"), U("_([0-9]-?)*[A-Z-a-z](-?[A-Za-z0-9])*\\._(tcp|udp|sctp|dccp)"));
+            const nmos::route_pattern mdnsServiceType = make_route_pattern(U("mdnsServiceType"), U("_([0-9]{1,}-?)*[A-Za-z](-?[A-Za-z0-9])*\\._(tcp|udp|sctp|dccp)"));
 
             // A service (instance) name (regex could be better!)
             const nmos::route_pattern mdnsServiceName = make_route_pattern(U("mdnsServiceName"), U(".{1,63}"));
