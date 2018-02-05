@@ -25,7 +25,9 @@ set(CMAKE_MODULE_PATH
 # guard against in-source builds and bad build-type strings
 include(safeguards)
 
-# find cpprestsdk
+# find dependencies
+
+# cpprestsdk
 # note: 2.10.0 minimum but there's no cpprestsdk-configVersion.cmake
 # and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk::cpprest
 find_package(cpprestsdk REQUIRED NAMES cpprestsdk cpprest)
@@ -34,7 +36,7 @@ if(cpprestsdk_FOUND)
 endif()
 get_target_property(CPPREST_INCLUDE_DIR cpprestsdk::cpprest INTERFACE_INCLUDE_DIRECTORIES)
 
-# find websocketpp
+# websocketpp
 # note: good idea to use same version as cpprestsdk was built with!
 if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
     message(STATUS "Using configured websocketpp include directory at " ${WEBSOCKETPP_INCLUDE_DIR})
@@ -46,11 +48,12 @@ else()
     endif()
 endif()
 
-# find boost
-# note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
-find_package(Boost 1.54.0 REQUIRED COMPONENTS system date_time)
+# boost
+# note: some components are only required for one platform or other
+set(FIND_BOOST_COMPONENTS system date_time regex)
 
-# set platform-specific variables for dependencies
+# platform-specific dependencies
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find bonjour (for mdns_static)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
@@ -59,9 +62,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # add dependency required by nmos/filesystem_route.cpp
     if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
         set (PLATFORM_LIBS -lstdc++fs)
+    else()
+        list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
-    # otherwise may need find_package(Boost REQUIRED COMPONENTS filesystem)?
 endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find bonjour (for mdns_static)
     set (BONJOUR_INCLUDE "${PROJECT_SOURCE_DIR}/../../Bonjour SDK/Include")
@@ -81,6 +86,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # does one of our dependencies result in needing to do this?
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
 endif()
+
+# since std::shared_mutex is not available until C++17
+list(APPEND FIND_BOOST_COMPONENTS thread)
+add_definitions(/DBST_SHARED_MUTEX_BOOST)
+
+# find boost
+# note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
+find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -165,6 +178,7 @@ set(NMOS_CPP_NODE_BST_SOURCES
     )
 set(NMOS_CPP_NODE_BST_HEADERS
     bst/regex.h
+    bst/shared_mutex.h
     )
 
 set(NMOS_CPP_NODE_CPPREST_SOURCES
@@ -292,6 +306,7 @@ set(NMOS_CPP_REGISTRY_BST_SOURCES
 set(NMOS_CPP_REGISTRY_BST_HEADERS
     bst/filesystem.h
     bst/regex.h
+    bst/shared_mutex.h
     )
 
 set(NMOS_CPP_REGISTRY_CPPREST_SOURCES
