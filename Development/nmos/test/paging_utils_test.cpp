@@ -336,7 +336,7 @@ BST_TEST_CASE(testCursorBasedPagingSingleResource)
 {
     resources resources{ 13 };
 
-    // resources.siz() == 1
+    // resources.size() == 1
     {
         // Request
         resource_paging paging(resources);

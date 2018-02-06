@@ -245,6 +245,7 @@ namespace nmos
         std::vector<web::json::value> events;
 
         // resources are traversed in order of increasing creation timestamp, so that events for super-resources are inserted before events for sub-resources
+        // (assuming not out-of-order insertion by the allow_invalid_resources setting, hmm)
         auto& by_created = resources.get<tags::created>();
         for (const auto& resource : by_created | boost::adaptors::reversed)
         {

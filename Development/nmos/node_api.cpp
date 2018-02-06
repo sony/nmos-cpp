@@ -7,7 +7,7 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, nmos::mutex & mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate);
 
     web::http::experimental::listener::api_router make_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
