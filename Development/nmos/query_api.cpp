@@ -255,10 +255,11 @@ namespace nmos
                     }
 
                     // search for a matching existing subscription
-                    resources::iterator resource = std::find_if(model.resources.begin(), model.resources.end(), [&req_host, &version, &data](const resources::value_type& resource)
+                    auto& by_type = model.resources.get<tags::type>();
+                    const auto subscriptions = by_type.equal_range(nmos::types::subscription);
+                    auto resource = std::find_if(subscriptions.first, subscriptions.second, [&req_host, &version, &data](const resources::value_type& resource)
                     {
                         return version == resource.version
-                            && nmos::types::subscription == resource.type
                             && nmos::fields::max_update_rate_ms(data) == nmos::fields::max_update_rate_ms(resource.data)
                             && nmos::fields::persist(data) == nmos::fields::persist(resource.data)
                             && (nmos::is04_versions::v1_0 == version || nmos::fields::secure(data) == nmos::fields::secure(resource.data))
@@ -268,7 +269,7 @@ namespace nmos
                             // (which, let's approximate by checking the host matches)
                             && req_host == web::uri(nmos::fields::ws_href(resource.data)).host();
                     });
-                    const bool creating = model.resources.end() == resource;
+                    const bool creating = subscriptions.second == resource;
 
                     if (creating)
                     {

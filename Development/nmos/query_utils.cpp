@@ -268,10 +268,12 @@ namespace nmos
 
         if (!details::is_queryable_resource(type)) return;
 
-        for (const auto& subscription : resources)
+        auto& by_type = resources.get<tags::type>();
+        const auto subscriptions = by_type.equal_range(nmos::types::subscription);
+        for (auto it = subscriptions.first; subscriptions.second != it; ++it)
         {
             // for each subscription
-            if (nmos::types::subscription != subscription.type) continue;
+            const auto& subscription = *it;
 
             // check whether the resource_path matches the resource type and the query parameters match either the "pre" or "post" resource
 

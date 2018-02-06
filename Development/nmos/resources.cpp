@@ -229,16 +229,16 @@ namespace nmos
     resources::const_iterator find_self_resource(const resources& resources)
     {
         auto& by_type = resources.get<tags::type>();
-        auto resource = by_type.lower_bound(nmos::types::node);
-        return by_type.upper_bound(nmos::types::node) != resource ? resources.iterator_to(*resource) : resources.end();
+        const auto nodes = by_type.equal_range(nmos::types::node);
+        return nodes.second != nodes.first ? resources.project<0>(nodes.first) : resources.end();
     }
 
     // strictly, this just returns a node (or the end iterator)
     resources::iterator find_self_resource(resources& resources)
     {
         auto& by_type = resources.get<tags::type>();
-        auto resource = by_type.lower_bound(nmos::types::node);
-        return by_type.upper_bound(nmos::types::node) != resource ? resources.iterator_to(*resource) : resources.end();
+        const auto nodes = by_type.equal_range(nmos::types::node);
+        return nodes.second != nodes.first ? resources.project<0>(nodes.first) : resources.end();
     }
 
     // get the id of each resource with the specified super-resource
