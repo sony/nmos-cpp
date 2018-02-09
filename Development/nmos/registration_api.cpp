@@ -116,6 +116,9 @@ namespace nmos
 
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
+                // note that, as elsewhere, as a minimum, schema validity is assumed;
+                // json_exceptions are handled by the exception handler added by add_api_finally_handler
+
                 nmos::type type = { nmos::fields::type(body) };
                 value data = nmos::fields::data(body);
                 nmos::id id = nmos::fields::id(data);
@@ -134,80 +137,107 @@ namespace nmos
                 const auto super_id_type = nmos::get_super_resource(data, type);
                 valid = valid && (creating || nmos::get_super_resource(resource->data, resource->type) == super_id_type);
 
+                // the super-resource must exist in this registry
+
                 auto super_resource = nmos::find_resource(model.resources, super_id_type);
                 const bool valid_super_resource = model.resources.end() != super_resource;
+                const std::pair<nmos::id, nmos::type> no_resource{};
+
+                if (no_resource == super_id_type) // i.e. just nodes, basically
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id;
+                else if (valid_super_resource)
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id << " on " << super_id_type.second.name << ": " << super_id_type.first;
+                else // if (!valid_super_resource)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id << " on unknown " << super_id_type.second.name << ": " << super_id_type.first;
+
+                valid = valid && (no_resource == super_id_type || valid_super_resource);
 
                 if (nmos::types::node == type)
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for node: " << id;
+                    // no extra validation yet
                 }
                 else if (nmos::types::device == type)
                 {
-                    valid = valid && valid_super_resource;
-
-                    if (!valid_super_resource)
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " on unknown node: " << nmos::fields::node_id(data);
-                    else
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " on node: " << nmos::fields::node_id(data);
-
                     // "The 'senders' and 'receivers' arrays in a Device have been deprecated, but will continue to be present until v2.0."
                     // Therefore, issue warnings rather than errors here and don't worry too much about other issues such as whether to
                     // merge senders and receivers with existing device if present?
                     // or remove previous senders and receivers?
                     // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/24
 
-                    for (auto& sender_id : nmos::fields::senders(data))
+                    for (auto& element : nmos::fields::senders(data))
                     {
-                        const bool valid_sender = nmos::has_resource(model.resources, { sender_id.as_string(), nmos::types::sender });
-                        valid = valid && valid_sender;
-                        if (!valid_sender) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown sender: " << sender_id.as_string();
+                        const auto& sender_id = element.as_string();
+                        const bool valid_sender = nmos::has_resource(model.resources, { sender_id, nmos::types::sender });
+                        if (!valid_sender) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown sender: " << sender_id;
                     }
 
-                    for (auto& receiver_id : nmos::fields::receivers(data))
+                    for (auto& element : nmos::fields::receivers(data))
                     {
-                        const bool valid_receiver = nmos::has_resource(model.resources, { receiver_id.as_string(), nmos::types::receiver });
-                        valid = valid && valid_receiver;
-                        if (!valid_receiver) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown receiver: " << receiver_id.as_string();
+                        const auto& receiver_id = element.as_string();
+                        const bool valid_receiver = nmos::has_resource(model.resources, { receiver_id, nmos::types::receiver });
+                        if (!valid_receiver) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for device: " << id << " with unknown receiver: " << receiver_id;
                     }
                 }
                 else if (nmos::types::source == type)
                 {
-                    valid = valid && valid_super_resource;
-
-                    if (!valid_super_resource)
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for source: " << id << " on unknown device: " << nmos::fields::device_id(data);
-                    else
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for source: " << id << " on device: " << nmos::fields::device_id(data);
+                    // the parent sources might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
+                    for (auto& element : nmos::fields::parents(data))
+                    {
+                        const auto& source_id = element.as_string();
+                        const bool valid_parent = nmos::has_resource(model.resources, { source_id, nmos::types::source });
+                        if (!valid_parent) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for source: " << id << " with unknown parent source: " << source_id;
+                    }
                 }
                 else if (nmos::types::flow == type)
                 {
-                    valid = valid && valid_super_resource;
+                    // v1.1 introduced device_id for flow
+                    if (nmos::is04_versions::v1_1 <= version)
+                    {
+                        const auto& device_id = nmos::fields::device_id(data);
+                        const bool valid_device = nmos::has_resource(model.resources, { device_id, nmos::types::device });
+                        if (!valid_device) slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for flow: " << id << " on unknown device: " << device_id;
+                        valid = valid && valid_device;
+                    }
 
-                    if (!valid_super_resource)
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for flow: " << id << " on unknown source: " << nmos::fields::source_id(data);
-                    else
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for flow: " << id << " on source: " << nmos::fields::source_id(data);
+                    // the parent flows might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
+                    for (auto& element : nmos::fields::parents(data))
+                    {
+                        const auto& flow_id = element.as_string();
+                        const bool valid_parent = nmos::has_resource(model.resources, { flow_id, nmos::types::flow });
+                        if (!valid_parent) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for flow: " << id << " with unknown parent flow: " << flow_id;
+                    }
                 }
                 else if (nmos::types::sender == type)
                 {
-                    const bool valid_flow = nmos::has_resource(model.resources, { nmos::fields::flow_id(data), nmos::types::flow });
-                    valid = valid && valid_super_resource && valid_flow;
-
-                    if (!valid_super_resource || !valid_flow)
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for sender: " << id << " on " << (valid_super_resource ? "device" : "unknown device") << ": " << nmos::fields::device_id(data) << " of " << (valid_flow ? "flow" : "unknown flow") << ": " << nmos::fields::flow_id(data);
+                    const auto& flow_id = nmos::fields::flow_id(data);
+                    const bool valid_flow = nmos::has_resource(model.resources, { flow_id, nmos::types::flow });
+                    if (!valid_flow)
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for sender: " << id << " of unknown flow: " << flow_id;
                     else
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for sender: " << id << " on device: " << nmos::fields::device_id(data) << " of flow: " << nmos::fields::flow_id(data);
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for sender: " << id << " of flow: " << flow_id;
+                    valid = valid && valid_flow;
+
+                    // v1.2 introduced subscription for sender
+                    if (nmos::is04_versions::v1_2 <= version)
+                    {
+                        // the receiver might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
+                        const value& receiver_id = nmos::fields::receiver_id(nmos::fields::subscription(data));
+                        const bool valid_receiver = receiver_id.is_null() || nmos::has_resource(model.resources, { receiver_id.as_string(), nmos::types::receiver });
+                        if (!valid_receiver)
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for sender: " << id << " subscribed to unknown receiver: " << receiver_id.as_string();
+                        else
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for sender: " << id << " subscribed to receiver: " << receiver_id.serialize();
+                    }
                 }
                 else if (nmos::types::receiver == type)
                 {
-                    const value sender_id = nmos::fields::sender_id(nmos::fields::subscription(data));
+                    // the sender might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
+                    const value& sender_id = nmos::fields::sender_id(nmos::fields::subscription(data));
                     const bool valid_sender = sender_id.is_null() || nmos::has_resource(model.resources, { sender_id.as_string(), nmos::types::sender });
-                    valid = valid && valid_super_resource && valid_sender;
-
-                    if (!valid_super_resource || !valid_sender)
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for receiver: " << id << " on " << (valid_super_resource ? "device" : "unknown device") << ": " << nmos::fields::device_id(data) << " subscribed to " << (valid_sender ? "sender" : "unknown sender") << ": " << sender_id.serialize();
+                    if (!valid_sender)
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for receiver: " << id << " subscribed to unknown sender: " << sender_id.as_string();
                     else
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for receiver: " << id << " on device: " << nmos::fields::device_id(data) << " subscribed to sender: " << sender_id.serialize();
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for receiver: " << id << " subscribed to sender: " << sender_id.serialize();
                 }
                 else // bad type
                 {

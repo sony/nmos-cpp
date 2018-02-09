@@ -49,7 +49,6 @@ int main(int argc, char* argv[])
     // Settings can be passed on the command-line, and some may be changed dynamically by POST to /settings/all on the Settings API
     //
     // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
-    // * "allow_invalid_resources": boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
     //
     // E.g.
     //
@@ -73,7 +72,6 @@ int main(int argc, char* argv[])
 
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     level = nmos::fields::logging_level(registry_model.settings); // synchronize atomic value with settings
-    web::json::insert(registry_model.settings, std::make_pair(nmos::fields::allow_invalid_resources, web::json::value::boolean(true)));
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
     const auto host_addresses = web::http::experimental::host_addresses(nmos::fields::host_name(registry_model.settings));
     if (!host_addresses.empty())
