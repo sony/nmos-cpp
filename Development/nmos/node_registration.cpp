@@ -181,16 +181,31 @@ namespace nmos
                 grain.updated = strictly_increasing_update(model.resources);
             });
 
-            // this would be the place to handle the registration uri in the settings having changed...
+            // this would be the place to handle e.g. the registration uri in the settings having changed...
 
             // issue the registration requests, without the lock on the resources and settings
             details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+
             for (auto& event : events.as_array())
             {
-                // for the moment, just log and ignore http exceptions... should really retry, or select an alternative registry
+                // need to implement specified handling of error conditions
+                // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
+                // for the moment, just log http exceptions...
                 try
                 {
                     details::request_registration(client, registry_version, event, gate);
+
+                    const auto& path = event.at(U("path")).as_string();
+                    auto slash = path.find('/'); // assert utility::string_t::npos != slash
+                    nmos::type type = nmos::type_from_resourceType(path.substr(0, slash));
+                    nmos::id id = path.substr(slash + 1);
+
+                    if (nmos::types::node == type)
+                    {
+                        // set the health of the node, to trigger the heartbeat thread
+                        nmos::read_lock lock(mutex);
+                        set_resource_health(model.resources, id);
+                    }
                 }
                 catch (const web::http::http_exception& e)
                 {
@@ -223,11 +238,13 @@ namespace nmos
             const auto id = resource->id;
             set_resource_health(model.resources, id);
 
-            // this would be the place to handle the registration uri in the settings having changed...
+            // this would be the place to handle e.g. the registration uri in the settings having changed...
 
             // issue the registration heartbeat, without the lock on the resources and settings
             details::reverse_lock_guard<nmos::read_lock> unlock{ lock };
-            // for the moment, just log and ignore http exceptions... should really retry, and/or force re-registration
+
+            // need to implement specified handling of error conditions
+            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
             try
             {
                 details::update_node_health(client, registry_version, id, gate);
