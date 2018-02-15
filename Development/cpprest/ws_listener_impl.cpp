@@ -225,6 +225,12 @@ namespace web
                                     server.get_alog().write(websocketpp::log::alevel::app, "listening with IPv6 failed; retrying with IPv4 only");
                                     server.listen(boost::asio::ip::tcp::v4(), (uint16_t)port);
                                 }
+                                // otherwise treat any error as usual
+                                else if (ec)
+                                {
+                                    throw websocketpp::exception(ec);
+                                }
+
                                 server.start_accept();
                             }
                             catch (const websocketpp::exception& e)
