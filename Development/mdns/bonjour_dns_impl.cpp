@@ -263,6 +263,7 @@ PRAGMA_WARNING_POP
         {
             resolved.host_name = hosttarget;
             slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceResolve, get address for host: " << resolved.host_name;
+            // if we used DNSServiceGetAddrInfo here, it would handle the suffix itself?
             const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(resolved.host_name)));
             if (!ip_addresses.empty())
             {

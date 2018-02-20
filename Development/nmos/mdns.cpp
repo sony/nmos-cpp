@@ -121,11 +121,17 @@ namespace nmos
             return details::service_base_name(service) + "_" + utility::us2s(nmos::fields::host_address(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings)));
         }
 
+        std::string qualified_host_name(const std::string& host_name)
+        {
+            // if an explicit host_hame has been specified, and is only a single label, generate the appropriate multicast .local domain name
+            return !host_name.empty() && std::string::npos == host_name.find('.') ? host_name + ".local" : host_name;
+        }
+
         // helper function for registering the specified service (API)
         void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
         {
             // explicitly specify a host_name to enable running on a Mininet host
-            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, utility::us2s(nmos::fields::host_name(settings)), mdns::make_txt_records(records));
+            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, qualified_host_name(utility::us2s(nmos::fields::host_name(settings))), mdns::make_txt_records(records));
         }
 
         // helper function for resolving the highest priority instance of the specified service (API)
