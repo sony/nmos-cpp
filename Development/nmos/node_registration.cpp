@@ -77,7 +77,7 @@ namespace nmos
                 });
 
                 // block and wait for the response
-                auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/resource/"), body).get();
+                auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/resource"), body).get();
 
                 if (web::http::status_codes::OK == response.status_code())
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << type.name << ": " << id;
@@ -93,7 +93,7 @@ namespace nmos
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << type.name << ": " << id;
 
                 // block and wait for the response
-                auto response = client.request(web::http::methods::DEL, make_api_version(registry_version) + U("/resource/") + path).get();
+                auto response = client.request(web::http::methods::DEL, make_api_version(registry_version) + U("/resource") + path).get();
 
                 if (web::http::status_codes::NoContent == response.status_code())
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
