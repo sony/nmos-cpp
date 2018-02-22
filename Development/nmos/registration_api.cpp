@@ -103,7 +103,7 @@ namespace nmos
 
         registration_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("resource/"), JU("health/") }));
+            set_reply(res, status_codes::OK, value_of({ JU("resource"), JU("health") }));
             return pplx::task_from_result(true);
         });
 
