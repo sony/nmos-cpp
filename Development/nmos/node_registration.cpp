@@ -77,7 +77,10 @@ namespace nmos
                 });
 
                 // block and wait for the response
-                auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/resource/"), body).get();
+
+                // No trailing slash on the URL
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/15
+                auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/resource"), body).get();
 
                 if (web::http::status_codes::OK == response.status_code())
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << type.name << ": " << id;
@@ -93,6 +96,7 @@ namespace nmos
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << type.name << ": " << id;
 
                 // block and wait for the response
+
                 auto response = client.request(web::http::methods::DEL, make_api_version(registry_version) + U("/resource/") + path).get();
 
                 if (web::http::status_codes::NoContent == response.status_code())
@@ -107,6 +111,7 @@ namespace nmos
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting heartbeat for node " << id;
 
             // block and wait for the response
+
             auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/health/nodes/") + id).get();
 
             // Check response to see if re-registration is required!
