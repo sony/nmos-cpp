@@ -80,8 +80,9 @@ namespace nmos
         // helper function for registering the specified service (API)
         void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records = make_txt_records());
 
-        // helper function for resolving the highest priority instance of the specified service (API)
-        web::uri resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver = nmos::is04_versions::all);
+        // helper function for resolving instances of the specified service (API)
+        // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver = nmos::is04_versions::all, bool randomize = true);
     }
 }
 

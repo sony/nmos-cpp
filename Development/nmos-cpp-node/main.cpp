@@ -95,10 +95,11 @@ int main(int argc, char* argv[])
     // Discover a Registration API
 
     std::unique_ptr<mdns::service_discovery> discovery = mdns::make_discovery(gate);
-    web::uri registration_uri = nmos::experimental::resolve_service(*discovery, nmos::service_types::registration);
+    auto registration_services = nmos::experimental::resolve_service(*discovery, nmos::service_types::registration);
 
-    if (!registration_uri.is_empty())
+    if (!registration_services.empty())
     {
+        auto registration_uri = registration_services.begin()->second;
         node_model.settings[nmos::fields::registry_address] = web::json::value::string(registration_uri.host());
         node_model.settings[nmos::fields::registration_port] = registration_uri.port();
         node_model.settings[nmos::fields::registry_version] = web::json::value::string(web::uri::split_path(registration_uri.path()).back());

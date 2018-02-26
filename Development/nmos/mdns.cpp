@@ -1,5 +1,6 @@
 #include "nmos/mdns.h"
 
+#include <random>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/filtered.hpp>
@@ -134,8 +135,35 @@ namespace nmos
             advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, qualified_host_name(utility::us2s(nmos::fields::host_name(settings))), mdns::make_txt_records(records));
         }
 
-        // helper function for resolving the highest priority instance of the specified service (API)
-        web::uri resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver)
+        namespace details
+        {
+            // this isn't a proper SeedSequence because two instances of random_device aren't going to produce the same values
+            // so the constructors, and size and param member functions are provided only to meet the syntactic requirements
+            class seed_generator
+            {
+            public:
+                seed_generator() {}
+                template <typename InputIterator> seed_generator(InputIterator first, InputIterator last) {}
+                template <typename T> seed_generator(const std::initializer_list<T>&) {}
+
+                template <typename RandomAccessorIterator>
+                void generate(const RandomAccessorIterator first, const RandomAccessorIterator last)
+                {
+                    std::uniform_int_distribution<std::uint32_t> uint32s;
+                    std::generate(first, last, [&] { return uint32s(device); });
+                }
+
+                size_t size() const { return 0; }
+                template <typename OutputIterator> void param(OutputIterator) {}
+
+            private:
+                std::random_device device;
+            };
+        }
+
+        // helper function for resolving instances of the specified service (API)
+        // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver, bool randomize)
         {
             std::vector<mdns::service_discovery::browse_result> browsed;
             discovery.browse(browsed, service);
@@ -143,6 +171,16 @@ namespace nmos
             // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri),
             // filtering out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#registration
+
+            if (randomize)
+            {
+                // "The Node selects a Registration API to use based on the priority, and a random selection if multiple Registration APIs
+                // with the same priority are identified."
+                // Therefore shuffle the browse results before inserting any into the resulting priority queue... 
+                details::seed_generator seeder;
+                std::shuffle(browsed.begin(), browsed.end(), std::default_random_engine(seeder));
+            }
+
             std::multimap<service_priority, web::uri> by_priority;
             for (auto& resolving : browsed)
             {
@@ -175,10 +213,7 @@ namespace nmos
                 }
             }
 
-            // "The Node selects a Registration API to use based on the priority, and a random selection if multiple Registration APIs
-            // with the same priority are identified."
-            // For now, return the first discovered when multiple instances with the same priority are identified...
-            return by_priority.empty() ? web::uri{} : by_priority.begin()->second;
+            return by_priority;
         }
     }
 }
