@@ -56,20 +56,24 @@ namespace nmos
         void request_registration(web::http::client::http_client& client, const nmos::api_version& registry_version, const web::json::value& event, slog::base_gate& gate)
         {
             const auto& path = event.at(U("path")).as_string();
-            const auto& data = event.at(U("post"));
-
             auto slash = path.find('/'); // assert utility::string_t::npos != slash
             nmos::type type = nmos::type_from_resourceType(path.substr(0, slash));
             nmos::id id = path.substr(slash + 1);
 
-            if (!data.is_null())
-            {
-                // 'create' or 'update'
-                const bool creation = event.at(U("pre")) == data;
+            // for more information on resource events see
+            // https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.2.%20Behaviour%20-%20Querying.md
+            const bool has_pre = event.has_field(U("pre"));
+            const bool has_post = event.has_field(U("post"));
+            const bool deletion = has_pre && !has_post;
 
+            if (!deletion)
+            {
+                // 'create' or 'update' or 'sync'
+                const bool creation = !has_pre && has_post;
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration " << (creation ? "creation" : "update") << " for " << type.name << ": " << id;
 
                 // a downgrade is required if the registry version is lower than this resource's version
+                const auto& data = event.at(U("post"));
                 auto body = web::json::value_of(
                 {
                     { U("type"), web::json::value::string(type.name) },
