@@ -125,6 +125,7 @@ namespace nmos
         std::string qualified_host_name(const std::string& host_name)
         {
             // if an explicit host_hame has been specified, and is only a single label, generate the appropriate multicast .local domain name
+            // or perhaps discovering the "default domain(s)", e.g. by using the DNSServiceEnumerationDomains API, would be better?
             return !host_name.empty() && std::string::npos == host_name.find('.') ? host_name + ".local" : host_name;
         }
 

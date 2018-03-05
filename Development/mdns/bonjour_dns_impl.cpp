@@ -6,9 +6,88 @@
 #include "cpprest/host_utils.h"
 #include "slog/all_in_one.h"
 
-#ifdef __linux__
+#ifdef _WIN32
+// winsock2.h provides htons
+#else
+// POSIX
 #include <arpa/inet.h> // for htons
 #endif
+
+#ifdef _WIN32
+// "Porting Socket Applications to Winsock" is a useful reference
+// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms740096(v=vs.85).aspx
+#else
+// POSIX
+#include <poll.h>
+#endif
+
+// dnssd_sock_t was added relatively recently (765.1.2)
+typedef decltype(DNSServiceRefSockFD(NULL)) DNSServiceRefSockFD_t;
+
+#ifdef _WIN32
+static inline bool dnssd_SocketValid(DNSServiceRefSockFD_t fd) { return fd != INVALID_SOCKET; }
+#else
+static inline bool dnssd_SocketValid(DNSServiceRefSockFD_t fd) { return fd >= 0; }
+#endif
+
+// Wait for a DNSServiceRef to become ready for at most timeout milliseconds (which may be zero)
+// Don't use select, which is the recommended practice, to avoid problems with file descriptors
+// greater than or equal to FD_SETSIZE.
+// See https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult
+static DNSServiceErrorType DNSServiceWaitForReply(DNSServiceRef sdRef, int timeout_millis)
+{
+    DNSServiceRefSockFD_t fd = DNSServiceRefSockFD(sdRef);
+    if (!dnssd_SocketValid(fd))
+    {
+        return kDNSServiceErr_BadParam;
+    }
+
+#ifdef _WIN32
+    // FD_SETSIZE doesn't present the same limitation on Windows because it controls the
+    // maximum number of file descriptors in the set, not the largest supported value
+    // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms740142(v=vs.85).aspx
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+PRAGMA_WARNING_PUSH
+PRAGMA_WARNING_DISABLE_CONDITIONAL_EXPRESSION_IS_CONSTANT
+    FD_SET(fd, &readfds);
+PRAGMA_WARNING_POP
+
+    // wait for up to timeout milliseconds (converted to secs and usecs)
+    struct timeval tv{ timeout_millis / 1000, (timeout_millis % 1000) * 1000 };
+    // first parameter is ignored on Windows but required e.g. on Linux
+    int res = select((int)fd + 1, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
+#else
+    // Use poll in order to be able to wait for a file descriptor larger than FD_SETSIZE
+    pollfd pfd_read{ fd, POLLIN, 0 };
+    int res = poll(&pfd_read, 1, timeout_millis);
+#endif
+
+    // both select and poll return values as follows...
+    if (res < 0)
+    {
+        // WSAGetLastError/errno would give more info
+        return kDNSServiceErr_Unknown;
+    }
+    else if (res == 0)
+    {
+        // timeout has expired
+        return kDNSServiceErr_Timeout;
+    }
+    else
+    {
+        return kDNSServiceErr_NoError;
+    }
+}
+
+// Read a reply from the daemon, calling the appropriate application callback
+// This call will block for at most timeout milliseconds.
+static DNSServiceErrorType DNSServiceProcessResult(DNSServiceRef sdRef, int timeout_millis)
+{
+    DNSServiceErrorType errorCode = DNSServiceWaitForReply(sdRef, timeout_millis);
+    return errorCode == kDNSServiceErr_NoError ? DNSServiceProcessResult(sdRef) : errorCode;
+}
 
 namespace mdns
 {
@@ -91,7 +170,7 @@ namespace mdns
     {
         bool result = false;
 
-        // try and find a record that matches
+        // try to find a record that matches
         for (const auto& service : m_services)
         {
             if (service.name == name && service.type == type && service.domain == domain)
@@ -160,40 +239,21 @@ namespace mdns
 
         if (errorCode == kDNSServiceErr_NoError)
         {
-            int socketId = DNSServiceRefSockFD(client);
-            int nfds = socketId + 1; // ignored parameter on Windows but required e.g. on Linux
-
-            fd_set readfds;
-            FD_ZERO(&readfds);
-PRAGMA_WARNING_PUSH
-PRAGMA_WARNING_DISABLE_CONDITIONAL_EXPRESSION_IS_CONSTANT
-            FD_SET(socketId, &readfds);
-PRAGMA_WARNING_POP
-
             do
             {
-                // only select to wait for results if we know there are none available
-                if (!m_more_coming)
-                {
-                    long wait_secs = (long)std::chrono::duration_cast<std::chrono::seconds>(absolute_timeout - std::chrono::system_clock::now()).count();
+                // wait for up to timeout seconds for a response
+                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
-                    // wait for up to timeout seconds for a response
-                    struct timeval tv{ wait_secs, 0 };
-                    int res = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
-
-                    if (res <= 0)
-                    {
-                        // timeout has expired or there was an error, so we need to stop waiting for results
-                        break;
-                    }
-                }
-
-                // get the browse response
-                errorCode = DNSServiceProcessResult(client);
+                // get the next browse response
+                errorCode = DNSServiceProcessResult(client, wait_millis);
 
                 if (errorCode == kDNSServiceErr_NoError)
                 {
                     // callback called, potentially more results coming
+                }
+                else if (errorCode == kDNSServiceErr_Timeout)
+                {
+                    break;
                 }
                 else
                 {
@@ -292,33 +352,20 @@ PRAGMA_WARNING_POP
 
         if (errorCode == kDNSServiceErr_NoError)
         {
-            int socketId = DNSServiceRefSockFD(client);
-            int nfds = socketId + 1; // ignored parameter on Windows but required e.g. on Linux
+            // wait for the resolve response
+            errorCode = DNSServiceProcessResult(client, (int)timeout_secs * 1000);
 
-            fd_set readfds;
-            FD_ZERO(&readfds);
-PRAGMA_WARNING_PUSH
-PRAGMA_WARNING_DISABLE_CONDITIONAL_EXPRESSION_IS_CONSTANT
-            FD_SET(socketId, &readfds);
-PRAGMA_WARNING_POP
-
-            // wait for up to timeout seconds for a response
-            struct timeval tv{ timeout_secs, 0 };
-            int res = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
-
-            if (res > 0)
+            if (errorCode == kDNSServiceErr_NoError)
             {
-                // wait for the resolve response
-                errorCode = DNSServiceProcessResult(client);
-
-                if (errorCode == kDNSServiceErr_NoError)
-                {
-                    // callback called
-                }
-                else
-                {
-                    slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult reported error: " << errorCode;
-                }
+                // callback called
+            }
+            else if (errorCode == kDNSServiceErr_Timeout)
+            {
+                // timeout expired
+            }
+            else
+            {
+                slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult reported error: " << errorCode;
             }
 
             DNSServiceRefDeallocate(client);
