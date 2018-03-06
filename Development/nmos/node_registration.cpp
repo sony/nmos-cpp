@@ -56,20 +56,27 @@ namespace nmos
         void request_registration(web::http::client::http_client& client, const nmos::api_version& registry_version, const web::json::value& event, slog::base_gate& gate)
         {
             const auto& path = event.at(U("path")).as_string();
-            const auto& data = event.at(U("post"));
-
             auto slash = path.find('/'); // assert utility::string_t::npos != slash
             nmos::type type = nmos::type_from_resourceType(path.substr(0, slash));
             nmos::id id = path.substr(slash + 1);
 
-            if (!data.is_null())
-            {
-                // 'create' or 'update'
-                const bool creation = event.at(U("pre")) == data;
+            const resource_event_type event_type = get_resource_event_type(event);
 
+            // An 'added' event calls for registration creation, i.e. a POST request with a 201 'Created' response (200 'OK' is unexpected)
+            // A 'removed' event, calls for registration deletion, i.e. a DELETE request
+            // A 'modified' event calls for a registration update, i.e. a POST request with a 200 'OK' response (201 'Created'is unexpected)
+            // A 'sync' event is the call for registration creation when first interacting with a registry
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml
+            const bool creation = resource_added_event == event_type || resource_unchanged_event == event_type;
+            const bool update = resource_modified_event == event_type;
+            const bool deletion = resource_removed_event == event_type;
+
+            if (creation || update)
+            {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration " << (creation ? "creation" : "update") << " for " << type.name << ": " << id;
 
                 // a downgrade is required if the registry version is lower than this resource's version
+                const auto& data = event.at(U("post"));
                 auto body = web::json::value_of(
                 {
                     { U("type"), web::json::value::string(type.name) },
@@ -82,6 +89,9 @@ namespace nmos
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/15
                 auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/resource"), body).get();
 
+                // need to implement specified handling of error conditions, including unexpected type of success
+                // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
+
                 if (web::http::status_codes::OK == response.status_code())
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << type.name << ": " << id;
                 else if (web::http::status_codes::Created == response.status_code())
@@ -89,10 +99,8 @@ namespace nmos
                 else if (web::http::is_error_status_code(response.status_code()))
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << (creation ? "creation" : "update") << " rejected for " << type.name << ": " << id;
             }
-            else
+            else if (deletion)
             {
-                // 'delete'
-
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << type.name << ": " << id;
 
                 // block and wait for the response
@@ -194,7 +202,7 @@ namespace nmos
             for (auto& event : events.as_array())
             {
                 // need to implement specified handling of error conditions
-                // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
+                // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
                 // for the moment, just log http exceptions...
                 try
                 {
@@ -249,7 +257,7 @@ namespace nmos
             details::reverse_lock_guard<nmos::read_lock> unlock{ lock };
 
             // need to implement specified handling of error conditions
-            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
+            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#error-conditions
             try
             {
                 details::update_node_health(client, registry_version, id, gate);

@@ -364,7 +364,7 @@ namespace nmos
 
                 // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
                 // on the Node's behalf in order to prevent stale entries remaining in the registry."
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
                 erase_resource(model.resources, resource->id);
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";

@@ -92,6 +92,7 @@ namespace nmos
     inline nmos::resources::index_iterator<tags::updated>::type lower_bound(const nmos::resources::index<tags::updated>::type& index, const nmos::tai& timestamp) { return index.lower_bound(timestamp); }
 
     // Helpers for constructing /subscriptions websocket grains
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.2.%20Behaviour%20-%20Querying.md
 
     // make the initial 'sync' resource events for a new grain, including all resources that match the specified version, resource path and flat query parameters
     web::json::value make_resource_events(const nmos::resources& resources, const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& params);
@@ -107,6 +108,18 @@ namespace nmos
 
     namespace details
     {
+        enum resource_event_type
+        {
+            resource_continued_nonexistence_event, // not used; neither existed previously, nor any longer (we may co-opt this for e.g. replicating health)
+            resource_added_event,
+            resource_removed_event,
+            resource_modified_event,
+            resource_unchanged_event // also known as 'sync'
+        };
+
+        // determine the type of the resource event from "pre" and "post"
+        resource_event_type get_resource_event_type(const web::json::value& event);
+
         // resource_path may be empty (matching all resource types) or e.g. "/nodes"
         web::json::value make_resource_event(const utility::string_t& resource_path, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
 
