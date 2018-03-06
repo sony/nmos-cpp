@@ -235,7 +235,7 @@ namespace nmos
                     // "NB: Default should be 'false' if the API is being presented via HTTP, and 'true' for HTTPS"
                     if (!data.has_field(nmos::fields::secure))
                     {
-                        data[nmos::fields::secure] = false; // for now, no means to detect the API protocol?
+                        data[nmos::fields::secure] = value::boolean(false); // for now, no means to detect the API protocol?
                     }
 
                     // for now, only support HTTP
