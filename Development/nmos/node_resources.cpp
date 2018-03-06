@@ -197,7 +197,7 @@ namespace nmos
 
             value subscription;
             subscription[U("receiver_id")] = value::null();
-            subscription[U("active")] = value(false);
+            subscription[U("active")] = value::boolean(false);
             data[U("subscription")] = subscription;
 
             return{ is04_versions::v1_2, types::sender, data, false };
@@ -228,7 +228,7 @@ namespace nmos
 
             value subscription;
             subscription[U("sender_id")] = value::null();
-            subscription[U("active")] = value(false);
+            subscription[U("active")] = value::boolean(false);
             data[U("subscription")] = subscription;
 
             // nmos-discovery-registration/APIs/schemas/receiver_video.json
