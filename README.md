@@ -36,23 +36,23 @@ Other open-source NMOS implementations:
 
 ### Active Development
 
-The **nmos-cpp-node** example application has been recently added, as well as cross-platform build support using CMake.
+Recent activity on the project:
+
+- Cross-platform build support using CMake
+- An initial release of the **nmos-cpp-node** example application
+- Back-end enhancements as part of the NMOS Scalability Activity
 
 In the next few weeks, we intend to bring to this repository:
 
+- Instructions for configuring a CMake toolchain for cross-compiling for embedded Linux on ARM
 - More of a unit test suite, and automated integration testing (the [AMWA NMOS Automated Testing](https://github.com/AMWA-TV/nmos-automated-testing) Activity is also a work in progress)
 - Additional documentation
-- Back-end enhancements as part of the NMOS Scalability Activity
 
 And of course, the software will continue to be updated to track the ongoing development of the NMOS specifications, and the work of the Networked Media Incubator.
 
 ## Contributing
 
-We welcome bug reports and feature requests for the implementation. These should be submitted as Issues on GitHub:
-
-- [Sign up](https://github.com/join) for GitHub if you haven't already done so.
-- Check whether someone has already submitted a similar Issue.
-- If necessary, submit a new Issue.
+We welcome bug reports, feature requests and contributions to the implementation and documentation. Please have a look at the simple [Contribution Guidelines](CONTRIBUTING.md).
 
 Thank you for your interest!
 
