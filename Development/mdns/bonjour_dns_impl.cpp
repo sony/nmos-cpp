@@ -24,6 +24,10 @@
 // dnssd_sock_t was added relatively recently (765.1.2)
 typedef decltype(DNSServiceRefSockFD(NULL)) DNSServiceRefSockFD_t;
 
+// kDNSServiceErr_Timeout was added a long time ago (320.5) but did not exist in Tiger
+// and is not defined by the Avahi compatibility layer
+static const DNSServiceErrorType kDNSServiceErr_Timeout_ = -65568;
+
 #ifdef _WIN32
 static inline bool dnssd_SocketValid(DNSServiceRefSockFD_t fd) { return fd != INVALID_SOCKET; }
 #else
@@ -73,7 +77,7 @@ PRAGMA_WARNING_POP
     else if (res == 0)
     {
         // timeout has expired
-        return kDNSServiceErr_Timeout;
+        return kDNSServiceErr_Timeout_;
     }
     else
     {
@@ -251,7 +255,7 @@ namespace mdns
                 {
                     // callback called, potentially more results coming
                 }
-                else if (errorCode == kDNSServiceErr_Timeout)
+                else if (errorCode == kDNSServiceErr_Timeout_)
                 {
                     break;
                 }
@@ -359,7 +363,7 @@ namespace mdns
             {
                 // callback called
             }
-            else if (errorCode == kDNSServiceErr_Timeout)
+            else if (errorCode == kDNSServiceErr_Timeout_)
             {
                 // timeout expired
             }
