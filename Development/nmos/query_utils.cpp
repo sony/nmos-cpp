@@ -235,6 +235,30 @@ namespace nmos
 
             return result;
         }
+
+        // determine the type of the resource event from "pre" and "post"
+        resource_event_type get_resource_event_type(const web::json::value& event)
+        {
+            const bool has_pre = event.has_field(U("pre"));
+            const bool has_post = event.has_field(U("post"));
+
+            if (!has_pre && !has_post)
+            {
+                return resource_continued_nonexistence_event;
+            }
+            else if (!has_pre && has_post)
+            {
+                return resource_added_event;
+            }
+            else if (has_pre && !has_post)
+            {
+                return resource_removed_event;
+            }
+            else // if (has_pre && has_post)
+            {
+                return event.at(U("pre")) != event.at(U("post")) ? resource_modified_event : resource_unchanged_event;
+            }
+        }
     }
 
     // make the initial 'sync' resource events for a new grain, including all resources that match the specified version, resource path and flat query parameters
