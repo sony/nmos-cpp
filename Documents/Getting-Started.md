@@ -10,7 +10,7 @@ On Linux and other platforms, the steps vary slightly.
 1. Use CMake to configure for your platform
    - Set the CMake source directory to the [Development](../Development) directory in the nmos-cpp source tree
    - Set the CMake build directory to an appropriate location, e.g. ``.../Development/build``
-   - Set CMake variables to control building nmos-cpp.
+   - Set CMake variables to control building nmos-cpp
    - On Windows:
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)

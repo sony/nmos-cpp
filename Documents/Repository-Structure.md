@@ -25,7 +25,7 @@
         The [Catch](https://github.com/philsquared/Catch) (automated test framework) single header version
       - [cmake](../Development/third_party/cmake)  
         CMake modules derived from third-party sources
-      - [mDNSResponder](../Development/third_party/mDNSResponder)
+      - [mDNSResponder](../Development/third_party/mDNSResponder)  
         Patches for the Bonjour DNS-SD implementation
 - [Documents](../Documents)  
   Documentation
