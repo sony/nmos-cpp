@@ -439,6 +439,8 @@ namespace mdns
 
             DNSServiceRefDeallocate(client);
 
+            client = nullptr;
+
             // for now, limited to IPv4
             errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, kDNSServiceProtocol_IPv4, resolved.host_name.c_str(), getaddrinfo_reply, this);
 

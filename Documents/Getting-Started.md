@@ -10,12 +10,13 @@ On Linux and other platforms, the steps vary slightly.
 1. Use CMake to configure for your platform
    - Set the CMake source directory to the [Development](../Development) directory in the nmos-cpp source tree
    - Set the CMake build directory to an appropriate location, e.g. ``.../Development/build``
-   - Set CMake variables to control building nmos-cpp:
+   - Set CMake variables to control building nmos-cpp.
+   - On Windows:
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-     - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_65_1`` to match the suggested ``b2`` command
-     - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_65_1/x64/lib`` to match the suggested ``b2`` command
+     - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_66_0`` to match the suggested ``b2`` command
+     - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_66_0/x64/lib`` to match the suggested ``b2`` command
    - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
      - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed cpprestsdk-config.cmake
      - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
@@ -25,7 +26,7 @@ On Linux and other platforms, the steps vary slightly.
 
 ## Build
 
-Open and build the generated nmos-cpp Visual Studio Solution.
+On Windows, open and build the generated nmos-cpp Visual Studio Solution.
 
 ## Run Tests
 
@@ -41,7 +42,7 @@ The output should conclude something like this:
   Total Test time (real) =  38.08 sec
 ```
 
-Note: The correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120d_2_10.dll) needs to be on the ``PATH`` or copied into the output directory.
+Note: On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120d_2_10.dll) needs to be on the ``PATH`` or copied into the output directory.
 
 ## What Next?
 

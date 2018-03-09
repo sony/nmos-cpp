@@ -9,7 +9,7 @@
     - [detail](../Development/detail)  
       Small general purpose utilties and header files to facilitate cross-platform development
     - [mdns](../Development/mdns)  
-      A simple API for mDNS Service Discovery (DNS-SD) and an implementation using the Bonjour SDK
+      A simple API for mDNS Service Discovery (DNS-SD) and an implementation using the original Bonjour *dns_sd.h* API
     - [nmos](../Development/nmos)  
       Implementations of the **NMOS Node, Registration and Query APIs, and the NMOS Connection API**
     - [nmos-cpp-node](../Development/nmos-cpp-node)  
@@ -25,5 +25,7 @@
         The [Catch](https://github.com/philsquared/Catch) (automated test framework) single header version
       - [cmake](../Development/third_party/cmake)  
         CMake modules derived from third-party sources
+      - [mDNSResponder](../Development/third_party/mDNSResponder)
+        Patches for the Bonjour DNS-SD implementation
 - [Documents](../Documents)  
   Documentation

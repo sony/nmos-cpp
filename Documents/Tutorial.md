@@ -7,13 +7,13 @@ The following instructions describe how to run the NMOS Registry and some exampl
 Follow the [Getting Started](Getting-Started.md) instructions before proceeding.
 
 Notes:
-- The correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120d_2_10.dll) needs to be on the ``PATH``.
-- The Bonjour service must be started to enable NMOS Nodes, and the Registry, to use DNS Service Discovery.
+- On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120d_2_10.dll) needs to be on the ``PATH``.
+- The Bonjour service (Windows) or ``mdnsd`` daemon (Linux) must be started to enable NMOS Nodes, and the Registry, to use DNS Service Discovery.
 - When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to select unique port numbers, as described below.
 
 ## Start an NMOS Registry
 
-Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line as JSON, which is demonstrated by the example batch script, [nmos-cpp-registry.bat](../Development/nmos-cpp-registry.bat), in the repository.
+Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line as JSON, which is demonstrated by the example Windows batch script, [nmos-cpp-registry.bat](../Development/nmos-cpp-registry.bat), in the repository.
 
 With no configuration parameters, the initial output should appear something like this:
 
@@ -34,7 +34,7 @@ This shows the nmos-cpp-registry starting up and advertising its APIs via DNS Se
 
 ## Start several NMOS Nodes
 
-Run the **nmos-cpp-node** application one or more times. Configuration parameters may be passed on the command-line as JSON, which is demonstrated by the example batch script, [nmos-cpp-node.bat](../Development/nmos-cpp-node.bat), in the repository.
+Run the **nmos-cpp-node** application one or more times. Configuration parameters may be passed on the command-line as JSON, which is demonstrated by the example Windows batch script, [nmos-cpp-node.bat](../Development/nmos-cpp-node.bat), in the repository.
 
 When running the nmos-cpp-registry and every nmos-cpp-node on different hosts, no configuration parameters are required.
 
