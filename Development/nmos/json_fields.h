@@ -2,6 +2,13 @@
 #define NMOS_JSON_FIELDS_H
 
 #include "cpprest/json_utils.h"
+#include "nmos/version.h" // for nmos::tai and parse_version
+
+// json field accessor helpers
+template <> struct web::json::details::value_as<nmos::tai>
+{
+    nmos::tai operator()(const web::json::value& value) const { return nmos::parse_version(value.as_string()); }
+};
 
 namespace nmos
 {
@@ -9,6 +16,7 @@ namespace nmos
     namespace fields
     {
         const web::json::field_as_string id{ U("id") };
+        const web::json::field<tai> version{ U("version") };
 
         // IS-04 Discovery and Registration
 
@@ -41,8 +49,7 @@ namespace nmos
         const web::json::field_as_bool master_enable{ U("master_enable") };
         const web::json::field_as_value activation{ U("activation") };
         const web::json::field_as_string mode{ U("mode") };
-        // it'd be nice to enable simple specialisations, such as web::json::field<tai>
-        const web::json::field_as_string requested_time{ U("requested_time") };
+        const web::json::field<tai> requested_time{ U("requested_time") };
         const web::json::field_as_array transport_params{ U("transport_params") };
     }
 }

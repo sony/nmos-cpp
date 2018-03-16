@@ -143,12 +143,20 @@ namespace nmos
                 const bool valid_super_resource = model.resources.end() != super_resource;
                 const std::pair<nmos::id, nmos::type> no_resource{};
 
+                // registration of an unchanged resource is considered as an acceptable "update" even though it's a no-op, but seems worth logging?
+                const bool unchanged = !creating && data == resource->data;
+
                 if (no_resource == super_id_type) // i.e. just nodes, basically
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id;
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << (unchanged ? "unchanged " : "") << type.name << ": " << id;
                 else if (valid_super_resource)
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id << " on " << super_id_type.second.name << ": " << super_id_type.first;
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << (unchanged ? "unchanged " : "") << type.name << ": " << id << " on " << super_id_type.second.name << ": " << super_id_type.first;
                 else // if (!valid_super_resource)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id << " on unknown " << super_id_type.second.name << ": " << super_id_type.first;
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << (unchanged ? "unchanged " : "") << type.name << ": " << id << " on unknown " << super_id_type.second.name << ": " << super_id_type.first;
+
+                // should registration with an old version (or with the same version but other modified properties!) be rejected?
+                const bool valid_version = creating || unchanged || nmos::fields::version(data) > nmos::fields::version(resource->data);
+                if (!valid_version)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << type.name << ": " << id << " with incorrect version";
 
                 valid = valid && (no_resource == super_id_type || valid_super_resource);
 

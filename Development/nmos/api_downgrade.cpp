@@ -1,5 +1,6 @@
 #include "nmos/api_downgrade.h"
 
+#include <map>
 #include "nmos/resource.h"
 
 namespace nmos

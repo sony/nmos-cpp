@@ -2,7 +2,6 @@
 #define CPPREST_JSON_UTILS_H
 
 #include "cpprest/json.h"
-#include "cpprest/base_uri.h" // for web::uri::decode
 
 // since some of the constructors are explicit, provide helpers
 #ifndef _TURN_OFF_PLATFORM_STRING

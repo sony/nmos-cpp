@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include "cpprest/base_uri.h" // for web::uri::decode
 
 // json query helpers
 namespace web
