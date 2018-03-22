@@ -55,6 +55,45 @@ namespace nmos
         }
     }
 
+    namespace details
+    {
+        static const std::map<utility::string_t, nmos::type> types_from_resourceType
+        {
+            { U("self"), nmos::types::node }, // for the Node API
+            { U("nodes"), nmos::types::node },
+            { U("devices"), nmos::types::device },
+            { U("sources"), nmos::types::source },
+            { U("flows"), nmos::types::flow },
+            { U("senders"), nmos::types::sender },
+            { U("receivers"), nmos::types::receiver },
+            { U("subscriptions"), nmos::types::subscription }
+        };
+
+        static const std::map<nmos::type, utility::string_t> resourceTypes_from_type
+        {
+            { nmos::types::node, U("nodes") },
+            { nmos::types::device, U("devices") },
+            { nmos::types::source, U("sources") },
+            { nmos::types::flow, U("flows") },
+            { nmos::types::sender, U("senders") },
+            { nmos::types::receiver, U("receivers") },
+            { nmos::types::subscription, U("subscriptions") },
+            { nmos::types::grain, {} } // subscription websocket grains aren't exposed via the Query API
+        };
+    }
+
+    // Map from a resourceType, i.e. the plural string used in the API endpoint routes, to a "proper" type
+    nmos::type type_from_resourceType(const utility::string_t& resourceType)
+    {
+        return details::types_from_resourceType.at(resourceType);
+    }
+
+    // Map from a "proper" type to a resourceType, i.e. the plural string used in the API endpoint routes
+    utility::string_t resourceType_from_type(const nmos::type& type)
+    {
+        return details::resourceTypes_from_type.at(type);
+    }
+
     web::json::value make_error_response_body(web::http::status_code code, const utility::string_t& error, const utility::string_t& debug)
     {
         web::json::value result = web::json::value::object(true);

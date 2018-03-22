@@ -58,10 +58,10 @@ namespace web
 
         namespace cors
         {
-            bool is_cors_response_header(const web::http::http_headers::key_type& header)
+            namespace details
             {
                 // See https://fetch.spec.whatwg.org/
-                static const std::set<web::http::http_headers::key_type> set
+                static const std::set<web::http::http_headers::key_type> cors_response_headers
                 {
                     web::http::cors::header_names::allow_origin,
                     web::http::cors::header_names::allow_credentials,
@@ -70,13 +70,17 @@ namespace web
                     web::http::cors::header_names::max_age,
                     web::http::cors::header_names::expose_headers
                 };
-                return set.end() != set.find(header);
             }
 
-            bool is_cors_safelisted_response_header(const web::http::http_headers::key_type& header)
+            bool is_cors_response_header(const web::http::http_headers::key_type& header)
+            {
+                return details::cors_response_headers.end() != details::cors_response_headers.find(header);
+            }
+
+            namespace details
             {
                 // See https://fetch.spec.whatwg.org/#cors-safelisted-response-header-name
-                static const std::set<web::http::http_headers::key_type> set
+                static const std::set<web::http::http_headers::key_type> cors_safelisted_response_headers
                 {
                     // don't need to include these simple headers in the Expose-Headers header
                     web::http::header_names::cache_control,
@@ -86,14 +90,17 @@ namespace web
                     web::http::header_names::last_modified,
                     web::http::header_names::pragma
                 };
-                return set.end() != set.find(header);
+            }
+
+            bool is_cors_safelisted_response_header(const web::http::http_headers::key_type& header)
+            {
+                return details::cors_safelisted_response_headers.end() != details::cors_safelisted_response_headers.find(header);
             }
         }
 
-        // based on existing function from cpprestsdk's internal_http_helpers.h
-        utility::string_t get_default_reason_phrase(web::http::status_code code)
+        namespace details
         {
-            static const std::map<web::http::status_code, const utility::char_t*> map
+            static const std::map<web::http::status_code, const utility::char_t*> default_reason_phrases
             {
 #define _PHRASES
 #define DAT(a,b,c) {status_codes::a, c},
@@ -101,8 +108,13 @@ namespace web
 #undef _PHRASES
 #undef DAT
             };
-            auto found = map.find(code);
-            return map.end() != found ? found->second : U("");
+        }
+
+        // based on existing function from cpprestsdk's internal_http_helpers.h
+        utility::string_t get_default_reason_phrase(web::http::status_code code)
+        {
+            auto found = details::default_reason_phrases.find(code);
+            return details::default_reason_phrases.end() != found ? found->second : U("");
         }
 
         namespace details

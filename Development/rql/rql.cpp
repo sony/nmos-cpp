@@ -124,6 +124,11 @@ namespace rql
         return arg.is_object() && arg.has_field(U("type")) && arg.has_field(U("value"));
     }
 
+    namespace details
+    {
+        static const utility::regex_t rql_name{ U("([A-Za-z0-9\\-\\._~]|[%][0-9A-Fa-f]{2}|[*+])*") };
+    }
+
     web::json::value parse_query(const utility::string_t& query)
     {
         using web::json::value;
@@ -172,8 +177,6 @@ namespace rql
         // pct-encoded   = "%" HEXDIG HEXDIG
         // unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
 
-        static const utility::regex_t name{ U("([A-Za-z0-9\\-\\._~]|[%][0-9A-Fa-f]{2}|[*+])*") };
-
         // <aside>
         // On the other hand, Uniform Resource Identifier (URI): Generic Syntax
         // for the Query part (from first '?' to '#') is defined by RFC 3986.
@@ -212,7 +215,7 @@ namespace rql
             {
                 utility::string_t token;
 
-                if (bst::regex_search(first, query.end(), match, name, bst::regex_constants::match_continuous))
+                if (bst::regex_search(first, query.end(), match, details::rql_name, bst::regex_constants::match_continuous))
                 {
                     token = match.str();
                     first = match[0].second;

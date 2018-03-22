@@ -51,44 +51,15 @@ namespace nmos
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
     }
 
-    // At the moment, it happens that we could cheat and tweak the regular expression for the resourceType route patterns so that
-    // the sub_match was the singular form and thus directly the equivalent nmos::type, since that's currently just a string too,
-    // but a mapping from one to the other seems less fragile!
-
+    // Note that a resourceType does not have the same value as a "proper" type, use this mapping instead!
     // Also note that a subscription for a single type has resource_path == U('/') + resourceType
     // and the websocket messages have topic == resource_path + U('/')
 
-    inline nmos::type type_from_resourceType(const utility::string_t& resourceType)
-    {
-        static const std::map<utility::string_t, nmos::type> map =
-        {
-            { U("self"), nmos::types::node }, // for the Node API
-            { U("nodes"), nmos::types::node },
-            { U("devices"), nmos::types::device },
-            { U("sources"), nmos::types::source },
-            { U("flows"), nmos::types::flow },
-            { U("senders"), nmos::types::sender },
-            { U("receivers"), nmos::types::receiver },
-            { U("subscriptions"), nmos::types::subscription }
-        };
-        return map.at(resourceType);
-    }
+    // Map from a resourceType, i.e. the plural string used in the API endpoint routes, to a "proper" type
+    nmos::type type_from_resourceType(const utility::string_t& resourceType);
 
-    inline utility::string_t resourceType_from_type(const nmos::type& type)
-    {
-        static const std::map<nmos::type, utility::string_t> map =
-        {
-            { nmos::types::node, U("nodes") },
-            { nmos::types::device, U("devices") },
-            { nmos::types::source, U("sources") },
-            { nmos::types::flow, U("flows") },
-            { nmos::types::sender, U("senders") },
-            { nmos::types::receiver, U("receivers") },
-            { nmos::types::subscription, U("subscriptions") },
-            { nmos::types::grain, {} } // subscription websocket grains aren't exposed via the Query API
-        };
-        return map.at(type);
-    }
+    // Map from a "proper" type to a resourceType, i.e. the plural string used in the API endpoint routes
+    utility::string_t resourceType_from_type(const nmos::type& type);
 
     // Other utility functions for generating NMOS response headers and body
 

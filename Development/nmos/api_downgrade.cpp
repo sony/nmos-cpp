@@ -44,24 +44,8 @@ namespace nmos
         return downgrade(resource.version, resource.type, resource.data, version, downgrade_version);
     }
 
-    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+    namespace details
     {
-        if (!is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)) return web::json::value::null();
-
-        // optimisation for the common case (old-versioned resources, if being permitted, do not get upgraded)
-        if (resource_version <= version) return resource_data;
-
-        web::json::value result;
-
-        // This is a simple representation of the backwards-compatible changes that have been made between minor versions
-        // of the specification. It just describes in which version each top-level property of each resource type was added.
-
-        // This doesn't cope with some details, like the addition in v1.2 of the "active" property in the "subscription"
-        // sub-object of a receiver. However, the schema, "subscription" sub-object does not have "additionalProperties": false
-        // so downgrading from v1.2 to v1.1 and keeping the "active" property doesn't cause a schema violation, though this
-        // could be an oversight...
-        // See nmos-discovery-registration/APIs/schemas/receiver_core.json
-
         static const std::map<nmos::type, std::map<nmos::api_version, std::vector<utility::string_t>>> resources_versions
         {
             {
@@ -115,8 +99,27 @@ namespace nmos
                 }
             }
         };
+    }
 
-        auto& resource_versions = resources_versions.at(resource_type);
+    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+    {
+        if (!is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)) return web::json::value::null();
+
+        // optimisation for the common case (old-versioned resources, if being permitted, do not get upgraded)
+        if (resource_version <= version) return resource_data;
+
+        web::json::value result;
+
+        // This is a simple representation of the backwards-compatible changes that have been made between minor versions
+        // of the specification. It just describes in which version each top-level property of each resource type was added.
+
+        // This doesn't cope with some details, like the addition in v1.2 of the "active" property in the "subscription"
+        // sub-object of a receiver. However, the schema, "subscription" sub-object does not have "additionalProperties": false
+        // so downgrading from v1.2 to v1.1 and keeping the "active" property doesn't cause a schema violation, though this
+        // could be an oversight...
+        // See nmos-discovery-registration/APIs/schemas/receiver_core.json
+
+        auto& resource_versions = details::resources_versions.at(resource_type);
         auto version_first = resource_versions.cbegin();
         auto version_last = resource_versions.upper_bound(version);
         for (auto version_properties = version_first; version_last != version_properties; ++version_properties)
