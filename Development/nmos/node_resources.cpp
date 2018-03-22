@@ -128,6 +128,7 @@ namespace nmos
         nmos::resource make_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
         {
             using web::json::value;
+            using web::json::value_of;
 
             const auto hostname = value::string(nmos::fields::host_name(settings));
 
@@ -157,6 +158,30 @@ namespace nmos
             data[U("interlace_mode")] = JU("progressive"); // optional
             data[U("colorspace")] = JU("BT709");
             data[U("transfer_characteristic")] = JU("SDR"); // optional
+
+            // nmos-discovery-registration/APIs/schemas/flow_video_raw.json
+
+            data[U("media_type")] = JU("video/raw");
+            data[U("components")] = value_of({
+                value_of({
+                    { U("name"), JU("Y") },
+                    { U("width"), 1920 },
+                    { U("height"), 1080 },
+                    { U("bit_depth"), 10 }
+                }),
+                value_of({
+                    { U("name"), JU("Cb") },
+                    { U("width"), 960 },
+                    { U("height"), 1080 },
+                    { U("bit_depth"), 10 }
+                }),
+                value_of({
+                    { U("name"), JU("Cr") },
+                    { U("width"), 960 },
+                    { U("height"), 1080 },
+                    { U("bit_depth"), 10 }
+                })
+            });
 
             return{ is04_versions::v1_2, types::flow, data, false };
         }
