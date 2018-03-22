@@ -83,6 +83,10 @@ namespace web
             {
                 int operator()(const web::json::value& value) const { return value.as_integer(); }
             };
+            template <> struct value_as<double>
+            {
+                double operator()(const web::json::value& value) const { return value.as_double(); }
+            };
         }
 
         template <typename T, typename V>
