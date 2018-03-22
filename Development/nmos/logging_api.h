@@ -28,7 +28,7 @@ namespace nmos
             struct sequenced;
         }
 
-        namespace detail
+        namespace details
         {
             struct event_id
             {
@@ -45,7 +45,7 @@ namespace nmos
             event,
             boost::multi_index::indexed_by<
                 boost::multi_index::sequenced<boost::multi_index::tag<tags::sequenced>>,
-                boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, detail::event_id>
+                boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, details::event_id>
             >
         > events;
 

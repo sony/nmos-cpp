@@ -146,7 +146,7 @@ namespace nmos
             return logging_api;
         }
 
-        namespace detail
+        namespace details
         {
             inline web::json::value json_from_string(const std::string& s)
             {
@@ -195,7 +195,7 @@ namespace nmos
             {
                 model.events.pop_front();
             }
-            model.events.push_back({ detail::json_from_message(message) });
+            model.events.push_back({ details::json_from_message(message) });
         }
     }
 }
