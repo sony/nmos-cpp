@@ -35,7 +35,7 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
@@ -43,7 +43,7 @@ namespace nmos
         // Source ID of the Query API instance issuing the data Grain
         const nmos::id source_id = nmos::make_id();
 
-        return [source_id, &model, &websockets, &mutex, &query_ws_events_condition, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
+        return [source_id, &model, &websockets, &mutex, &condition, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
             nmos::write_lock lock(mutex);
 
@@ -86,8 +86,8 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Creating websocket connection: " << id << " to subscription: " << subscription->id;
 
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread";
-                query_ws_events_condition.notify_all();
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
+                condition.notify_all();
             }
             else
             {
@@ -131,7 +131,7 @@ namespace nmos
         };
     }
 
-    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
+    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::model& model, nmos::websockets& websockets, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;

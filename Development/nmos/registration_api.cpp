@@ -9,7 +9,7 @@
 
 namespace nmos
 {
-    void erase_expired_resources_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    void erase_expired_resources_thread(nmos::model& model, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         // start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource actually needs to be deleted from the resources
         nmos::read_lock lock(mutex);
@@ -18,7 +18,7 @@ namespace nmos
 
         // wait until the next node could potentially expire, or the server is being shut down
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
-        while (!condition.wait_until(lock, time_point_from_health(least_health + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
+        while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown.load(); }))
         {
             // most nodes will have had a heartbeat during the wait, so the least health will have been increased
             // so this thread will be able to go straight back to waiting
@@ -47,17 +47,17 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
 
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread";
-                query_ws_events_condition.notify_all();
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
+                condition.notify_all();
             }
 
             least_health = nmos::least_health(model.resources);
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -81,7 +81,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, mutex, query_ws_events_condition, gate));
+        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, mutex, condition, gate));
 
         nmos::add_api_finally_handler(registration_api, gate);
 
@@ -95,7 +95,7 @@ namespace nmos
         return result;
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate)
+    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -107,7 +107,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/resource/?"), methods::POST, [&model, &mutex, &query_ws_events_condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/resource/?"), methods::POST, [&model, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return req.extract_json().then([&, req, res, parameters](value body) mutable
             {
@@ -272,8 +272,8 @@ namespace nmos
 
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
 
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
-                    query_ws_events_condition.notify_all();
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
+                    condition.notify_all();
 
                     set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
                     const string_t location(U("/x-nmos/registration/") + parameters.at(U("version")) + U("/resource/") + nmos::resourceType_from_type(type) + U("/") + id);
@@ -345,7 +345,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &query_ws_events_condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually deleted from resources
             nmos::write_lock lock(mutex);
@@ -375,8 +375,8 @@ namespace nmos
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
                 erase_resource(model.resources, resource->id);
 
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread";
-                query_ws_events_condition.notify_all();
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
+                condition.notify_all();
 
                 set_reply(res, status_codes::NoContent);
             }

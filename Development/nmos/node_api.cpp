@@ -7,9 +7,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_node_api(const nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -40,7 +40,7 @@ namespace nmos
         return node_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_node_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 

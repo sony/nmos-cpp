@@ -52,7 +52,6 @@ namespace nmos
 
         // make a POST or DELETE request on the Registration API specified by the client for the specified resource event
         // this could be made asynchronous, returning pplx::task<web::http::http_response>
-        // however, the logging gateway would need to be passed out of scope to a continuation to perform the response logging
         void request_registration(web::http::client::http_client& client, const nmos::api_version& registry_version, const web::json::value& event, slog::base_gate& gate)
         {
             const auto& path = event.at(U("path")).as_string();
@@ -63,7 +62,7 @@ namespace nmos
             const resource_event_type event_type = get_resource_event_type(event);
 
             // An 'added' event calls for registration creation, i.e. a POST request with a 201 'Created' response (200 'OK' is unexpected)
-            // A 'removed' event, calls for registration deletion, i.e. a DELETE request
+            // A 'removed' event, calls for registration deletion, i.e. a DELETE request with a 204 'No Content' response
             // A 'modified' event calls for a registration update, i.e. a POST request with a 200 'OK' response (201 'Created'is unexpected)
             // A 'sync' event is the call for registration creation when first interacting with a registry
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml
@@ -113,22 +112,10 @@ namespace nmos
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration deletion rejected for " << type.name << ": " << id;
             }
         }
-
-        void update_node_health(web::http::client::http_client& client, const nmos::api_version& registry_version, const nmos::id& id, slog::base_gate& gate)
-        {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting heartbeat for node " << id;
-
-            // block and wait for the response
-
-            auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/health/nodes/") + id).get();
-
-            // Check response to see if re-registration is required!
-            if (web::http::status_codes::NotFound == response.status_code())
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration not found for node: " << id;
-        }
     }
 
-    void node_registration_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
+    // interaction with the Registration API /resources endpoints
+    void node_registration_operation_thread(nmos::model& model, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
@@ -228,7 +215,24 @@ namespace nmos
         }
     }
 
-    void node_registration_heartbeat_thread(const nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, slog::base_gate& gate)
+    namespace details
+    {
+        void update_node_health(web::http::client::http_client& client, const nmos::api_version& registry_version, const nmos::id& id, slog::base_gate& gate)
+        {
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting heartbeat for node " << id;
+
+            // block and wait for the response
+
+            auto response = client.request(web::http::methods::POST, make_api_version(registry_version) + U("/health/nodes/") + id).get();
+
+            // Check response to see if re-registration is required!
+            if (web::http::status_codes::NotFound == response.status_code())
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration not found for node: " << id;
+        }
+    }
+
+    // interaction with the Registration API /health endpoints
+    void node_registration_heartbeat_thread(const nmos::model& model, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         // since health is mutable, no need to get an exclusive/write lock
         nmos::read_lock lock(mutex);
@@ -241,7 +245,7 @@ namespace nmos
         auto self_health = model.resources.end() == resource || nmos::health_forever == resource->health ? health_now() : resource->health.load();
 
         // wait until the next node heartbeat, or the server is being shut down
-        while (!condition.wait_until(lock, time_point_from_health(self_health + nmos::fields::registration_heartbeat_interval(model.settings)), [&]{ return shutdown; }))
+        while (!condition.wait_until(lock, time_point_from_health(self_health + nmos::fields::registration_heartbeat_interval(model.settings)), [&]{ return shutdown.load(); }))
         {
             auto heartbeat_health = health_now() - nmos::fields::registration_heartbeat_interval(model.settings);
             resource = nmos::find_self_resource(model.resources);

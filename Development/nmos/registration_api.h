@@ -1,6 +1,7 @@
 #ifndef NMOS_REGISTRATION_API_H
 #define NMOS_REGISTRATION_API_H
 
+#include <atomic>
 #include "cpprest/api_router.h"
 #include "nmos/mutex.h"
 
@@ -15,9 +16,9 @@ namespace nmos
 {
     struct model;
 
-    void erase_expired_resources_thread(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, bool& shutdown, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate);
+    void erase_expired_resources_thread(nmos::model& model, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& query_ws_events_condition, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 }
 
 #endif

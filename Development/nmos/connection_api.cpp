@@ -8,9 +8,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -34,14 +34,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(resources, mutex, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(resources, mutex, condition, gate));
 
         nmos::add_api_finally_handler(connection_api, gate);
 
         return connection_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -137,7 +137,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&resources, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return req.extract_json().then([&, req, res, parameters](value body) mutable
             {
@@ -173,6 +173,9 @@ namespace nmos
                                 subscription[U("sender_id")] = master_enable ? body[U("sender_id")] : value::null();
                             }
                         });
+
+                        // notify anyone who cares...
+                        condition.notify_all();
 
                         set_reply(res, status_codes::OK, value{});
                     }

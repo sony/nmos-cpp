@@ -23,17 +23,19 @@ int main(int argc, char* argv[])
     // Construct our data models and mutexes to protect each of them
     // plus variables to signal when the server is stopping
 
+    std::atomic<bool> shutdown{ false };
+    nmos::condition_variable shutdown_condition; // associated with registry_mutex; notify on shutdown
+
     nmos::resources self_resources;
     nmos::mutex self_mutex;
 
     nmos::model registry_model;
     nmos::mutex registry_mutex;
+    nmos::condition_variable registry_condition; // associated with registry_mutex; notify on any change to registry_model, and on shutdown
 
     nmos::experimental::log_model log_model;
     nmos::mutex log_mutex;
     std::atomic<slog::severity> level{ slog::severities::more_info };
-
-    bool shutdown = false;
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -111,7 +113,7 @@ int main(int argc, char* argv[])
 
     // Configure the Settings API
 
-    web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(registry_model.settings, registry_mutex, level, gate);
+    web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(registry_model.settings, level, registry_mutex, registry_condition, gate);
     web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(registry_model.settings)));
     nmos::support_api(settings_listener, settings_api);
 
@@ -134,10 +136,8 @@ int main(int argc, char* argv[])
 
     nmos::websockets registry_websockets;
 
-    nmos::condition_variable query_ws_events_condition; // associated with registry_mutex; notify on any change to registry_model, and on shutdown
-
     web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, registry_mutex, gate);
-    web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(registry_model, registry_websockets, registry_mutex, query_ws_events_condition, gate);
+    web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(registry_model, registry_websockets, registry_mutex, registry_condition, gate);
     web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, registry_mutex, gate);
     web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::fields::query_ws_port(registry_model.settings), nmos::make_slog_logging_callback(gate));
     query_ws_listener.set_validate_handler(std::ref(query_ws_validate_handler));
@@ -146,11 +146,9 @@ int main(int argc, char* argv[])
 
     // Configure the Registration API
 
-    web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, registry_mutex, query_ws_events_condition, gate);
+    web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, registry_mutex, registry_condition, gate);
     web::http::experimental::listener::http_listener registration_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::registration_port(registry_model.settings)), listener_config);
     nmos::support_api(registration_listener, registration_api);
-
-    nmos::condition_variable registration_expiration_condition; // associated with registry_mutex; notify on shutdown
 
     // Configure the Node API
 
@@ -190,8 +188,8 @@ int main(int argc, char* argv[])
 
         // start up registry management before any NMOS APIs are open
 
-        auto query_ws_events_sending = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, registry_mutex, query_ws_events_condition, shutdown, gate); }, [&] { shutdown = true; query_ws_events_condition.notify_all(); });
-        auto registration_expiration = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, registry_mutex, registration_expiration_condition, shutdown, query_ws_events_condition, gate); }, [&] { shutdown = true; registration_expiration_condition.notify_all(); });
+        auto send_query_ws_events = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, shutdown, registry_mutex, registry_condition, gate); }, [&] { shutdown = true; registry_condition.notify_all(); });
+        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, shutdown, registry_mutex, shutdown_condition, registry_condition, gate); }, [&] { shutdown = true; shutdown_condition.notify_all(); });
 
         // open in an order that means NMOS APIs don't expose references to others that aren't open yet
 

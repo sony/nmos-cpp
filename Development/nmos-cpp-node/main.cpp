@@ -21,14 +21,16 @@ int main(int argc, char* argv[])
     // Construct our data models and mutexes to protect each of them
     // plus variables to signal when the server is stopping
 
+    std::atomic<bool> shutdown{ false };
+    nmos::condition_variable shutdown_condition; // associated with node_mutex; notify on shutdown
+
     nmos::model node_model;
     nmos::mutex node_mutex;
+    nmos::condition_variable node_condition; // associated with node_mutex; notify on any change to node_model, and on shutdown
 
     nmos::experimental::log_model log_model;
     nmos::mutex log_mutex;
     std::atomic<slog::severity> level{ slog::severities::more_info };
-
-    bool shutdown = false;
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -118,7 +120,7 @@ int main(int argc, char* argv[])
 
     // Configure the Settings API
 
-    web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(node_model.settings, node_mutex, level, gate);
+    web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(node_model.settings, level, node_mutex, node_condition, gate);
     web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(node_model.settings)));
     nmos::support_api(settings_listener, settings_api);
 
@@ -142,11 +144,9 @@ int main(int argc, char* argv[])
     // set up the node resources
     nmos::experimental::make_node_resources(node_model.resources, node_model.settings);
 
-    nmos::condition_variable node_model_condition; // associated with node_mutex; notify on any change to node_model, and on shutdown
-
     // Configure the Connection API
 
-    web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model.resources, node_mutex, gate);
+    web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model.resources, node_mutex, node_condition, gate);
     web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
     nmos::support_api(connection_listener, connection_api);
 
@@ -174,10 +174,10 @@ int main(int argc, char* argv[])
 
         mdns::service_advertiser_guard advertiser_guard(*advertiser);
 
-        // start up communication with the registry once all NMOS APIs are open
+        // start up node operation once all NMOS APIs are open
 
-        auto node_registration = nmos::details::make_thread_guard([&] { nmos::node_registration_thread(node_model, node_mutex, node_model_condition, shutdown, gate); }, [&] { shutdown = true; node_model_condition.notify_all(); });
-        auto node_heartbeat = nmos::details::make_thread_guard([&] { nmos::node_registration_heartbeat_thread(node_model, node_mutex, node_model_condition, shutdown, gate); }, [&] { shutdown = true; node_model_condition.notify_all(); });
+        auto registration_operation = nmos::details::make_thread_guard([&] { nmos::node_registration_operation_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { shutdown = true; node_condition.notify_all(); });
+        auto registration_heartbeat = nmos::details::make_thread_guard([&] { nmos::node_registration_heartbeat_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { shutdown = true; node_condition.notify_all(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
