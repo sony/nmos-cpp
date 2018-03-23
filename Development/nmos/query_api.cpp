@@ -169,7 +169,7 @@ namespace nmos
 
                 set_reply(res, status_codes::OK,
                     web::json::serialize(page,
-                        [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }),
+                        [&count, &match](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, match.version, match.downgrade_version); }),
                     U("application/json"));
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
