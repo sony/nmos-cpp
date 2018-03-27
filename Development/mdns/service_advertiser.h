@@ -33,7 +33,7 @@ namespace mdns
         service_advertiser& advertiser;
     };
 
-    // make a default implementation of the mDNS Service Discovery advertisement interface 
+    // make a default implementation of the mDNS Service Discovery advertisement interface
     std::unique_ptr<service_advertiser> make_advertiser(slog::base_gate& gate);
 }
 

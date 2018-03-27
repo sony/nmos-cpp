@@ -185,7 +185,7 @@ namespace mdns
                 const std::vector<unsigned char> txt_records = make_txt_records(records);
 
                 DNSServiceErrorType errorCode = DNSServiceUpdateRecord((DNSServiceRef)service.sdRef, NULL, 0, (std::uint16_t)txt_records.size(), &txt_records[0], 0);
-                
+
                 if (errorCode == kDNSServiceErr_NoError)
                 {
                     result = true;
@@ -232,7 +232,7 @@ namespace mdns
         }
     }
 
-    bool bonjour_dns_impl::browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, unsigned int timeout_secs)
+    bool bonjour_dns_impl::browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
     {
         m_found = &found;
 
@@ -241,7 +241,8 @@ namespace mdns
         m_found->clear();
         m_more_coming = false;
 
-        const auto absolute_timeout = std::chrono::system_clock::now() + std::chrono::seconds(timeout_secs);
+        const auto latest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(latest_timeout_seconds);
+        const auto earliest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(earliest_timeout_seconds);
 
         DNSServiceErrorType errorCode = DNSServiceBrowse(&client, 0, 0, type.c_str(), !domain.empty() ? domain.c_str() : NULL, browse_reply, this);
 
@@ -250,6 +251,7 @@ namespace mdns
             do
             {
                 // wait for up to timeout seconds for a response
+                const auto& absolute_timeout = m_found->empty() ? latest_timeout : earliest_timeout;
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
                 // process the next browse response
@@ -269,7 +271,7 @@ namespace mdns
                     break;
                 }
 
-            } while (absolute_timeout > std::chrono::system_clock::now());
+            } while (earliest_timeout > std::chrono::system_clock::now());
 
             DNSServiceRefDeallocate(client);
         }
@@ -402,7 +404,7 @@ namespace mdns
         }
     }
 
-    bool bonjour_dns_impl::resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int timeout_secs)
+    bool bonjour_dns_impl::resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int timeout_seconds)
     {
         m_resolved = &resolved;
 
@@ -412,7 +414,7 @@ namespace mdns
 
         slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain;
 
-        const auto absolute_timeout = std::chrono::system_clock::now() + std::chrono::seconds(timeout_secs);
+        const auto absolute_timeout = std::chrono::system_clock::now() + std::chrono::seconds(timeout_seconds);
 
         DNSServiceErrorType errorCode = DNSServiceResolve(&client, 0, interface_id, name.c_str(), type.c_str(), domain.c_str(), (DNSServiceResolveReply)resolve_reply, this);
 

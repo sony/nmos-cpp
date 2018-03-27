@@ -20,7 +20,7 @@ namespace mdns
         virtual void start();
 
         // Discovery - not thread-safe!
-        virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, unsigned int timeout_seconds);
+        virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds);
         virtual bool resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int timeout_seconds);
 
         struct service

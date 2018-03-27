@@ -39,11 +39,11 @@ namespace mdns
             mdns::txt_records txt_records;
         };
 
-        virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain = {}, unsigned int timeout_seconds = default_timeout_seconds) = 0;
+        virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain = {}, unsigned int latest_timeout_seconds = default_latest_timeout_seconds, unsigned int earliest_timeout_seconds = default_earliest_timeout_seconds) = 0;
         virtual bool resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, unsigned int timeout_seconds = default_timeout_seconds) = 0;
     };
 
-    // make a default implementation of the mDNS Service Discovery browsing interface 
+    // make a default implementation of the mDNS Service Discovery browsing interface
     std::unique_ptr<service_discovery> make_discovery(slog::base_gate& gate);
 }
 
