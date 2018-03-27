@@ -16,10 +16,13 @@ namespace pplx
     /// <param name="milliseconds">
     ///     The number of milliseconds after which the task should complete.
     /// </param>
+    /// <param name="token">
+    ///     Cancellation token for cancellation of this operation.
+    /// </param>
     /// <remarks>
     ///     Because the scheduler is cooperative in nature, the delay before the task completes could be longer than the specified amount of time.
     /// </remarks>
-    pplx::task<void> complete_after(unsigned int milliseconds);
+    pplx::task<void> complete_after(unsigned int milliseconds, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
     /// <summary>
     ///     Creates a task that completes after a specified amount of time.
@@ -27,13 +30,16 @@ namespace pplx
     /// <param name="duration">
     ///     The amount of time (milliseconds and up) after which the task should complete.
     /// </param>
+    /// <param name="token">
+    ///     Cancellation token for cancellation of this operation.
+    /// </param>
     /// <remarks>
     ///     Because the scheduler is cooperative in nature, the delay before the task completes could be longer than the specified amount of time.
     /// </remarks>
     template <typename Rep, typename Period>
-    inline pplx::task<void> complete_after(const std::chrono::duration<Rep, Period>& duration)
+    inline pplx::task<void> complete_after(const std::chrono::duration<Rep, Period>& duration, const pplx::cancellation_token& token = pplx::cancellation_token::none())
     {
-        return complete_after((unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+        return complete_after((unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(), token);
     }
 }
 

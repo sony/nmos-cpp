@@ -6,7 +6,7 @@
 
 namespace Concurrency // since namespace pplx = Concurrency
 {
-    pplx::task<void> complete_after(unsigned int milliseconds)
+    pplx::task<void> complete_after(unsigned int milliseconds, const pplx::cancellation_token& token)
     {
         // just yielding the current thread for the duration by pplx::wait(milliseconds) probably isn't good enough, so instead
         // construct a task that completes after an asynchronous wait on a timer
@@ -22,8 +22,27 @@ namespace Concurrency // since namespace pplx = Concurrency
         timer->link_target(callback.get());
         timer->start();
 
-        // capture the timer and callback so they don't get deleted too soon
-        return pplx::create_task(tce).then([timer, callback]{});
+        auto result = pplx::create_task(tce, token);
+
+        // when the token is canceled, cancel the timer 
+        if (token.is_cancelable())
+        {
+            auto registration = token.register_callback([timer, tce]
+            {
+                timer->stop();
+                tce.set_exception(pplx::task_canceled());
+            });
+
+            result.then([token, registration](pplx::task<void>)
+            {
+                token.deregister_callback(registration);
+            });
+        }
+
+        // capture the timer and callback so they definitely don't get deleted too soon
+        result.then([timer, callback]{});
+
+        return result;
     }
 }
 
@@ -34,7 +53,7 @@ namespace Concurrency // since namespace pplx = Concurrency
 
 namespace pplx
 {
-    pplx::task<void> complete_after(unsigned int milliseconds)
+    pplx::task<void> complete_after(unsigned int milliseconds, const pplx::cancellation_token& token)
     {
         // construct a task that completes after an asynchronous wait on a timer
         pplx::task_completion_event<void> tce;
@@ -48,7 +67,8 @@ namespace pplx
         {
             if (ec == boost::asio::error::operation_aborted)
             {
-                pplx::cancel_current_task();
+                // perhaps better done directly in the token callback?
+                tce.set_exception(pplx::task_canceled());
             }
             else
             {
@@ -56,8 +76,27 @@ namespace pplx
             }
         });
 
-        // capture the timer so it doesn't get deleted too soon
-        return pplx::create_task(tce).then([timer]{});
+        auto result = pplx::create_task(tce, token);
+
+        // when the token is canceled, cancel the timer 
+        if (token.is_cancelable())
+        {
+            auto registration = token.register_callback([timer]
+            {
+                boost::system::error_code ignored;
+                timer->cancel(ignored);
+            });
+
+            result.then([token, registration](pplx::task<void>)
+            {
+                token.deregister_callback(registration);
+            });
+        }
+
+        // capture the timer so it definitely doesn't get deleted too soon
+        result.then([timer]{});
+
+        return result;
     }
 }
 
