@@ -5,10 +5,19 @@
 #include "nmos/version.h" // for nmos::tai and parse_version
 
 // json field accessor helpers
-template <> struct web::json::details::value_as<nmos::tai>
+namespace web
 {
-    nmos::tai operator()(const web::json::value& value) const { return nmos::parse_version(value.as_string()); }
-};
+    namespace json
+    {
+        namespace details
+        {
+            template <> struct value_as<nmos::tai>
+            {
+                nmos::tai operator()(const web::json::value& value) const { return nmos::parse_version(value.as_string()); }
+            };
+        }
+    }
+}
 
 namespace nmos
 {
