@@ -17,6 +17,16 @@ namespace web
         void set_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& body_text, const utility::string_t& content_type = U("text/plain"));
         void set_reply(web::http::http_response& res, web::http::status_code code, const web::json::value& body_data);
 
+        inline bool is_client_error_status_code(web::http::status_code code)
+        {
+            return 400 <= code && code <= 499;
+        }
+
+        inline bool is_server_error_status_code(web::http::status_code code)
+        {
+            return 500 <= code && code <= 599;
+        }
+
         inline bool is_error_status_code(web::http::status_code code)
         {
             return 400 <= code && code <= 599;
