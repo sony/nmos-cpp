@@ -13,7 +13,9 @@
 namespace nmos
 {
     // "APIs MUST produce an mDNS advertisement [...] accompanied by DNS TXT records"
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L17 etc.
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L17
+    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml#L122
+    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/NodeAPI.raml#L37
 
     // For now, the TXT record keys and the functions to make/parse the values are kept as implementation details
 
@@ -22,6 +24,12 @@ namespace nmos
         const std::string api_proto{ "api_proto" };
         const std::string api_ver{ "api_ver" };
         const std::string pri{ "pri" };
+        const std::string ver_slf{ "ver_slf" };
+        const std::string ver_src{ "ver_src" };
+        const std::string ver_flw{ "ver_flw" };
+        const std::string ver_dvc{ "ver_dvc" };
+        const std::string ver_snd{ "ver_snd" };
+        const std::string ver_rcv{ "ver_rcv" };
     }
 
     namespace details
@@ -37,6 +45,7 @@ namespace nmos
         }
     }
 
+    // find and parse the 'api_proto' TXT record (or return the default)
     service_protocol parse_api_proto_record(const mdns::structured_txt_records& records)
     {
         return mdns::parse_txt_record(records, txt_record_keys::api_proto, details::parse_api_proto_value, service_protocols::http);
@@ -57,6 +66,7 @@ namespace nmos
         }
     }
 
+    // find and parse the 'api_ver' TXT record (or return the default)
     std::vector<api_version> parse_api_ver_record(const mdns::structured_txt_records& records)
     {
         return mdns::parse_txt_record(records, txt_record_keys::api_ver, details::parse_api_ver_value, is04_versions::unspecified);
@@ -64,29 +74,92 @@ namespace nmos
 
     namespace details
     {
+        template <typename T>
+        inline std::string ostringstreamed(const T& value)
+        {
+            std::ostringstream os; os << value; return os.str();
+        }
+
+        template <typename T>
+        inline T istringstreamed(const std::string& value, const T& default_value = {})
+        {
+            T result{ default_value }; std::istringstream is(value); is >> result; return result;
+        }
+
         inline std::string make_pri_value(service_priority pri = service_priorities::highest_development_priority)
         {
-            return utility::us2s(utility::ostringstreamed(pri));
+            return ostringstreamed(pri);
         }
 
         inline service_priority parse_pri_value(const std::string& pri)
         {
-            return utility::istringstreamed(utility::s2us(pri), service_priorities::no_priority);
+            return istringstreamed(pri, service_priorities::no_priority);
+        }
+
+        inline std::string make_ver_value(api_resource_version ver)
+        {
+            return ostringstreamed<int>(ver);
+        }
+
+        inline api_resource_version parse_ver_value(const std::string& ver)
+        {
+            return (api_resource_version)istringstreamed<int>(ver, 0);
         }
     }
 
+    // find and parse the 'pri' TXT record
     service_priority parse_pri_record(const mdns::structured_txt_records& records)
     {
         return mdns::parse_txt_record(records, txt_record_keys::pri, details::parse_pri_value, service_priorities::no_priority);
     }
 
+    // make the required TXT records from the specified values (or sensible default values, and omitting 'pri' if no_priority)
     mdns::structured_txt_records make_txt_records(service_priority pri, const std::vector<api_version>& api_ver, const service_protocol& api_proto)
+    {
+        if (service_priorities::no_priority == pri)
+        {
+            return
+            {
+                { txt_record_keys::api_proto, details::make_api_proto_value(api_proto) },
+                { txt_record_keys::api_ver, details::make_api_ver_value(api_ver) }
+            };
+        }
+        else
+        {
+            return
+            {
+                { txt_record_keys::api_proto, details::make_api_proto_value(api_proto) },
+                { txt_record_keys::api_ver, details::make_api_ver_value(api_ver) },
+                { txt_record_keys::pri, details::make_pri_value(pri) }
+            };
+        }
+    }
+
+    // find and parse the Node 'ver_' TXT records
+    api_resource_versions parse_ver_records(const mdns::structured_txt_records& records)
+    {
+        const api_resource_version no_ver{ 0 };
+        api_resource_versions ver;
+        ver.self = mdns::parse_txt_record(records, txt_record_keys::ver_slf, details::parse_ver_value, no_ver);
+        ver.sources = mdns::parse_txt_record(records, txt_record_keys::ver_src, details::parse_ver_value, no_ver);
+        ver.flows = mdns::parse_txt_record(records, txt_record_keys::ver_flw, details::parse_ver_value, no_ver);
+        ver.devices = mdns::parse_txt_record(records, txt_record_keys::ver_dvc, details::parse_ver_value, no_ver);
+        ver.senders = mdns::parse_txt_record(records, txt_record_keys::ver_snd, details::parse_ver_value, no_ver);
+        ver.receivers = mdns::parse_txt_record(records, txt_record_keys::ver_rcv, details::parse_ver_value, no_ver);
+        return ver;
+    }
+
+    // make the Node 'ver_' TXT records from the specified values
+    mdns::structured_txt_records make_ver_records(const api_resource_versions& ver)
     {
         return
         {
-            { txt_record_keys::api_proto, details::make_api_proto_value(api_proto) },
-            { txt_record_keys::api_ver, details::make_api_ver_value(api_ver) },
-            { txt_record_keys::pri, details::make_pri_value(pri) }
+            { txt_record_keys::ver_slf, details::make_ver_value(ver.self) },
+            { txt_record_keys::ver_src, details::make_ver_value(ver.sources) },
+            { txt_record_keys::ver_flw, details::make_ver_value(ver.flows) },
+            { txt_record_keys::ver_dvc, details::make_ver_value(ver.devices) },
+            { txt_record_keys::ver_snd, details::make_ver_value(ver.senders) },
+            { txt_record_keys::ver_rcv, details::make_ver_value(ver.receivers) }
         };
     }
 
@@ -136,6 +209,12 @@ namespace nmos
             advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, qualified_host_name(utility::us2s(nmos::fields::host_name(settings))), mdns::make_txt_records(records));
         }
 
+        // helper function for updating the specified service (API) TXT records
+        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
+        {
+            advertiser.update_record(service_name(service, settings), service, {}, mdns::make_txt_records(records));
+        }
+
         namespace details
         {
             // this isn't a proper SeedSequence because two instances of random_device aren't going to produce the same values
@@ -177,7 +256,7 @@ namespace nmos
             {
                 // "The Node selects a Registration API to use based on the priority, and a random selection if multiple Registration APIs
                 // with the same priority are identified."
-                // Therefore shuffle the browse results before inserting any into the resulting priority queue... 
+                // Therefore shuffle the browse results before inserting any into the resulting priority queue...
                 details::seed_generator seeder;
                 std::shuffle(browsed.begin(), browsed.end(), std::default_random_engine(seeder));
             }
@@ -208,7 +287,7 @@ namespace nmos
                         .set_scheme(utility::s2us(api_proto))
                         .set_host(utility::s2us(resolved.ip_address))
                         .set_port(resolved.port)
-                        .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*api_ver) + U("/"))
+                        .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*api_ver))
                         .to_uri()
                     });
                 }
