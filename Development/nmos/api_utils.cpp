@@ -179,12 +179,25 @@ namespace nmos
             {
                 std::rethrow_exception(std::current_exception());
             }
-            // assume a json exception indicates a bad request, while other exception types are unexpected errors
+            // assume a JSON error indicates a bad request
             catch (const web::json::json_exception& e)
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Invalid JSON: " << e.what();
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
                 details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
             }
+            // likewise an HTTP error, e.g. from http_request::extract_json
+            catch (const web::http::http_exception& e)
+            {
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error: " << e.what();
+                details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
+            }
+            // while a runtime_error (often) indicates an unimplemented feature
+            catch (const std::runtime_error& e)
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
+                details::set_error_reply(res, status_codes::NotImplemented, utility::s2us(e.what()));
+            }
+            // and other exception types are unexpected errors
             catch (const std::exception& e)
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected exception: " << e.what();
