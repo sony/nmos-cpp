@@ -188,11 +188,11 @@ int main(int argc, char* argv[])
     }
     catch (const web::http::http_exception& e)
     {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
     }
     catch (const std::system_error& e)
     {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.code() << "]";
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "System error: " << e.what() << " [" << e.code() << "]";
     }
     catch (const std::exception& e)
     {

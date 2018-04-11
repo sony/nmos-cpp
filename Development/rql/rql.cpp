@@ -47,6 +47,11 @@ namespace rql
             return{ U("rql parse error - invalid typed-value, ") + type + U(':') + value };
         }
 
+        inline rql_exception unimplemented_operator(const utility::string_t& name)
+        {
+            return{ U("rql evaluation error - unimplemented call-operator, ") + name };
+        }
+
         web::json::value make_value(const utility::string_t& encoded_type, const utility::string_t& encoded_value)
         {
             using web::json::value;
@@ -325,8 +330,12 @@ namespace rql
             // throws json_exception if not an array
             args.as_array();
 
-            // throws out_of_range if operator not found
-            return operators.at(name)(*this, args);
+            const auto found = operators.find(name);
+            if (found == operators.end())
+            {
+                throw details::unimplemented_operator(name);
+            }
+            return found->second(*this, args);
         }
         // arg is a value used as property key
         else if (extract_value)

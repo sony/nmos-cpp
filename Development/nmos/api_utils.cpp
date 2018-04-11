@@ -188,7 +188,7 @@ namespace nmos
             // likewise an HTTP error, e.g. from http_request::extract_json
             catch (const web::http::http_exception& e)
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error: " << e.what();
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
                 details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
             }
             // while a runtime_error (often) indicates an unimplemented feature

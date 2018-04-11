@@ -39,19 +39,29 @@ namespace nmos
         }
         if (basic_query.has_field(U("query")))
         {
-            auto& advanced = basic_query.at(U("query"));
-            if (advanced.has_field(U("downgrade")))
+            auto& advanced = basic_query.at(U("query")).as_object();
+            for (auto& field : advanced)
             {
-                downgrade_version = parse_api_version(web::json::field_as_string{ U("downgrade") }(advanced));
-            }
-            if (advanced.has_field(U("rql")))
-            {
-                rql_query = rql::parse_query(web::json::field_as_string{ U("rql") }(advanced));
-            }
-            // extract the experimental match flags, which extend Basic Queries with really simple per-query control of string matching
-            if (advanced.has_field(U("match_type")))
-            {
-                match_flags = experimental::parse_match_type(web::json::field_as_string{ U("match_type") }(advanced));
+                if (field.first == U("downgrade"))
+                {
+                    downgrade_version = parse_api_version(field.second.as_string());
+                }
+                else if (field.first == U("rql"))
+                {
+                    rql_query = rql::parse_query(field.second.as_string());
+                }
+                // extract the experimental match flags, which extend Basic Queries with really simple per-query control of string matching
+                else if (field.first == U("match_type"))
+                {
+                    match_flags = experimental::parse_match_type(field.second.as_string());
+                }
+                // taking query.ancestry_id as an example, an error should be reported for unimplemented parameters
+                // "A 501 HTTP status code should be returned where an ancestry query is attempted against a Query API which does not implement it."
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#ancestry-queries-optional
+                else
+                {
+                    throw std::runtime_error("unimplemented parameter - query." + utility::us2s(field.first));
+                }
             }
             basic_query.erase(U("query"));
         }
@@ -69,32 +79,40 @@ namespace nmos
         // extract the supported paging options
         if (query_params.has_field(U("paging")))
         {
-            auto& paging = query_params.at(U("paging"));
-            if (paging.has_field(U("order")))
+            auto& paging = query_params.at(U("paging")).as_object();
+            for (auto& field : paging)
             {
-                // paging.order is "create" or "update"
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml#L40
-                order_by_created = U("create") == web::json::field_as_string{ U("order") }(paging);
-            }
-            if (paging.has_field(U("until")))
-            {
-                until = nmos::parse_version(web::json::field_as_string{ U("until") }(paging));
-                // "These parameters may be used to construct a URL which would return the same set of bounded data on consecutive requests"
-                // therefore the response to a request with 'until' in the future should be fixed up...
-                if (until > max_until) until = max_until;
-            }
-            if (paging.has_field(U("since")))
-            {
-                since = nmos::parse_version(web::json::field_as_string{ U("since") }(paging));
-                since_specified = true;
-                // how should a request with 'since' in the future be fixed up?
-                if (since > until && until == max_until) until = since;
-            }
-            if (paging.has_field(U("limit")))
-            {
-                // "If the client had requested a page size which the server is unable to honour, the actual page size would be returned"
-                limit = utility::istringstreamed<size_t>(web::json::field_as_string{ U("limit") }(paging));
-                if (limit > max_limit) limit = max_limit;
+                if (field.first == U("order"))
+                {
+                    // paging.order is "create" or "update"
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml#L40
+                    order_by_created = U("create") == field.second.as_string();
+                }
+                else if (field.first == U("until"))
+                {
+                    until = nmos::parse_version(field.second.as_string());
+                    // "These parameters may be used to construct a URL which would return the same set of bounded data on consecutive requests"
+                    // therefore the response to a request with 'until' in the future should be fixed up...
+                    if (until > max_until) until = max_until;
+                }
+                else if (field.first == U("since"))
+                {
+                    since = nmos::parse_version(field.second.as_string());
+                    since_specified = true;
+                    // how should a request with 'since' in the future be fixed up?
+                    if (since > until && until == max_until) until = since;
+                }
+                else if (field.first == U("limit"))
+                {
+                    // "If the client had requested a page size which the server is unable to honour, the actual page size would be returned"
+                    limit = utility::istringstreamed<size_t>(field.second.as_string());
+                    if (limit > max_limit) limit = max_limit;
+                }
+                // as for resource_query, an error is reported for unimplemented parameters
+                else
+                {
+                    throw std::runtime_error("unimplemented parameter - paging." + utility::us2s(field.first));
+                }
             }
         }
     }
