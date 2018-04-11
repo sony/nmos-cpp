@@ -41,6 +41,17 @@ namespace pplx
     {
         return complete_after((unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(), token);
     }
+
+    /// <summary>
+    ///     Creates a task for an asynchronous do-while loop. Executes a task repeatedly, until the returned condition value becomes false.
+    /// </summary>
+    /// <param name="create_iteration_task">
+    ///     This function should create a task that performs the loop iteration and returns the Boolean value of the loop condition.
+    /// </param>
+    /// <param name="token">
+    ///     Cancellation token for cancellation of the do-while loop.
+    /// </param>
+    pplx::task<void> do_while(const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 }
 
 #endif

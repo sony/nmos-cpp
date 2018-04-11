@@ -24,7 +24,7 @@ namespace Concurrency // since namespace pplx = Concurrency
 
         auto result = pplx::create_task(tce, token);
 
-        // when the token is canceled, cancel the timer 
+        // when the token is canceled, cancel the timer
         if (token.is_cancelable())
         {
             auto registration = token.register_callback([timer, tce]
@@ -78,7 +78,7 @@ namespace pplx
 
         auto result = pplx::create_task(tce, token);
 
-        // when the token is canceled, cancel the timer 
+        // when the token is canceled, cancel the timer
         if (token.is_cancelable())
         {
             auto registration = token.register_callback([timer]
@@ -101,3 +101,51 @@ namespace pplx
 }
 
 #endif
+
+namespace pplx
+{
+    namespace details
+    {
+        void do_while_iteration(pplx::task_completion_event<void> event, const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token)
+        {
+            create_iteration_task().then([=](pplx::task<bool> condition)
+            {
+                try
+                {
+                    if (condition.get())
+                    {
+                        do_while_iteration(event, create_iteration_task, token);
+                    }
+                    else
+                    {
+                        event.set();
+                    }
+                }
+                catch (...)
+                {
+                    event.set_exception(std::current_exception());
+                }
+            }, token);
+        }
+    }
+
+    pplx::task<void> do_while(const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token)
+    {
+        pplx::task_completion_event<void> event;
+
+        pplx::create_task([=]
+        {
+            // this try-catch is for exceptions from the first call to create_iteration_task as opposed to the task it creates
+            try
+            {
+                details::do_while_iteration(event, create_iteration_task, token);
+            }
+            catch (...)
+            {
+                event.set_exception(std::current_exception());
+            }
+        }, token);
+
+        return pplx::create_task(event, token);
+    }
+}
