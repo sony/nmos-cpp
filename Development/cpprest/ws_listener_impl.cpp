@@ -92,7 +92,7 @@ namespace web
                         websocketpp::log::channel_type_hint::value hint;
                         web::logging::experimental::callback_function callback;
                     };
-                    
+
                     void websocketpp_log::write(websocketpp::log::level channel, const std::string& message)
                     {
                         if (callback)

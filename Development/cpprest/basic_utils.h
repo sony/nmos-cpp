@@ -23,13 +23,13 @@ namespace utility
     template <typename T>
     inline string_t ostringstreamed(const T& value)
     {
-        return [&]{ ostringstream_t os; os << value; return os.str(); }();
+        ostringstream_t os; os << value; return os.str();
     }
 
     template <typename T>
     inline T istringstreamed(const string_t& value, const T& default_value = {})
     {
-        return [&]{ T result{ default_value }; istringstream_t is(value); is >> result; return result; }();
+       T result{ default_value }; istringstream_t is(value); is >> result; return result;
     }
 }
 
