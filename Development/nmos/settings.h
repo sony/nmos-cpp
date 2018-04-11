@@ -29,20 +29,25 @@ namespace nmos
         // host_address [registry, node]: used to construct response headers and URL fields
         const web::json::field_as_string_or host_address{ U("host_address"), U("127.0.0.1") };
 
-        // pri [registry, node]: used for the 'pri' TXT record
+        // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) prevents advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
-        // registry_address [node]: used to make requests on registry APIs
-        const web::json::field_as_string_or registry_address{ U("registry_address"), U("127.0.0.1") };
+        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs
+        const web::json::field_as_integer_or discovery_backoff_min{ U("discovery_interval_min"), 1 };
+        const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_interval_max"), 30 };
+        const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_interval_factor"), 1.5 };
 
-        // registry_version [node]: used to make requests on registry APIs
+        // registry_address [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
+        const web::json::field_as_string registry_address{ U("registry_address") };
+
+        // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string_or registry_version{ U("registry_version"), U("v1.2") };
 
         // port numbers [registry, node]: ports on which to listen for each API
 
         const web::json::field_as_integer_or query_port{ U("query_port"), 3211 };
         const web::json::field_as_integer_or query_ws_port{ U("query_ws_port"), 3213 };
-        // registration_port [node]: used to make requests on the registry's Registration API
+        // registration_port [node]: used to construct request URLs for the registry's Registration API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or registration_port{ U("registration_port"), 3210 };
         const web::json::field_as_integer_or node_port{ U("node_port"), 3212 };
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };

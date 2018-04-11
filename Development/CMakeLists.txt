@@ -204,7 +204,7 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/logging_api.cpp
     nmos/mdns.cpp
     nmos/node_api.cpp
-    nmos/node_registration.cpp
+    nmos/node_behaviour.cpp
     nmos/node_resources.cpp
     nmos/process_utils.cpp
     nmos/query_utils.cpp
@@ -227,7 +227,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/model.h
     nmos/mutex.h
     nmos/node_api.h
-    nmos/node_registration.h
+    nmos/node_behaviour.h
     nmos/node_resources.h
     nmos/paging_utils.h
     nmos/process_utils.h
@@ -242,6 +242,13 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/thread_utils.h
     nmos/type.h
     nmos/version.h
+    )
+
+set(NMOS_CPP_NODE_PPLX_SOURCES
+    pplx/pplx_utils.cpp
+    )
+set(NMOS_CPP_NODE_PPLX_HEADERS
+    pplx/pplx_utils.h
     )
 
 set(NMOS_CPP_NODE_RQL_SOURCES
@@ -265,6 +272,8 @@ add_executable(
     ${NMOS_CPP_NODE_CPPREST_HEADERS}
     ${NMOS_CPP_NODE_NMOS_SOURCES}
     ${NMOS_CPP_NODE_NMOS_HEADERS}
+    ${NMOS_CPP_NODE_PPLX_SOURCES}
+    ${NMOS_CPP_NODE_PPLX_HEADERS}
     ${NMOS_CPP_NODE_RQL_SOURCES}
     ${NMOS_CPP_NODE_RQL_HEADERS}
     ${NMOS_CPP_NODE_SLOG_HEADERS}
@@ -274,12 +283,14 @@ source_group("Source Files" FILES ${NMOS_CPP_NODE_SOURCES})
 source_group("bst\\Source Files" FILES ${NMOS_CPP_NODE_BST_SOURCES})
 source_group("cpprest\\Source Files" FILES ${NMOS_CPP_NODE_CPPREST_SOURCES})
 source_group("nmos\\Source Files" FILES ${NMOS_CPP_NODE_NMOS_SOURCES})
+source_group("pplx\\Source Files" FILES ${NMOS_CPP_NODE_PPLX_SOURCES})
 source_group("rql\\Source Files" FILES ${NMOS_CPP_NODE_RQL_SOURCES})
 
 source_group("Header Files" FILES ${NMOS_CPP_NODE_HEADERS})
 source_group("bst\\Header Files" FILES ${NMOS_CPP_NODE_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_NODE_CPPREST_HEADERS})
 source_group("nmos\\Header Files" FILES ${NMOS_CPP_NODE_NMOS_HEADERS})
+source_group("pplx\\Header Files" FILES ${NMOS_CPP_NODE_PPLX_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_NODE_RQL_HEADERS})
 source_group("slog\\Header Files" FILES ${NMOS_CPP_NODE_SLOG_HEADERS})
 

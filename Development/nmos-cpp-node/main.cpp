@@ -1,16 +1,13 @@
 #include <iostream>
 #include "cpprest/host_utils.h"
-#include "mdns/service_advertiser.h"
-#include "mdns/service_discovery.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
 #include "nmos/logging_api.h"
-#include "nmos/mdns.h"
 #include "nmos/model.h"
 #include "nmos/node_api.h"
+#include "nmos/node_behaviour.h"
 #include "nmos/node_resources.h"
-#include "nmos/node_registration.h"
 #include "nmos/process_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/thread_utils.h"
@@ -46,7 +43,7 @@ int main(int argc, char* argv[])
     // Settings can be passed on the command-line, and some may be changed dynamically by POST to /settings/all on the Settings API
     //
     // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
-    // * "registry_address": string value, e.g. "127.0.0.1" (instead of using mDNS service discovery)
+    // * "registry_address": used to construct request URLs for registry APIs (if not discovered via DNS-SD)
     //
     // E.g.
     //
@@ -76,7 +73,6 @@ int main(int argc, char* argv[])
     {
         web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(host_addresses[0])));
     }
-    web::json::insert(node_model.settings, std::make_pair(nmos::fields::registry_address, nmos::fields::host_address(node_model.settings)));
 
     // Reconfigure the logging streams according to settings
 
@@ -94,29 +90,11 @@ int main(int argc, char* argv[])
         access_log.rdbuf(&access_log_buf);
     }
 
-    // Discover a Registration API
-
-    std::unique_ptr<mdns::service_discovery> discovery = mdns::make_discovery(gate);
-    auto registration_services = nmos::experimental::resolve_service(*discovery, nmos::service_types::registration);
-
-    if (!registration_services.empty())
-    {
-        auto registration_uri = registration_services.begin()->second;
-        node_model.settings[nmos::fields::registry_address] = web::json::value::string(registration_uri.host());
-        node_model.settings[nmos::fields::registration_port] = registration_uri.port();
-        node_model.settings[nmos::fields::registry_version] = web::json::value::string(web::uri::split_path(registration_uri.path()).back());
-    }
-    else
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via mDNS";
-    }
-
     // Log the process ID and the API addresses we'll be using
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << nmos::fields::registry_address(node_model.settings) << ":" << nmos::fields::registration_port(node_model.settings);
 
     // Configure the Settings API
 
@@ -150,16 +128,6 @@ int main(int argc, char* argv[])
     web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
     nmos::support_api(connection_listener, connection_api);
 
-    // Configure the mDNS advertisements for our APIs
-
-    std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
-    const auto pri = nmos::fields::pri(node_model.settings);
-    if (nmos::service_priorities::no_priority != pri) // no_priority allows the node to run unadvertised
-    {
-        const auto records = nmos::make_txt_records(pri);
-        nmos::experimental::register_service(*advertiser, nmos::service_types::node, node_model.settings, records);
-    }
-
     try
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
@@ -172,12 +140,9 @@ int main(int argc, char* argv[])
         web::http::experimental::listener::http_listener_guard node_guard(node_listener);
         web::http::experimental::listener::http_listener_guard connection_guard(connection_listener);
 
-        mdns::service_advertiser_guard advertiser_guard(*advertiser);
+        // start up node operation (including the the mDNS advertisements) once all NMOS APIs are open
 
-        // start up node operation once all NMOS APIs are open
-
-        auto registration_operation = nmos::details::make_thread_guard([&] { nmos::node_registration_operation_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { shutdown = true; node_condition.notify_all(); });
-        auto registration_heartbeat = nmos::details::make_thread_guard([&] { nmos::node_registration_heartbeat_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { shutdown = true; node_condition.notify_all(); });
+        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { shutdown = true; node_condition.notify_all(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
