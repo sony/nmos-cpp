@@ -192,7 +192,7 @@ namespace nmos
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
-            // hmmm, no way to cancel this currently...
+            // hmmm, no way to cancel this currently... perhaps should be using discovery_backoff_max for latest_timeout_seconds?
             std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration);
 
             if (!registration_services.empty())
@@ -557,7 +557,7 @@ namespace nmos
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
                         // "If the chosen Registration API does not respond correctly at any time,
                         // another Registration API should be selected from the discovered list."
@@ -622,7 +622,20 @@ namespace nmos
                     background_heartbeats = pplx::do_while([=, &client, &gate]
                     {
                         return update_node_health(*client, self_id, heartbeat_interval, gate, token);
-                    }, token).then([&](pplx::task<void> t) { try { t.get(); } catch (...) {} node_unregistered = true; condition.notify_all(); });
+                    }, token).then([&](pplx::task<void> t)
+                    {
+                        try
+                        {
+                            t.wait(); // not t.get() to avoid any task_canceled exception
+                        }
+                        catch (const web::http::http_exception& e)
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                        }
+
+                        node_unregistered = true;
+                        condition.notify_all();
+                    });
                 }
 
                 auto events = web::json::value::array();
@@ -663,7 +676,7 @@ namespace nmos
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
                         background_cancellation_source.cancel();
                         background_heartbeats.wait();
@@ -749,10 +762,13 @@ namespace nmos
                 return pplx::complete_after(polite_interval, token).then([&]
                 {
                     registration_services = discover_registration_services(discovery, details::snapshot(model.settings, mutex), gate);
-                    registration_services_discovered = !registration_services.empty();
-                    return !registration_services_discovered;
+                    return registration_services.empty();
                 });
-            }).then([&](pplx::task<void> t) { try { t.get(); } catch (...) {} condition.notify_all(); });
+            }).then([&]
+            {
+                registration_services_discovered = !registration_services.empty();
+                condition.notify_all();
+            });
 
             tai most_recent_update{};
 
