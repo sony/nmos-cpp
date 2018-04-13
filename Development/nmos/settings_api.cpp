@@ -31,9 +31,9 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/all/?"), methods::POST, [&settings, &logging_level, &mutex, &condition](http_request req, http_response res, const string_t&, const route_parameters&)
+            settings_api.support(U("/settings/all/?"), methods::POST, [&settings, &logging_level, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                return req.extract_json().then([&, req, res](value body) mutable
+                return details::extract_json(req, parameters, gate).then([&, req, res](value body) mutable
                 {
                     nmos::write_lock lock(mutex);
 

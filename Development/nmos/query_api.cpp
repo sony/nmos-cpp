@@ -208,7 +208,7 @@ namespace nmos
 
         query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            return req.extract_json().then([&, req, res, parameters](value data) mutable
+            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value data) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually inserted into resources
                 nmos::write_lock lock(mutex);

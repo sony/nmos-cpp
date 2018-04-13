@@ -1,11 +1,45 @@
 #include "nmos/api_utils.h"
 
+#include <boost/algorithm/string/trim.hpp>
 #include "nmos/slog.h"
 
 namespace nmos
 {
     namespace details
     {
+        // extract JSON after checking the Content-Type header
+        pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate)
+        {
+            auto content_type = req.headers().content_type();
+            auto semicolon = content_type.find(U(';'));
+            if (utility::string_t::npos != semicolon) content_type.erase(semicolon);
+            boost::algorithm::trim(content_type);
+
+            if (web::http::details::mime_types::application_json == content_type)
+            {
+                // No "charset" parameter is defined for the application/json media-type
+                // but it's quite common so don't even bother to log a warning...
+                // See https://www.iana.org/assignments/media-types/application/json
+
+                return req.extract_json(false);
+            }
+            else if (content_type.empty())
+            {
+                // "If a Content-Type header field is not present, the recipient MAY
+                // [...] examine the data to determine its type."
+                // See https://tools.ietf.org/html/rfc7231#section-3.1.1.5
+
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Missing Content-Type: should be application/json";
+
+                return req.extract_json(true);
+            }
+            else
+            {
+                // more helpful message than from web::http::details::http_msg_base::parse_and_check_content_type for unacceptable content-type
+                return pplx::task_from_exception<web::json::value>(web::http::http_exception(U("Incorrect Content-Type: ") + req.headers().content_type() + U(", should be application/json")));
+            }
+        }
+
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res)
         {
             // NMOS specification says "all NMOS APIs MUST implement valid CORS HTTP headers in responses"

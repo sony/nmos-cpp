@@ -139,7 +139,7 @@ namespace nmos
 
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&resources, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            return req.extract_json().then([&, req, res, parameters](value body) mutable
+            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
                 nmos::write_lock lock(mutex);
