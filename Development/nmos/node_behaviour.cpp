@@ -228,7 +228,7 @@ namespace nmos
             value data;
             data[nmos::fields::id] = value::string(id);
             data[nmos::fields::max_update_rate_ms] = 0; // no throttling used at present
-            data[nmos::fields::persist] = false; // not to be deleted by someone else
+            data[nmos::fields::persist] = value::boolean(false); // not to be deleted by someone else
             data[nmos::fields::resource_path] = value::string(U(""));
             data[nmos::fields::params] = value::object();
             // no ws_href since subscriptions are inaccessible on the Node API anyway
