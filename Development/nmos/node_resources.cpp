@@ -52,9 +52,7 @@ namespace nmos
             // need to populate this... each interface needs chassis_id, port_id and a name which can be referenced by senders and receivers
             data[U("interfaces")] = value::array();
 
-            // start with never_expire = true, i.e. health = health_forever, and set it only when
-            // the node is successfully posted to the registry, to trigger the heartbeat thread
-            return{ is04_versions::v1_2, types::node, data, true };
+            return{ is04_versions::v1_2, types::node, data, false };
         }
 
         nmos::resource make_device(const nmos::id& id, const nmos::id& node_id, const std::vector<nmos::id>& senders, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
