@@ -33,9 +33,9 @@ namespace nmos
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
         // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs
-        const web::json::field_as_integer_or discovery_backoff_min{ U("discovery_interval_min"), 1 };
-        const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_interval_max"), 30 };
-        const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_interval_factor"), 1.5 };
+        const web::json::field_as_integer_or discovery_backoff_min{ U("discovery_backoff_min"), 1 };
+        const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_backoff_max"), 30 };
+        const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_backoff_factor"), 1.5 };
 
         // registry_address [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string registry_address{ U("registry_address") };
