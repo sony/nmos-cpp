@@ -9,7 +9,7 @@
 
 namespace nmos
 {
-    void erase_expired_resources_thread(nmos::model& model, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
+    void erase_expired_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         // start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource actually needs to be deleted from the resources
         nmos::read_lock lock(mutex);
@@ -18,7 +18,7 @@ namespace nmos
 
         // wait until the next node could potentially expire, or the server is being shut down
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
-        while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown.load(); }))
+        while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
         {
             // most nodes will have had a heartbeat during the wait, so the least health will have been increased
             // so this thread will be able to go straight back to waiting

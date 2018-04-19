@@ -18,8 +18,7 @@ int main(int argc, char* argv[])
     // Construct our data models and mutexes to protect each of them
     // plus variables to signal when the server is stopping
 
-    std::atomic<bool> shutdown{ false };
-    nmos::condition_variable shutdown_condition; // associated with node_mutex; notify on shutdown
+    bool shutdown{ false };
 
     nmos::model node_model;
     nmos::mutex node_mutex;
@@ -142,7 +141,7 @@ int main(int argc, char* argv[])
 
         // start up node operation (including the the mDNS advertisements) once all NMOS APIs are open
 
-        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { shutdown = true; node_condition.notify_all(); });
+        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { nmos::write_lock lock(node_mutex); shutdown = true; node_condition.notify_all(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

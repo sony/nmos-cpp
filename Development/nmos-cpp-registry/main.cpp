@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     // Construct our data models and mutexes to protect each of them
     // plus variables to signal when the server is stopping
 
-    std::atomic<bool> shutdown{ false };
+    bool shutdown{ false };
     nmos::condition_variable shutdown_condition; // associated with registry_mutex; notify on shutdown
 
     nmos::resources self_resources;
@@ -188,8 +188,8 @@ int main(int argc, char* argv[])
 
         // start up registry management before any NMOS APIs are open
 
-        auto send_query_ws_events = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, shutdown, registry_mutex, registry_condition, gate); }, [&] { shutdown = true; registry_condition.notify_all(); });
-        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, shutdown, registry_mutex, shutdown_condition, registry_condition, gate); }, [&] { shutdown = true; shutdown_condition.notify_all(); });
+        auto send_query_ws_events = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, shutdown, registry_mutex, registry_condition, gate); }, [&] { nmos::read_lock lock(registry_mutex); shutdown = true; registry_condition.notify_all(); });
+        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, shutdown, registry_mutex, shutdown_condition, registry_condition, gate); }, [&] { nmos::write_lock lock(registry_mutex); shutdown = true; shutdown_condition.notify_all(); });
 
         // open in an order that means NMOS APIs don't expose references to others that aren't open yet
 

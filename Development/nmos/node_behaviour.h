@@ -1,7 +1,6 @@
 #ifndef NMOS_NODE_BEHAVIOUR_H
 #define NMOS_NODE_BEHAVIOUR_H
 
-#include <atomic>
 #include "nmos/mutex.h"
 
 namespace slog
@@ -16,7 +15,7 @@ namespace nmos
 {
     struct model;
 
-    void node_behaviour_thread(nmos::model& model, const std::atomic<bool>& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    void node_behaviour_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 }
 
 #endif
