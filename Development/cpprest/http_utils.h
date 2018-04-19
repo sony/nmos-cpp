@@ -17,11 +17,37 @@ namespace web
         void set_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& body_text, const utility::string_t& content_type = U("text/plain"));
         void set_reply(web::http::http_response& res, web::http::status_code code, const web::json::value& body_data);
 
+        // "The first digit of the status-code defines the class of response.
+        // The last two digits do not have any categorization role .There are
+        // five values for the first digit"
+        // See https://tools.ietf.org/html/rfc7231#section-6
+        // and https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+
+        // "1xx (Informational): The request was received, continuing process"
+        inline bool is_informational_status_code(web::http::status_code code)
+        {
+            return 100 <= code && code <= 199;
+        }
+
+        // "2xx (Successful): The request was successfully received, understood, and accepted"
+        inline bool is_success_status_code(web::http::status_code code)
+        {
+            return 200 <= code && code <= 299;
+        }
+
+        // "3xx (Redirection): Further action needs to be taken in order to complete the request"
+        inline bool is_redirection_status_code(web::http::status_code code)
+        {
+            return 300 <= code && code <= 399;
+        }
+
+        // "4xx (Client Error): The request contains bad syntax or cannot be fulfilled"
         inline bool is_client_error_status_code(web::http::status_code code)
         {
             return 400 <= code && code <= 499;
         }
 
+        // "5xx (Server Error): The server failed to fulfill an apparently valid request"
         inline bool is_server_error_status_code(web::http::status_code code)
         {
             return 500 <= code && code <= 599;
