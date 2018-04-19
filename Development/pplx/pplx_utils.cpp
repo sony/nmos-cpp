@@ -106,26 +106,34 @@ namespace pplx
 {
     namespace details
     {
-        void do_while_iteration(pplx::task_completion_event<void> event, const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token)
+        void propagate_exception(pplx::task_completion_event<void> event, const pplx::task<void>& task)
         {
-            create_iteration_task().then([=](pplx::task<bool> condition)
+            task.then([event](pplx::task<void> completed_or_canceled)
             {
                 try
                 {
-                    if (condition.get())
-                    {
-                        do_while_iteration(event, create_iteration_task, token);
-                    }
-                    else
-                    {
-                        event.set();
-                    }
+                    completed_or_canceled.get();
                 }
                 catch (...)
                 {
                     event.set_exception(std::current_exception());
                 }
-            }, token);
+            });
+        }
+
+        void do_while_iteration(pplx::task_completion_event<void> event, const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token)
+        {
+            propagate_exception(event, create_iteration_task().then([event, create_iteration_task, token](pplx::task<bool> condition)
+            {
+                if (condition.get())
+                {
+                    do_while_iteration(event, create_iteration_task, token);
+                }
+                else
+                {
+                    event.set();
+                }
+           }, token));
         }
     }
 
@@ -133,18 +141,10 @@ namespace pplx
     {
         pplx::task_completion_event<void> event;
 
-        pplx::create_task([=]
+        details::propagate_exception(event, pplx::create_task([event, create_iteration_task, token]
         {
-            // this try-catch is for exceptions from the first call to create_iteration_task as opposed to the task it creates
-            try
-            {
-                details::do_while_iteration(event, create_iteration_task, token);
-            }
-            catch (...)
-            {
-                event.set_exception(std::current_exception());
-            }
-        }, token);
+            details::do_while_iteration(event, create_iteration_task, token);
+        }, token));
 
         return pplx::create_task(event, token);
     }

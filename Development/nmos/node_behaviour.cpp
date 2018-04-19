@@ -217,6 +217,21 @@ namespace nmos
 
             return registration_services;
         }
+
+        // "The Node selects a Registration API to use based on the priority"
+        const web::uri& top_registration_service(const std::multimap<service_priority, web::uri>& registration_services)
+        {
+            return registration_services.begin()->second;
+        }
+
+        // "If the chosen Registration API does not respond correctly at any time,
+        // another Registration API should be selected from the discovered list."
+        void pop_registration_service(std::multimap<service_priority, web::uri>& registration_services)
+        {
+            registration_services.erase(registration_services.begin());
+            // "TTLs on advertised services" may have expired too, so should cache time-to-live values
+            // using DNSServiceQueryRecord instead of DNSServiceResolve?
+        }
     }
 
     // a (fake) subscription to keep track of all resource events
@@ -309,37 +324,58 @@ namespace nmos
             });
         }
 
-        pplx::task<web::http::http_response> handle_registration_error_conditions(pplx::task<web::http::http_response> response_task)
+        // server-side (5xx) registration error
+        struct registration_service_exception {};
+
+        // should be called when an error condition has been identified, because it will always log
+        void handle_registration_error_conditions(const web::http::http_response& response, slog::base_gate& gate, const char* operation)
         {
+            // "For HTTP codes 400 and upwards, a JSON format response MUST be returned [in which]
+            // the 'code' should always match the HTTP status code. 'error' must always be present
+            // and in string format. 'debug' may be null if no further debug information is available"
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#error-codes--responses
+            // Especially in the case of client (4xx) errors, logging these would be a good idea, but
+            // would necessitate blocking for the response body, and extracting them from the json
+            // and dealing with potential errors along the way...
+
             // "A 500 [or other 5xx] error, inability to connect or a timeout indicates a server side or connectivity issue."
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
-            auto response = response_task.get(); // may throw http_exception
             if (web::http::is_server_error_status_code(response.status_code()))
             {
-                throw web::http::http_exception(response.reason_phrase());
-                // or return pplx::task_from_exception<web::http::http_response>(web::http::http_exception(response.reason_phrase()));
-            }
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
 
-            // "A 400 [or other 4xx] error indicates a client error which is likely to be the result of a validation failure identified by the Registration API."
+                throw registration_service_exception();
+            }
+            // "A 400 [or other 4xx] error [in response to a POST] indicates a client error which is likely
+            // to be the result of a validation failure identified by the Registration API."
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-400-or-other-4xx-on-registration
-            if (web::http::is_client_error_status_code(response.status_code()))
+            else if (web::http::is_client_error_status_code(response.status_code()))
             {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
+
                 // "The same request must not be re-attempted without corrective action being taken first.
                 // Error responses as detailed in the APIs documentation may assist with debugging these issues."
-                // When running unattended however, it seems reasonable to treat this just like a server error...
-                throw web::http::http_exception(response.reason_phrase());
+                // In an automated system, the best option seems to be to allow the registry-held representation
+                // of the Node's resources to become out of sync with the Node's view, and flag this to the user
+                // as visibly as possible.
 
-                // there may be a case for a 404 error being handled differently than other 4xx errors,
-                // since it's the target state after a DELETE, and is handled differently on heartbeats
-                // but for the moment, it gets no special treatment!
+                // Note that a 400 error can also indicate that the super-resource was not found due to recent
+                // garbage collection in the Registration API, even when this has not yet been indicated by a
+                // 404 error on heartbeat. Unfortunately, this situation cannot easily be distinguished from a
+                // validation failure at this time, another reason not to handle 4xx errors like 5xx errors.
+
+                // Similarly, a 404 error in response to a DELETE indicates either that the resource has already
+                // been explicitly deleted (i.e. a real error somewhere), or that it was not found due to recent
+                // garbage collection as above.
             }
-
-            return response_task;
+            else
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
+            }
         }
 
-        // make a POST or DELETE request on the Registration API specified by the client for the specified resource event
-        // this could be made asynchronous, returning pplx::task<web::http::http_response>
-        void request_registration(web::http::client::http_client& client, const web::json::value& event, slog::base_gate& gate)
+        // make an asynchronous POST or DELETE request on the Registration API specified by the client for the specified resource event
+        pplx::task<void> request_registration(web::http::client::http_client client, const web::json::value& event, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             // base uri should be like http://example.api.com/x-nmos/registration/{version}
             const auto& registry_version = parse_api_version(web::uri::split_path(client.base_uri().path()).back());
@@ -366,46 +402,65 @@ namespace nmos
 
                 auto body = make_registration_request_body(type, event.at(U("post")), registry_version);
 
-                auto response = client.request(web::http::methods::POST, U("/resource"), body).then(&handle_registration_error_conditions).get();
-
-                // "On first registration with a Registration API this should result in a '201 Created' HTTP response code.
-                // If a Node receives a 200 code in this case, a previous record of the Node can be assumed to still exist."
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-200-on-first-registration
-                if (web::http::status_codes::OK == response.status_code())
+                return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response) mutable
                 {
-                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration out of sync for " << type.name << ": " << id;
+                    // hmm, when I tried to make this a task-based continuation in order to just return the response_task argument (in most cases)
+                    // the enclosing then call failed to compile
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting out of sync registration deletion for " << type.name << ": " << id;
+                    // "On first registration with a Registration API this should result in a '201 Created' HTTP response code.
+                    // If a Node receives a 200 code in this case, a previous record of the Node can be assumed to still exist."
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-200-on-first-registration
 
-                    // "In order to avoid the registry-held representation of the Node's resources from being out of sync
-                    // with the Node's view, an HTTP DELETE should be performed in this situation to explicitly clear the
-                    // registry of the Node and any sub-resources."
-
-                    response = client.request(web::http::methods::DEL, U("/resource/") + path).then(&handle_registration_error_conditions).get();
-
-                    if (web::http::status_codes::NoContent == response.status_code())
+                    if (web::http::status_codes::Created == response.status_code())
                     {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
+                        // successful registration will be logged by the continuation
+
+                        return pplx::task_from_result(response);
                     }
-                    else // must be 1xx, some other 2xx, or 3xx, but all of those are unexpected
+                    else if (web::http::status_codes::OK == response.status_code())
                     {
-                        throw web::http::http_exception(response.reason_phrase());
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration out of sync for " << type.name << ": " << id;
+
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting out of sync registration deletion for " << type.name << ": " << id;
+
+                        // "In order to avoid the registry-held representation of the Node's resources from being out of sync
+                        // with the Node's view, an HTTP DELETE should be performed in this situation to explicitly clear the
+                        // registry of the Node and any sub-resources."
+
+                        return client.request(web::http::methods::DEL, U("/resource/") + path, token).then([=, &gate](web::http::http_response response) mutable
+                        {
+                            if (web::http::status_codes::NoContent == response.status_code())
+                            {
+                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
+                            }
+                            else
+                            {
+                                handle_registration_error_conditions(response, gate, "deletion");
+                            }
+
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Re-requesting registration creation for " << type.name << ": " << id;
+
+                            // "A new Node registration after this point should result in the correct 201 response code."
+                            return client.request(web::http::methods::POST, U("/resource"), body, token);
+                        });
                     }
+                    else
+                    {
+                        // registration errors (4xx, 5xx) will be logged by the continuation
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Re-requesting registration creation for " << type.name << ": " << id;
-
-                    // "A new Node registration after this point should result in the correct 201 response code."
-                    response = client.request(web::http::methods::POST, U("/resource"), body).then(&handle_registration_error_conditions).get();
-                }
-
-                if (web::http::status_codes::Created == response.status_code())
+                        return pplx::task_from_result(response);
+                    }
+                }).then([=, &gate](web::http::http_response response)
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration created for " << type.name << ": " << id;
-                }
-                else // must be 1xx, some other 2xx, or 3xx, but all of those are unexpected
-                {
-                    throw web::http::http_exception(response.reason_phrase());
-                }
+                    if (web::http::status_codes::Created == response.status_code())
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration created for " << type.name << ": " << id;
+                    }
+                    else
+                    {
+                        handle_registration_error_conditions(response, gate, "creation");
+                    }
+                });
             }
             else if (update)
             {
@@ -413,39 +468,41 @@ namespace nmos
 
                 auto body = make_registration_request_body(type, event.at(U("post")), registry_version);
 
-                // block and wait for the response
-
-                auto response = client.request(web::http::methods::POST, U("/resource"), body).then(&handle_registration_error_conditions).get();
-
-                if (web::http::status_codes::OK == response.status_code())
+                return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response)
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << type.name << ": " << id;
-                }
-                else // must be 1xx, some other 2xx, or 3xx, but all of those are unexpected
-                {
-                    throw web::http::http_exception(response.reason_phrase());
-                }
+                    if (web::http::status_codes::OK == response.status_code())
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << type.name << ": " << id;
+                    }
+                    else
+                    {
+                        handle_registration_error_conditions(response, gate, "update");
+                    }
+                });
             }
             else if (deletion)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << type.name << ": " << id;
 
-                // block and wait for the response
-
-                auto response = client.request(web::http::methods::DEL, U("/resource/") + path).then(&handle_registration_error_conditions).get();
-
-                if (web::http::status_codes::NoContent == response.status_code())
+                return client.request(web::http::methods::DEL, U("/resource/") + path, token).then([=, &gate](web::http::http_response response)
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
-                }
-                else // must be 1xx, some other 2xx, or 3xx, but all of those are unexpected
-                {
-                    throw web::http::http_exception(response.reason_phrase());
-                }
+                    if (web::http::status_codes::NoContent == response.status_code())
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
+                    }
+                    else
+                    {
+                        handle_registration_error_conditions(response, gate, "deletion");
+                    }
+                });
             }
+
+            // probably an error to get here
+            return pplx::task_from_result();
         }
 
-        pplx::task<bool> update_node_health(web::http::client::http_client client, const nmos::id& id, int registration_heartbeat_interval, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        // asynchronously perform a heartbeat and return a result that indicates whether the heartbeat was successful
+        pplx::task<bool> update_node_health(web::http::client::http_client client, const nmos::id& id, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting heartbeat for node: " << id;
 
@@ -455,7 +512,7 @@ namespace nmos
 
                 if (web::http::status_codes::OK == response.status_code())
                 {
-                    return pplx::complete_after(std::chrono::seconds(registration_heartbeat_interval), token).then([] { return true; });
+                    return true;
                 }
                 else if (web::http::status_codes::NotFound == response.status_code())
                 {
@@ -463,13 +520,17 @@ namespace nmos
 
                     // "On encountering this code, a Node must re-register each of its resources with the Registration API in order."
                     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-404-on-heartbeat
-                    return pplx::task_from_result(false);
+                    return false;
                 }
-                else // unexpected status code
+                else
                 {
-                    throw web::http::http_exception(response.reason_phrase());
+                    handle_registration_error_conditions(response, gate, "heartbeat");
+
+                    // if we get here, it's not a server (5xx) error, so the best option seems to be to continue
+                    // even though we don't really know what's going on...
+                    return true;
                 }
-            });
+            }, token);
         }
 
         // there is significant similarity between initial_registration and registered_operation but I'm too tired to refactor again right now...
@@ -498,24 +559,26 @@ namespace nmos
                 grain.updated = strictly_increasing_update(model.resources);
             });
 
+            std::atomic<bool> registration_service_error(false);
             std::atomic<bool> node_registered(false);
 
             tai most_recent_update{};
 
             for (;;)
             {
-                // can't continue without a Registration API...
-                if (registration_services.empty()) break;
-
                 // wait for the thread to be interrupted because there are resource events (or this is the first time through)
                 // or because the node was registered successfully
+                // or because an error has been encountered with the selected registration service
                 // or because the server is being shut down
-                condition.wait(lock, [&]{ return shutdown || node_registered || most_recent_update < grain->updated; });
-                if (shutdown) break;
-                if (node_registered) break;
+                condition.wait(lock, [&]{ return shutdown || registration_service_error || node_registered || most_recent_update < grain->updated; });
+                if (registration_service_error)
+                {
+                    pop_registration_service(registration_services);
+                }
+                if (shutdown || registration_services.empty() || node_registered) break;
 
                 // "The Node selects a Registration API to use based on the priority"
-                const auto base_uri = registration_services.begin()->second;
+                const auto base_uri = top_registration_service(registration_services);
                 if (!client || client->base_uri() != base_uri)
                 {
                     client.reset(new web::http::client::http_client(base_uri));
@@ -526,6 +589,8 @@ namespace nmos
 
                 while (0 != events.size())
                 {
+                    if (shutdown || registration_service_error || node_registered) break;
+
                     const auto id_type = get_node_behaviour_event_id_type(events.at(0));
                     const auto event_type = get_resource_event_type(events.at(0));
 
@@ -536,9 +601,6 @@ namespace nmos
                         continue;
                     }
 
-                    if (shutdown) break;
-                    if (registration_services.empty()) break;
-
                     try
                     {
                         // issue the registration request, without the lock on the resources and settings
@@ -546,25 +608,25 @@ namespace nmos
 
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << client->base_uri().host() << ":" << client->base_uri().port();
 
-                        details::request_registration(*client, events.at(0), gate);
+                        // block and wait for the response
+                        // (which means no way to cancel this currently...)
+                        details::request_registration(*client, events.at(0), gate).get();
 
-                        // on success, discard the resource event
+                        // on success (or an ignored failure), discard the resource event
                         events.erase(0);
 
                         // subsequent events are handled in registered operation
                         node_registered = true;
-                        break;
                     }
                     catch (const web::http::http_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
-                        // "If the chosen Registration API does not respond correctly at any time,
-                        // another Registration API should be selected from the discovered list."
-                        registration_services.erase(registration_services.begin());
-                        // should use DNSServiceQueryRecord instead of DNSServiceResolve to get TTLs...
-
-                        break;
+                        registration_service_error = true;
+                    }
+                    catch (const registration_service_exception&)
+                    {
+                        registration_service_error = true;
                     }
                 }
 
@@ -586,6 +648,7 @@ namespace nmos
             pplx::cancellation_token_source background_cancellation_source;
             pplx::task<void> background_heartbeats = pplx::task_from_result();
 
+            std::atomic<bool> registration_service_error(false);
             std::atomic<bool> node_unregistered(false);
 
             // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
@@ -594,46 +657,89 @@ namespace nmos
 
             for (;;)
             {
-                // can't continue without a Registration API...
-                if (registration_services.empty()) break;
-
                 // wait for the thread to be interrupted because there are resource events (or this is the first time through)
                 // or because the node was unregistered (cleanly, or as a result of missed heartbeats)
+                // or because an error has been encountered with the selected registration service
                 // or because the server is being shut down
-                condition.wait(lock, [&]{ return shutdown || node_unregistered || most_recent_update < grain->updated; });
-                if (shutdown) break;
-                if (node_unregistered) break;
+                condition.wait(lock, [&]{ return shutdown || registration_service_error || node_unregistered || most_recent_update < grain->updated; });
+                if (registration_service_error)
+                {
+                    pop_registration_service(registration_services);
 
+                    background_cancellation_source.cancel();
+                    background_heartbeats.wait();
+                    background_cancellation_source = pplx::cancellation_token_source();
+                }
+                if (shutdown || registration_services.empty() || node_unregistered) break;
+
+                // this needs to be passed in from initial_registration, because otherwise a controlled unregistration can be omitted
                 auto self = nmos::find_self_resource(model.resources);
                 if (model.resources.end() == self) break;
                 const auto self_id = self->id;
 
                 // "The Node selects a Registration API to use based on the priority"
-                const auto base_uri = registration_services.begin()->second;
+                const auto base_uri = top_registration_service(registration_services);
                 if (!client || client->base_uri() != base_uri)
                 {
                     client.reset(new web::http::client::http_client(base_uri));
 
-                    const auto heartbeat_interval = nmos::fields::registration_heartbeat_interval(model.settings);
+                    // "The first interaction with a new Registration API [after a server side or connectivity issue]
+                    // should be a heartbeat to confirm whether whether the Node is still present in the registry"
+                    // therefore, block and wait for the first heartbeat response
+                    try
+                    {
+                        bool node_registered = update_node_health(*client, self_id, gate).get();
+                        if (!node_registered)
+                        {
+                            node_unregistered = true;
+                        }
+                    }
+                    catch (const web::http::http_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+
+                        registration_service_error = true;
+                    }
+                    catch (const registration_service_exception&)
+                    {
+                        registration_service_error = true;
+                    }
+
+                    if (shutdown || registration_service_error || node_unregistered) continue;
 
                     // "6. The Node persists itself in the registry by issuing heartbeats."
 
+                    const auto heartbeat_interval = nmos::fields::registration_heartbeat_interval(model.settings);
                     auto token = background_cancellation_source.get_token();
                     background_heartbeats = pplx::do_while([=, &client, &gate]
                     {
-                        return update_node_health(*client, self_id, heartbeat_interval, gate, token);
+                        return pplx::complete_after(std::chrono::seconds(heartbeat_interval), token).then([=, &client, &gate]() mutable
+                        {
+                            return update_node_health(*client, self_id, gate, token);
+                        });
                     }, token).then([&](pplx::task<void> t)
                     {
                         try
                         {
-                            t.wait(); // not t.get() to avoid any task_canceled exception
+                            t.get();
+
+                            node_unregistered = true;
                         }
                         catch (const web::http::http_exception& e)
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+
+                            registration_service_error = true;
+                        }
+                        catch (const registration_service_exception&)
+                        {
+                            registration_service_error = true;
+                        }
+                        catch (const pplx::task_canceled&)
+                        {
+                            // someone else is in charge
                         }
 
-                        node_unregistered = true;
                         condition.notify_all();
                     });
                 }
@@ -645,20 +751,21 @@ namespace nmos
 
                 while (0 != events.size())
                 {
+                    if (shutdown || registration_service_error || node_unregistered) break;
+
                     const auto id_type = get_node_behaviour_event_id_type(events.at(0));
                     const auto event_type = get_resource_event_type(events.at(0));
-
-                    if (shutdown) break;
-                    if (registration_services.empty()) break;
 
                     try
                     {
                         // issue the registration request, without the lock on the resources and settings
                         details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
 
-                        details::request_registration(*client, events.at(0), gate);
+                        // block and wait for the response
+                        // (which means no way to cancel this currently...)
+                        details::request_registration(*client, events.at(0), gate).get();
 
-                        // on success, discard the resource event
+                        // on success (or an ignored failure), discard the resource event
                         events.erase(0);
 
                         // "Following deletion of all other resources, the Node resource may be deleted and heartbeating stopped."
@@ -666,29 +773,17 @@ namespace nmos
                         {
                             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
                             node_unregistered = true;
-
-                            background_cancellation_source.cancel();
-                            background_heartbeats.wait();
-                            background_cancellation_source = pplx::cancellation_token_source();
-
-                            break;
                         }
                     }
                     catch (const web::http::http_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
-                        background_cancellation_source.cancel();
-                        background_heartbeats.wait();
-                        background_cancellation_source = pplx::cancellation_token_source();
-
-                        // "If the chosen Registration API does not respond correctly at any time,
-                        // another Registration API should be selected from the discovered list."
-                        registration_services.erase(registration_services.begin());
-                        // "TTLs on advertised services" may have expired too, so should cache time-to-live values
-                        // using DNSServiceQueryRecord instead of DNSServiceResolve?
-
-                        break;
+                        registration_service_error = true;
+                    }
+                    catch (const registration_service_exception&)
+                    {
+                        registration_service_error = true;
                     }
                 }
 
