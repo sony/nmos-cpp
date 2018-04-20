@@ -360,6 +360,9 @@ namespace nmos
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
             if (web::http::is_server_error_status_code(response.status_code()))
             {
+                // this could be regarded as a 'severe' error - presumably it is for the registry
+                // on the other hand, since the node has a strategy to recover, it could be regarded as only a 'warning'
+                // so on balance, log as an 'error'
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
 
                 throw registration_service_exception();
@@ -369,6 +372,9 @@ namespace nmos
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-400-or-other-4xx-on-registration
             else if (web::http::is_client_error_status_code(response.status_code()))
             {
+                // the severity here is trickier, since if it truly indicated a validation failure, this is a 'severe' error
+                // but unfortunately, there are circumstances described below where it could be regarded as only a 'warning
+                // so again, until there's a means to distinguish these cases, log as an 'error'
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
 
                 // "The same request must not be re-attempted without corrective action being taken first.
@@ -388,6 +394,8 @@ namespace nmos
             }
             else
             {
+                // this is a non-error status code, it might even be a successful (2xx) code, but since the
+                // calling function didn't expect it, log as an 'error'
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
             }
         }
@@ -522,7 +530,7 @@ namespace nmos
         // asynchronously perform a heartbeat and return a result that indicates whether the heartbeat was successful
         pplx::task<bool> update_node_health(web::http::client::http_client client, const nmos::id& id, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting heartbeat for node: " << id;
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting registration heartbeat for node: " << id;
 
             return client.request(web::http::methods::POST, U("/health/nodes/") + id, token).then([=, &gate](pplx::task<web::http::http_response> response_task)
             {
@@ -534,7 +542,9 @@ namespace nmos
                 }
                 else if (web::http::status_codes::NotFound == response.status_code())
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration not found for node: " << id;
+                    // although there's a recovery strategy here, so this could be regarded as a 'warning'
+                    // it is definitely unexpected, so log it as an 'error'
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration heartbeat error: " << response.status_code() << " " << response.reason_phrase();
 
                     // "On encountering this code, a Node must re-register each of its resources with the Registration API in order."
                     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-404-on-heartbeat
