@@ -19,8 +19,8 @@ namespace nmos
     namespace details
     {
         // registered operation
-        void initial_registration(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
-        void registered_operation(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
 
         // peer to peer operation
         void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
@@ -83,6 +83,11 @@ namespace nmos
             insert_resource(model.resources, details::make_node_behaviour_grain(grain_id, subscription_id));
         }
 
+        // there should be exactly one node resource, but it may not have been added yet
+        // and during a controlled shutdown it may be removed; it is therefore identified
+        // during initial registration for use in registered operation
+        nmos::id self_id;
+
         // continue until the server is being shut down
         for (;;)
         {
@@ -120,7 +125,7 @@ namespace nmos
 
             case initial_registration:
                 // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
-                details::initial_registration(model, grain_id, shutdown, mutex, condition, registration_services, gate);
+                details::initial_registration(self_id, model, grain_id, shutdown, mutex, condition, registration_services, gate);
 
                 if (!registration_services.empty())
                 {
@@ -137,7 +142,7 @@ namespace nmos
             case registered_operation:
                 // "6. The Node persists itself in the registry by issuing heartbeats."
                 // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
-                details::registered_operation(model, grain_id, shutdown, mutex, condition, registration_services, gate);
+                details::registered_operation(self_id, model, grain_id, shutdown, mutex, condition, registration_services, gate);
 
                 if (!registration_services.empty())
                 {
@@ -547,7 +552,7 @@ namespace nmos
         }
 
         // there is significant similarity between initial_registration and registered_operation but I'm too tired to refactor again right now...
-        void initial_registration(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting initial registration";
 
@@ -614,6 +619,8 @@ namespace nmos
                         continue;
                     }
 
+                    self_id = id_type.first;
+
                     try
                     {
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << client->base_uri().host() << ":" << client->base_uri().port();
@@ -649,7 +656,7 @@ namespace nmos
             }
         }
 
-        void registered_operation(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting registered operation";
 
@@ -689,11 +696,6 @@ namespace nmos
                     background_cancellation_source = pplx::cancellation_token_source();
                 }
                 if (shutdown || registration_services.empty() || node_unregistered) break;
-
-                // this needs to be passed in from initial_registration, because otherwise a controlled unregistration can be omitted
-                auto self = nmos::find_self_resource(model.resources);
-                if (model.resources.end() == self) break;
-                const auto self_id = self->id;
 
                 // "The Node selects a Registration API to use based on the priority"
                 const auto base_uri = top_registration_service(registration_services);
@@ -791,9 +793,9 @@ namespace nmos
                         events.erase(0);
 
                         // "Following deletion of all other resources, the Node resource may be deleted and heartbeating stopped."
+                        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
                         if (self_id == id_type.first && resource_removed_event == event_type)
                         {
-                            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
                             node_unregistered = true;
                         }
                     }
