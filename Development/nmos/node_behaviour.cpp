@@ -652,7 +652,7 @@ namespace nmos
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration request HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
                         registration_service_error = true;
                     }
@@ -726,7 +726,7 @@ namespace nmos
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration heartbeat HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
                         registration_service_error = true;
                     }
@@ -759,7 +759,7 @@ namespace nmos
                         }
                         catch (const web::http::http_exception& e)
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration heartbeat HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
                             registration_service_error = true;
                         }
@@ -811,7 +811,7 @@ namespace nmos
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration request HTTP error: " << e.what() << " [" << e.error_code() << "]";
 
                         registration_service_error = true;
                     }
