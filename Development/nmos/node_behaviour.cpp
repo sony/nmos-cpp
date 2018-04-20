@@ -203,7 +203,7 @@ namespace nmos
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
-            // hmmm, no way to cancel this currently... perhaps should be using discovery_backoff_max for latest_timeout_seconds?
+            // hmmm, no way to cancel this currently... perhaps should be using discovery_backoff_min/max for earliest/latest_timeout_seconds?
             std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration);
 
             if (!registration_services.empty())
@@ -609,6 +609,7 @@ namespace nmos
                 const auto base_uri = top_registration_service(registration_services);
                 if (!client || client->base_uri() != base_uri)
                 {
+                    // hmm, should configure the timeout rather than using the default one...
                     client.reset(new web::http::client::http_client(base_uri));
                 }
 
@@ -698,10 +699,9 @@ namespace nmos
                 {
                     pop_registration_service(registration_services);
 
-                    // cancel without the lock since it is also used by the background heartbeats
-                    details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-
                     background_cancellation_source.cancel();
+                    // wait without the lock since it is also used by the background heartbeats
+                    details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
                     background_heartbeats.wait();
                     background_cancellation_source = pplx::cancellation_token_source();
                 }
@@ -711,11 +711,17 @@ namespace nmos
                 const auto base_uri = top_registration_service(registration_services);
                 if (!client || client->base_uri() != base_uri)
                 {
+                    // hmm, should configure the timeout rather than using the default one...
+                    // the node needs to be able to get a response to heartbeats (if not other requests)
+                    // within the configured garbage collection interval on average, but the worst case
+                    // which could avoid triggering garbage collection is (almost) twice this value?
                     client.reset(new web::http::client::http_client(base_uri));
 
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
-                    // therefore, block and wait for the first heartbeat response
+
+                    // block and wait for the first heartbeat response
+                    // (which means no way to cancel this currently...)
                     try
                     {
                         bool node_registered = update_node_health(*client, self_id, gate).get();
@@ -824,10 +830,9 @@ namespace nmos
                 most_recent_update = grain->updated;
             }
 
-            // cancel without the lock since it is also used by the background heartbeats
-            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-
             background_cancellation_source.cancel();
+            // wait without the lock since it is also used by the background heartbeats
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
             background_heartbeats.wait();
         }
     }
@@ -941,10 +946,9 @@ namespace nmos
             // withdraw the 'ver_' TXT records
             update_node_service(advertiser, model.settings);
 
-            // cancel without the lock since it is also used by the background discovery
-            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-
             background_cancellation_source.cancel();
+            // wait without the lock since it is also used by the background discovery
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
             background_discovery.wait();
         }
     }
