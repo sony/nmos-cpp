@@ -1,6 +1,6 @@
 #include "nmos/node_behaviour.h"
 
-#include "pplx/pplx_utils.h" // for pplx::complete_after
+#include "pplx/pplx_utils.h" // for pplx::complete_at
 #include "cpprest/http_client.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
@@ -679,6 +679,7 @@ namespace nmos
             std::unique_ptr<web::http::client::http_client> client;
 
             pplx::cancellation_token_source background_cancellation_source;
+            std::chrono::system_clock::time_point heartbeat_time;
             pplx::task<void> background_heartbeats = pplx::task_from_result();
 
             bool registration_service_error(false);
@@ -724,6 +725,7 @@ namespace nmos
                     // (which means no way to cancel this currently...)
                     try
                     {
+                        heartbeat_time = std::chrono::system_clock::now();
                         bool node_registered = update_node_health(*client, self_id, gate).get();
                         if (!node_registered)
                         {
@@ -745,12 +747,13 @@ namespace nmos
 
                     // "6. The Node persists itself in the registry by issuing heartbeats."
 
-                    const auto heartbeat_interval = nmos::fields::registration_heartbeat_interval(model.settings);
+                    const std::chrono::seconds heartbeat_interval(nmos::fields::registration_heartbeat_interval(model.settings));
                     auto token = background_cancellation_source.get_token();
-                    background_heartbeats = pplx::do_while([=, &client, &gate]
+                    background_heartbeats = pplx::do_while([=, &heartbeat_time, &client, &gate]
                     {
-                        return pplx::complete_after(std::chrono::seconds(heartbeat_interval), token).then([=, &client, &gate]() mutable
+                        return pplx::complete_at(heartbeat_time + heartbeat_interval, token).then([=, &heartbeat_time, &client, &gate]() mutable
                         {
+                            heartbeat_time = std::chrono::system_clock::now();
                             return update_node_health(*client, self_id, gate, token);
                         });
                     }, token).then([&](pplx::task<void> t)
@@ -891,14 +894,15 @@ namespace nmos
             bool registration_services_discovered(false);
 
             pplx::cancellation_token_source background_cancellation_source;
-
+            auto discovery_time = std::chrono::system_clock::now();
             const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
             auto token = background_cancellation_source.get_token();
             pplx::task<void> background_discovery = pplx::do_while([&]
             {
-                return pplx::complete_after(discovery_interval, token).then([&]
+                return pplx::complete_at(discovery_time + discovery_interval, token).then([&]
                 {
+                    discovery_time = std::chrono::system_clock::now();
                     registration_services = discover_registration_services(discovery, fallback_registration_service, gate);
                     return registration_services.empty();
                 });

@@ -39,7 +39,27 @@ namespace pplx
     template <typename Rep, typename Period>
     inline pplx::task<void> complete_after(const std::chrono::duration<Rep, Period>& duration, const pplx::cancellation_token& token = pplx::cancellation_token::none())
     {
-        return complete_after((unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(), token);
+        return duration > std::chrono::duration<Rep, Period>::zero()
+            ? complete_after((unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(duration).count(), token)
+            : pplx::task_from_result();
+    }
+
+    /// <summary>
+    ///     Creates a task that completes at a specified time.
+    /// </summary>
+    /// <param name="time">
+    ///     The time point at which the task should complete.
+    /// </param>
+    /// <param name="token">
+    ///     Cancellation token for cancellation of this operation.
+    /// </param>
+    /// <remarks>
+    ///     Because the scheduler is cooperative in nature, the time at which the task completes could be after the specified time.
+    /// </remarks>
+    template <typename Clock, typename Duration = typename Clock::duration>
+    inline pplx::task<void> complete_at(const std::chrono::time_point<Clock, Duration>& time, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+    {
+        return complete_after(time - Clock::now(), token);
     }
 
     /// <summary>
