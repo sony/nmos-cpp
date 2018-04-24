@@ -65,6 +65,14 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
 
+        // registration_request_max [node]: timeout for interactions with the Registration API /resource endpoint
+        const web::json::field_as_integer_or registration_request_max{ U("registration_request_max"), 30 };
+
+        // registration_heartbeat_max [node]: timeout for interactions with the Registration API /health/nodes endpoint
+        // Note that the node needs to be able to get a response to heartbeats (if not other requests) within the garbage collection interval of the Registration API on average,
+        // but the worst case which could avoid triggering garbage collection is (almost) twice this value... see registration_expiry_interval
+        const web::json::field_as_integer_or registration_heartbeat_max{ U("registration_heartbeat_max"), 2 * 12 };
+
         // query_paging_default/query_paging_limit [registry]: default/maximum number of results per "page" when using the Query API (a client may request a lower limit)
         const web::json::field_as_integer_or query_paging_default{ U("query_paging_default"), 10 };
         const web::json::field_as_integer_or query_paging_limit{ U("query_paging_limit"), 100 };

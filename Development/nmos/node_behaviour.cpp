@@ -400,6 +400,13 @@ namespace nmos
             }
         }
 
+        web::http::client::http_client_config config_with_timeout(const std::chrono::seconds& timeout)
+        {
+            web::http::client::http_client_config config;
+            config.set_timeout(timeout);
+            return config;
+        }
+
         // make an asynchronous POST or DELETE request on the Registration API specified by the client for the specified resource event
         pplx::task<void> request_registration(web::http::client::http_client client, const web::json::value& event, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
@@ -571,7 +578,7 @@ namespace nmos
             const auto grain = model.resources.find(grain_id);
             if (model.resources.end() == grain) return;
 
-            std::unique_ptr<web::http::client::http_client> client;
+            std::unique_ptr<web::http::client::http_client> registration_client;
 
             // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
 
@@ -607,10 +614,10 @@ namespace nmos
 
                 // "The Node selects a Registration API to use based on the priority"
                 const auto base_uri = top_registration_service(registration_services);
-                if (!client || client->base_uri() != base_uri)
+                if (!registration_client || registration_client->base_uri() != base_uri)
                 {
-                    // hmm, should configure the timeout rather than using the default one...
-                    client.reset(new web::http::client::http_client(base_uri));
+                    auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
+                    registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
                 }
 
                 auto events = web::json::value::array();
@@ -634,7 +641,7 @@ namespace nmos
 
                     try
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << client->base_uri().host() << ":" << client->base_uri().port();
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
 
                         {
                             // issue the registration request, without the lock on the resources and settings
@@ -642,7 +649,7 @@ namespace nmos
 
                             // block and wait for the response
                             // (which means no way to cancel this currently...)
-                            details::request_registration(*client, events.at(0), gate).get();
+                            details::request_registration(*registration_client, events.at(0), gate).get();
                         }
 
                         // on success (or an ignored failure), discard the resource event
@@ -676,7 +683,8 @@ namespace nmos
             const auto grain = model.resources.find(grain_id);
             if (model.resources.end() == grain) return;
 
-            std::unique_ptr<web::http::client::http_client> client;
+            std::unique_ptr<web::http::client::http_client> registration_client;
+            std::unique_ptr<web::http::client::http_client> heartbeat_client;
 
             pplx::cancellation_token_source background_cancellation_source;
             std::chrono::system_clock::time_point heartbeat_time;
@@ -710,13 +718,13 @@ namespace nmos
 
                 // "The Node selects a Registration API to use based on the priority"
                 const auto base_uri = top_registration_service(registration_services);
-                if (!client || client->base_uri() != base_uri)
+                if (!registration_client || registration_client->base_uri() != base_uri)
                 {
-                    // hmm, should configure the timeout rather than using the default one...
-                    // the node needs to be able to get a response to heartbeats (if not other requests)
-                    // within the configured garbage collection interval on average, but the worst case
-                    // which could avoid triggering garbage collection is (almost) twice this value?
-                    client.reset(new web::http::client::http_client(base_uri));
+                    auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
+                    registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
+
+                    auto heartbeat_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_heartbeat_max(model.settings)));
+                    heartbeat_client.reset(new web::http::client::http_client(base_uri, heartbeat_config));
 
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
@@ -726,7 +734,7 @@ namespace nmos
                     try
                     {
                         heartbeat_time = std::chrono::system_clock::now();
-                        bool node_registered = update_node_health(*client, self_id, gate).get();
+                        bool node_registered = update_node_health(*heartbeat_client, self_id, gate).get();
                         if (!node_registered)
                         {
                             node_unregistered = true;
@@ -749,12 +757,12 @@ namespace nmos
 
                     const std::chrono::seconds heartbeat_interval(nmos::fields::registration_heartbeat_interval(model.settings));
                     auto token = background_cancellation_source.get_token();
-                    background_heartbeats = pplx::do_while([=, &heartbeat_time, &client, &gate]
+                    background_heartbeats = pplx::do_while([=, &heartbeat_time, &heartbeat_client, &gate]
                     {
-                        return pplx::complete_at(heartbeat_time + heartbeat_interval, token).then([=, &heartbeat_time, &client, &gate]() mutable
+                        return pplx::complete_at(heartbeat_time + heartbeat_interval, token).then([=, &heartbeat_time, &heartbeat_client, &gate]() mutable
                         {
                             heartbeat_time = std::chrono::system_clock::now();
-                            return update_node_health(*client, self_id, gate, token);
+                            return update_node_health(*heartbeat_client, self_id, gate, token);
                         });
                     }, token).then([&](pplx::task<void> t)
                     {
@@ -805,7 +813,7 @@ namespace nmos
 
                             // block and wait for the response
                             // (which means no way to cancel this currently...)
-                            details::request_registration(*client, events.at(0), gate).get();
+                            details::request_registration(*registration_client, events.at(0), gate).get();
                         }
 
                         // on success (or an ignored failure), discard the resource event
