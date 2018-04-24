@@ -243,10 +243,14 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API)
         // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver, bool randomize)
+        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver, bool randomize, const std::chrono::seconds& timeout)
         {
+            const auto absolute_timeout = std::chrono::system_clock::now() + timeout;
+
             std::vector<mdns::service_discovery::browse_result> browsed;
-            discovery.browse(browsed, service);
+
+            int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+            discovery.browse(browsed, service, {}, (wait_millis + 999) / 1000);
 
             // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri),
             // filtering out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."
@@ -265,7 +269,9 @@ namespace nmos
             for (auto& resolving : browsed)
             {
                 mdns::service_discovery::resolve_result resolved;
-                if (discovery.resolve(resolved, resolving.name, resolving.type, resolving.domain, resolving.interface_id))
+
+                wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+                if (discovery.resolve(resolved, resolving.name, resolving.type, resolving.domain, resolving.interface_id, (wait_millis + 999) / 1000))
                 {
                     // parse into structured TXT records
                     auto records = mdns::parse_txt_records(resolved.txt_records);
@@ -291,6 +297,8 @@ namespace nmos
                         .to_uri()
                     });
                 }
+
+                // even if wait_millis is now zero, continue to try to resolve all browse results
             }
 
             return by_priority;

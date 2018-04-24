@@ -109,7 +109,7 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API)
         // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver = nmos::is04_versions::all, bool randomize = true);
+        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver = nmos::is04_versions::all, bool randomize = true, const std::chrono::seconds& timeout = std::chrono::seconds(mdns::default_latest_timeout_seconds));
     }
 }
 

@@ -25,10 +25,9 @@ namespace nmos
         // peer to peer operation
         void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
 
-        // service discovery/advertisement
-        void advertise_node_service(mdns::service_advertiser& advertiser, const nmos::settings& settings);
-        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const web::uri& fallback_registration_service, slog::base_gate& gate);
-        web::uri get_registration_service(const nmos::settings& settings);
+        // service advertisement/discovery
+        void advertise_node_service(const nmos::settings& settings, nmos::mutex& mutex, mdns::service_advertiser& advertiser);
+        void discover_registration_services(const nmos::settings& settings, nmos::mutex& mutex, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate);
 
         // a (fake) subscription to keep track of all resource events
         nmos::resource make_node_behaviour_subscription(const nmos::id& id);
@@ -64,7 +63,7 @@ namespace nmos
         // "3. The Node produces an mDNS advertisement of type '_nmos-node._tcp' in the '.local' domain as specified in Node API."
         std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
         mdns::service_advertiser_guard advertiser_guard(*advertiser);
-        details::advertise_node_service(*advertiser, details::with_read_lock(mutex, [&] { return model.settings; }));
+        details::advertise_node_service(model.settings, mutex, *advertiser);
 
         // "If the chosen Registration API does not respond correctly at any time, another Registration API should be selected from the discovered list."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
@@ -104,7 +103,7 @@ namespace nmos
                 }
 
                 // "4. The Node performs a DNS-SD browse for services of type '_nmos-registration._tcp' as specified."
-                registration_services = details::discover_registration_services(*discovery, details::with_read_lock(mutex, [&] { return details::get_registration_service(model.settings); }), gate);
+                details::discover_registration_services(model.settings, mutex, registration_services, *discovery, gate);
 
                 if (!registration_services.empty())
                 {
@@ -157,7 +156,7 @@ namespace nmos
                 break;
 
             case rediscovery:
-                registration_services = details::discover_registration_services(*discovery, details::with_read_lock(mutex, [&] { return details::get_registration_service(model.settings); }), gate);
+                details::discover_registration_services(model.settings, mutex, registration_services, *discovery, gate);
 
                 if (!registration_services.empty())
                 {
@@ -183,7 +182,7 @@ namespace nmos
         }
     }
 
-    // service discovery/advertisement
+    // service advertisement/discovery
     namespace details
     {
         // register the node service with the required TXT records
@@ -199,12 +198,17 @@ namespace nmos
             }
         }
 
-        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const web::uri& fallback_registration_service, slog::base_gate& gate)
+        void advertise_node_service(const nmos::settings& settings, nmos::mutex& mutex, mdns::service_advertiser& advertiser)
+        {
+            advertise_node_service(advertiser, details::with_read_lock(mutex, [&] { return settings; }));
+        }
+
+        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
-            // hmmm, no way to cancel this currently... perhaps should be using discovery_backoff_min/max for earliest/latest_timeout_seconds?
-            std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration);
+            // hmmm, no way to cancel this currently...
+            std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, nmos::is04_versions::all, true, timeout);
 
             if (!registration_services.empty())
             {
@@ -235,6 +239,20 @@ namespace nmos
                 .to_uri()
                 : web::uri();
         }
+
+        void discover_registration_services(const nmos::settings& settings, nmos::mutex& mutex, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
+        {
+            web::uri fallback_registration_service;
+            std::chrono::seconds discovery_interval;
+
+            {
+                nmos::read_lock lock(mutex);
+                fallback_registration_service = get_registration_service(settings);
+                discovery_interval = std::chrono::seconds(nmos::fields::discovery_backoff_max(settings));
+            }
+
+            registration_services = details::discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
+        };
 
         // "The Node selects a Registration API to use based on the priority"
         const web::uri& top_registration_service(const std::multimap<service_priority, web::uri>& registration_services)
@@ -911,7 +929,7 @@ namespace nmos
                 return pplx::complete_at(discovery_time + discovery_interval, token).then([&]
                 {
                     discovery_time = std::chrono::system_clock::now();
-                    registration_services = discover_registration_services(discovery, fallback_registration_service, gate);
+                    registration_services = discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
                     return registration_services.empty();
                 });
             }).then([&]
