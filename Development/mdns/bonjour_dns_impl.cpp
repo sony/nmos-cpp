@@ -218,7 +218,7 @@ namespace mdns
             {
                 mdns::service_discovery::browse_result result{ serviceName, regtype, replyDomain, interfaceIndex };
 
-                slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain;
+                slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << result.interface_id;
                 found.push_back(result);
             }
 
@@ -259,10 +259,12 @@ namespace mdns
 
                 if (errorCode == kDNSServiceErr_NoError)
                 {
+                    slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceProcessResult succeeded";
                     // callback called, potentially more results coming
                 }
                 else if (errorCode == kDNSServiceErr_Timeout_)
                 {
+                    slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceProcessResult timed out";
                     break;
                 }
                 else
@@ -412,7 +414,8 @@ namespace mdns
 
         *m_resolved = resolve_result{};
 
-        slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain;
+        // could use if_indextoname to get a name for the interface
+        slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
 
         const auto absolute_timeout = std::chrono::system_clock::now() + std::chrono::seconds(timeout_seconds);
 
@@ -429,10 +432,12 @@ namespace mdns
             if (errorCode == kDNSServiceErr_NoError)
             {
                 // callback called
+                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult succeeded";
             }
             else if (errorCode == kDNSServiceErr_Timeout_)
             {
                 // timeout expired
+                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult timed out";
             }
             else
             {
@@ -457,10 +462,12 @@ namespace mdns
                 if (errorCode == kDNSServiceErr_NoError)
                 {
                     // callback called
+                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
                 }
                 else if (errorCode == kDNSServiceErr_Timeout_)
                 {
                     // timeout expired
+                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out";
                 }
                 else
                 {
