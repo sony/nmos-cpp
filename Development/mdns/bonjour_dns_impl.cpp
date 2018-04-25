@@ -31,6 +31,12 @@ typedef decltype(DNSServiceRefSockFD(NULL)) DNSServiceRefSockFD_t;
 static const DNSServiceErrorType kDNSServiceErr_Timeout_ = -65568;
 
 #ifdef _WIN32
+// kIPv6IfIndexBase was added a really long time ago (107.1) in the Windows implementation
+// because "Windows does not have a uniform scheme for IPv4 and IPv6 interface indexes"
+static const std::uint32_t kIPv6IfIndexBase = 10000000L;
+#endif
+
+#ifdef _WIN32
 static inline bool dnssd_SocketValid(DNSServiceRefSockFD_t fd) { return fd != INVALID_SOCKET; }
 #else
 static inline bool dnssd_SocketValid(DNSServiceRefSockFD_t fd) { return fd >= 0; }
@@ -232,7 +238,7 @@ namespace mdns
         }
     }
 
-    bool bonjour_dns_impl::browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
+    bool bonjour_dns_impl::browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
     {
         m_found = &found;
 
@@ -244,7 +250,10 @@ namespace mdns
         const auto latest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(latest_timeout_seconds);
         const auto earliest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(earliest_timeout_seconds);
 
-        DNSServiceErrorType errorCode = DNSServiceBrowse(&client, 0, 0, type.c_str(), !domain.empty() ? domain.c_str() : NULL, browse_reply, this);
+        // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
+        slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceBrowse for regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
+
+        DNSServiceErrorType errorCode = DNSServiceBrowse(&client, 0, interface_id, type.c_str(), !domain.empty() ? domain.c_str() : NULL, browse_reply, this);
 
         if (errorCode == kDNSServiceErr_NoError)
         {
@@ -449,36 +458,50 @@ namespace mdns
             client = nullptr;
 
             // for now, limited to IPv4
-            errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, kDNSServiceProtocol_IPv4, resolved.host_name.c_str(), getaddrinfo_reply, this);
+            const DNSServiceProtocol protocol = kDNSServiceProtocol_IPv4;
 
-            if (errorCode == kDNSServiceErr_NoError)
+#ifdef _WIN32
+            if (protocol == kDNSServiceProtocol_IPv4 && interface_id >= kIPv6IfIndexBase)
             {
-                // wait for up to timeout seconds for a response
-                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+                // no point trying in this case!
+                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << resolved.host_name << " on interface: " << interface_id;
+            }
+            else
+#endif
+            {
+                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << resolved.host_name << " on interface: " << interface_id;
 
-                // process the address info response
-                errorCode = DNSServiceProcessResult(client, wait_millis);
+                errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, protocol, resolved.host_name.c_str(), getaddrinfo_reply, this);
 
                 if (errorCode == kDNSServiceErr_NoError)
                 {
-                    // callback called
-                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
-                }
-                else if (errorCode == kDNSServiceErr_Timeout_)
-                {
-                    // timeout expired
-                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out";
+                    // wait for up to timeout seconds for a response
+                    int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+
+                    // process the address info response
+                    errorCode = DNSServiceProcessResult(client, wait_millis);
+
+                    if (errorCode == kDNSServiceErr_NoError)
+                    {
+                        // callback called
+                        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
+                    }
+                    else if (errorCode == kDNSServiceErr_Timeout_)
+                    {
+                        // timeout expired
+                        slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out";
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult reported error: " << errorCode;
+                    }
+
+                    DNSServiceRefDeallocate(client);
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult reported error: " << errorCode;
+                    slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
                 }
-
-                DNSServiceRefDeallocate(client);
-            }
-            else
-            {
-                slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
             }
         }
         else

@@ -21,6 +21,7 @@ namespace web
                 boost::asio::ip::tcp::resolver resolver(service);
                 std::vector<utility::string_t> addresses;
                 boost::system::error_code ec;
+                // for now, limited to IPv4
                 std::for_each(resolver.resolve({ boost::asio::ip::tcp::v4(), utility::us2s(host_name), "" }, ec), boost::asio::ip::tcp::resolver::iterator{}, [&](const boost::asio::ip::tcp::resolver::iterator::value_type& re)
                 {
                     addresses.push_back(utility::s2us(re.endpoint().address().to_string()));

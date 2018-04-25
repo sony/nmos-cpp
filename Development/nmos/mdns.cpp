@@ -250,7 +250,7 @@ namespace nmos
             std::vector<mdns::service_discovery::browse_result> browsed;
 
             int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
-            discovery.browse(browsed, service, {}, (wait_millis + 999) / 1000);
+            discovery.browse(browsed, service, {}, 0, (wait_millis + 999) / 1000);
 
             // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri),
             // filtering out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."
