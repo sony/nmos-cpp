@@ -113,10 +113,10 @@ namespace nmos
         return mdns::parse_txt_record(records, txt_record_keys::pri, details::parse_pri_value, service_priorities::no_priority);
     }
 
-    // make the required TXT records from the specified values (or sensible default values, and omitting 'pri' if no_priority)
-    mdns::structured_txt_records make_txt_records(service_priority pri, const std::vector<api_version>& api_ver, const service_protocol& api_proto)
+    // make the required TXT records from the specified values (or sensible default values)
+    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri, const std::vector<api_version>& api_ver, const service_protocol& api_proto)
     {
-        if (service_priorities::no_priority == pri)
+        if (service == nmos::service_types::node)
         {
             return
             {

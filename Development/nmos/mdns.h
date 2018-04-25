@@ -74,8 +74,8 @@ namespace nmos
     // find and parse the 'pri' TXT record
     service_priority parse_pri_record(const mdns::structured_txt_records& records);
 
-    // make the required TXT records from the specified values (or sensible default values, and omitting 'pri' if no_priority)
-    mdns::structured_txt_records make_txt_records(service_priority pri = service_priorities::highest_development_priority, const std::vector<api_version>& api_ver = is04_versions::all, const service_protocol& api_proto = service_protocols::http);
+    // make the required TXT records from the specified values (or sensible default values)
+    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri = service_priorities::highest_development_priority, const std::vector<api_version>& api_ver = is04_versions::all, const service_protocol& api_proto = service_protocols::http);
 
     // "The value of each of the ['ver_' TXT records] should be an unsigned 8-bit integer initialised
     // to '0'. This integer MUST be incremented and mDNS TXT record updated whenever a change is made
@@ -102,7 +102,7 @@ namespace nmos
     namespace experimental
     {
         // helper function for registering the specified service (API)
-        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records = make_txt_records());
+        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records);
 
         // helper function for updating the specified service (API) TXT records
         void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records);
