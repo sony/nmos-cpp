@@ -251,7 +251,7 @@ namespace nmos
             }
 
             registration_services = details::discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
-        };
+        }
 
         // "The Node selects a Registration API to use based on the priority"
         const web::uri& top_registration_service(const std::multimap<service_priority, web::uri>& registration_services)
@@ -614,6 +614,12 @@ namespace nmos
             bool registration_service_error(false);
             bool node_registered(false);
 
+            web::json::value events;
+
+            // background tasks may read/write the above local state by reference
+            pplx::cancellation_token_source cancellation_source;
+            pplx::task<void> request = pplx::task_from_result();
+
             tai most_recent_update{};
 
             for (;;)
@@ -627,6 +633,12 @@ namespace nmos
                 {
                     pop_registration_service(registration_services);
                     registration_service_error = false;
+
+                    cancellation_source.cancel();
+                    // wait without the lock since it is also used by the background tasks
+                    details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+                    request.wait();
+                    cancellation_source = pplx::cancellation_token_source();
                 }
                 if (shutdown || registration_services.empty() || node_registered) break;
 
@@ -638,7 +650,7 @@ namespace nmos
                     registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
                 }
 
-                auto events = web::json::value::array();
+                events = web::json::value::array();
                 node_behaviour_grain_guard guard(model.resources, grain, events);
 
                 while (0 != events.size())
@@ -657,39 +669,55 @@ namespace nmos
 
                     self_id = id_type.first;
 
-                    try
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+
+                    auto token = cancellation_source.get_token();
+                    request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                        nmos::write_lock lock(mutex); // in order to update local state
 
+                        try
                         {
-                            // issue the registration request, without the lock on the resources and settings
-                            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+                            finally.get();
 
-                            // block and wait for the response
-                            // (which means no way to cancel this currently...)
-                            details::request_registration(*registration_client, events.at(0), gate).get();
+                            // on success (or an ignored failure), discard the resource event
+                            if (0 != events.size())
+                            {
+                                events.erase(0);
+                            }
+
+                            // subsequent events are handled in registered operation
+                            node_registered = true;
+                        }
+                        catch (const web::http::http_exception& e)
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration request HTTP error: " << e.what() << " [" << e.error_code() << "]";
+
+                            registration_service_error = true;
+                        }
+                        catch (const registration_service_exception&)
+                        {
+                            registration_service_error = true;
+                        }
+                        catch (const pplx::task_canceled&)
+                        {
+                            // someone else is in charge
                         }
 
-                        // on success (or an ignored failure), discard the resource event
-                        events.erase(0);
+                        condition.notify_all();
+                    });
 
-                        // subsequent events are handled in registered operation
-                        node_registered = true;
-                    }
-                    catch (const web::http::http_exception& e)
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration request HTTP error: " << e.what() << " [" << e.error_code() << "]";
-
-                        registration_service_error = true;
-                    }
-                    catch (const registration_service_exception&)
-                    {
-                        registration_service_error = true;
-                    }
+                    // wait for the request because interactions with the Registration API /resource endpoint must be sequential
+                    condition.wait(lock, [&]{ return shutdown || registration_service_error || node_registered || request.is_done(); });
                 }
 
                 most_recent_update = grain->updated;
             }
+
+            cancellation_source.cancel();
+            // wait without the lock since it is also used by the background tasks
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+            request.wait();
         }
 
         void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
@@ -704,12 +732,18 @@ namespace nmos
             std::unique_ptr<web::http::client::http_client> registration_client;
             std::unique_ptr<web::http::client::http_client> heartbeat_client;
 
-            pplx::cancellation_token_source background_cancellation_source;
-            std::chrono::system_clock::time_point heartbeat_time;
-            pplx::task<void> background_heartbeats = pplx::task_from_result();
-
             bool registration_service_error(false);
+            bool node_registered(false);
             bool node_unregistered(false);
+
+            web::json::value events;
+
+            std::chrono::system_clock::time_point heartbeat_time;
+
+            // background tasks may read/write the above local state by reference
+            pplx::cancellation_token_source cancellation_source;
+            pplx::task<void> request = pplx::task_from_result();
+            pplx::task<void> heartbeats = pplx::task_from_result();
 
             // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
 
@@ -727,11 +761,12 @@ namespace nmos
                     pop_registration_service(registration_services);
                     registration_service_error = false;
 
-                    background_cancellation_source.cancel();
-                    // wait without the lock since it is also used by the background heartbeats
+                    cancellation_source.cancel();
+                    // wait without the lock since it is also used by the background tasks
                     details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-                    background_heartbeats.wait();
-                    background_cancellation_source = pplx::cancellation_token_source();
+                    request.wait();
+                    heartbeats.wait();
+                    cancellation_source = pplx::cancellation_token_source();
                 }
                 if (shutdown || registration_services.empty() || node_unregistered) break;
 
@@ -748,48 +783,39 @@ namespace nmos
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
 
-                    // block and wait for the first heartbeat response
-                    // (which means no way to cancel this currently...)
-                    try
+                    const std::chrono::seconds heartbeat_interval(nmos::fields::registration_heartbeat_interval(model.settings));
+                    auto token = cancellation_source.get_token();
+                    heartbeat_time = std::chrono::system_clock::now();
+                    heartbeats = update_node_health(*heartbeat_client, self_id, gate, token).then([&](bool success)
                     {
-                        heartbeat_time = std::chrono::system_clock::now();
-                        bool node_registered = update_node_health(*heartbeat_client, self_id, gate).get();
+                        nmos::write_lock lock(mutex); // in order to update local state
+
+                        node_registered = success;
                         if (!node_registered)
                         {
                             node_unregistered = true;
                         }
-                    }
-                    catch (const web::http::http_exception& e)
+
+                        condition.notify_all();
+                    }).then([=, &heartbeat_time, &heartbeat_client, &gate]
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration heartbeat HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                        // "6. The Node persists itself in the registry by issuing heartbeats."
 
-                        registration_service_error = true;
-                    }
-                    catch (const registration_service_exception&)
-                    {
-                        registration_service_error = true;
-                    }
-
-                    if (shutdown || registration_service_error || node_unregistered) continue;
-
-                    // "6. The Node persists itself in the registry by issuing heartbeats."
-
-                    const std::chrono::seconds heartbeat_interval(nmos::fields::registration_heartbeat_interval(model.settings));
-                    auto token = background_cancellation_source.get_token();
-                    background_heartbeats = pplx::do_while([=, &heartbeat_time, &heartbeat_client, &gate]
-                    {
-                        return pplx::complete_at(heartbeat_time + heartbeat_interval, token).then([=, &heartbeat_time, &heartbeat_client, &gate]() mutable
+                        return pplx::do_while([=, &heartbeat_time, &heartbeat_client, &gate]
                         {
-                            heartbeat_time = std::chrono::system_clock::now();
-                            return update_node_health(*heartbeat_client, self_id, gate, token);
-                        });
-                    }, token).then([&](pplx::task<void> t)
+                            return pplx::complete_at(heartbeat_time + heartbeat_interval, token).then([=, &heartbeat_time, &heartbeat_client, &gate]() mutable
+                            {
+                                heartbeat_time = std::chrono::system_clock::now();
+                                return update_node_health(*heartbeat_client, self_id, gate, token);
+                            });
+                        }, token);
+                    }).then([&](pplx::task<void> finally)
                     {
-                        nmos::write_lock lock(mutex); // in order to update flags
+                        nmos::write_lock lock(mutex); // in order to update local state
 
                         try
                         {
-                            t.get();
+                            finally.get();
 
                             node_unregistered = true;
                         }
@@ -810,9 +836,13 @@ namespace nmos
 
                         condition.notify_all();
                     });
+
+                    // wait for the response from the first heartbeat that the Node is still registered (or not!)
+                    condition.wait(lock, [&]{ return shutdown || registration_service_error || node_unregistered || node_registered; });
+                    if (shutdown || registration_service_error || node_unregistered) continue;
                 }
 
-                auto events = web::json::value::array();
+                events = web::json::value::array();
                 node_behaviour_grain_guard guard(model.resources, grain, events);
 
                 most_recent_update = grain->updated;
@@ -824,46 +854,58 @@ namespace nmos
                     const auto id_type = get_node_behaviour_event_id_type(events.at(0));
                     const auto event_type = get_resource_event_type(events.at(0));
 
-                    try
+                    auto token = cancellation_source.get_token();
+                    request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
                     {
-                        {
-                            // issue the registration request, without the lock on the resources and settings
-                            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+                        nmos::write_lock lock(mutex); // in order to update state variables
 
-                            // block and wait for the response
-                            // (which means no way to cancel this currently...)
-                            details::request_registration(*registration_client, events.at(0), gate).get();
+                        try
+                        {
+                            finally.get();
+
+                            // on success (or an ignored failure), discard the resource event
+                            if (0 != events.size())
+                            {
+                                events.erase(0);
+                            }
+
+                            // "Following deletion of all other resources, the Node resource may be deleted and heartbeating stopped."
+                            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
+                            if (self_id == id_type.first && resource_removed_event == event_type)
+                            {
+                                node_unregistered = true;
+                            }
+                        }
+                        catch (const web::http::http_exception& e)
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration request HTTP error: " << e.what() << " [" << e.error_code() << "]";
+
+                            registration_service_error = true;
+                        }
+                        catch (const registration_service_exception&)
+                        {
+                            registration_service_error = true;
+                        }
+                        catch (const pplx::task_canceled&)
+                        {
+                            // someone else is in charge
                         }
 
-                        // on success (or an ignored failure), discard the resource event
-                        events.erase(0);
+                        condition.notify_all();
+                    });
 
-                        // "Following deletion of all other resources, the Node resource may be deleted and heartbeating stopped."
-                        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
-                        if (self_id == id_type.first && resource_removed_event == event_type)
-                        {
-                            node_unregistered = true;
-                        }
-                    }
-                    catch (const web::http::http_exception& e)
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration request HTTP error: " << e.what() << " [" << e.error_code() << "]";
-
-                        registration_service_error = true;
-                    }
-                    catch (const registration_service_exception&)
-                    {
-                        registration_service_error = true;
-                    }
+                    // wait for the request because interactions with the Registration API /resource endpoint must be sequential
+                    condition.wait(lock, [&]{ return shutdown || registration_service_error || node_unregistered || request.is_done(); });
                 }
 
                 most_recent_update = grain->updated;
             }
 
-            background_cancellation_source.cancel();
-            // wait without the lock since it is also used by the background heartbeats
+            cancellation_source.cancel();
+            // wait without the lock since it is also used by the background tasks
             details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-            background_heartbeats.wait();
+            request.wait();
+            heartbeats.wait();
         }
     }
 
@@ -920,11 +962,13 @@ namespace nmos
             // intermittently attempting discovery of a Registration API while in peer-to-peer mode seems like a good idea?
             bool registration_services_discovered(false);
 
-            pplx::cancellation_token_source background_cancellation_source;
             auto discovery_time = std::chrono::system_clock::now();
             const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
-            auto token = background_cancellation_source.get_token();
+
+            // background tasks may read/write the above local state by reference
+            pplx::cancellation_token_source cancellation_source;
+            auto token = cancellation_source.get_token();
             pplx::task<void> background_discovery = pplx::do_while([&]
             {
                 return pplx::complete_at(discovery_time + discovery_interval, token).then([&]
@@ -935,7 +979,7 @@ namespace nmos
                 });
             }).then([&]
             {
-                nmos::write_lock lock(mutex); // in order to update flags
+                nmos::write_lock lock(mutex); // in order to update local state
 
                 registration_services_discovered = !registration_services.empty();
 
@@ -977,8 +1021,8 @@ namespace nmos
             // withdraw the 'ver_' TXT records
             update_node_service(advertiser, model.settings);
 
-            background_cancellation_source.cancel();
-            // wait without the lock since it is also used by the background discovery
+            cancellation_source.cancel();
+            // wait without the lock since it is also used by the background tasks
             details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
             background_discovery.wait();
         }
