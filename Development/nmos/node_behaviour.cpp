@@ -626,6 +626,7 @@ namespace nmos
                 if (registration_service_error)
                 {
                     pop_registration_service(registration_services);
+                    registration_service_error = false;
                 }
                 if (shutdown || registration_services.empty() || node_registered) break;
 
@@ -724,6 +725,7 @@ namespace nmos
                 if (registration_service_error)
                 {
                     pop_registration_service(registration_services);
+                    registration_service_error = false;
 
                     background_cancellation_source.cancel();
                     // wait without the lock since it is also used by the background heartbeats
