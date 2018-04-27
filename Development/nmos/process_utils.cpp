@@ -1,5 +1,6 @@
 #include "nmos/process_utils.h"
 
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/signal_set.hpp>
 
 // boost::this_process::get_id() would be perfect, except that Boost.Process was only introduced in Boost 1.64.0

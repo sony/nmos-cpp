@@ -61,7 +61,7 @@ namespace nmos
     inline utility::string_t make_http_protocol(const web::http::http_version& http_version)
     {
         utility::ostringstream_t result;
-        result << U("HTTP/") << http_version.first << U(".") << http_version.second;
+        result << U("HTTP/") << (int)http_version.major << U(".") << (int)http_version.minor;
         return result.str();
     }
 
