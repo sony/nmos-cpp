@@ -16,17 +16,24 @@ The codebase utilizes a number of great open-source projects (licenses vary).
 
 The following instructions describe how to prepare these external dependencies when building this software.
 
+On Windows, Visual Studio is required. Visual Studio 2013 has been tested extensively and more recent toolchains should also be supported.
+
+On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 release series has been tested, although a more recent compiler is to be recommended!
+
 ### CMake
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
    Notes:
    - C++ REST SDK currently requires CMake 3.9 or higher, and using Boost 1.66.0 or higher requires CMake 3.11
+   - Pre-built binary distributions are available for many platforms
    - Some CMake modules derived from third-party sources are included in the [third_party/cmake](../Development/third_party/cmake) directory
 
 ### Boost C++ Libraries
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
-   Note: Several Boost releases have been tested, including Version 1.67.0 (current release) and Version 1.54.0
+   Notes:
+   - Several Boost releases have been tested, including Version 1.67.0 (current release) and Version 1.54.0
+   - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS (long-term support) has Version 1.54.0
 2. Expand the archive so that, for example, the boost\_1\_67\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - date_time
@@ -48,10 +55,13 @@ Note: WebSocket++ v0.7.0 (latest release) has also been tested.
 ### OpenSSL
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
-It is compatible with the OpenSSL 1.0.2 series, the Long Term Support (LTS) release. OpenSSL 1.1.0 is quite different, and not currently supported.
+It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) release is recommended. OpenSSL 1.1 is quite different, and not currently supported.
 
-1. On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-   The [Win64 OpenSSL v1.0.2o Light](https://slproweb.com/download/Win64OpenSSL_Light-1_0_2o.exe) installer has been tested
+1. Download and install a recent release
+   Notes:
+   - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
+     The [Win64 OpenSSL v1.0.2o Light](https://slproweb.com/download/Win64OpenSSL_Light-1_0_2o.exe) installer has been tested
+   - On Linux distributions, an OpenSSL package may already be installed, e.g. Ubuntu 14.04 LTS has version 1.01f
 
 ### C++ REST SDK
 
@@ -73,7 +83,10 @@ It is compatible with the OpenSSL 1.0.2 series, the Long Term Support (LTS) rele
 
 For example, on Windows, for Visual Studio 2013:
 ```
-cmake ^
+cd .../Release
+mkdir build
+cd build
+cmake .. ^
   -G "Visual Studio 12 2013 Win64" ^
   -DCPPREST_PPLX_IMPL:STRING="winpplx" ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
@@ -82,6 +95,19 @@ cmake ^
   -DBOOST_INCLUDEDIR:PATH=".../boost_1_67_0" ^
   -DBOOST_LIBRARYDIR:PATH=".../boost_1_67_0/x64/lib" ^
   -DWERROR:BOOL="0"
+```
+
+For example, on Linux, using the default toolchain and dependencies:
+
+```
+cd .../Release
+mkdir build
+cd build
+cmake .. ^
+  -DCMAKE_BUILD_TYPE:STRING="Release" ^
+  -DWERROR:BOOL="0"
+make
+sudo make install
 ```
 
 ### DNS Service Discovery
@@ -123,6 +149,7 @@ Notes:
 ### Catch
 
 A copy of the single header version (v1.10.0) is included in the [third_party/catch](../Development/third_party/catch) directory.
+No installation is necessary.
 
 # What Next?
 
