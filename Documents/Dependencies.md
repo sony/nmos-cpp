@@ -78,6 +78,7 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_67_0`` to match the suggested ``b2`` command
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
+   - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
 4. Use CMake to generate project files  
    On Windows, the "Visual Studio 12 2013 Win64" generator has been tested
 
