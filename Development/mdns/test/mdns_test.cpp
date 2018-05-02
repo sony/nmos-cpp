@@ -13,9 +13,9 @@
 
 static unsigned int sleepSeconds = 2;
 
-static uint16_t queryPort = 49999;
-static uint16_t registrationPort = 49998;
-static uint16_t nodePort = 49997;
+static uint16_t testPort1 = 49999;
+static uint16_t testPort2 = 49998;
+static uint16_t testPort3 = 49997;
 
 namespace
 {
@@ -106,18 +106,18 @@ BST_TEST_CASE(testMdnsAdvertiseAPIs)
         "pri=100"
     };
 
-    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
-    advertiser->register_service("sea-lion-test_registration", "_nmos-registration._tcp", registrationPort, {}, {}, textRecords);
-    advertiser->register_service("sea-lion-test_node", "_nmos-node._tcp", nodePort, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-advertise-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-advertise-2", "_sea-lion-test1._tcp", testPort2, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-advertise-3", "_sea-lion-test2._tcp", testPort3, {}, {}, textRecords);
 
     // Advertise our APIs
     advertiser->start();
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement started for 3 service(s)"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_query._nmos-query._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_registration._nmos-registration._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_node._nmos-node._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-advertise-1._sea-lion-test1._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-advertise-2._sea-lion-test1._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-advertise-3._sea-lion-test2._tcp"));
 
     advertiser->stop();
 }
@@ -142,45 +142,37 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
         "pri=100"
     };
 
-    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
-    advertiser->register_service("sea-lion-test_registration", "_nmos-registration._tcp", registrationPort, {}, {}, textRecords);
-    advertiser->register_service("sea-lion-test_node", "_nmos-node._tcp", nodePort, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-browse-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-browse-2", "_sea-lion-test1._tcp", testPort2, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-browse-3", "_sea-lion-test2._tcp", testPort3, {}, {}, textRecords);
 
     // Advertise our APIs
     advertiser->start();
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement started for 3 service(s)"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_query._nmos-query._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_registration._nmos-registration._tcp"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_node._nmos-node._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-browse-1._sea-lion-test1._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-browse-2._sea-lion-test1._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-browse-3._sea-lion-test2._tcp"));
     gate.clearLogMessages();
 
     // Now discover the APIs
     std::unique_ptr<mdns::service_discovery> browser = mdns::make_discovery(gate);
     std::vector<mdns::service_discovery::browse_result> found;
 
-    browser->browse(found, "_nmos-query._tcp");
+    browser->browse(found, "_sea-lion-test1._tcp");
 
     auto browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
     {
-        return br.name == "sea-lion-test_query";
+        return br.name == "test-mdns-browse-2";
     });
     BST_REQUIRE(browseResult >= 1);
 
-    browser->browse(found, "_nmos-registration._tcp");
+    browser->browse(found, "_sea-lion-test2._tcp");
 
     browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
     {
-        return br.name == "sea-lion-test_registration";
-    });
-    BST_REQUIRE(browseResult >= 1);
-
-    browser->browse(found, "_nmos-node._tcp");
-
-    browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
-    {
-        return br.name == "sea-lion-test_node";
+        return br.name == "test-mdns-browse-3";
     });
     BST_REQUIRE(browseResult >= 1);
 
@@ -190,9 +182,9 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
     advertiser->stop();
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
-    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: sea-lion-test_query"));
-    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: sea-lion-test_registration"));
-    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: sea-lion-test_node"));
+    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: test-mdns-browse-1"));
+    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: test-mdns-browse-2"));
+    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: test-mdns-browse-3"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,14 +211,14 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     BST_REQUIRE(!ipAddresses.empty());
     std::string ipAddress = utility::us2s(ipAddresses[0]);
 
-    advertiser->register_service("sea-lion-test_query", "_nmos-query._tcp", queryPort, {}, {}, textRecords);
+    advertiser->register_service("test-mdns-resolve-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
 
     // Advertise our APIs
     advertiser->start();
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement started for 1 service(s)"));
-    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: sea-lion-test_query._nmos-query._tcp"));
+    BST_REQUIRE(gate.hasLogMessage("Registered advertisement for: test-mdns-resolve-1._sea-lion-test1._tcp"));
     gate.clearLogMessages();
 
     // Now discover an API
@@ -234,11 +226,11 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     std::vector<mdns::service_discovery::browse_result> found;
     mdns::service_discovery::browse_result testQuery;
 
-    resolver->browse(found, "_nmos-query._tcp");
+    resolver->browse(found, "_sea-lion-test1._tcp");
 
     for (size_t i = 0; i < found.size(); i++)
     {
-        if (found[i].name == "sea-lion-test_query")
+        if (found[i].name == "test-mdns-resolve-1")
         {
             testQuery = found[i];
             break;
@@ -255,7 +247,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
 
     BST_REQUIRE(resolved.ip_address == ipAddress);
-    BST_REQUIRE(resolved.port == queryPort);
+    BST_REQUIRE(resolved.port == testPort1);
     BST_REQUIRE(resolved.txt_records.size() == textRecords.size());
 
     size_t count = 0;
@@ -272,13 +264,13 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     textRecords.pop_back();
     textRecords.push_back("pri=1");
 
-    BST_REQUIRE(advertiser->update_record("sea-lion-test_query", "_nmos-query._tcp", {}, textRecords));
+    BST_REQUIRE(advertiser->update_record("test-mdns-resolve-1", "_sea-lion-test1._tcp", {}, textRecords));
 
     // Now resolve again and check the txt records
     BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
 
     BST_REQUIRE(resolved.ip_address == ipAddress);
-    BST_REQUIRE(resolved.port == queryPort);
+    BST_REQUIRE(resolved.port == testPort1);
     BST_REQUIRE(resolved.txt_records.size() == textRecords.size());
 
     count = 0;
@@ -295,5 +287,5 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     advertiser->stop();
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
-    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: sea-lion-test_query"));
+    BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: test-mdns-resolve-1"));
 }
