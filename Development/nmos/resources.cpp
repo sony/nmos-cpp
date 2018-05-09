@@ -55,8 +55,8 @@ namespace nmos
 
         if (result.second)
         {
-            auto& resource = *result.first;
-            insert_resource_events(resources, resource.version, resource.type, web::json::value::null(), resource.data);
+            auto& inserted = *result.first;
+            insert_resource_events(resources, inserted.version, inserted.type, web::json::value::null(), inserted.data);
         }
         // else logic error?
 
@@ -78,8 +78,8 @@ namespace nmos
 
         if (result)
         {
-            auto& resource = *found;
-            insert_resource_events(resources, resource.version, resource.type, pre, resource.data);
+            auto& modified = *found;
+            insert_resource_events(resources, modified.version, modified.type, pre, modified.data);
         }
 
         return result;

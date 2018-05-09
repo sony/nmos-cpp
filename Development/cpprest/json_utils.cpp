@@ -66,9 +66,9 @@ namespace web
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
                     for (auto it = pobjects.begin(); pobjects.end() != it; it = pobjects.erase(it))
                     {
-                        auto& object = **it;
-                        auto found = object.find(key);
-                        if (object.end() != found)
+                        auto& subobject = **it;
+                        auto found = subobject.find(key);
+                        if (subobject.end() != found)
                         {
                             auto& field = found->second;
                             if (field.is_array())
@@ -99,9 +99,9 @@ namespace web
                     // leaf key, so map each object to the specified field, merging arrays into results
                     for (auto& pobject : pobjects)
                     {
-                        auto& object = *pobject;
-                        auto found = object.find(key);
-                        if (object.end() != found)
+                        auto& subobject = *pobject;
+                        auto found = subobject.find(key);
+                        if (subobject.end() != found)
                         {
                             auto& field = found->second;
                             if (!results.is_array())

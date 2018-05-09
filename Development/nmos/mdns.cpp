@@ -276,24 +276,24 @@ namespace nmos
                     // parse into structured TXT records
                     auto records = mdns::parse_txt_records(resolved.txt_records);
 
-                    // 'pri' must not be omitted
-                    auto pri = nmos::parse_pri_record(records);
-                    if (nmos::service_priorities::no_priority == pri) continue;
+                    // 'pri' must not be omitted for Registration API and Query API (see nmos::make_txt_records)
+                    auto resolved_pri = nmos::parse_pri_record(records);
+                    if (service != nmos::service_types::node && nmos::service_priorities::no_priority == resolved_pri) continue;
 
                     // for now, HTTP only
-                    auto api_proto = nmos::parse_api_proto_record(records);
-                    if (nmos::service_protocols::http != api_proto) continue;
+                    auto resolved_proto = nmos::parse_api_proto_record(records);
+                    if (nmos::service_protocols::http != resolved_proto) continue;
 
                     // check the advertisement includes a version we support
-                    auto api_vers = nmos::parse_api_ver_record(records);
-                    auto api_ver = std::find_first_of(api_vers.rbegin(), api_vers.rend(), nmos::is04_versions::all.begin(), nmos::is04_versions::all.end());
-                    if (api_vers.rend() == api_ver) continue;
+                    auto resolved_vers = nmos::parse_api_ver_record(records);
+                    auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.begin(), api_ver.end());
+                    if (resolved_vers.rend() == resolved_ver) continue;
 
-                    by_priority.insert({pri, web::uri_builder()
-                        .set_scheme(utility::s2us(api_proto))
+                    by_priority.insert({ resolved_pri, web::uri_builder()
+                        .set_scheme(utility::s2us(resolved_proto))
                         .set_host(utility::s2us(resolved.ip_address))
                         .set_port(resolved.port)
-                        .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*api_ver))
+                        .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*resolved_ver))
                         .to_uri()
                     });
                 }
