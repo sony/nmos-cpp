@@ -165,6 +165,12 @@ add_library(
 source_group("Source Files" FILES ${MDNS_SOURCES})
 source_group("Header Files" FILES ${MDNS_HEADERS})
 
+# ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
+target_link_libraries(
+    mdns_static
+    cpprestsdk::cpprest
+    )
+
 # nmos-cpp-node
 
 set(NMOS_CPP_NODE_SOURCES
