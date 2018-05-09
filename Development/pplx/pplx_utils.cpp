@@ -102,7 +102,11 @@ namespace pplx
 
 #endif
 
+#if (defined(_MSC_VER) && (_MSC_VER >= 1800)) && !CPPREST_FORCE_PPLX
+namespace Concurrency // since namespace pplx = Concurrency
+#else
 namespace pplx
+#endif
 {
     namespace details
     {
