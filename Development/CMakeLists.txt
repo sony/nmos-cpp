@@ -69,8 +69,9 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find bonjour (for mdns_static)
-    set (BONJOUR_INCLUDE "${PROJECT_SOURCE_DIR}/../../Bonjour SDK/Include")
-    set (BONJOUR_LIB_DIR "${PROJECT_SOURCE_DIR}/../../Bonjour SDK/Lib/x64")
+    # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
+    set (BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
+    set (BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
     set (BONJOUR_LIB dnssd)
 
     # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
