@@ -36,6 +36,7 @@ On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 relea
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS (long-term support) has Version 1.54.0
 2. Expand the archive so that, for example, the boost\_1\_67\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
+   - chrono
    - date_time
    - regex
    - system
@@ -44,7 +45,7 @@ On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 relea
 For example, on Windows, for Visual Studio 2013:
 ```
 bootstrap
-b2 toolset=msvc-12.0 --prefix=. --with-date_time --with-regex --with-system --with-thread --stagedir=x64 stage address-model=64
+b2 toolset=msvc-12.0 --prefix=. --with-chrono --with-date_time --with-regex --with-system --with-thread --stagedir=x64 stage address-model=64
 ```
 
 ### WebSocket++
