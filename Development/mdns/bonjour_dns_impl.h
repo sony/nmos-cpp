@@ -20,8 +20,8 @@ namespace mdns
         virtual void start();
 
         // Discovery - not thread-safe!
-        virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds);
-        virtual bool resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int timeout_seconds);
+        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds);
+        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds);
 
         struct service
         {
@@ -43,9 +43,10 @@ namespace mdns
         slog::base_gate& m_gate;
 
         // browse/resolve in-flight state
-        std::vector<browse_result>* m_found;
+        std::vector<browse_result>* m_browsed;
+        std::vector<resolve_result>* m_resolved;
+        std::vector<std::string>* m_ip_addresses;
         bool m_more_coming;
-        resolve_result* m_resolved;
     };
 }
 

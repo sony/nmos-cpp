@@ -218,14 +218,14 @@ namespace mdns
 
         if (errorCode == kDNSServiceErr_NoError)
         {
-            std::vector<service_discovery::browse_result>& found = *impl->m_found;
+            auto& results = *impl->m_browsed;
 
             if (0 != (flags & kDNSServiceFlagsAdd))
             {
-                mdns::service_discovery::browse_result result{ serviceName, regtype, replyDomain, interfaceIndex };
+                results.push_back({ serviceName, regtype, replyDomain, interfaceIndex });
+                const auto& result = results.back();
 
                 slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << result.interface_id;
-                found.push_back(result);
             }
 
             impl->m_more_coming = 0 != (flags & kDNSServiceFlagsMoreComing);
@@ -233,19 +233,16 @@ namespace mdns
         else
         {
             slog::log<slog::severities::error>(impl->m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply received error: " << errorCode;
-            impl->m_more_coming = false;
-            return;
         }
     }
 
-    bool bonjour_dns_impl::browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
+    bool bonjour_dns_impl::browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
     {
-        m_found = &found;
+        m_browsed = &results;
 
         DNSServiceRef client = nullptr;
 
-        m_found->clear();
-        m_more_coming = false;
+        m_browsed->clear();
 
         const auto latest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(latest_timeout_seconds);
         const auto earliest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(earliest_timeout_seconds);
@@ -260,10 +257,11 @@ namespace mdns
             do
             {
                 // wait for up to timeout seconds for a response
-                const auto& absolute_timeout = m_found->empty() ? latest_timeout : earliest_timeout;
+                const auto& absolute_timeout = m_browsed->empty() ? latest_timeout : earliest_timeout;
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
-                // process the next browse response
+                // process the next browse responses (callback may be called more than once in any call to DNSServiceProcessResult)
+                m_more_coming = false;
                 errorCode = DNSServiceProcessResult(client, wait_millis);
 
                 if (errorCode == kDNSServiceErr_NoError)
@@ -282,7 +280,7 @@ namespace mdns
                     break;
                 }
 
-            } while (earliest_timeout > std::chrono::system_clock::now());
+            } while ((m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
 
             DNSServiceRefDeallocate(client);
         }
@@ -291,7 +289,7 @@ namespace mdns
             slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceBrowse reported error: " << errorCode;
         }
 
-        return !found.empty();
+        return !results.empty();
     }
 
     static txt_records parse_txt_records(const unsigned char* txtRecord, size_t txtLen)
@@ -338,20 +336,22 @@ namespace mdns
     {
         bonjour_dns_impl* impl = (bonjour_dns_impl*)context;
 
-        service_discovery::resolve_result& resolved = *impl->m_resolved;
+        auto& results = *impl->m_resolved;
 
         if (errorCode == kDNSServiceErr_NoError)
         {
-            resolved.host_name = hosttarget;
+            results.push_back({ hosttarget, ntohs(port), parse_txt_records(txtRecord, txtLen) });
+            auto& result = results.back();
+
             // now that DNSServiceGetAddrInfo is being called afterwards, this result will generally be overwritten
-            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(resolved.host_name)));
-            if (!ip_addresses.empty())
+            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(result.host_name)));
+            std::transform(ip_addresses.begin(), ip_addresses.end(), std::back_inserter(result.ip_addresses), utility::us2s);
+            if (!result.ip_addresses.empty())
             {
-                resolved.ip_address = utility::us2s(ip_addresses[0]);
-                slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got address: " << resolved.ip_address << " for host: " << resolved.host_name;
+                slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got " << result.ip_addresses.size() << " address(es) for host: " << hosttarget;
             }
-            resolved.port = ntohs(port);
-            resolved.txt_records = parse_txt_records(txtRecord, txtLen);
+
+            impl->m_more_coming = 0 != (flags & kDNSServiceFlagsMoreComing);
         }
         else
         {
@@ -398,16 +398,21 @@ namespace mdns
     {
         bonjour_dns_impl* impl = (bonjour_dns_impl*)context;
 
-        service_discovery::resolve_result& resolved = *impl->m_resolved;
+        auto& results = *impl->m_ip_addresses;
 
-        if (errorCode == kDNSServiceErr_NoError && 0 != address)
+        if (errorCode == kDNSServiceErr_NoError)
         {
-            const auto ip_address = from_sockaddr(*address);
-            if (!ip_address.is_unspecified())
+            if (0 != address)
             {
-                resolved.ip_address = ip_address.to_string();
-                slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceGetAddrInfoReply got address: " << resolved.ip_address << " for host: " << resolved.host_name;
+                const auto ip_address = from_sockaddr(*address);
+                if (!ip_address.is_unspecified())
+                {
+                    results.push_back(ip_address.to_string());
+                    slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceGetAddrInfoReply got address: " << results.back() << " for host: " << hostname;
+                }
             }
+
+            impl->m_more_coming = 0 != (flags & kDNSServiceFlagsMoreComing);
         }
         else
         {
@@ -415,101 +420,125 @@ namespace mdns
         }
     }
 
-    bool bonjour_dns_impl::resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int timeout_seconds)
+    bool bonjour_dns_impl::resolve(std::vector<resolve_result>& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
     {
         m_resolved = &resolved;
 
         DNSServiceRef client = nullptr;
 
-        *m_resolved = resolve_result{};
+        m_resolved->clear();
 
-        // could use if_indextoname to get a name for the interface
+        const auto latest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(latest_timeout_seconds);
+        const auto earliest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(earliest_timeout_seconds);
+
+        // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
         slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
-
-        const auto absolute_timeout = std::chrono::system_clock::now() + std::chrono::seconds(timeout_seconds);
 
         DNSServiceErrorType errorCode = DNSServiceResolve(&client, 0, interface_id, name.c_str(), type.c_str(), domain.c_str(), (DNSServiceResolveReply)resolve_reply, this);
 
         if (errorCode == kDNSServiceErr_NoError)
         {
-            // wait for up to timeout seconds for a response
-            int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
-
-            // process the resolve response
-            errorCode = DNSServiceProcessResult(client, wait_millis);
-
-            if (errorCode == kDNSServiceErr_NoError)
+            do
             {
-                // callback called
-                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult succeeded";
-            }
-            else if (errorCode == kDNSServiceErr_Timeout_)
-            {
-                // timeout expired
-                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult timed out";
-            }
-            else
-            {
-                slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult reported error: " << errorCode;
-            }
+                // wait for up to timeout seconds for a response
+                const auto& absolute_timeout = m_resolved->empty() ? latest_timeout : earliest_timeout;
+                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
-            DNSServiceRefDeallocate(client);
-
-            client = nullptr;
-
-            // for now, limited to IPv4
-            const DNSServiceProtocol protocol = kDNSServiceProtocol_IPv4;
-
-#ifdef _WIN32
-            if (protocol == kDNSServiceProtocol_IPv4 && interface_id >= kIPv6IfIndexBase)
-            {
-                // no point trying in this case!
-                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << resolved.host_name << " on interface: " << interface_id;
-            }
-            else
-#endif
-            {
-                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << resolved.host_name << " on interface: " << interface_id;
-
-                errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, protocol, resolved.host_name.c_str(), getaddrinfo_reply, this);
+                // process the next resolve responses (callback may be called more than once in any call to DNSServiceProcessResult)
+                m_more_coming = false;
+                errorCode = DNSServiceProcessResult(client, wait_millis);
 
                 if (errorCode == kDNSServiceErr_NoError)
                 {
-                    // wait for up to timeout seconds for a response
-                    int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
-
-                    // process the address info response
-                    errorCode = DNSServiceProcessResult(client, wait_millis);
-
-                    if (errorCode == kDNSServiceErr_NoError)
-                    {
-                        // callback called
-                        slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
-                    }
-                    else if (errorCode == kDNSServiceErr_Timeout_)
-                    {
-                        // timeout expired
-                        slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out";
-                    }
-                    else
-                    {
-                        slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult reported error: " << errorCode;
-                    }
-
-                    DNSServiceRefDeallocate(client);
+                    slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult succeeded";
+                    // callback called, potentially more results coming
+                }
+                else if (errorCode == kDNSServiceErr_Timeout_)
+                {
+                    slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult timed out";
+                    break;
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
+                    slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceProcessResult reported error: " << errorCode;
+                    break;
+                }
+
+            } while ((m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+
+            DNSServiceRefDeallocate(client);
+
+            // DNSServiceGetAddrInfo was added a long time ago (161.1) but did not exist in Tiger
+            // and is not defined by the Avahi compatibility layer, so getaddrinfo must be relied on instead
+#if _DNS_SD_H+0 >= 1610100
+            for (auto& r : *m_resolved)
+            {
+                m_ip_addresses = &r.ip_addresses;
+
+                client = nullptr;
+
+                // for now, limited to IPv4
+                const DNSServiceProtocol protocol = kDNSServiceProtocol_IPv4;
+
+#ifdef _WIN32
+                if (protocol == kDNSServiceProtocol_IPv4 && interface_id >= kIPv6IfIndexBase)
+                {
+                    // no point trying in this case!
+                    slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << r.host_name << " on interface: " << interface_id;
+                }
+                else
+#endif
+                {
+                    slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << r.host_name << " on interface: " << interface_id;
+
+                    errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, protocol, r.host_name.c_str(), getaddrinfo_reply, this);
+
+                    if (errorCode == kDNSServiceErr_NoError)
+                    {
+                        do
+                        {
+                            // wait for up to timeout seconds for a response
+                            const auto& absolute_timeout = m_ip_addresses->empty() ? latest_timeout : earliest_timeout;
+                            int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+
+                            // process the next resolve responses (callback may be called more than once in any call to DNSServiceProcessResult)
+                            m_more_coming = false;
+                            errorCode = DNSServiceProcessResult(client, wait_millis);
+
+                            if (errorCode == kDNSServiceErr_NoError)
+                            {
+                                slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
+                                // callback called, potentially more results coming
+                            }
+                            else if (errorCode == kDNSServiceErr_Timeout_)
+                            {
+                                slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out";
+                                break;
+                            }
+                            else
+                            {
+                                slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult reported error: " << errorCode;
+                                break;
+                            }
+
+                        } while ((m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+
+                        DNSServiceRefDeallocate(client);
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
+                    }
                 }
             }
+#endif
         }
         else
         {
             slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceResolve reported error: " << errorCode;
         }
 
-        return !resolved.ip_address.empty();
+        return !resolved.empty();
     }
 
     void bonjour_dns_impl::start()

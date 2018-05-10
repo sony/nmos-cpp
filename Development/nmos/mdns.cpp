@@ -268,13 +268,15 @@ namespace nmos
             std::multimap<service_priority, web::uri> by_priority;
             for (auto& resolving : browsed)
             {
-                mdns::service_discovery::resolve_result resolved;
+                std::vector<mdns::service_discovery::resolve_result> resolved;
 
                 wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
                 if (discovery.resolve(resolved, resolving.name, resolving.type, resolving.domain, resolving.interface_id, (wait_millis + 999) / 1000))
                 {
+                    // note, since we specified the interface_id, we expect only one result...
+
                     // parse into structured TXT records
-                    auto records = mdns::parse_txt_records(resolved.txt_records);
+                    auto records = mdns::parse_txt_records(resolved.front().txt_records);
 
                     // 'pri' must not be omitted for Registration API and Query API (see nmos::make_txt_records)
                     auto resolved_pri = nmos::parse_pri_record(records);
@@ -289,13 +291,16 @@ namespace nmos
                     auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.begin(), api_ver.end());
                     if (resolved_vers.rend() == resolved_ver) continue;
 
-                    by_priority.insert({ resolved_pri, web::uri_builder()
-                        .set_scheme(utility::s2us(resolved_proto))
-                        .set_host(utility::s2us(resolved.ip_address))
-                        .set_port(resolved.port)
-                        .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*resolved_ver))
-                        .to_uri()
-                    });
+                    for (const auto& ip_address : resolved.front().ip_addresses)
+                    {
+                        by_priority.insert({ resolved_pri, web::uri_builder()
+                            .set_scheme(utility::s2us(resolved_proto))
+                            .set_host(utility::s2us(ip_address))
+                            .set_port(resolved.front().port)
+                            .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*resolved_ver))
+                            .to_uri()
+                        });
+                    }
                 }
 
                 // even if wait_millis is now zero, continue to try to resolve all browse results

@@ -158,19 +158,19 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
 
     // Now discover the APIs
     std::unique_ptr<mdns::service_discovery> browser = mdns::make_discovery(gate);
-    std::vector<mdns::service_discovery::browse_result> found;
+    std::vector<mdns::service_discovery::browse_result> browsed;
 
-    browser->browse(found, "_sea-lion-test1._tcp");
+    browser->browse(browsed, "_sea-lion-test1._tcp");
 
-    auto browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
+    auto browseResult = std::count_if(browsed.begin(), browsed.end(), [](const mdns::service_discovery::browse_result& br)
     {
         return br.name == "test-mdns-browse-2";
     });
     BST_REQUIRE(browseResult >= 1);
 
-    browser->browse(found, "_sea-lion-test2._tcp");
+    browser->browse(browsed, "_sea-lion-test2._tcp");
 
-    browseResult = std::count_if(found.begin(), found.end(), [](const mdns::service_discovery::browse_result& br)
+    browseResult = std::count_if(browsed.begin(), browsed.end(), [](const mdns::service_discovery::browse_result& br)
     {
         return br.name == "test-mdns-browse-3";
     });
@@ -205,11 +205,14 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     textRecords.push_back("api_ver=v1.0,v1.1,v1.2");
     textRecords.push_back("pri=100");
 
-    // get the ip address
+    // get the ip addresses
     std::string hostname = utility::us2s(web::http::experimental::host_name());
-    auto ipAddresses = web::http::experimental::host_addresses(utility::s2us(hostname));
+    std::vector<std::string> ipAddresses;
+    for (const auto& a : web::http::experimental::host_addresses(utility::s2us(hostname)))
+    {
+        ipAddresses.push_back(utility::us2s(a));
+    }
     BST_REQUIRE(!ipAddresses.empty());
-    std::string ipAddress = utility::us2s(ipAddresses[0]);
 
     advertiser->register_service("test-mdns-resolve-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
 
@@ -223,42 +226,50 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     // Now discover an API
     std::unique_ptr<mdns::service_discovery> resolver = mdns::make_discovery(gate);
-    std::vector<mdns::service_discovery::browse_result> found;
+    std::vector<mdns::service_discovery::browse_result> browsed;
     mdns::service_discovery::browse_result testQuery;
 
-    resolver->browse(found, "_sea-lion-test1._tcp");
+    resolver->browse(browsed, "_sea-lion-test1._tcp");
 
-    for (size_t i = 0; i < found.size(); i++)
+    for (size_t i = 0; i < browsed.size(); i++)
     {
-        if (found[i].name == "test-mdns-resolve-1")
+        if (browsed[i].name == "test-mdns-resolve-1")
         {
-            testQuery = found[i];
+            testQuery = browsed[i];
             break;
         }
     }
 
     BST_REQUIRE(!testQuery.name.empty());
 
-    // Now resolve the ip address and port
-    mdns::service_discovery::resolve_result resolved;
+    // Now resolve the ip addresses and port
+    std::vector<mdns::service_discovery::resolve_result> resolved;
 
     gate.clearLogMessages();
 
     BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
 
-    BST_REQUIRE(resolved.ip_address == ipAddress);
-    BST_REQUIRE(resolved.port == testPort1);
-    BST_REQUIRE(resolved.txt_records.size() == textRecords.size());
-
-    size_t count = 0;
-    for (size_t i = 0; i < textRecords.size(); i++)
+    BST_REQUIRE(!resolved.empty());
+    for (auto& result : resolved)
     {
-        if (resolved.txt_records.end() != std::find(resolved.txt_records.begin(), resolved.txt_records.end(), textRecords[i]))
+        for (size_t i = 0; i < ipAddresses.size(); i++)
         {
-            count++;
+            BST_CHECK(result.ip_addresses.end() != std::find(result.ip_addresses.begin(), result.ip_addresses.end(), ipAddresses[i]));
         }
+
+        BST_REQUIRE(result.port == testPort1);
+
+        BST_REQUIRE(result.txt_records.size() == textRecords.size());
+        size_t count = 0;
+        for (size_t i = 0; i < textRecords.size(); i++)
+        {
+            if (result.txt_records.end() != std::find(result.txt_records.begin(), result.txt_records.end(), textRecords[i]))
+            {
+                count++;
+            }
+        }
+        BST_REQUIRE(count == textRecords.size());
     }
-    BST_REQUIRE(count == textRecords.size());
 
     // now update the txt records
     textRecords.pop_back();
@@ -266,22 +277,32 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     BST_REQUIRE(advertiser->update_record("test-mdns-resolve-1", "_sea-lion-test1._tcp", {}, textRecords));
 
+    std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
+
     // Now resolve again and check the txt records
     BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
 
-    BST_REQUIRE(resolved.ip_address == ipAddress);
-    BST_REQUIRE(resolved.port == testPort1);
-    BST_REQUIRE(resolved.txt_records.size() == textRecords.size());
-
-    count = 0;
-    for (size_t i = 0; i < textRecords.size(); i++)
+    BST_REQUIRE(!resolved.empty());
+    for (auto& result : resolved)
     {
-        if (resolved.txt_records.end() != std::find(resolved.txt_records.begin(), resolved.txt_records.end(), textRecords[i]))
+        for (size_t i = 0; i < ipAddresses.size(); i++)
         {
-            count++;
+            BST_CHECK(result.ip_addresses.end() != std::find(result.ip_addresses.begin(), result.ip_addresses.end(), ipAddresses[i]));
         }
+
+        BST_REQUIRE(result.port == testPort1);
+
+        BST_REQUIRE(result.txt_records.size() == textRecords.size());
+        size_t count = 0;
+        for (size_t i = 0; i < textRecords.size(); i++)
+        {
+            if (result.txt_records.end() != std::find(result.txt_records.begin(), result.txt_records.end(), textRecords[i]))
+            {
+                count++;
+            }
+        }
+        BST_REQUIRE(count == textRecords.size());
     }
-    BST_REQUIRE(count == textRecords.size());
 
     // stop all the advertising
     advertiser->stop();

@@ -16,7 +16,11 @@ namespace nmos
 
             result[U("name")] = value::string(utility::s2us(name));
             result[U("host_target")] = value::string(utility::s2us(resolved.host_name));
-            result[U("address")] = !resolved.ip_address.empty() ? value::string(utility::s2us(resolved.ip_address)) : value::null();
+            value& addresses = result[U("addresses")] = value::array();
+            for (const auto& ip_address : resolved.ip_addresses)
+            {
+                web::json::push_back(addresses, value::string(utility::s2us(ip_address)));
+            }
             result[U("port")] = resolved.port;
 
             value& txt = result[U("txt")];
@@ -73,11 +77,11 @@ namespace nmos
                             // check if we already have resolved this service
                             if (results.end() != results.find(f.name)) continue;
 
-                            ::mdns::service_discovery::resolve_result resolved;
+                            std::vector<::mdns::service_discovery::resolve_result> resolved;
 
                             if (discovery->resolve(resolved, f.name, f.type, f.domain, f.interface_id))
                             {
-                                results[f.name] = make_mdns_result(f.name, resolved);
+                                results[f.name] = make_mdns_result(f.name, resolved.front());
                             }
                         }
 
@@ -110,13 +114,14 @@ namespace nmos
                     const std::string serviceName = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceName.name));
 
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
-                    ::mdns::service_discovery::resolve_result resolved;
+                    std::vector<::mdns::service_discovery::resolve_result> resolved;
 
                     // When browsing, we use the default domain and then use the browse results' domain (and interface)
                     // but here, I'm not sure what we should specify?
                     if (discovery->resolve(resolved, serviceName, serviceType, "local."))
                     {
-                        value result = make_mdns_result(serviceName, resolved);
+                        // for now, pick one result, even though there may be one per interface
+                        value result = make_mdns_result(serviceName, resolved.front());
 
                         set_reply(res, status_codes::OK, result);
                     }

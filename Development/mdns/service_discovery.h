@@ -32,15 +32,17 @@ namespace mdns
         struct resolve_result
         {
             resolve_result() {}
+            resolve_result(const std::string& host_name, std::uint16_t port, const mdns::txt_records& txt_records) : host_name(host_name), port(port), txt_records(txt_records) {}
 
             std::string host_name;
-            std::string ip_address;
             std::uint16_t port;
             mdns::txt_records txt_records;
+
+            std::vector<std::string> ip_addresses;
         };
 
-        virtual bool browse(std::vector<browse_result>& found, const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, unsigned int latest_timeout_seconds = default_latest_timeout_seconds, unsigned int earliest_timeout_seconds = default_earliest_timeout_seconds) = 0;
-        virtual bool resolve(resolve_result& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, unsigned int timeout_seconds = default_timeout_seconds) = 0;
+        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, unsigned int latest_timeout_seconds = default_latest_timeout_seconds, unsigned int earliest_timeout_seconds = default_earliest_timeout_seconds) = 0;
+        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, unsigned int latest_timeout_seconds = default_latest_timeout_seconds, unsigned int earliest_timeout_seconds = default_earliest_timeout_seconds) = 0;
     };
 
     // make a default implementation of the mDNS Service Discovery browsing interface
