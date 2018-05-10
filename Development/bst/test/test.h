@@ -29,14 +29,11 @@
 // Making test assertions
 
 // BST_{REQUIRE,CHECK,WARN}(expr) - test Boolean expression
-// BST_{REQUIRE,CHECK,WARN}_{EQUAL,NE,GE,LE}(expected, actual) - test relationship between expected and actual
+// BST_{REQUIRE,CHECK,WARN}_{EQUAL,NE,LT,LE,GT,GE}(expected, actual) - test relationship between expected and actual
 // BST_{REQUIRE,CHECK,WARN}_STRING_EQUAL(expected, actual) - same, but to test strings pointed to by char*
 // BST_{REQUIRE,CHECK,WARN}_THROW(expr, exception) - test expression throws the indicated exception type
 // BST_{REQUIRE,CHECK,WARN}_TRY - introduce a test of an exception-throwing statement
 // BST_{REQUIRE,CHECK,WARN}_CATCH(exception) - test the preceding statement throws the indicated exception type
-//
-// Note: Not all combinations of level/flavour {REQUIRE,CHECK,WARN} and comparison {EQUAL,NE,GE,LE} may yet be
-// implemented below, but can easily be added
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Implementation

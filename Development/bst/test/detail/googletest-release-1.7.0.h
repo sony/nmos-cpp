@@ -78,19 +78,30 @@
 //- Tweak TYPED_TEST so we can give a custom name to the type parameter
 
 #define BST_TEST_CASE(symbol) TEST(bstTestCase, symbol)
+#define BST_CHECK(expr) EXPECT_TRUE(expr)
 #define BST_CHECK_EQUAL(expected, actual) EXPECT_EQ(expected, actual)
 #define BST_CHECK_NE(expected, actual) EXPECT_NE(expected, actual)
+#define BST_CHECK_LT(expected, actual) EXPECT_LT(expected, actual)
+#define BST_CHECK_LE(expected, actual) EXPECT_LE(expected, actual)
+#define BST_CHECK_GT(expected, actual) EXPECT_GT(expected, actual)
+#define BST_CHECK_GE(expected, actual) EXPECT_GE(expected, actual)
 #define BST_CHECK_THROW(expr, exception) EXPECT_THROW(expr, exception)
 #define BST_REQUIRE(expr) ASSERT_TRUE(expr)
 #define BST_REQUIRE_EQUAL(expected, actual) ASSERT_EQ(expected, actual)
 #define BST_REQUIRE_NE(expected, actual) ASSERT_NE(expected, actual)
-#define BST_REQUIRE_GE(expected, actual) ASSERT_GE(expected, actual)
+#define BST_REQUIRE_LT(expected, actual) ASSERT_LT(expected, actual)
 #define BST_REQUIRE_LE(expected, actual) ASSERT_LE(expected, actual)
+#define BST_REQUIRE_GT(expected, actual) ASSERT_GT(expected, actual)
+#define BST_REQUIRE_GE(expected, actual) ASSERT_GE(expected, actual)
 #define BST_REQUIRE_THROW(expr, exception) ASSERT_THROW(expr, exception)
 // Hmm, Google Test doesn't have the equivalent of WARN?
 #define BST_WARN(expr) EXPECT_TRUE(expr)
 #define BST_WARN_EQUAL(expected, actual) EXPECT_EQ(expected, actual)
 #define BST_WARN_NE(expected, actual) EXPECT_NE(expected, actual)
+#define BST_WARN_LT(expected, actual) EXPECT_LT(expected, actual)
+#define BST_WARN_LE(expected, actual) EXPECT_LE(expected, actual)
+#define BST_WARN_GT(expected, actual) EXPECT_GT(expected, actual)
+#define BST_WARN_GE(expected, actual) EXPECT_GE(expected, actual)
 
 // Explicit STRING macros to work around the different behaviours of the frameworks when comparing two char* or wchar_t*
 namespace bst_test_detail
