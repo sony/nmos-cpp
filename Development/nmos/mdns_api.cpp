@@ -63,7 +63,8 @@ namespace nmos
             {
                 return pplx::create_task([]{}).then([&, res, parameters]() mutable
                 {
-                    const std::string serviceType = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceType.name));
+                    // hmm, something to think about... the regex patterns are presumably being used on encoded paths?
+                    const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
 
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
                     std::vector<::mdns::service_discovery::browse_result> found;
@@ -110,8 +111,8 @@ namespace nmos
             {
                 return pplx::create_task([]{}).then([&, res, parameters]() mutable
                 {
-                    const std::string serviceType = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceType.name));
-                    const std::string serviceName = utility::us2s(parameters.at(nmos::experimental::patterns::mdnsServiceName.name));
+                    const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
+                    const std::string serviceName = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceName.name)));
 
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
                     std::vector<::mdns::service_discovery::resolve_result> resolved;
