@@ -42,11 +42,17 @@ namespace nmos
 
             mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ JU("x-mdns/") }));
+                set_reply(res, status_codes::OK, value_of({ JU("x-dns-sd/") }));
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/x-dns-sd/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            {
+                set_reply(res, status_codes::OK, value_of({ JU("v1.0/") }));
+                return pplx::task_from_result(true);
+            });
+
+            mdns_api.support(U("/x-dns-sd/v1.0/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 // the list of available service types cannot easily be enumerated so it might be better to respond with status_codes::NoContent
                 // rather than return a misleading list?
@@ -59,7 +65,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/x-dns-sd/v1.0/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return pplx::create_task([]{}).then([&, res, parameters]() mutable
                 {
@@ -107,7 +113,7 @@ namespace nmos
                 });
             });
 
-            mdns_api.support(U("/x-mdns/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/x-dns-sd/v1.0/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return pplx::create_task([]{}).then([&, res, parameters]() mutable
                 {

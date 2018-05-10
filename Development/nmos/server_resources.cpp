@@ -51,7 +51,7 @@ namespace nmos
                 .set_host(nmos::fields::host_address(settings))
                 .set_port(nmos::experimental::fields::mdns_port(settings));
             mdns_service[U("href")] = value::string(mdns_uri.to_string());
-            mdns_service[U("type")] = JU("urn:x-mdns:v1.0");
+            mdns_service[U("type")] = JU("urn:x-dns-sd/v1.0");
             data[U("services")][0] = mdns_service;
 
             data[U("clocks")] = value::array();
