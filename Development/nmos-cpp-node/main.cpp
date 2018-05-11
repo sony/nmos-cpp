@@ -66,11 +66,20 @@ int main(int argc, char* argv[])
 
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
+
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
-    const auto host_addresses = web::http::experimental::host_addresses(nmos::fields::host_name(node_model.settings));
-    if (!host_addresses.empty())
+
+    // if the "host_addresses" setting was omitted, add all the interface addresses
+    const auto interface_addresses = web::http::experimental::interface_addresses();
+    if (!interface_addresses.empty())
     {
-        web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(host_addresses[0])));
+        web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
+    }
+
+    // if the "host_address" setting was omitted, use the first of the "host_addresses"
+    if (node_model.settings.has_field(nmos::fields::host_addresses))
+    {
+        web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(node_model.settings)[0]));
     }
 
     // Reconfigure the logging streams according to settings
@@ -93,7 +102,7 @@ int main(int argc, char* argv[])
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
 
     // Configure the Settings API
 
@@ -139,7 +148,7 @@ int main(int argc, char* argv[])
         web::http::experimental::listener::http_listener_guard node_guard(node_listener);
         web::http::experimental::listener::http_listener_guard connection_guard(connection_listener);
 
-        // start up node operation (including the the mDNS advertisements) once all NMOS APIs are open
+        // start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 
         auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { nmos::write_lock lock(node_mutex); shutdown = true; node_condition.notify_all(); });
 

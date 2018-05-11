@@ -36,23 +36,32 @@ namespace nmos
             data[U("hostname")] = hostname;
             data[U("api")][U("versions")] = value_of({ JU("v1.0"), JU("v1.1"), JU("v1.2") });
 
-            value endpoint;
-            endpoint[U("host")] = value::string(uri.host());
-            endpoint[U("port")] = uri.port();
-            endpoint[U("protocol")] = value::string(uri.scheme());
-            data[U("api")][U("endpoints")][0] = endpoint;
+            const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
+            const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+
+            for (const auto& host_address : host_addresses)
+            {
+                value endpoint;
+                endpoint[U("host")] = host_address;
+                endpoint[U("port")] = uri.port();
+                endpoint[U("protocol")] = value::string(uri.scheme());
+                web::json::push_back(data[U("api")][U("endpoints")], endpoint);
+            }
 
             data[U("caps")] = value::object();
 
             // This is the experimental REST API for mDNS Service Discovery
-            value mdns_service;
-            auto mdns_uri = web::uri_builder()
-                .set_scheme(U("http"))
-                .set_host(nmos::fields::host_address(settings))
-                .set_port(nmos::experimental::fields::mdns_port(settings));
-            mdns_service[U("href")] = value::string(mdns_uri.to_string());
-            mdns_service[U("type")] = JU("urn:x-dns-sd/v1.0");
-            data[U("services")][0] = mdns_service;
+            for (const auto& host_address : host_addresses)
+            {
+                value mdns_service;
+                auto mdns_uri = web::uri_builder()
+                    .set_scheme(U("http"))
+                    .set_host(host_address.as_string())
+                    .set_port(nmos::experimental::fields::mdns_port(settings));
+                mdns_service[U("href")] = value::string(mdns_uri.to_string());
+                mdns_service[U("type")] = JU("urn:x-dns-sd/v1.0");
+                web::json::push_back(data[U("services")], mdns_service);
+            }
 
             data[U("clocks")] = value::array();
 

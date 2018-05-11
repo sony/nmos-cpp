@@ -74,11 +74,20 @@ int main(int argc, char* argv[])
 
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     level = nmos::fields::logging_level(registry_model.settings); // synchronize atomic value with settings
+
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
-    const auto host_addresses = web::http::experimental::host_addresses(nmos::fields::host_name(registry_model.settings));
-    if (!host_addresses.empty())
+
+    // if the "host_addresses" setting was omitted, add all the interface addresses
+    const auto interface_addresses = web::http::experimental::interface_addresses();
+    if (!interface_addresses.empty())
     {
-        web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, web::json::value::string(host_addresses[0])));
+        web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
+    }
+
+    // if the "host_address" setting was omitted, use the first of the "host_addresses"
+    if (registry_model.settings.has_field(nmos::fields::host_addresses))
+    {
+        web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(registry_model.settings)[0]));
     }
 
     // Reconfigure the logging streams according to settings
@@ -101,11 +110,11 @@ int main(int argc, char* argv[])
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << registry_model.settings.serialize();
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
 
-    // Configure the mDNS API
+    // Configure the mDNS Service Discovery API
 
     web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(gate);
     web::http::experimental::listener::http_listener mdns_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::mdns_port(registry_model.settings)));

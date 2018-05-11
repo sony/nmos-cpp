@@ -37,11 +37,17 @@ namespace nmos
             data[U("hostname")] = hostname;
             data[U("api")][U("versions")] = value_of({ JU("v1.0"), JU("v1.1"), JU("v1.2") });
 
-            value endpoint;
-            endpoint[U("host")] = value::string(uri.host());
-            endpoint[U("port")] = uri.port();
-            endpoint[U("protocol")] = value::string(uri.scheme());
-            data[U("api")][U("endpoints")][0] = endpoint;
+            const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
+            const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+
+            for (const auto& host_address : host_addresses)
+            {
+                value endpoint;
+                endpoint[U("host")] = host_address;
+                endpoint[U("port")] = uri.port();
+                endpoint[U("protocol")] = value::string(uri.scheme());
+                web::json::push_back(data[U("api")][U("endpoints")], endpoint);
+            }
 
             data[U("caps")] = value::object();
 
@@ -58,6 +64,7 @@ namespace nmos
         nmos::resource make_device(const nmos::id& id, const nmos::id& node_id, const std::vector<nmos::id>& senders, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value;
+            using web::json::value_of;
             using web::json::value_from_elements;
 
             const auto hostname = value::string(nmos::fields::host_name(settings));
@@ -79,15 +86,21 @@ namespace nmos
             data[U("senders")] = value_from_elements(senders);
             data[U("receivers")] = value_from_elements(receivers);
 
-            value control;
-            auto connection_uri = web::uri_builder()
-                .set_scheme(U("http"))
-                .set_host(nmos::fields::host_address(settings))
-                .set_port(nmos::fields::connection_port(settings))
-                .set_path(U("/x-nmos/connection/v1.0"));
-            control[U("href")] = value::string(connection_uri.to_string());
-            control[U("type")] = JU("urn:x-nmos:control:sr-ctrl/v1.0");
-            data[U("controls")][0] = control;
+            const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
+            const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+
+            for (const auto& host_address : host_addresses)
+            {
+                value control;
+                auto connection_uri = web::uri_builder()
+                    .set_scheme(U("http"))
+                    .set_host(host_address.as_string())
+                    .set_port(nmos::fields::connection_port(settings))
+                    .set_path(U("/x-nmos/connection/v1.0"));
+                control[U("href")] = value::string(connection_uri.to_string());
+                control[U("type")] = value(U("urn:x-nmos:control:sr-ctrl/v1.0"));
+                web::json::push_back(data[U("controls")], control);
+            }
 
             return{ is04_versions::v1_2, types::device, data, false };
         }
