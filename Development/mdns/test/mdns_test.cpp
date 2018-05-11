@@ -206,13 +206,15 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     textRecords.push_back("pri=100");
 
     // get the ip addresses
-    std::string hostname = utility::us2s(web::http::experimental::host_name());
     std::vector<std::string> ipAddresses;
-    for (const auto& a : web::http::experimental::host_addresses(utility::s2us(hostname)))
+    for (const auto& a : web::http::experimental::interface_addresses())
     {
         ipAddresses.push_back(utility::us2s(a));
     }
-    BST_REQUIRE(!ipAddresses.empty());
+    if (ipAddresses.empty())
+    {
+        ipAddresses.push_back("127.0.0.1");
+    }
 
     advertiser->register_service("test-mdns-resolve-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
 

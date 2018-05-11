@@ -12,6 +12,8 @@ namespace web
         namespace experimental
         {
             utility::string_t host_name();
+            std::vector<utility::string_t> interface_addresses();
+
             std::vector<utility::string_t> host_addresses(const utility::string_t& host_name);
         }
     }
