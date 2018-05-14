@@ -977,11 +977,20 @@ namespace nmos
                     registration_services = discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
                     return registration_services.empty();
                 });
-            }).then([&]
+            }, token).then([&](pplx::task<void> finally)
             {
                 nmos::write_lock lock(mutex); // in order to update local state
 
-                registration_services_discovered = !registration_services.empty();
+                try
+                {
+                    finally.get();
+
+                    registration_services_discovered = !registration_services.empty();
+                }
+                catch (const pplx::task_canceled&)
+                {
+                    // someone else is in charge
+                }
 
                 condition.notify_all();
             });
