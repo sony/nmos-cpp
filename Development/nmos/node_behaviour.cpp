@@ -699,10 +699,6 @@ namespace nmos
                         {
                             registration_service_error = true;
                         }
-                        catch (const pplx::task_canceled&)
-                        {
-                            // someone else is in charge
-                        }
 
                         condition.notify_all();
                     });
@@ -829,10 +825,6 @@ namespace nmos
                         {
                             registration_service_error = true;
                         }
-                        catch (const pplx::task_canceled&)
-                        {
-                            // someone else is in charge
-                        }
 
                         condition.notify_all();
                     });
@@ -885,10 +877,6 @@ namespace nmos
                         catch (const registration_service_exception&)
                         {
                             registration_service_error = true;
-                        }
-                        catch (const pplx::task_canceled&)
-                        {
-                            // someone else is in charge
                         }
 
                         condition.notify_all();
@@ -977,20 +965,11 @@ namespace nmos
                     registration_services = discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
                     return registration_services.empty();
                 });
-            }, token).then([&](pplx::task<void> finally)
+            }, token).then([&]
             {
                 nmos::write_lock lock(mutex); // in order to update local state
 
-                try
-                {
-                    finally.get();
-
-                    registration_services_discovered = !registration_services.empty();
-                }
-                catch (const pplx::task_canceled&)
-                {
-                    // someone else is in charge
-                }
+                registration_services_discovered = !registration_services.empty();
 
                 condition.notify_all();
             });
