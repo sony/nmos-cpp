@@ -30,7 +30,9 @@ namespace Concurrency // since namespace pplx = Concurrency
             auto registration = token.register_callback([timer, tce]
             {
                 timer->stop();
-                tce.set_exception(pplx::task_canceled());
+                // calling tce.set_exception(pplx::task_canceled()) does not have the right effect, it results in a call
+                // to wait on the task throwing rather than returning pplx::canceled
+                tce._Cancel();
             });
 
             result.then([token, registration](pplx::task<void>)
@@ -67,8 +69,9 @@ namespace pplx
         {
             if (ec == boost::asio::error::operation_aborted)
             {
-                // perhaps better done directly in the token callback?
-                tce.set_exception(pplx::task_canceled());
+                // calling tce.set_exception(pplx::task_canceled()) does not have the right effect, it results in a call
+                // to wait on the task throwing rather than returning pplx::canceled
+                tce._Cancel();
             }
             else
             {
@@ -117,6 +120,10 @@ namespace pplx
                 try
                 {
                     completed_or_canceled.get();
+                }
+                catch (pplx::task_canceled&)
+                {
+                    event._Cancel();
                 }
                 catch (...)
                 {
