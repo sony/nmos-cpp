@@ -206,14 +206,14 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     textRecords.push_back("pri=100");
 
     // get the ip addresses
-    std::vector<std::string> ipAddresses;
+    std::set<std::string> ipAddresses;
     for (const auto& a : web::http::experimental::interface_addresses())
     {
-        ipAddresses.push_back(utility::us2s(a));
+        ipAddresses.insert(utility::us2s(a));
     }
     if (ipAddresses.empty())
     {
-        ipAddresses.push_back("127.0.0.1");
+        ipAddresses.insert("127.0.0.1");
     }
 
     advertiser->register_service("test-mdns-resolve-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
@@ -229,35 +229,30 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     // Now discover an API
     std::unique_ptr<mdns::service_discovery> resolver = mdns::make_discovery(gate);
     std::vector<mdns::service_discovery::browse_result> browsed;
-    mdns::service_discovery::browse_result testQuery;
 
     resolver->browse(browsed, "_sea-lion-test1._tcp");
 
-    for (size_t i = 0; i < browsed.size(); i++)
+    BST_REQUIRE(!browsed.empty());
+    gate.clearLogMessages();
+
+    // Now resolve all the ip addresses and port
+    std::vector<mdns::service_discovery::resolve_result> resolved;
+    for (auto& resolving : browsed)
     {
-        if (browsed[i].name == "test-mdns-resolve-1")
+        if (resolving.name == "test-mdns-resolve-1")
         {
-            testQuery = browsed[i];
-            break;
+            std::vector<mdns::service_discovery::resolve_result> r;
+            BST_REQUIRE(resolver->resolve(r, resolving.name, resolving.type, resolving.domain, resolving.interface_id, 2));
+            resolved.insert(resolved.end(), r.begin(), r.end());
         }
     }
 
-    BST_REQUIRE(!testQuery.name.empty());
-
-    // Now resolve the ip addresses and port
-    std::vector<mdns::service_discovery::resolve_result> resolved;
-
-    gate.clearLogMessages();
-
-    BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
-
     BST_REQUIRE(!resolved.empty());
+
+    std::set<std::string> ip_addresses;
     for (auto& result : resolved)
     {
-        for (size_t i = 0; i < ipAddresses.size(); i++)
-        {
-            BST_CHECK(result.ip_addresses.end() != std::find(result.ip_addresses.begin(), result.ip_addresses.end(), ipAddresses[i]));
-        }
+        ip_addresses.insert(result.ip_addresses.begin(), result.ip_addresses.end());
 
         BST_REQUIRE(result.port == testPort1);
 
@@ -273,6 +268,8 @@ BST_TEST_CASE(testMdnsResolveAPIs)
         BST_REQUIRE(count == textRecords.size());
     }
 
+    BST_CHECK(ip_addresses == ipAddresses);
+
     // now update the txt records
     textRecords.pop_back();
     textRecords.push_back("pri=1");
@@ -282,18 +279,12 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
 
     // Now resolve again and check the txt records
-    BST_REQUIRE(resolver->resolve(resolved, testQuery.name, testQuery.type, testQuery.domain, testQuery.interface_id, 2));
+    auto& resolving = browsed[0];
+    BST_REQUIRE(resolver->resolve(resolved, resolving.name, resolving.type, resolving.domain, resolving.interface_id, 2));
 
     BST_REQUIRE(!resolved.empty());
     for (auto& result : resolved)
     {
-        for (size_t i = 0; i < ipAddresses.size(); i++)
-        {
-            BST_CHECK(result.ip_addresses.end() != std::find(result.ip_addresses.begin(), result.ip_addresses.end(), ipAddresses[i]));
-        }
-
-        BST_REQUIRE(result.port == testPort1);
-
         BST_REQUIRE(result.txt_records.size() == textRecords.size());
         size_t count = 0;
         for (size_t i = 0; i < textRecords.size(); i++)

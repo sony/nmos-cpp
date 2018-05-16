@@ -30,6 +30,12 @@ typedef decltype(DNSServiceRefSockFD(NULL)) DNSServiceRefSockFD_t;
 // and is not defined by the Avahi compatibility layer
 static const DNSServiceErrorType kDNSServiceErr_Timeout_ = -65568;
 
+// DNSServiceGetAddrInfo was added a long time ago (161.1) but did not exist in Tiger
+// and is not defined by the Avahi compatibility layer, so getaddrinfo must be relied on instead
+#if _DNS_SD_H+0 >= 1610100
+#define HAVE_DNSSERVICEGETADDRINFO
+#endif
+
 #ifdef _WIN32
 // kIPv6IfIndexBase was added a really long time ago (107.1) in the Windows implementation
 // because "Windows does not have a uniform scheme for IPv4 and IPv6 interface indexes"
@@ -343,13 +349,7 @@ namespace mdns
             results.push_back({ hosttarget, ntohs(port), parse_txt_records(txtRecord, txtLen) });
             auto& result = results.back();
 
-            // now that DNSServiceGetAddrInfo is being called afterwards, this result will generally be overwritten
-            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(result.host_name)));
-            std::transform(ip_addresses.begin(), ip_addresses.end(), std::back_inserter(result.ip_addresses), utility::us2s);
-            if (!result.ip_addresses.empty())
-            {
-                slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got " << result.ip_addresses.size() << " address(es) for host: " << hosttarget;
-            }
+            slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got host: " << result.host_name << " port: " << (int)result.port;
 
             impl->m_more_coming = 0 != (flags & kDNSServiceFlagsMoreComing);
         }
@@ -359,6 +359,7 @@ namespace mdns
         }
     }
 
+#ifdef HAVE_DNSSERVICEGETADDRINFO
     // this just shouldn't be this hard!
     static boost::asio::ip::address from_sockaddr(const sockaddr& address)
     {
@@ -419,6 +420,7 @@ namespace mdns
             slog::log<slog::severities::error>(impl->m_gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceGetAddrInfoReply received error: " << errorCode;
         }
     }
+#endif
 
     bool bonjour_dns_impl::resolve(std::vector<resolve_result>& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
     {
@@ -468,11 +470,9 @@ namespace mdns
 
             DNSServiceRefDeallocate(client);
 
-            // DNSServiceGetAddrInfo was added a long time ago (161.1) but did not exist in Tiger
-            // and is not defined by the Avahi compatibility layer, so getaddrinfo must be relied on instead
-#if _DNS_SD_H+0 >= 1610100
             for (auto& r : *m_resolved)
             {
+#ifdef HAVE_DNSSERVICEGETADDRINFO
                 m_ip_addresses = &r.ip_addresses;
 
                 client = nullptr;
@@ -530,8 +530,16 @@ namespace mdns
                         slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
                     }
                 }
-            }
 #endif
+
+                if (r.ip_addresses.empty())
+                {
+                    // hmmm, plain old getaddrinfo uses all name resolution mechamisms so isn't specific to a particular interface
+                    const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(r.host_name)));
+                    std::transform(ip_addresses.begin(), ip_addresses.end(), std::back_inserter(r.ip_addresses), utility::us2s);
+                    slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, got " << r.ip_addresses.size() << " address(es) for hostname: " << r.host_name;
+                }
+            }
         }
         else
         {
