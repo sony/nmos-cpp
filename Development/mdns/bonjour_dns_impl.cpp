@@ -266,7 +266,7 @@ namespace mdns
                 const auto& absolute_timeout = m_browsed->empty() ? latest_timeout : earliest_timeout;
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
-                // process the next browse responses (callback may be called more than once in any call to DNSServiceProcessResult)
+                // process the next browse responses (callback may be called more than once, or (at least with Avahi!) not at all, in any call to DNSServiceProcessResult)
                 m_more_coming = false;
                 errorCode = DNSServiceProcessResult(client, wait_millis);
 
@@ -286,7 +286,7 @@ namespace mdns
                     break;
                 }
 
-            } while ((m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+            } while ((m_browsed->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
 
             DNSServiceRefDeallocate(client);
         }
@@ -446,7 +446,7 @@ namespace mdns
                 const auto& absolute_timeout = m_resolved->empty() ? latest_timeout : earliest_timeout;
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
-                // process the next resolve responses (callback may be called more than once in any call to DNSServiceProcessResult)
+                // process the next resolve responses (callback may be called more than once, or not at all, in any call to DNSServiceProcessResult)
                 m_more_coming = false;
                 errorCode = DNSServiceProcessResult(client, wait_millis);
 
@@ -466,7 +466,7 @@ namespace mdns
                     break;
                 }
 
-            } while ((m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+            } while ((m_resolved->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
 
             DNSServiceRefDeallocate(client);
 
@@ -501,7 +501,7 @@ namespace mdns
                             const auto& absolute_timeout = m_ip_addresses->empty() ? latest_timeout : earliest_timeout;
                             int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
 
-                            // process the next resolve responses (callback may be called more than once in any call to DNSServiceProcessResult)
+                            // process the next lookup responses (callback may be called more than once, or potentially not at all, in any call to DNSServiceProcessResult)
                             m_more_coming = false;
                             errorCode = DNSServiceProcessResult(client, wait_millis);
 
@@ -521,7 +521,7 @@ namespace mdns
                                 break;
                             }
 
-                        } while ((m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+                        } while ((m_ip_addresses->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
 
                         DNSServiceRefDeallocate(client);
                     }
