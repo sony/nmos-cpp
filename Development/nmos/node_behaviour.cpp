@@ -638,14 +638,17 @@ namespace nmos
                     // wait without the lock since it is also used by the background tasks
                     details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
                     request.wait();
+
+                    registration_client.reset();
                     cancellation_source = pplx::cancellation_token_source();
                 }
                 if (shutdown || registration_services.empty() || node_registered) break;
 
                 // "The Node selects a Registration API to use based on the priority"
-                const auto base_uri = top_registration_service(registration_services);
-                if (!registration_client || registration_client->base_uri() != base_uri)
+                if (!registration_client)
                 {
+                    const auto base_uri = top_registration_service(registration_services);
+
                     auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
                     registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
                 }
@@ -762,14 +765,18 @@ namespace nmos
                     details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
                     request.wait();
                     heartbeats.wait();
+
+                    registration_client.reset();
+                    heartbeat_client.reset();
                     cancellation_source = pplx::cancellation_token_source();
                 }
                 if (shutdown || registration_services.empty() || node_unregistered) break;
 
                 // "The Node selects a Registration API to use based on the priority"
-                const auto base_uri = top_registration_service(registration_services);
-                if (!registration_client || registration_client->base_uri() != base_uri)
+                if (!registration_client)
                 {
+                    const auto base_uri = top_registration_service(registration_services);
+
                     auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
                     registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
 
