@@ -42,6 +42,12 @@ namespace nmos
                 << "most recent update: " << make_version(most_recent_update(resources)) << ", least health: " << least_health(resources);
         });
     }
+
+    // (defined in namespace slog to ensure slog::nolog_statement::operator<< also finds it via ADL)
+    inline slog::log_statement& operator<<(slog::log_statement& s, const std::pair<nmos::id, nmos::type>& id_type)
+    {
+        return s << id_type.second.name << ": " << id_type.first;
+    }
 }
 
 #endif

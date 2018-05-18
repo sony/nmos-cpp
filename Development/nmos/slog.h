@@ -6,15 +6,14 @@
 #include "cpprest/logging_utils.h"
 #include "slog/all_in_one.h"
 
-// Enable logging of cpprestsdk's utility::string_t when it's an alias for std::wstring (as on Windows) rather than std::string
-inline slog::log_statement& operator<<(slog::log_statement& s, const utf16string& u16s)
+namespace slog
 {
-    return s << utility::conversions::to_utf8string(u16s);
-}
-// hmmm, this shouldn't be necessary?
-inline const slog::nolog_statement& operator<<(const slog::nolog_statement& s, const utf16string&)
-{
-    return s;
+    // Enable logging of cpprestsdk's utility::string_t when it's an alias for std::wstring (as on Windows) rather than std::string
+    // (defined in namespace slog to ensure slog::nolog_statement::operator<< also finds it via ADL)
+    inline log_statement& operator<<(log_statement& s, const utf16string& u16s)
+    {
+        return s << utility::conversions::to_utf8string(u16s);
+    }
 }
 
 namespace nmos

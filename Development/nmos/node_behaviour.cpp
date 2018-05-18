@@ -6,6 +6,7 @@
 #include "mdns/service_discovery.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::type_from_resourceType
+#include "nmos/log_manip.h"
 #include "nmos/mdns.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
@@ -390,7 +391,7 @@ namespace nmos
             else if (web::http::is_client_error_status_code(response.status_code()))
             {
                 // the severity here is trickier, since if it truly indicated a validation failure, this is a 'severe' error
-                // but unfortunately, there are circumstances described below where it could be regarded as only a 'warning
+                // but unfortunately, there are circumstances described below where it could be regarded as only a 'warning'
                 // so again, until there's a means to distinguish these cases, log as an 'error'
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
 
@@ -432,8 +433,6 @@ namespace nmos
 
             const auto& path = event.at(U("path")).as_string();
             const auto id_type = get_node_behaviour_event_id_type(event);
-            const auto& id = id_type.first;
-            const auto& type = id_type.second;
             const auto event_type = get_resource_event_type(event);
 
             // An 'added' event calls for registration creation, i.e. a POST request with a 201 'Created' response (200 'OK' is unexpected)
@@ -448,9 +447,9 @@ namespace nmos
 
             if (creation)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration creation for " << type.name << ": " << id;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration creation for " << id_type;
 
-                auto body = make_registration_request_body(type, event.at(U("post")), registry_version);
+                auto body = make_registration_request_body(id_type.second, event.at(U("post")), registry_version);
 
                 return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response) mutable
                 {
@@ -469,9 +468,9 @@ namespace nmos
                     }
                     else if (web::http::status_codes::OK == response.status_code())
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration out of sync for " << type.name << ": " << id;
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration out of sync for " << id_type;
 
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting out of sync registration deletion for " << type.name << ": " << id;
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting out of sync registration deletion for " << id_type;
 
                         // "In order to avoid the registry-held representation of the Node's resources from being out of sync
                         // with the Node's view, an HTTP DELETE should be performed in this situation to explicitly clear the
@@ -481,14 +480,14 @@ namespace nmos
                         {
                             if (web::http::status_codes::NoContent == response.status_code())
                             {
-                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
+                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << id_type;
                             }
                             else
                             {
                                 handle_registration_error_conditions(response, gate, "deletion");
                             }
 
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Re-requesting registration creation for " << type.name << ": " << id;
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Re-requesting registration creation for " << id_type;
 
                             // "A new Node registration after this point should result in the correct 201 response code."
                             return client.request(web::http::methods::POST, U("/resource"), body, token);
@@ -504,7 +503,7 @@ namespace nmos
                 {
                     if (web::http::status_codes::Created == response.status_code())
                     {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration created for " << type.name << ": " << id;
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration created for " << id_type;
                     }
                     else
                     {
@@ -514,15 +513,15 @@ namespace nmos
             }
             else if (update)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration update for " << type.name << ": " << id;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration update for " << id_type;
 
-                auto body = make_registration_request_body(type, event.at(U("post")), registry_version);
+                auto body = make_registration_request_body(id_type.second, event.at(U("post")), registry_version);
 
                 return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response)
                 {
                     if (web::http::status_codes::OK == response.status_code())
                     {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << type.name << ": " << id;
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration updated for " << id_type;
                     }
                     else
                     {
@@ -532,13 +531,13 @@ namespace nmos
             }
             else if (deletion)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << type.name << ": " << id;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << id_type;
 
                 return client.request(web::http::methods::DEL, U("/resource/") + path, token).then([=, &gate](web::http::http_response response)
                 {
                     if (web::http::status_codes::NoContent == response.status_code())
                     {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << type.name << ": " << id;
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration deleted for " << id_type;
                     }
                     else
                     {
