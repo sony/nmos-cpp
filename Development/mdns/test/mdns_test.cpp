@@ -30,11 +30,13 @@ namespace
 
         bool hasLogMessage(const char* str) const
         {
+            std::lock_guard<std::mutex> lock(mutex);
             return messages.end() != std::find_if(messages.begin(), messages.end(), [&](const std::string& message) { return message.find(str) != std::string::npos; });
         }
 
         void clearLogMessages()
         {
+            std::lock_guard<std::mutex> lock(mutex);
             messages.clear();
         }
 
@@ -53,7 +55,7 @@ namespace
         };
 
         std::vector<std::string> messages;
-        std::mutex mutex;
+        mutable std::mutex mutex;
         mutable slog::async_log_service<service_function> service;
     };
 }
