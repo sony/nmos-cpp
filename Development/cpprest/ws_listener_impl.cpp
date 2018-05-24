@@ -274,11 +274,10 @@ namespace web
                                     }
                                     connections.clear();
                                 }
-
-                                server.stop_perpetual();
                             }
                             catch (const websocketpp::exception& e)
                             {
+                                server.stop_perpetual();
                                 if (thread.joinable())
                                 {
                                     thread.join();
@@ -286,6 +285,7 @@ namespace web
                                 return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "close")));
                             }
 
+                            server.stop_perpetual();
                             if (thread.joinable())
                             {
                                 thread.join();
