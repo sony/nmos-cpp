@@ -673,7 +673,8 @@ namespace rql
         template <typename ThreeStateBinaryPredicate, typename ThreeStateCompare>
         operators default_operators(ThreeStateBinaryPredicate equal_to, ThreeStateCompare less)
         {
-            using namespace std::placeholders;
+            using std::placeholders::_1;
+            using std::placeholders::_2;
             return
             {
                 { U("and"), functions::logical_and },
@@ -700,7 +701,8 @@ namespace rql
         template <typename ThreeStateBinaryPredicate, typename ThreeStateCompare>
         operators default_any_operators(ThreeStateBinaryPredicate equal_to, ThreeStateCompare less)
         {
-            using namespace std::placeholders;
+            using std::placeholders::_1;
+            using std::placeholders::_2;
             return
             {
                 { U("and"), functions::logical_and },
