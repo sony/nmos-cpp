@@ -23,8 +23,10 @@ namespace nmos
         resource_query(const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& flat_query_params);
 
         result_type operator()(argument_type resource) const { return (*this)(resource.version, resource.type, resource.data); }
+        web::json::value downgrade(const nmos::resource& resource) const { return downgrade(resource.version, resource.type, resource.data); }
 
         result_type operator()(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
+        web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
 
         // the Query API version (since a registry being queried may contain resources of more than one version of IS-04 Discovery and Registration)
         nmos::api_version version;
@@ -103,6 +105,7 @@ namespace nmos
     namespace fields
     {
         const web::json::field_as_value message{ U("message") };
+        const web::json::field_path<web::json::value> grain_data{ { U("grain"), U("data") } };
         const web::json::field_path<web::json::value> message_grain_data{ { U("message"), U("grain"), U("data") } };
     }
 

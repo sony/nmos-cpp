@@ -105,6 +105,9 @@ namespace nmos
     {
         if (!is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)) return web::json::value::null();
 
+        // optimisation for no resource data (special case)
+        if (resource_data.is_null()) return resource_data;
+
         // optimisation for the common case (old-versioned resources, if being permitted, do not get upgraded)
         if (resource_version <= version) return resource_data;
 

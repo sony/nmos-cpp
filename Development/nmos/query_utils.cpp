@@ -190,10 +190,17 @@ namespace nmos
 
     resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const
     {
+        // in theory, should be performing match_query against the downgraded resource_data but
+        // in practice, I don't think that can make a difference?
         return (resource_path.empty() || resource_path == U('/') + nmos::resourceType_from_type(resource_type))
             && nmos::is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)
             && web::json::match_query(resource_data, basic_query, match_flags)
             && match_rql(resource_data, rql_query);
+    }
+
+    web::json::value resource_query::downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const
+    {
+        return nmos::downgrade(resource_version, resource_type, resource_data, version, downgrade_version);
     }
 
     // Helpers for constructing /subscriptions websocket grains
@@ -295,7 +302,8 @@ namespace nmos
 
             if (match(resource))
             {
-                events.push_back(details::make_resource_event(resource_path, resource.type, resource.data, resource.data));
+                const auto resource_data = match.downgrade(resource);
+                events.push_back(details::make_resource_event(resource_path, resource.type, resource_data, resource_data));
             }
         }
 
@@ -320,7 +328,7 @@ namespace nmos
             // check whether the resource_path matches the resource type and the query parameters match either the "pre" or "post" resource
 
             const auto resource_path = nmos::fields::resource_path(subscription.data);
-            resource_query match(subscription.version, resource_path, subscription.data.at(U("params")));
+            const resource_query match(subscription.version, resource_path, subscription.data.at(U("params")));
 
             const bool pre_match = match(version, type, pre);
             const bool post_match = match(version, type, post);
@@ -329,7 +337,11 @@ namespace nmos
 
             // add the event to the grain for each websocket connection to this subscription
 
-            const value event = details::make_resource_event(resource_path, type, pre_match ? pre : value::null(), post_match ? post : value::null());
+            // note: downgrade just returns a copy in the case that version <= match.version
+            const value event = details::make_resource_event(resource_path, type,
+                pre_match ? match.downgrade(version, type, pre) : value::null(),
+                post_match ? match.downgrade(version, type, post) : value::null()
+                );
 
             for (const auto& id : subscription.sub_resources)
             {

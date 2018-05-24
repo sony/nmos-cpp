@@ -352,7 +352,8 @@ namespace nmos
     {
         web::json::value make_registration_request_body(const nmos::type& type, const web::json::value& data, const nmos::api_version& registry_version)
         {
-            // a downgrade is required if the registry version is lower than this resource's version
+            // the node behaviour subscription version is currently fixed (see make_node_behaviour_subscription)
+            // rather than being set to the registry version, so a downgrade is required if the registry version is lower
             return web::json::value_of(
             {
                 { U("type"), web::json::value::string(type.name) },
