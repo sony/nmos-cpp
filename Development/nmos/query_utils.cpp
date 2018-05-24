@@ -303,7 +303,19 @@ namespace nmos
             if (match(resource))
             {
                 const auto resource_data = match.downgrade(resource);
-                events.push_back(details::make_resource_event(resource_path, resource.type, resource_data, resource_data));
+                auto event = details::make_resource_event(resource_path, resource.type, resource_data, resource_data);
+
+                // experimental extension (an equivalent HTTP response header has been discussed for v1.3)
+                // however, only add "api_version" when resource_path is empty (since that's also an extension);
+                // ironically, the latter is a schema violation, but the former wouldn't be because the schema
+                // does not have "additionalProperties": false
+                // see nmos-discovery-registration/APIs/schemas/queryapi-subscriptions-websocket.json
+                if (resource_path.empty() && resource.version < match.version)
+                {
+                    event[_XPLATSTR("api_version")] = web::json::value::string(nmos::make_api_version(resource.version));
+                }
+
+                events.push_back(event);
             }
         }
 
@@ -338,10 +350,16 @@ namespace nmos
             // add the event to the grain for each websocket connection to this subscription
 
             // note: downgrade just returns a copy in the case that version <= match.version
-            const value event = details::make_resource_event(resource_path, type,
+            auto event = details::make_resource_event(resource_path, type,
                 pre_match ? match.downgrade(version, type, pre) : value::null(),
                 post_match ? match.downgrade(version, type, post) : value::null()
                 );
+
+            // see explanation in nmos::make_resource_events
+            if (resource_path.empty() && version < match.version)
+            {
+                event[_XPLATSTR("api_version")] = web::json::value::string(nmos::make_api_version(version));
+            }
 
             for (const auto& id : subscription.sub_resources)
             {
