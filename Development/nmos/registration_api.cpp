@@ -95,6 +95,11 @@ namespace nmos
         return result;
     }
 
+    inline utility::string_t make_registration_api_resource_location(const nmos::resource& resource)
+    {
+        return U("/x-nmos/registration/") + nmos::make_api_version(resource.version) + U("/resource/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
+    }
+
     inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -134,37 +139,55 @@ namespace nmos
                 const bool valid_type = creating || resource->type == type;
                 valid = valid && valid_type;
 
+                // a modification request must not change the API version
+                const bool valid_api_version = creating || resource->version == version;
+                valid = valid && valid_api_version;
+
                 // it must not change the super-resource either
+                const std::pair<nmos::id, nmos::type> no_resource{};
                 const auto super_id_type = nmos::get_super_resource(data, type);
                 const bool valid_super_id_type = creating || nmos::get_super_resource(resource->data, resource->type) == super_id_type;
                 valid = valid && valid_super_id_type;
 
-                // the super-resource should exist in this registry
+                // the super-resource should exist in this registry (and must be of the right type)
 
-                const auto super_resource = nmos::find_resource(model.resources, super_id_type);
-                const bool valid_super_resource = model.resources.end() != super_resource;
-                const std::pair<nmos::id, nmos::type> no_resource{};
+                const auto super_resource = model.resources.find(super_id_type.first);
+                const bool no_super_resource = model.resources.end() == super_resource;
+                const bool valid_super_resource = no_resource == super_id_type || !no_super_resource;
+                valid = valid && valid_super_resource;
+
+                const bool valid_super_type = no_resource == super_id_type || no_super_resource || super_resource->type == super_id_type.second;
+                valid = valid && valid_super_type;
+
+                // all the sub-resources of each node must have the same version
+                const bool valid_super_api_version = no_resource == super_id_type || no_super_resource || super_resource->version == version;
+                valid = valid && valid_super_api_version;
 
                 // registration of an unchanged resource is considered as an acceptable "update" even though it's a no-op, but seems worth logging?
                 const bool unchanged = !creating && data == resource->data;
 
+                // each modification of a resource should update the version timestamp
+                const bool valid_version = creating || unchanged || nmos::fields::version(data) > nmos::fields::version(resource->data);
+                valid = valid && valid_version;
+
                 if (!valid_type)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " would modify type from " << resource->type.name;
+                else if (!valid_api_version)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " would modify API version from " << nmos::make_api_version(resource->version);
                 else if (!valid_super_id_type)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on " << super_id_type << " would modify super-resource from " << nmos::get_super_resource(resource->data, resource->type);
+                else if (!valid_super_resource)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on unknown " << super_id_type;
+                else if (!valid_super_type)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on " << super_id_type << " with inconsistent type of " << super_resource->type.name;
+                else if (!valid_super_api_version)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with API version inconsistent with super-resource " << nmos::make_api_version(super_resource->version);
+                else if (!valid_version)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with invalid version";
                 else if (no_resource == super_id_type) // i.e. just nodes, basically
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << (unchanged ? "unchanged " : "") << id_type;
-                else if (valid_super_resource)
+                else
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << (unchanged ? "unchanged " : "") << id_type << " on " << super_id_type;
-                else // if (!valid_super_resource)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << (unchanged ? "unchanged " : "") << id_type << " on unknown " << super_id_type;
-
-                // should registration with an old version (or with the same version but other modified properties!) be rejected?
-                const bool valid_version = creating || unchanged || nmos::fields::version(data) > nmos::fields::version(resource->data);
-                if (!valid_version)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with incorrect version";
-
-                valid = valid && (no_resource == super_id_type || valid_super_resource);
 
                 if (nmos::types::node == type)
                 {
@@ -267,10 +290,16 @@ namespace nmos
                     {
                         nmos::resource created_resource{ version, type, data, false };
 
+                        set_reply(res, status_codes::Created, data);
+                        res.headers().add(web::http::header_names::location, make_registration_api_resource_location(created_resource));
+
                         insert_resource(model.resources, std::move(created_resource), allow_invalid_resources);
                     }
                     else
                     {
+                        set_reply(res, status_codes::OK, data);
+                        res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
+
                         modify_resource(model.resources, id, [&data](nmos::resource& resource)
                         {
                             resource.data = data;
@@ -281,10 +310,24 @@ namespace nmos
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
                     condition.notify_all();
+                }
+                else if (!valid_type || !valid_api_version || !valid_super_id_type || !valid_version)
+                {
+                    // experimental extension, using a more specific status code to distinguish conflicts from validation errors
+                    set_reply(res, status_codes::Conflict);
 
-                    set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
-                    const string_t location(U("/x-nmos/registration/") + parameters.at(U("version")) + U("/resource/") + nmos::resourceType_from_type(type) + U("/") + id);
-                    res.headers().add(web::http::header_names::location, location);
+                    // the Location header would enable an HTTP DELETE to be performed to explicitly clear the registry of the conflicting registration
+                    // (assert !creating, i.e. model.resources.end() != resource in all these cases)
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
+                }
+                else if (!valid_super_type || !valid_super_api_version)
+                {
+                    // the difference here is that it's the super-resource that conflicts
+                    set_reply(res, status_codes::Conflict);
+
+                    // since the conflict is with the super-resource, a single HTTP DELETE cannot be enough to resolve the issue in this case...
+                    // (assert !no_super_resource, i.e. model.resources.end() != super_resource in all these cases)
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*super_resource));
                 }
                 else
                 {
@@ -300,10 +343,11 @@ namespace nmos
             // since health is mutable, no need to get an exclusive/write lock even to handle a POST request
             nmos::read_lock lock(mutex);
 
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(model.resources, { resourceId, nmos::types::node });
-            if (model.resources.end() != resource)
+            if (model.resources.end() != resource && resource->version == version)
             {
                 if (methods::POST == req.method())
                 {
@@ -335,11 +379,12 @@ namespace nmos
         {
             nmos::read_lock lock(mutex);
 
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (model.resources.end() != resource)
+            if (model.resources.end() != resource && resource->version == version)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
                 set_reply(res, status_codes::OK, resource->data);
@@ -357,11 +402,12 @@ namespace nmos
             // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually deleted from resources
             nmos::write_lock lock(mutex);
 
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (model.resources.end() != resource)
+            if (model.resources.end() != resource && resource->version == version)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
 
