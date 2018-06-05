@@ -702,7 +702,10 @@ namespace nmos
                         {
                             registration_service_error = true;
                         }
-
+                    });
+                    // avoid race condition between condition.notify_all() and request.is_done()
+                    request.then([&]
+                    {
                         condition.notify_all();
                     });
 
@@ -885,7 +888,10 @@ namespace nmos
                         {
                             registration_service_error = true;
                         }
-
+                    });
+                    // avoid race condition between condition.notify_all() and request.is_done()
+                    request.then([&]
+                    {
                         condition.notify_all();
                     });
 
