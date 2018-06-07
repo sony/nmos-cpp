@@ -121,7 +121,7 @@ namespace pplx
                 {
                     completed_or_canceled.get();
                 }
-                catch (pplx::task_canceled&)
+                catch (const pplx::task_canceled&)
                 {
                     event._Cancel();
                 }
@@ -152,11 +152,15 @@ namespace pplx
     {
         pplx::task_completion_event<void> event;
 
+        // create the result task before starting the 'loop', as a workaround for a bug in pplx::task_completion_event::_RegisterTask
+        // that a task created from an event cancelled without a user exception (using _Cancel as above) isn't marked as cancelled
+        auto result = pplx::create_task(event, token);
+
         details::propagate_exception(event, pplx::create_task([event, create_iteration_task, token]
         {
             details::do_while_iteration(event, create_iteration_task, token);
         }, token));
 
-        return pplx::create_task(event, token);
+        return result;
     }
 }
