@@ -191,7 +191,21 @@ namespace nmos
                 web::websockets::experimental::listener::websocket_outgoing_message message;
                 message.set_utf8_message(serialized);
 
-                listener.send(websocket.second, message);
+                // hmmm, no way to cancel this currently...
+                auto send = listener.send(websocket.second, message).then([&](pplx::task<void> finally)
+                {
+                    try
+                    {
+                        finally.get();
+                    }
+                    catch (const web::websockets::experimental::listener::websocket_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSockets error: " << e.what() << " [" << e.error_code() << "]";
+                    }
+                });
+                // current websocket_listener implementation is synchronous in any case, but just to make clear...
+                // for now, wait for the message to be sent
+                send.wait();
 
                 // reset the grain for next time
                 model.resources.modify(grain, [&model](nmos::resource& grain)
