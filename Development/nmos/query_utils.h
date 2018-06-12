@@ -40,6 +40,9 @@ namespace nmos
         // the client's minimum supported version of IS-04 Discovery and Registration
         nmos::api_version downgrade_version;
 
+        // whether resources of a higher API version are stripped of higher-version keys (false is experimental)
+        bool strip;
+
         // a representation of the RQL abstract syntax tree for an Advanced Query
         web::json::value rql_query;
 

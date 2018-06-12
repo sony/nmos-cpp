@@ -30,6 +30,7 @@ namespace nmos
         , resource_path(resource_path)
         , basic_query(web::json::unflatten(flat_query_params))
         , downgrade_version(version)
+        , strip(true)
         , match_flags(web::json::match_default)
     {
         // extract the supported advanced query options
@@ -49,6 +50,13 @@ namespace nmos
                 else if (field.first == U("rql"))
                 {
                     rql_query = rql::parse_query(field.second.as_string());
+                }
+                // extract the experimental flag, used to override the default behaviour that resources
+                // "must have all [higher-versioned] keys stripped by the Query API before they are returned"
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
+                else if (field.first == _XPLATSTR("strip"))
+                {
+                    strip = field.second.as_bool();
                 }
                 // extract the experimental match flags, which extend Basic Queries with really simple per-query control of string matching
                 else if (field.first == U("match_type"))
@@ -200,6 +208,9 @@ namespace nmos
 
     web::json::value resource_query::downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const
     {
+        // when requested, return the resource not stripped
+        if (!strip && resource_version.major == version.major && resource_version.minor > version.minor) return resource_data;
+
         return nmos::downgrade(resource_version, resource_type, resource_data, version, downgrade_version);
     }
 
@@ -310,7 +321,7 @@ namespace nmos
                 // ironically, the latter is a schema violation, but the former wouldn't be because the schema
                 // does not have "additionalProperties": false
                 // see nmos-discovery-registration/APIs/schemas/queryapi-subscriptions-websocket.json
-                if (resource_path.empty() && resource.version < match.version)
+                if (resource_path.empty() && (!match.strip || resource.version < match.version))
                 {
                     event[_XPLATSTR("api_version")] = web::json::value::string(nmos::make_api_version(resource.version));
                 }
@@ -356,7 +367,7 @@ namespace nmos
                 );
 
             // see explanation in nmos::make_resource_events
-            if (resource_path.empty() && version < match.version)
+            if (resource_path.empty() && (!match.strip || version < match.version))
             {
                 event[_XPLATSTR("api_version")] = web::json::value::string(nmos::make_api_version(version));
             }
