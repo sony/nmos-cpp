@@ -50,8 +50,10 @@ b2 toolset=msvc-12.0 --prefix=. --with-chrono --with-date_time --with-regex --wi
 
 ### WebSocket++
 
-A copy of the header-only WebSocket++ v0.5.1 is included in the C++ REST SDK, so a separate installation is not necessary.
+A copy of the header-only WebSocket++ v0.5.1 is included within the C++ REST SDK source tree, so a separate installation is not necessary.
 Note: WebSocket++ v0.7.0 (latest release) has also been tested.
+
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
 
 ### OpenSSL
 
