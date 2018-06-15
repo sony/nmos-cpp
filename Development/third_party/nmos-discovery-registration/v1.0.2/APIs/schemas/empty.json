@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes an empty request or response",
+  "title": "Empty schema",
+  "required": [
+  ],
+  "properties": {
+  }
+}

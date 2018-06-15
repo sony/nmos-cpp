@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a raw audio Flow",
+  "title": "Raw Audio Flow resource",
+  "allOf": [
+    { "$ref": "flow_audio.json" },
+    {
+      "type": "object",
+      "required": [
+        "media_type",
+        "bit_depth"
+      ],
+      "properties": {
+        "media_type": {
+          "description": "Subclassification of the format using IANA assigned media types",
+          "type": "string",
+          "anyOf": [
+            {
+              "enum": [
+                "audio/L24",
+                "audio/L20",
+                "audio/L16",
+                "audio/L8"
+              ]
+            },
+            {
+              "pattern": "^audio\\/[^\\s\\/]+$"
+            }
+          ]
+        },
+        "bit_depth" : {
+          "description" : "Bit depth of the audio samples",
+          "type" : "integer"
+        }
+      }
+    }
+  ]
+}

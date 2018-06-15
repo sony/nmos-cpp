@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a mux Flow",
+  "title": "Mux Flow resource",
+  "allOf": [
+    { "$ref": "flow_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "format",
+        "media_type"
+      ],
+      "properties": {
+        "format": {
+          "description": "Format of the data coming from the Flow as a URN",
+          "type": "string",
+          "enum": [
+            "urn:x-nmos:format:mux"
+          ],
+          "format": "uri"
+        },
+        "media_type": {
+          "description": "Subclassification of the format using IANA assigned media types",
+          "type": "string",
+          "anyOf": [
+            {
+              "enum": [
+                "video/SMPTE2022-6"
+              ]
+            },
+            {
+              "pattern": "^[^\\s\\/]+\\/[^\\s\\/]+$"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

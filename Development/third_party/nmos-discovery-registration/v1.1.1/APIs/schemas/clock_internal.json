@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a clock with no external reference",
+  "title": "Clock with no external reference",
+  "type": "object",
+  "required": [
+    "name",
+    "ref_type"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of this refclock (unique for this set of clocks)",
+      "pattern": "clk[0-9]+"
+    },
+    "ref_type": {
+      "description": "Type of external reference used by this clock",
+      "type": "string",
+      "enum": [
+        "internal"
+      ]
+    }
+  }
+}

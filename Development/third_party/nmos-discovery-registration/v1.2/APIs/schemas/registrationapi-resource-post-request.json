@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Register a new resource or update an existing resource",
+  "title": "Resource registration",
+  "required": [
+    "type",
+    "data"
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "description": "Singular form of the resource type to be registered",
+          "type": "string",
+          "enum": ["node"]
+        },
+        "data": {
+          "$ref": "node.json"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "description": "Singular form of the resource type to be registered",
+          "type": "string",
+          "enum": ["device"]
+        },
+        "data": {
+          "$ref": "device.json"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "description": "Singular form of the resource type to be registered",
+          "type": "string",
+          "enum": ["sender"]
+        },
+        "data": {
+          "$ref": "sender.json"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "description": "Singular form of the resource type to be registered",
+          "type": "string",
+          "enum": ["receiver"]
+        },
+        "data": {
+          "$ref": "receiver.json"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "description": "Singular form of the resource type to be registered",
+          "type": "string",
+          "enum": ["source"]
+        },
+        "data": {
+          "$ref": "source.json"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "description": "Singular form of the resource type to be registered",
+          "type": "string",
+          "enum": ["flow"]
+        },
+        "data": {
+          "$ref": "flow.json"
+        }
+      }
+    }
+  ]
+}

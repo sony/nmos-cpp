@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a coded Video Flow",
+  "title": "Coded Video Flow resource",
+  "allOf": [
+    { "$ref": "flow_video.json" },
+    {
+      "type": "object",
+      "required": [
+        "media_type"
+      ],
+      "properties": {
+        "media_type": {
+          "description": "Subclassification of the format using IANA assigned media types",
+          "type": "string",
+          "anyOf": [
+            {
+              "enum": [
+                "video/H264",
+                "video/vc2"
+              ]
+            },
+            {
+              "pattern": "^video\\/[^\\s\\/]+$"
+            }
+          ],
+          "not": {
+            "enum": [
+              "video/raw"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

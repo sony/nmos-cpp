@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a receiver",
+  "title": "Receiver resource",
+  "allOf": [
+    { "$ref": "resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "device_id",
+        "transport",
+        "interface_bindings",
+        "subscription"
+      ],
+      "properties": {
+        "device_id": {
+          "description": "Device ID which this Receiver forms part of",
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "transport": {
+          "description": "Transport type accepted by the Receiver in URN format",
+          "type": "string",
+          "oneOf": [
+            {
+              "enum": [
+                "urn:x-nmos:transport:rtp",
+                "urn:x-nmos:transport:rtp.ucast",
+                "urn:x-nmos:transport:rtp.mcast",
+                "urn:x-nmos:transport:dash"
+              ]
+            },
+            {
+              "not": {
+                "pattern": "^urn:x-nmos:"
+              }
+            }
+          ],
+          "format": "uri"
+        },
+        "interface_bindings": {
+          "description": "Binding of Receiver ingress ports to interfaces on the parent Node. Should contain a single network interface unless a redundancy mechanism such as ST.2022-7 is in use, in which case each 'leg' should have a matching interface listed.",
+          "type": "array",
+          "items": {
+            "type":"string"
+          }
+        },
+        "subscription": {
+          "description": "Object containing the 'sender_id' currently subscribed to. Sender_id should be null on initialisation, or when connected to a non-NMOS Sender.",
+          "type": "object",
+          "required": ["sender_id", "active"],
+          "properties": {
+            "sender_id": {
+              "type": ["string", "null"],
+              "description": "UUID of the Sender that this Receiver is currently subscribed to",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "default": null
+            },
+            "active": {
+              "type": "boolean",
+              "description": "Receiver is enabled and configured with a Sender's connection parameters",
+              "default": false
+            }
+          }
+        }
+      }
+    }
+  ]
+}

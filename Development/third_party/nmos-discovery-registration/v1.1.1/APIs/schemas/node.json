@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the Node and the services which run on it",
+  "title": "Node resource",
+  "allOf": [
+    { "$ref": "resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "href",
+        "caps",
+        "api",
+        "services",
+        "clocks"
+      ],
+      "properties": {
+        "href": {
+          "description": "HTTP access href for the Node's API (deprecated)",
+          "type": "string",
+          "format": "uri"
+        },
+        "hostname": {
+          "description": "Node hostname (optional, deprecated)",
+          "type": "string",
+          "format": "hostname"
+        },
+        "api": {
+          "description": "URL fragments required to connect to the Node API",
+          "type": "object",
+          "required": ["versions", "endpoints"],
+          "properties": {
+            "versions": {
+              "description": "Supported API versions running on this Node",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "v[0-9]+.[0-9]+"
+              }
+            },
+            "endpoints": {
+              "description": "Host, port and protocol details required to connect to the API",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["host", "port", "protocol"],
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "description": "IP address or hostname which the Node API is running on",
+                    "anyOf": [
+                      {"format": "hostname"},
+                      {"format": "ipv4"},
+                      {"format": "ipv6"}
+                    ]
+                  },
+                  "port": {
+                    "type": "integer",
+                    "description": "Port number which the Node API is running on",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "description": "Protocol supported by this instance of the Node API",
+                    "enum": ["http", "https"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "caps": {
+          "description": "Capabilities (not yet defined)",
+          "type": "object"
+        },
+        "services": {
+          "description": "Array of objects containing a URN format type and href",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["href", "type"],
+            "properties": {
+              "href": {
+                "type": "string",
+                "description": "URL to reach a service running on the Node",
+                "format": "uri"
+              },
+              "type": {
+                "type": "string",
+                "description": "URN identifying the type of service",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "clocks": {
+          "description": "Clocks made available to Devices owned by this Node",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "$ref": "clock_internal.json" },
+              { "$ref": "clock_ptp.json" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

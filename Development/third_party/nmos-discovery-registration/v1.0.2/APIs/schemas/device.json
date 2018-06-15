@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a Device",
+  "title": "Device resource",
+  "required": [
+    "id",
+    "version",
+    "label",
+    "type",
+    "node_id",
+    "senders",
+    "receivers"
+  ],
+  "properties": {
+    "id": {
+      "description": "Globally unique identifier for the Device",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "version": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating precisely when an attribute of the resource last changed",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "label": {
+      "description": "Freeform string label for the Device",
+      "type": "string"
+    },
+    "type": {
+      "description": "Device type URN",
+      "type": "string",
+      "format": "uri"
+    },
+    "node_id": {
+      "description": "Globally unique identifier for the Node which initially created the Device",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "senders": {
+      "description": "UUIDs of Senders attached to the Device",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      }
+    },
+    "receivers": {
+      "description": "UUIDs of Receivers attached to the Device",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Register a new resource or update an existing resource",
+  "title": "Resource registration",
+  "required": [
+    "max_update_rate_ms",
+    "persist",
+    "resource_path",
+    "params"
+  ],
+  "properties": {
+    "max_update_rate_ms": {
+      "description": "Rate limiting for messages. Sets the minimum interval between consecutive websocket messages",
+      "type": "integer",
+      "default": 100
+    },
+    "persist": {
+      "description": "Whether to destroy the socket when the final client disconnects",
+      "type": "boolean",
+      "default": false
+    },
+    "resource_path": {
+      "description": "HTTP resource path in the query API which this subscription relates to",
+      "type": "string",
+      "enum": ["/nodes", "/devices", "/sources", "/flows", "/senders", "/receivers"]
+    },
+    "params": {
+      "description": "Object containing attributes to filter the resource on as per the Query Parameters specification. Can be empty.",
+      "type": "object"
+    }
+  }
+}

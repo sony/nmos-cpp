@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "A list of subscription resources",
+  "title": "Collection of subscriptions",
+  "items": {
+    "$ref": "queryapi-subscription-response.json"
+  },
+  "minItems": 0,
+  "uniqueItems": true
+}

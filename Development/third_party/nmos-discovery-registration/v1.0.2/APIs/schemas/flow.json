@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a Flow",
+  "title": "Flow resource",
+  "required": [
+    "id",
+    "version",
+    "label",
+    "description",
+    "format",
+    "tags",
+    "source_id",
+    "parents"
+  ],
+  "properties": {
+    "id": {
+      "description": "Globally unique identifier for the Flow",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "version": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating precisely when an attribute of the resource last changed",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "label": {
+      "description": "Freeform string label for the Flow",
+      "type": "string"
+    },
+    "description": {
+      "description": "Detailed description of the Flow",
+      "type": "string"
+    },
+    "format": {
+      "description": "Format of the data coming from the Flow as a URN",
+      "type": "string",
+      "enum": [
+        "urn:x-nmos:format:video",
+        "urn:x-nmos:format:audio",
+        "urn:x-nmos:format:data"
+      ],
+      "format": "uri"
+    },
+    "tags": {
+      "description": "Key value set of freeform string tags to aid in filtering Flows. Values should be represented as an array of strings. Can be empty.",
+      "type": "object",
+      "patternProperties": {
+        "": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source_id": {
+      "description": "Globally unique identifier for the Source which initially created the Flow",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "parents": {
+      "description": "Array of UUIDs representing the Flow IDs of Grains which came together to generate this Flow (may change over the lifetime of this Flow)",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      }
+    }
+  }
+}

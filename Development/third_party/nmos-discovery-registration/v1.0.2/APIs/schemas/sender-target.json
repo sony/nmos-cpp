@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a sender",
+  "title": "Sender resource",
+  "required": [],
+  "properties": {
+    "id": {
+      "description": "Globally unique identifier for the Sender",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "version": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating precisely when an attribute of the resource last changed",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "label": {
+      "description": "Freeform string label for the Sender",
+      "type": "string"
+    },
+    "description": {
+      "description": "Detailed description of the Sender",
+      "type": "string"
+    },
+    "flow_id": {
+      "description": "ID of the Flow currently passing via this Sender",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "transport": {
+      "description": "Transport type used by the Sender in URN format",
+      "type": "string",
+      "enum": [
+        "urn:x-nmos:transport:rtp",
+        "urn:x-nmos:transport:rtp.ucast",
+        "urn:x-nmos:transport:rtp.mcast",
+        "urn:x-nmos:transport:dash"
+      ],
+      "format": "uri"
+    },
+    "tags": {
+      "description": "Key value set of freeform string tags to aid in filtering Senders. Values should be represented as an array of strings. Can be empty.",
+      "type": "object",
+      "patternProperties": {
+        "": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "device_id": {
+      "description": "Device ID which this Sender forms part of",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "manifest_href": {
+      "description": "HTTP URL to a file describing how to connect to the Sender (SDP for RTP)",
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a data Grain sent via the a Query API websocket subscription",
+  "title": "Query API data Grain",
+  "required": [
+    "grain_type",
+    "source_id",
+    "flow_id",
+    "origin_timestamp",
+    "sync_timestamp",
+    "creation_timestamp",
+    "rate",
+    "duration",
+    "grain"
+  ],
+  "properties": {
+    "grain_type": {
+      "description": "Type of data contained within the 'grain' attribute's payload",
+      "type": "string",
+      "enum": [
+        "event"
+      ]
+    },
+    "source_id": {
+      "description": "Source ID of the Query API instance issuing the data Grain",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "flow_id": {
+      "description": "Subscription ID under the /subscriptions/ resource of the Query API",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "origin_timestamp": {
+      "description": "TAI timestamp at which this data Grain was generated in the format <ts_secs>:<ts_nsecs>",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "sync_timestamp": {
+      "description": "TAI timestamp at which this data Grain was generated in the format <ts_secs>:<ts_nsecs>",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "creation_timestamp": {
+      "description": "TAI timestamp at which this data Grain was generated in the format <ts_secs>:<ts_nsecs>",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "rate": {
+      "description": "Rate at which Grains will be received within this Flow (if applicable)",
+      "type": "object",
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "properties": {
+        "numerator": {
+          "description": "Numerator of the Grain rate",
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "description": "Denominator of the Grain rate",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "duration": {
+      "description": "Duration over which this Grain is valid or should be presented (if applicable)",
+      "type": "object",
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "properties": {
+        "numerator": {
+          "description": "Numerator of the Grain duration",
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "description": "Denominator of the Grain duration",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "grain": {
+      "description": "Payload of the data Grain",
+      "type": "object",
+      "required": [
+        "type",
+        "topic",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "description": "Format classifier for the data contained in this payload",
+          "type": "string",
+          "format": "uri",
+          "enum": [
+            "urn:x-nmos:format:data.event"
+          ]
+        },
+        "topic": {
+          "description": "Query API topic which has been subscribed to using this websocket",
+          "type": "string",
+          "enum": [
+            "/nodes/",
+            "/devices/",
+            "/sources/",
+            "/flows/",
+            "/senders/",
+            "/receivers/"
+          ]
+        },
+        "data": {
+          "description": "An array of changes which have occurred and are being passed to the subscription client",
+          "type": "array",
+          "items": {
+            "description": "A single object identifying a change which has occurred under a particular API resource",
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "description": "ID of the resource which has undergone a change (may be a Node ID, Device ID etc.)",
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "pre": {
+                "description": "Representation of the resource undergoing a change prior to the change occurring. Omitted if the resource didn't previously exist.",
+                "type": "object",
+                "oneOf": [
+                  {"$ref": "node.json"},
+                  {"$ref": "device.json"},
+                  {"$ref": "source.json"},
+                  {"$ref": "flow.json"},
+                  {"$ref": "sender.json"},
+                  {"$ref": "receiver.json"}
+                ]
+              },
+              "post": {
+                "description": "Representation of the resource undergoing a change after the change had occurred. Omitted if the resource no longer exists.",
+                "type": "object",
+                "oneOf": [
+                  {"$ref": "node.json"},
+                  {"$ref": "device.json"},
+                  {"$ref": "source.json"},
+                  {"$ref": "flow.json"},
+                  {"$ref": "sender.json"},
+                  {"$ref": "receiver.json"}
+                ]
+              }
+            }
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

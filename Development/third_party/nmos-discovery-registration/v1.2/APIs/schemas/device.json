@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a Device",
+  "title": "Device resource",
+  "allOf": [
+    { "$ref": "resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "node_id",
+        "senders",
+        "receivers",
+        "controls"
+      ],
+      "properties": {
+        "type": {
+          "description": "Device type URN",
+          "type": "string",
+          "oneOf": [
+            {
+              "enum": [
+                "urn:x-nmos:device:generic",
+                "urn:x-nmos:device:pipeline"
+              ]
+            },
+            {
+              "not": {
+                "pattern": "^urn:x-nmos:"
+              }
+            }
+          ],
+          "format": "uri"
+        },
+        "node_id": {
+          "description": "Globally unique identifier for the Node which initially created the Device",
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "senders": {
+          "description": "UUIDs of Senders attached to the Device (deprecated)",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
+        "receivers": {
+          "description": "UUIDs of Receivers attached to the Device (deprecated)",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
+        "controls": {
+          "description": "Control endpoints exposed for the Device",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["href", "type"],
+            "properties": {
+              "href": {
+                "type": "string",
+                "description": "URL to reach a control endpoint, whether http or otherwise",
+                "format": "uri"
+              },
+              "type": {
+                "type": "string",
+                "description": "URN identifying the control format",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

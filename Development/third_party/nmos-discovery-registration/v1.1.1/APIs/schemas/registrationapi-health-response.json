@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Response to a request to update a resource's health",
+  "title": "Heartbeat response",
+  "required": [
+    "health"
+  ],
+  "properties": {
+    "health": {
+      "description": "Timestamp indicating the time in seconds at which the server recorded the heartbeat",
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    }
+  }
+}

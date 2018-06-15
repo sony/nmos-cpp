@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the Node and the services which run on it",
+  "title": "Node resource",
+  "required": [
+    "id",
+    "version",
+    "label",
+    "href",
+    "caps",
+    "services"
+  ],
+  "properties": {
+    "id": {
+      "description": "Globally unique identifier for the Node",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "version": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating precisely when an attribute of the resource last changed",
+      "type": "string",
+      "pattern": "^[0-9]+:[0-9]+$"
+    },
+    "label": {
+      "description": "Freeform string label for the Node",
+      "type": "string"
+    },
+    "href": {
+      "description": "HTTP access href for the Node's API",
+      "type": "string",
+      "format": "uri"
+    },
+    "hostname": {
+      "description": "Node hostname (optional)",
+      "type": "string",
+      "format": "hostname"
+    },
+    "caps": {
+      "description": "Capabilities (not yet defined)",
+      "type": "object"
+    },
+    "services": {
+      "description": "Array of objects containing a URN format type and href",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["href", "type"],
+        "properties": {
+          "href": {
+            "type": "string",
+            "description": "URL to reach a service running on the Node",
+            "format": "uri"
+          },
+          "type": {
+            "type": "string",
+            "description": "URN identifying the type of service",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
+}
