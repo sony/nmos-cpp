@@ -172,6 +172,182 @@ target_link_libraries(
     cpprestsdk::cpprest
     )
 
+# nmos_is04_schemas library
+
+set(NMOS_IS04_V1_2_SCHEMAS_JSON
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/clock_internal.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/clock_ptp.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/device.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/devices.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/empty.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/error.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flows.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_audio.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_audio_coded.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_audio_raw.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_core.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_data.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_mux.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_sdianc_data.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_video.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_video_coded.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/flow_video_raw.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/node.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/nodeapi-base.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/nodes.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/queryapi-base.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/queryapi-subscription-response.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/queryapi-subscriptions-post-request.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/queryapi-subscriptions-response.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/queryapi-subscriptions-websocket.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receiver.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receivers.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receiver_audio.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receiver_core.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receiver_data.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receiver_mux.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/receiver_video.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/registrationapi-base.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/registrationapi-health-response.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/registrationapi-resource-post-request.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/registrationapi-resource-response.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/resource_core.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/sender.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/senders.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/source.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/sources.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/source_audio.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/source_core.json
+    third_party/nmos-discovery-registration/v1.2/APIs/schemas/source_generic.json
+    )
+
+set(NMOS_IS04_V1_1_1_SCHEMAS_JSON
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/clock_internal.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/clock_ptp.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/device.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/devices.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/empty.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/error.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flows.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_audio.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_audio_coded.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_audio_raw.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_core.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_data.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_mux.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_sdianc_data.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_video.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_video_coded.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/flow_video_raw.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/node.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/nodeapi-base.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/nodes.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/queryapi-base.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/queryapi-subscription-response.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/queryapi-subscriptions-post-request.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/queryapi-subscriptions-response.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/queryapi-subscriptions-websocket.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receiver.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receivers.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receiver_audio.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receiver_core.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receiver_data.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receiver_mux.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/receiver_video.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/registrationapi-base.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/registrationapi-health-response.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/registrationapi-resource-post-request.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/registrationapi-resource-response.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/resource_core.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/sender.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/senders.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/source.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/sources.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/source_audio.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/source_core.json
+    third_party/nmos-discovery-registration/v1.1.1/APIs/schemas/source_generic.json
+    )
+
+set(NMOS_IS04_V1_0_2_SCHEMAS_JSON
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/device.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/devices.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/empty.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/error.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/flow.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/flows.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/node.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/nodeapi-base.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/nodes.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/queryapi-base.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/queryapi-subscription-response.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/queryapi-subscriptions-response.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/queryapi-v1.0-subscriptions-post-request.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/queryapi-v1.0-subscriptions-websocket.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/receiver.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/receivers.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/registrationapi-base.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/registrationapi-health-response.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/registrationapi-resource-response.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/registrationapi-v1.0-resource-post-request.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/sender-target.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/sender.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/senders.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/source.json
+    third_party/nmos-discovery-registration/v1.0.2/APIs/schemas/sources.json
+    )
+
+set(NMOS_IS04_SCHEMAS_JSON_MATCH "third_party/nmos-discovery-registration/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS04_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is04_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_2_SCHEMAS_SOURCES "${NMOS_IS04_V1_2_SCHEMAS_JSON}")
+string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_1_1_SCHEMAS_SOURCES "${NMOS_IS04_V1_1_1_SCHEMAS_JSON}")
+string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_0_2_SCHEMAS_SOURCES "${NMOS_IS04_V1_0_2_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS04_V1_2_SCHEMAS_JSON} ${NMOS_IS04_V1_1_1_SCHEMAS_JSON} ${NMOS_IS04_V1_0_2_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is04_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is04_schemas_static STATIC
+    ${NMOS_IS04_V1_2_SCHEMAS_SOURCES}
+    ${NMOS_IS04_V1_1_1_SCHEMAS_SOURCES}
+    ${NMOS_IS04_V1_0_2_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is04_schemas\\v1.2\\Source Files" FILES ${NMOS_IS04_V1_2_SCHEMAS_SOURCES})
+source_group("nmos\\is04_schemas\\v1.1.1\\Source Files" FILES ${NMOS_IS04_V1_1_1_SCHEMAS_SOURCES})
+source_group("nmos\\is04_schemas\\v1.0.2\\Source Files" FILES ${NMOS_IS04_V1_0_2_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is04_schemas_static
+    )
+
 # nmos-cpp-node
 
 set(NMOS_CPP_NODE_SOURCES
