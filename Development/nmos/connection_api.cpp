@@ -225,9 +225,21 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            set_reply(res, status_codes::OK, U("v=0\r\no=- 37 42 IN IP4 127.0.0.1 \r\ns= \r\nt=0 0\r\n"), U("application/sdp"));
+            nmos::read_lock lock(mutex);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+            auto& redirects = model.transportfile.redirects;
+            auto url = redirects.find(resourceId);
+            if (url != redirects.end())
+            {
+                set_reply(res, status_codes::TemporaryRedirect);
+                res.headers().add(web::http::header_names::location, url->second);
+            }
+            else
+            {
+                set_reply(res, status_codes::NotFound);
+            }
             return pplx::task_from_result(true);
         });
 
