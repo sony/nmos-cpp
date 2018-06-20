@@ -11,6 +11,8 @@ namespace nmos
     {
         nmos::resources resources;
         nmos::settings settings;
+        nmos::resources active;
+        nmos::resources staged;
     };
 }
 
