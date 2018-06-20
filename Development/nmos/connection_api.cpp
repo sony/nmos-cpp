@@ -8,9 +8,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -34,16 +34,17 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(resources, mutex, condition, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, mutex, condition, gate));
 
         nmos::add_api_finally_handler(connection_api, gate);
 
         return connection_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
+        auto &resources = model.resources;
 
         api_router connection_api;
 
@@ -193,9 +194,24 @@ namespace nmos
             });
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/active/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/active/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            set_reply(res, status_codes::NotImplemented);
+            nmos::read_lock lock(mutex);
+            
+            auto &active = model.active;
+
+            const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+            auto resource = find_resource(active, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (active.end() == resource)
+            {
+                set_reply(res, status_codes::NotFound);
+            }
+            else
+            {
+                set_reply(res, status_codes::OK, resource->data);
+            }
             return pplx::task_from_result(true);
         });
 
