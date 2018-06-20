@@ -8,6 +8,21 @@
 
 namespace nmos
 {
+    static web::json::value strip_id(const web::json::value &src)
+    {
+        web::json::value result;
+        auto &object = src.as_object();
+        for (auto &pair: object)
+        {
+            auto &key = pair.first;
+            if (key != "id")
+            {
+                result[key] = pair.second;
+            }
+        }
+        return result;
+    }
+
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 
     web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
@@ -210,7 +225,7 @@ namespace nmos
             }
             else
             {
-                set_reply(res, status_codes::OK, resource->data);
+                set_reply(res, status_codes::OK, strip_id(resource->data));
             }
             return pplx::task_from_result(true);
         });
