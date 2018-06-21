@@ -132,9 +132,23 @@ namespace nmos
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
                 // Validate JSON syntax according to the schema
-                // could be done before the lock?
 
-                validator.validate(body, experimental::make_registrationapi_resource_post_request_schema_uri(version));
+                const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
+                if (!allow_invalid_resources)
+                {
+                    validator.validate(body, experimental::make_registrationapi_resource_post_request_schema_uri(version));
+                }
+                else
+                {
+                    try
+                    {
+                        validator.validate(body, experimental::make_registrationapi_resource_post_request_schema_uri(version));
+                    }
+                    catch (const web::json::json_exception& e)
+                    {
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
+                    }
+                }
 
                 const value data = nmos::fields::data(body);
                 const std::pair<nmos::id, nmos::type> id_type{ nmos::fields::id(data), { nmos::fields::type(body) } };
@@ -295,7 +309,6 @@ namespace nmos
                     valid = false;
                 }
 
-                const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
                 // always reject updates that would modify resource type or super-resource
                 if (valid_type && valid_super_id_type && (valid || allow_invalid_resources))
                 {
