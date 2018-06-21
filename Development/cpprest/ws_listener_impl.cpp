@@ -384,7 +384,7 @@ namespace web
                 }
 
                 websocket_listener::websocket_listener(int port, web::logging::experimental::callback_function log)
-                    : impl(std::unique_ptr<details::websocket_listener_impl>(new details::websocket_listener_impl(log)))
+                    : impl(new details::websocket_listener_impl(log))
                     , port(port)
                 {
                 }
