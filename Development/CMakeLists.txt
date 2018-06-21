@@ -112,7 +112,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")	
     endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -D_GLIBCXX_USE_NANOSLEEP -DBOOST_RESULT_OF_USE_DECLTYPE -DSLOG_DETAIL_NO_REF_QUALIFIERS")	
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -D_GLIBCXX_USE_NANOSLEEP -DBOOST_RESULT_OF_USE_DECLTYPE -DSLOG_DETAIL_NO_REF_QUALIFIERS -DJSON_SCHEMA_BOOST_REGEX")	
     endif()
 elseif(MSVC)
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -131,6 +131,7 @@ include_directories(
     ${WEBSOCKETPP_INCLUDE_DIR} # defined by find_package(websocketpp)
     ${Boost_INCLUDE_DIRS} # defined by find_package(Boost) 
     ${BONJOUR_INCLUDE} # defined above
+    ${PROJECT_SOURCE_DIR}/third_party/nlohmann
     )
 
 # location of libraries
@@ -173,6 +174,10 @@ target_link_libraries(
     )
 
 # nmos_is04_schemas library
+
+set(NMOS_IS04_SCHEMAS_HEADERS
+    nmos/is04_schemas/is04_schemas.h
+    )
 
 set(NMOS_IS04_V1_2_SCHEMAS_JSON
     third_party/nmos-discovery-registration/v1.2/APIs/schemas/clock_internal.json
@@ -335,17 +340,44 @@ endforeach()
 
 add_library(
     nmos_is04_schemas_static STATIC
+    ${NMOS_IS04_SCHEMAS_HEADERS}
     ${NMOS_IS04_V1_2_SCHEMAS_SOURCES}
     ${NMOS_IS04_V1_1_1_SCHEMAS_SOURCES}
     ${NMOS_IS04_V1_0_2_SCHEMAS_SOURCES}
     )
 
+source_group("nmos\\is04_schemas\\Header Files" FILES ${NMOS_IS04_SCHEMAS_HEADERS})
 source_group("nmos\\is04_schemas\\v1.2\\Source Files" FILES ${NMOS_IS04_V1_2_SCHEMAS_SOURCES})
 source_group("nmos\\is04_schemas\\v1.1.1\\Source Files" FILES ${NMOS_IS04_V1_1_1_SCHEMAS_SOURCES})
 source_group("nmos\\is04_schemas\\v1.0.2\\Source Files" FILES ${NMOS_IS04_V1_0_2_SCHEMAS_SOURCES})
 
 target_link_libraries(
     nmos_is04_schemas_static
+    )
+
+# json schema validator library
+
+set(JSON_SCHEMA_VALIDATOR_SOURCES
+    third_party/nlohmann/json-validator.cpp
+    third_party/nlohmann/json-uri.cpp
+    )
+
+set(JSON_SCHEMA_VALIDATOR_HEADERS
+    third_party/nlohmann/json-schema.hpp
+    third_party/nlohmann/json.hpp
+    )
+
+add_library(
+    json_schema_validator_static STATIC
+    ${JSON_SCHEMA_VALIDATOR_SOURCES}
+    ${JSON_SCHEMA_VALIDATOR_HEADERS}
+	)
+
+source_group("Source Files" FILES ${JSON_SCHEMA_VALIDATOR_SOURCES})
+source_group("Header Files" FILES ${JSON_SCHEMA_VALIDATOR_HEADERS})
+
+target_link_libraries(
+    json_schema_validator_static
     )
 
 # nmos-cpp-node
@@ -508,6 +540,7 @@ set(NMOS_CPP_REGISTRY_CPPREST_SOURCES
     cpprest/host_utils.cpp
     cpprest/http_utils.cpp
     cpprest/json_utils.cpp
+	cpprest/json_validator_impl.cpp
     cpprest/ws_listener_impl.cpp
     )
 set(NMOS_CPP_REGISTRY_CPPREST_HEADERS
@@ -516,6 +549,7 @@ set(NMOS_CPP_REGISTRY_CPPREST_HEADERS
     cpprest/host_utils.h
     cpprest/http_utils.h
     cpprest/json_utils.h
+	cpprest/json_validator.h
     cpprest/logging_utils.h
     cpprest/regex_utils.h
     cpprest/ws_listener.h
@@ -526,6 +560,7 @@ set(NMOS_CPP_REGISTRY_NMOS_SOURCES
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
     nmos/filesystem_route.cpp
+    nmos/json_schema.cpp
     nmos/logging_api.cpp
     nmos/mdns.cpp
     nmos/mdns_api.cpp
@@ -550,6 +585,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/health.h
     nmos/id.h
     nmos/json_fields.h
+    nmos/json_schema.h
     nmos/log_manip.h
     nmos/logging_api.h
     nmos/mdns.h
@@ -619,6 +655,8 @@ target_link_libraries(
     nmos-cpp-registry
     mdns_static
     cpprestsdk::cpprest
+	json_schema_validator_static
+	nmos_is04_schemas_static
     ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}

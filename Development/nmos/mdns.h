@@ -49,7 +49,6 @@ namespace nmos
 
     namespace is04_versions
     {
-        const std::vector<api_version> all{ nmos::is04_versions::v1_0, nmos::is04_versions::v1_1, nmos::is04_versions::v1_2 };
         const std::vector<api_version> unspecified{ nmos::is04_versions::v1_0 };
     }
 

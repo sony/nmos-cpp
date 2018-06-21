@@ -1,6 +1,9 @@
 #include "nmos/registration_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
+#include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
@@ -112,10 +115,15 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/resource/?"), methods::POST, [&model, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        const web::json::experimental::json_validator validator
         {
-            // note that, as elsewhere, as a minimum, the correct Content-Type and JSON schema validity is assumed;
-            // http_exception and json_exception are handled by the exception handler added by add_api_finally_handler
+            nmos::experimental::load_json_schema,
+            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
+        };
+
+        registration_api.support(U("/resource/?"), methods::POST, [&model, &mutex, &condition, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            // note that, as elsewhere, http_exception and json_exception are handled by the exception handler added by add_api_finally_handler
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually modified or inserted into resources
@@ -123,12 +131,17 @@ namespace nmos
 
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
+                // Validate JSON syntax according to the schema
+                // could be done before the lock?
+
+                validator.validate(body, experimental::make_registrationapi_resource_post_request_schema_uri(version));
+
                 const value data = nmos::fields::data(body);
                 const std::pair<nmos::id, nmos::type> id_type{ nmos::fields::id(data), { nmos::fields::type(body) } };
                 const auto& id = id_type.first;
                 const auto& type = id_type.second;
 
-                // Validate request, including referential integrity
+                // Validate request semantics, including referential integrity
                 // such as the requested super-resource
 
                 bool valid = true;

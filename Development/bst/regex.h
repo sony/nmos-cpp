@@ -41,6 +41,8 @@ namespace bst
     using bst_regex::regex;
     using bst_regex::wregex;
 
+    using bst_regex::regex_error;
+
     using bst_regex::match_results;
     using bst_regex::cmatch;
     using bst_regex::wcmatch;
