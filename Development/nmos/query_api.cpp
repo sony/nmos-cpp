@@ -46,7 +46,7 @@ namespace nmos
     {
         web::uri make_query_uri_with_no_paging(const web::http::http_request& req, const nmos::settings& settings)
         {
-            // could rebuild the query parameters from the decoded and parsed resource query, rather than individually deleting the paging parameters from the request?
+            // could rebuild the query parameters from the decoded and parsed query string, rather than individually deleting the paging parameters from the request?
             auto query_params = web::json::value_from_query(req.request_uri().query());
             if (query_params.has_field(U("paging.order")))
             {
@@ -69,17 +69,21 @@ namespace nmos
             // See https://tools.ietf.org/html/rfc5988#section-5
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md
 
-            // get the request host
-            auto req_host = web::http::get_host_port(req).first;
-            if (req_host.empty())
+            // get the request host and port (or use the primary host address, and port, from settings)
+            auto req_host_port = web::http::get_host_port(req);
+            if (req_host_port.first.empty())
             {
-                req_host = nmos::fields::host_address(settings);
+                req_host_port.first = nmos::fields::host_address(settings);
+            }
+            if (0 == req_host_port.second)
+            {
+                req_host_port.second = nmos::fields::query_port(settings);
             }
 
             return web::uri_builder()
                 .set_scheme(U("http")) // for now, no means to detect the API protocol?
-                .set_host(req_host)
-                .set_port(nmos::fields::query_port(settings)) // could also get from the request?
+                .set_host(req_host_port.first)
+                .set_port(req_host_port.second)
                 .set_path(req.request_uri().path()) // could also build from the route parameters, version and resourceType?
                 .set_query(web::json::query_from_value(query_params))
                 .to_uri();
