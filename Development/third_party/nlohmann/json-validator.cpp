@@ -222,7 +222,7 @@ void validate_numeric(const json &instance, const json &schema, const std::strin
 
 		if (multipleOf != schema.end()) {
 			double multiple = multipleOf.value();
-			double value_float = value;
+			double value_float = (double)value;
 
 			if (violates_multiple_of(value_float, multiple))
 				throw std::out_of_range(name + " is not a multiple of " + std::to_string(multiple));
