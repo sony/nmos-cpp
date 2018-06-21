@@ -7,6 +7,7 @@ The codebase utilizes a number of great open-source projects (licenses vary).
 - The [CMake](https://cmake.org/) build tools
 - The [C++ REST SDK](https://github.com/Microsoft/cpprestsdk), for client-server communication over REST APIs
   - This library incorporates some third-party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and OpenSSL.
+- For JSON Schema validation, the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library, which is implemented on top of [JSON for Modern C++](https://github.com/nlohmann/json)
 - For DNS Service Discovery (DNS-SD), the [Bonjour SDK](https://developer.apple.com/bonjour/) (on Windows; it is known as [mDNSResponder](https://opensource.apple.com/tarballs/mDNSResponder/) on Linux)
 - The [WebSocket++](https://github.com/zaphoyd/websocketpp) header-only C++ websocket client/server library, to implement Query API websocket subscriptions
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
@@ -16,7 +17,7 @@ The codebase utilizes a number of great open-source projects (licenses vary).
 
 The following instructions describe how to prepare these external dependencies when building this software.
 
-On Windows, Visual Studio is required. Visual Studio 2013 has been tested extensively and more recent toolchains should also be supported.
+On Windows, Visual Studio is required. Visual Studio 2015 is the primary development environment; more recent toolchains should also be supported.
 
 On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 release series has been tested, although a more recent compiler is to be recommended!
 
@@ -42,7 +43,7 @@ On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 relea
    - system
    - thread
 
-For example, on Windows, for Visual Studio 2013:
+For example, on Windows, for Visual Studio 2015:
 ```
 bootstrap
 b2 toolset=msvc-12.0 --prefix=. --with-chrono --with-date_time --with-regex --with-system --with-thread --stagedir=x64 stage address-model=64
@@ -83,15 +84,15 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
 4. Use CMake to generate project files  
-   On Windows, the "Visual Studio 12 2013 Win64" generator has been tested
+   On Windows, the "Visual Studio 12 2015 Win64" generator has been tested
 
-For example, on Windows, for Visual Studio 2013:
+For example, on Windows, for Visual Studio 2015:
 ```
 cd .../Release
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 12 2013 Win64" ^
+  -G "Visual Studio 12 2015 Win64" ^
   -DCPPREST_PPLX_IMPL:STRING="winpplx" ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
@@ -113,6 +114,11 @@ cmake .. ^
 make
 sudo make install
 ```
+
+### Modern C++ JSON schema validator
+
+A copy of the source code necessary to use this library is included in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
+No installation is necessary.
 
 ### DNS Service Discovery
 

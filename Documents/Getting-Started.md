@@ -1,6 +1,6 @@
 # Getting Started
 
-The following instructions describe how to set up and build this software on Windows with Visual Studio 2013.
+The following instructions describe how to set up and build this software on Windows with Visual Studio 2015.
 On Linux and other platforms, the steps vary slightly.
 
 ## Preparation
@@ -23,12 +23,12 @@ On Linux and other platforms, the steps vary slightly.
      - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
      - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. ``.../Release/libs/websocketpp`` within the C++ REST SDK source tree
 2. Use CMake to generate project files  
-   The "Visual Studio 12 2013 Win64" generator has been tested
+   The "Visual Studio 12 2015 Win64" generator has been tested
 
-For example, on Windows, for Visual Studio 2013:
+For example, on Windows, for Visual Studio 2015:
 ```
 cmake ^
-  -G "Visual Studio 12 2013 Win64" ^
+  -G "Visual Studio 12 2015 Win64" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
   -DBOOST_INCLUDEDIR:PATH=".../boost_1_67_0" ^

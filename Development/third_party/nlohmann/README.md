@@ -10,7 +10,7 @@ Original source code:
 - Copyright (c) 2013-2018 Niels Lohmann <http://nlohmann.me>.
 
 
-# Modern C++ JSON schema validator
+## Modern C++ JSON schema validator
 
 It also contains source files from the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library.
 
