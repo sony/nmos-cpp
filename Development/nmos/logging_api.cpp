@@ -8,6 +8,27 @@ namespace nmos
 {
     namespace experimental
     {
+        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate);
+
+        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate)
+        {
+            using namespace web::http::experimental::listener::api_router_using_declarations;
+
+            api_router logging_api;
+
+            logging_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            {
+                set_reply(res, status_codes::OK, value_of({ value(U("log/")) }));
+                return pplx::task_from_result(true);
+            });
+
+            logging_api.mount(U("/log"), make_unmounted_logging_api(model, mutex, gate));
+
+            nmos::add_api_finally_handler(logging_api, gate);
+
+            return logging_api;
+        }
+
         bool match_logging_rql(const web::json::value& value, const web::json::value& query)
         {
             return query.is_null() || rql::evaluator
@@ -20,7 +41,7 @@ namespace nmos
             }(query) == web::json::value::boolean(true);
         }
 
-        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -28,17 +49,11 @@ namespace nmos
 
             logging_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ JU("log/") }));
+                set_reply(res, status_codes::OK, value_of({ value(U("events/")) }));
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
-            {
-                set_reply(res, status_codes::OK, value_of({ JU("events/") }));
-                return pplx::task_from_result(true);
-            });
-
-            logging_api.support(U("/log/events/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/events/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::read_lock lock(mutex);
 
@@ -102,7 +117,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/events/?"), methods::DEL, [&model, &mutex](http_request req, http_response res, const string_t&, const route_parameters&)
+            logging_api.support(U("/events/?"), methods::DEL, [&model, &mutex](http_request req, http_response res, const string_t&, const route_parameters&)
             {
                 nmos::write_lock lock(mutex);
 
@@ -119,7 +134,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::read_lock lock(mutex);
 
@@ -140,8 +155,6 @@ namespace nmos
 
                 return pplx::task_from_result(true);
             });
-
-            nmos::add_api_finally_handler(logging_api, gate);
 
             return logging_api;
         }

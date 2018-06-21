@@ -8,6 +8,33 @@ namespace nmos
 {
     namespace experimental
     {
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(slog::base_gate& gate);
+
+        web::http::experimental::listener::api_router make_mdns_api(slog::base_gate& gate)
+        {
+            using namespace web::http::experimental::listener::api_router_using_declarations;
+
+            api_router mdns_api;
+
+            mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            {
+                set_reply(res, status_codes::OK, value_of({ value(U("x-dns-sd/")) }));
+                return pplx::task_from_result(true);
+            });
+
+            mdns_api.support(U("/x-dns-sd/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            {
+                set_reply(res, status_codes::OK, value_of({ value(U("v1.0/")) }));
+                return pplx::task_from_result(true);
+            });
+
+            mdns_api.mount(U("/x-dns-sd/v1.0"), make_unmounted_mdns_api(gate));
+
+            nmos::add_api_finally_handler(mdns_api, gate);
+
+            return mdns_api;
+        }
+
         web::json::value make_mdns_result(const std::string& name, const ::mdns::service_discovery::resolve_result& resolved)
         {
             using web::json::value;
@@ -34,25 +61,13 @@ namespace nmos
             return result;
         }
 
-        web::http::experimental::listener::api_router make_mdns_api(slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
             api_router mdns_api;
 
             mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
-            {
-                set_reply(res, status_codes::OK, value_of({ JU("x-dns-sd/") }));
-                return pplx::task_from_result(true);
-            });
-
-            mdns_api.support(U("/x-dns-sd/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
-            {
-                set_reply(res, status_codes::OK, value_of({ JU("v1.0/") }));
-                return pplx::task_from_result(true);
-            });
-
-            mdns_api.support(U("/x-dns-sd/v1.0/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
                 // the list of available service types cannot easily be enumerated so it might be better to respond with status_codes::NoContent
                 // rather than return a misleading list?
@@ -65,7 +80,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-dns-sd/v1.0/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return pplx::create_task([]{}).then([&, res, parameters]() mutable
                 {
@@ -113,7 +128,7 @@ namespace nmos
                 });
             });
 
-            mdns_api.support(U("/x-dns-sd/v1.0/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return pplx::create_task([]{}).then([&, res, parameters]() mutable
                 {
@@ -140,8 +155,6 @@ namespace nmos
                     return true;
                 });
             });
-
-            nmos::add_api_finally_handler(mdns_api, gate);
 
             return mdns_api;
         }
