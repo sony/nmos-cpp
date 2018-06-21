@@ -22,7 +22,13 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.mount(U("/log"), make_unmounted_logging_api(model, mutex, gate));
+            logging_api.support(U("/log/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            {
+                set_reply(res, status_codes::OK, value_of({ value(U("v1.0/")) }));
+                return pplx::task_from_result(true);
+            });
+
+            logging_api.mount(U("/log/v1.0"), make_unmounted_logging_api(model, mutex, gate));
 
             nmos::add_api_finally_handler(logging_api, gate);
 
