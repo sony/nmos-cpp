@@ -141,9 +141,31 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            set_reply(res, status_codes::NotImplemented);
+            nmos::read_lock lock(mutex);
+
+            const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+            auto &constraints = model.constraints;
+            auto resource = find_resource(constraints, {resourceId, nmos::type_from_resourceType(resourceType)});
+            if (constraints.end() == resource)
+            {
+                set_reply(res, status_codes::NotFound);
+            }
+            else
+            {
+                // Crude hack here: Since a constraint response is
+                // supposed to be an array, but the nmos::resources
+                // type expects an object with an "id" field, we
+                // presume an "array" field that contains the correct
+                // response. The correct way to deal with this, no
+                // doubt, is to set the type of model::constraints
+                // to something other than nmos::resources.
+                set_reply(res, status_codes::OK, resource->data.at("array"));
+            }
+
             return pplx::task_from_result(true);
         });
 

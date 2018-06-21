@@ -12,6 +12,7 @@ namespace nmos
         nmos::resources resources;
         nmos::settings settings;
         nmos::resources active;
+        nmos::resources constraints;
         nmos::resources staged;
         struct
         {
