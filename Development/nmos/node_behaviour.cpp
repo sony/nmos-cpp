@@ -365,7 +365,7 @@ namespace nmos
         struct registration_service_exception {};
 
         // should be called when an error condition has been identified, because it will always log
-        void handle_registration_error_conditions(const web::http::http_response& response, slog::base_gate& gate, const char* operation)
+        void handle_registration_error_conditions(const web::http::http_response& response, bool handle_client_error_as_server_error, slog::base_gate& gate, const char* operation)
         {
             // "For HTTP codes 400 and upwards, a JSON format response MUST be returned [in which]
             // the 'code' should always match the HTTP status code. 'error' must always be present
@@ -377,7 +377,7 @@ namespace nmos
 
             // "A 500 [or other 5xx] error, inability to connect or a timeout indicates a server side or connectivity issue."
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
-            if (web::http::is_server_error_status_code(response.status_code()))
+            if (handle_client_error_as_server_error ? web::http::is_error_status_code(response.status_code()) : web::http::is_server_error_status_code(response.status_code()))
             {
                 // this could be regarded as a 'severe' error - presumably it is for the registry
                 // on the other hand, since the node has a strategy to recover, it could be regarded as only a 'warning'
@@ -417,6 +417,11 @@ namespace nmos
                 // calling function didn't expect it, log as an 'error'
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration " << operation << " error: " << response.status_code() << " " << response.reason_phrase();
             }
+        }
+
+        void handle_registration_error_conditions(const web::http::http_response& response, slog::base_gate& gate, const char* operation)
+        {
+            handle_registration_error_conditions(response, false, gate, operation);
         }
 
         web::http::client::http_client_config config_with_timeout(const std::chrono::seconds& timeout)
@@ -508,7 +513,10 @@ namespace nmos
                     }
                     else
                     {
-                        handle_registration_error_conditions(response, gate, "creation");
+                        // after a 400 or other 4xx error in response to creating the registration for the node resource itself
+                        // there's definitely no point adopting registered operation, so handle this case like a server error
+                        const bool initial_registration = nmos::types::node == id_type.second;
+                        handle_registration_error_conditions(response, initial_registration, gate, "creation");
                     }
                 });
             }
