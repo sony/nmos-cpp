@@ -117,7 +117,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::read_lock lock(mutex);
 
