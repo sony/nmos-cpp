@@ -19,7 +19,7 @@ The following instructions describe how to prepare these external dependencies w
 
 On Windows, Visual Studio is required. Visual Studio 2015 is the primary development environment; more recent toolchains should also be supported.
 
-On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 release series has been tested, although a more recent compiler is to be recommended!
+On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series has been tested, although a more recent compiler is to be recommended!
 
 ### CMake
 
