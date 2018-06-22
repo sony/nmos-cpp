@@ -147,12 +147,6 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
-        {
-            set_reply(res, status_codes::NotImplemented);
-            return pplx::task_from_result(true);
-        });
-
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&resources, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
@@ -209,17 +203,18 @@ namespace nmos
             });
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/active/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::read_lock lock(mutex);
-            
-            auto &active = model.active;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+            const string_t stagingType = parameters.at(nmos::patterns::stagingType.name);
 
-            auto resource = find_resource(active, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (active.end() == resource)
+            auto &resources = stagingType == "active" ? model.active : model.staged;
+
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() == resource)
             {
                 set_reply(res, status_codes::NotFound);
             }

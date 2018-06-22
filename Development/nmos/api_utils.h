@@ -47,6 +47,7 @@ namespace nmos
         // Connection API just manipulates senders and receivers (and only senders have the /transportfile endpoint)
         const route_pattern connectorType = make_route_pattern(U("resourceType"), U("senders|receivers"));
         const route_pattern senderType = make_route_pattern(U("resourceType"), U("senders"));
+        const route_pattern stagingType = make_route_pattern(U("stagingType"), U("active|staged"));
 
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
     }
