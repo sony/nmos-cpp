@@ -46,7 +46,7 @@ On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.7 relea
 For example, on Windows, for Visual Studio 2015:
 ```
 bootstrap
-b2 toolset=msvc-12.0 --prefix=. --with-chrono --with-date_time --with-regex --with-system --with-thread --stagedir=x64 stage address-model=64
+b2 toolset=msvc-14.0 --prefix=. --with-chrono --with-date_time --with-regex --with-system --with-thread --stagedir=x64 stage address-model=64
 ```
 
 ### WebSocket++
@@ -84,7 +84,7 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. ``.../boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
 4. Use CMake to generate project files  
-   On Windows, the "Visual Studio 12 2015 Win64" generator has been tested
+   On Windows, the "Visual Studio 14 2015 Win64" generator has been tested
 
 For example, on Windows, for Visual Studio 2015:
 ```
@@ -92,7 +92,7 @@ cd .../Release
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 12 2015 Win64" ^
+  -G "Visual Studio 14 2015 Win64" ^
   -DCPPREST_PPLX_IMPL:STRING="winpplx" ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^

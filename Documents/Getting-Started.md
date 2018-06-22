@@ -23,12 +23,12 @@ On Linux and other platforms, the steps vary slightly.
      - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
      - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. ``.../Release/libs/websocketpp`` within the C++ REST SDK source tree
 2. Use CMake to generate project files  
-   The "Visual Studio 12 2015 Win64" generator has been tested
+   The "Visual Studio 14 2015 Win64" generator has been tested
 
 For example, on Windows, for Visual Studio 2015:
 ```
 cmake ^
-  -G "Visual Studio 12 2015 Win64" ^
+  -G "Visual Studio 14 2015 Win64" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
   -DBOOST_INCLUDEDIR:PATH=".../boost_1_67_0" ^
@@ -54,7 +54,7 @@ The output should conclude something like this:
   Total Test time (real) =  38.08 sec
 ```
 
-Note: On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
+Note: On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
 
 ## What Next?
 

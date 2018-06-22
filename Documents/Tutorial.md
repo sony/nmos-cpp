@@ -7,7 +7,7 @@ The following instructions describe how to run the NMOS Registry and some exampl
 Follow the [Getting Started](Getting-Started.md) instructions before proceeding.
 
 Notes:
-- On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk120_2_10.dll or cpprest120d_2_10.dll) needs to be on the ``PATH``.
+- On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140d_2_10.dll) needs to be on the ``PATH``.
 - The Bonjour service (Windows) or ``mdnsd`` daemon (Linux) must be started to enable NMOS Nodes, and the Registry, to use DNS Service Discovery.
 - When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to select unique port numbers, as described below.
 
