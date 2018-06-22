@@ -1,7 +1,10 @@
 #include "nmos/query_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
+#include "cpprest/json_validator.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/slog.h"
@@ -210,18 +213,41 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        const web::json::experimental::json_validator validator
+        {
+            nmos::experimental::load_json_schema,
+            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
+        };
+
+        query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value data) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually inserted into resources
                 nmos::write_lock lock(mutex);
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested";
-
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
-                // Validate request
+                // Validate JSON syntax according to the schema
+
+                const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
+                if (!allow_invalid_resources)
+                {
+                    validator.validate(data, experimental::make_queryapi_subscriptions_post_request_schema_uri(version));
+                }
+                else
+                {
+                    try
+                    {
+                        validator.validate(data, experimental::make_queryapi_subscriptions_post_request_schema_uri(version));
+                    }
+                    catch (const web::json::json_exception& e)
+                    {
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
+                    }
+                }
+
+                // Validate request semantics
 
                 bool valid = true;
 
@@ -308,6 +334,8 @@ namespace nmos
                 }
                 else
                 {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested is invalid";
+
                     set_reply(res, status_codes::BadRequest);
                 }
 
