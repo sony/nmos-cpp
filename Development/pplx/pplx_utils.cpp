@@ -32,7 +32,10 @@ namespace Concurrency // since namespace pplx = Concurrency
                 timer->stop();
                 // calling tce.set_exception(pplx::task_canceled()) does not have the right effect, it results in a call
                 // to wait on the task throwing rather than returning pplx::canceled
-                tce._Cancel();
+                if (!tce._IsTriggered())
+                {
+                    tce._Cancel();
+                }
             });
 
             result.then([token, registration](pplx::task<void>)
@@ -71,7 +74,10 @@ namespace pplx
             {
                 // calling tce.set_exception(pplx::task_canceled()) does not have the right effect, it results in a call
                 // to wait on the task throwing rather than returning pplx::canceled
-                tce._Cancel();
+                if (!tce._IsTriggered())
+                {
+                    tce._Cancel();
+                }
             }
             else
             {
@@ -123,7 +129,10 @@ namespace pplx
                 }
                 catch (const pplx::task_canceled&)
                 {
-                    event._Cancel();
+                    if (!event._IsTriggered())
+                    {
+                        event._Cancel();
+                    }
                 }
                 catch (...)
                 {
