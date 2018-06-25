@@ -54,7 +54,7 @@ namespace nmos
                 // extract the experimental flag, used to override the default behaviour that resources
                 // "must have all [higher-versioned] keys stripped by the Query API before they are returned"
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
-                else if (field.first == _XPLATSTR("strip"))
+                else if (field.first == U("strip"))
                 {
                     strip = field.second.as_bool();
                 }
@@ -323,7 +323,7 @@ namespace nmos
                 // see nmos-discovery-registration/APIs/schemas/queryapi-subscriptions-websocket.json
                 if (resource_path.empty() && (!match.strip || resource.version < match.version))
                 {
-                    event[_XPLATSTR("api_version")] = web::json::value::string(nmos::make_api_version(resource.version));
+                    event[U("api_version")] = web::json::value::string(nmos::make_api_version(resource.version));
                 }
 
                 events.push_back(event);
@@ -369,7 +369,7 @@ namespace nmos
             // see explanation in nmos::make_resource_events
             if (resource_path.empty() && (!match.strip || version < match.version))
             {
-                event[_XPLATSTR("api_version")] = web::json::value::string(nmos::make_api_version(version));
+                event[U("api_version")] = web::json::value::string(nmos::make_api_version(version));
             }
 
             for (const auto& id : subscription.sub_resources)
