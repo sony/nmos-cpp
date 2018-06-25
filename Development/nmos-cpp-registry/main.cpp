@@ -13,8 +13,8 @@
 #include "nmos/query_api.h"
 #include "nmos/query_ws_api.h"
 #include "nmos/registration_api.h"
+#include "nmos/registry_resources.h"
 #include "nmos/settings_api.h"
-#include "nmos/server_resources.h"
 #include "nmos/thread_utils.h"
 #include "main_gate.h"
 
@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
     nmos::support_api(node_listener, node_api);
 
     // set up the node resources
-    nmos::experimental::make_server_resources(self_resources, registry_model.settings);
+    nmos::experimental::insert_registry_resources(self_resources, registry_model.settings);
 
     // add the self resources to the registration API resources
     // (for now just copy them directly, since these resources currently do not change and are configured to never expire)

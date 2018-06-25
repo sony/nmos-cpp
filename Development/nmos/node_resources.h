@@ -9,7 +9,9 @@ namespace nmos
 {
     namespace experimental
     {
-        void make_node_resources(nmos::resources& resources, const nmos::settings& settings);
+        // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
+        // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
+        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings);
     }
 }
 

@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
     nmos::support_api(node_listener, node_api);
 
     // set up the node resources
-    nmos::experimental::make_node_resources(node_model.resources, node_model.settings);
+    nmos::experimental::insert_node_resources(node_model.resources, node_model.settings);
 
     // Configure the Connection API
 

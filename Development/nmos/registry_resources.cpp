@@ -1,4 +1,4 @@
-#include "nmos/server_resources.h"
+#include "nmos/registry_resources.h"
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
@@ -8,7 +8,7 @@ namespace nmos
 {
     namespace experimental
     {
-        nmos::resource make_server_node(const nmos::id& id, const nmos::settings& settings)
+        nmos::resource make_registry_node(const nmos::id& id, const nmos::settings& settings)
         {
             using web::json::value;
             using web::json::value_of;
@@ -71,11 +71,13 @@ namespace nmos
             return{ is04_versions::v1_2, types::node, data, true };
         }
 
-        void make_server_resources(nmos::resources& resources, const nmos::settings& settings)
+        // insert a node resource according to the settings; return an iterator to the inserted node resource,
+        // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
+        std::pair<resources::iterator, bool> insert_registry_resources(nmos::resources& resources, const nmos::settings& settings)
         {
             auto node_id = nmos::make_id();
 
-            insert_resource(resources, make_server_node(node_id, settings));
+            return insert_resource(resources, make_registry_node(node_id, settings));
         }
     }
 }

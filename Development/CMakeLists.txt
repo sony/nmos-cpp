@@ -573,8 +573,8 @@ set(NMOS_CPP_REGISTRY_NMOS_SOURCES
     nmos/query_utils.cpp
     nmos/query_ws_api.cpp
     nmos/registration_api.cpp
+    nmos/registry_resources.cpp
     nmos/resources.cpp
-    nmos/server_resources.cpp
     nmos/settings_api.cpp
     )
 set(NMOS_CPP_REGISTRY_NMOS_HEADERS
@@ -603,9 +603,9 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/query_ws_api.h
     nmos/rational.h
     nmos/registration_api.h
+    nmos/registry_resources.h
     nmos/resource.h
     nmos/resources.h
-    nmos/server_resources.h
     nmos/settings.h
     nmos/settings_api.h
     nmos/slog.h

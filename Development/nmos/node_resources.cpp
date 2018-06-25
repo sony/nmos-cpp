@@ -276,7 +276,9 @@ namespace nmos
             return{ is04_versions::v1_2, types::receiver, data, false };
         }
 
-        void make_node_resources(nmos::resources& resources, const nmos::settings& settings)
+        // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
+        // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
+        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings)
         {
             auto node_id = nmos::make_id();
             auto device_id = nmos::make_id();
@@ -285,12 +287,13 @@ namespace nmos
             auto sender_id = nmos::make_id();
             auto receiver_id = nmos::make_id();
 
-            insert_resource(resources, make_node_node(node_id, settings));
+            auto result = insert_resource(resources, make_node_node(node_id, settings));
             insert_resource(resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));
             insert_resource(resources, make_source(source_id, device_id, settings));
             insert_resource(resources, make_flow(flow_id, source_id, device_id, settings));
             insert_resource(resources, make_sender(sender_id, flow_id, device_id, settings));
             insert_resource(resources, make_receiver(receiver_id, device_id, settings));
+            return result;
         }
     }
 }
