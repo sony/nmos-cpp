@@ -169,7 +169,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&resources, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
@@ -181,39 +181,31 @@ namespace nmos
 
                 // Validate request?
 
-                const auto master_enable = nmos::fields::master_enable(body);
-                const auto activation = nmos::fields::activation(body);
-                const auto mode = nmos::fields::mode(activation);
-
-                auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-                if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
+                bool activation_present = true;
+                string_t mode;
+                try
                 {
-                    if (nmos::activation_modes::activate_immediate == mode)
+                    const auto activation = nmos::fields::activation(body);
+                    mode = nmos::fields::mode(activation);
+                }
+                catch (web::json::json_exception &e)
+                {
+                    activation_present = false;
+                }
+
+                auto resource = find_resource(model.staged, { resourceId, nmos::type_from_resourceType(resourceType) });
+                if (model.staged.end() != resource)
+                {
+                    if (activation_present && nmos::activation_modes::activate_immediate == mode)
                     {
-                        modify_resource(resources, resourceId, [&](nmos::resource& resource)
-                        {
-                            resource.data[U("version")] = value::string(nmos::make_version(resource.updated));
-
-                            auto& subscription = resource.data[U("subscription")];
-                            subscription[U("active")] = value::boolean(master_enable);
-                            if (nmos::types::sender == resource.type)
-                            {
-                                subscription[U("receiver_id")] = master_enable ? body[U("receiver_id")] : value::null();
-                            }
-                            else // if (nmos::types::receiver == resource.type)
-                            {
-                                subscription[U("sender_id")] = master_enable ? body[U("sender_id")] : value::null();
-                            }
-                        });
-
                         // notify anyone who cares...
-                        condition.notify_all();
+                        // condition.notify_all();
 
-                        set_reply(res, status_codes::OK, value{});
+                        set_reply(res, status_codes::NotImplemented);
                     }
                     else
                     {
-                        set_reply(res, status_codes::NotImplemented);
+                        set_reply(res, status_codes::OK, strip_id(resource->data));
                     }
                 }
                 else
