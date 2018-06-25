@@ -419,6 +419,7 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
     nmos/connection_api.cpp
+    nmos/id.cpp
     nmos/logging_api.cpp
     nmos/mdns.cpp
     nmos/node_api.cpp
@@ -563,6 +564,7 @@ set(NMOS_CPP_REGISTRY_NMOS_SOURCES
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
     nmos/filesystem_route.cpp
+    nmos/id.cpp
     nmos/json_schema.cpp
     nmos/logging_api.cpp
     nmos/mdns.cpp

@@ -3,6 +3,7 @@
 #include <set>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include "cpprest/basic_utils.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::resourceType_from_type
 #include "nmos/rational.h"
