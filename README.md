@@ -4,8 +4,8 @@
 
 This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://github.com/AMWA-TV/nmos) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
 
-- [NMOS Discovery and Registration Specification](https://github.com/AMWA-TV/nmos-discovery-registration) (IS-04)
-- [NMOS Connection Management Specification](https://github.com/AMWA-TV/nmos-device-connection-management) (IS-05)
+- [AMWA IS-04 NMOS Discovery and Registration Specification](https://github.com/AMWA-TV/nmos-discovery-registration)
+- [AMWA IS-05 NMOS Connection Management Specification](https://github.com/AMWA-TV/nmos-device-connection-management)
 
 This software is a **work in progress**, tracking the ongoing development of the NMOS specifications in the AMWA Networked Media Incubator. For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
 
@@ -38,6 +38,7 @@ Other open-source NMOS implementations:
 
 Recent activity on the project:
 
+- JSON Schema validation in the Registration API and the Query API
 - Cross-platform build support using CMake
 - An initial release of the **nmos-cpp-node** example application
 - Back-end enhancements as part of the NMOS Scalability Activity

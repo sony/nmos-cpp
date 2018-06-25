@@ -13,48 +13,60 @@ Notes:
 
 ## Start an NMOS Registry
 
-Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line as JSON, which is demonstrated by the example Windows batch script, [nmos-cpp-registry.bat](../Development/nmos-cpp-registry.bat), in the repository.
+Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line as JSON. Each named parameter is specified as a field in a JSON object.
+The parameters that can be specified, and default values where applicable, are described in [nmos/settings.h](../Development/nmos/settings.h), in the repository.
 
-With no configuration parameters, the initial output should appear something like this:
+For example, to launch the application without verbose logging, try ``./nmos-cpp-registry "{\"logging_level\":0}"``.
+
+The initial output should appear something like this:
 
 ```
-2017-11-09 11:48:56.294: info: 67948: Starting nmos-cpp registry
-2017-11-09 11:48:56.310: info: 67948: Configuring nmos-cpp registry with its Node API at: 10.0.0.1:3212
-2017-11-09 11:48:56.310: info: 67948: Configuring nmos-cpp registry with its Registration API at: 10.0.0.1:3210
-2017-11-09 11:48:56.310: info: 67948: Configuring nmos-cpp registry with its Query API at: 10.0.0.1:3211
-Press return to quit.
-2017-11-09 11:48:56.326: info: 67948: Registered advertisement for: nmos-cpp_query_10.0.0.1:3211._nmos-query._tcp
-2017-11-09 11:48:56.326: info: 67948: Registered advertisement for: nmos-cpp_registration_10.0.0.1:3210._nmos-registration._tcp
-2017-11-09 11:48:56.326: info: 67948: Registered advertisement for: nmos-cpp_node_10.0.0.1:3212._nmos-node._tcp
-2017-11-09 11:48:56.326: info: 67948: Preparing for connections
-2017-11-09 11:48:56.341: info: 67948: Ready for connections
+2018-06-25 16:24:06.536: info: 10460: Starting nmos-cpp registry
+2018-06-25 16:24:06.571: info: 10460: Process ID: 11776
+2018-06-25 16:24:06.571: info: 10460: Initial settings: {"host_address":"10.0.0.1","host_addresses":["10.0.0.1"],"host_name":"h1","logging_level":0,"seed_id":"91688498-560c-4f3c-b4d4-2718f83b227f"}
+2018-06-25 16:24:06.571: info: 10460: Configuring nmos-cpp registry with its primary Node API at: 10.0.0.1:3212
+2018-06-25 16:24:06.571: info: 10460: Configuring nmos-cpp registry with its primary Registration API at: 10.0.0.1:3210
+2018-06-25 16:24:06.571: info: 10460: Configuring nmos-cpp registry with its primary Query API at: 10.0.0.1:3211
+2018-06-25 16:24:07.484: info: 10460: Registered advertisement for: nmos-cpp_query_10.0.0.1:3211._nmos-query._tcp
+2018-06-25 16:24:07.486: info: 10460: Registered advertisement for: nmos-cpp_registration_10.0.0.1:3210._nmos-registration._tcp
+2018-06-25 16:24:07.487: info: 10460: Registered advertisement for: nmos-cpp_node_10.0.0.1:3212._nmos-node._tcp
+2018-06-25 16:24:07.487: info: 10460: Preparing for connections
+2018-06-25 16:24:07.496: info: 10460: Ready for connections
 ```
 
 This shows the nmos-cpp-registry starting up and advertising its APIs via DNS Service Discovery.
 
 ## Start several NMOS Nodes
 
-Run the **nmos-cpp-node** application one or more times. Configuration parameters may be passed on the command-line as JSON, which is demonstrated by the example Windows batch script, [nmos-cpp-node.bat](../Development/nmos-cpp-node.bat), in the repository.
+Run the **nmos-cpp-node** application one or more times. Like the registry application, configuration parameters may be passed on the command-line as JSON.
+The parameters that can be specified, and default values where applicable, are described in [nmos/settings.h](../Development/nmos/settings.h), in the repository.
 
-When running the nmos-cpp-registry and every nmos-cpp-node on different hosts, no configuration parameters are required.
+When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to set unique port numbers for each instance. In the case of the node application,
+``"node_port"``, ``"connection_port"``, ``"settings_port"`` and ``"logging_port"`` must be set uniquely.
 
-In this case, each node's initial output should appear something like this:
+Otherwise, the command may be as simple as ``./nmos-cpp-node "{\"logging_level\":0}"``.
+
+Each node's initial output should appear something like this:
 
 ```
-2017-11-09 11:51:45.713: info: 30940: Starting nmos-cpp node
-2017-11-09 11:51:49.756: info: 30940: Configuring nmos-cpp node with its Node API at: 10.0.0.2:3212
-2017-11-09 11:51:49.756: info: 30940: Registering nmos-cpp node with the Registration API at: 10.0.0.1:3210
-Press return to quit.
-2017-11-09 11:51:49.772: info: 30940: Registered advertisement for: nmos-cpp_node_10.0.0.2:3212._nmos-node._tcp
-2017-11-09 11:51:49.772: info: 30940: Preparing for connections
-2017-11-09 11:51:49.787: info: 39480: Sending 6 changes to the Registration API
-2017-11-09 11:51:49.787: info: 39480: Requesting registration creation for node: 21848058-2625-43d6-bb34-671e08ed4c84
-2017-11-09 11:51:49.787: info: 30940: Ready for connections
-2017-11-09 11:51:49.803: info: 39480: Requesting registration creation for device: dcfc538e-6af3-4e94-9bcf-9f6df89d0bc3
-2017-11-09 11:51:49.803: info: 39480: Requesting registration creation for source: 555c161b-6e3b-4403-af22-3656d6397412
-2017-11-09 11:51:49.818: info: 39480: Requesting registration creation for flow: 28ad8b02-44d3-4a8e-9c36-a14075d48d71
-2017-11-09 11:51:49.818: info: 39480: Requesting registration creation for sender: a6dffe48-9def-4291-a182-f013c2b5d583
-2017-11-09 11:51:49.818: info: 39480: Requesting registration creation for receiver: df85086a-b283-45e4-9ed6-c1583925a036
+2018-06-25 16:25:23.387: info: 6096: Starting nmos-cpp node
+2018-06-25 16:25:23.415: info: 6096: Process ID: 8340
+2018-06-25 16:25:23.415: info: 6096: Initial settings: {"host_address":"10.0.0.2","host_addresses":["10.0.0.2"],"host_name":"h2","logging_level":0,"seed_id":"1befd731-e454-41d7-b198-9c736b2aaa6d"}
+2018-06-25 16:25:23.415: info: 6096: Configuring nmos-cpp node with its primary Node API at: 10.0.0.2:3212
+2018-06-25 16:25:23.428: info: 6096: Preparing for connections
+2018-06-25 16:25:23.435: info: 6096: Ready for connections
+2018-06-25 16:25:23.437: info: 4656: Registered advertisement for: nmos-cpp_node_10.0.0.2:3212._nmos-node._tcp
+2018-06-25 16:25:23.439: info: 4656: Attempting discovery of a Registration API
+2018-06-25 16:25:23.455: info: 4656: Discovered 2 Registration API(s)
+2018-06-25 16:25:23.455: info: 4656: Attempting initial registration
+2018-06-25 16:25:23.460: info: 4656: Registering nmos-cpp node with the Registration API at: 10.0.0.1:3210
+2018-06-25 16:25:23.461: info: 4656: Requesting registration creation for node: 172bbbe0-a2da-5179-8a24-f2f288eeff75
+2018-06-25 16:25:23.585: info: 4656: Adopting registered operation
+2018-06-25 16:25:23.593: info: 4656: Requesting registration creation for device: b89caa85-556f-52e4-aec3-2c625a314bb5
+2018-06-25 16:25:23.682: info: 4656: Requesting registration creation for source: baffbc06-cf83-59a5-9969-6494c6bc1b2e
+2018-06-25 16:25:23.780: info: 4656: Requesting registration creation for flow: b8b8ab2b-aab8-50a3-aea3-87a3f848f40b
+2018-06-25 16:25:23.892: info: 4656: Requesting registration creation for sender: 4214b159-58d5-5484-9d08-3c2553240f09
+2018-06-25 16:25:23.986: info: 4656: Requesting registration creation for receiver: 45a18912-db55-5953-a9f8-b87f4d70d386
 ```
 
 This shows the nmos-cpp-node starting up and advertising its Node API via DNS Service Discovery.
@@ -64,15 +76,10 @@ It selects an NMOS Registry to use, and registers itself, according to the NMOS 
 On the other side, this operation should be reflected in the nmos-cpp-registry output something like this:
 
 ```
-2017-11-09 11:51:49.787: info: 56916: Registration requested for node: 21848058-2625-43d6-bb34-671e08ed4c84
-2017-11-09 11:51:49.803: more info: 56916: access: Sending response
-2017-11-09 11:51:49.803: info: 66984: Registration requested for device: dcfc538e-6af3-4e94-9bcf-9f6df89d0bc3 on node: 21848058-2625-43d6-bb34-671e08ed4c84
-2017-11-09 11:51:49.803: more info: 66984: access: Sending response
-2017-11-09 11:51:49.818: info: 9632: Registration requested for source: 555c161b-6e3b-4403-af22-3656d6397412 on device: dcfc538e-6af3-4e94-9bcf-9f6df89d0bc3
-2017-11-09 11:51:49.818: more info: 9632: access: Sending response
-2017-11-09 11:51:49.818: info: 7220: Registration requested for flow: 28ad8b02-44d3-4a8e-9c36-a14075d48d71 on source: 555c161b-6e3b-4403-af22-3656d6397412
-2017-11-09 11:51:49.818: more info: 7220: access: Sending response
-2017-11-09 11:51:49.818: info: 9632: Registration requested for sender: a6dffe48-9def-4291-a182-f013c2b5d583 on device: dcfc538e-6af3-4e94-9bcf-9f6df89d0bc3 of flow: 28ad8b02-44d3-4a8e-9c36-a14075d48d71
-2017-11-09 11:51:49.818: more info: 9632: access: Sending response
-2017-11-09 11:51:49.834: info: 7220: Registration requested for receiver: df85086a-b283-45e4-9ed6-c1583925a036 on device: dcfc538e-6af3-4e94-9bcf-9f6df89d0bc3 subscribed to sender: null
+2018-06-25 16:25:23.580: info: 11976: Registration requested for node: 172bbbe0-a2da-5179-8a24-f2f288eeff75
+2018-06-25 16:25:23.676: info: 11948: Registration requested for device: b89caa85-556f-52e4-aec3-2c625a314bb5 on node: 172bbbe0-a2da-5179-8a24-f2f288eeff75
+2018-06-25 16:25:23.777: info: 11836: Registration requested for source: baffbc06-cf83-59a5-9969-6494c6bc1b2e on device: b89caa85-556f-52e4-aec3-2c625a314bb5
+2018-06-25 16:25:23.888: info: 8344: Registration requested for flow: b8b8ab2b-aab8-50a3-aea3-87a3f848f40b on source: baffbc06-cf83-59a5-9969-6494c6bc1b2e
+2018-06-25 16:25:23.982: info: 11200: Registration requested for sender: 4214b159-58d5-5484-9d08-3c2553240f09 on device: b89caa85-556f-52e4-aec3-2c625a314bb5
+2018-06-25 16:25:24.089: info: 11836: Registration requested for receiver: 45a18912-db55-5953-a9f8-b87f4d70d386 on device: b89caa85-556f-52e4-aec3-2c625a314bb5
 ```
