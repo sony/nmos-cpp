@@ -88,6 +88,9 @@ namespace nmos
         // Field accessors simplify access to fields in the settings
         namespace fields
         {
+            // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
+            const web::json::field_as_string seed_id{ U("seed_id") };
+
             // port numbers [registry, node]: ports on which to listen for each API
 
             const web::json::field_as_integer_or settings_port{ U("settings_port"), 3209 };

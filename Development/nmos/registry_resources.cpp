@@ -75,7 +75,8 @@ namespace nmos
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
         std::pair<resources::iterator, bool> insert_registry_resources(nmos::resources& resources, const nmos::settings& settings)
         {
-            auto node_id = nmos::make_id();
+            const auto& seed_id = nmos::experimental::fields::seed_id(settings);
+            auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
 
             return insert_resource(resources, make_registry_node(node_id, settings));
         }

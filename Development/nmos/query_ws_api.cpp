@@ -35,13 +35,10 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
-
-        // Source ID of the Query API instance issuing the data Grain
-        const nmos::id source_id = nmos::make_id();
 
         return [source_id, &model, &websockets, &mutex, &condition, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {

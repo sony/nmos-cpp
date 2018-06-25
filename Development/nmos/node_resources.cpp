@@ -280,12 +280,13 @@ namespace nmos
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
         std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings)
         {
-            auto node_id = nmos::make_id();
-            auto device_id = nmos::make_id();
-            auto source_id = nmos::make_id();
-            auto flow_id = nmos::make_id();
-            auto sender_id = nmos::make_id();
-            auto receiver_id = nmos::make_id();
+            const auto& seed_id = nmos::experimental::fields::seed_id(settings);
+            auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
+            auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
+            auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
+            auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
+            auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+            auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
 
             auto result = insert_resource(resources, make_node_node(node_id, settings));
             insert_resource(resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));

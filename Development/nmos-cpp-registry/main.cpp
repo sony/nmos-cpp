@@ -72,6 +72,8 @@ int main(int argc, char* argv[])
 
     // Prepare run-time default settings (different than header defaults)
 
+    web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
+
     web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     level = nmos::fields::logging_level(registry_model.settings); // synchronize atomic value with settings
 
@@ -143,10 +145,14 @@ int main(int argc, char* argv[])
     web::http::experimental::listener::http_listener query_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::query_port(registry_model.settings)), listener_config);
     nmos::support_api(query_listener, query_api);
 
+    // "Source ID of the Query API instance issuing the data Grain"
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/queryapi-subscriptions-websocket.json
+    const nmos::id query_id = nmos::make_repeatable_id(nmos::experimental::fields::seed_id(registry_model.settings), U("/x-nmos/query"));
+
     nmos::websockets registry_websockets;
 
     web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, registry_mutex, gate);
-    web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(registry_model, registry_websockets, registry_mutex, registry_condition, gate);
+    web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(query_id, registry_model, registry_websockets, registry_mutex, registry_condition, gate);
     web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, registry_mutex, gate);
     web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::fields::query_ws_port(registry_model.settings), nmos::make_slog_logging_callback(gate));
     query_ws_listener.set_validate_handler(std::ref(query_ws_validate_handler));

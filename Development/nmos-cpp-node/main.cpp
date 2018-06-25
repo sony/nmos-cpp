@@ -64,6 +64,8 @@ int main(int argc, char* argv[])
 
     // Prepare run-time default settings (different than header defaults)
 
+    web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
+
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
 
