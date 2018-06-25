@@ -196,6 +196,12 @@ namespace nmos
                 auto resource = find_resource(model.staged, { resourceId, nmos::type_from_resourceType(resourceType) });
                 if (model.staged.end() != resource)
                 {
+                    for (auto& pair: body.as_object())
+                    {
+                        pair = pair;
+                        set_reply(res, status_codes::BadRequest);
+                        return true;
+                    }
                     if (activation_present && nmos::activation_modes::activate_immediate == mode)
                     {
                         // notify anyone who cares...
