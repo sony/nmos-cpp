@@ -196,21 +196,40 @@ namespace nmos
                 auto resource = find_resource(model.staged, { resourceId, nmos::type_from_resourceType(resourceType) });
                 if (model.staged.end() != resource)
                 {
+                    bool notify_required = false;
+
+                    // First, verify that every key is a valid field.
                     for (auto& pair: body.as_object())
                     {
-                        pair = pair;
-                        set_reply(res, status_codes::BadRequest);
-                        return true;
+                        if (pair.first != "sender_id" || resourceType != "receivers")
+                        {
+                            set_reply(res, status_codes::BadRequest);
+                            return true;
+                        }
+                    }
+
+                    // OK, now it's safe to update everything.
+                    for (auto& pair: body.as_object())
+                    {
+                        if (pair.first == "sender_id" && resourceType == "receivers")
+                        {
+                            auto update = [&pair] (nmos::resource &resource)
+                            {
+                                resource.data[pair.first] = pair.second;
+                            };
+                            modify_resource(model.staged, resourceId, update);
+                            notify_required = true;
+                        }
                     }
                     if (activation_present && nmos::activation_modes::activate_immediate == mode)
                     {
-                        // notify anyone who cares...
-                        // condition.notify_all();
-
                         set_reply(res, status_codes::NotImplemented);
                     }
                     else
                     {
+                        if (notify_required)
+                            condition.notify_all();
+
                         set_reply(res, status_codes::OK, strip_id(resource->data));
                     }
                 }
