@@ -600,7 +600,7 @@ namespace nmos
 
             nmos::write_lock lock(mutex);
 
-            const auto grain = model.resources.find(grain_id);
+            const auto grain = nmos::find_resource(model.resources, { grain_id, nmos::types::grain });
             if (model.resources.end() == grain) return;
 
             std::unique_ptr<web::http::client::http_client> registration_client;
@@ -736,7 +736,7 @@ namespace nmos
 
             nmos::write_lock lock(mutex);
 
-            const auto grain = model.resources.find(grain_id);
+            const auto grain = nmos::find_resource(model.resources, { grain_id, nmos::types::grain });
             if (model.resources.end() == grain) return;
 
             std::unique_ptr<web::http::client::http_client> registration_client;
@@ -962,7 +962,7 @@ namespace nmos
 
             nmos::write_lock lock(mutex);
 
-            const auto grain = model.resources.find(grain_id);
+            const auto grain = nmos::find_resource(model.resources, { grain_id, nmos::types::grain });
             if (model.resources.end() == grain) return;
 
             api_resource_versions ver;

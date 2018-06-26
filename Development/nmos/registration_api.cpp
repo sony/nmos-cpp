@@ -160,8 +160,8 @@ namespace nmos
 
                 bool valid = true;
 
-                // a modification request must not change the existing type (hence not using find_resource)
-                const auto resource = model.resources.find(id);
+                // a modification request must not change the existing type
+                const auto resource = nmos::find_resource(model.resources, id);
                 const bool creating = model.resources.end() == resource;
                 const bool valid_type = creating || resource->type == type;
                 valid = valid && valid_type;
@@ -177,8 +177,7 @@ namespace nmos
                 valid = valid && valid_super_id_type;
 
                 // the super-resource should exist in this registry (and must be of the right type)
-
-                const auto super_resource = model.resources.find(super_id_type.first);
+                const auto super_resource = nmos::find_resource(model.resources, super_id_type.first);
                 const bool no_super_resource = model.resources.end() == super_resource;
                 const bool valid_super_resource = no_resource == super_id_type || !no_super_resource;
                 valid = valid && valid_super_resource;

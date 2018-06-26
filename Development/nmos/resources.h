@@ -77,6 +77,11 @@ namespace nmos
 
     bool has_resource(const resources& resources, const std::pair<id, type>& id_type);
 
+    // find resource by id
+    resources::const_iterator find_resource(const resources& resources, const id& id);
+    resources::iterator find_resource(resources& resources, const id& id);
+
+    // find resource by id, and matching type
     resources::const_iterator find_resource(const resources& resources, const std::pair<id, type>& id_type);
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type);
 

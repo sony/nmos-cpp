@@ -211,17 +211,31 @@ namespace nmos
         return resources.end() != resource && id_type.second == resource->type;
     }
 
+    // find resource by id
+    resources::const_iterator find_resource(const resources& resources, const id& id)
+    {
+        if (id.empty()) return resources.end();
+        auto resource = resources.find(id);
+        return resources.end() != resource ? resource : resources.end();
+    }
+
+    resources::iterator find_resource(resources& resources, const id& id)
+    {
+        if (id.empty()) return resources.end();
+        auto resource = resources.find(id);
+        return resources.end() != resource ? resource : resources.end();
+    }
+
+    // find resource by id, and matching type
     resources::const_iterator find_resource(const resources& resources, const std::pair<id, type>& id_type)
     {
-        if (no_resource == id_type) return resources.end();
-        auto resource = resources.find(id_type.first);
+        auto resource = find_resource(resources, id_type.first);
         return resources.end() != resource && id_type.second == resource->type ? resource : resources.end();
     }
 
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type)
     {
-        if (no_resource == id_type) return resources.end();
-        auto resource = resources.find(id_type.first);
+        auto resource = find_resource(resources, id_type.first);
         return resources.end() != resource && id_type.second == resource->type ? resource : resources.end();
     }
 
