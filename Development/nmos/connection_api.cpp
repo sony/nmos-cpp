@@ -201,7 +201,8 @@ namespace nmos
                     // First, verify that every key is a valid field.
                     for (auto& pair: body.as_object())
                     {
-                        if (pair.first != "sender_id" || resourceType != "receivers")
+                        if ((pair.first != "sender_id" || resourceType != "receivers") &&
+                            (pair.first != "receiver_id" || resourceType != "senders"))
                         {
                             set_reply(res, status_codes::BadRequest);
                             return true;
@@ -211,7 +212,8 @@ namespace nmos
                     // OK, now it's safe to update everything.
                     for (auto& pair: body.as_object())
                     {
-                        if (pair.first == "sender_id" && resourceType == "receivers")
+                        if ((pair.first == "sender_id" && resourceType == "receivers") ||
+                            (pair.first == "receiver_id" && resourceType == "senders"))
                         {
                             auto update = [&pair] (nmos::resource &resource)
                             {
