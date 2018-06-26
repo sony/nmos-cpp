@@ -56,6 +56,15 @@ namespace nmos
         return connection_api;
     }
 
+
+    template<typename pair_type, typename rtt>
+    static bool patch_key_is_valid(const pair_type &pair, const rtt &resourceType)
+    {
+        return (pair.first == "sender_id" && resourceType == "receivers")  ||
+            (pair.first == "receiver_id" && resourceType == "senders")  ||
+            pair.first == "transport_params";
+    }
+
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -185,11 +194,9 @@ namespace nmos
                     bool notify_required = false;
 
                     // First, verify that every key is a valid field.
-                    for (auto& pair: body.as_object())
+                    for (const auto & pair: body.as_object())
                     {
-                        if ((pair.first != "sender_id" || resourceType != "receivers") &&
-                            (pair.first != "receiver_id" || resourceType != "senders") &&
-                            pair.first != "transport_params")
+                        if (!patch_key_is_valid(pair, resourceType))
                         {
                             set_reply(res, status_codes::BadRequest);
                             return true;
