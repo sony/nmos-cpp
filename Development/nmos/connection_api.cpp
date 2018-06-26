@@ -179,20 +179,6 @@ namespace nmos
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-                // Validate request?
-
-                bool activation_present = true;
-                string_t mode;
-                try
-                {
-                    const auto activation = nmos::fields::activation(body);
-                    mode = nmos::fields::mode(activation);
-                }
-                catch (web::json::json_exception &e)
-                {
-                    activation_present = false;
-                }
-
                 auto resource = find_resource(model.staged, { resourceId, nmos::type_from_resourceType(resourceType) });
                 if (model.staged.end() != resource)
                 {
@@ -202,7 +188,8 @@ namespace nmos
                     for (auto& pair: body.as_object())
                     {
                         if ((pair.first != "sender_id" || resourceType != "receivers") &&
-                            (pair.first != "receiver_id" || resourceType != "senders"))
+                            (pair.first != "receiver_id" || resourceType != "senders") &&
+                            pair.first != "transport_params")
                         {
                             set_reply(res, status_codes::BadRequest);
                             return true;
@@ -213,7 +200,8 @@ namespace nmos
                     for (auto& pair: body.as_object())
                     {
                         if ((pair.first == "sender_id" && resourceType == "receivers") ||
-                            (pair.first == "receiver_id" && resourceType == "senders"))
+                            (pair.first == "receiver_id" && resourceType == "senders") ||
+                            pair.first == "transport_params")
                         {
                             auto update = [&pair] (nmos::resource &resource)
                             {
@@ -223,11 +211,7 @@ namespace nmos
                             notify_required = true;
                         }
                     }
-                    if (activation_present && nmos::activation_modes::activate_immediate == mode)
-                    {
-                        set_reply(res, status_codes::NotImplemented);
-                    }
-                    else
+
                     {
                         if (notify_required)
                             condition.notify_all();
