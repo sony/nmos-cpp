@@ -199,17 +199,12 @@ namespace nmos
                     // OK, now it's safe to update everything.
                     for (auto& pair: body.as_object())
                     {
-                        if ((pair.first == "sender_id" && resourceType == "receivers") ||
-                            (pair.first == "receiver_id" && resourceType == "senders") ||
-                            pair.first == "transport_params")
+                        auto update = [&pair] (nmos::resource &resource)
                         {
-                            auto update = [&pair] (nmos::resource &resource)
-                            {
-                                resource.data[pair.first] = pair.second;
-                            };
-                            modify_resource(model.staged, resourceId, update);
-                            notify_required = true;
-                        }
+                            resource.data[pair.first] = pair.second;
+                        };
+                        modify_resource(model.staged, resourceId, update);
+                        notify_required = true;
                     }
 
                     {
