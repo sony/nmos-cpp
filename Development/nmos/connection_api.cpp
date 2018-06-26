@@ -202,14 +202,14 @@ namespace nmos
                     }
 
                     // OK, now it's safe to update everything.
-                    for (auto& pair: body.as_object())
+                    auto update = [&body] (nmos::resource &resource)
                     {
-                        auto update = [&pair] (nmos::resource &resource)
+                        for (const auto& pair: body.as_object())
                         {
                             resource.data[pair.first] = pair.second;
-                        };
-                        modify_resource(model.staged, resourceId, update);
-                    }
+                        }
+                    };
+                    modify_resource(model.staged, resourceId, update);
 
                     set_reply(res, status_codes::OK, strip_id(resource->data));
                 }
