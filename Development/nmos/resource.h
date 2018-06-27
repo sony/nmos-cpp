@@ -15,20 +15,20 @@ namespace nmos
     // Resources have an API version, resource type and representation as json data
     // Everything else is (internal) registry information: their id, references to their sub-resources, creation and update timestamps,
     // and health which is usually propagated from a node, because only nodes get heartbeats and keep all their sub-resources alive
-
-    struct resource_core
+    struct resource
     {
         // the API version, type, id and creation timestamp are logically const after construction*, other data may be modified
         // when any data is modified, the update timestamp must be set, and resource events should be generated
         // *or more accurately, after insertion into the registry
 
-        resource_core(api_version version, type type, web::json::value data)
+        resource(api_version version, type type, web::json::value data, bool never_expire)
             : version(version)
             , type(type)
             , data(data)
             , id(fields::id(data))
             , created(tai_now())
             , updated(created)
+            , health(never_expire ? health_forever : created.seconds)
         {}
 
         // the API version of the Node API, Registration API or Query API exposing this resource
@@ -54,14 +54,6 @@ namespace nmos
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#pagination
         tai created;
         tai updated;
-    };
-
-    struct resource : resource_core
-    {
-        resource(api_version version, nmos::type type, web::json::value data, bool never_expire)
-            : resource_core(version, type, data)
-            , health(never_expire ? health_forever : created.seconds)
-        {}
 
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         mutable details::copyable_atomic<nmos::health> health;

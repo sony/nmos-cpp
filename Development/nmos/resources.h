@@ -27,10 +27,10 @@ namespace nmos
 
     namespace details
     {
-        typedef boost::multi_index::member<resource_core, id, &resource_core::id> id_extractor;
-        typedef boost::multi_index::composite_key<resource, boost::multi_index::const_mem_fun<resource_core, bool, &resource_core::has_data>, boost::multi_index::member<resource_core, type, &resource_core::type>> type_extractor;
-        typedef boost::multi_index::member<resource_core, tai, &resource_core::created> created_extractor;
-        typedef boost::multi_index::member<resource_core, tai, &resource_core::updated> updated_extractor;
+        typedef boost::multi_index::member<resource, id, &resource::id> id_extractor;
+        typedef boost::multi_index::composite_key<resource, boost::multi_index::const_mem_fun<resource, bool, &resource::has_data>, boost::multi_index::member<resource, type, &resource::type>> type_extractor;
+        typedef boost::multi_index::member<resource, tai, &resource::created> created_extractor;
+        typedef boost::multi_index::member<resource, tai, &resource::updated> updated_extractor;
 
         // extant resources have non-null data
         inline std::tuple<bool, type> has_data(const type& type) { return{ true, type }; }
