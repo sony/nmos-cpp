@@ -117,8 +117,10 @@ namespace nmos
     }
 
     // erase all resources which expired *before* the specified time from the specified model
-    void erase_expired_resources(resources& resources, const health& until_health)
+    // and return the count of the number of resources erased
+    resources::size_type erase_expired_resources(resources& resources, const health& until_health)
     {
+        resources::size_type count = 0;
         auto resource = resources.begin();
         while (resources.end() != resource)
         {
@@ -139,7 +141,10 @@ namespace nmos
             resource = resources.erase(resource);
 
             insert_resource_events(resources, version, type, pre, web::json::value::null());
+
+            ++count;
         }
+        return count;
     }
 
     // find the resource with the specified id in the specified resources (if present) and

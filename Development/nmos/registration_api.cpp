@@ -37,16 +37,12 @@ namespace nmos
 
             until_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
 
-            auto before = model.resources.size();
-
             // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
-            erase_expired_resources(model.resources, until_health);
+            const auto expired = erase_expired_resources(model.resources, until_health);
 
-            auto after = model.resources.size();
-
-            if (before != after)
+            if (0 != expired)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << (before - after) << " resources have expired, " << after << " remain";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << expired << " resources have expired";
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
 

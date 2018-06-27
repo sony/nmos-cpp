@@ -63,7 +63,8 @@ namespace nmos
     resources::size_type erase_resource(resources& resources, const id& id);
 
     // erase all resources which expired *before* the specified time from the specified resources
-    void erase_expired_resources(resources& resources, const health& until_health);
+    // and return the count of the number of resources erased
+    resources::size_type erase_expired_resources(resources& resources, const health& until_health);
 
     // find the resource with the specified id in the specified resources (if present) and
     // set the health of the resource and all of its sub-resources, to prevent them expiring
