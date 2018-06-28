@@ -31,17 +31,21 @@ namespace nmos
             , updated(created)
         {}
 
-        // the API version of the Node API or Registration API exposing this resource
+        // the API version of the Node API, Registration API or Query API exposing this resource
         api_version version;
 
+        // the type of the resource, e.g. node, device, source, flow, sender, receiver
         // see nmos/type.h
         nmos::type type;
 
         // resource data is stored directly as json rather than e.g. being deserialized to a class hierarchy to allow quick
-        // prototyping; json validation at the API boundary would ensure the data met the schema for the specified version
+        // prototyping; json validation at the API boundary ensures the data met the schema for the specified version
         web::json::value data;
+        // when the resource data is null, the resource has been deleted or expired
+        bool has_data() const { return !data.is_null(); }
 
-        // could use fields::id(data) but the id is such an important index...
+        // universally unique identifier for the resource
+        // see nmos/id.h
         nmos::id id;
 
         // sub-resources are tracked in order to optimise resource expiry and deletion

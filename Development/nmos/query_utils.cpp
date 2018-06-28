@@ -201,7 +201,8 @@ namespace nmos
     {
         // in theory, should be performing match_query against the downgraded resource_data but
         // in practice, I don't think that can make a difference?
-        return (resource_path.empty() || resource_path == U('/') + nmos::resourceType_from_type(resource_type))
+        return !resource_data.is_null()
+            && (resource_path.empty() || resource_path == U('/') + nmos::resourceType_from_type(resource_type))
             && nmos::is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)
             && web::json::match_query(resource_data, basic_query, match_flags)
             && match_rql(resource_data, rql_query);
@@ -343,7 +344,7 @@ namespace nmos
         if (!details::is_queryable_resource(type)) return;
 
         auto& by_type = resources.get<tags::type>();
-        const auto subscriptions = by_type.equal_range(nmos::types::subscription);
+        const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
         for (auto it = subscriptions.first; subscriptions.second != it; ++it)
         {
             // for each subscription

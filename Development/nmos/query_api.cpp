@@ -286,7 +286,7 @@ namespace nmos
 
                     // search for a matching existing subscription
                     auto& by_type = model.resources.get<tags::type>();
-                    const auto subscriptions = by_type.equal_range(nmos::types::subscription);
+                    const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
                     auto resource = std::find_if(subscriptions.first, subscriptions.second, [&req_host, &version, &data](const resources::value_type& resource)
                     {
                         return version == resource.version

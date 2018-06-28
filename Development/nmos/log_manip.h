@@ -16,7 +16,7 @@ namespace nmos
         {
             for (auto& resource : resources)
             {
-                s << resource.type.name << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << ' ' << resource.health << '\n';
+                s << resource.type.name << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << ' ' << resource.health << (resource.has_data() ? "" : " (non-extant)") << '\n';
                 for (auto& sub_resource : resource.sub_resources)
                 {
                     s << "  " << sub_resource.substr(0, 6) << '\n';
@@ -30,16 +30,17 @@ namespace nmos
         return slog::log_manip([&](slog::log_statement& s)
         {
             auto& by_type = resources.get<tags::type>();
-            s << by_type.size() << " resources ("
-                << by_type.count(types::node) << " nodes, "
-                << by_type.count(types::device) << " devices, "
-                << by_type.count(types::source) << " sources, "
-                << by_type.count(types::flow) << " flows, "
-                << by_type.count(types::sender) << " senders, "
-                << by_type.count(types::receiver) << " receivers, "
-                << by_type.count(types::subscription) << " subscriptions, "
-                << by_type.count(types::grain) << " grains), "
-                << "most recent update: " << make_version(most_recent_update(resources)) << ", least health: " << least_health(resources);
+            s << by_type.count(true) << " resources ("
+                << by_type.count(details::has_data(types::node)) << " nodes, "
+                << by_type.count(details::has_data(types::device)) << " devices, "
+                << by_type.count(details::has_data(types::source)) << " sources, "
+                << by_type.count(details::has_data(types::flow)) << " flows, "
+                << by_type.count(details::has_data(types::sender)) << " senders, "
+                << by_type.count(details::has_data(types::receiver)) << " receivers, "
+                << by_type.count(details::has_data(types::subscription)) << " subscriptions, "
+                << by_type.count(details::has_data(types::grain)) << " grains), "
+                << "most recent update: " << make_version(most_recent_update(resources)) << ", least health: " << least_health(resources).first << ", "
+                << by_type.count(false) << " non-extant resources";
         });
     }
 

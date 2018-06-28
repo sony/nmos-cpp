@@ -21,24 +21,26 @@ namespace nmos
 
         // wait until the next node could potentially expire, or the server is being shut down
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
-        while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
+        while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health.first + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
         {
             // most nodes will have had a heartbeat during the wait, so the least health will have been increased
             // so this thread will be able to go straight back to waiting
-            auto until_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
+            auto expire_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
+            auto forget_health = expire_health - nmos::fields::registration_expiry_interval(model.settings);
             least_health = nmos::least_health(model.resources);
-            if (least_health >= until_health) continue;
+            if (least_health.first >= expire_health && least_health.second >= forget_health) continue;
 
             // otherwise, there's actually work to do...
 
             details::reverse_lock_guard<nmos::read_lock> unlock(lock);
-            // note, without atomic upgrade, another thread may preempt hence the need to recalculate until_health and least_health
+            // note, without atomic upgrade, another thread may preempt hence the need to recalculate expire_health/forget_health and least_health
             nmos::write_lock upgrade(mutex);
 
-            until_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
+            expire_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
+            forget_health = expire_health - nmos::fields::registration_expiry_interval(model.settings);
 
             // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
-            const auto expired = erase_expired_resources(model.resources, until_health);
+            const auto expired = erase_expired_resources(model.resources, expire_health, forget_health);
 
             if (0 != expired)
             {

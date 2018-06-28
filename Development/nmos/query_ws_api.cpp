@@ -12,7 +12,7 @@ namespace nmos
     inline resources::iterator find_subscription(resources& resources, const utility::string_t& ws_resource_path)
     {
         auto& by_type = resources.get<tags::type>();
-        const auto subscriptions = by_type.equal_range(nmos::types::subscription);
+        const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
         auto resource = std::find_if(subscriptions.first, subscriptions.second, [&ws_resource_path](const nmos::resources::value_type& resource)
         {
             return ws_resource_path == web::uri(nmos::fields::ws_href(resource.data)).path();

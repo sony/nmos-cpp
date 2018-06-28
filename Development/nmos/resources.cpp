@@ -6,12 +6,16 @@ namespace nmos
 {
     // Resource creation/update/deletion operations
 
+    // returns the least health of extant and non-extant resources
     // note, this is now O(N), not O(1), since resource health is mutable and therefore unindexed
-    health least_health(const resources& resources)
+    std::pair<health, health> least_health(const resources& resources)
     {
-        auto result = health_now();
+        const auto now = health_now();
+        std::pair<health, health> results{ now, now };
         for (const auto& resource : resources)
         {
+            auto& result = resource.has_data() ? results.first : results.second;
+
             // since health is mutable, the snapshot may be immediately out of date
             // but it is reasonable to rely on it not being modified to be *less*
             const auto health_snapshot = resource.health.load();
@@ -20,7 +24,7 @@ namespace nmos
                 result = health_snapshot;
             }
         }
-        return result;
+        return results;
     }
 
     // insert a resource
@@ -52,6 +56,13 @@ namespace nmos
         }
 
         auto result = resources.insert(std::move(resource));
+        // replacement of a deleted or expired resource is also allowed
+        // (currently, with no further checks on api_version, type, etc.)
+        if (!result.second && !result.first->has_data())
+        {
+            // if the insertion was banned, resource has not been moved from
+            result.second = resources.replace(result.first, std::move(resource));
+        }
 
         if (result.second)
         {
@@ -87,6 +98,7 @@ namespace nmos
 
     // erase the resource with the specified id from the specified resources (if present)
     // and return the count of the number of resources erased (including sub-resources)
+    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
     resources::size_type erase_resource(resources& resources, const id& id)
     {
         // also erase all sub-resources of this resource, i.e.
@@ -95,21 +107,25 @@ namespace nmos
         // for a sender, all flows with matching source_id
         // it won't be a very deep recursion...
         resources::size_type count = 0;
-        auto resource = resources.find(id);
-        if (resources.end() != resource)
+        auto found = resources.find(id);
+        if (resources.end() != found && found->has_data())
         {
-            for (auto& sub_resource : resource->sub_resources)
+            for (auto& sub_resource : found->sub_resources)
             {
                 count += erase_resource(resources, sub_resource);
             }
 
-            const auto version = resource->version;
-            const auto type = resource->type;
-            const auto pre = resource->data;
+            const auto pre = found->data;
 
-            resources.erase(resource);
+            auto resource_updated = nmos::strictly_increasing_update(resources);
+            resources.modify(found, [&resource_updated](resource& resource) {
+                // set resource.updated when a resource is deleted?
+                resource.updated = resource_updated;
+                resource.data = web::json::value::null();
+            });
 
-            insert_resource_events(resources, version, type, pre, web::json::value::null());
+            auto& erased = *found;
+            insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
 
             ++count;
         }
@@ -118,15 +134,29 @@ namespace nmos
 
     // erase all resources which expired *before* the specified time from the specified model
     // and return the count of the number of resources erased
-    resources::size_type erase_expired_resources(resources& resources, const health& until_health)
+    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
+    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, const health& forget_health)
     {
         resources::size_type count = 0;
-        auto resource = resources.begin();
-        while (resources.end() != resource)
+        auto found = resources.begin();
+        while (resources.end() != found)
         {
-            if (until_health <= resource->health)
+            if (!found->has_data())
             {
-                ++resource;
+                if (found->health < forget_health)
+                {
+                    found = resources.erase(found);
+                }
+                else
+                {
+                    ++found;
+                }
+                continue;
+            }
+
+            if (expire_health <= found->health)
+            {
+                ++found;
                 continue;
             }
 
@@ -134,14 +164,17 @@ namespace nmos
             // from its super-resource's sub-resources, but this is effectively achieved anyway since
             // health is propagated from nodes (and subscriptions) which don't have a super-resource
 
-            const auto version = resource->version;
-            const auto type = resource->type;
-            const auto pre = resource->data;
+            const auto pre = found->data;
 
-            resource = resources.erase(resource);
+            resources.modify(found, [](resource& resource) {
+                // don't set resource.updated when a resource is expired?
+                resource.data = web::json::value::null();
+            });
 
-            insert_resource_events(resources, version, type, pre, web::json::value::null());
+            auto& erased = *found;
+            insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
 
+            ++found;
             ++count;
         }
         return count;
@@ -152,17 +185,17 @@ namespace nmos
     // note, since health is mutable, no need for the resources parameter to be non-const
     void set_resource_health(const resources& resources, const id& id, health health)
     {
-        auto resource = resources.find(id);
-        if (resources.end() != resource)
+        auto found = resources.find(id);
+        if (resources.end() != found && found->has_data())
         {
-            for (auto& sub_resource : resource->sub_resources)
+            for (auto& sub_resource : found->sub_resources)
             {
                 set_resource_health(resources, sub_resource, health);
             }
 
             // since health is mutable, no need for:
-            // resources.modify(resource, [&health](nmos::resource& resource){ resource.health = health; });
-            resource->health = health;
+            // resources.modify(found, [&health](nmos::resource& resource){ resource.health = health; });
+            found->health = health;
         }
     }
 
@@ -213,7 +246,7 @@ namespace nmos
     {
         if (no_resource == id_type) return false;
         auto resource = resources.find(id_type.first);
-        return resources.end() != resource && id_type.second == resource->type;
+        return resources.end() != resource && resource->has_data() && id_type.second == resource->type;
     }
 
     // find resource by id
@@ -221,14 +254,14 @@ namespace nmos
     {
         if (id.empty()) return resources.end();
         auto resource = resources.find(id);
-        return resources.end() != resource ? resource : resources.end();
+        return resources.end() != resource && resource->has_data() ? resource : resources.end();
     }
 
     resources::iterator find_resource(resources& resources, const id& id)
     {
         if (id.empty()) return resources.end();
         auto resource = resources.find(id);
-        return resources.end() != resource ? resource : resources.end();
+        return resources.end() != resource && resource->has_data() ? resource : resources.end();
     }
 
     // find resource by id, and matching type
@@ -248,7 +281,7 @@ namespace nmos
     resources::const_iterator find_self_resource(const resources& resources)
     {
         auto& by_type = resources.get<tags::type>();
-        const auto nodes = by_type.equal_range(nmos::types::node);
+        const auto nodes = by_type.equal_range(details::has_data(nmos::types::node));
         return nodes.second != nodes.first ? resources.project<0>(nodes.first) : resources.end();
     }
 
@@ -256,7 +289,7 @@ namespace nmos
     resources::iterator find_self_resource(resources& resources)
     {
         auto& by_type = resources.get<tags::type>();
-        const auto nodes = by_type.equal_range(nmos::types::node);
+        const auto nodes = by_type.equal_range(details::has_data(nmos::types::node));
         return nodes.second != nodes.first ? resources.project<0>(nodes.first) : resources.end();
     }
 
