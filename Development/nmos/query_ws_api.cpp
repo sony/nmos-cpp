@@ -114,7 +114,7 @@ namespace nmos
                     modify_resource(model.resources, nmos::fields::subscription_id(grain->data), [&](nmos::resource& subscription)
                     {
                         subscription.sub_resources.erase(grain->id);
-                        if (subscription.sub_resources.empty())
+                        if (!nmos::fields::persist(subscription.data) && subscription.sub_resources.empty())
                         {
                             subscription.health = health_now();
                         }
