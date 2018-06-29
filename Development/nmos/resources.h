@@ -53,11 +53,8 @@ namespace nmos
 
     // Resource creation/update/deletion operations
 
-    inline tai most_recent_update(const resources& resources)
-    {
-        auto& by_updated = resources.get<tags::updated>();
-        return (by_updated.empty() ? tai{} : by_updated.begin()->updated);
-    }
+    // returns the most recent timestamp in the specified resources
+    tai most_recent_update(const resources& resources);
 
     inline tai strictly_increasing_update(const resources& resources, tai update = tai_now())
     {

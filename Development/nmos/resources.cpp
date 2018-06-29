@@ -6,6 +6,13 @@ namespace nmos
 {
     // Resource creation/update/deletion operations
 
+    // returns the most recent timestamp in the specified resources
+    tai most_recent_update(const resources& resources)
+    {
+        auto& by_updated = resources.get<tags::updated>();
+        return (by_updated.empty() ? tai{} : by_updated.begin()->updated);
+    }
+
     // returns the least health of extant and non-extant resources
     // note, this is now O(N), not O(1), since resource health is mutable and therefore unindexed
     std::pair<health, health> least_health(const resources& resources)
@@ -307,3 +314,4 @@ namespace nmos
         return result;
     }
 }
+
