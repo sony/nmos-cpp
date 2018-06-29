@@ -49,7 +49,7 @@ namespace nmos
                     return web::json::extract(value.as_object(), results, key.as_string());
                 },
                 rql::default_any_operators()
-            }(query) == web::json::value::boolean(true);
+            }(query) == rql::value_true;
         }
 
         // Cursor-based paging parameters

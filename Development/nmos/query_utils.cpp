@@ -194,7 +194,7 @@ namespace nmos
                 return web::json::extract(value.as_object(), results, key.as_string());
             },
             rql::default_any_operators(equal_to, less)
-        }(query) == web::json::value::boolean(true);
+        }(query) == rql::value_true;
     }
 
     resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const
