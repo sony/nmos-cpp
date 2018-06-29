@@ -33,14 +33,6 @@ namespace nmos
         // a (fake) subscription to keep track of all resource events
         nmos::resource make_node_behaviour_subscription(const nmos::id& id);
         nmos::resource make_node_behaviour_grain(const nmos::id& id, const nmos::id& subscription_id);
-
-        // workaround to read current values from settings where there is no other reason to have a lock (could be extracted to nmos/mutex.h or nmos/thread_utils.h)
-        template <typename Func>
-        auto with_read_lock(nmos::mutex& mutex, Func&& func) -> decltype(func())
-        {
-            nmos::read_lock lock(mutex);
-            return func();
-        }
     }
 
     void node_behaviour_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
@@ -91,7 +83,7 @@ namespace nmos
         // continue until the server is being shut down
         for (;;)
         {
-            if (details::with_read_lock(mutex, [&] { return shutdown; })) break;
+            if (with_read_lock(mutex, [&] { return shutdown; })) break;
 
             switch (mode)
             {
@@ -200,7 +192,7 @@ namespace nmos
 
         void advertise_node_service(const nmos::settings& settings, nmos::mutex& mutex, mdns::service_advertiser& advertiser)
         {
-            advertise_node_service(advertiser, details::with_read_lock(mutex, [&] { return settings; }));
+            advertise_node_service(advertiser, with_read_lock(mutex, [&] { return settings; }));
         }
 
         std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
