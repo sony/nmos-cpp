@@ -38,7 +38,7 @@ namespace web
                 {
                     web::http::http_response res;
 
-                    (*this)(req, res, {}, {}).then([req, res](bool continue_matching)
+                    (*this)(req, res, {}, route_parameters()).then([req, res](bool continue_matching)
                     {
                         if (continue_matching)
                         {
