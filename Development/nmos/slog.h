@@ -34,7 +34,7 @@ namespace nmos
     { \
         return slog::ios_stasher<details::name##_tag>(name); \
     } \
-    inline details::name##_tag::type get_##name##_stash(const std::ostream& os, const details::name##_tag::type& default_value = {}) \
+    inline details::name##_tag::type get_##name##_stash(const std::ostream& os, const details::name##_tag::type& default_value = stash_type()) \
     { \
         return slog::get_stash<details::name##_tag>(os, default_value); \
     }
