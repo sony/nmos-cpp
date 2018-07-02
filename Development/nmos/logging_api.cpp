@@ -52,6 +52,47 @@ namespace nmos
             }(query) == rql::value_true;
         }
 
+        // Predicate to match events against a query
+        struct event_query
+        {
+            typedef const nmos::experimental::event& argument_type;
+            typedef bool result_type;
+
+            event_query(const web::json::value& flat_query_params);
+
+            result_type operator()(argument_type event) const;
+
+            // the query/exemplar object for a Basic Query
+            web::json::value basic_query;
+
+            // a representation of the RQL abstract syntax tree for an Advanced Query
+            web::json::value rql_query;
+        };
+
+        event_query::event_query(const web::json::value& flat_query_params)
+            : basic_query(web::json::unflatten(flat_query_params))
+        {
+            if (basic_query.has_field(U("paging")))
+            {
+                basic_query.erase(U("paging"));
+            }
+            if (basic_query.has_field(U("query")))
+            {
+                auto& advanced = basic_query.at(U("query"));
+                if (advanced.has_field(U("rql")))
+                {
+                    rql_query = rql::parse_query(web::json::field_as_string{ U("rql") }(advanced));
+                }
+                basic_query.erase(U("query"));
+            }
+        }
+
+        event_query::result_type event_query::operator()(argument_type event) const
+        {
+            return web::json::match_query(event.data, basic_query, web::json::match_icase | web::json::match_substr)
+                && match_logging_rql(event.data, rql_query);
+        }
+
         // Cursor-based paging parameters
         struct event_paging
         {
@@ -239,22 +280,7 @@ namespace nmos
 
                 // Configure the query predicate
 
-                value basic_query = web::json::unflatten(flat_query_params);
-                value rql_query;
-
-                if (basic_query.has_field(U("paging")))
-                {
-                    basic_query.erase(U("paging"));
-                }
-                if (basic_query.has_field(U("query")))
-                {
-                    auto& advanced = basic_query.at(U("query"));
-                    if (advanced.has_field(U("rql")))
-                    {
-                        rql_query = rql::parse_query(web::json::field_as_string{ U("rql") }(advanced));
-                    }
-                    basic_query.erase(U("query"));
-                }
+                event_query match(flat_query_params);
 
                 // Configure the paging parameters
 
@@ -264,11 +290,8 @@ namespace nmos
                 if (paging.valid())
                 {
                     // Get the payload and update the paging parameters
-                    auto page = paging.page(model.events, [&basic_query, &rql_query](const event& event)
-                    {
-                        return web::json::match_query(event.data, basic_query, web::json::match_icase | web::json::match_substr)
-                            && match_logging_rql(event.data, rql_query);
-                    });
+                    struct default_constructible_event_query_wrapper { const event_query* impl; bool operator()(const event& e) const { return (*impl)(e); } };
+                    auto page = paging.page(model.events, default_constructible_event_query_wrapper{ &match });
 
                     size_t count = 0;
 
