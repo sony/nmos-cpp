@@ -211,7 +211,11 @@ namespace nmos
     // get the super-resource id and type
     std::pair<id, type> get_super_resource(const web::json::value& data, const type& type)
     {
-        if (nmos::types::node == type)
+        if (data.is_null())
+        {
+            return no_resource;
+        }
+        else if (nmos::types::node == type)
         {
             return no_resource;
         }
