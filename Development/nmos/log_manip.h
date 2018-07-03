@@ -19,6 +19,7 @@ namespace nmos
                 s << resource.type.name << ' ' << resource.id.substr(0, 6) << ' ' << make_version(resource.created) << ' ' << make_version(resource.updated) << ' ' << resource.health << (resource.has_data() ? "" : " (non-extant)") << '\n';
                 for (auto& sub_resource : resource.sub_resources)
                 {
+                    // note that this information may be out-of-date because in some circumstances a resource is *not* removed from its super-resource's sub-resources
                     s << "  " << sub_resource.substr(0, 6) << '\n';
                 }
             }
