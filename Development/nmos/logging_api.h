@@ -36,7 +36,7 @@ namespace nmos
 
                 result_type operator()(const event& event) const
                 {
-                    return fields::id(event.data);
+                    return nmos::fields::id(event.data);
                 }
             };
         }

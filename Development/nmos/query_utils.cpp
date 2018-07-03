@@ -228,14 +228,14 @@ namespace nmos
         void set_grain_timestamp(web::json::value& message, const nmos::tai& tai)
         {
             const auto timestamp = web::json::value::string(nmos::make_version(tai));
-            message[U("origin_timestamp")] = timestamp;
-            message[U("sync_timestamp")] = timestamp;
-            message[U("creation_timestamp")] = timestamp;
+            message[nmos::fields::origin_timestamp] = timestamp;
+            message[nmos::fields::sync_timestamp] = timestamp;
+            message[nmos::fields::creation_timestamp] = timestamp;
         }
 
         nmos::tai get_grain_timestamp(const web::json::value& message)
         {
-            return parse_version(nmos::fields::sync_timestamp(message));
+            return nmos::fields::sync_timestamp(message);
         }
 
         web::json::value make_grain(const nmos::id& source_id, const nmos::id& flow_id, const utility::string_t& topic)
@@ -245,14 +245,14 @@ namespace nmos
             // seems worthwhile to keep_order for simple visualisation
             value result = value::object(true);
 
-            result[U("grain_type")] = JU("event");
+            result[U("grain_type")] = value(U("event"));
             result[U("source_id")] = value::string(source_id);
             result[U("flow_id")] = value::string(flow_id);
             set_grain_timestamp(result, {});
             result[U("rate")] = make_rational();
             result[U("duration")] = make_rational();
             value& grain = result[U("grain")] = value::object(true);
-            grain[U("type")] = JU("urn:x-nmos:format:data.event");
+            grain[U("type")] = value(U("urn:x-nmos:format:data.event"));
             grain[U("topic")] = value::string(topic);
             grain[U("data")] = value::array();
 
@@ -266,7 +266,7 @@ namespace nmos
             // seems worthwhile to keep_order for simple visualisation
             web::json::value result = web::json::value::object(true);
 
-            const auto id = (!pre.is_null() ? pre : post).at(U("id")).as_string();
+            const auto id = nmos::fields::id(!pre.is_null() ? pre : post);
             result[U("path")] = web::json::value::string(resource_path.empty() ? nmos::resourceType_from_type(type) + U('/') + id : id);
             if (!pre.is_null()) result[U("pre")] = pre;
             if (!post.is_null()) result[U("post")] = post;
@@ -318,14 +318,19 @@ namespace nmos
                 const auto resource_data = match.downgrade(resource);
                 auto event = details::make_resource_event(resource_path, resource.type, resource_data, resource_data);
 
-                // experimental extension (an equivalent HTTP response header has been discussed for v1.3)
-                // however, only add "api_version" when resource_path is empty (since that's also an extension);
+                // experimental extension, for the query.strip flag
+
+                // api_version: the API version of the Node API exposing this resource, omitted when equal to the subscription Query API version (an equivalent HTTP response header has been discussed for v1.3)
+                // also omitted unless resource_path is empty (since that's also an extension);
                 // ironically, the latter is a schema violation, but the former wouldn't be because the schema
                 // does not have "additionalProperties": false
                 // see nmos-discovery-registration/APIs/schemas/queryapi-subscriptions-websocket.json
-                if (resource_path.empty() && (!match.strip || resource.version < match.version))
+                if (resource_path.empty())
                 {
-                    event[U("api_version")] = web::json::value::string(nmos::make_api_version(resource.version));
+                    if (!match.strip || resource.version < match.version)
+                    {
+                        event[nmos::experimental::fields::api_version] = web::json::value::string(nmos::make_api_version(resource.version));
+                    }
                 }
 
                 events.push_back(event);
@@ -369,9 +374,12 @@ namespace nmos
                 );
 
             // see explanation in nmos::make_resource_events
-            if (resource_path.empty() && (!match.strip || version < match.version))
+            if (resource_path.empty())
             {
-                event[U("api_version")] = web::json::value::string(nmos::make_api_version(version));
+                if (!match.strip || version < match.version)
+                {
+                    event[nmos::experimental::fields::api_version] = web::json::value::string(nmos::make_api_version(version));
+                }
             }
 
             for (const auto& id : subscription.sub_resources)

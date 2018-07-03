@@ -2,6 +2,7 @@
 #define NMOS_JSON_FIELDS_H
 
 #include "cpprest/json_utils.h"
+#include "nmos/api_version.h" // for nmos::api_version and parse_api_version
 #include "nmos/version.h" // for nmos::tai and parse_version
 
 // json field accessor helpers
@@ -11,6 +12,11 @@ namespace web
     {
         namespace details
         {
+            template <> struct value_as<nmos::api_version>
+            {
+                nmos::api_version operator()(const web::json::value& value) const { return nmos::parse_api_version(value.as_string()); }
+            };
+
             template <> struct value_as<nmos::tai>
             {
                 nmos::tai operator()(const web::json::value& value) const { return nmos::parse_version(value.as_string()); }
@@ -50,7 +56,10 @@ namespace nmos
         const web::json::field_as_integer max_update_rate_ms{ U("max_update_rate_ms") };
         const web::json::field_as_string ws_href{ U("ws_href") };
         const web::json::field_as_string subscription_id{ U("subscription_id") };
-        const web::json::field_as_string sync_timestamp{ U("sync_timestamp") };
+        // (mostly) for query_ws_api
+        const web::json::field<tai> creation_timestamp{ U("creation_timestamp") };
+        const web::json::field<tai> origin_timestamp{ U("origin_timestamp") };
+        const web::json::field<tai> sync_timestamp{ U("sync_timestamp") };
 
         // IS-05 Connection Management
 
@@ -60,6 +69,16 @@ namespace nmos
         const web::json::field_as_string mode{ U("mode") };
         const web::json::field<tai> requested_time{ U("requested_time") };
         const web::json::field_as_array transport_params{ U("transport_params") };
+    }
+
+    // Fields for experimental extensions
+    namespace experimental
+    {
+        // Field accessors simplify access to fields in json messages
+        namespace fields
+        {
+            const web::json::field<nmos::api_version> api_version{ U("api_version") };
+        }
     }
 }
 

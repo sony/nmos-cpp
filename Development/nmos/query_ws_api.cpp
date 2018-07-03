@@ -54,8 +54,8 @@ namespace nmos
 
                 value data;
                 nmos::id id = nmos::make_id();
-                data[U("id")] = value::string(id);
-                data[U("subscription_id")] = value::string(subscription->id);
+                data[nmos::fields::id] = value::string(id);
+                data[nmos::fields::subscription_id] = value::string(subscription->id);
 
                 // create an initial websocket message with no data
 
