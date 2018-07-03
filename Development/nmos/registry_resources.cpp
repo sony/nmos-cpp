@@ -30,11 +30,12 @@ namespace nmos
             auto uri = web::uri_builder()
                 .set_scheme(U("http"))
                 .set_host(nmos::fields::host_address(settings))
-                .set_port(nmos::fields::node_port(settings));
+                .set_port(nmos::fields::node_port(settings))
+                .to_uri();
 
             data[U("href")] = value::string(uri.to_string());
             data[U("hostname")] = hostname;
-            data[U("api")][U("versions")] = value_of({ JU("v1.0"), JU("v1.1"), JU("v1.2") });
+            data[U("api")][U("versions")] = value_of({ value(U("v1.0")), value(U("v1.1")), value(U("v1.2")) });
 
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
             const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
@@ -57,9 +58,10 @@ namespace nmos
                 auto mdns_uri = web::uri_builder()
                     .set_scheme(U("http"))
                     .set_host(host_address.as_string())
-                    .set_port(nmos::experimental::fields::mdns_port(settings));
+                    .set_port(nmos::experimental::fields::mdns_port(settings))
+                    .to_uri();
                 mdns_service[U("href")] = value::string(mdns_uri.to_string());
-                mdns_service[U("type")] = JU("urn:x-dns-sd/v1.0");
+                mdns_service[U("type")] = value(U("urn:x-dns-sd/v1.0"));
                 web::json::push_back(data[U("services")], mdns_service);
             }
 

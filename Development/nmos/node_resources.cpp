@@ -31,11 +31,12 @@ namespace nmos
             auto uri = web::uri_builder()
                 .set_scheme(U("http"))
                 .set_host(nmos::fields::host_address(settings))
-                .set_port(nmos::fields::node_port(settings));
+                .set_port(nmos::fields::node_port(settings))
+                .to_uri();
 
             data[U("href")] = value::string(uri.to_string());
             data[U("hostname")] = hostname;
-            data[U("api")][U("versions")] = value_of({ JU("v1.0"), JU("v1.1"), JU("v1.2") });
+            data[U("api")][U("versions")] = value_of({ value(U("v1.0")), value(U("v1.1")), value(U("v1.2")) });
 
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
             const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
@@ -81,7 +82,7 @@ namespace nmos
 
             // nmos-discovery-registration/APIs/schemas/device.json
 
-            data[U("type")] = JU("urn:x-nmos:device:generic");
+            data[U("type")] = value(U("urn:x-nmos:device:generic"));
             data[U("node_id")] = value::string(node_id);
             data[U("senders")] = value_from_elements(senders);
             data[U("receivers")] = value_from_elements(receivers);
@@ -96,7 +97,8 @@ namespace nmos
                     .set_scheme(U("http"))
                     .set_host(host_address.as_string())
                     .set_port(nmos::fields::connection_port(settings))
-                    .set_path(U("/x-nmos/connection/v1.0"));
+                    .set_path(U("/x-nmos/connection/v1.0"))
+                    .to_uri();
                 control[U("href")] = value::string(connection_uri.to_string());
                 control[U("type")] = value(U("urn:x-nmos:control:sr-ctrl/v1.0"));
                 web::json::push_back(data[U("controls")], control);
@@ -131,7 +133,7 @@ namespace nmos
 
             // nmos-discovery-registration/APIs/schemas/source_generic.json
 
-            data[U("format")] = JU("urn:x-nmos:format:video");
+            data[U("format")] = value(U("urn:x-nmos:format:video"));
 
             return{ is04_versions::v1_2, types::source, data, false };
         }
@@ -163,31 +165,31 @@ namespace nmos
 
             // nmos-discovery-registration/APIs/schemas/flow_video.json
 
-            data[U("format")] = JU("urn:x-nmos:format:video");
+            data[U("format")] = value(U("urn:x-nmos:format:video"));
             data[U("frame_width")] = 1920;
             data[U("frame_height")] = 1080;
-            data[U("interlace_mode")] = JU("progressive"); // optional
-            data[U("colorspace")] = JU("BT709");
-            data[U("transfer_characteristic")] = JU("SDR"); // optional
+            data[U("interlace_mode")] = value(U("progressive")); // optional
+            data[U("colorspace")] = value(U("BT709"));
+            data[U("transfer_characteristic")] = value(U("SDR")); // optional
 
             // nmos-discovery-registration/APIs/schemas/flow_video_raw.json
 
-            data[U("media_type")] = JU("video/raw");
+            data[U("media_type")] = value(U("video/raw"));
             data[U("components")] = value_of({
                 value_of({
-                    { U("name"), JU("Y") },
+                    { U("name"), value(U("Y")) },
                     { U("width"), 1920 },
                     { U("height"), 1080 },
                     { U("bit_depth"), 10 }
                 }),
                 value_of({
-                    { U("name"), JU("Cb") },
+                    { U("name"), value(U("Cb")) },
                     { U("width"), 960 },
                     { U("height"), 1080 },
                     { U("bit_depth"), 10 }
                 }),
                 value_of({
-                    { U("name"), JU("Cr") },
+                    { U("name"), value(U("Cr")) },
                     { U("width"), 960 },
                     { U("height"), 1080 },
                     { U("bit_depth"), 10 }
@@ -218,14 +220,15 @@ namespace nmos
             //data[U("caps")] = value::object(); // optional
 
             data[U("flow_id")] = value::string(flow_id); // may be null
-            data[U("transport")] = JU("urn:x-nmos:transport:rtp");
+            data[U("transport")] = value(U("urn:x-nmos:transport:rtp"));
             data[U("device_id")] = value::string(device_id);
 
             auto sdp_uri = web::uri_builder()
                 .set_scheme(U("http"))
                 .set_host(nmos::fields::host_address(settings))
                 .set_port(nmos::fields::connection_port(settings))
-                .set_path(U("/x-nmos/connection/v1.0/single/senders/") + id + U("/transportfile"));
+                .set_path(U("/x-nmos/connection/v1.0/single/senders/") + id + U("/transportfile"))
+                .to_uri();
             data[U("manifest_href")] = value::string(sdp_uri.to_string());
 
             // need to populate this...
@@ -258,7 +261,7 @@ namespace nmos
             // nmos-discovery-registration/APIs/schemas/receiver_core.json
 
             data[U("device_id")] = value::string(device_id);
-            data[U("transport")] = JU("urn:x-nmos:transport:rtp");
+            data[U("transport")] = value(U("urn:x-nmos:transport:rtp"));
             // need to populate this...
             data[U("interface_bindings")] = value::array();
 
@@ -269,9 +272,9 @@ namespace nmos
 
             // nmos-discovery-registration/APIs/schemas/receiver_video.json
 
-            data[U("format")] = JU("urn:x-nmos:format:video");
+            data[U("format")] = value(U("urn:x-nmos:format:video"));
 
-            data[U("caps")][U("media_types")][0] = JU("video/raw");
+            data[U("caps")][U("media_types")][0] = value(U("video/raw"));
 
             return{ is04_versions::v1_2, types::receiver, data, false };
         }
