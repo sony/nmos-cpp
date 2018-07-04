@@ -2,7 +2,7 @@
 #define SLOG_ALL_IN_ONE_H
 ////////////////////////////////////////////////////////////////////////////////////////////
 // AUTO-GENERATED AMALGAMATED HEADER
-// Generated at r347; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
+// Generated at r354; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "slog/config.h"
 #ifndef SLOG_CONFIG_H
@@ -2371,612 +2371,6 @@ namespace slog
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "bst/chrono.h"
-#ifndef BST_CHRONO_H
-#define BST_CHRONO_H
-
-// Provide bst::chrono::duration, etc. using either std:: or boost:: symbols
-
-// Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
-#ifndef BST_THREAD_BOOST
-
-#include <chrono>
-namespace bst_chrono = std::chrono;
-
-#else
-
-#include <boost/chrono/chrono.hpp>
-namespace bst_chrono = boost::chrono;
-
-#endif
-
-namespace bst
-{
-    namespace chrono
-    {
-	    // should replace using-directive with using-declarations for compatible symbols
-        using namespace bst_chrono;
-    }
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "bst/thread.h"
-#ifndef BST_THREAD_H
-#define BST_THREAD_H
-
-// Provide bst::thread, etc. using either std:: or boost:: symbols
-
-#ifndef BST_THREAD_BOOST
-
-#include <thread>
-namespace bst_thread = std;
-namespace bst_this_thread = std::this_thread;
-
-#else
-
-#include <boost/thread/thread.hpp>
-namespace bst_thread = boost;
-namespace bst_this_thread = boost::this_thread;
-
-#endif
-
-namespace bst
-{
-    namespace this_thread
-    {
-        // should replace using-directive with using-declarations for compatible symbols
-        using namespace bst_this_thread;
-    }
-    using bst_thread::thread;
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "slog/async_log_message.h"
-#ifndef SLOG_ASYNC_LOG_MESSAGE_H
-#define SLOG_ASYNC_LOG_MESSAGE_H
-
-// Amalgamated: #include "bst/chrono.h"
-// Amalgamated: #include "bst/thread.h"
-// Amalgamated: #include "slog/copyable_log_message.h"
-
-namespace slog
-{
-    // A copyable log message for logging in multi-threaded application, which captures a timestamp and the thread id
-    class async_log_message : public copyable_log_message
-    {
-    public:
-        typedef bst::chrono::system_clock clock;
-        typedef clock::time_point time_point;
-
-        // Converting constructor fulfills the primary purpose of saving a log_message
-        // Note: No harm in not being explicit?
-        async_log_message(const log_message& message)
-            : copyable_log_message(message)
-            , thread_id_(bst::this_thread::get_id())
-            , timestamp_(clock::now())
-        {}
-
-        // This constructor provides compatibility with log_message construction
-        async_log_message(const std::string& file, int line, const std::string& function, severity level)
-            : copyable_log_message(file, line, function, level)
-            , thread_id_(bst::this_thread::get_id())
-            , timestamp_(clock::now())
-        {}
-
-        // This constructor provides compatibility with log_message construction
-        async_log_message(const std::string& file, int line, const std::string& function, severity level, const std::string& str)
-            : copyable_log_message(file, line, function, level, str)
-            , thread_id_(bst::this_thread::get_id())
-            , timestamp_(clock::now())
-        {}
-
-        // A default constructor seems like a good idea, even though it constructs a barely useful instance
-        // Note: Need to decide whether this is even "barely useful" or whether default meaning invalid would be better
-        // and use default-constructed thread id and timestamp if so
-        async_log_message()
-            : copyable_log_message()
-            , thread_id_(bst::this_thread::get_id())
-            , timestamp_(clock::now())
-        {}
-
-        // Likewise a constructor simply taking an initializing string for the message stream
-        explicit async_log_message(const std::string& str)
-            : copyable_log_message(str)
-            , thread_id_(bst::this_thread::get_id())
-            , timestamp_(clock::now())
-        {}
-
-        // Trivial destructor
-        ~async_log_message() {}
-
-        // Copy constructor (unlike the log_message converting constructor, copy timestamp etc., don't generate anew!)
-        async_log_message(const async_log_message& message)
-            : copyable_log_message(message)
-            , thread_id_(message.thread_id())
-            , timestamp_(message.timestamp())
-        {}
-
-        // The copy assignment operator is provided for consistency with the copy constructor (rule of 3 or so)
-        async_log_message& operator=(async_log_message message)
-        {
-            swap(*this, message);
-            return *this;
-        }
-
-        // The swap function can only be found via ADL; it's used to implement assignment via copy-swap
-        friend void swap(async_log_message& a, async_log_message& b)
-        {
-            using std::swap;
-            swap((copyable_log_message&)a, (copyable_log_message&)b);
-            swap(a.thread_id_, b.thread_id_);
-            swap(a.timestamp_, b.timestamp_);
-        }
-
-        // Accessors (in addition to those in copyable_log_message)
-        bst::thread::id thread_id() const { return thread_id_; }
-        time_point timestamp() const { return timestamp_; }
-
-    protected:
-        bst::thread::id thread_id_;
-        time_point timestamp_;
-    };
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "bst/condition_variable.h"
-#ifndef BST_CONDITION_VARIABLE_H
-#define BST_CONDITION_VARIABLE_H
-
-// Provide bst::condition_variable, etc. using either std:: or boost:: symbols
-
-// Amalgamated: #include "bst/chrono.h"
-
-// Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
-#ifndef BST_THREAD_BOOST
-
-#include <condition_variable>
-namespace bst_thread = std;
-
-#else
-
-#include <boost/thread/condition_variable.hpp>
-namespace bst_thread = boost;
-
-#endif
-
-namespace bst
-{
-    using bst_thread::condition_variable;
-    using bst_thread::lock_guard;
-    using bst_thread::mutex;
-    using bst_thread::unique_lock;
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "util/concurrent_queue.h"
-#ifndef UTIL_CONCURRENT_QUEUE_H
-#define UTIL_CONCURRENT_QUEUE_H
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// This concurrent queue supports thread-safe push/pop via condition variable notification.
-// Initial design influenced by: 
-// http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
-// http://www.justsoftwaresolutions.co.uk/threading/condition-variable-spurious-wakes.html
-// Support for closing the queue is added, to enable uses where it must be possible to wake
-// threads waiting on an empty queue; the mechanism ended up close to that proposed in the
-// WG21 paper, "C++ Concurrent Queues":
-// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3533.html
-
-#include <deque>
-// Amalgamated: #include "bst/condition_variable.h"
-
-namespace util
-{
-  class concurrent_queue_closed_exception;
-
-  template < typename Value >
-  class concurrent_queue;
-
-  template < typename Value >
-  class concurrent_queue_front;
-
-  template < typename Value >
-  class concurrent_queue_back;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////
-class util::concurrent_queue_closed_exception {};
-
-////////////////////////////////////////////////////////////////////////////////////////////
-template < typename Value >
-class util::concurrent_queue
-{
-  typedef std::deque< Value > underlying_queue_t;
-  typedef bst::mutex mutex_t;
-  typedef bst::unique_lock< mutex_t > lock_t;
-public:
-  typedef typename underlying_queue_t::value_type value_type;
-  typedef typename underlying_queue_t::size_type size_type;
-
-  void push( const value_type& value )
-  {
-    lock_t lock( mutex );
-
-    if ( closed )
-    {
-      throw concurrent_queue_closed_exception();
-    }
-
-    queue.push_back( value );
-    lock.unlock();
-    condition_variable.notify_one();
-  }
-
-  // ephemeral result
-  bool empty() const
-  {
-    lock_t lock( mutex );
-    return queue.empty();
-  }
-
-  // ephemeral result
-  size_type size() const
-  {
-    lock_t lock( mutex );
-    return queue.size();
-  }
-
-  // ephemeral result
-  bool try_front( value_type& front_value )
-  {
-    lock_t lock( mutex );
-
-    if ( queue.empty() )
-    {
-      return false;
-    }
-
-    front_value = queue.front();
-
-    return true;
-  }
-
-  bool try_pop( value_type& popped_value )
-  {
-    lock_t lock( mutex );
-
-    if ( queue.empty() )
-    {
-      return false;
-    }
-
-    popped_value = queue.front();
-    queue.pop_front();
-
-    return true;
-  }
-
-  void pop( value_type& popped_value )
-  {
-    lock_t lock( mutex );
-
-    condition_variable.wait( lock, [&]{ return closed || !queue.empty(); } );
-
-    if ( queue.empty() )
-    {
-      // must be closed
-      throw concurrent_queue_closed_exception();
-    }
-
-    popped_value = queue.front();
-    queue.pop_front();
-  }
-
-  template < typename TimePoint >
-  bool pop_or_wait_until( value_type& popped_value, const TimePoint& wait_time )
-  {
-    lock_t lock( mutex );
-
-    if ( !condition_variable.wait_until( lock, wait_time, [&]{ return closed || !queue.empty(); } ) )
-    {
-      return false;
-    }
-
-    if ( queue.empty() )
-    {
-      // must be closed
-      throw concurrent_queue_closed_exception();
-    }
-
-    popped_value = queue.front();
-    queue.pop_front();
-
-    return true;
-  }
-
-  template < typename Duration >
-  bool pop_or_wait_for( value_type& popped_value, const Duration& wait_duration )
-  {
-    return pop_or_wait_until( popped_value, bst::chrono::steady_clock::now() + wait_duration );
-  }
-
-  // ephemeral result
-  bool is_closed() const
-  {
-    lock_t lock( mutex );
-    return closed;
-  }
-
-  void close()
-  {
-    lock_t lock( mutex );
-    closed = true;
-    lock.unlock();
-    condition_variable.notify_all();
-  }
-
-  void open()
-  {
-    lock_t lock( mutex );
-    closed = false;
-  }
-
-  concurrent_queue() : closed( false ) {}
-private:
-  concurrent_queue( const concurrent_queue& );
-  const concurrent_queue& operator=( const concurrent_queue& );
-
-private:
-  underlying_queue_t queue;
-  bool closed;
-  mutable bst::mutex mutex;
-  bst::condition_variable condition_variable;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////
-template < typename Value >
-class util::concurrent_queue_front
-{
-public:
-  typedef concurrent_queue< Value > concurrent_queue_type;
-  typedef typename concurrent_queue_type::value_type value_type;
-
-  // ephemeral result
-  bool empty() const
-  {
-    return queue.empty();
-  }
-
-  // ephemeral result
-  bool try_front( value_type& front_value )
-  {
-    return queue.try_front( front_value );
-  }
-
-  bool try_pop( value_type& popped_value )
-  {
-    return queue.try_pop( popped_value );
-  }
-
-  void pop( value_type& popped_value )
-  {
-    queue.pop( popped_value );
-  }
-
-  template < typename TimePoint >
-  bool pop_or_wait_until( value_type& popped_value, const TimePoint& wait_time )
-  {
-    return queue.pop_or_wait_until( popped_value, wait_time );
-  }
-
-  template < typename Duration >
-  bool pop_or_wait_for( value_type& popped_value, const Duration& wait_duration )
-  {
-    return queue.pop_or_wait_for( popped_value, wait_duration );
-  }
-
-  concurrent_queue_front( concurrent_queue_type& queue ) : queue( queue ) {}
-private:
-  concurrent_queue_front( const concurrent_queue_front& );
-  const concurrent_queue_front& operator=( const concurrent_queue_front& );
-
-private:
-  concurrent_queue_type& queue;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////
-template < typename Value >
-class util::concurrent_queue_back
-{
-public:
-  typedef concurrent_queue< Value > concurrent_queue_type;
-  typedef typename concurrent_queue_type::value_type value_type;
-
-  void push( const value_type& value )
-  {
-    queue.push( value );
-  }
-
-  // ephemeral result
-  bool is_closed() const
-  {
-    return queue.is_closed();
-  }
-
-  void close()
-  {
-    queue.close();
-  }
-
-  void open()
-  {
-    queue.open();
-  }
-
-  concurrent_queue_back( concurrent_queue_type& queue ) : queue( queue ) {}
-private:
-  concurrent_queue_back( const concurrent_queue_back& );
-  const concurrent_queue_back& operator=( const concurrent_queue_back& );
-
-private:
-  concurrent_queue_type& queue;
-};
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "util/message_service.h"
-#ifndef UTIL_MESSAGE_SERVICE_H
-#define UTIL_MESSAGE_SERVICE_H
-
-// Amalgamated: #include "util/concurrent_queue.h"
-#include <map>
-namespace util
-{
-    // This message_service provides very simple asynchronous handling of messages
-    // Notes:
-    // 1. It isn't based on C++11 std::packaged_task, etc. and provides no means of determining whether the messages have been serviced or not
-    // 2. It's something like an active object, but can utilise multiple threads concurrently, a bit like boost::asio::io_service
-    template <typename MessageType>
-    class message_service
-    {
-    public:
-        typedef concurrent_queue_closed_exception stopped_exception;
-        typedef MessageType message_type;
-
-        message_service() : message_queue() {}
-
-        // Utilise the current thread to run, returning normally when the service is stopped
-        template <typename ServiceFunction>
-        void run(const ServiceFunction& fn = ServiceFunction())
-        {
-            try
-            {
-                // Inefficient and unnecessary to test !stopped() all the time, and need to handle stopped_exception anyway
-                for (;;)
-                {
-                    message_type message;
-                    message_queue.pop(message);
-                    fn(message);
-                }
-            }
-            catch (const stopped_exception&)
-            {
-                // Must have been stopped (though might have been reset by now!)
-            }
-        }
-
-        // Signal all threads that are waiting in run() to stop
-        void stop() { message_queue.close(); }
-
-        // Ephemeral state
-        bool idle() const { return message_queue.empty(); }
-        bool stopping() const { return message_queue.is_closed(); }
-        bool stopped() const { return stopping() && idle(); }
-
-        // Queue message and return immediately; message will be serviced on a thread calling run()
-        // Notes:
-        // 1. Will throw stopped_exception if the service is stopped
-        // 2. It is the responsibility of the service function to synchronize if necessary e.g. with other queued messages
-        void post(const message_type& message) { message_queue.push(message); }
-
-        // Clear stopped state, cf. io_service
-        void reset() { message_queue.open(); }
-
-        // Trivial destructor
-        // Note: It is the caller's responsibility to ensure all threads have left run() before destroying this!
-        ~message_service() {}
-
-    private:
-        // Non-copyable
-        message_service(const message_service&);
-        const message_service& operator=(const message_service&);
-
-        concurrent_queue<message_type> message_queue;
-    };
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Amalgamating: #include "slog/async_log_service.h"
-#ifndef SLOG_ASYNC_LOG_SERVICE_H
-#define SLOG_ASYNC_LOG_SERVICE_H
-
-// Amalgamated: #include "bst/thread.h"
-// Amalgamated: #include "util/message_service.h"
-// Amalgamated: #include "slog/async_log_message.h"
-// Amalgamated: #include "slog/log_handler_type.h"
-
-namespace slog
-{
-    // Forward declare default parameter helper for async_log_service
-    namespace detail { template <typename ServiceFunction> struct async_log_service_message_default; }
-
-    // An async_log_service is used to move logging to a separate worker thread.
-    // It can be used as part of a custom logging gateway, or by reference, as a
-    // log_function with the global or thread-local logging gateway.
-    template <typename ServiceFunction, typename ServiceMessage = typename detail::async_log_service_message_default<ServiceFunction>::type>
-    // ServiceMessage must be default constructible, copyable and support explicit
-    // construction from a log_message, e.g. copyable_log_message or async_log_message.
-    // A ServiceFunction must be callable with a ServiceMessage parameter. It could
-    // be a function object or function pointer. With copyable_log_message as the
-    // message type, that means it could be log_handler or log_function.
-    class async_log_service
-    {
-    public:
-        typedef ServiceMessage service_message;
-        typedef ServiceFunction service_function;
-
-        explicit async_log_service(service_function service_fun = service_function())
-            : worker([=](){ service.run(service_fun); })
-        {}
-
-        ~async_log_service()
-        {
-            service.stop();
-            worker.join();
-            // assert service.stopped()?
-        }
-
-        void operator()(const log_message& message)
-        {
-            service.post(service_message(message));
-        }
-
-    private:
-        // Non-copyable
-        async_log_service(const async_log_service&);
-        const async_log_service& operator=(const async_log_service&);
-
-        util::message_service<service_message> service;
-        bst::thread worker;
-    };
-
-    namespace detail
-    {
-        template <typename ServiceFunction>
-        struct async_log_service_message_default
-        {
-            typedef typename std::remove_const<typename std::remove_reference<typename ServiceFunction::argument_type>::type>::type arg_type;
-            typedef typename std::conditional<std::is_same<log_message, arg_type>::value, copyable_log_message, arg_type>::type type;
-        };
-        template <>
-        struct async_log_service_message_default<log_handler> { typedef copyable_log_message type; };
-    }
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "detail/private_access.h"
 #ifndef DETAIL_PRIVATE_ACCESS_H
 #define DETAIL_PRIVATE_ACCESS_H
@@ -3569,6 +2963,782 @@ PRAGMA_WARNING_POP
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "bst/chrono.h"
+#ifndef BST_CHRONO_H
+#define BST_CHRONO_H
+
+// Provide bst::chrono::duration, etc. using either std:: or boost:: symbols
+
+// Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
+#ifndef BST_THREAD_BOOST
+
+#include <chrono>
+namespace bst_chrono = std::chrono;
+
+#else
+
+#include <boost/chrono/chrono.hpp>
+namespace bst_chrono = boost::chrono;
+
+#endif
+
+namespace bst
+{
+    namespace chrono
+    {
+	    // should replace using-directive with using-declarations for compatible symbols
+        using namespace bst_chrono;
+    }
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "bst/thread.h"
+#ifndef BST_THREAD_H
+#define BST_THREAD_H
+
+// Provide bst::thread, etc. using either std:: or boost:: symbols
+
+#ifndef BST_THREAD_BOOST
+
+#include <thread>
+namespace bst_thread = std;
+namespace bst_this_thread = std::this_thread;
+
+#else
+
+#include <boost/thread/thread.hpp>
+namespace bst_thread = boost;
+namespace bst_this_thread = boost::this_thread;
+
+#endif
+
+namespace bst
+{
+    namespace this_thread
+    {
+        // should replace using-directive with using-declarations for compatible symbols
+        using namespace bst_this_thread;
+    }
+    using bst_thread::thread;
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "slog/async_log_message.h"
+#ifndef SLOG_ASYNC_LOG_MESSAGE_H
+#define SLOG_ASYNC_LOG_MESSAGE_H
+
+// Amalgamated: #include "bst/chrono.h"
+// Amalgamated: #include "bst/thread.h"
+// Amalgamated: #include "slog/copyable_log_message.h"
+
+namespace slog
+{
+    // A copyable log message for logging in multi-threaded application, which captures a timestamp and the thread id
+    class async_log_message : public copyable_log_message
+    {
+    public:
+        typedef bst::chrono::system_clock clock;
+        typedef clock::time_point time_point;
+
+        // Converting constructor fulfills the primary purpose of saving a log_message
+        // Note: No harm in not being explicit?
+        async_log_message(const log_message& message)
+            : copyable_log_message(message)
+            , thread_id_(bst::this_thread::get_id())
+            , timestamp_(clock::now())
+        {}
+
+        // This constructor provides compatibility with log_message construction
+        async_log_message(const std::string& file, int line, const std::string& function, severity level)
+            : copyable_log_message(file, line, function, level)
+            , thread_id_(bst::this_thread::get_id())
+            , timestamp_(clock::now())
+        {}
+
+        // This constructor provides compatibility with log_message construction
+        async_log_message(const std::string& file, int line, const std::string& function, severity level, const std::string& str)
+            : copyable_log_message(file, line, function, level, str)
+            , thread_id_(bst::this_thread::get_id())
+            , timestamp_(clock::now())
+        {}
+
+        // A default constructor seems like a good idea, even though it constructs a barely useful instance
+        // Note: Need to decide whether this is even "barely useful" or whether default meaning invalid would be better
+        // and use default-constructed thread id and timestamp if so
+        async_log_message()
+            : copyable_log_message()
+            , thread_id_(bst::this_thread::get_id())
+            , timestamp_(clock::now())
+        {}
+
+        // Likewise a constructor simply taking an initializing string for the message stream
+        explicit async_log_message(const std::string& str)
+            : copyable_log_message(str)
+            , thread_id_(bst::this_thread::get_id())
+            , timestamp_(clock::now())
+        {}
+
+        // Trivial destructor
+        ~async_log_message() {}
+
+        // Copy constructor (unlike the log_message converting constructor, copy timestamp etc., don't generate anew!)
+        async_log_message(const async_log_message& message)
+            : copyable_log_message(message)
+            , thread_id_(message.thread_id())
+            , timestamp_(message.timestamp())
+        {}
+
+        // The copy assignment operator is provided for consistency with the copy constructor (rule of 3 or so)
+        async_log_message& operator=(async_log_message message)
+        {
+            swap(*this, message);
+            return *this;
+        }
+
+        // The swap function can only be found via ADL; it's used to implement assignment via copy-swap
+        friend void swap(async_log_message& a, async_log_message& b)
+        {
+            using std::swap;
+            swap((copyable_log_message&)a, (copyable_log_message&)b);
+            swap(a.thread_id_, b.thread_id_);
+            swap(a.timestamp_, b.timestamp_);
+        }
+
+        // Accessors (in addition to those in copyable_log_message)
+        bst::thread::id thread_id() const { return thread_id_; }
+        time_point timestamp() const { return timestamp_; }
+
+    protected:
+        bst::thread::id thread_id_;
+        time_point timestamp_;
+    };
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "bst/condition_variable.h"
+#ifndef BST_CONDITION_VARIABLE_H
+#define BST_CONDITION_VARIABLE_H
+
+// Provide bst::condition_variable, etc. using either std:: or boost:: symbols
+
+// Amalgamated: #include "bst/chrono.h"
+
+// Note: Same condition as bst/thread.h because we want consistent use of function/thread/chrono
+#ifndef BST_THREAD_BOOST
+
+#include <condition_variable>
+namespace bst_thread = std;
+
+#else
+
+#include <boost/thread/condition_variable.hpp>
+namespace bst_thread = boost;
+
+#endif
+
+namespace bst
+{
+    using bst_thread::condition_variable;
+    using bst_thread::lock_guard;
+    using bst_thread::mutex;
+    using bst_thread::unique_lock;
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "util/concurrent_queue.h"
+#ifndef UTIL_CONCURRENT_QUEUE_H
+#define UTIL_CONCURRENT_QUEUE_H
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// This concurrent queue supports thread-safe push/pop via condition variable notification.
+// Initial design influenced by: 
+// http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
+// http://www.justsoftwaresolutions.co.uk/threading/condition-variable-spurious-wakes.html
+// Support for closing the queue is added, to enable uses where it must be possible to wake
+// threads waiting on an empty queue; the mechanism ended up close to that proposed in the
+// WG21 paper, "C++ Concurrent Queues":
+// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3533.html
+
+#include <deque>
+// Amalgamated: #include "bst/condition_variable.h"
+
+namespace util
+{
+  class concurrent_queue_closed_exception;
+
+  template < typename Value >
+  class concurrent_queue;
+
+  template < typename Value >
+  class concurrent_queue_front;
+
+  template < typename Value >
+  class concurrent_queue_back;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+class util::concurrent_queue_closed_exception {};
+
+////////////////////////////////////////////////////////////////////////////////////////////
+template < typename Value >
+class util::concurrent_queue
+{
+private:
+  typedef std::deque< Value > underlying_queue_t;
+  typedef bst::mutex mutex_t;
+  typedef bst::unique_lock< mutex_t > lock_t;
+
+public:
+  typedef typename underlying_queue_t::value_type value_type;
+  typedef typename underlying_queue_t::size_type size_type;
+
+  // Capacity
+
+  // ephemeral result
+  bool empty() const
+  {
+    lock_t lock( mutex );
+    return queue.empty();
+  }
+
+  // ephemeral result
+  bool full() const
+  {
+    lock_t lock( mutex );
+    return queue_full();
+  }
+
+  // ephemeral result
+  size_type size() const
+  {
+    lock_t lock( mutex );
+    return queue.size();
+  }
+
+  size_type max_size() const
+  {
+    lock_t lock( mutex ); // unnecessary?
+    return queue.max_size();
+  }
+
+  size_type full_size() const
+  {
+    lock_t lock( mutex ); // unnecessary if full_size cannot vary after construction
+    return capacity;
+  }
+
+  // Inserting
+
+  bool try_push( const value_type& value )
+  {
+    lock_t lock( mutex );
+
+    if ( closed )
+    {
+      throw concurrent_queue_closed_exception();
+    }
+
+    if ( queue_full() )
+    {
+      return false;
+    }
+
+    queue.push_back( value );
+
+    lock.unlock();
+    not_empty.notify_one();
+
+    return true;
+  }
+
+  void push( const value_type& value )
+  {
+    lock_t lock( mutex );
+
+    not_full.wait( lock, [&]{ return closed || !queue_full(); } );
+
+    if ( closed )
+    {
+      throw concurrent_queue_closed_exception();
+    }
+    // else not full
+
+    queue.push_back( value );
+
+    lock.unlock();
+    not_empty.notify_one();
+  }
+
+  template < typename TimePoint >
+  bool push_or_wait_until( const value_type& value, const TimePoint& wait_time )
+  {
+    lock_t lock( mutex );
+
+    if ( !not_full.wait_until( lock, wait_time, [&]{ return closed || !queue_full(); } ) )
+    {
+      return false;
+    }
+
+    if ( closed )
+    {
+      throw concurrent_queue_closed_exception();
+    }
+    // else not full
+
+    queue.push_back( value );
+
+    lock.unlock();
+    not_empty.notify_one();
+
+    return true;
+  }
+
+  template < typename Duration >
+  bool push_or_wait_for( const value_type& value, const Duration& wait_duration )
+  {
+    return push_or_wait_until( value, bst::chrono::steady_clock::now() + wait_duration );
+  }
+
+  // Extracting
+
+  bool try_front( value_type& front_value )
+  {
+    lock_t lock( mutex );
+
+    if ( queue.empty() )
+    {
+      return false;
+    }
+
+    front_value = queue.front();
+
+    return true;
+  }
+
+  bool try_pop( value_type& popped_value )
+  {
+    lock_t lock( mutex );
+
+    if ( queue.empty() )
+    {
+      return false;
+    }
+
+    popped_value = queue.front();
+    queue.pop_front();
+
+    lock.unlock();
+    not_full.notify_one();
+
+    return true;
+  }
+
+  void pop( value_type& popped_value )
+  {
+    lock_t lock( mutex );
+
+    not_empty.wait( lock, [&]{ return closed || !queue.empty(); } );
+
+    if ( queue.empty() )
+    {
+      // must be closed
+      throw concurrent_queue_closed_exception();
+    }
+
+    popped_value = queue.front();
+    queue.pop_front();
+
+    lock.unlock();
+    not_full.notify_one();
+  }
+
+  template < typename TimePoint >
+  bool pop_or_wait_until( value_type& popped_value, const TimePoint& wait_time )
+  {
+    lock_t lock( mutex );
+
+    if ( !not_empty.wait_until( lock, wait_time, [&]{ return closed || !queue.empty(); } ) )
+    {
+      return false;
+    }
+
+    if ( queue.empty() )
+    {
+      // must be closed
+      throw concurrent_queue_closed_exception();
+    }
+
+    popped_value = queue.front();
+    queue.pop_front();
+
+    lock.unlock();
+    not_full.notify_one();
+
+    return true;
+  }
+
+  template < typename Duration >
+  bool pop_or_wait_for( value_type& popped_value, const Duration& wait_duration )
+  {
+    return pop_or_wait_until( popped_value, bst::chrono::steady_clock::now() + wait_duration );
+  }
+
+  // Closable
+
+  // ephemeral result
+  bool is_closed() const
+  {
+    lock_t lock( mutex );
+    return closed;
+  }
+
+  void close()
+  {
+    lock_t lock( mutex );
+    closed = true;
+    lock.unlock();
+    not_empty.notify_all();
+    not_full.notify_all();
+  }
+
+  void open()
+  {
+    lock_t lock( mutex );
+    closed = false;
+  }
+
+  // Construction
+
+  concurrent_queue() : capacity( queue.max_size() ), closed( false ) {}
+  explicit concurrent_queue( size_type capacity ) : capacity( capacity ), closed( false ) { if ( capacity > queue.max_size() ) throw std::length_error( "invalid full_size" ); }
+
+private:
+  concurrent_queue( const concurrent_queue& );
+  const concurrent_queue& operator=( const concurrent_queue& );
+
+  bool queue_full() const
+  {
+      return capacity == queue.size();
+  }
+
+private:
+  underlying_queue_t queue;
+  size_type capacity;
+  bool closed;
+  mutable bst::mutex mutex;
+  bst::condition_variable not_empty;
+  bst::condition_variable not_full;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////
+template < typename Value >
+class util::concurrent_queue_front
+{
+public:
+  typedef concurrent_queue< Value > concurrent_queue_type;
+  typedef typename concurrent_queue_type::value_type value_type;
+
+  // Capacity
+
+  // ephemeral result
+  bool empty() const
+  {
+    return queue.empty();
+  }
+
+  // Extracting
+
+  bool try_front( value_type& front_value )
+  {
+    return queue.try_front( front_value );
+  }
+
+  bool try_pop( value_type& popped_value )
+  {
+    return queue.try_pop( popped_value );
+  }
+
+  void pop( value_type& popped_value )
+  {
+    queue.pop( popped_value );
+  }
+
+  template < typename TimePoint >
+  bool pop_or_wait_until( value_type& popped_value, const TimePoint& wait_time )
+  {
+    return queue.pop_or_wait_until( popped_value, wait_time );
+  }
+
+  template < typename Duration >
+  bool pop_or_wait_for( value_type& popped_value, const Duration& wait_duration )
+  {
+    return queue.pop_or_wait_for( popped_value, wait_duration );
+  }
+
+  // Construction
+
+  concurrent_queue_front( concurrent_queue_type& queue ) : queue( queue ) {}
+
+private:
+  concurrent_queue_front( const concurrent_queue_front& );
+  const concurrent_queue_front& operator=( const concurrent_queue_front& );
+
+private:
+  concurrent_queue_type& queue;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////
+template < typename Value >
+class util::concurrent_queue_back
+{
+public:
+  typedef concurrent_queue< Value > concurrent_queue_type;
+  typedef typename concurrent_queue_type::value_type value_type;
+
+  // Capacity
+
+  // ephemeral result
+  bool full() const
+  {
+    return queue.full();
+  }
+
+  // Inserting
+
+  bool try_push( const value_type& value )
+  {
+    return queue.try_push( value );
+  }
+
+  void push( const value_type& value )
+  {
+    queue.push( value );
+  }
+
+  template < typename TimePoint >
+  bool push_or_wait_until( const value_type& value, const TimePoint& wait_time )
+  {
+    return queue.push_or_wait_until( value, wait_time );
+  }
+
+  template < typename Duration >
+  bool push_or_wait_for( const value_type& value, const Duration& wait_duration )
+  {
+    return queue.push_or_wait_for( value, wait_duration );
+  }
+
+  // Closable
+
+  // ephemeral result
+  bool is_closed() const
+  {
+    return queue.is_closed();
+  }
+
+  void close()
+  {
+    queue.close();
+  }
+
+  void open()
+  {
+    queue.open();
+  }
+
+  // Construction
+
+  concurrent_queue_back( concurrent_queue_type& queue ) : queue( queue ) {}
+
+private:
+  concurrent_queue_back( const concurrent_queue_back& );
+  const concurrent_queue_back& operator=( const concurrent_queue_back& );
+
+private:
+  concurrent_queue_type& queue;
+};
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "util/message_service.h"
+#ifndef UTIL_MESSAGE_SERVICE_H
+#define UTIL_MESSAGE_SERVICE_H
+
+// Amalgamated: #include "util/concurrent_queue.h"
+#include <map>
+namespace util
+{
+    // This message_service provides very simple asynchronous handling of messages
+    // Notes:
+    // 1. It isn't based on C++11 std::packaged_task, etc. and provides no means of determining whether the messages have been serviced or not
+    // 2. It's something like an active object, but can utilise multiple threads concurrently, a bit like boost::asio::io_service
+    template <typename MessageType>
+    class message_service
+    {
+    public:
+        typedef concurrent_queue_closed_exception stopped_exception;
+        typedef MessageType message_type;
+        typedef typename concurrent_queue<message_type>::size_type size_type;
+
+        message_service() : message_queue() {}
+        explicit message_service(size_type capacity) : message_queue(capacity) {}
+
+        // Utilise the current thread to run, returning normally when the service is stopped
+        template <typename ServiceFunction>
+        void run(const ServiceFunction& fn = ServiceFunction())
+        {
+            try
+            {
+                // Inefficient and unnecessary to test !stopped() all the time, and need to handle stopped_exception anyway
+                for (;;)
+                {
+                    message_type message;
+                    message_queue.pop(message);
+                    fn(message);
+                }
+            }
+            catch (const stopped_exception&)
+            {
+                // Must have been stopped (though might have been reset by now!)
+            }
+        }
+
+        // Signal all threads that are waiting in run() to stop
+        void stop() { message_queue.close(); }
+
+        // Ephemeral state
+        bool idle() const { return message_queue.empty(); }
+        bool overwhelmed() const { return message_queue.full(); }
+        bool stopping() const { return message_queue.is_closed(); }
+        bool stopped() const { return stopping() && idle(); }
+
+        // Queue message; message will be serviced on a thread calling run()
+        // Notes:
+        // 1. Will throw stopped_exception if the service is stopped
+        // 2. When the message service is overwhelmed, post() will block whereas try_post() will return false immediately without posting the message in this case
+        // 3. It is the responsibility of the service function to synchronize if necessary e.g. with other queued messages
+        void post(const message_type& message = message_type()) { message_queue.push(message); }
+        bool try_post(const message_type& message = message_type()) { return message_queue.try_push(message); }
+
+        // Clear stopped state, cf. io_service
+        void reset() { message_queue.open(); }
+
+        // Trivial destructor
+        // Note: It is the caller's responsibility to ensure all threads have left run() before destroying this!
+        ~message_service() {}
+
+    private:
+        // Non-copyable
+        message_service(const message_service&);
+        const message_service& operator=(const message_service&);
+
+        concurrent_queue<message_type> message_queue;
+    };
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Amalgamating: #include "slog/async_log_service.h"
+#ifndef SLOG_ASYNC_LOG_SERVICE_H
+#define SLOG_ASYNC_LOG_SERVICE_H
+
+// Amalgamated: #include "bst/atomic.h"
+// Amalgamated: #include "bst/thread.h"
+// Amalgamated: #include "util/message_service.h"
+// Amalgamated: #include "slog/async_log_message.h"
+// Amalgamated: #include "slog/log_handler_type.h"
+// Amalgamated: #include "slog/ios_stasher.h"
+
+namespace slog
+{
+    // Forward declare default parameter helper for async_log_service
+    namespace detail { template <typename ServiceFunction> struct async_log_service_message_default; }
+
+    struct async_log_discarded_tag : slog::stash_tag<int> {};
+    
+    // An async_log_service is used to move logging to a separate worker thread.
+    // It can be used as part of a custom logging gateway, or by reference, as a
+    // log_function with the global or thread-local logging gateway.
+    template <typename ServiceFunction, typename ServiceMessage = typename detail::async_log_service_message_default<ServiceFunction>::type>
+    // ServiceMessage must be default constructible, copyable and support explicit
+    // construction from a log_message, e.g. copyable_log_message or async_log_message.
+    // A ServiceFunction must be callable with a ServiceMessage parameter. It could
+    // be a function object or function pointer. With copyable_log_message as the
+    // message type, that means it could be log_handler or log_function.
+    class async_log_service
+    {
+    public:
+        typedef ServiceMessage service_message;
+        typedef ServiceFunction service_function;
+        typedef typename util::message_service<service_message>::size_type size_type;
+
+        explicit async_log_service(service_function service_fun = service_function())
+            : worker([=](){ service.run(service_fun); })
+        {}
+
+        explicit async_log_service(size_type capacity, service_function service_fun = service_function())
+            : service(capacity)
+            , worker([=](){ service.run(service_fun); })
+        {}
+
+        ~async_log_service()
+        {
+            service.stop();
+            worker.join();
+            // assert service.stopped()?
+        }
+
+        void operator()(const log_message& message)
+        {
+            // stash and reset the current discard count
+            const auto post_discard = discarded.exchange(0);
+            if (0 != post_discard)
+            {
+                // const_cast is a bit icky, but log_message is non-copyable and log_signature means we can't just always make message an rvalue-reference...
+                const_cast<std::ostream&>(message.stream()) << slog::stash<async_log_discarded_tag>(post_discard);
+            }
+            // attempt to enqueue the message without blocking, and restore and bump the discard count if that fails
+            if (!service.try_post(service_message(message)))
+            {
+                discarded.fetch_add(post_discard + 1);
+            }
+        }
+
+    private:
+        // Non-copyable
+        async_log_service(const async_log_service&);
+        const async_log_service& operator=(const async_log_service&);
+
+        util::message_service<service_message> service;
+        bst::atomic<int> discarded;
+        bst::thread worker;
+    };
+
+    namespace detail
+    {
+        template <typename ServiceFunction>
+        struct async_log_service_message_default
+        {
+            typedef typename std::remove_const<typename std::remove_reference<typename ServiceFunction::argument_type>::type>::type arg_type;
+            typedef typename std::conditional<std::is_same<log_message, arg_type>::value, copyable_log_message, arg_type>::type type;
+        };
+        template <>
+        struct async_log_service_message_default<log_handler> { typedef copyable_log_message type; };
+    }
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "slog/scopes.h"
 #ifndef SLOG_SCOPES_H
 #define SLOG_SCOPES_H
@@ -4019,23 +4189,23 @@ namespace slog
 // Amalgamated: #include "slog/slog.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-// Asynchronous logging (depends on fundamentals, copyable log message)
-
-// Amalgamated: #include "slog/async_log_message.h"
-// Amalgamated: #include "slog/async_log_service.h"
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Other extensions
+// Asynchronous logging and other extensions
 
 //#include "slog/detail/function_service.h"
 
 // Type-safe heterogeneous storage in a stream
 // Amalgamated: #include "slog/ios_stasher.h"
 
-// Logging scopes (depends on copyable log message, export configuration, asynchronous logging, ios_stasher)
+// Thread/time-stamped message (depends on fundamentals, copyable log message)
+// Amalgamated: #include "slog/async_log_message.h"
+
+// Asynchronous logging (depends on async_log_message, ios_stasher)
+// Amalgamated: #include "slog/async_log_service.h"
+
+// Logging scopes (depends on copyable log message, export configuration, ios_stasher)
 // Amalgamated: #include "slog/scopes.h"
 
-// Manipulators for log message formatting (depends on printf-style logging, typical severity/verbosity levels, asynchronous logging)
+// Manipulators for log message formatting (depends on printf-style logging, typical severity/verbosity levels, async_log_message)
 // Amalgamated: #include "slog/log_manip.h"
 
 #endif
