@@ -108,6 +108,7 @@ namespace nmos
     namespace fields
     {
         const web::json::field_as_value message{ U("message") };
+        const web::json::field_path<utility::string_t> grain_topic{ { U("grain"), U("topic") } };
         const web::json::field_path<web::json::value> grain_data{ { U("grain"), U("data") } };
         const web::json::field_path<web::json::value> message_grain_data{ { U("message"), U("grain"), U("data") } };
     }
