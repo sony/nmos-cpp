@@ -265,6 +265,9 @@ namespace nmos
     // a (fake) subscription to keep track of all resource events
     namespace details
     {
+        const utility::string_t node_behaviour_resource_path;
+        const utility::string_t node_behaviour_topic = node_behaviour_resource_path + U("/");
+
         nmos::resource make_node_behaviour_subscription(const nmos::id& id)
         {
             using web::json::value;
@@ -272,7 +275,7 @@ namespace nmos
             data[nmos::fields::id] = value::string(id);
             data[nmos::fields::max_update_rate_ms] = 0; // no throttling used at present
             data[nmos::fields::persist] = value::boolean(false); // not to be deleted by someone else
-            data[nmos::fields::resource_path] = value::string(U(""));
+            data[nmos::fields::resource_path] = value::string(node_behaviour_resource_path);
             data[nmos::fields::params] = value::object();
             // no ws_href since subscriptions are inaccessible on the Node API anyway
             return{ nmos::is04_versions::v1_2, nmos::types::subscription, data, true };
@@ -284,7 +287,7 @@ namespace nmos
             value data;
             data[nmos::fields::id] = value::string(id);
             data[nmos::fields::subscription_id] = value::string(subscription_id);
-            data[nmos::fields::message] = details::make_grain(nmos::make_id(), subscription_id, U("/"));
+            data[nmos::fields::message] = details::make_grain(nmos::make_id(), subscription_id, node_behaviour_topic);
             nmos::fields::message_grain_data(data) = value::array();
             return{ nmos::is04_versions::v1_2, nmos::types::grain, data, true };
         }
@@ -330,13 +333,6 @@ namespace nmos
             nmos::resources::iterator grain;
             web::json::value& events;
         };
-
-        std::pair<nmos::id, nmos::type> get_node_behaviour_event_id_type(const web::json::value& event)
-        {
-            const auto& path = event.at(U("path")).as_string();
-            auto slash = path.find('/'); // assert utility::string_t::npos != slash
-            return{ path.substr(slash + 1), nmos::type_from_resourceType(path.substr(0, slash)) };
-        }
     }
 
     // registered operation
@@ -430,7 +426,7 @@ namespace nmos
             const auto& registry_version = parse_api_version(web::uri::split_path(client.base_uri().path()).back());
 
             const auto& path = event.at(U("path")).as_string();
-            const auto id_type = get_node_behaviour_event_id_type(event);
+            const auto id_type = get_resource_event_resource(node_behaviour_topic, event);
             const auto event_type = get_resource_event_type(event);
 
             // An 'added' event calls for registration creation, i.e. a POST request with a 201 'Created' response (200 'OK' is unexpected)
@@ -660,7 +656,7 @@ namespace nmos
                 {
                     if (shutdown || registration_service_error || node_registered) break;
 
-                    const auto id_type = get_node_behaviour_event_id_type(events.at(0));
+                    const auto id_type = get_resource_event_resource(node_behaviour_topic, events.at(0));
                     const auto event_type = get_resource_event_type(events.at(0));
 
                     // discard events prior to the node 'added' or 'sync' event (shouldn't generally be necessary?)
@@ -853,7 +849,7 @@ namespace nmos
                 {
                     if (shutdown || registration_service_error || node_unregistered) break;
 
-                    const auto id_type = get_node_behaviour_event_id_type(events.at(0));
+                    const auto id_type = get_resource_event_resource(node_behaviour_topic, events.at(0));
                     const auto event_type = get_resource_event_type(events.at(0));
 
                     auto token = cancellation_source.get_token();
@@ -1006,7 +1002,7 @@ namespace nmos
 
                     for (const auto& event : events.as_array())
                     {
-                        const auto id_type = get_node_behaviour_event_id_type(event);
+                        const auto id_type = get_resource_event_resource(node_behaviour_topic, event);
                         update_resource_version(ver, id_type.second);
                     }
 

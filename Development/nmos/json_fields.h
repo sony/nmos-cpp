@@ -60,6 +60,7 @@ namespace nmos
         const web::json::field<tai> creation_timestamp{ U("creation_timestamp") };
         const web::json::field<tai> origin_timestamp{ U("origin_timestamp") };
         const web::json::field<tai> sync_timestamp{ U("sync_timestamp") };
+        const web::json::field_as_string topic{ U("topic") };
 
         // IS-05 Connection Management
 

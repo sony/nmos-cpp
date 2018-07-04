@@ -114,6 +114,9 @@ namespace nmos
 
     namespace details
     {
+        // get the resource id and type from the grain topic and event "path"
+        std::pair<nmos::id, nmos::type> get_resource_event_resource(const utility::string_t& topic, const web::json::value& event);
+
         enum resource_event_type
         {
             resource_continued_nonexistence_event, // not used; neither existed previously, nor any longer (we may co-opt this for e.g. replicating health)

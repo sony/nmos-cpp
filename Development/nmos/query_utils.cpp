@@ -274,6 +274,18 @@ namespace nmos
             return result;
         }
 
+        // get the resource id and type from the grain topic and event "path"
+        std::pair<nmos::id, nmos::type> get_resource_event_resource(const utility::string_t& topic, const web::json::value& event)
+        {
+            const auto topic_path = topic + event.at(U("path")).as_string();
+            // topic path should be like "/{resourceType}/{resourceId}"
+            auto slash = topic_path.find(U('/'), 1);
+            if (utility::string_t::npos != slash)
+                return{ topic_path.substr(slash + 1), nmos::type_from_resourceType(topic_path.substr(1, slash - 1)) };
+            else
+                return{};
+        }
+
         // determine the type of the resource event from "pre" and "post"
         resource_event_type get_resource_event_type(const web::json::value& event)
         {
