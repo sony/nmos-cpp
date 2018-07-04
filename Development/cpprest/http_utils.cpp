@@ -2,7 +2,7 @@
 
 #include <map>
 #include <set>
-#include "cpprest/basic_utils.h" // for utility::istringstreamed
+#include "cpprest/basic_utils.h" // for utility::conversions
 #include "detail/private_access.h"
 
 namespace web
@@ -19,7 +19,7 @@ namespace web
             if (req.headers().end() != header)
             {
                 auto colon = header->second.find(':');
-                return{ header->second.substr(0, colon), utility::string_t::npos != colon ? utility::istringstreamed<int>(header->second.substr(colon + 1)) : 0 };
+                return{ header->second.substr(0, colon), utility::string_t::npos != colon ? utility::conversions::details::scan_string(header->second.substr(colon + 1), 0) : 0 };
             }
             else
             {

@@ -255,13 +255,13 @@ namespace rql
                             nest.push(&web::json::back(args)[U("args")]);
                         }
                         break;
-                    case ',':
+                    case U(','):
                         if (1 == nest.size()) throw details::unexpected_token(punct);
                         // (typed-)value
                         web::json::push_back(args, details::make_value(type, token));
                         type.clear();
                         break;
-                    case ')':
+                    case U(')'):
                         if (1 >= nest.size()) throw details::unexpected_token(punct);
                         // (typed-)value
                         web::json::push_back(args, details::make_value(type, token));
@@ -269,7 +269,7 @@ namespace rql
                         nest.pop();
                         state = after_arg;
                         break;
-                    case ':':
+                    case U(':'):
                         if (token.empty()) throw details::unexpected_token(punct);
                         if (!type.empty()) throw details::unexpected_token(punct);
                         // typed-value
@@ -286,11 +286,11 @@ namespace rql
 
                 switch (punct)
                 {
-                case ',':
+                case U(','):
                     if (1 == nest.size()) throw details::unexpected_token(punct);
                     state = before_arg;
                     break;
-                case ')':
+                case U(')'):
                     if (1 >= nest.size()) throw details::unexpected_token(punct);
                     nest.pop();
                     state = after_arg;

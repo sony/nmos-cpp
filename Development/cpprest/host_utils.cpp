@@ -3,7 +3,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include "cpprest/basic_utils.h" // for utility::s2us, etc.
+#include "cpprest/asyncrt_utils.h" // for utility::conversions
 
 #if !defined(_WIN32)
 #include <ifaddrs.h> // for ifaddrs
@@ -18,7 +18,7 @@ namespace web
         {
             utility::string_t host_name()
             {
-                return utility::s2us(boost::asio::ip::host_name());
+                return utility::conversions::to_string_t(boost::asio::ip::host_name());
             }
 
             namespace details
@@ -130,7 +130,7 @@ namespace web
                 std::vector<utility::string_t> addresses;
                 boost::system::error_code ec;
                 // for now, limited to IPv4
-                const auto results = resolver.resolve({ boost::asio::ip::tcp::v4(), utility::us2s(host_name), "" }, ec);
+                const auto results = resolver.resolve({ boost::asio::ip::tcp::v4(), utility::conversions::to_utf8string(host_name), "" }, ec);
 #if BOOST_VERSION >= 106600
                 for (const auto& re : results)
                 {
@@ -139,7 +139,7 @@ namespace web
                 {
                     const auto& re = *it;
 #endif
-                    addresses.push_back(utility::s2us(re.endpoint().address().to_string()));
+                    addresses.push_back(utility::conversions::to_string_t(re.endpoint().address().to_string()));
                 }
                 return addresses; // empty if host_name cannot be resolved
             }
