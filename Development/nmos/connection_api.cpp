@@ -60,9 +60,9 @@ namespace nmos
     template<typename pair_type, typename rtt>
     static bool patch_key_is_valid(const pair_type &pair, const rtt &resourceType)
     {
-        return (pair.first == "sender_id" && resourceType == "receivers")  ||
-            (pair.first == "receiver_id" && resourceType == "senders")  ||
-            pair.first == "transport_params";
+        return (pair.first == U("sender_id") && resourceType == U("receivers"))  ||
+            (pair.first == U("receiver_id") && resourceType == U("senders"))  ||
+            pair.first == U("transport_params");
     }
 
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
