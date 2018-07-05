@@ -62,6 +62,7 @@ namespace nmos
     {
         return (pair.first == U("sender_id") && resourceType == U("receivers"))  ||
             (pair.first == U("receiver_id") && resourceType == U("senders"))  ||
+            (pair.first == U("transport_file") && resourceType == U("receivers"))  ||
             pair.first == U("transport_params");
     }
 
@@ -206,6 +207,14 @@ namespace nmos
                     {
                         for (const auto& pair: body.as_object())
                         {
+                            if (pair.first == U("transport_file"))
+                            {
+                                for (const auto &opair: pair.second.as_object())
+                                {
+                                    resource.data[pair.first][opair.first] = opair.second;
+                                }
+                                continue;
+                            }
                             if (pair.first == U("transport_params"))
                             {
                                 const auto& a = pair.second.as_array();
