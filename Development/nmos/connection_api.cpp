@@ -191,8 +191,6 @@ namespace nmos
                 auto resource = find_resource(model.staged, { resourceId, nmos::type_from_resourceType(resourceType) });
                 if (model.staged.end() != resource)
                 {
-                    bool notify_required = false;
-
                     // First, verify that every key is a valid field.
                     for (const auto & pair: body.as_object())
                     {
@@ -211,15 +209,9 @@ namespace nmos
                             resource.data[pair.first] = pair.second;
                         };
                         modify_resource(model.staged, resourceId, update);
-                        notify_required = true;
                     }
 
-                    {
-                        if (notify_required)
-                            condition.notify_all();
-
-                        set_reply(res, status_codes::OK, strip_id(resource->data));
-                    }
+                    set_reply(res, status_codes::OK, strip_id(resource->data));
                 }
                 else
                 {
