@@ -206,6 +206,18 @@ namespace nmos
                     {
                         for (const auto& pair: body.as_object())
                         {
+                            if (pair.first == U("transport_params"))
+                            {
+                                const auto& a = pair.second.as_array();
+                                for (size_t i = 0; i < std::max<size_t>(2, a.size()); i++)
+                                {
+                                    for (const auto& tp: a.at(i).as_object())
+                                    {
+                                        resource.data[pair.first][i][tp.first] = tp.second;
+                                    }
+                                }
+                                continue;
+                            }
                             resource.data[pair.first] = pair.second;
                         }
                     };
