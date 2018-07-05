@@ -23,9 +23,9 @@ namespace nmos
         return result;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::callbacks&, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::callbacks& callbacks, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -49,7 +49,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, mutex, condition, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, callbacks, mutex, condition, gate));
 
         nmos::add_api_finally_handler(connection_api, gate);
 
@@ -63,10 +63,12 @@ namespace nmos
         return (pair.first == U("sender_id") && resourceType == U("receivers"))  ||
             (pair.first == U("receiver_id") && resourceType == U("senders"))  ||
             (pair.first == U("transport_file") && resourceType == U("receivers"))  ||
+            pair.first == U("activation")  ||
+            pair.first == U("master_enable")  ||
             pair.first == U("transport_params");
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::callbacks &callbacks, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
         auto &resources = model.resources;
@@ -179,7 +181,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &mutex, &condition, &callbacks, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
@@ -189,7 +191,8 @@ namespace nmos
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-                auto resource = find_resource(model.staged, { resourceId, nmos::type_from_resourceType(resourceType) });
+                auto type = nmos::type_from_resourceType(resourceType);
+                auto resource = find_resource(model.staged, { resourceId, type });
                 if (model.staged.end() != resource)
                 {
                     // First, verify that every key is a valid field.
@@ -203,10 +206,19 @@ namespace nmos
                     }
 
                     // OK, now it's safe to update everything.
-                    auto update = [&body] (nmos::resource &resource)
+                    nmos::activation_mode mode;
+                    auto update = [&body, &mode] (nmos::resource &resource)
                     {
                         for (const auto& pair: body.as_object())
                         {
+                            if (pair.first == U("activation"))
+                            {
+                                for (const auto &opair: pair.second.as_object())
+                                {
+                                    if (opair.first == U("mode"))
+                                        mode = nmos::fields::mode(pair.second);
+                                }
+                            }
                             if (pair.first == U("transport_file"))
                             {
                                 for (const auto &opair: pair.second.as_object())
@@ -231,6 +243,14 @@ namespace nmos
                         }
                     };
                     modify_resource(model.staged, resourceId, update);
+
+                    if (nmos::activation_modes::activate_immediate == mode)
+                    {
+                        callbacks.activate(resourceId, type);
+                    }
+                    // else pass the buck to a scheduler thread to
+                    // deal with the activation at the right time,
+                    // and reply with the right HTTP status code.
 
                     set_reply(res, status_codes::OK, strip_id(resource->data));
                 }
