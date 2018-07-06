@@ -244,15 +244,57 @@ namespace nmos
                     };
                     modify_resource(model.staged, resourceId, update);
 
+                    // "If no activation was requested in the PATCH
+                    // `activation_time` will be set `null`."
+                    // [https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml]
+                    auto response = strip_id(resource->data);
+                    response["activation"]["activation_time"] = value();
+
                     if (nmos::activation_modes::activate_immediate == mode)
                     {
                         callbacks.activate(resourceId, type);
+                        // "For immediate activations on the staged
+                        // endpoint this property will be the time the
+                        // activation actually occurred in the response
+                        // to the PATCH request, but null in response
+                        // to any GET requests thereafter."
+                        // [https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json]
+                        response["activation"]["activation_time"] = value::string(nmos::make_version());
+
+                        // "For an immediate activation this field will
+                        // always be null on the staged endpoint, even
+                        // in the response to the PATCH request." [ibid]
+                        response["activation"]["requested_time"] = value();
+
+                        auto update = [&body, &mode] (nmos::resource &resource)
+                        {
+                            auto& activation = resource.data["activation"];
+
+                            // "For immediate activations, in the
+                            // response to the PATCH request this field
+                            // will be set to 'activate_immediate',
+                            // but will be null in response to any
+                            // subsequent GET requests." [ibid]
+                            activation["mode"] = value();
+
+                            // "For immediate activations on the staged
+                            // endpoint this property will be the time the
+                            // activation actually occurred in the response
+                            // to the PATCH request, but null in response
+                            // to any GET requests thereafter." [ibid]
+                            activation["activation_time"] = value();
+
+                            // "This field returns to null once the activation
+                            // is completed on the staged endpoint." [ibid]
+                            activation["requested_time"] = value();
+                        };
+                        modify_resource(model.staged, resourceId, update);
                     }
                     // else pass the buck to a scheduler thread to
                     // deal with the activation at the right time,
                     // and reply with the right HTTP status code.
 
-                    set_reply(res, status_codes::OK, strip_id(resource->data));
+                    set_reply(res, status_codes::OK, response);
                 }
                 else
                 {
