@@ -185,6 +185,18 @@ namespace nmos
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
+                try
+                {
+                    const auto activation = nmos::fields::activation(body);
+                    auto mode = nmos::fields::mode(activation);
+                    if (mode != nmos::activation_modes::activate_immediate)
+                    {
+                        set_reply(res, status_codes::NotImplemented);
+                        return true;
+                    }
+                }
+                catch (web::json::json_exception &e) {}
+
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
                 nmos::write_lock lock(mutex);
 
