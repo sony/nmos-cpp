@@ -150,7 +150,7 @@ namespace nmos
         {
             if (!found->has_data())
             {
-                if (found->health < forget_health)
+                if (found->health < forget_health || found->health == health_forever)
                 {
                     found = resources.erase(found);
                 }
