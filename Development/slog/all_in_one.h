@@ -2,7 +2,7 @@
 #define SLOG_ALL_IN_ONE_H
 ////////////////////////////////////////////////////////////////////////////////////////////
 // AUTO-GENERATED AMALGAMATED HEADER
-// Generated at r354; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
+// Generated at r368; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "slog/config.h"
 #ifndef SLOG_CONFIG_H
@@ -558,8 +558,8 @@ namespace bst
 
     namespace placeholders
     {
-	    // could replace using-directive with using-declarations for symbols
-		using namespace bst_placeholders;
+        // could replace using-directive with using-declarations for symbols
+        using namespace bst_placeholders;
     }
 
     using bst_functional::function;
@@ -920,7 +920,7 @@ namespace slog
 #ifndef BST_ATOMIC_H
 #define BST_ATOMIC_H
 
-// Provide bst::array, using either std:: or boost:: symbols
+// Provide bst::atomic, using either std:: or boost:: symbols
 
 #ifndef BST_ATOMIC_BOOST
 
@@ -2986,7 +2986,7 @@ namespace bst
 {
     namespace chrono
     {
-	    // should replace using-directive with using-declarations for compatible symbols
+        // should replace using-directive with using-declarations for compatible symbols
         using namespace bst_chrono;
     }
 }
@@ -3174,13 +3174,13 @@ namespace util
 {
   class concurrent_queue_closed_exception;
 
-  template < typename Value >
+  template < typename Value, typename Container = std::deque< Value > >
   class concurrent_queue;
 
-  template < typename Value >
+  template < typename Value, typename Container = std::deque< Value > >
   class concurrent_queue_front;
 
-  template < typename Value >
+  template < typename Value, typename Container = std::deque< Value > >
   class concurrent_queue_back;
 }
 
@@ -3188,17 +3188,17 @@ namespace util
 class util::concurrent_queue_closed_exception {};
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-template < typename Value >
+template < typename Value, typename Container >
 class util::concurrent_queue
 {
 private:
-  typedef std::deque< Value > underlying_queue_t;
   typedef bst::mutex mutex_t;
   typedef bst::unique_lock< mutex_t > lock_t;
 
 public:
-  typedef typename underlying_queue_t::value_type value_type;
-  typedef typename underlying_queue_t::size_type size_type;
+  typedef Container container_type;
+  typedef typename Container::value_type value_type;
+  typedef typename Container::size_type size_type;
 
   // Capacity
 
@@ -3237,83 +3237,110 @@ public:
 
   // Inserting
 
-  bool try_push( const value_type& value )
+  template < typename... Args >
+  bool try_emplace( Args&&... args )
   {
     lock_t lock( mutex );
 
-    if ( closed )
-    {
-      throw concurrent_queue_closed_exception();
-    }
-
-    if ( queue_full() )
+    if ( try_full() )
     {
       return false;
     }
 
-    queue.push_back( value );
+    queue.emplace_back( std::forward< Args >( args )... );
 
-    lock.unlock();
-    not_empty.notify_one();
+    notify_not_empty( lock );
 
     return true;
+  }
+
+  bool try_push( value_type&& value )
+  {
+    return try_emplace( std::move( value ) );
+  }
+
+  bool try_push( const value_type& value )
+  {
+    return try_emplace( value );
+  }
+
+  template < typename... Args >
+  void emplace( Args&&... args )
+  {
+    lock_t lock( mutex );
+
+    wait_not_full( lock );
+
+    queue.emplace_back( std::forward< Args >( args )... );
+
+    notify_not_empty( lock );
+  }
+
+  void push( value_type&& value )
+  {
+    emplace( std::move( value ) );
   }
 
   void push( const value_type& value )
   {
-    lock_t lock( mutex );
-
-    not_full.wait( lock, [&]{ return closed || !queue_full(); } );
-
-    if ( closed )
-    {
-      throw concurrent_queue_closed_exception();
-    }
-    // else not full
-
-    queue.push_back( value );
-
-    lock.unlock();
-    not_empty.notify_one();
+    emplace( value );
   }
 
-  template < typename TimePoint >
-  bool push_or_wait_until( const value_type& value, const TimePoint& wait_time )
+  template < typename TimePoint, typename... Args >
+  bool emplace_or_wait_until( const TimePoint& wait_time, Args&&... args )
   {
     lock_t lock( mutex );
 
-    if ( !not_full.wait_until( lock, wait_time, [&]{ return closed || !queue_full(); } ) )
+    if ( !wait_not_full_until( lock, wait_time ) )
     {
       return false;
     }
 
-    if ( closed )
-    {
-      throw concurrent_queue_closed_exception();
-    }
-    // else not full
+    queue.emplace_back( std::forward< Args >( args )... );
 
-    queue.push_back( value );
-
-    lock.unlock();
-    not_empty.notify_one();
+    notify_not_empty( lock );
 
     return true;
   }
 
-  template < typename Duration >
-  bool push_or_wait_for( const value_type& value, const Duration& wait_duration )
+  template < typename TimePoint >
+  bool push_or_wait_until( const TimePoint& wait_time, value_type&& value )
   {
-    return push_or_wait_until( value, bst::chrono::steady_clock::now() + wait_duration );
+    return emplace_or_wait_until( wait_time, std::move( value ) );
+  }
+
+  template < typename TimePoint >
+  bool push_or_wait_until( const TimePoint& wait_time, const value_type& value )
+  {
+    return emplace_or_wait_until( wait_time, value );
+  }
+
+  template < typename Duration, typename... Args >
+  bool emplace_or_wait_for( const Duration& wait_duration, Args&&... args )
+  {
+    return emplace_or_wait_until( after( wait_duration ), std::forward< Args >( args )... );
+  }
+
+  template < typename Duration >
+  bool push_or_wait_for( const Duration& wait_duration, value_type&& value )
+  {
+    return emplace_or_wait_for( wait_duration, std::move( value ) );
+  }
+
+  template < typename Duration >
+  bool push_or_wait_for( const Duration& wait_duration, const value_type& value )
+  {
+    return emplace_or_wait_for( wait_duration, value );
   }
 
   // Extracting
 
-  bool try_front( value_type& front_value )
+  // ephemeral front value
+  bool try_front( value_type& front_value ) const
   {
     lock_t lock( mutex );
 
-    if ( queue.empty() )
+    if ( try_empty() )
     {
       return false;
     }
@@ -3327,16 +3354,14 @@ public:
   {
     lock_t lock( mutex );
 
-    if ( queue.empty() )
+    if ( try_empty() )
     {
       return false;
     }
 
-    popped_value = queue.front();
-    queue.pop_front();
+    queue_pop_front( popped_value );
 
-    lock.unlock();
-    not_full.notify_one();
+    notify_not_full( lock );
 
     return true;
   }
@@ -3345,50 +3370,44 @@ public:
   {
     lock_t lock( mutex );
 
-    not_empty.wait( lock, [&]{ return closed || !queue.empty(); } );
+    wait_not_empty( lock );
 
-    if ( queue.empty() )
-    {
-      // must be closed
-      throw concurrent_queue_closed_exception();
-    }
+    queue_pop_front( popped_value );
 
-    popped_value = queue.front();
-    queue.pop_front();
-
-    lock.unlock();
-    not_full.notify_one();
+    notify_not_full( lock );
   }
 
   template < typename TimePoint >
-  bool pop_or_wait_until( value_type& popped_value, const TimePoint& wait_time )
+  bool pop_or_wait_until( const TimePoint& wait_time, value_type& popped_value )
   {
     lock_t lock( mutex );
 
-    if ( !not_empty.wait_until( lock, wait_time, [&]{ return closed || !queue.empty(); } ) )
+    if ( !wait_not_empty_until( lock, wait_time ) )
     {
       return false;
     }
 
-    if ( queue.empty() )
-    {
-      // must be closed
-      throw concurrent_queue_closed_exception();
-    }
+    queue_pop_front( popped_value );
 
-    popped_value = queue.front();
-    queue.pop_front();
-
-    lock.unlock();
-    not_full.notify_one();
+    notify_not_full( lock );
 
     return true;
   }
 
   template < typename Duration >
-  bool pop_or_wait_for( value_type& popped_value, const Duration& wait_duration )
+  bool pop_or_wait_for( const Duration& wait_duration, value_type& popped_value )
   {
-    return pop_or_wait_until( popped_value, bst::chrono::steady_clock::now() + wait_duration );
+    return pop_or_wait_until( after( wait_duration ), popped_value );
+  }
+
+  void clear()
+  {
+    lock_t lock( mutex );
+
+    queue.clear();
+
+    lock.unlock();
+    not_full.notify_all();
   }
 
   // Closable
@@ -3403,7 +3422,9 @@ public:
   void close()
   {
     lock_t lock( mutex );
+
     closed = true;
+
     lock.unlock();
     not_empty.notify_all();
     not_full.notify_all();
@@ -3417,33 +3438,149 @@ public:
 
   // Construction
 
-  concurrent_queue() : capacity( queue.max_size() ), closed( false ) {}
-  explicit concurrent_queue( size_type capacity ) : capacity( capacity ), closed( false ) { if ( capacity > queue.max_size() ) throw std::length_error( "invalid full_size" ); }
+  explicit concurrent_queue( const container_type& queue )
+    : closed( false ), capacity( queue.max_size() ), queue( queue )
+  {}
+
+  explicit concurrent_queue( container_type&& queue = container_type() )
+    : closed( false ), capacity( queue.max_size() ), queue( std::move( queue ) )
+  {}
+
+  concurrent_queue( size_type capacity, const container_type& queue )
+    : closed( false ), capacity( throw_if_too_full( capacity, queue ) ), queue( queue )
+  {}
+
+  explicit concurrent_queue( size_type capacity, container_type&& queue = container_type() )
+    : closed( false ), capacity( throw_if_too_full( capacity, queue ) ), queue( std::move( queue ) )
+  {}
 
 private:
   concurrent_queue( const concurrent_queue& );
   const concurrent_queue& operator=( const concurrent_queue& );
 
+  static size_type throw_if_too_full( size_type capacity, const container_type& queue )
+  {
+    if ( capacity > queue.max_size() || queue.size() > capacity )
+    {
+      throw std::length_error( "invalid full_size" );
+    }
+    return capacity;
+  }
+
   bool queue_full() const
   {
-      return capacity == queue.size();
+    return capacity == queue.size();
+  }
+
+  template < typename Duration >
+  static auto after( const Duration& wait_duration ) -> decltype( bst::chrono::steady_clock::now() + wait_duration )
+  {
+    return bst::chrono::steady_clock::now() + wait_duration;
+  }
+
+  // Inserting implementation
+
+  bool try_full() const
+  {
+    throw_if_closed();
+    return queue_full();
+  }
+
+  void wait_not_full( lock_t& lock )
+  {
+    not_full.wait( lock, [&]{ return closed || !queue_full(); } );
+    throw_if_closed();
+  }
+
+  template < typename TimePoint >
+  bool wait_not_full_until( lock_t& lock, const TimePoint& wait_time )
+  {
+    if ( !not_full.wait_until( lock, wait_time, [&]{ return closed || !queue_full(); } ) )
+    {
+      return false;
+    }
+
+    throw_if_closed();
+
+    return true;
+  }
+
+  void notify_not_empty( lock_t& lock )
+  {
+    lock.unlock();
+    not_empty.notify_one();
+  }
+
+  void throw_if_closed() const
+  {
+    if ( closed )
+    {
+      throw concurrent_queue_closed_exception();
+    }
+  }
+
+  // Extracting implementation
+
+  bool try_empty() const
+  {
+    return queue.empty();
+  }
+
+  void wait_not_empty( lock_t& lock )
+  {
+    not_empty.wait( lock, [&]{ return closed || !queue.empty(); } );
+    throw_if_empty(); // allow the queue to be "drained" even when closed
+  }
+
+  template < typename TimePoint >
+  bool wait_not_empty_until( lock_t& lock, const TimePoint& wait_time )
+  {
+    if ( !not_empty.wait_until( lock, wait_time, [&]{ return closed || !queue.empty(); } ) )
+    {
+      return false;
+    }
+
+    throw_if_empty(); // allow the queue to be "drained" even when closed
+
+    return true;
+  }
+
+  void notify_not_full( lock_t& lock )
+  {
+    lock.unlock();
+    not_full.notify_one();
+  }
+
+  void throw_if_empty() const
+  {
+    if ( queue.empty() )
+    {
+      // must be closed
+      throw concurrent_queue_closed_exception();
+    }
+  }
+
+  void queue_pop_front( value_type& popped_value )
+  {
+    popped_value = std::move( queue.front() );
+    queue.pop_front();
   }
 
 private:
-  underlying_queue_t queue;
-  size_type capacity;
   bool closed;
+  size_type capacity;
+  container_type queue;
   mutable bst::mutex mutex;
   bst::condition_variable not_empty;
   bst::condition_variable not_full;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-template < typename Value >
+template < typename Value, typename Container >
 class util::concurrent_queue_front
 {
 public:
-  typedef concurrent_queue< Value > concurrent_queue_type;
+  typedef concurrent_queue< Value, Container > concurrent_queue_type;
   typedef typename concurrent_queue_type::value_type value_type;
 
   // Capacity
@@ -3456,7 +3593,8 @@ public:
 
   // Extracting
 
-  bool try_front( value_type& front_value )
+  // ephemeral front value
+  bool try_front( value_type& front_value ) const
   {
     return queue.try_front( front_value );
   }
@@ -3472,15 +3610,20 @@ public:
   }
 
   template < typename TimePoint >
-  bool pop_or_wait_until( value_type& popped_value, const TimePoint& wait_time )
+  bool pop_or_wait_until( const TimePoint& wait_time, value_type& popped_value )
   {
-    return queue.pop_or_wait_until( popped_value, wait_time );
+    return queue.pop_or_wait_until( wait_time, popped_value );
   }
 
   template < typename Duration >
-  bool pop_or_wait_for( value_type& popped_value, const Duration& wait_duration )
+  bool pop_or_wait_for( const Duration& wait_duration, value_type& popped_value )
   {
-    return queue.pop_or_wait_for( popped_value, wait_duration );
+    return queue.pop_or_wait_for( wait_duration, popped_value );
+  }
+
+  void clear()
+  {
+    queue.clear();
   }
 
   // Construction
@@ -3496,11 +3639,11 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-template < typename Value >
+template < typename Value, typename Container >
 class util::concurrent_queue_back
 {
 public:
-  typedef concurrent_queue< Value > concurrent_queue_type;
+  typedef concurrent_queue< Value, Container > concurrent_queue_type;
   typedef typename concurrent_queue_type::value_type value_type;
 
   // Capacity
@@ -3513,9 +3656,31 @@ public:
 
   // Inserting
 
+  template < typename... Args >
+  bool try_emplace( Args&&... args )
+  {
+    return queue.try_emplace( std::forward< Args >( args )... );
+  }
+
+  bool try_push( value_type&& value )
+  {
+    return queue.try_push( std::move( value ) );
+  }
+
   bool try_push( const value_type& value )
   {
     return queue.try_push( value );
+  }
+
+  template < typename... Args >
+  void emplace( Args&&... args )
+  {
+    queue.emplace( std::forward< Args >( args )... );
+  }
+
+  void push( value_type&& value )
+  {
+    queue.push( std::move( value ) );
   }
 
   void push( const value_type& value )
@@ -3523,16 +3688,40 @@ public:
     queue.push( value );
   }
 
-  template < typename TimePoint >
-  bool push_or_wait_until( const value_type& value, const TimePoint& wait_time )
+  template < typename TimePoint, typename... Args >
+  bool emplace_or_wait_until( const TimePoint& wait_time, Args&&... args )
   {
-    return queue.push_or_wait_until( value, wait_time );
+    return queue.emplace_or_wait_until( wait_time, std::forward< Args >( args )... );
+  }
+
+  template < typename TimePoint >
+  bool push_or_wait_until( const TimePoint& wait_time, value_type&& value )
+  {
+    return queue.push_or_wait_until( wait_time, std::move( value ) );
+  }
+
+  template < typename TimePoint >
+  bool push_or_wait_until( const TimePoint& wait_time, const value_type& value )
+  {
+    return queue.push_or_wait_until( wait_time, value );
+  }
+
+  template < typename Duration, typename... Args >
+  bool emplace_or_wait_for( const Duration& wait_duration, Args&&... args )
+  {
+    return queue.emplace_or_wait_for( wait_duration, std::forward< Args >( args )... );
   }
 
   template < typename Duration >
-  bool push_or_wait_for( const value_type& value, const Duration& wait_duration )
+  bool push_or_wait_for( const Duration& wait_duration, value_type&& value )
   {
-    return queue.push_or_wait_for( value, wait_duration );
+    return queue.push_or_wait_for( wait_duration, value );
+  }
+
+  template < typename Duration >
+  bool push_or_wait_for( const Duration& wait_duration, const value_type& value )
+  {
+    return queue.push_or_wait_for( wait_duration, value );
   }
 
   // Closable
@@ -3682,11 +3871,13 @@ namespace slog
         typedef typename util::message_service<service_message>::size_type size_type;
 
         explicit async_log_service(service_function service_fun = service_function())
-            : worker([=](){ service.run(service_fun); })
+            : discarded(0)
+            , worker([=](){ service.run(service_fun); })
         {}
 
         explicit async_log_service(size_type capacity, service_function service_fun = service_function())
             : service(capacity)
+            , discarded(0)
             , worker([=](){ service.run(service_fun); })
         {}
 
