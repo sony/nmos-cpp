@@ -195,12 +195,12 @@ namespace nmos
             advertise_node_service(advertiser, with_read_lock(mutex, [&] { return settings; }));
         }
 
-        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
+        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
             // hmmm, no way to cancel this currently...
-            std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, nmos::is04_versions::all, true, timeout);
+            std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, nmos::is04_versions::all, true, timeout);
 
             if (!registration_services.empty())
             {
@@ -234,16 +234,18 @@ namespace nmos
 
         void discover_registration_services(const nmos::settings& settings, nmos::mutex& mutex, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
         {
+            std::string browse_domain;
             web::uri fallback_registration_service;
             std::chrono::seconds discovery_interval;
 
             {
                 nmos::read_lock lock(mutex);
+                browse_domain = utility::us2s(nmos::fields::domain_name(settings));
                 fallback_registration_service = get_registration_service(settings);
                 discovery_interval = std::chrono::seconds(nmos::fields::discovery_backoff_max(settings));
             }
 
-            registration_services = details::discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
+            registration_services = details::discover_registration_services(discovery, browse_domain, fallback_registration_service, discovery_interval, gate);
         }
 
         // "The Node selects a Registration API to use based on the priority"
@@ -960,8 +962,9 @@ namespace nmos
             bool registration_services_discovered(false);
 
             auto discovery_time = std::chrono::system_clock::now();
-            const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
+            const std::string browse_domain = utility::us2s(nmos::fields::domain_name(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
+            const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
 
             // background tasks may read/write the above local state by reference
             pplx::cancellation_token_source cancellation_source;
@@ -971,7 +974,7 @@ namespace nmos
                 return pplx::complete_at(discovery_time + discovery_interval, token).then([&]
                 {
                     discovery_time = std::chrono::system_clock::now();
-                    registration_services = discover_registration_services(discovery, fallback_registration_service, discovery_interval, gate);
+                    registration_services = discover_registration_services(discovery, browse_domain, fallback_registration_service, discovery_interval, gate);
                     return registration_services.empty();
                 });
             }, token).then([&]

@@ -2,6 +2,7 @@
 
 #include <random>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -192,7 +193,8 @@ namespace nmos
         std::string service_name(const nmos::service_type& service, const nmos::settings& settings)
         {
             // this just serves as an example of a possible service naming strategy
-            return details::service_base_name(service) + "_" + utility::us2s(nmos::fields::host_address(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings)));
+            // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
+            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::fields::host_address(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
         std::string qualified_host_name(const std::string& host_name)
@@ -243,14 +245,14 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API)
         // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::vector<nmos::api_version>& api_ver, bool randomize, const std::chrono::seconds& timeout)
+        std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, bool randomize, const std::chrono::seconds& timeout)
         {
             const auto absolute_timeout = std::chrono::system_clock::now() + timeout;
 
             std::vector<mdns::service_discovery::browse_result> browsed;
 
             int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
-            discovery.browse(browsed, service, {}, 0, (wait_millis + 999) / 1000);
+            discovery.browse(browsed, service, browse_domain, 0, (wait_millis + 999) / 1000);
 
             // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri),
             // filtering out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."

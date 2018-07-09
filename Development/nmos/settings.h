@@ -26,6 +26,9 @@ namespace nmos
         // host_name [registry, node]: used in resource description/label fields
         const web::json::field_as_string_or host_name{ U("host_name"), U("localhost") };
 
+        // domain_name [node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS) 
+        const web::json::field_as_string_or domain_name{ U("domain_name"), U("") };
+
         // host_address/host_addresses [registry, node]: used to construct response headers (e.g. 'Link' or 'Location') and URL fields in the data model
         const web::json::field_as_string_or host_address{ U("host_address"), U("127.0.0.1") };
         const web::json::field_as_array host_addresses{ U("host_addresses") };

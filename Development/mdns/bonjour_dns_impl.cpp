@@ -228,7 +228,8 @@ namespace mdns
 
             if (0 != (flags & kDNSServiceFlagsAdd))
             {
-                results.push_back({ serviceName, regtype, replyDomain, interfaceIndex });
+                // map kDNSServiceInterfaceIndexLocalOnly to kDNSServiceInterfaceIndexAny, to handle AVAHI_IF_UNSPEC escaping from the Avahi compatibility layer
+                results.push_back({ serviceName, regtype, replyDomain, kDNSServiceInterfaceIndexLocalOnly == interfaceIndex ? kDNSServiceInterfaceIndexAny : interfaceIndex });
                 const auto& result = results.back();
 
                 slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << result.interface_id;
