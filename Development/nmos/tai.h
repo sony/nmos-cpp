@@ -12,6 +12,8 @@ namespace nmos
         std::int64_t seconds;
         std::int64_t nanoseconds;
 
+        tai() : seconds(0), nanoseconds(0) {}
+        tai(std::int64_t seconds, std::int64_t nanoseconds) : seconds(seconds), nanoseconds(nanoseconds) {}
         auto tied() const -> decltype(std::tie(seconds, nanoseconds)) { return std::tie(seconds, nanoseconds); }
         friend bool operator==(const tai& lhs, const tai& rhs) { return lhs.tied() == rhs.tied(); }
         friend bool operator< (const tai& lhs, const tai& rhs) { return lhs.tied() <  rhs.tied(); }

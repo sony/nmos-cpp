@@ -16,6 +16,8 @@ namespace nmos
         std::uint32_t major;
         std::uint32_t minor;
 
+        api_version() : major{ 0 }, minor{ 0 } {}
+        api_version(std::uint32_t major, std::uint32_t minor) : major{ major }, minor{ minor } {}
         auto tied() const -> decltype(std::tie(major, minor)) { return std::tie(major, minor); }
         friend bool operator==(const api_version& lhs, const api_version& rhs) { return lhs.tied() == rhs.tied(); }
         friend bool operator< (const api_version& lhs, const api_version& rhs) { return lhs.tied() <  rhs.tied(); }
