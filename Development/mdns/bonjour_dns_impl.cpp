@@ -322,12 +322,14 @@ namespace mdns
             : input;
     }
 
+#ifdef _WIN32
     static const std::string suffix_absolute(".");
     static const std::string suffix_local(".local");
     static std::string without_suffix(const std::string& host_name)
     {
         return ierase_tail_copy(ierase_tail_copy(host_name, suffix_absolute), suffix_local);
     }
+#endif
 
     static void DNSSD_API resolve_reply(
         DNSServiceRef         sdRef,
@@ -535,8 +537,15 @@ namespace mdns
 
                 if (r.ip_addresses.empty())
                 {
-                    // hmmm, plain old getaddrinfo uses all name resolution mechamisms so isn't specific to a particular interface
+                    // hmmm, plain old getaddrinfo uses all name resolution mechanisms so isn't specific to a particular interface
+#ifdef _WIN32
+                    // on Windows, resolution of multicast .local domain names doesn't seem to work even with the Bonjour service running?
                     const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(r.host_name)));
+#else
+                    // on Linux, the name-service switch should be configured to use Avahi to resolve multicast .local domain names
+                    // by including 'mdns4' or 'mdns4_minimal' in the hosts stanza of /etc/nsswitch.conf
+                    const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(r.host_name));
+#endif
                     std::transform(ip_addresses.begin(), ip_addresses.end(), std::back_inserter(r.ip_addresses), utility::us2s);
                     slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "After DNSServiceResolve, got " << r.ip_addresses.size() << " address(es) for hostname: " << r.host_name;
                 }
