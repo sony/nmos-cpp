@@ -88,10 +88,11 @@ namespace nmos
             switch (mode)
             {
             case initial_discovery:
+            case rediscovery:
                 if (0 != discovery_backoff)
                 {
                     nmos::read_lock lock(mutex);
-                    condition.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&]{ return shutdown; });
+                    condition.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return shutdown; });
                     if (shutdown) break;
                 }
 
@@ -100,7 +101,7 @@ namespace nmos
 
                 if (!registration_services.empty())
                 {
-                    mode = initial_registration;
+                    mode = initial_discovery == mode ? initial_registration : registered_operation;
 
                     // "Should a 5xx error be encountered when interacting with all discoverable Registration APIs it is recommended that clients
                     // implement an exponential backoff algorithm in their next attempts until a non-5xx response code is received."
@@ -140,26 +141,13 @@ namespace nmos
                 {
                     // "A 404 error on heartbeat indicates that the Node performing the heartbeat is not known to the Registration API. [The] Node must re-register each of its resources with the Registration API in order."
                     mode = initial_registration;
+
+                    discovery_backoff = 0;
                 }
                 else
                 {
                     // "Should no further Registration APIs be available or TTLs on advertised services expired, a re-query may be performed."
                     mode = rediscovery;
-                }
-                break;
-
-            case rediscovery:
-                details::discover_registration_services(model.settings, mutex, registration_services, *discovery, gate);
-
-                if (!registration_services.empty())
-                {
-                    // "Another Registration API should be selected from the discovered list."
-                    mode = registered_operation;
-                }
-                else
-                {
-                    // "If no Registration APIs are advertised on a network, the Node should assume peer to peer operation unless configured otherwise."
-                    mode = peer_to_peer_operation;
                 }
                 break;
 
