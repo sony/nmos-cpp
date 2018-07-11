@@ -8,9 +8,9 @@ namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_unmounted_mdns_api(slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_mdns_api(slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -28,7 +28,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.mount(U("/x-dns-sd/v1.0"), make_unmounted_mdns_api(gate));
+            mdns_api.mount(U("/x-dns-sd/v1.0"), make_unmounted_mdns_api(settings, mutex, gate));
 
             nmos::add_api_finally_handler(mdns_api, gate);
 
@@ -61,7 +61,7 @@ namespace nmos
             return result;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_mdns_api(slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -80,17 +80,28 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&settings, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                return pplx::create_task([]{}).then([&, res, parameters]() mutable
+                return pplx::create_task([]{}).then([&, req, res, parameters]() mutable
                 {
                     // hmm, something to think about... the regex patterns are presumably being used on encoded paths?
                     const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
 
+                    // get the browse domain from the query parameters or settings
+
+                    auto flat_query_params = web::json::value_from_query(req.request_uri().query());
+                    for (auto& param : flat_query_params.as_object())
+                    {
+                        param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
+                    }
+
+                    const auto settings_domain = with_read_lock(mutex, [&] { return nmos::fields::domain(settings); });
+                    const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
                     std::vector<::mdns::service_discovery::browse_result> found;
 
-                    if (discovery->browse(found, serviceType))
+                    if (discovery->browse(found, serviceType, browse_domain))
                     {
                         std::map<std::string, value> results;
 
@@ -128,19 +139,30 @@ namespace nmos
                 });
             });
 
-            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&gate](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&settings, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                return pplx::create_task([]{}).then([&, res, parameters]() mutable
+                return pplx::create_task([]{}).then([&, req, res, parameters]() mutable
                 {
                     const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
                     const std::string serviceName = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceName.name)));
 
+                    // get the service domain from the query parameters or settings
+
+                    auto flat_query_params = web::json::value_from_query(req.request_uri().query());
+                    for (auto& param : flat_query_params.as_object())
+                    {
+                        param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
+                    }
+
+                    const auto settings_domain = with_read_lock(mutex, [&] { return nmos::fields::domain(settings); });
+                    const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
                     std::vector<::mdns::service_discovery::resolve_result> resolved;
 
-                    // When browsing, we use the default domain and then use the browse results' domain (and interface)
-                    // but here, I'm not sure what we should specify?
-                    if (discovery->resolve(resolved, serviceName, serviceType, "local."))
+                    // When browsing, we resolve using the browse results' domain and interface
+                    // so this can give different results...
+                    if (discovery->resolve(resolved, serviceName, serviceType, service_domain.empty() ? "local." : service_domain))
                     {
                         // for now, pick one result, even though there may be one per interface
                         value result = make_mdns_result(serviceName, resolved.front());

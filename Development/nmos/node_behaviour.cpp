@@ -240,7 +240,7 @@ namespace nmos
 
             {
                 nmos::read_lock lock(mutex);
-                browse_domain = utility::us2s(nmos::fields::domain_name(settings));
+                browse_domain = utility::us2s(nmos::fields::domain(settings));
                 fallback_registration_service = get_registration_service(settings);
                 discovery_interval = std::chrono::seconds(nmos::fields::discovery_backoff_max(settings));
             }
@@ -962,7 +962,7 @@ namespace nmos
             bool registration_services_discovered(false);
 
             auto discovery_time = std::chrono::system_clock::now();
-            const std::string browse_domain = utility::us2s(nmos::fields::domain_name(model.settings));
+            const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
             const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
 
