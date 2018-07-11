@@ -90,6 +90,30 @@ BST_TEST_CASE(testMdnsAdvertiseStart)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMdnsAdvertiseAddress)
+{
+    test_gate gate;
+
+    std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
+
+    std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
+
+    BST_REQUIRE(gate.hasLogMessage("Discovery/advertiser instance constructed"));
+    gate.clearLogMessages();
+
+    BST_CHECK(advertiser->register_address("test-mdns-advertise-address", "127.0.0.1", {}));
+
+    // Advertise our APIs
+    advertiser->start();
+    std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
+
+    BST_REQUIRE(gate.hasLogMessage("Advertisement started for 0 service(s)"));
+    BST_REQUIRE(gate.hasLogMessage("Registered address: 127.0.0.1 for hostname: test-mdns-advertise-address"));
+
+    advertiser->stop();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testMdnsAdvertiseAPIs)
 {
     test_gate gate;
@@ -108,9 +132,9 @@ BST_TEST_CASE(testMdnsAdvertiseAPIs)
         "pri=100"
     };
 
-    advertiser->register_service("test-mdns-advertise-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
-    advertiser->register_service("test-mdns-advertise-2", "_sea-lion-test1._tcp", testPort2, {}, {}, textRecords);
-    advertiser->register_service("test-mdns-advertise-3", "_sea-lion-test2._tcp", testPort3, {}, {}, textRecords);
+    BST_CHECK(advertiser->register_service("test-mdns-advertise-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords));
+    BST_CHECK(advertiser->register_service("test-mdns-advertise-2", "_sea-lion-test1._tcp", testPort2, {}, {}, textRecords));
+    BST_CHECK(advertiser->register_service("test-mdns-advertise-3", "_sea-lion-test2._tcp", testPort3, {}, {}, textRecords));
 
     // Advertise our APIs
     advertiser->start();
@@ -123,7 +147,6 @@ BST_TEST_CASE(testMdnsAdvertiseAPIs)
 
     advertiser->stop();
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testMdnsBrowseAPIs)
@@ -144,9 +167,9 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
         "pri=100"
     };
 
-    advertiser->register_service("test-mdns-browse-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
-    advertiser->register_service("test-mdns-browse-2", "_sea-lion-test1._tcp", testPort2, {}, {}, textRecords);
-    advertiser->register_service("test-mdns-browse-3", "_sea-lion-test2._tcp", testPort3, {}, {}, textRecords);
+    BST_CHECK(advertiser->register_service("test-mdns-browse-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords));
+    BST_CHECK(advertiser->register_service("test-mdns-browse-2", "_sea-lion-test1._tcp", testPort2, {}, {}, textRecords));
+    BST_CHECK(advertiser->register_service("test-mdns-browse-3", "_sea-lion-test2._tcp", testPort3, {}, {}, textRecords));
 
     // Advertise our APIs
     advertiser->start();
@@ -218,7 +241,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
         ipAddresses.insert("127.0.0.1");
     }
 
-    advertiser->register_service("test-mdns-resolve-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords);
+    BST_CHECK(advertiser->register_service("test-mdns-resolve-1", "_sea-lion-test1._tcp", testPort1, {}, {}, textRecords));
 
     // Advertise our APIs
     advertiser->start();

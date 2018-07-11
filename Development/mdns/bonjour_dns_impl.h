@@ -13,6 +13,7 @@ namespace mdns
         virtual ~bonjour_dns_impl();
 
         // Advertisement
+        virtual bool register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain);
         virtual bool register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& txt_records);
         virtual bool update_record(const std::string& name, const std::string& type, const std::string& domain, const txt_records& txt_records);
 
@@ -39,6 +40,7 @@ namespace mdns
             void* sdRef;
         };
 
+        void* m_client;
         std::vector<service> m_services;
         slog::base_gate& m_gate;
 

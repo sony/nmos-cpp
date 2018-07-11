@@ -23,8 +23,8 @@ namespace nmos
         // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
         const web::json::field_as_bool_or allow_invalid_resources{ U("allow_invalid_resources"), false };
 
-        // host_name [registry, node]: used in resource description/label fields
-        const web::json::field_as_string_or host_name{ U("host_name"), U("localhost") };
+        // host_name [registry, node]: the host name for which to advertise services or an empty string to use the default
+        const web::json::field_as_string_or host_name{ U("host_name"), U("") };
 
         // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS) 
         const web::json::field_as_string_or domain{ U("domain"), U("") };
@@ -93,6 +93,9 @@ namespace nmos
         {
             // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
             const web::json::field_as_string seed_id{ U("seed_id") };
+
+            // label [registry, node]: used in resource description/label fields
+            const web::json::field_as_string_or label{ U("label"), U("") };
 
             // port numbers [registry, node]: ports on which to listen for each API
 

@@ -197,24 +197,30 @@ namespace nmos
             return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::fields::host_address(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
-        std::string qualified_host_name(const std::string& host_name)
-        {
-            // if an explicit host_hame has been specified, and is only a single label, generate the appropriate multicast .local domain name
-            // or perhaps discovering the "default domain(s)", e.g. by using the DNSServiceEnumerationDomains API, would be better?
-            return !host_name.empty() && std::string::npos == host_name.find('.') ? host_name + ".local" : host_name;
-        }
-
         // helper function for registering the specified service (API)
         void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
         {
-            // explicitly specify a host_name to enable running on a Mininet host
-            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), {}, qualified_host_name(utility::us2s(nmos::fields::host_name(settings))), mdns::make_txt_records(records));
+            // if a host_name has been explicitly specified, attempt to register it in the specified domain
+            const auto host_name = utility::us2s(nmos::fields::host_name(settings));
+            const auto domain = utility::us2s(nmos::fields::domain(settings));
+            if (!host_name.empty())
+            {
+                const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
+                const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+                for (const auto& host_address : host_addresses)
+                {
+                    advertiser.register_address(host_name, utility::us2s(host_address.as_string()), domain);
+                }
+            }
+
+            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), domain, host_name, mdns::make_txt_records(records));
         }
 
         // helper function for updating the specified service (API) TXT records
         void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
         {
-            advertiser.update_record(service_name(service, settings), service, {}, mdns::make_txt_records(records));
+            const auto domain = utility::us2s(nmos::fields::domain(settings));
+            advertiser.update_record(service_name(service, settings), service, domain, mdns::make_txt_records(records));
         }
 
         namespace details

@@ -69,8 +69,6 @@ int main(int argc, char* argv[])
     web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
     level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
 
-    web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_name, web::json::value::string(web::http::experimental::host_name())));
-
     // if the "host_addresses" setting was omitted, add all the interface addresses
     const auto interface_addresses = web::http::experimental::interface_addresses();
     if (!interface_addresses.empty())

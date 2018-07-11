@@ -110,7 +110,8 @@ static DNSServiceErrorType DNSServiceProcessResult(DNSServiceRef sdRef, int time
 namespace mdns
 {
     bonjour_dns_impl::bonjour_dns_impl(slog::base_gate& gate)
-        : m_gate(gate)
+        : m_client(nullptr)
+        , m_gate(gate)
     {
         slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "Discovery/advertiser instance constructed";
     }
@@ -121,6 +122,11 @@ namespace mdns
         stop();
 
         slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "Discovery/advertiser instance destructed";
+    }
+
+    static std::string make_full_name(const std::string& host_name, const std::string& domain)
+    {
+        return !host_name.empty() ? host_name + "." + (!domain.empty() ? domain : "local.") : "";
     }
 
     static std::vector<unsigned char> make_txt_records(const txt_records& records)
@@ -147,21 +153,130 @@ namespace mdns
         return txt;
     }
 
+    static void DNSSD_API register_address_reply(
+        DNSServiceRef         sdRef,
+        DNSRecordRef          recordRef,
+        DNSServiceFlags       flags,
+        DNSServiceErrorType   errorCode,
+        void*                 context)
+    {
+        bonjour_dns_impl* impl = (bonjour_dns_impl*)context;
+
+        if (errorCode == kDNSServiceErr_NoError)
+        {
+            slog::log<slog::severities::more_info>(impl->m_gate, SLOG_FLF) << "After DNSServiceRegisterRecord, DNSServiceRegisterRecordReply received no error";
+        }
+        else
+        {
+            slog::log<slog::severities::error>(impl->m_gate, SLOG_FLF) << "After DNSServiceRegisterRecord, DNSServiceRegisterRecordReply received error: " << errorCode;
+            // possible errors include kDNSServiceErr_NameConflict, kDNSServiceErr_AlreadyRegistered
+        }
+    }
+
+    bool bonjour_dns_impl::register_address(const std::string& host_name, const std::string& ip_address_str, const std::string& domain)
+    {
+        // since empty host_name is valid for other functions, check that logic error here
+        if (host_name.empty()) return false;
+
+#if BOOST_VERSION >= 106600
+        const auto ip_address = boost::asio::ip::make_address(ip_address_str);
+#else
+        const auto ip_address = boost::asio::ip::address::from_string(ip_address_str);
+#endif
+        if (ip_address.is_unspecified()) return false;
+
+        // for now, limited to IPv4
+        if (!ip_address.is_v4()) return false;
+
+        bool result = false;
+
+        // the Avahi compatibility layer implementations of DNSServiceCreateConnection and DNSServiceRegisterRecord
+        // just return kDNSServiceErr_Unsupported
+        // see https://github.com/lathiat/avahi/blob/master/avahi-compat-libdns_sd/unsupported.c
+        // an alternative may be to use avahi-publish -a -R {host_name} {ip_address}
+        // see https://linux.die.net/man/1/avahi-publish-address
+
+        // lazily create the connection
+        DNSServiceErrorType errorCode = nullptr == m_client ? DNSServiceCreateConnection((DNSServiceRef*)&m_client) : kDNSServiceErr_NoError;
+
+        if (errorCode == kDNSServiceErr_NoError)
+        {
+            // so far as I can tell, attempting to register a host name in a domain other than the multicast .local domain always fails
+            // which may be the expected behaviour?
+            const auto fullname = make_full_name(host_name, domain);
+
+#if BOOST_VERSION >= 106600
+            const auto rdata = htonl(ip_address.to_v4().to_uint());
+#else
+            const auto rdata = htonl(ip_address.to_v4().to_ulong());
+#endif
+
+            // so far as I can tell, this call always returns kDNSServiceErr_BadParam in my Windows environment
+            // with a message in the event log for the Bonjour Service:
+            // mDNS_Register_internal: TTL CCCC0000 should be 1 - 0x7FFFFFFF    4 ...
+            // which looks like a bug in how the ttl value is marshalled between the client stub library and the service?
+            DNSRecordRef recordRef;
+            errorCode = DNSServiceRegisterRecord(
+                (DNSServiceRef)m_client,
+                &recordRef,
+                kDNSServiceFlagsShared,
+                kDNSServiceInterfaceIndexAny,
+                fullname.c_str(),
+                kDNSServiceType_A,
+                kDNSServiceClass_IN,
+                sizeof(rdata),
+                &rdata,
+                0,
+                &register_address_reply,
+                this);
+
+            if (errorCode == kDNSServiceErr_NoError)
+            {
+                // process the response (should this be in a loop, like for browse?)
+                errorCode = DNSServiceProcessResult((DNSServiceRef)m_client, 1);
+
+                if (errorCode == kDNSServiceErr_NoError)
+                {
+                    slog::log<slog::severities::too_much_info>(m_gate, SLOG_FLF) << "After DNSServiceRegisterRecord, DNSServiceProcessResult succeeded";
+
+                    result = true;
+
+                    slog::log<slog::severities::info>(m_gate, SLOG_FLF) << "Registered address: " << ip_address.to_string() << " for hostname: " << fullname;
+                }
+                else
+                {
+                    slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "After DNSServiceRegisterRecord, DNSServiceProcessResult reported error: " << errorCode;
+                }
+            }
+            else
+            {
+                slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceRegisterRecord reported error: " << errorCode;
+            }
+        }
+        else
+        {
+            slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceCreateConnection reported error: " << errorCode;
+        }
+
+        return result;
+    }
+
     bool bonjour_dns_impl::register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& records)
     {
         bool result = false;
 
         DNSServiceRef sdRef;
+        const auto fullname = make_full_name(host_name, domain);
         const std::vector<unsigned char> txt_records = make_txt_records(records);
 
         DNSServiceErrorType errorCode = DNSServiceRegister(
             &sdRef,
-            0, // all interfaces
             0,
+            kDNSServiceInterfaceIndexAny,
             !name.empty() ? name.c_str() : NULL,
             type.c_str(),
             !domain.empty() ? domain.c_str() : NULL,
-            !host_name.empty() ? host_name.c_str() : NULL,
+            !fullname.empty() ? fullname.c_str() : NULL,
             htons(port),
             (std::uint16_t)txt_records.size(),
             !txt_records.empty() ? &txt_records[0] : NULL,
@@ -315,6 +430,7 @@ namespace mdns
         return records;
     }
 
+#ifdef _WIN32
     inline std::string ierase_tail_copy(const std::string& input, const std::string& tail)
     {
         return boost::algorithm::iends_with(input, tail)
@@ -322,7 +438,6 @@ namespace mdns
             : input;
     }
 
-#ifdef _WIN32
     static const std::string suffix_absolute(".");
     static const std::string suffix_local(".local");
     static std::string without_suffix(const std::string& host_name)
@@ -574,5 +689,12 @@ namespace mdns
         }
 
         m_services.clear();
+
+        if (nullptr != m_client)
+        {
+            DNSServiceRefDeallocate((DNSServiceRef)m_client);
+
+            m_client = nullptr;
+        }
     }
 }

@@ -14,7 +14,8 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            const auto hostname = value::string(nmos::fields::host_name(settings));
+            const auto label = value::string(nmos::experimental::fields::label(settings));
+            const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
 
             value data;
 
@@ -22,8 +23,8 @@ namespace nmos
 
             data[U("id")] = value::string(id);
             data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = hostname;
-            data[U("description")] = hostname;
+            data[U("label")] = label;
+            data[U("description")] = label;
             data[U("tags")] = value::object();
 
             // nmos-discovery-registration/APIs/schemas/node.json
@@ -35,7 +36,7 @@ namespace nmos
                 .to_uri();
 
             data[U("href")] = value::string(uri.to_string());
-            data[U("hostname")] = hostname;
+            data[U("hostname")] = value::string(hostname);
             data[U("api")][U("versions")] = value_of({ value(U("v1.0")), value(U("v1.1")), value(U("v1.2")) });
 
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
@@ -68,7 +69,7 @@ namespace nmos
             using web::json::value_of;
             using web::json::value_from_elements;
 
-            const auto hostname = value::string(nmos::fields::host_name(settings));
+            const auto label = value::string(nmos::experimental::fields::label(settings));
 
             value data;
 
@@ -76,8 +77,8 @@ namespace nmos
 
             data[U("id")] = value::string(id);
             data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = hostname;
-            data[U("description")] = hostname;
+            data[U("label")] = label;
+            data[U("description")] = label;
             data[U("tags")] = value::object();
 
             // nmos-discovery-registration/APIs/schemas/device.json
@@ -111,7 +112,7 @@ namespace nmos
         {
             using web::json::value;
 
-            const auto hostname = value::string(nmos::fields::host_name(settings));
+            const auto label = value::string(nmos::experimental::fields::label(settings));
 
             value data;
 
@@ -119,8 +120,8 @@ namespace nmos
 
             data[U("id")] = value::string(id);
             data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = hostname;
-            data[U("description")] = hostname;
+            data[U("label")] = label;
+            data[U("description")] = label;
             data[U("tags")] = value::object();
 
             // nmos-discovery-registration/APIs/schemas/source_core.json
@@ -143,7 +144,7 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            const auto hostname = value::string(nmos::fields::host_name(settings));
+            const auto label = value::string(nmos::experimental::fields::label(settings));
 
             value data;
 
@@ -151,8 +152,8 @@ namespace nmos
 
             data[U("id")] = value::string(id);
             data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = hostname;
-            data[U("description")] = hostname;
+            data[U("label")] = label;
+            data[U("description")] = label;
             data[U("tags")] = value::object();
 
             // nmos-discovery-registration/APIs/schemas/flow_core.json
@@ -203,7 +204,7 @@ namespace nmos
         {
             using web::json::value;
 
-            const auto hostname = value::string(nmos::fields::host_name(settings));
+            const auto label = value::string(nmos::experimental::fields::label(settings));
 
             value data;
 
@@ -211,8 +212,8 @@ namespace nmos
 
             data[U("id")] = value::string(id);
             data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = hostname;
-            data[U("description")] = hostname;
+            data[U("label")] = label;
+            data[U("description")] = label;
             data[U("tags")] = value::object();
 
             // nmos-discovery-registration/APIs/schemas/sender.json
@@ -246,7 +247,7 @@ namespace nmos
         {
             using web::json::value;
 
-            const auto hostname = value::string(nmos::fields::host_name(settings));
+            const auto label = value::string(nmos::experimental::fields::label(settings));
 
             value data;
 
@@ -254,8 +255,8 @@ namespace nmos
 
             data[U("id")] = value::string(id);
             data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = hostname;
-            data[U("description")] = hostname;
+            data[U("label")] = label;
+            data[U("description")] = label;
             data[U("tags")] = value::object();
 
             // nmos-discovery-registration/APIs/schemas/receiver_core.json
