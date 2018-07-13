@@ -1,6 +1,7 @@
 #ifndef NMOS_TYPE_H
 #define NMOS_TYPE_H
 
+#include <vector>
 #include "cpprest/details/basic_types.h"
 
 namespace nmos
@@ -38,6 +39,9 @@ namespace nmos
         // similarly, the information about the next grain for each specific websocket connection
         // to a subscription is managed as a sub-resource of the subscription
         const type grain{ U("grain") };
+
+        // all types ordered so that sub-resource types appear after super-resource types
+        const std::vector<type> all{ nmos::types::node, nmos::types::device, nmos::types::source, nmos::types::flow, nmos::types::sender, nmos::types::receiver, nmos::types::subscription, nmos::types::grain };
     }
 }
 
