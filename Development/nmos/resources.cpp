@@ -1,5 +1,6 @@
 #include "nmos/resources.h"
 
+#include <boost/range/adaptor/reversed.hpp>
 #include "nmos/query_utils.h"
 
 namespace nmos
@@ -43,12 +44,8 @@ namespace nmos
             resource.sub_resources = get_sub_resources(resources, { resource.id, resource.type });
         }
 
-        // set the creation and update timestamps, and the initial health, before inserting the resource
+        // set the creation and update timestamps, before inserting the resource
         resource.updated = resource.created = nmos::strictly_increasing_update(resources);
-        if (nmos::health_forever != resource.health)
-        {
-            resource.health = resource.created.seconds;
-        }
 
         // all types (other than nodes, and subscriptions) must* be a sub-resource of an existing resource
         // (*assuming not out-of-order insertion by the allow_invalid_resources setting)
@@ -75,6 +72,14 @@ namespace nmos
         {
             auto& inserted = *result.first;
             insert_resource_events(resources, inserted.version, inserted.type, web::json::value::null(), inserted.data);
+
+            // set the initial health of this resource from the super-resource (if applicable)
+            // and update the health of any sub-resources to which the resource has been joined
+            // this may emit further resource events...
+            auto inserted_health = nmos::health_forever != inserted.health
+                ? super_resource != resources.end() ? super_resource->health.load() : inserted.created.seconds
+                : nmos::health_forever;
+            set_resource_health(resources, inserted.id, inserted_health);
         }
         // else logic error?
 
@@ -89,11 +94,13 @@ namespace nmos
 
         auto pre = found->data;
 
-        // set the update timestamp before applying the modifier
         auto resource_updated = nmos::strictly_increasing_update(resources);
-        auto result = resources.modify(found, [&resource_updated, &modifier](resource& resource) {
-            resource.updated = resource_updated;
+        auto result = resources.modify(found, [&resource_updated, &modifier](resource& resource)
+        {
             modifier(resource);
+
+            // set the update timestamp
+            resource.updated = resource_updated;
         });
 
         if (result)
@@ -127,10 +134,12 @@ namespace nmos
             const auto pre = found->data;
 
             auto resource_updated = nmos::strictly_increasing_update(resources);
-            resources.modify(found, [&resource_updated](resource& resource) {
-                // set resource.updated when a resource is deleted?
-                resource.updated = resource_updated;
+            resources.modify(found, [&resource_updated](resource& resource)
+            {
                 resource.data = web::json::value::null();
+
+                // set the update timestamp when a resource is deleted
+                resource.updated = resource_updated;
             });
 
             auto& erased = *found;
@@ -141,50 +150,81 @@ namespace nmos
         return count;
     }
 
+    // forget all erased resources which expired *before* the specified time from the specified model
+    // and return the count of the number of resources forgotten
+    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
+    resources::size_type forget_erased_resources(resources& resources, const health& forget_health)
+    {
+        resources::size_type count = 0;
+        auto& by_type = resources.get<tags::type>();
+        const auto range = by_type.equal_range(false);
+        auto found = range.first;
+        while (range.second != found)
+        {
+            if (found->health < forget_health || found->health == health_forever)
+            {
+                found = by_type.erase(found);
+                ++count;
+            }
+            else
+            {
+                ++found;
+            }
+        }
+        return count;
+    }
+
+    // erase all resources of the specified type which expired *before* the specified time from the specified model
+    // and return the count of the number of resources erased; sub-resources are *not* erased
+    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
+    resources::size_type erase_expired_resources(resources& resources, const nmos::type& type, const health& expire_health)
+    {
+        resources::size_type count = 0;
+        auto& by_type = resources.get<tags::type>();
+        const auto range = by_type.equal_range(details::has_data(type));
+        auto found = range.first;
+        while (range.second != found)
+        {
+            if (expire_health <= found->health)
+            {
+                ++found;
+            }
+            else
+            {
+                // since modify reorders the resource in this index
+                const auto next = std::next(found);
+
+                const auto pre = found->data;
+
+                by_type.modify(found, [](resource& resource)
+                {
+                    resource.data = web::json::value::null();
+
+                    // don't set the update timestamp when a resource is expired
+                });
+
+                auto& erased = *found;
+                insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
+
+                found = next;
+                ++count;
+            }
+        }
+        return count;
+    }
+
     // erase all resources which expired *before* the specified time from the specified model
     // and return the count of the number of resources erased
     // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
     resources::size_type erase_expired_resources(resources& resources, const health& expire_health, const health& forget_health)
     {
+        forget_erased_resources(resources, forget_health);
+
         resources::size_type count = 0;
-        auto found = resources.begin();
-        while (resources.end() != found)
+        // reverse order to ensure sub-resources are erased before super-resources
+        for (const auto& type : nmos::types::all | boost::adaptors::reversed)
         {
-            if (!found->has_data())
-            {
-                if (found->health < forget_health || found->health == health_forever)
-                {
-                    found = resources.erase(found);
-                }
-                else
-                {
-                    ++found;
-                }
-                continue;
-            }
-
-            if (expire_health <= found->health)
-            {
-                ++found;
-                continue;
-            }
-
-            // should also erase all sub-resources of this resource, and remove this resource's id
-            // from its super-resource's sub-resources, but this is effectively achieved anyway since
-            // health is propagated from nodes (and subscriptions) which don't have a super-resource
-
-            const auto pre = found->data;
-
-            resources.modify(found, [](resource& resource) {
-                // don't set resource.updated when a resource is expired?
-                resource.data = web::json::value::null();
-            });
-
-            auto& erased = *found;
-            insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
-
-            ++found;
-            ++count;
+            count += erase_expired_resources(resources, type, expire_health);
         }
         return count;
     }
@@ -320,4 +360,3 @@ namespace nmos
         return result;
     }
 }
-
