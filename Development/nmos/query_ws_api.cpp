@@ -152,6 +152,8 @@ namespace nmos
 
             earliest_necessary_update = (tai_clock::time_point::max)();
 
+            std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::experimental::listener::websocket_outgoing_message>> outgoing_messages;
+
             for (const auto& websocket : websockets.left)
             {
                 // for each websocket connection that has valid grain and subscription resources
@@ -182,14 +184,31 @@ namespace nmos
                     details::set_grain_timestamp(nmos::fields::message(grain.data), most_recent_message);
                 });
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
 
                 auto serialized = utility::us2s(nmos::fields::message(grain->data).serialize());
                 web::websockets::experimental::listener::websocket_outgoing_message message;
                 message.set_utf8_message(serialized);
 
+                outgoing_messages.push_back({ websocket.second, message });
+
+                // reset the grain for next time
+                model.resources.modify(grain, [&model](nmos::resource& grain)
+                {
+                    nmos::fields::message_grain_data(grain.data) = value::array();
+                    grain.updated = strictly_increasing_update(model.resources);
+                });
+            }
+
+            // send the messages without the lock on resources
+            details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+
+            if (!outgoing_messages.empty()) slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sending " << outgoing_messages.size() << " websocket messages";
+
+            for (auto& outgoing_message : outgoing_messages)
+            {
                 // hmmm, no way to cancel this currently...
-                auto send = listener.send(websocket.second, message).then([&](pplx::task<void> finally)
+                auto send = listener.send(outgoing_message.first, outgoing_message.second).then([&](pplx::task<void> finally)
                 {
                     try
                     {
@@ -203,13 +222,6 @@ namespace nmos
                 // current websocket_listener implementation is synchronous in any case, but just to make clear...
                 // for now, wait for the message to be sent
                 send.wait();
-
-                // reset the grain for next time
-                model.resources.modify(grain, [&model](nmos::resource& grain)
-                {
-                    nmos::fields::message_grain_data(grain.data) = value::array();
-                    grain.updated = strictly_increasing_update(model.resources);
-                });
             }
         }
     }
