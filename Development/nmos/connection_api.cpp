@@ -231,7 +231,7 @@ namespace nmos
                                         mode = nmos::fields::mode(pair.second);
                                 }
                             }
-                            if (pair.first == U("transport_file"))
+                            if (pair.first == U("transport_file") || pair.first == U("activation"))
                             {
                                 for (const auto &opair: pair.second.as_object())
                                 {
