@@ -92,7 +92,8 @@ namespace nmos
                 if (0 != discovery_backoff)
                 {
                     nmos::read_lock lock(mutex);
-                    condition.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return shutdown; });
+                    // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
+                    condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return shutdown; });
                     if (shutdown) break;
                 }
 
