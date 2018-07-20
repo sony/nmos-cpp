@@ -183,21 +183,34 @@ namespace nmos
             advertise_node_service(advertiser, with_read_lock(mutex, [&] { return settings; }));
         }
 
-        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
+        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
+            std::multimap<service_priority, web::uri> registration_services;
+            
+            if (nmos::service_priorities::no_priority != priorities.first)
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
-            // hmmm, no way to cancel this currently...
-            std::multimap<service_priority, web::uri> registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, nmos::is04_versions::all, true, timeout);
+                // hmmm, no way to cancel this currently...
+                registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, nmos::is04_versions::all, true, timeout);
+
+                // erase results with unsuitable priorities (too high or too low) to avoid development and live systems colliding
+                // only services between priorities.first and priorities.second (inclusive) should be returned
+                registration_services.erase(registration_services.begin(), registration_services.lower_bound(priorities.first));
+                registration_services.erase(registration_services.upper_bound(priorities.second), registration_services.end());
+
+                if (!registration_services.empty())
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Discovered " << registration_services.size() << " Registration API(s)";
+                }
+                else
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via DNS-SD";
+                }
+            }
 
             if (!registration_services.empty())
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Discovered " << registration_services.size() << " Registration API(s)";
-            }
-            else
-            {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via DNS-SD";
-
                 if (!fallback_registration_service.is_empty())
                 {
                     registration_services.insert({ nmos::service_priorities::no_priority, fallback_registration_service });
@@ -223,17 +236,18 @@ namespace nmos
         void discover_registration_services(const nmos::settings& settings, nmos::mutex& mutex, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
         {
             std::string browse_domain;
+            std::pair<nmos::service_priority, nmos::service_priority> priorities;
             web::uri fallback_registration_service;
             std::chrono::seconds discovery_interval;
-
             {
                 nmos::read_lock lock(mutex);
                 browse_domain = utility::us2s(nmos::fields::domain(settings));
+                priorities = { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
                 fallback_registration_service = get_registration_service(settings);
                 discovery_interval = std::chrono::seconds(nmos::fields::discovery_backoff_max(settings));
             }
 
-            registration_services = details::discover_registration_services(discovery, browse_domain, fallback_registration_service, discovery_interval, gate);
+            registration_services = details::discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, discovery_interval, gate);
         }
 
         // "The Node selects a Registration API to use based on the priority"
@@ -951,6 +965,7 @@ namespace nmos
 
             auto discovery_time = std::chrono::system_clock::now();
             const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
+            const std::pair<nmos::service_priority, nmos::service_priority> priorities(nmos::fields::highest_pri(model.settings), nmos::fields::lowest_pri(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
             const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
 
@@ -962,7 +977,7 @@ namespace nmos
                 return pplx::complete_at(discovery_time + discovery_interval, token).then([&]
                 {
                     discovery_time = std::chrono::system_clock::now();
-                    registration_services = discover_registration_services(discovery, browse_domain, fallback_registration_service, discovery_interval, gate);
+                    registration_services = discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, discovery_interval, gate);
                     return registration_services.empty();
                 });
             }, token).then([&]
