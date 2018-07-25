@@ -269,14 +269,14 @@ namespace nmos
             {
                 nmos::read_lock lock(mutex);
 
+                // Extract and decode the query string
+
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-                for (auto& param : flat_query_params.as_object())
-                {
-                    // special case, RQL needs the URI-encoded string
-                    if (U("query.rql") == param.first) continue;
-                    // everything else needs the decoded string
-                    param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
-                }
+                // special case, RQL needs the URI-encoded string
+                const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
+                // everything else needs the decoded string
+                nmos::details::decode_elements(flat_query_params);
+                if (flat_query_params.has_field(nmos::fields::query_rql)) flat_query_params[nmos::fields::query_rql] = value::string(encoded_rql);
 
                 // Configure the query predicate
 

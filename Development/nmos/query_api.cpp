@@ -146,14 +146,14 @@ namespace nmos
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
 
+            // Extract and decode the query string
+
             auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-            for (auto& param : flat_query_params.as_object())
-            {
-                // special case, RQL needs the URI-encoded string
-                if (U("query.rql") == param.first) continue;
-                // everything else needs the decoded string
-                param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
-            }
+            // special case, RQL needs the URI-encoded string
+            const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
+            // everything else needs the decoded string
+            details::decode_elements(flat_query_params);
+            if (flat_query_params.has_field(nmos::fields::query_rql)) flat_query_params[nmos::fields::query_rql] = value::string(encoded_rql);
 
             // Configure the query predicate
 
@@ -199,11 +199,26 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
+            // Extract and decode the query string
+
+            auto flat_query_params = web::json::value_from_query(req.request_uri().query());
+            // special case, RQL needs the URI-encoded string
+            const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
+            // everything else needs the decoded string
+            details::decode_elements(flat_query_params);
+            if (flat_query_params.has_field(nmos::fields::query_rql)) flat_query_params[nmos::fields::query_rql] = value::string(encoded_rql);
+
+            // Configure a query predicate, though only downgrade queries are supported on this endpoint, no basic or advanced (RQL) query parameters
+            const resource_query match(version, U('/') + resourceType, flat_query_params);
+
             auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (model.resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
+            if (model.resources.end() != resource && nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
+                set_reply(res, status_codes::OK, match.downgrade(*resource));
+
+                // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
+                res.headers().add(U("X-API-Version"), make_api_version(resource->version));
             }
             else
             {

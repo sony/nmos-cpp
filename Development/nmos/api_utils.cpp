@@ -7,6 +7,18 @@ namespace nmos
 {
     namespace details
     {
+        // decode URI-encoded string value elements in a JSON object
+        void decode_elements(web::json::value& value)
+        {
+            for (auto& element : value.as_object())
+            {
+                if (element.second.is_string())
+                {
+                    element.second = web::json::value::string(web::uri::decode(element.second.as_string()));
+                }
+            }
+        }
+
         // extract JSON after checking the Content-Type header
         pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate)
         {
