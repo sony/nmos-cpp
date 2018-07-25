@@ -210,7 +210,7 @@ namespace nmos
                 }
             }
 
-            if (!registration_services.empty())
+            if (registration_services.empty())
             {
                 if (!fallback_registration_service.is_empty())
                 {
