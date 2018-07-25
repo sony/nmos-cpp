@@ -115,6 +115,14 @@ namespace nmos
         const web::json::field_path<web::json::value> message_grain_data{ { U("message"), U("grain"), U("data") } };
     }
 
+    namespace experimental
+    {
+        namespace fields
+        {
+            const web::json::field_as_string_or query_strip{ _XPLATSTR("query.strip"), _XPLATSTR("true") };
+        }
+    }
+
     namespace details
     {
         // get the resource id and type from the grain topic and event "path"

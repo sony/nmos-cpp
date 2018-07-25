@@ -47,6 +47,31 @@ namespace nmos
 
     namespace details
     {
+        utility::string_t make_query_parameters(const web::json::value& query)
+        {
+            return web::json::query_from_value(query);
+        }
+
+        web::json::value parse_query_parameters(const utility::string_t& query)
+        {
+            auto flat_query_params = web::json::value_from_query(query);
+            // special case, RQL needs the URI-encoded string
+            const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
+            // everything else needs the decoded string
+            details::decode_elements(flat_query_params);
+            if (flat_query_params.has_field(nmos::fields::query_rql))
+            {
+                flat_query_params[nmos::fields::query_rql] = web::json::value::string(encoded_rql);
+            }
+            // any non-string query parameters need parsing...
+            if (flat_query_params.has_field(nmos::experimental::fields::query_strip))
+            {
+                flat_query_params[nmos::experimental::fields::query_strip] = web::json::value::parse(nmos::experimental::fields::query_strip(flat_query_params));
+            }
+
+            return flat_query_params;
+        }
+
         web::uri make_query_uri_with_no_paging(const web::http::http_request& req, const nmos::settings& settings)
         {
             // could rebuild the query parameters from the decoded and parsed query string, rather than individually deleting the paging parameters from the request?
@@ -88,7 +113,7 @@ namespace nmos
                 .set_host(req_host_port.first)
                 .set_port(req_host_port.second)
                 .set_path(req.request_uri().path()) // could also build from the route parameters, version and resourceType?
-                .set_query(web::json::query_from_value(query_params))
+                .set_query(make_query_parameters(query_params))
                 .to_uri();
         }
 
@@ -148,12 +173,7 @@ namespace nmos
 
             // Extract and decode the query string
 
-            auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-            // special case, RQL needs the URI-encoded string
-            const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
-            // everything else needs the decoded string
-            details::decode_elements(flat_query_params);
-            if (flat_query_params.has_field(nmos::fields::query_rql)) flat_query_params[nmos::fields::query_rql] = value::string(encoded_rql);
+            const auto flat_query_params = details::parse_query_parameters(req.request_uri().query());
 
             // Configure the query predicate
 
@@ -201,12 +221,7 @@ namespace nmos
 
             // Extract and decode the query string
 
-            auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-            // special case, RQL needs the URI-encoded string
-            const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
-            // everything else needs the decoded string
-            details::decode_elements(flat_query_params);
-            if (flat_query_params.has_field(nmos::fields::query_rql)) flat_query_params[nmos::fields::query_rql] = value::string(encoded_rql);
+            const auto flat_query_params = details::parse_query_parameters(req.request_uri().query());
 
             // Configure a query predicate, though only downgrade queries are supported on this endpoint, no basic or advanced (RQL) query parameters
             const resource_query match(version, U('/') + resourceType, flat_query_params);
