@@ -218,7 +218,10 @@ namespace nmos
                 set_reply(res, status_codes::OK, match.downgrade(*resource));
 
                 // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
-                res.headers().add(U("X-API-Version"), make_api_version(resource->version));
+                if (!match.strip || resource->version < match.version)
+                {
+                    res.headers().add(U("X-API-Version"), make_api_version(resource->version));
+                }
             }
             else
             {
