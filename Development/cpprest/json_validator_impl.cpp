@@ -43,6 +43,10 @@ namespace web
                         if (!bst::regex_match(value, re))
                             throw std::invalid_argument(value + " is not a valid ipv6");
                     }
+#if 0
+                    // validation of hostnames is disabled due to the unfortunate lack of consistency
+                    // between implementations and the bewildering number of possibly relevant RFCs
+                    // see https://github.com/sony/nmos-cpp/issues/11
                     else if (format == "hostname")
                     {
                         // see https://stackoverflow.com/a/106223
@@ -50,6 +54,7 @@ namespace web
                         if (!bst::regex_match(value, re))
                             throw std::invalid_argument(value + " is not a valid hostname");
                     }
+#endif
                     else if (format == "date-time")
                     {
                         if (utility::datetime() == utility::datetime::from_string(utility::s2us(value), utility::datetime::ISO_8601))
