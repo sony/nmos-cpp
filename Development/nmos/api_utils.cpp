@@ -19,6 +19,20 @@ namespace nmos
             }
         }
 
+        // URI-encode string value elements in a JSON object
+        void encode_elements(web::json::value& value)
+        {
+            for (auto& element : value.as_object())
+            {
+                if (element.second.is_string())
+                {
+                    auto de = element.second.as_string();
+                    auto en = web::uri::encode_uri(de, web::uri::components::query);
+                    element.second = web::json::value::string(en);
+                }
+            }
+        }
+
         // extract JSON after checking the Content-Type header
         pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate)
         {

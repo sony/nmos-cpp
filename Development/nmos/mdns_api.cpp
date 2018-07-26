@@ -90,10 +90,7 @@ namespace nmos
                     // get the browse domain from the query parameters or settings
 
                     auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-                    for (auto& param : flat_query_params.as_object())
-                    {
-                        param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
-                    }
+                    nmos::details::decode_elements(flat_query_params);
 
                     const auto settings_domain = with_read_lock(mutex, [&] { return nmos::fields::domain(settings); });
                     const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
@@ -149,10 +146,7 @@ namespace nmos
                     // get the service domain from the query parameters or settings
 
                     auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-                    for (auto& param : flat_query_params.as_object())
-                    {
-                        param.second = web::json::value::string(web::uri::decode(param.second.as_string()));
-                    }
+                    nmos::details::decode_elements(flat_query_params);
 
                     const auto settings_domain = with_read_lock(mutex, [&] { return nmos::fields::domain(settings); });
                     const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));

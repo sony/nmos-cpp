@@ -77,6 +77,9 @@ namespace nmos
         // decode URI-encoded string value elements in a JSON object
         void decode_elements(web::json::value& value);
 
+        // URI-encode string value elements in a JSON object
+        void encode_elements(web::json::value& value);
+
         // extract JSON after checking the Content-Type header
         pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate);
 

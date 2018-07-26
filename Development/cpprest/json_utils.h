@@ -342,7 +342,8 @@ namespace web
         web::json::value value_from_query(const utility::string_t& query);
 
         // construct a query string of '&' separated terms from a parameters object
-        // field names will be URI-encoded, but string values will be left as-is, and other types just serialized!
+        // field names will be URI-encoded, but string values will be left as-is
+        // other value types will be serialized before being encoded!
         utility::string_t query_from_value(const web::json::value& value);
 
         // construct a query/exemplar object from a parameters object, by constructing nested sub-objects from '.'-separated field names

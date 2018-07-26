@@ -47,23 +47,41 @@ namespace nmos
 
     namespace details
     {
-        utility::string_t make_query_parameters(const web::json::value& query)
+        utility::string_t make_query_parameters(web::json::value flat_query_params)
         {
-            return web::json::query_from_value(query);
+            // any non-string query parameters need serializing before encoding
+            // but web::json::query_from_value does this...
+
+            // special case, RQL is kept as the URI-encoded string
+            const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
+
+            // all other string values need encoding
+            nmos::details::encode_elements(flat_query_params);
+
+            if (flat_query_params.has_field(nmos::fields::query_rql))
+            {
+                flat_query_params[nmos::fields::query_rql] = web::json::value::string(encoded_rql);
+            }
+
+            return web::json::query_from_value(flat_query_params);
         }
 
         web::json::value parse_query_parameters(const utility::string_t& query)
         {
             auto flat_query_params = web::json::value_from_query(query);
-            // special case, RQL needs the URI-encoded string
+
+            // special case, RQL is kept as the URI-encoded string
             const auto encoded_rql = nmos::fields::query_rql(flat_query_params);
-            // everything else needs the decoded string
-            details::decode_elements(flat_query_params);
+
+            // all other string values need decoding
+            nmos::details::decode_elements(flat_query_params);
+
             if (flat_query_params.has_field(nmos::fields::query_rql))
             {
                 flat_query_params[nmos::fields::query_rql] = web::json::value::string(encoded_rql);
             }
-            // any non-string query parameters need parsing...
+
+            // any non-string query parameters need parsing after decoding...
             if (flat_query_params.has_field(nmos::experimental::fields::query_strip))
             {
                 flat_query_params[nmos::experimental::fields::query_strip] = web::json::value::parse(nmos::experimental::fields::query_strip(flat_query_params));
@@ -75,7 +93,7 @@ namespace nmos
         web::uri make_query_uri_with_no_paging(const web::http::http_request& req, const nmos::settings& settings)
         {
             // could rebuild the query parameters from the decoded and parsed query string, rather than individually deleting the paging parameters from the request?
-            auto query_params = web::json::value_from_query(req.request_uri().query());
+            auto query_params = parse_query_parameters(req.request_uri().query());
             if (query_params.has_field(U("paging.order")))
             {
                 query_params.erase(U("paging.order"));

@@ -161,7 +161,8 @@ namespace web
         }
 
         // construct a query string of '&' separated terms from a parameters object
-        // field names will be URI-encoded, but string values will be left as-is, and other types just serialized!
+        // field names will be URI-encoded, but string values will be left as-is
+        // other value types will be serialized before being encoded!
         utility::string_t query_from_value(const web::json::value& params)
         {
             utility::ostringstream_t query;
@@ -173,7 +174,7 @@ namespace web
                 if (param.second.is_string())
                     query << param.second.as_string();
                 else
-                    query << param.second.serialize();
+                    query << uri::encode_uri(param.second.serialize(), uri::components::query);
             }
             return query.str();
         }
