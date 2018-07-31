@@ -23,6 +23,9 @@ namespace nmos
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
         while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health.first + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
         {
+            // hmmm, it needs to be possible to enable/disable periodic logging like this independently of the severity...
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
+
             // most nodes will have had a heartbeat during the wait, so the least health will have been increased
             // so this thread will be able to go straight back to waiting
             auto expire_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
@@ -45,8 +48,6 @@ namespace nmos
             if (0 != expired)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << expired << " resources have expired";
-
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
                 condition.notify_all();

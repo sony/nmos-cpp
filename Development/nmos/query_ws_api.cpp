@@ -1,5 +1,6 @@
 #include "nmos/query_ws_api.h"
 
+#include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/rational.h"
@@ -185,6 +186,30 @@ namespace nmos
                 });
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
+
+                //+ additional logging, cf. nmos::details::request_registration
+                // see nmos/node_behaviour.cpp
+                const auto topic = nmos::fields::grain_topic(nmos::fields::message(grain->data));
+                const auto message_origin_timestamp = nmos::fields::origin_timestamp(nmos::fields::message(grain->data));
+                for (const auto& event : nmos::fields::message_grain_data(grain->data).as_array())
+                {
+                    const auto id_type = nmos::details::get_resource_event_resource(topic, event);
+                    const auto event_type = nmos::details::get_resource_event_type(event);
+                    const auto event_origin_timestamp = web::json::field_with_default<tai>{ nmos::fields::origin_timestamp, message_origin_timestamp }(event);
+
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Sending registration " << slog::omanip([&event_type](std::ostream& s)
+                    {
+                        switch (event_type)
+                        {
+                        case nmos::details::resource_added_event: s << "creation"; break;
+                        case nmos::details::resource_removed_event: s << "deletion"; break;
+                        case nmos::details::resource_modified_event: s << "update"; break;
+                        case nmos::details::resource_unchanged_event: s << "sync"; break;
+                        default: s << "operation"; break;
+                        }
+                    }) << " for " << id_type << " at: " << nmos::make_version(event_origin_timestamp);
+                }
+                //- additional logging, cf. nmos::details::request_registration
 
                 auto serialized = utility::us2s(nmos::fields::message(grain->data).serialize());
                 web::websockets::experimental::listener::websocket_outgoing_message message;
