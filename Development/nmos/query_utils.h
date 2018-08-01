@@ -143,11 +143,6 @@ namespace nmos
         // resource_path may be empty (matching all resource types) or e.g. "/nodes"
         web::json::value make_resource_event(const utility::string_t& resource_path, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
 
-        // set all three timestamps in the message
-        void set_grain_timestamp(web::json::value& message, const nmos::tai& tai);
-
-        nmos::tai get_grain_timestamp(const web::json::value& message);
-
         // make an empty grain
         web::json::value make_grain(const nmos::id& source_id, const nmos::id& flow_id, const utility::string_t& topic);
     }

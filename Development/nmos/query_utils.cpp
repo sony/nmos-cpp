@@ -225,19 +225,6 @@ namespace nmos
             return type != types::subscription && type != types::grain;
         }
 
-        void set_grain_timestamp(web::json::value& message, const nmos::tai& tai)
-        {
-            const auto timestamp = web::json::value::string(nmos::make_version(tai));
-            message[nmos::fields::origin_timestamp] = timestamp;
-            message[nmos::fields::sync_timestamp] = timestamp;
-            message[nmos::fields::creation_timestamp] = timestamp;
-        }
-
-        nmos::tai get_grain_timestamp(const web::json::value& message)
-        {
-            return nmos::fields::sync_timestamp(message);
-        }
-
         web::json::value make_grain(const nmos::id& source_id, const nmos::id& flow_id, const utility::string_t& topic)
         {
             using web::json::value;
@@ -248,7 +235,10 @@ namespace nmos
             result[U("grain_type")] = value(U("event"));
             result[U("source_id")] = value::string(source_id);
             result[U("flow_id")] = value::string(flow_id);
-            set_grain_timestamp(result, {});
+            const auto timestamp = value::string(nmos::make_version(tai{}));
+            result[nmos::fields::origin_timestamp] = timestamp;
+            result[nmos::fields::sync_timestamp] = timestamp;
+            result[nmos::fields::creation_timestamp] = timestamp;
             result[U("rate")] = make_rational();
             result[U("duration")] = make_rational();
             value& grain = result[U("grain")] = value::object(true);
