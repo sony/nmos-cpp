@@ -254,6 +254,7 @@ namespace nmos
                             resource.data[pair.first] = pair.second;
                         }
                     };
+                    modify_resource(model.patched, resourceId, update);
                     modify_resource(model.staged, resourceId, update);
 
                     // "If no activation was requested in the PATCH
@@ -301,6 +302,11 @@ namespace nmos
                             activation["requested_time"] = value();
                         };
                         modify_resource(model.staged, resourceId, update);
+
+                        modify_resource(model.patched, resourceId, [](nmos::resource &resource)
+                        {
+                            resource.data = value::object();
+                        });
                     }
                     // else pass the buck to a scheduler thread to
                     // deal with the activation at the right time,
