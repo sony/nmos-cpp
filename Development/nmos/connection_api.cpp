@@ -242,7 +242,7 @@ namespace nmos
                             if (pair.first == U("transport_params"))
                             {
                                 const auto& a = pair.second.as_array();
-                                for (size_t i = 0; i < std::max<size_t>(2, a.size()); i++)
+                                for (size_t i = 0; i < std::min<size_t>(2, a.size()); i++)
                                 {
                                     for (const auto& tp: a.at(i).as_object())
                                     {
