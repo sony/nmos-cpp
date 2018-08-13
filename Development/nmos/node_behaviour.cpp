@@ -847,7 +847,6 @@ namespace nmos
 
                 events = web::json::value::array();
                 node_behaviour_grain_guard guard(model.resources, grain, events);
-
                 most_recent_update = grain->updated;
 
                 while (0 != events.size())
@@ -899,8 +898,6 @@ namespace nmos
                     // wait for the request because interactions with the Registration API /resource endpoint must be sequential
                     condition.wait(lock, [&]{ return shutdown || registration_service_error || node_unregistered || request.is_done(); });
                 }
-
-                most_recent_update = grain->updated;
             }
 
             cancellation_source.cancel();
