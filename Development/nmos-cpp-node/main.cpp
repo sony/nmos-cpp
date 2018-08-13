@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
 
     struct: public nmos::callbacks
     {
-        virtual void activate(const std::string&, const nmos::type&) {}
+        virtual void activate(const std::string& resourceId, const nmos::type& resourceType, nmos::write_lock&, nmos::condition_variable&) {}
     } trivial_callbacks;
 
     web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, trivial_callbacks, node_mutex, node_condition, gate);

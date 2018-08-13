@@ -265,7 +265,7 @@ namespace nmos
 
                     if (nmos::activation_modes::activate_immediate == mode)
                     {
-                        callbacks.activate(resourceId, type);
+                        callbacks.activate(resourceId, type, lock, condition);
                         // "For immediate activations on the staged
                         // endpoint this property will be the time the
                         // activation actually occurred in the response

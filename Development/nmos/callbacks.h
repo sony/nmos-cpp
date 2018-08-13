@@ -5,12 +5,13 @@
 
 #include "nmos/id.h"
 #include "nmos/type.h"
+#include "nmos/mutex.h"
 
 namespace nmos
 {
     struct callbacks
     {
-        virtual void activate(const std::string& resourceId, const nmos::type& resourceType) = 0;
+        virtual void activate(const std::string& resourceId, const nmos::type& resourceType, nmos::write_lock&, nmos::condition_variable&) = 0;
     };
 }
 
