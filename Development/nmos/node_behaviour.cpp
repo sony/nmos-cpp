@@ -656,6 +656,7 @@ namespace nmos
 
                 events = web::json::value::array();
                 node_behaviour_grain_guard guard(model.resources, grain, events);
+                most_recent_update = grain->updated;
 
                 while (0 != events.size())
                 {
@@ -713,8 +714,6 @@ namespace nmos
                     // wait for the request because interactions with the Registration API /resource endpoint must be sequential
                     condition.wait(lock, [&]{ return shutdown || registration_service_error || node_registered || request.is_done(); });
                 }
-
-                most_recent_update = grain->updated;
             }
 
             cancellation_source.cancel();
@@ -1000,6 +999,7 @@ namespace nmos
                 {
                     auto events = web::json::value::array();
                     node_behaviour_grain_guard guard(model.resources, grain, events);
+                    most_recent_update = grain->updated;
 
                     // update the 'ver_' TXT records, without the lock on the resources
                     details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
@@ -1015,8 +1015,6 @@ namespace nmos
                     // job done
                     events = web::json::value::array();
                 }
-
-                most_recent_update = grain->updated;
             }
 
             // withdraw the 'ver_' TXT records
