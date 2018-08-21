@@ -2,7 +2,10 @@
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
+#include "nmos/log_manip.h"
+#include "nmos/model.h"
 #include "nmos/rational.h"
+#include "nmos/thread_utils.h"
 #include "nmos/version.h"
 
 namespace nmos
@@ -299,6 +302,51 @@ namespace nmos
             insert_resource(resources, make_sender(sender_id, flow_id, device_id, settings));
             insert_resource(resources, make_receiver(receiver_id, device_id, settings));
             return result;
+        }
+
+        // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
+        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
+        {
+            const auto seed_id = nmos::with_read_lock(mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
+            auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
+            auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
+            auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
+            auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
+            auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+            auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+
+            nmos::write_lock lock(mutex); // in order to update the resources
+
+            // any delay between updates to the model resources is unnecessary
+            // this just serves as a slightly more realistic example!
+            const unsigned int delay_millis{ 50 };
+
+            const auto insert_resource_after = [&](unsigned int milliseconds, nmos::resource&& resource, slog::base_gate& gate)
+            {
+                // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
+                if (!shutdown_condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds), [&] { return shutdown; }))
+                {
+                    const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+                    const bool success = insert_resource(model.resources, std::move(resource)).second;
+
+                    if (success)
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
+                    else
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
+
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
+                    condition.notify_all();
+                }
+            };
+
+            insert_resource_after(delay_millis, make_node_node(node_id, model.settings), gate);
+            insert_resource_after(delay_millis, make_device(device_id, node_id, { sender_id }, { receiver_id }, model.settings), gate);
+            insert_resource_after(delay_millis, make_source(source_id, device_id, model.settings), gate);
+            insert_resource_after(delay_millis, make_flow(flow_id, source_id, device_id, model.settings), gate);
+            insert_resource_after(delay_millis, make_sender(sender_id, flow_id, device_id, model.settings), gate);
+            insert_resource_after(delay_millis, make_receiver(receiver_id, device_id, model.settings), gate);
+
+            shutdown_condition.wait(lock, [&] { return shutdown; });
         }
     }
 }

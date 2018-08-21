@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
     // plus variables to signal when the server is stopping
 
     bool shutdown{ false };
+    nmos::condition_variable shutdown_condition; // associated with node_mutex; notify on shutdown
 
     nmos::model node_model;
     nmos::mutex node_mutex;
@@ -131,7 +132,7 @@ int main(int argc, char* argv[])
         nmos::support_api(node_listener, node_api);
 
         // set up the node resources
-        nmos::experimental::insert_node_resources(node_model.resources, node_model.settings);
+        auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, shutdown, node_mutex, shutdown_condition, node_condition, gate); }, [&] { nmos::write_lock lock(node_mutex); shutdown = true; shutdown_condition.notify_all(); });
 
         // Configure the Connection API
 
