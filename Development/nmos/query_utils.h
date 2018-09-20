@@ -119,7 +119,7 @@ namespace nmos
     {
         namespace fields
         {
-            const web::json::field_as_string_or query_strip{ _XPLATSTR("query.strip"), _XPLATSTR("true") };
+            const web::json::field_as_string_or query_strip{ U("query.strip"), U("true") };
         }
     }
 

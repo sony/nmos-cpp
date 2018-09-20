@@ -87,6 +87,14 @@ namespace web
             {
                 double operator()(const web::json::value& value) const { return value.as_double(); }
             };
+            template <> struct value_as<int64_t>
+            {
+                int64_t operator()(const web::json::value& value) const { return value.as_number().to_int64(); }
+            };
+            template <> struct value_as<uint64_t>
+            {
+                uint64_t operator()(const web::json::value& value) const { return value.as_number().to_uint64(); }
+            };
         }
 
         template <typename T, typename V>
@@ -138,6 +146,7 @@ namespace web
             }
         };
 
+        typedef field_with_default<web::json::value> field_as_value_or;
         typedef field_with_default<utility::string_t> field_as_string_or;
         typedef field_with_default<bool> field_as_bool_or;
         typedef field_with_default<int> field_as_integer_or;

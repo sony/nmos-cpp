@@ -418,6 +418,7 @@ set(NMOS_CPP_NODE_CPPREST_HEADERS
 set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
+    nmos/components.cpp
     nmos/connection_api.cpp
     nmos/id.cpp
     nmos/logging_api.cpp
@@ -435,14 +436,21 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
+    nmos/channels.h
+    nmos/colorspace.h
+    nmos/components.h
     nmos/copyable_atomic.h
     nmos/connection_api.h
+    nmos/device_type.h
+    nmos/format.h
     nmos/health.h
     nmos/id.h
+    nmos/interlace_mode.h
     nmos/json_fields.h
     nmos/log_manip.h
     nmos/logging_api.h
     nmos/mdns.h
+    nmos/media_type.h
     nmos/model.h
     nmos/mutex.h
     nmos/node_api.h
@@ -460,6 +468,8 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/string_enum.h
     nmos/tai.h
     nmos/thread_utils.h
+    nmos/transfer_characteristic.h
+    nmos/transport.h
     nmos/type.h
     nmos/version.h
     )

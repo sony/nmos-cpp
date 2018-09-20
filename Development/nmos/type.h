@@ -9,7 +9,7 @@ namespace nmos
     // Resources have a type
     struct type : public string_enum<type>
     {
-        explicit type(utility::string_t name = _XPLATSTR("")) : string_enum{ std::move(name) } {}
+        explicit type(utility::string_t name = U("")) : string_enum{ std::move(name) } {}
     };
 
     namespace types

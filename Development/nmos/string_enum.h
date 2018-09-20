@@ -25,6 +25,12 @@ namespace nmos
         friend bool operator<=(const Derived& lhs, const Derived& rhs) { return !(rhs < lhs); }
         friend bool operator>=(const Derived& lhs, const Derived& rhs) { return !(lhs < rhs); }
     };
+
+#define DEFINE_STRING_ENUM(Type) \
+    struct Type : public string_enum<Type> \
+    { \
+        explicit Type(utility::string_t name = U("")) : string_enum{ std::move(name) } {} \
+    };
 }
 
 #endif
