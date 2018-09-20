@@ -457,6 +457,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/settings.h
     nmos/settings_api.h
     nmos/slog.h
+    nmos/string_enum.h
     nmos/tai.h
     nmos/thread_utils.h
     nmos/type.h
@@ -611,6 +612,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/settings.h
     nmos/settings_api.h
     nmos/slog.h
+    nmos/string_enum.h
     nmos/tai.h
     nmos/thread_utils.h
     nmos/type.h

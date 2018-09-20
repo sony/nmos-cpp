@@ -150,7 +150,7 @@ namespace nmos
                 }
 
                 const value data = nmos::fields::data(body);
-                const std::pair<nmos::id, nmos::type> id_type{ nmos::fields::id(data), { nmos::fields::type(body) } };
+                const std::pair<nmos::id, nmos::type> id_type{ nmos::fields::id(data), nmos::type{ nmos::fields::type(body) } };
                 const auto& id = id_type.first;
                 const auto& type = id_type.second;
 

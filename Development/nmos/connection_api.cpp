@@ -151,7 +151,7 @@ namespace nmos
 
                 const auto master_enable = nmos::fields::master_enable(body);
                 const auto activation = nmos::fields::activation(body);
-                const auto mode = nmos::fields::mode(activation);
+                const auto mode = nmos::activation_mode{ nmos::fields::mode(activation) };
 
                 auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
                 if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
