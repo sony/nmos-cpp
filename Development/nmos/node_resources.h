@@ -1,7 +1,6 @@
 #ifndef NMOS_NODE_RESOURCES_H
 #define NMOS_NODE_RESOURCES_H
 
-#include "nmos/components.h" // for chroma_subsampling
 #include "nmos/id.h"
 #include "nmos/rational.h"
 #include "nmos/settings.h"
@@ -15,20 +14,12 @@ namespace nmos
 {
     struct channel;
     struct colorspace;
+    enum chroma_subsampling;
     struct format;
     struct interlace_mode;
     struct resource;
     struct transfer_characteristic;
     struct transport;
-
-    namespace details
-    {
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/resource_core.json
-        web::json::value make_resource_core(const nmos::id& id, const nmos::settings& settings);
-    }
-
-    // See  https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/schemas/node.json
-    nmos::resource make_node(const nmos::id& id, const nmos::settings& settings);
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/device.json
     nmos::resource make_device(const nmos::id& id, const nmos::id& node_id, const std::vector<nmos::id>& senders, const std::vector<nmos::id>& receivers, const nmos::settings& settings);

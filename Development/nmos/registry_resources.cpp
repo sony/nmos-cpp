@@ -2,7 +2,7 @@
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
-#include "nmos/version.h"
+#include "nmos/node_resource.h"
 
 namespace nmos
 {
@@ -13,44 +13,11 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            const auto label = value::string(nmos::experimental::fields::label(settings));
-            const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
-
-            value data;
-
-            // nmos-discovery-registration/APIs/schemas/resource_core.json
-
-            data[U("id")] = value::string(id);
-            data[U("version")] = value::string(nmos::make_version());
-            data[U("label")] = label;
-            data[U("description")] = label;
-            data[U("tags")] = value::object();
-
-            // nmos-discovery-registration/APIs/schemas/node.json
-
-            auto uri = web::uri_builder()
-                .set_scheme(U("http"))
-                .set_host(nmos::fields::host_address(settings))
-                .set_port(nmos::fields::node_port(settings))
-                .to_uri();
-
-            data[U("href")] = value::string(uri.to_string());
-            data[U("hostname")] = value::string(hostname);
-            data[U("api")][U("versions")] = value_of({ value(U("v1.0")), value(U("v1.1")), value(U("v1.2")) });
+            auto resource = nmos::make_node(id, settings);
+            auto& data = resource.data;
 
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
             const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
-
-            for (const auto& host_address : host_addresses)
-            {
-                value endpoint;
-                endpoint[U("host")] = host_address;
-                endpoint[U("port")] = uri.port();
-                endpoint[U("protocol")] = value::string(uri.scheme());
-                web::json::push_back(data[U("api")][U("endpoints")], endpoint);
-            }
-
-            data[U("caps")] = value::object();
 
             // This is the experimental REST API for mDNS Service Discovery
             for (const auto& host_address : host_addresses)
@@ -62,16 +29,13 @@ namespace nmos
                     .set_port(nmos::experimental::fields::mdns_port(settings))
                     .to_uri();
                 mdns_service[U("href")] = value::string(mdns_uri.to_string());
-                mdns_service[U("type")] = value(U("urn:x-dns-sd/v1.0"));
+                mdns_service[U("type")] = value::string(U("urn:x-dns-sd/v1.0"));
                 web::json::push_back(data[U("services")], mdns_service);
             }
 
-            data[U("clocks")] = value::array();
+            resource.health = health_forever;
 
-            // need to populate this... each interface needs chassis_id, port_id and a name which can be referenced by senders and receivers
-            data[U("interfaces")] = value::array();
-
-            return{ is04_versions::v1_2, types::node, data, true };
+            return resource;
         }
 
         // insert a node resource according to the settings; return an iterator to the inserted node resource,

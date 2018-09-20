@@ -7,6 +7,7 @@
 #include "nmos/json_fields.h"
 #include "nmos/health.h"
 #include "nmos/id.h"
+#include "nmos/settings.h"
 #include "nmos/tai.h"
 #include "nmos/type.h"
 
@@ -58,6 +59,12 @@ namespace nmos
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         mutable details::copyable_atomic<nmos::health> health;
     };
+
+    namespace details
+    {
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/resource_core.json
+        web::json::value make_resource_core(const nmos::id& id, const nmos::settings& settings);
+    }
 }
 
 #endif
