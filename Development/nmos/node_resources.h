@@ -14,7 +14,7 @@ namespace nmos
 {
     struct channel;
     struct colorspace;
-    enum chroma_subsampling;
+    enum chroma_subsampling : int;
     struct format;
     struct interlace_mode;
     struct resource;
