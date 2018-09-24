@@ -87,6 +87,10 @@ namespace web
             {
                 double operator()(const web::json::value& value) const { return value.as_double(); }
             };
+            template <> struct value_as<uint32_t>
+            {
+                uint32_t operator()(const web::json::value& value) const { return value.as_number().to_uint32(); }
+            };
             template <> struct value_as<int64_t>
             {
                 int64_t operator()(const web::json::value& value) const { return value.as_number().to_int64(); }
@@ -139,7 +143,7 @@ namespace web
             utility::string_t key;
             T default_value;
             operator const utility::string_t&() const { return key; }
-            template <typename V> auto operator()(V& value) const -> decltype(as<T>(value))
+            auto operator()(const web::json::value& value) const -> decltype(as<T>(value))
             {
                 web::json::object::const_iterator it;
                 return value.is_object() && value.as_object().end() != (it = value.as_object().find(key)) ? as<T>(it->second) : default_value;
@@ -178,14 +182,21 @@ namespace web
             }
         }
 
+        // insert each field into the specified value
+        template <typename InputIterator>
+        inline void insert(web::json::value& value, InputIterator first, InputIterator last)
+        {
+            for (auto it = first; last != it; ++it)
+            {
+                insert(value, *it);
+            }
+        }
+
         template <typename KeyValuePairs>
         inline web::json::value value_from_fields(const KeyValuePairs& fields, bool keep_order = false)
         {
             web::json::value result = web::json::value::object(keep_order);
-            for (auto& field : fields)
-            {
-                insert(result, field);
-            }
+            insert(result, std::begin(fields), std::end(fields));
             return result;
         }
 
@@ -193,6 +204,12 @@ namespace web
         inline void push_back(web::json::value& value, const Value& element)
         {
             value[value.size()] = web::json::value{ element };
+        }
+
+        template <typename Value>
+        inline void push_back(web::json::value& value, web::json::value&& element)
+        {
+            value[value.size()] = std::move(element);
         }
 
         template <typename Values>
