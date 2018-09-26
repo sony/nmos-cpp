@@ -390,32 +390,31 @@ namespace nmos
 
         namespace details
         {
-            inline web::json::value json_from_string(const std::string& s)
-            {
-                return web::json::value{ utility::s2us(s) };
-            }
-
             template <typename T>
-            inline std::string ostringstreamed(const T& value)
+            inline utility::string_t ostringstreamed(const T& value)
             {
-                return [&]{ std::ostringstream os; os << value; return os.str(); }();
+                return [&] { std::ostringstream os; os << value; return utility::s2us(os.str()); }();
             }
 
             inline web::json::value json_from_message(const slog::async_log_message& message, const tai& cursor)
             {
-                web::json::value json_source_location = web::json::value::object(true);
-                json_source_location[U("file")] = json_from_string(message.file());
-                json_source_location[U("line")] = message.line();
-                json_source_location[U("function")] = json_from_string(message.function());
+                auto json_message = web::json::value_of({
+                    { U("timestamp"), ostringstreamed(slog::put_timestamp(message.timestamp(), "%Y-%m-%dT%H:%M:%06.3SZ")) },
+                    { U("level"), message.level() },
+                    { U("level_name"), ostringstreamed(slog::put_severity_name(message.level())) },
+                    { U("thread_id"), ostringstreamed(message.thread_id()) },
+                    { U("source_location"), web::json::value_of({
+                        { U("file"), utility::s2us(message.file()) },
+                        { U("line"), message.line() },
+                        { U("function"), utility::s2us(message.function()) }
+                    }, true) },
+                    { U("message"), utility::s2us(message.str()) },
+                    // adding a unique id, and unique cursor, just to allow the API to provide access to events in the standard REST manner
+                    { U("id"), nmos::make_id() },
+                    { U("cursor"), nmos::make_version(cursor) }
+                }, true);
 
-                web::json::value json_message = web::json::value::object(true);
-                json_message[U("timestamp")] = json_from_string(ostringstreamed(slog::put_timestamp(message.timestamp(), "%Y-%m-%dT%H:%M:%06.3SZ")));
-                json_message[U("level")] = message.level();
-                json_message[U("level_name")] = json_from_string(ostringstreamed(slog::put_severity_name(message.level())));
-                json_message[U("thread_id")] = json_from_string(ostringstreamed(message.thread_id()));
-                json_message[U("source_location")] = json_source_location;
-                json_message[U("message")] = json_from_string(message.str());
-
+                // a few useful optional properties are only stashed in some log messages
                 const auto http_method = nmos::get_http_method_stash(message.stream());
                 if (!http_method.empty()) json_message[U("http_method")] = web::json::value::string(http_method);
                 const auto request_uri = nmos::get_request_uri_stash(message.stream());
@@ -423,9 +422,6 @@ namespace nmos
                 const auto route_parameters = nmos::get_route_parameters_stash(message.stream());
                 if (!route_parameters.empty()) json_message[U("route_parameters")] = web::json::value_from_fields(route_parameters);
 
-                // adding a unique id, and unique cursor, just to allow the API to provide access to events in the standard REST manner
-                json_message[U("id")] = web::json::value::string(nmos::make_id());
-                json_message[U("cursor")] = web::json::value::string(nmos::make_version(cursor));
                 return json_message;
             }
         }
