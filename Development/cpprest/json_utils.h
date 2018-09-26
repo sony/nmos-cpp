@@ -206,7 +206,6 @@ namespace web
             value[value.size()] = web::json::value{ element };
         }
 
-        template <typename Value>
         inline void push_back(web::json::value& value, web::json::value&& element)
         {
             value[value.size()] = std::move(element);
@@ -223,9 +222,27 @@ namespace web
             return result;
         }
 
+        namespace details
+        {
+            // value_init shouldn't be used explicitly, it exists to allow implicit conversions
+            // from bool and string in braced-init-list arguments to web::json::value_of
+            struct value_init : public value
+            {
+                using value::value;
+
+                value_init() {}
+                value_init(const value& v) : value(v) {}
+                value_init(value&& v) : value(std::move(v)) {}
+
+                value_init(bool b) : value(b) {}
+                value_init(utility::string_t s) : value(std::move(s)) {}
+                value_init(const utility::char_t* s) : value(s) {}
+            };
+        }
+
         // this function allows terse construction of object values using a braced-init-list
-        // e.g. value_of({ { U("foo"), 42 }, { U("bar"), 57 } })
-        inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, web::json::value>> fields, bool keep_order = false)
+        // e.g. value_of({ { U("foo"), 42 }, { U("bar"), U("baz") }, { U("qux"), true } })
+        inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, web::json::details::value_init>> fields, bool keep_order = false)
         {
             web::json::value result = web::json::value::object(keep_order);
             for (auto& field : fields)
@@ -239,7 +256,7 @@ namespace web
         // (it is a template specialization to resolve ambiguous calls in favour of the non-template function,
         // since gcc considers the explicit two-arg value constructors for elements of the braced-init-list)
         template <typename = void>
-        inline web::json::value value_of(std::initializer_list<web::json::value> elements)
+        inline web::json::value value_of(std::initializer_list<web::json::details::value_init> elements)
         {
             web::json::value result = web::json::value::array();
             for (auto& element : elements)
