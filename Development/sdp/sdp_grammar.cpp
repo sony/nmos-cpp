@@ -16,6 +16,9 @@ namespace sdp
 
     namespace grammar
     {
+        // for easy reading and simple equality comparison of the json representation
+        const bool keep_order = true;
+
         // SDP structured text conversion to/from json
 
         inline std::string js2s(const web::json::value& v) { return utility::us2s(v.as_string()); }
@@ -53,8 +56,8 @@ namespace sdp
                     const auto eq = s.find(separator);
                     const auto key = key_converter.second.parse(s.substr(0, eq));
                     return std::string::npos != eq
-                        ? web::json::value_of({ { key_converter.first, key }, { value_converter.first, value_converter.second.parse(s.substr(eq + 1)) } })
-                        : web::json::value_of({ { key_converter.first, key } });
+                        ? web::json::value_of({ { key_converter.first, key }, { value_converter.first, value_converter.second.parse(s.substr(eq + 1)) } }, keep_order)
+                        : web::json::value_of({ { key_converter.first, key } }, keep_order);
                 }
             };
         }
@@ -90,7 +93,7 @@ namespace sdp
 
         const converter strings_converter = array_converter(string_converter, " ");
 
-        const converter field_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ");
+        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ");
 
         converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
         {
@@ -106,7 +109,7 @@ namespace sdp
                     return s;
                 },
                 [=](const std::string& s) {
-                    auto v = web::json::value::object(true); // for easy reading
+                    auto v = web::json::value::object(keep_order);
                     size_t pos = 0;
                     for (auto& field : field_converters)
                     {
@@ -132,8 +135,8 @@ namespace sdp
             },
             [](const std::string& s) {
                 return !s.empty() && std::string::npos != time_units.find(s.back())
-                    ? web::json::value_of({ { sdp::fields::time_value, s2jn(s.substr(0, s.size() - 1)) }, { sdp::fields::time_unit, s2js({ s.back() }) } })
-                    : web::json::value_of({ { sdp::fields::time_value, s2jn(s) } });
+                    ? web::json::value_of({ { sdp::fields::time_value, s2jn(s.substr(0, s.size() - 1)) }, { sdp::fields::time_unit, s2js({ s.back() }) } }, keep_order)
+                    : web::json::value_of({ { sdp::fields::time_value, s2jn(s) } }, keep_order);
             }
         };
 
@@ -296,7 +299,7 @@ namespace sdp
                         web::json::push_back(v, web::json::value_of({
                             { sdp::fields::time, number_converter.parse(time) },
                             { sdp::fields::adjustment, typed_time_converter.parse(adjustment) }
-                        }));
+                        }, keep_order));
                     } while (std::string::npos != pos);
                     return v;
                 },
@@ -340,7 +343,7 @@ namespace sdp
                         }
                     },
                     [&](const std::string& s) {
-                        auto v = web::json::value::object(true); // for easy reading
+                        auto v = web::json::value::object(keep_order);
 
                         const auto colon = s.find(':');
                         // empty token for att-field (before the colon) is prohibited
@@ -445,7 +448,7 @@ namespace sdp
                             return s;
                         },
                         [](const std::string& s) {
-                            auto v = web::json::value::object(true); // for easy reading
+                            auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::payload_type] = number_converter.parse(substr_find(s, pos, " "));
                             v[sdp::fields::encoding_name] = string_converter.parse(substr_find(s, pos, "/"));
@@ -472,14 +475,14 @@ namespace sdp
                         [](const web::json::value& v) {
                             std::string s;
                             s += string_converter.format(v.at(sdp::fields::format));
-                            s += " " + field_values_converter.format(v.at(sdp::fields::format_specific_parameters)) + "; ";
+                            s += " " + named_values_converter.format(v.at(sdp::fields::format_specific_parameters)) + "; ";
                             return s;
                         },
                         [](const std::string& s) {
-                            auto v = web::json::value::object(true); // for easy reading
+                            auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::format_specific_parameters] = field_values_converter.parse(substr_find(s, pos));
+                            v[sdp::fields::format_specific_parameters] = named_values_converter.parse(substr_find(s, pos));
                             return v;
                         },
                     }
@@ -498,7 +501,7 @@ namespace sdp
                             return s;
                         },
                         [](const std::string& s) {
-                            auto v = web::json::value::object(true); // for easy reading
+                            auto v = web::json::value::object(keep_order);
                             size_t pos = (!s.empty() && ' ' == s.front()) ? 1 : 0;
                             v[sdp::fields::filter_mode] = string_converter.parse(substr_find(s, pos, " "));
                             v[sdp::fields::network_type] = string_converter.parse(substr_find(s, pos, " "));
@@ -520,7 +523,7 @@ namespace sdp
                             return s;
                         },
                         [](const std::string& s) {
-                            auto v = web::json::value::object(true); // for easy reading
+                            auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::semantics] = string_converter.parse(substr_find(s, pos, " "));
                             v[sdp::fields::mids] = strings_converter.parse(substr_find(s, pos));
@@ -568,7 +571,7 @@ namespace sdp
                             return s;
                         },
                         [](const std::string& s) {
-                            auto v = web::json::value::object(true); // for easy reading
+                            auto v = web::json::value::object(keep_order);
                             size_t pos = s.find_first_of("=:");
                             v[sdp::fields::clock_source] = string_converter.parse(s.substr(0, pos));
                             const sdp::ts_refclk_source clock_source{ utility::s2us(s.substr(0, pos)) };
@@ -755,7 +758,7 @@ namespace sdp
             description = web::json::value::array();
             do
             {
-                web::json::push_back(description, web::json::value::object(true)); // for easy reading
+                web::json::push_back(description, web::json::value::object(sdp::grammar::keep_order));
                 read_elements(is, web::json::back(description), grammar.elements);
             } while (sub_grammar->type == is.peek());
         }
@@ -768,7 +771,7 @@ namespace sdp
             if (!valid) throw sdp_exception("sdp parse error - expected a line for " + utility::us2s(sub_grammar->name));
             if (sub_grammar->type != peek_type) return;
 
-            description = web::json::value::object(true); // for easy reading
+            description = web::json::value::object(sdp::grammar::keep_order);
             read_elements(is, description, grammar.elements);
         }
     }

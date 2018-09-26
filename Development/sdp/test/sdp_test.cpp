@@ -4,8 +4,6 @@
 #include "bst/test/test.h"
 #include "sdp/json.h"
 
-#include <iostream>
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpRoundtrip)
 {
@@ -16,7 +14,7 @@ o=- 2358175406662690538 2358175406662690538 IN IP4 192.168.9.142
 s=Example Sender 1 (Video)
 t=0 0
 a=group:DUP PRIMARY SECONDARY
-m=video 50020/3 RTP/AVP 96
+m=video 50020 RTP/AVP 96
 c=IN IP4 239.22.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
 a=source-filter: incl IN IP4 239.22.142.1 192.168.9.142
@@ -74,7 +72,23 @@ a=mid:SECONDARY
     auto session_description2 = sdp::parse_session_description(test_sdp2);
     BST_REQUIRE_EQUAL(session_description, session_description2);
 
-    // beginning of example constructing json representation from scratch...
+    // example constructing json representation from scratch...
+
+    auto format_specific_parameters = web::json::value_of({
+        sdp::named_value(U("colorimetry"), U("BT709")),
+        sdp::named_value(U("exactframerate"),U("30000/1001")),
+        sdp::named_value(U("depth"),U("10")),
+        sdp::named_value(U("TCS"),U("SDR")),
+        sdp::named_value(U("sampling"),U("YCbCr-4:2:2")),
+        sdp::named_value(U("width"),U("1920")),
+        sdp::named_value(U("interlace")),
+        sdp::named_value(U("TP"),U("2110TPN")),
+        sdp::named_value(U("PM"),U("2110GPM")),
+        sdp::named_value(U("height"),U("1080")),
+        sdp::named_value(U("SSN"),U("ST2110-20:2017"))
+    });
+
+    const bool keep_order = true;
 
     auto session_description3 = web::json::value_of({
         { sdp::fields::protocol_version, 0 },
@@ -85,7 +99,7 @@ a=mid:SECONDARY
             { sdp::fields::network_type, web::json::value::string(sdp::network_types::IN.name) },
             { sdp::fields::address_type, web::json::value::string(sdp::address_types::IP4.name) },
             { sdp::fields::unicast_address, web::json::value::string(U("192.168.9.142")) }
-        }, true) },
+        }, keep_order) },
         { sdp::fields::session_name, web::json::value::string(U("Example Sender 1 (Video)")) },
         { sdp::fields::time_descriptions, web::json::value_of({
             web::json::value_of({
@@ -93,7 +107,7 @@ a=mid:SECONDARY
                     { sdp::fields::start_time, 0 },
                     { sdp::fields::stop_time, 0 }
                 }) }
-            })
+            }, keep_order)
         }) },
         { sdp::fields::attributes, web::json::value_of({
             web::json::value_of({
@@ -104,12 +118,133 @@ a=mid:SECONDARY
                         web::json::value::string(U("PRIMARY")),
                         web::json::value::string(U("SECONDARY"))
                     }) }
-                }, true) }
-            })
+                }, keep_order) },
+            }, keep_order)
+        }) },
+        { sdp::fields::media_descriptions, web::json::value_of({
+            web::json::value_of({
+                { sdp::fields::media, web::json::value_of({
+                    { sdp::fields::media_type, web::json::value::string(sdp::media_types::video.name) },
+                    { sdp::fields::port, 50020 },
+                    { sdp::fields::protocol, web::json::value::string(sdp::protocols::RTP_AVP.name) },
+                    { sdp::fields::formats, web::json::value_of({
+                        { web::json::value::string(U("96")) }
+                    }) }
+                }, keep_order) },
+                { sdp::fields::connection_data, web::json::value_of({
+                    { sdp::fields::network_type, web::json::value::string(sdp::network_types::IN.name) },
+                    { sdp::fields::address_type, web::json::value::string(sdp::address_types::IP4.name) },
+                    { sdp::fields::connection_address, web::json::value::string(U("239.22.142.1/32")) }
+                }, keep_order) },
+                { sdp::fields::attributes, web::json::value_of({
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::ts_refclk) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::clock_source, web::json::value::string(sdp::ts_refclk_sources::PTP.name) },
+                            { sdp::fields::ptp_version, web::json::value::string(sdp::ptp_versions::IEEE1588_2008.name) },
+                            { sdp::fields::traceable, web::json::value::boolean(true) }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::source_filter) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::filter_mode, web::json::value::string(sdp::filter_modes::incl.name) },
+                            { sdp::fields::network_type, web::json::value::string(sdp::network_types::IN.name) },
+                            { sdp::fields::address_types, web::json::value::string(sdp::address_types::IP4.name) },
+                            { sdp::fields::destination_address, web::json::value::string(U("239.22.142.1")) },
+                            { sdp::fields::source_addresses, web::json::value_of({
+                                { web::json::value::string(U("192.168.9.142")) }
+                            }) }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::rtpmap) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::payload_type, 96 },
+                            { sdp::fields::encoding_name, web::json::value::string(U("raw")) },
+                            { sdp::fields::clock_rate, 90000 }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::fmtp) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::format, web::json::value::string(U("96")) },
+                            { sdp::fields::format_specific_parameters, format_specific_parameters }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::mediaclk) },
+                        { sdp::fields::value, web::json::value::string(U("direct=0")) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::mid) },
+                        { sdp::fields::value, web::json::value::string(U("PRIMARY")) }
+                    }, keep_order)
+                }) }
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::media, web::json::value_of({
+                    { sdp::fields::media_type, web::json::value::string(sdp::media_types::video.name) },
+                    { sdp::fields::port, 50120 },
+                    { sdp::fields::protocol, web::json::value::string(sdp::protocols::RTP_AVP.name) },
+                    { sdp::fields::formats, web::json::value_of({
+                        { web::json::value::string(U("96")) }
+                    }) }
+                }, keep_order) },
+                { sdp::fields::connection_data, web::json::value_of({
+                    { sdp::fields::network_type, web::json::value::string(sdp::network_types::IN.name) },
+                    { sdp::fields::address_type, web::json::value::string(sdp::address_types::IP4.name) },
+                    { sdp::fields::connection_address, web::json::value::string(U("239.122.142.1/32")) }
+                }, keep_order) },
+                { sdp::fields::attributes, web::json::value_of({
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::ts_refclk) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::clock_source, web::json::value::string(sdp::ts_refclk_sources::PTP.name) },
+                            { sdp::fields::ptp_version, web::json::value::string(sdp::ptp_versions::IEEE1588_2008.name) },
+                            { sdp::fields::traceable, web::json::value::boolean(true) }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::source_filter) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::filter_mode, web::json::value::string(sdp::filter_modes::incl.name) },
+                            { sdp::fields::network_type, web::json::value::string(sdp::network_types::IN.name) },
+                            { sdp::fields::address_types, web::json::value::string(sdp::address_types::IP4.name) },
+                            { sdp::fields::destination_address, web::json::value::string(U("239.122.142.1")) },
+                            { sdp::fields::source_addresses, web::json::value_of({
+                                { web::json::value::string(U("192.168.109.142")) }
+                            }) }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::rtpmap) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::payload_type, 96 },
+                            { sdp::fields::encoding_name, web::json::value::string(U("raw")) },
+                            { sdp::fields::clock_rate, 90000 }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::fmtp) },
+                        { sdp::fields::value, web::json::value_of({
+                            { sdp::fields::format, web::json::value::string(U("96")) },
+                            { sdp::fields::format_specific_parameters, format_specific_parameters }
+                        }, keep_order) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::mediaclk) },
+                        { sdp::fields::value, web::json::value::string(U("direct=0")) }
+                    }, keep_order),
+                    web::json::value_of({
+                        { sdp::fields::name, web::json::value::string(sdp::attributes::mid) },
+                        { sdp::fields::value, web::json::value::string(U("SECONDARY")) }
+                    }, keep_order)
+                }) }
+            }, keep_order)
         }) }
-    }, true);
-
-    session_description2.erase(sdp::fields::media_descriptions);
+    }, keep_order);
 
     BST_CHECK_EQUAL(session_description3, session_description2);
+    BST_CHECK_EQUAL(session_description3.serialize(), session_description2.serialize());
 }

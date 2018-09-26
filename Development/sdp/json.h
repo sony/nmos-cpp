@@ -196,6 +196,20 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc7273#section-5
     }
 
+    // make a named value (useful for attributes)
+    inline web::json::value named_value(const utility::string_t& name, const web::json::value& value = {}, bool keep_order = true)
+    {
+        return !value.is_null()
+            ? web::json::value_of({ { sdp::fields::name, web::json::value::string(name) }, { sdp::fields::value, value } }, keep_order)
+            : web::json::value_of({ { sdp::fields::name, web::json::value::string(name) } }, keep_order);
+    }
+
+    // make a named value (useful for format specific parameters)
+    inline web::json::value named_value(const utility::string_t& name, const utility::string_t& value)
+    {
+        return named_value(name, web::json::value::string(value));
+    }
+
     // find an array element with the specified name (useful with attributes and format specific parameters)
     inline web::json::array::const_iterator find_name(const web::json::array& name_value_array, const utility::string_t& name)
     {
@@ -267,7 +281,7 @@ namespace sdp
     namespace address_types
     {
         const address_type IP4{ U("IP4") };
-        const address_type IP6{ U("IP4") };
+        const address_type IP6{ U("IP6") };
     }
 }
 
