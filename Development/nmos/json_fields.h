@@ -35,16 +35,19 @@ namespace nmos
 
         // IS-04 Discovery and Registration
 
-        // (mostly) for registration_api
+        // (mostly) for node_api and registration_api
         const web::json::field_as_string type{ U("type") };
         const web::json::field_as_value data{ U("data") };
         const web::json::field_as_string node_id{ U("node_id") };
         const web::json::field_as_string device_id{ U("device_id") };
         const web::json::field_as_string source_id{ U("source_id") };
         const web::json::field_as_string flow_id{ U("flow_id") };
+        const web::json::field_as_string manifest_href{ U("manifest_href") };
         const web::json::field_as_value subscription{ U("subscription") };
+        const web::json::field_as_bool active{ U("active") };
         const web::json::field_as_value sender_id{ U("sender_id") };
         const web::json::field_as_value receiver_id{ U("receiver_id") };
+        const web::json::field_as_string format{ U("format") };
         const web::json::field_as_array senders{ U("senders") };
         const web::json::field_as_array receivers{ U("receivers") };
         const web::json::field_as_array parents{ U("parents") };

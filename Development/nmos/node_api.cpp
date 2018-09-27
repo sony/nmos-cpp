@@ -7,9 +7,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, node_api_target_handler target_handler, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_node_api(const nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_node_api(const nmos::resources& resources, nmos::mutex& mutex, node_api_target_handler target_handler, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -33,14 +33,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(resources, mutex, gate));
+        node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(resources, mutex, target_handler, gate));
 
         nmos::add_api_finally_handler(node_api, gate);
 
         return node_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, node_api_target_handler target_handler, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -117,7 +117,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&resources, &mutex, target_handler, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::read_lock lock(mutex);
 
@@ -127,7 +127,21 @@ namespace nmos
             auto resource = find_resource(resources, { resourceId, nmos::types::receiver });
             if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
             {
-                set_reply(res, status_codes::NotImplemented);
+                if (target_handler)
+                {
+                    return details::extract_json(req, parameters, gate).then([target_handler, resourceId, res](value sender_data) mutable
+                    {
+                        return target_handler(resourceId, sender_data).then([res, sender_data]() mutable
+                        {
+                            set_reply(res, status_codes::Accepted, sender_data);
+                            return true;
+                        });
+                    });
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotImplemented);
+                }
             }
             else
             {
@@ -139,4 +153,5 @@ namespace nmos
 
         return node_api;
     }
+
 }

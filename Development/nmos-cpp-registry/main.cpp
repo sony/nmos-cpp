@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
 
         // Configure the Node API
 
-        web::http::experimental::listener::api_router node_api = nmos::make_node_api(self_resources, self_mutex, gate);
+        web::http::experimental::listener::api_router node_api = nmos::make_node_api(self_resources, self_mutex, {}, gate);
         web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(registry_model.settings)), listener_config);
         nmos::support_api(node_listener, node_api);
 

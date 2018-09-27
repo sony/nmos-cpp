@@ -424,6 +424,7 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/logging_api.cpp
     nmos/mdns.cpp
     nmos/node_api.cpp
+    nmos/node_api_target_handler.cpp
     nmos/node_behaviour.cpp
     nmos/node_resource.cpp
     nmos/node_resources.cpp
@@ -456,6 +457,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/model.h
     nmos/mutex.h
     nmos/node_api.h
+    nmos/node_api_target_handler.h
     nmos/node_behaviour.h
     nmos/node_resource.h
     nmos/node_resources.h
@@ -627,6 +629,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/model.h
     nmos/mutex.h
     nmos/node_api.h
+    nmos/node_api_target_handler.h
     nmos/node_resource.h
     nmos/paging_utils.h
     nmos/process_utils.h

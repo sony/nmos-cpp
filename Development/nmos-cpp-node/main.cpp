@@ -127,7 +127,14 @@ int main(int argc, char* argv[])
 
         // Configure the Node API
 
-        web::http::experimental::listener::api_router node_api = nmos::make_node_api(node_model.resources, node_mutex, gate);
+        auto unchecked_connect = [&gate](const nmos::id& receiver_id, const utility::string_t& sdp)
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << (sdp.empty() ? "Disconnecting" : "Connecting") << " receiver: " << receiver_id;
+            return pplx::task_from_result();
+        };
+
+        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model.resources, node_mutex, node_condition, unchecked_connect, gate);
+        web::http::experimental::listener::api_router node_api = nmos::make_node_api(node_model.resources, node_mutex, target_handler, gate);
         web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(node_model.settings)), listener_config);
         nmos::support_api(node_listener, node_api);
 
