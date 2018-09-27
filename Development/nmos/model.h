@@ -11,6 +11,14 @@ namespace nmos
     {
         nmos::resources resources;
         nmos::settings settings;
+        nmos::resources active;
+        nmos::resources constraints;
+        nmos::resources staged;
+        struct
+        {
+            std::map<nmos::id, std::string> redirects;
+            // Consider adding more here, like the actual SDP string.
+        } transportfile;
     };
 }
 

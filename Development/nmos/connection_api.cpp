@@ -8,9 +8,24 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    static web::json::value strip_id(const web::json::value &src)
+    {
+        web::json::value result;
+        auto &object = src.as_object();
+        for (auto &pair: object)
+        {
+            auto &key = pair.first;
+            if (key != "id")
+            {
+                result[key] = pair.second;
+            }
+        }
+        return result;
+    }
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+
+    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -34,16 +49,17 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(resources, mutex, condition, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, mutex, condition, gate));
 
         nmos::add_api_finally_handler(connection_api, gate);
 
         return connection_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
+        auto &resources = model.resources;
 
         api_router connection_api;
 
@@ -125,15 +141,31 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            set_reply(res, status_codes::NotImplemented);
-            return pplx::task_from_result(true);
-        });
+            nmos::read_lock lock(mutex);
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
-        {
-            set_reply(res, status_codes::NotImplemented);
+            const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+            auto &constraints = model.constraints;
+            auto resource = find_resource(constraints, {resourceId, nmos::type_from_resourceType(resourceType)});
+            if (constraints.end() == resource)
+            {
+                set_reply(res, status_codes::NotFound);
+            }
+            else
+            {
+                // Crude hack here: Since a constraint response is
+                // supposed to be an array, but the nmos::resources
+                // type expects an object with an "id" field, we
+                // presume an "array" field that contains the correct
+                // response. The correct way to deal with this, no
+                // doubt, is to set the type of model::constraints
+                // to something other than nmos::resources.
+                set_reply(res, status_codes::OK, resource->data.at("array"));
+            }
+
             return pplx::task_from_result(true);
         });
 
@@ -193,15 +225,43 @@ namespace nmos
             });
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/active/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            set_reply(res, status_codes::NotImplemented);
+            nmos::read_lock lock(mutex);
+
+            const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+            const string_t stagingType = parameters.at(nmos::patterns::stagingType.name);
+
+            auto &resources = stagingType == "active" ? model.active : model.staged;
+
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() == resource)
+            {
+                set_reply(res, status_codes::NotFound);
+            }
+            else
+            {
+                set_reply(res, status_codes::OK, strip_id(resource->data));
+            }
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            set_reply(res, status_codes::OK, U("v=0\r\no=- 37 42 IN IP4 127.0.0.1 \r\ns= \r\nt=0 0\r\n"), U("application/sdp"));
+            nmos::read_lock lock(mutex);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+            auto& redirects = model.transportfile.redirects;
+            auto url = redirects.find(resourceId);
+            if (url != redirects.end())
+            {
+                set_reply(res, status_codes::TemporaryRedirect);
+                res.headers().add(web::http::header_names::location, url->second);
+            }
+            else
+            {
+                set_reply(res, status_codes::NotFound);
+            }
             return pplx::task_from_result(true);
         });
 
