@@ -323,11 +323,50 @@ namespace nmos
         return resource;
     }
 
+    namespace details
+    {
+        web::json::value make_connection_resource_core(const nmos::id& id)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::id, id },
+                { nmos::fields::device_id, U("these are not the droids you are looking for") },
+                { nmos::fields::endpoint_constraints, value_of({
+                    value::object(),
+                    value::object()
+                }) },
+                { nmos::fields::endpoint_staged, value::object() },
+                { nmos::fields::endpoint_active, value::object() }
+            });
+        }
+    }
+
+    nmos::resource make_connection_sender(const nmos::id& id, const utility::string_t& transportfile_href)
+    {
+        using web::json::value;
+
+        auto data = details::make_connection_resource_core(id);
+        data[nmos::fields::transport_file][nmos::fields::href] = value::string(transportfile_href);
+
+        return{ is05_versions::v1_0, types::sender, data, false };
+    }
+
+    nmos::resource make_connection_receiver(const nmos::id& id)
+    {
+        using web::json::value;
+
+        auto data = details::make_connection_resource_core(id);
+
+        return{ is05_versions::v1_0, types::receiver, data, false };
+    }
+
     namespace experimental
     {
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
-        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings)
+        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings)
         {
             const auto& seed_id = nmos::experimental::fields::seed_id(settings);
             auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
@@ -337,17 +376,17 @@ namespace nmos
             auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
             auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
 
-            auto result = insert_resource(resources, make_node(node_id, settings));
-            insert_resource(resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));
-            insert_resource(resources, make_video_source(source_id, device_id, { 25, 1 }, settings));
-            insert_resource(resources, make_raw_video_flow(flow_id, source_id, device_id, settings));
-            insert_resource(resources, make_sender(sender_id, flow_id, device_id, {}, settings));
-            insert_resource(resources, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, settings));
+            auto result = insert_resource(node_resources, make_node(node_id, settings));
+            insert_resource(node_resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));
+            insert_resource(node_resources, make_video_source(source_id, device_id, { 25, 1 }, settings));
+            insert_resource(node_resources, make_raw_video_flow(flow_id, source_id, device_id, settings));
+            insert_resource(node_resources, make_sender(sender_id, flow_id, device_id, {}, settings));
+            insert_resource(node_resources, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, settings));
             return result;
         }
 
         // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate)
+        void node_resources_thread(nmos::node_model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate)
         {
             const auto seed_id = nmos::with_read_lock(model.mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
             auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
@@ -375,6 +414,9 @@ namespace nmos
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
                     else
                         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
+
+                    if (nmos::types::sender == id_type.second) insert_resource(model.connection_resources, make_connection_sender(id_type.first, {}));
+                    else if (nmos::types::receiver == id_type.second) insert_resource(model.connection_resources, make_connection_receiver(id_type.first));
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
                     model.notify();

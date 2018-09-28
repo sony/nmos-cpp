@@ -35,25 +35,9 @@ namespace nmos
     struct node_model : model
     {
         // IS-05 senders and receivers for this node
-        //nmos::resources connection_resources;
-
-        nmos::resources active;
-        nmos::resources constraints;
-        nmos::resources staged;
-
-        // These are resources that have been modified by an IS-05
-        // PATCH request but have not yet been activated. It is
-        // separate from staged (above) because of the requirement
-        // that an updated transport parameter should override an
-        // updated SDP entry, but the SDP entry should take priority
-        // if the transport parameters have not been changed.
-        nmos::resources patched;
-
-        struct
-        {
-            std::map<nmos::id, utility::string_t> redirects;
-            // Consider adding more here, like the actual SDP string.
-        } transportfile;
+        // Each resource's data is a json object with a field for each endpoint
+        // i.e. "constraints", "staged", "active", and for senders, "transportfile"
+        nmos::resources connection_resources;
     };
 
     struct registry_model : model

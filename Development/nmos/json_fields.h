@@ -68,11 +68,17 @@ namespace nmos
         // IS-05 Connection Management
 
         // for connection_api
+        const web::json::field_as_value endpoint_constraints{ U("constraints") }; // array
+        const web::json::field_as_value endpoint_staged{ U("staged") }; // object
+        const web::json::field_as_value endpoint_active{ U("active") }; // object
         const web::json::field_as_bool master_enable{ U("master_enable") };
-        const web::json::field_as_value activation{ U("activation") };
+        const web::json::field_as_value_or activation{ U("activation"), {} }; // object
         const web::json::field_as_string mode{ U("mode") };
         const web::json::field<tai> requested_time{ U("requested_time") };
-        const web::json::field_as_array transport_params{ U("transport_params") };
+        const web::json::field<tai> activation_time{ U("activation_time") };
+        const web::json::field_as_value transport_file{ U("transport_file") }; // object
+        const web::json::field_as_string href{ U("href") };
+        const web::json::field_as_value transport_params{ U("transport_params") }; // array
     }
 
     // Fields for experimental extensions

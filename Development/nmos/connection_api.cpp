@@ -10,13 +10,6 @@
 
 namespace nmos
 {
-    static web::json::value strip_id(const web::json::value &src)
-    {
-        auto result = src;
-        if (result.has_field(nmos::fields::id)) result.erase(nmos::fields::id);
-        return result;
-    }
-
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, nmos::activate_function activate, slog::base_gate& gate);
 
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, nmos::activate_function activate, slog::base_gate& gate)
@@ -101,11 +94,11 @@ namespace nmos
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             auto lock = model.read_lock();
-            auto& resources = model.node_resources;
+            auto& resources = model.connection_resources;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
 
-            const auto match = [&](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType) && nmos::is_permitted_downgrade(resource, nmos::is04_versions::v1_2); };
+            const auto match = [&](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
 
             size_t count = 0;
 
@@ -123,13 +116,13 @@ namespace nmos
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             auto lock = model.read_lock();
-            auto& resources = model.node_resources;
+            auto& resources = model.connection_resources;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, nmos::is04_versions::v1_2))
+            if (resources.end() != resource)
             {
                 if (nmos::types::sender == resource->type)
                 {
@@ -151,26 +144,19 @@ namespace nmos
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             auto lock = model.read_lock();
+            auto& resources = model.connection_resources;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto &constraints = model.constraints;
-            auto resource = find_resource(constraints, {resourceId, nmos::type_from_resourceType(resourceType)});
-            if (constraints.end() == resource)
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() == resource)
             {
                 set_reply(res, status_codes::NotFound);
             }
             else
             {
-                // Crude hack here: Since a constraint response is
-                // supposed to be an array, but the nmos::resources
-                // type expects an object with an "id" field, we
-                // presume an "array" field that contains the correct
-                // response. The correct way to deal with this, no
-                // doubt, is to set the type of model::constraints
-                // to something other than nmos::resources.
-                set_reply(res, status_codes::OK, resource->data.at(U("array")));
+                set_reply(res, status_codes::OK, nmos::fields::endpoint_constraints(resource->data));
             }
 
             return pplx::task_from_result(true);
@@ -180,30 +166,30 @@ namespace nmos
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
-                try
+                const auto& activation = nmos::fields::activation(body);
+                const auto mode = !activation.is_null() ? nmos::activation_mode{ nmos::fields::mode(activation) } : nmos::activation_modes::none;
+
+                if (nmos::activation_modes::activate_scheduled_absolute == mode || nmos::activation_modes::activate_scheduled_relative == mode)
                 {
-                    const auto& activation = nmos::fields::activation(body);
-                    const auto mode = nmos::activation_mode{ nmos::fields::mode(activation) };
-                    if (mode != nmos::activation_modes::activate_immediate)
-                    {
-                        set_reply(res, status_codes::NotImplemented);
-                        return true;
-                    }
+                    set_reply(res, status_codes::NotImplemented);
+                    return true;
                 }
-                catch (web::json::json_exception&) {}
 
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
                 auto lock = model.write_lock();
+                auto& resources = model.connection_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
                 auto type = nmos::type_from_resourceType(resourceType);
-                auto resource = find_resource(model.staged, { resourceId, type });
-                if (model.staged.end() != resource)
+                auto resource = find_resource(resources, { resourceId, type });
+                if (resources.end() != resource)
                 {
+                    // Validate JSON syntax according to the schema ideally...
+
                     // First, verify that every key is a valid field.
-                    for (const auto & pair: body.as_object())
+                    for (const auto& pair : body.as_object())
                     {
                         if (!patch_key_is_valid(pair, resourceType))
                         {
@@ -213,52 +199,48 @@ namespace nmos
                     }
 
                     // OK, now it's safe to update everything.
-                    nmos::activation_mode mode;
-                    auto update = [&body, &mode] (nmos::resource &resource)
+                    auto update = [&body](nmos::resource& resource)
                     {
+                        auto& staged = nmos::fields::endpoint_staged(resource.data);
+
                         for (const auto& pair: body.as_object())
                         {
-                            if (pair.first == U("activation"))
+                            if (pair.first == nmos::fields::transport_file.key || pair.first == nmos::fields::activation.key)
                             {
-                                for (const auto &opair: pair.second.as_object())
+                                for (const auto& opair : pair.second.as_object())
                                 {
-                                    if (opair.first == U("mode"))
-                                        mode = nmos::activation_mode{ nmos::fields::mode(pair.second) };
+                                    staged[pair.first][opair.first] = opair.second;
                                 }
                             }
-                            if (pair.first == U("transport_file") || pair.first == U("activation"))
-                            {
-                                for (const auto &opair: pair.second.as_object())
-                                {
-                                    resource.data[pair.first][opair.first] = opair.second;
-                                }
-                                continue;
-                            }
-                            if (pair.first == U("transport_params"))
+                            else if (pair.first == nmos::fields::transport_params.key)
                             {
                                 const auto& a = pair.second.as_array();
                                 for (size_t i = 0; i < std::min<size_t>(2, a.size()); i++)
                                 {
-                                    for (const auto& tp: a.at(i).as_object())
+                                    for (const auto& tp : a.at(i).as_object())
                                     {
-                                        resource.data[pair.first][i][tp.first] = tp.second;
+                                        staged[pair.first][i][tp.first] = tp.second;
                                     }
                                 }
-                                continue;
                             }
-                            resource.data[pair.first] = pair.second;
+                            else
+                            {
+                                staged[pair.first] = pair.second;
+                            }
                         }
                     };
-                    modify_resource(model.patched, resourceId, update);
-                    modify_resource(model.staged, resourceId, update);
 
-                    // "If no activation was requested in the PATCH
-                    // `activation_time` will be set `null`."
-                    // [https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml]
-                    auto response = strip_id(resource->data);
-                    response[U("activation")][U("activation_time")] = value();
+                    modify_resource(resources, resourceId, update);
 
-                    if (nmos::activation_modes::activate_immediate == mode)
+                    auto response = nmos::fields::endpoint_staged(resource->data);
+
+                    if (nmos::activation_modes::none == mode)
+                    {
+                        // "If no activation was requested in the PATCH `activation_time` will be set `null`."
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
+                        response[nmos::fields::activation][nmos::fields::activation_time] = value();
+                    }
+                    else if (nmos::activation_modes::activate_immediate == mode)
                     {
                         // should be asynchronous (task-based), with a continuation to return the response
                         {
@@ -266,50 +248,37 @@ namespace nmos
                             activate(type, resourceId);
                         }
 
-                        // "For immediate activations on the staged
-                        // endpoint this property will be the time the
-                        // activation actually occurred in the response
-                        // to the PATCH request, but null in response
+                        // "For immediate activations on the staged endpoint this property will be the time the
+                        // activation actually occurred in the response to the PATCH request, but null in response
                         // to any GET requests thereafter."
-                        // [https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json]
-                        response[U("activation")][U("activation_time")] = value::string(nmos::make_version());
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
+                        response[nmos::fields::activation][nmos::fields::activation_time] = value::string(nmos::make_version());
 
-                        // "For an immediate activation this field will
-                        // always be null on the staged endpoint, even
-                        // in the response to the PATCH request." [ibid]
-                        response[U("activation")][U("requested_time")] = value();
+                        // "For an immediate activation this field will always be null on the staged endpoint, even
+                        // in the response to the PATCH request."
+                        response[nmos::fields::activation][nmos::fields::requested_time] = value();
 
-                        auto update = [&body, &mode] (nmos::resource &resource)
+                        auto update = [&body, &mode](nmos::resource &resource)
                         {
-                            auto& activation = resource.data[U("activation")];
+                            auto& staged = nmos::fields::endpoint_staged(resource.data);
+                            auto& activation = staged[nmos::fields::activation];
 
-                            // "For immediate activations, in the
-                            // response to the PATCH request this field
-                            // will be set to 'activate_immediate',
-                            // but will be null in response to any
-                            // subsequent GET requests." [ibid]
-                            activation[U("mode")] = value();
+                            // "For immediate activations, in the response to the PATCH request this field
+                            // will be set to 'activate_immediate', but will be null in response to any
+                            // subsequent GET requests."
+                            activation[nmos::fields::mode] = value();
 
-                            // "For immediate activations on the staged
-                            // endpoint this property will be the time the
-                            // activation actually occurred in the response
-                            // to the PATCH request, but null in response
-                            // to any GET requests thereafter." [ibid]
-                            activation[U("activation_time")] = value();
+                            // "For immediate activations on the staged endpoint this property will be the time the
+                            // activation actually occurred in the response to the PATCH request, but null in response
+                            // to any GET requests thereafter."
+                            activation[nmos::fields::activation_time] = value();
 
-                            // "This field returns to null once the activation
-                            // is completed on the staged endpoint." [ibid]
-                            activation[U("requested_time")] = value();
+                            // "This field returns to null once the activation is completed on the staged endpoint."
+                            activation[nmos::fields::requested_time] = value();
                         };
-                        modify_resource(model.staged, resourceId, update);
-
-                        modify_resource(model.patched, resourceId, [](nmos::resource &resource)
-                        {
-                            resource.data = value::object();
-                        });
+                        modify_resource(resources, resourceId, update);
                     }
-                    // else pass the buck to a scheduler thread to
-                    // deal with the activation at the right time,
+                    // else pass the buck to a scheduler thread to deal with the activation at the right time,
                     // and reply with the right HTTP status code.
 
                     set_reply(res, status_codes::OK, response);
@@ -326,12 +295,13 @@ namespace nmos
         connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             auto lock = model.read_lock();
+            auto& resources = model.connection_resources;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
             const string_t stagingType = parameters.at(nmos::patterns::stagingType.name);
 
-            auto &resources = stagingType == U("active") ? model.active : model.staged;
+            const auto& endpoint_data = stagingType == nmos::fields::active.key ? nmos::fields::endpoint_active : nmos::fields::endpoint_staged;
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
             if (resources.end() == resource)
@@ -340,7 +310,7 @@ namespace nmos
             }
             else
             {
-                set_reply(res, status_codes::OK, strip_id(resource->data));
+                set_reply(res, status_codes::OK, endpoint_data(resource->data));
             }
             return pplx::task_from_result(true);
         });
@@ -348,19 +318,21 @@ namespace nmos
         connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             auto lock = model.read_lock();
+            auto& resources = model.connection_resources;
 
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
-            auto& redirects = model.transportfile.redirects;
-            auto url = redirects.find(resourceId);
-            if (url != redirects.end())
+
+            auto resource = find_resource(resources, { resourceId, nmos::types::sender });
+            if (resources.end() != resource)
             {
                 set_reply(res, status_codes::TemporaryRedirect);
-                res.headers().add(web::http::header_names::location, url->second);
+                res.headers().add(web::http::header_names::location, nmos::fields::href(nmos::fields::transport_file(resource->data)));
             }
             else
             {
                 set_reply(res, status_codes::NotFound);
             }
+
             return pplx::task_from_result(true);
         });
 

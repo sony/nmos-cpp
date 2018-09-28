@@ -85,16 +85,16 @@ namespace slog
 // This currently serves as an example of the resources that an NMOS node would construct
 namespace nmos
 {
-    struct model;
+    struct node_model;
 
     namespace experimental
     {
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
-        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings);
+        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings);
 
         // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate);
+        void node_resources_thread(nmos::node_model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate);
     }
 }
 
