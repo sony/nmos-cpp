@@ -143,9 +143,14 @@ int main(int argc, char* argv[])
 
         // Configure the Connection API
 
-        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model.resources, node_mutex, node_condition, gate);
-        web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
-        nmos::support_api(connection_listener, connection_api);
+    struct: public nmos::callbacks
+    {
+        virtual void activate(const std::string& resourceId, const nmos::type& resourceType, nmos::write_lock&, nmos::condition_variable&) {}
+    } trivial_callbacks;
+
+    web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, trivial_callbacks, node_mutex, node_condition, gate);
+    web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
+    nmos::support_api(connection_listener, connection_api);
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
