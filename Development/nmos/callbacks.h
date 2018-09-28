@@ -11,7 +11,7 @@ namespace nmos
 {
     struct callbacks
     {
-        virtual void activate(const std::string& resourceId, const nmos::type& resourceType, nmos::write_lock&, nmos::condition_variable&) = 0;
+        virtual void activate(const nmos::id&, const nmos::type&, nmos::write_lock&, nmos::condition_variable&) = 0;
     };
 }
 

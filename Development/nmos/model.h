@@ -25,7 +25,7 @@ namespace nmos
 
         struct
         {
-            std::map<nmos::id, std::string> redirects;
+            std::map<nmos::id, utility::string_t> redirects;
             // Consider adding more here, like the actual SDP string.
         } transportfile;
     };

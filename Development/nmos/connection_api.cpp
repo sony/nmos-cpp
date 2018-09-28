@@ -10,16 +10,8 @@ namespace nmos
 {
     static web::json::value strip_id(const web::json::value &src)
     {
-        web::json::value result;
-        auto &object = src.as_object();
-        for (auto &pair: object)
-        {
-            auto &key = pair.first;
-            if (key != "id")
-            {
-                result[key] = pair.second;
-            }
-        }
+        auto result = src;
+        if (result.has_field(nmos::fields::id)) result.erase(nmos::fields::id);
         return result;
     }
 
@@ -175,7 +167,7 @@ namespace nmos
                 // response. The correct way to deal with this, no
                 // doubt, is to set the type of model::constraints
                 // to something other than nmos::resources.
-                set_reply(res, status_codes::OK, resource->data.at("array"));
+                set_reply(res, status_codes::OK, resource->data.at(U("array")));
             }
 
             return pplx::task_from_result(true);
@@ -187,15 +179,15 @@ namespace nmos
             {
                 try
                 {
-                    const auto activation = nmos::fields::activation(body);
-                    auto mode = nmos::fields::mode(activation);
+                    const auto& activation = nmos::fields::activation(body);
+                    const auto mode = nmos::activation_mode{ nmos::fields::mode(activation) };
                     if (mode != nmos::activation_modes::activate_immediate)
                     {
                         set_reply(res, status_codes::NotImplemented);
                         return true;
                     }
                 }
-                catch (web::json::json_exception &e) {}
+                catch (web::json::json_exception&) {}
 
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
                 nmos::write_lock lock(mutex);
@@ -228,7 +220,7 @@ namespace nmos
                                 for (const auto &opair: pair.second.as_object())
                                 {
                                     if (opair.first == U("mode"))
-                                        mode = nmos::fields::mode(pair.second);
+                                        mode = nmos::activation_mode{ nmos::fields::mode(pair.second) };
                                 }
                             }
                             if (pair.first == U("transport_file") || pair.first == U("activation"))
@@ -261,7 +253,7 @@ namespace nmos
                     // `activation_time` will be set `null`."
                     // [https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml]
                     auto response = strip_id(resource->data);
-                    response["activation"]["activation_time"] = value();
+                    response[U("activation")][U("activation_time")] = value();
 
                     if (nmos::activation_modes::activate_immediate == mode)
                     {
@@ -272,34 +264,34 @@ namespace nmos
                         // to the PATCH request, but null in response
                         // to any GET requests thereafter."
                         // [https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json]
-                        response["activation"]["activation_time"] = value::string(nmos::make_version());
+                        response[U("activation")][U("activation_time")] = value::string(nmos::make_version());
 
                         // "For an immediate activation this field will
                         // always be null on the staged endpoint, even
                         // in the response to the PATCH request." [ibid]
-                        response["activation"]["requested_time"] = value();
+                        response[U("activation")][U("requested_time")] = value();
 
                         auto update = [&body, &mode] (nmos::resource &resource)
                         {
-                            auto& activation = resource.data["activation"];
+                            auto& activation = resource.data[U("activation")];
 
                             // "For immediate activations, in the
                             // response to the PATCH request this field
                             // will be set to 'activate_immediate',
                             // but will be null in response to any
                             // subsequent GET requests." [ibid]
-                            activation["mode"] = value();
+                            activation[U("mode")] = value();
 
                             // "For immediate activations on the staged
                             // endpoint this property will be the time the
                             // activation actually occurred in the response
                             // to the PATCH request, but null in response
                             // to any GET requests thereafter." [ibid]
-                            activation["activation_time"] = value();
+                            activation[U("activation_time")] = value();
 
                             // "This field returns to null once the activation
                             // is completed on the staged endpoint." [ibid]
-                            activation["requested_time"] = value();
+                            activation[U("requested_time")] = value();
                         };
                         modify_resource(model.staged, resourceId, update);
 
@@ -331,7 +323,7 @@ namespace nmos
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
             const string_t stagingType = parameters.at(nmos::patterns::stagingType.name);
 
-            auto &resources = stagingType == "active" ? model.active : model.staged;
+            auto &resources = stagingType == U("active") ? model.active : model.staged;
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
             if (resources.end() == resource)
