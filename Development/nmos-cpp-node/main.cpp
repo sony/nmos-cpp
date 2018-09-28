@@ -20,14 +20,11 @@ int main(int argc, char* argv[])
     // plus variables to signal when the server is stopping
 
     bool shutdown{ false };
-    nmos::condition_variable shutdown_condition; // associated with node_mutex; notify on shutdown
+    nmos::condition_variable shutdown_condition; // associated with node_model.mutex; notify on shutdown
 
-    nmos::model node_model;
-    nmos::mutex node_mutex;
-    nmos::condition_variable node_condition; // associated with node_mutex; notify on any change to node_model, and on shutdown
+    nmos::node_model node_model;
 
     nmos::experimental::log_model log_model;
-    nmos::mutex log_mutex;
     std::atomic<slog::severity> level{ slog::severities::more_info };
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
@@ -37,7 +34,7 @@ int main(int argc, char* argv[])
     std::ostream access_log(&access_log_buf);
 
     // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model, log_mutex, level);
+    main_gate gate(error_log, access_log, log_model, level);
 
     try
     {
@@ -92,14 +89,14 @@ int main(int argc, char* argv[])
         if (!nmos::fields::error_log(node_model.settings).empty())
         {
             error_log_buf.open(nmos::fields::error_log(node_model.settings), std::ios_base::out | std::ios_base::ate);
-            nmos::write_lock lock(log_mutex);
+            auto lock = log_model.write_lock();
             error_log.rdbuf(&error_log_buf);
         }
 
         if (!nmos::fields::access_log(node_model.settings).empty())
         {
             access_log_buf.open(nmos::fields::access_log(node_model.settings), std::ios_base::out | std::ios_base::ate);
-            nmos::write_lock lock(log_mutex);
+            auto lock = log_model.write_lock();
             access_log.rdbuf(&access_log_buf);
         }
 
@@ -111,13 +108,13 @@ int main(int argc, char* argv[])
 
         // Configure the Settings API
 
-        web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(node_model.settings, level, node_mutex, node_condition, gate);
+        web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(node_model, level, gate);
         web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(node_model.settings)));
         nmos::support_api(settings_listener, settings_api);
 
         // Configure the Logging API
 
-        web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, log_mutex, gate);
+        web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, gate);
         web::http::experimental::listener::http_listener logging_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::logging_port(node_model.settings)));
         nmos::support_api(logging_listener, logging_api);
 
@@ -134,13 +131,13 @@ int main(int argc, char* argv[])
             return pplx::task_from_result();
         };
 
-        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model.resources, node_mutex, node_condition, unchecked_connect, gate);
-        web::http::experimental::listener::api_router node_api = nmos::make_node_api(node_model.resources, node_mutex, target_handler, gate);
+        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, unchecked_connect, gate);
+        web::http::experimental::listener::api_router node_api = nmos::make_node_api(node_model, target_handler, gate);
         web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(node_model.settings)), listener_config);
         nmos::support_api(node_listener, node_api);
 
         // set up the node resources
-        auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, shutdown, node_mutex, shutdown_condition, node_condition, gate); }, [&] { nmos::write_lock lock(node_mutex); shutdown = true; shutdown_condition.notify_all(); });
+        auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, shutdown, shutdown_condition, gate); }, [&] { auto lock = node_model.write_lock(); shutdown = true; shutdown_condition.notify_all(); });
 
         // Configure the Connection API
 
@@ -151,7 +148,7 @@ int main(int argc, char* argv[])
             //return pplx::task_from_result();
         };
 
-        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, node_mutex, node_condition, activate, gate);
+        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, activate, gate);
         web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
         nmos::support_api(connection_listener, connection_api);
 
@@ -167,7 +164,7 @@ int main(int argc, char* argv[])
 
         // start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 
-        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, node_mutex, node_condition, gate); }, [&] { nmos::write_lock lock(node_mutex); shutdown = true; node_condition.notify_all(); });
+        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, gate); }, [&] { auto lock = node_model.write_lock(); shutdown = true; node_model.notify(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

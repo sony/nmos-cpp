@@ -3,6 +3,7 @@
 #include "nmos/activation_mode.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/model.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
 #include "nmos/version.h"
@@ -16,9 +17,9 @@ namespace nmos
         return result;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, nmos::activate_function activate, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, nmos::activate_function activate, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, nmos::activate_function activate, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, nmos::activate_function activate, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -42,7 +43,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, mutex, condition, activate, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, activate, gate));
 
         nmos::add_api_finally_handler(connection_api, gate);
 
@@ -61,10 +62,9 @@ namespace nmos
             pair.first == U("transport_params");
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, nmos::activate_function activate, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, nmos::activate_function activate, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
-        auto& resources = model.resources;
 
         api_router connection_api;
 
@@ -98,9 +98,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.node_resources;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
 
@@ -119,9 +120,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.node_resources;
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -146,9 +148,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -174,7 +176,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &mutex, &condition, activate, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, activate, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
@@ -191,7 +193,7 @@ namespace nmos
                 catch (web::json::json_exception&) {}
 
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
-                nmos::write_lock lock(mutex);
+                auto lock = model.write_lock();
 
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -260,7 +262,7 @@ namespace nmos
                     {
                         // should be asynchronous (task-based), with a continuation to return the response
                         {
-                            nmos::details::reverse_lock_guard<nmos::write_lock> unlock(lock);
+                            details::reverse_lock_guard<nmos::write_lock> unlock(lock);
                             activate(type, resourceId);
                         }
 
@@ -321,9 +323,9 @@ namespace nmos
             });
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -343,9 +345,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
             auto& redirects = model.transportfile.redirects;
             auto url = redirects.find(resourceId);

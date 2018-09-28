@@ -3,14 +3,15 @@
 #include "mdns/service_discovery.h"
 #include "nmos/api_utils.h"
 #include "nmos/mdns.h"
+#include "nmos/model.h"
 
 namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_mdns_api(nmos::base_model& model, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -28,7 +29,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.mount(U("/x-dns-sd/v1.0"), make_unmounted_mdns_api(settings, mutex, gate));
+            mdns_api.mount(U("/x-dns-sd/v1.0"), make_unmounted_mdns_api(model, gate));
 
             nmos::add_api_finally_handler(mdns_api, gate);
 
@@ -61,7 +62,7 @@ namespace nmos
             return result;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -80,7 +81,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&settings, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return pplx::create_task([]{}).then([&, req, res, parameters]() mutable
                 {
@@ -92,7 +93,7 @@ namespace nmos
                     auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                     nmos::details::decode_elements(flat_query_params);
 
-                    const auto settings_domain = with_read_lock(mutex, [&] { return nmos::fields::domain(settings); });
+                    const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
                     const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
 
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
@@ -136,7 +137,7 @@ namespace nmos
                 });
             });
 
-            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&settings, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return pplx::create_task([]{}).then([&, req, res, parameters]() mutable
                 {
@@ -148,7 +149,7 @@ namespace nmos
                     auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                     nmos::details::decode_elements(flat_query_params);
 
-                    const auto settings_domain = with_read_lock(mutex, [&] { return nmos::fields::domain(settings); });
+                    const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
                     const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
 
                     std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);

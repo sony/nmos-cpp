@@ -94,7 +94,7 @@ namespace nmos
         std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings);
 
         // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate);
+        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate);
     }
 }
 

@@ -2,16 +2,16 @@
 #define NMOS_MDNS_API_H
 
 #include "nmos/api_utils.h" // for web::http::experimental::listener::api_router and nmos::route_pattern
-#include "nmos/mutex.h"
-#include "nmos/settings.h"
 #include "nmos/slog.h" // for slog::base_gate and slog::severity, etc.
 
 // This is an experimental extension to expose mDNS Service Discovery via a REST API
 namespace nmos
 {
+    struct base_model;
+
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_mdns_api(nmos::settings& settings, nmos::mutex& mutex, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_mdns_api(nmos::base_model& model, slog::base_gate& gate);
 
         namespace patterns
         {

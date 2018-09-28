@@ -24,17 +24,11 @@ int main(int argc, char* argv[])
     // plus variables to signal when the server is stopping
 
     bool shutdown{ false };
-    nmos::condition_variable shutdown_condition; // associated with registry_mutex; notify on shutdown
+    nmos::condition_variable shutdown_condition; // associated with registry_model.mutex; notify on shutdown
 
-    nmos::resources self_resources;
-    nmos::mutex self_mutex;
-
-    nmos::model registry_model;
-    nmos::mutex registry_mutex;
-    nmos::condition_variable registry_condition; // associated with registry_mutex; notify on any change to registry_model, and on shutdown
+    nmos::registry_model registry_model;
 
     nmos::experimental::log_model log_model;
-    nmos::mutex log_mutex;
     std::atomic<slog::severity> level{ slog::severities::more_info };
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
@@ -44,7 +38,7 @@ int main(int argc, char* argv[])
     std::ostream access_log(&access_log_buf);
 
     // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model, log_mutex, level);
+    main_gate gate(error_log, access_log, log_model, level);
 
     try
     {
@@ -98,14 +92,14 @@ int main(int argc, char* argv[])
         if (!nmos::fields::error_log(registry_model.settings).empty())
         {
             error_log_buf.open(nmos::fields::error_log(registry_model.settings), std::ios_base::out | std::ios_base::ate);
-            nmos::write_lock lock(log_mutex);
+            auto lock = log_model.write_lock();
             error_log.rdbuf(&error_log_buf);
         }
 
         if (!nmos::fields::access_log(registry_model.settings).empty())
         {
             access_log_buf.open(nmos::fields::access_log(registry_model.settings), std::ios_base::out | std::ios_base::ate);
-            nmos::write_lock lock(log_mutex);
+            auto lock = log_model.write_lock();
             access_log.rdbuf(&access_log_buf);
         }
 
@@ -119,19 +113,19 @@ int main(int argc, char* argv[])
 
         // Configure the mDNS Service Discovery API
 
-        web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(registry_model.settings, registry_mutex, gate);
+        web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(registry_model, gate);
         web::http::experimental::listener::http_listener mdns_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::mdns_port(registry_model.settings)));
         nmos::support_api(mdns_listener, mdns_api);
 
         // Configure the Settings API
 
-        web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(registry_model.settings, level, registry_mutex, registry_condition, gate);
+        web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(registry_model, level, gate);
         web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(registry_model.settings)));
         nmos::support_api(settings_listener, settings_api);
 
         // Configure the Logging API
 
-        web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, log_mutex, gate);
+        web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, gate);
         web::http::experimental::listener::http_listener logging_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::logging_port(registry_model.settings)));
         nmos::support_api(logging_listener, logging_api);
 
@@ -142,7 +136,7 @@ int main(int argc, char* argv[])
 
         // Configure the Query API
 
-        web::http::experimental::listener::api_router query_api = nmos::make_query_api(registry_model, registry_mutex, gate);
+        web::http::experimental::listener::api_router query_api = nmos::make_query_api(registry_model, gate);
         web::http::experimental::listener::http_listener query_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::query_port(registry_model.settings)), listener_config);
         nmos::support_api(query_listener, query_api);
 
@@ -152,9 +146,9 @@ int main(int argc, char* argv[])
 
         nmos::websockets registry_websockets;
 
-        web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, registry_mutex, gate);
-        web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(query_id, registry_model, registry_websockets, registry_mutex, registry_condition, gate);
-        web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, registry_mutex, gate);
+        web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, gate);
+        web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(query_id, registry_model, registry_websockets, gate);
+        web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, gate);
         web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::fields::query_ws_port(registry_model.settings), nmos::make_slog_logging_callback(gate));
         query_ws_listener.set_validate_handler(std::ref(query_ws_validate_handler));
         query_ws_listener.set_open_handler(std::ref(query_ws_open_handler));
@@ -162,22 +156,23 @@ int main(int argc, char* argv[])
 
         // Configure the Registration API
 
-        web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, registry_mutex, registry_condition, gate);
+        web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, gate);
         web::http::experimental::listener::http_listener registration_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::registration_port(registry_model.settings)), listener_config);
         nmos::support_api(registration_listener, registration_api);
 
         // Configure the Node API
 
-        web::http::experimental::listener::api_router node_api = nmos::make_node_api(self_resources, self_mutex, {}, gate);
+        web::http::experimental::listener::api_router node_api = nmos::make_node_api(registry_model, {}, gate);
         web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(registry_model.settings)), listener_config);
         nmos::support_api(node_listener, node_api);
 
         // set up the node resources
+        auto & self_resources = registry_model.node_resources;
         nmos::experimental::insert_registry_resources(self_resources, registry_model.settings);
 
         // add the self resources to the Registration API resources
         // (for now just copy them directly, since these resources currently do not change and are configured to never expire)
-        registry_model.resources.insert(self_resources.begin(), self_resources.end());
+        registry_model.registry_resources.insert(self_resources.begin(), self_resources.end());
 
         // Configure the Admin UI
 
@@ -201,8 +196,8 @@ int main(int argc, char* argv[])
 
         // start up registry management before any NMOS APIs are open
 
-        auto send_query_ws_events = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, shutdown, registry_mutex, registry_condition, gate); }, [&] { nmos::read_lock lock(registry_mutex); shutdown = true; registry_condition.notify_all(); });
-        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, shutdown, registry_mutex, shutdown_condition, registry_condition, gate); }, [&] { nmos::write_lock lock(registry_mutex); shutdown = true; shutdown_condition.notify_all(); });
+        auto send_query_ws_events = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, shutdown, gate); }, [&] { auto lock = registry_model.write_lock(); shutdown = true; registry_model.notify(); });
+        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(registry_model, shutdown, shutdown_condition, gate); }, [&] { auto lock = registry_model.write_lock(); shutdown = true; shutdown_condition.notify_all(); });
 
         // open in an order that means NMOS APIs don't expose references to others that aren't open yet
 

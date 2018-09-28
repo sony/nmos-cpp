@@ -8,9 +8,9 @@ namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -28,7 +28,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.mount(U("/log/v1.0"), make_unmounted_logging_api(model, mutex, gate));
+            logging_api.mount(U("/log/v1.0"), make_unmounted_logging_api(model, gate));
 
             nmos::add_api_finally_handler(logging_api, gate);
 
@@ -292,7 +292,7 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -304,9 +304,9 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/events/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/events/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                nmos::read_lock lock(mutex);
+                auto lock = model.read_lock();
 
                 // Extract and decode the query string
 
@@ -346,9 +346,9 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/events/?"), methods::DEL, [&model, &mutex](http_request req, http_response res, const string_t&, const route_parameters&)
+            logging_api.support(U("/events/?"), methods::DEL, [&model](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                nmos::write_lock lock(mutex);
+                auto lock = model.write_lock();
 
                 if (req.request_uri().query().empty())
                 {
@@ -363,9 +363,9 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex](http_request, http_response res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/events/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model](http_request, http_response res, const string_t&, const route_parameters& parameters)
             {
-                nmos::read_lock lock(mutex);
+                auto lock = model.read_lock();
 
                 const string_t eventId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -433,15 +433,15 @@ namespace nmos
             return cursor > most_recent ? cursor : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
         }
 
-        void log_to_model(log_model& model, const slog::async_log_message& message)
+        void insert_log_event(events& events, const slog::async_log_message& message)
         {
             // capacity ought to be part of log/settings
             const std::size_t capacity = 1234;
-            while (model.events.size() > capacity)
+            while (events.size() > capacity)
             {
-                model.events.pop_back();
+                events.pop_back();
             }
-            model.events.push_front({ details::json_from_message(message, strictly_increasing_cursor(model.events)) });
+            events.push_front({ details::json_from_message(message, strictly_increasing_cursor(events)) });
         }
     }
 }

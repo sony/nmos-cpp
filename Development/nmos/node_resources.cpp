@@ -347,9 +347,9 @@ namespace nmos
         }
 
         // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
+        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate)
         {
-            const auto seed_id = nmos::with_read_lock(mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
+            const auto seed_id = nmos::with_read_lock(model.mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
             auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
             auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
             auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
@@ -357,7 +357,7 @@ namespace nmos
             auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
             auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
 
-            nmos::write_lock lock(mutex); // in order to update the resources
+            auto lock = model.write_lock(); // in order to update the resources
 
             // any delay between updates to the model resources is unnecessary
             // this just serves as a slightly more realistic example!
@@ -369,7 +369,7 @@ namespace nmos
                 if (!shutdown_condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds), [&] { return shutdown; }))
                 {
                     const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-                    const bool success = insert_resource(model.resources, std::move(resource)).second;
+                    const bool success = insert_resource(model.node_resources, std::move(resource)).second;
 
                     if (success)
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
@@ -377,7 +377,7 @@ namespace nmos
                         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
-                    condition.notify_all();
+                    model.notify();
                 }
             };
 

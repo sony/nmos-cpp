@@ -51,13 +51,19 @@ namespace nmos
 
         struct log_model
         {
+            mutable nmos::mutex mutex;
             nmos::experimental::events events;
+
+            // convenience functions
+
+            nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
+            nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
         };
 
-        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, nmos::mutex& mutex, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate);
 
         // push a log event into the model keeping a maximum size (lock the mutex before calling this)
-        void log_to_model(log_model& model, const slog::async_log_message& message);
+        void insert_log_event(events& events, const slog::async_log_message& message);
     }
 }
 

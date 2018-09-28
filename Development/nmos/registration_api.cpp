@@ -12,54 +12,55 @@
 
 namespace nmos
 {
-    void erase_expired_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
+    void erase_expired_resources_thread(nmos::registry_model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate)
     {
         // start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource actually needs to be deleted from the resources
-        nmos::read_lock lock(mutex);
+        auto lock = model.read_lock();
+        auto& resources = model.registry_resources;
 
-        auto least_health = nmos::least_health(model.resources);
+        auto least_health = nmos::least_health(resources);
 
         // wait until the next node could potentially expire, or the server is being shut down
         // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
         while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health.first + nmos::fields::registration_expiry_interval(model.settings) + 1), [&]{ return shutdown; }))
         {
             // hmmm, it needs to be possible to enable/disable periodic logging like this independently of the severity...
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(resources);
 
             // most nodes will have had a heartbeat during the wait, so the least health will have been increased
             // so this thread will be able to go straight back to waiting
             auto expire_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
             auto forget_health = expire_health - nmos::fields::registration_expiry_interval(model.settings);
-            least_health = nmos::least_health(model.resources);
+            least_health = nmos::least_health(resources);
             if (least_health.first >= expire_health && least_health.second >= forget_health) continue;
 
             // otherwise, there's actually work to do...
 
             details::reverse_lock_guard<nmos::read_lock> unlock(lock);
             // note, without atomic upgrade, another thread may preempt hence the need to recalculate expire_health/forget_health and least_health
-            nmos::write_lock upgrade(mutex);
+            auto upgrade = model.write_lock();
 
             expire_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
             forget_health = expire_health - nmos::fields::registration_expiry_interval(model.settings);
 
             // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
-            const auto expired = erase_expired_resources(model.resources, expire_health, forget_health);
+            const auto expired = erase_expired_resources(resources, expire_health, forget_health);
 
             if (0 != expired)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << expired << " resources have expired";
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
-                condition.notify_all();
+                model.notify();
             }
 
-            least_health = nmos::least_health(model.resources);
+            least_health = nmos::least_health(resources);
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::registry_model& model, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_registration_api(nmos::registry_model& model, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -83,7 +84,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, mutex, condition, gate));
+        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, gate));
 
         nmos::add_api_finally_handler(registration_api, gate);
 
@@ -102,7 +103,7 @@ namespace nmos
         return U("/x-nmos/registration/") + nmos::make_api_version(resource.version) + U("/resource/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::registry_model& model, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -120,13 +121,14 @@ namespace nmos
             boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
         };
 
-        registration_api.support(U("/resource/?"), methods::POST, [&model, &mutex, &condition, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/resource/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             // note that, as elsewhere, http_exception and json_exception are handled by the exception handler added by add_api_finally_handler
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually modified or inserted into resources
-                nmos::write_lock lock(mutex);
+                auto lock = model.write_lock();
+                auto& resources = model.registry_resources;
 
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
@@ -160,8 +162,8 @@ namespace nmos
                 bool valid = true;
 
                 // a modification request must not change the existing type
-                const auto resource = nmos::find_resource(model.resources, id);
-                const bool creating = model.resources.end() == resource;
+                const auto resource = nmos::find_resource(resources, id);
+                const bool creating = resources.end() == resource;
                 const bool valid_type = creating || resource->type == type;
                 valid = valid && valid_type;
 
@@ -176,8 +178,8 @@ namespace nmos
                 valid = valid && valid_super_id_type;
 
                 // the super-resource should exist in this registry (and must be of the right type)
-                const auto super_resource = nmos::find_resource(model.resources, super_id_type.first);
-                const bool no_super_resource = model.resources.end() == super_resource;
+                const auto super_resource = nmos::find_resource(resources, super_id_type.first);
+                const bool no_super_resource = resources.end() == super_resource;
                 const bool valid_super_resource = no_resource == super_id_type || !no_super_resource;
                 valid = valid && valid_super_resource;
 
@@ -229,14 +231,14 @@ namespace nmos
                     for (auto& element : nmos::fields::senders(data))
                     {
                         const auto& sender_id = element.as_string();
-                        const bool valid_sender = nmos::has_resource(model.resources, { sender_id, nmos::types::sender });
+                        const bool valid_sender = nmos::has_resource(resources, { sender_id, nmos::types::sender });
                         if (!valid_sender) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with unknown sender: " << sender_id;
                     }
 
                     for (auto& element : nmos::fields::receivers(data))
                     {
                         const auto& receiver_id = element.as_string();
-                        const bool valid_receiver = nmos::has_resource(model.resources, { receiver_id, nmos::types::receiver });
+                        const bool valid_receiver = nmos::has_resource(resources, { receiver_id, nmos::types::receiver });
                         if (!valid_receiver) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with unknown receiver: " << receiver_id;
                     }
                 }
@@ -246,7 +248,7 @@ namespace nmos
                     for (auto& element : nmos::fields::parents(data))
                     {
                         const auto& source_id = element.as_string();
-                        const bool valid_parent = nmos::has_resource(model.resources, { source_id, nmos::types::source });
+                        const bool valid_parent = nmos::has_resource(resources, { source_id, nmos::types::source });
                         if (!valid_parent) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with unknown parent source: " << source_id;
                     }
                 }
@@ -256,7 +258,7 @@ namespace nmos
                     if (nmos::is04_versions::v1_1 <= version)
                     {
                         const auto& device_id = nmos::fields::device_id(data);
-                        const bool valid_device = nmos::has_resource(model.resources, { device_id, nmos::types::device });
+                        const bool valid_device = nmos::has_resource(resources, { device_id, nmos::types::device });
                         if (!valid_device) slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on unknown device: " << device_id;
                         valid = valid && valid_device;
                     }
@@ -265,14 +267,14 @@ namespace nmos
                     for (auto& element : nmos::fields::parents(data))
                     {
                         const auto& flow_id = element.as_string();
-                        const bool valid_parent = nmos::has_resource(model.resources, { flow_id, nmos::types::flow });
+                        const bool valid_parent = nmos::has_resource(resources, { flow_id, nmos::types::flow });
                         if (!valid_parent) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " with unknown parent flow: " << flow_id;
                     }
                 }
                 else if (nmos::types::sender == type)
                 {
                     const auto& flow_id = nmos::fields::flow_id(data);
-                    const bool valid_flow = nmos::has_resource(model.resources, { flow_id, nmos::types::flow });
+                    const bool valid_flow = nmos::has_resource(resources, { flow_id, nmos::types::flow });
                     if (!valid_flow)
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " of unknown flow: " << flow_id;
                     else
@@ -284,7 +286,7 @@ namespace nmos
                     {
                         // the receiver might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
                         const value& receiver_id = nmos::fields::receiver_id(nmos::fields::subscription(data));
-                        const bool valid_receiver = receiver_id.is_null() || nmos::has_resource(model.resources, { receiver_id.as_string(), nmos::types::receiver });
+                        const bool valid_receiver = receiver_id.is_null() || nmos::has_resource(resources, { receiver_id.as_string(), nmos::types::receiver });
                         if (!valid_receiver)
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " subscribed to unknown receiver: " << receiver_id.as_string();
                         else
@@ -295,7 +297,7 @@ namespace nmos
                 {
                     // the sender might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
                     const value& sender_id = nmos::fields::sender_id(nmos::fields::subscription(data));
-                    const bool valid_sender = sender_id.is_null() || nmos::has_resource(model.resources, { sender_id.as_string(), nmos::types::sender });
+                    const bool valid_sender = sender_id.is_null() || nmos::has_resource(resources, { sender_id.as_string(), nmos::types::sender });
                     if (!valid_sender)
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " subscribed to unknown sender: " << sender_id.as_string();
                     else
@@ -317,23 +319,23 @@ namespace nmos
                         set_reply(res, status_codes::Created, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(created_resource));
 
-                        insert_resource(model.resources, std::move(created_resource), allow_invalid_resources);
+                        insert_resource(resources, std::move(created_resource), allow_invalid_resources);
                     }
                     else
                     {
                         set_reply(res, status_codes::OK, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
 
-                        modify_resource(model.resources, id, [&data](nmos::resource& resource)
+                        modify_resource(resources, id, [&data](nmos::resource& resource)
                         {
                             resource.data = data;
                         });
                     }
 
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(model.resources);
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(resources);
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
-                    condition.notify_all();
+                    model.notify();
                 }
                 else if (!valid_type || !valid_api_version || !valid_super_id_type || !valid_version)
                 {
@@ -341,7 +343,7 @@ namespace nmos
                     set_reply(res, status_codes::Conflict);
 
                     // the Location header would enable an HTTP DELETE to be performed to explicitly clear the registry of the conflicting registration
-                    // (assert !creating, i.e. model.resources.end() != resource in all these cases)
+                    // (assert !creating, i.e. resources.end() != resource in all these cases)
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
                 else if (!valid_super_type || !valid_super_api_version)
@@ -350,7 +352,7 @@ namespace nmos
                     set_reply(res, status_codes::Conflict);
 
                     // since the conflict is with the super-resource, a single HTTP DELETE cannot be enough to resolve the issue in this case...
-                    // (assert !no_super_resource, i.e. model.resources.end() != super_resource in all these cases)
+                    // (assert !no_super_resource, i.e. resources.end() != super_resource in all these cases)
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*super_resource));
                 }
                 else
@@ -362,23 +364,24 @@ namespace nmos
             });
         });
 
-        registration_api.support(U("/health/nodes/") + nmos::patterns::resourceId.pattern + U("/?"), [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/health/nodes/") + nmos::patterns::resourceId.pattern + U("/?"), [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             // since health is mutable, no need to get an exclusive/write lock even to handle a POST request
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.registry_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = find_resource(model.resources, { resourceId, nmos::types::node });
-            if (model.resources.end() != resource && resource->version == version)
+            auto resource = find_resource(resources, { resourceId, nmos::types::node });
+            if (resources.end() != resource && resource->version == version)
             {
                 if (methods::POST == req.method())
                 {
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
 
                     const auto health = nmos::health_now();
-                    set_resource_health(model.resources, resourceId, health);
+                    set_resource_health(resources, resourceId, health);
 
                     set_reply(res, web::http::status_codes::OK, make_health_response_body(health));
                 }
@@ -399,16 +402,17 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.registry_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (model.resources.end() != resource && resource->version == version)
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() != resource && resource->version == version)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
                 set_reply(res, status_codes::OK, resource->data);
@@ -421,27 +425,28 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &condition, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        registration_api.support(U("/resource/") + nmos::patterns::resourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the resource is actually deleted from resources
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& resources = model.registry_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (model.resources.end() != resource && resource->version == version)
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() != resource && resource->version == version)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
 
                 // remove this resource from its super-resource's sub-resources
-                auto super_resource = nmos::find_resource(model.resources, nmos::get_super_resource(resource->data, resource->type));
-                if (super_resource != model.resources.end())
+                auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(resource->data, resource->type));
+                if (super_resource != resources.end())
                 {
                     // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
-                    // hence model.resources.modify(...) rather than modify_resource(model.resources, ...)
-                    model.resources.modify(super_resource, [&resource](nmos::resource& super_resource)
+                    // hence resources.modify(...) rather than modify_resource(resources, ...)
+                    resources.modify(super_resource, [&resource](nmos::resource& super_resource)
                     {
                         super_resource.sub_resources.erase(resource->id);
                     });
@@ -450,10 +455,10 @@ namespace nmos
                 // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
                 // on the Node's behalf in order to prevent stale entries remaining in the registry."
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
-                erase_resource(model.resources, resource->id);
+                erase_resource(resources, resource->id);
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
-                condition.notify_all();
+                model.notify();
 
                 set_reply(res, status_codes::NoContent);
             }

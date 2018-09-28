@@ -2,11 +2,13 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include "cpprest/http_client.h"
+#include "nmos/json_fields.h"
+#include "nmos/model.h"
 #include "nmos/slog.h"
 
 namespace nmos
 {
-    node_api_target_handler make_node_api_target_handler(nmos::resources& resources, nmos::mutex& mutex, nmos::condition_variable& condition, connect_function connect, slog::base_gate& gate)
+    node_api_target_handler make_node_api_target_handler(nmos::model& model, connect_function connect, slog::base_gate& gate)
     {
         return [&, connect](const nmos::id& receiver_id, const web::json::value& sender_data)
         {
@@ -51,9 +53,9 @@ namespace nmos
                     return connect(receiver_id, sdp);
                 }).then([&, receiver_id, sender_id]
                 {
-                    nmos::write_lock lock(mutex);
+                    auto lock = model.write_lock();
 
-                    modify_resource(resources, receiver_id, [&sender_id](nmos::resource& resource)
+                    modify_resource(model.node_resources, receiver_id, [&sender_id](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
                         nmos::fields::subscription(resource.data) = value_of({
@@ -63,7 +65,7 @@ namespace nmos
                     });
 
                     // notify anyone who cares...
-                    condition.notify_all();
+                    model.notify();
                 });
             }
             else
@@ -72,9 +74,9 @@ namespace nmos
 
                 return connect(receiver_id, U("")).then([&, receiver_id]
                 {
-                    nmos::write_lock lock(mutex);
+                    auto lock = model.write_lock();
 
-                    modify_resource(resources, receiver_id, [](nmos::resource& resource)
+                    modify_resource(model.node_resources, receiver_id, [](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
                         nmos::fields::subscription(resource.data) = value_of({
@@ -84,7 +86,7 @@ namespace nmos
                     });
 
                     // notify anyone who cares...
-                    condition.notify_all();
+                    model.notify();
                 });
             }
         };

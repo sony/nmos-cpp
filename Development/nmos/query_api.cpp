@@ -12,9 +12,9 @@
 
 namespace nmos
 {
-    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::registry_model& model, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -38,7 +38,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_query_api(model, mutex, gate));
+        query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_query_api(model, gate));
 
         nmos::add_api_finally_handler(query_api, gate);
 
@@ -170,7 +170,7 @@ namespace nmos
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate)
+    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::registry_model& model, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -182,9 +182,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.registry_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
@@ -202,13 +203,13 @@ namespace nmos
             // Configure the paging parameters
 
             // Limit queries to the current resources (although tai_now() would also be an option?) and use the paging limit (default and max) from the setings
-            resource_paging paging(flat_query_params, most_recent_update(model.resources), (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
+            resource_paging paging(flat_query_params, most_recent_update(resources), (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
 
             if (paging.valid())
             {
                 // Get the payload and update the paging parameters
                 struct default_constructible_resource_query_wrapper { const resource_query* impl; bool operator()(const nmos::resource& r) const { return (*impl)(r); } };
-                auto page = paging.page(model.resources, default_constructible_resource_query_wrapper{ &match }); // std::cref(match) is OK from Boost.Range 1.56.0
+                auto page = paging.page(resources, default_constructible_resource_query_wrapper{ &match }); // std::cref(match) is OK from Boost.Range 1.56.0
 
                 size_t count = 0;
 
@@ -229,9 +230,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.registry_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
@@ -244,8 +246,8 @@ namespace nmos
             // Configure a query predicate, though only downgrade queries are supported on this endpoint, no basic or advanced (RQL) query parameters
             const resource_query match(version, U('/') + resourceType, flat_query_params);
 
-            auto resource = find_resource(model.resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (model.resources.end() != resource && nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
+            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
                 set_reply(res, status_codes::OK, match.downgrade(*resource));
@@ -270,12 +272,13 @@ namespace nmos
             boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
         };
 
-        query_api.support(U("/subscriptions/?"), methods::POST, [&model, &mutex, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/subscriptions/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value data) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually inserted into resources
-                nmos::write_lock lock(mutex);
+                auto lock = model.write_lock();
+                auto& resources = model.registry_resources;
 
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
@@ -336,7 +339,7 @@ namespace nmos
                     }
 
                     // search for a matching existing subscription
-                    auto& by_type = model.resources.get<tags::type>();
+                    auto& by_type = resources.get<tags::type>();
                     const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
                     auto resource = std::find_if(subscriptions.first, subscriptions.second, [&req_host, &version, &data](const resources::value_type& resource)
                     {
@@ -370,7 +373,7 @@ namespace nmos
                         // never expire persistent subscriptions, they are only deleted when explicitly requested
                         nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
 
-                        insert_resource(model.resources, std::move(subscription));
+                        insert_resource(resources, std::move(subscription));
                     }
                     else
                     {
@@ -394,22 +397,23 @@ namespace nmos
             });
         });
 
-        query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually deleted from resources
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& resources = model.registry_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t subscriptionId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto subscription = find_resource(model.resources, { subscriptionId, nmos::types::subscription });
+            auto subscription = find_resource(resources, { subscriptionId, nmos::types::subscription });
             // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
-            if (model.resources.end() != subscription && subscription->version == version)
+            if (resources.end() != subscription && subscription->version == version)
             {
                 if (nmos::fields::persist(subscription->data))
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
-                    erase_resource(model.resources, subscription->id);
+                    erase_resource(resources, subscription->id);
 
                     set_reply(res, status_codes::NoContent);
                 }

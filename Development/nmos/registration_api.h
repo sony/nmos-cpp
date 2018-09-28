@@ -13,11 +13,11 @@ namespace slog
 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml
 namespace nmos
 {
-    struct model;
+    struct registry_model;
 
-    void erase_expired_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate);
+    void erase_expired_resources_thread(nmos::registry_model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_registration_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_registration_api(nmos::registry_model& model, slog::base_gate& gate);
 }
 
 #endif
