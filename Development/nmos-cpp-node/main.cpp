@@ -4,6 +4,7 @@
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
 #include "nmos/logging_api.h"
+#include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
@@ -143,12 +144,14 @@ int main(int argc, char* argv[])
 
         // Configure the Connection API
 
-        struct: public nmos::callbacks
+        auto activate = [&gate](const nmos::type& type, const nmos::id& id)
         {
-            virtual void activate(const nmos::id&, const nmos::type&, nmos::write_lock&, nmos::condition_variable&) {}
-        } trivial_callbacks;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Activating" << std::make_pair(id, type);
+            // not yet asynchronous (task-based)
+            //return pplx::task_from_result();
+        };
 
-        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, trivial_callbacks, node_mutex, node_condition, gate);
+        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, node_mutex, node_condition, activate, gate);
         web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
         nmos::support_api(connection_listener, connection_api);
 

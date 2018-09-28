@@ -4,6 +4,7 @@
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
 #include "nmos/slog.h"
+#include "nmos/thread_utils.h"
 #include "nmos/version.h"
 
 namespace nmos
@@ -15,9 +16,9 @@ namespace nmos
         return result;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::callbacks&, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, nmos::activate_function activate, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::callbacks& callbacks, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, nmos::activate_function activate, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -41,7 +42,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, callbacks, mutex, condition, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, mutex, condition, activate, gate));
 
         nmos::add_api_finally_handler(connection_api, gate);
 
@@ -60,10 +61,10 @@ namespace nmos
             pair.first == U("transport_params");
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::callbacks &callbacks, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::model& model, nmos::mutex& mutex, nmos::condition_variable& condition, nmos::activate_function activate, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
-        auto &resources = model.resources;
+        auto& resources = model.resources;
 
         api_router connection_api;
 
@@ -173,7 +174,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &mutex, &condition, &callbacks, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &mutex, &condition, activate, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
@@ -257,7 +258,12 @@ namespace nmos
 
                     if (nmos::activation_modes::activate_immediate == mode)
                     {
-                        callbacks.activate(resourceId, type, lock, condition);
+                        // should be asynchronous (task-based), with a continuation to return the response
+                        {
+                            nmos::details::reverse_lock_guard<nmos::write_lock> unlock(lock);
+                            activate(type, resourceId);
+                        }
+
                         // "For immediate activations on the staged
                         // endpoint this property will be the time the
                         // activation actually occurred in the response
