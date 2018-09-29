@@ -1,5 +1,6 @@
 #include "cpprest/json_utils.h"
 
+#include <list>
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include "cpprest/base_uri.h" // for web::uri::decode
