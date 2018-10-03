@@ -132,10 +132,12 @@ a=mid:SECONDARY
                     }) }
                 }, keep_order) },
                 { sdp::fields::connection_data, web::json::value_of({
-                    { sdp::fields::network_type, sdp::network_types::IN.name },
-                    { sdp::fields::address_type, sdp::address_types::IP4.name },
-                    { sdp::fields::connection_address, U("239.22.142.1/32") }
-                }, keep_order) },
+                    web::json::value_of({
+                        { sdp::fields::network_type, sdp::network_types::IN.name },
+                        { sdp::fields::address_type, sdp::address_types::IP4.name },
+                        { sdp::fields::connection_address, U("239.22.142.1/32") }
+                    }, keep_order)
+                }) },
                 { sdp::fields::attributes, web::json::value_of({
                     web::json::value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },
@@ -192,10 +194,12 @@ a=mid:SECONDARY
                     }) }
                 }, keep_order) },
                 { sdp::fields::connection_data, web::json::value_of({
-                    { sdp::fields::network_type, sdp::network_types::IN.name },
-                    { sdp::fields::address_type, sdp::address_types::IP4.name },
-                    { sdp::fields::connection_address, U("239.122.142.1/32") }
-                }, keep_order) },
+                    web::json::value_of({
+                        { sdp::fields::network_type, sdp::network_types::IN.name },
+                        { sdp::fields::address_type, sdp::address_types::IP4.name },
+                        { sdp::fields::connection_address, U("239.122.142.1/32") }
+                    }, keep_order)
+                }) },
                 { sdp::fields::attributes, web::json::value_of({
                     web::json::value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },

@@ -338,24 +338,20 @@ namespace web
         template <typename ForwardRange, typename Transform>
         inline utility::string_t serialize(const ForwardRange& range, Transform transform)
         {
-            utility::ostringstream_t os;
             using std::begin;
-            serialize_if(os, range, [](const typename std::iterator_traits<decltype(begin(range))>::value_type& element) { return true; }, transform);
-            return os.str();
+            return serialize_if(range, [](const typename std::iterator_traits<decltype(begin(range))>::value_type& element) { return true; }, transform);
         }
 
         template <typename ForwardRange>
         inline utility::string_t serialize(const ForwardRange& range)
         {
-            utility::ostringstream_t os;
             using std::begin;
-            serialize_if(os, range, [](const typename std::iterator_traits<decltype(begin(range))>::value_type& element) { return true; });
-            return os.str();
+            return serialize_if(range, [](const typename std::iterator_traits<decltype(begin(range))>::value_type& element) { return true; });
         }
     }
 }
 
-// json query helpers
+// json query/patch helpers
 namespace web
 {
     namespace json
@@ -394,6 +390,9 @@ namespace web
 
         // compare a value against a query/exemplar
         bool match_query(const web::json::value& value, const web::json::value& query, match_flag_type match_flags = match_default);
+
+        // merge source into target value
+        void merge_patch(web::json::value& value, const web::json::value& patch);
     }
 }
 

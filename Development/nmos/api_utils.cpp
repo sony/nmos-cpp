@@ -221,7 +221,7 @@ namespace nmos
             };
         }
 
-        void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& debug = {})
+        void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& debug)
         {
             set_reply(res, code, nmos::make_error_response_body(code, {}, debug));
         }

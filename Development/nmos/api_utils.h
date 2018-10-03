@@ -90,6 +90,8 @@ namespace nmos
 
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate);
+
+        void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& debug = {});
     }
 }
 

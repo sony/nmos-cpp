@@ -1,5 +1,6 @@
 #include "cpprest/json_utils.h"
 
+#include <list>
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include "cpprest/base_uri.h" // for web::uri::decode
@@ -250,6 +251,47 @@ namespace web
             else
             {
                 return false;
+            }
+        }
+
+        // merge source into target value
+        void merge_patch(web::json::value& value, const web::json::value& patch)
+        {
+            // similar to, though not the same as, RFC 7386 JSON Merge Patch
+            // due to the different handling of null values and arrays
+            // see https://tools.ietf.org/html/rfc7386
+            if (value.is_array() && patch.is_array())
+            {
+                if (value.size() != patch.size())
+                {
+                    throw web::json::json_exception(U("patch error - inconsistent array size"));
+                }
+                auto vb = value.as_array().begin(), ve = value.as_array().end();
+                auto pb = patch.as_array().begin();
+                while (vb != ve)
+                {
+                    merge_patch(*vb++, *pb++);
+                }
+            }
+            else if (value.is_object() && patch.is_object())
+            {
+                for (auto& patch_field : patch.as_object())
+                {
+                    // can't use value.as_object().find(patch_field.first) because it's const!
+                    if (!value.has_field(patch_field.first))
+                    {
+                        throw web::json::json_exception(U("patch error - unexpected object field"));
+                    }
+                    merge_patch(value.at(patch_field.first), patch_field.second);
+                }
+            }
+            else if (value.type() == patch.type() || patch.is_null())
+            {
+                value = patch;
+            }
+            else
+            {
+                throw web::json::json_exception(U("patch error - inconsistent type"));
             }
         }
     }
