@@ -390,7 +390,11 @@ namespace sdp
                         })
                     ),
                     information,
-                    connection_data,
+                    optional_lines(
+                        connection_data.name,
+                        connection_data.type,
+                        connection_data.value_converter
+                    ),
                     bandwidth_information,
                     encryption_key,
                     attributes(converters, converter),
