@@ -16,11 +16,7 @@
 
 int main(int argc, char* argv[])
 {
-    // Construct our data models and mutexes to protect each of them
-    // plus variables to signal when the server is stopping
-
-    bool shutdown{ false };
-    nmos::condition_variable shutdown_condition; // associated with node_model.mutex; notify on shutdown
+    // Construct our data models including mutexes to protect them
 
     nmos::node_model node_model;
 
@@ -137,7 +133,7 @@ int main(int argc, char* argv[])
         nmos::support_api(node_listener, node_api);
 
         // set up the node resources
-        auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, shutdown, shutdown_condition, gate); }, [&] { auto lock = node_model.write_lock(); shutdown = true; shutdown_condition.notify_all(); });
+        auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         // Configure the Connection API
 
@@ -164,7 +160,7 @@ int main(int argc, char* argv[])
 
         // start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 
-        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, shutdown, gate); }, [&] { auto lock = node_model.write_lock(); shutdown = true; node_model.notify(); });
+        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

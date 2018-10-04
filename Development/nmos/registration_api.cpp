@@ -12,10 +12,12 @@
 
 namespace nmos
 {
-    void erase_expired_resources_thread(nmos::registry_model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate)
+    void erase_expired_resources_thread(nmos::registry_model& model, slog::base_gate& gate)
     {
         // start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource actually needs to be deleted from the resources
         auto lock = model.read_lock();
+        auto& shutdown_condition = model.shutdown_condition;
+        auto& shutdown = model.shutdown;
         auto& resources = model.registry_resources;
 
         auto least_health = nmos::least_health(resources);

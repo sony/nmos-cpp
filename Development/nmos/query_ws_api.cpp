@@ -132,13 +132,15 @@ namespace nmos
         };
     }
 
-    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, const bool& shutdown, slog::base_gate& gate)
+    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
 
         // could start out as a shared/read lock, only upgraded to an exclusive/write lock when a grain in the resources is actually modified
         auto lock = model.write_lock();
+        auto& condition = model.condition;
+        auto& shutdown = model.shutdown;
         auto& resources = model.registry_resources;
 
         tai most_recent_message{};
@@ -148,7 +150,7 @@ namespace nmos
         {
             // wait for the thread to be interrupted either because there are resource changes, or because the server is being shut down
             // or because message sending was throttled earlier
-            details::wait_until(model.condition, lock, earliest_necessary_update, [&]{ return shutdown || most_recent_message < most_recent_update(resources); });
+            details::wait_until(condition, lock, earliest_necessary_update, [&]{ return shutdown || most_recent_message < most_recent_update(resources); });
             if (shutdown) break;
             most_recent_message = most_recent_update(resources);
 

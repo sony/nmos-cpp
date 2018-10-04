@@ -386,7 +386,7 @@ namespace nmos
         }
 
         // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::node_model& model, const bool& shutdown, nmos::condition_variable& shutdown_condition, slog::base_gate& gate)
+        void node_resources_thread(nmos::node_model& model, slog::base_gate& gate)
         {
             const auto seed_id = nmos::with_read_lock(model.mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
             auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
@@ -405,7 +405,7 @@ namespace nmos
             const auto insert_resource_after = [&](unsigned int milliseconds, nmos::resource&& resource, slog::base_gate& gate)
             {
                 // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
-                if (!shutdown_condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds), [&] { return shutdown; }))
+                if (!model.shutdown_condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
                 {
                     const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
                     const bool success = insert_resource(model.node_resources, std::move(resource)).second;
@@ -430,7 +430,7 @@ namespace nmos
             insert_resource_after(delay_millis, make_sender(sender_id, flow_id, device_id, {}, model.settings), gate);
             insert_resource_after(delay_millis, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, model.settings), gate);
 
-            shutdown_condition.wait(lock, [&] { return shutdown; });
+            model.shutdown_condition.wait(lock, [&] { return model.shutdown; });
         }
     }
 }

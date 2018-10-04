@@ -13,17 +13,25 @@ namespace nmos
         // mutex should be used to protect the members of the model from simultaneous access by multiple threads
         mutable nmos::mutex mutex;
 
-        // condition should be used to wait for, and notify other threads about, changes to members of the model
+        // condition should be used to wait for, and notify other threads about, changes to any member of the model
         mutable nmos::condition_variable condition;
+
+        // condition should be used to wait for, and notify other threads when shutdown is initiated
+        mutable nmos::condition_variable shutdown_condition;
 
         // application-wide configuration
         nmos::settings settings;
+
+        // flag indicating whether shutdown has been initiated
+        bool shutdown = false;
 
         // convenience functions
 
         nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
         nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
         void notify() const { return condition.notify_all(); }
+
+        void controlled_shutdown() { { auto lock = write_lock(); shutdown = true; } notify(); shutdown_condition.notify_all(); }
     };
 
     struct model : base_model

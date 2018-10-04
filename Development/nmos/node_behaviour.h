@@ -13,7 +13,7 @@ namespace nmos
 {
     struct model;
 
-    void node_behaviour_thread(nmos::model& model, const bool& shutdown, slog::base_gate& gate);
+    void node_behaviour_thread(nmos::model& model, slog::base_gate& gate);
 }
 
 #endif
