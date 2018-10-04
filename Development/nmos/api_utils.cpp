@@ -257,6 +257,12 @@ namespace nmos
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
                 details::set_error_reply(res, status_codes::NotImplemented, utility::s2us(e.what()));
             }
+            // and a logic_error (probably) indicates some other implementation error
+            catch (const std::logic_error& e)
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
+                details::set_error_reply(res, status_codes::InternalError, utility::s2us(e.what()));
+            }
             // and other exception types are unexpected errors
             catch (const std::exception& e)
             {
