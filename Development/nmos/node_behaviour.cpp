@@ -92,8 +92,7 @@ namespace nmos
                 if (0 != discovery_backoff)
                 {
                     auto lock = model.read_lock();
-                    // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
-                    model.condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return model.shutdown; });
+                    model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return model.shutdown; });
                     if (model.shutdown) break;
                 }
 

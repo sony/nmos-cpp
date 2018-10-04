@@ -31,7 +31,28 @@ namespace nmos
         nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
         void notify() const { return condition.notify_all(); }
 
-        void controlled_shutdown() { { auto lock = write_lock(); shutdown = true; } notify(); shutdown_condition.notify_all(); }
+        template <class ReadOrWriteLock, class Predicate>
+        void wait(ReadOrWriteLock& lock, Predicate pred)
+        {
+            condition.wait(lock, pred);
+        }
+
+        template <class ReadOrWriteLock, class Rep, class Period, class Predicate>
+        bool wait_for(ReadOrWriteLock& lock, const std::chrono::duration<Rep, Period>& rel_time, Predicate pred)
+        {
+            // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
+            return condition.wait_until(lock, std::chrono::steady_clock::now() + rel_time, pred);
+        }
+
+        void controlled_shutdown()
+        {
+            {
+                auto lock = write_lock();
+                shutdown = true;
+            }
+            notify();
+            shutdown_condition.notify_all();
+        }
     };
 
     struct model : base_model
