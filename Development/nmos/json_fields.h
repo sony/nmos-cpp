@@ -71,14 +71,20 @@ namespace nmos
         const web::json::field_as_value endpoint_constraints{ U("constraints") }; // array
         const web::json::field_as_value endpoint_staged{ U("staged") }; // object
         const web::json::field_as_value endpoint_active{ U("active") }; // object
+        const web::json::field_as_value endpoint_transportfile{ U("transportfile") }; // object
+        const web::json::field_as_string href{ U("href") };
         const web::json::field_as_bool master_enable{ U("master_enable") };
         const web::json::field_as_value_or activation{ U("activation"), {} }; // object
-        const web::json::field_as_string mode{ U("mode") };
-        const web::json::field<tai> requested_time{ U("requested_time") };
-        const web::json::field<tai> activation_time{ U("activation_time") };
-        const web::json::field_as_value transport_file{ U("transport_file") }; // object
-        const web::json::field_as_string href{ U("href") };
+        const web::json::field_as_value_or mode{ U("mode"), {} }; // string or null
+        const web::json::field_as_value_or requested_time{ U("requested_time"), {} }; // string or null
+        const web::json::field_as_value_or activation_time{ U("activation_time"), {} }; // string or null
+        const web::json::field_as_value_or transport_file{ U("transport_file"), {} }; // object
         const web::json::field_as_value transport_params{ U("transport_params") }; // array
+        const web::json::field_as_value_or multicast_ip{ U("multicast_ip"), {} }; // string or null
+        const web::json::field_as_value_or interface_ip{ U("interface_ip"), {} }; // string or null
+        const web::json::field_as_value_or source_ip{ U("source_ip"), {} }; // string or null
+        const web::json::field_as_value_or destination_port{ U("destination_port"), {} }; // string or integer
+        const web::json::field_as_bool_or rtp_enabled{ U("rtp_enabled"), false };
     }
 
     // Fields for experimental extensions

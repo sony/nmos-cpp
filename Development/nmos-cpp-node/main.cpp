@@ -137,14 +137,7 @@ int main(int argc, char* argv[])
 
         // Configure the Connection API
 
-        auto activate = [&gate](const nmos::type& type, const nmos::id& id)
-        {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Activating" << std::make_pair(id, type);
-            // not yet asynchronous (task-based)
-            //return pplx::task_from_result();
-        };
-
-        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, activate, gate);
+        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, gate);
         web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
         nmos::support_api(connection_listener, connection_api);
 
