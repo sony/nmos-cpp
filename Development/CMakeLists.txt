@@ -432,6 +432,7 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/query_utils.cpp
     nmos/resource.cpp
     nmos/resources.cpp
+    nmos/sdp_utils.cpp
     nmos/settings_api.cpp
     )
 set(NMOS_CPP_NODE_NMOS_HEADERS
@@ -467,6 +468,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/rational.h
     nmos/resource.h
     nmos/resources.h
+    nmos/sdp_utils.h
     nmos/settings.h
     nmos/settings_api.h
     nmos/slog.h
