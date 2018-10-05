@@ -369,6 +369,7 @@ namespace nmos
                 // "For an immediate activation this field will always be null on the staged endpoint,
                 // even in the response to the PATCH request."
                 response_activation[nmos::fields::requested_time] = value::null();
+                staged_activation[nmos::fields::requested_time] = value::null();
 
                 // "For immediate activations on the staged endpoint this property will be the time the activation actually
                 // occurred in the response to the PATCH request, but null in response to any GET requests thereafter."
