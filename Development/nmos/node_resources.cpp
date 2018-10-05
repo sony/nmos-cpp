@@ -324,6 +324,12 @@ namespace nmos
 
     namespace details
     {
+        web::json::value legs_of(const web::json::value& value, bool smpte2022_7)
+        {
+            using web::json::value_of;
+            return smpte2022_7 ? value_of({ value, value }) : value_of({ value });
+        }
+
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
         web::json::value make_connection_resource_staging_core(bool smpte2022_7)
@@ -338,7 +344,7 @@ namespace nmos
                     { nmos::fields::requested_time, value::null() },
                     { nmos::fields::activation_time, value::null() }
                 }) },
-                { nmos::fields::transport_params, smpte2022_7 ? value_of({ value::object(), value::object() }) : value_of({ value::object() }) }
+                { nmos::fields::transport_params, legs_of(value::object(), smpte2022_7) }
             });
         }
 
@@ -362,9 +368,75 @@ namespace nmos
             return value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::endpoint_constraints, smpte2022_7 ? value_of({ value::object(), value::object() }) : value_of({ value::object() }) },
+                { nmos::fields::endpoint_constraints, legs_of(value::object(), smpte2022_7) },
                 { nmos::fields::endpoint_staged, make_connection_resource_staging_core(smpte2022_7) },
                 { nmos::fields::endpoint_active, make_connection_resource_staging_core(smpte2022_7) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
+        web::json::value make_connection_sender_core_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::source_ip, unconstrained },
+                { nmos::fields::destination_ip, unconstrained },
+                { nmos::fields::source_port, unconstrained },
+                { nmos::fields::destination_port, unconstrained },
+                { nmos::fields::rtp_enabled, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
+        web::json::value make_connection_sender_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::source_ip, U("auto") },
+                { nmos::fields::destination_ip, U("auto") },
+                { nmos::fields::source_port, U("auto") },
+                { nmos::fields::destination_port, U("auto") },
+                { nmos::fields::rtp_enabled, true }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
+        web::json::value make_connection_receiver_core_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::source_ip, unconstrained },
+                { nmos::fields::interface_ip, unconstrained },
+                { nmos::fields::destination_port, unconstrained },
+                { nmos::fields::rtp_enabled, unconstrained },
+                { nmos::fields::multicast_ip, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+        web::json::value make_connection_receiver_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::source_ip, value::null() },
+                { nmos::fields::interface_ip, U("auto") },
+                { nmos::fields::destination_port, U("auto") },
+                { nmos::fields::rtp_enabled, true },
+                { nmos::fields::multicast_ip, value::null() }
             });
         }
     }
@@ -376,8 +448,13 @@ namespace nmos
 
         auto data = details::make_connection_resource_core(id, smpte2022_7);
 
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_sender_core_constraints(), smpte2022_7);
+
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
-        data[nmos::fields::endpoint_active][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_sender_staged_core_parameter_set(), smpte2022_7);
+
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+        // Hmm, all instances of "auto" should be resolved into the actual values that will be used
 
         const utility::string_t sdp_magic(U("v=0"));
 
@@ -404,10 +481,14 @@ namespace nmos
 
         auto data = details::make_connection_resource_core(id, smpte2022_7);
 
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_receiver_core_constraints(), smpte2022_7);
+
         data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
-        data[nmos::fields::endpoint_active][nmos::fields::sender_id] = value::null();
-        data[nmos::fields::endpoint_active][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_receiver_staged_core_parameter_set(), smpte2022_7);
+
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+        // Hmm, all instances of "auto" should be resolved into the actual values that will be used
 
         return{ is05_versions::v1_0, types::receiver, data, false };
     }

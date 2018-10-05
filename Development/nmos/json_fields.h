@@ -84,6 +84,8 @@ namespace nmos
         const web::json::field_as_value_or interface_ip{ U("interface_ip"), {} }; // string or null
         const web::json::field_as_value_or source_ip{ U("source_ip"), {} }; // string or null
         const web::json::field_as_value_or destination_port{ U("destination_port"), {} }; // string or integer
+        const web::json::field_as_value_or destination_ip{ U("destination_ip"), {} }; // string
+        const web::json::field_as_value_or source_port{ U("source_port"), {} }; // string or integer
         const web::json::field_as_bool_or rtp_enabled{ U("rtp_enabled"), false };
     }
 
