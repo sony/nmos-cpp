@@ -4,7 +4,6 @@
 #include "nmos/activation_mode.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
-#include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -257,44 +256,14 @@ namespace nmos
             }
         }
 
-        void set_staged_activation_time(nmos::resources& connection_resources, const nmos::id& id, const nmos::tai& tai)
-        {
-            using web::json::value;
-
-            modify_resource(connection_resources, id, [&tai](nmos::resource& resource)
-            {
-                resource.data[nmos::fields::version] = value::string(nmos::make_version());
-
-                auto& staged = nmos::fields::endpoint_staged(resource.data);
-                auto& staged_activation = staged[nmos::fields::activation];
-
-                staged_activation[nmos::fields::activation_time] = value::string(nmos::make_version(tai));
-            });
-        }
-
-        void set_staged_activation_not_pending(nmos::resources& connection_resources, const nmos::id& id)
-        {
-            using web::json::value;
-
-            modify_resource(connection_resources, id, [](nmos::resource& resource)
-            {
-                resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-
-                auto& staged = nmos::fields::endpoint_staged(resource.data);
-                auto& staged_activation = staged[nmos::fields::activation];
-
-                staged_activation[nmos::fields::mode] = value::null();
-                staged_activation[nmos::fields::requested_time] = value::null();
-                staged_activation[nmos::fields::activation_time] = value::null();
-            });
-        }
-
         // wait for the staged activation mode of the specified resource to be set to something other than "activate_immediate"
         // or for the resource to have vanished (unexpected!)
         // or for the server to be shut down
-        void wait_immediate_activation_not_pending(nmos::node_model& model, nmos::write_lock& lock, std::pair<nmos::id, nmos::type> id_type)
+        // or for the timeout to expire
+        template <class ReadOrWriteLock>
+        bool wait_immediate_activation_not_pending(nmos::node_model& model, ReadOrWriteLock& lock, std::pair<nmos::id, nmos::type> id_type)
         {
-            model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
+            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
             {
                 if (model.shutdown) return true;
 
@@ -309,9 +278,11 @@ namespace nmos
         // wait for the staged activation of the specified resource to have changed
         // or for the resource to have vanished (unexpected!)
         // or for the server to be shut down
-        void wait_activation_modified(nmos::node_model& model, nmos::write_lock& lock, std::pair<nmos::id, nmos::type> id_type, web::json::value initial_activation)
+        // or for the timeout to expire
+        template <class ReadOrWriteLock>
+        bool wait_activation_modified(nmos::node_model& model, ReadOrWriteLock& lock, std::pair<nmos::id, nmos::type> id_type, web::json::value initial_activation)
         {
-            model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
+            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
             {
                 if (model.shutdown) return true;
 
@@ -327,18 +298,10 @@ namespace nmos
         {
             using web::json::value;
 
-            // we need to use wait_activation_modified here
-
-            // ...while over in the connection thread...
+            // lock.owns_lock() must be true initially; waiting releases and reacquires the lock
+            if (!wait_activation_modified(model, lock, id_type, response_activation) || model.shutdown)
             {
-                // on success, update the active endpoint and the relevant IS-04 resource
-                // and update the staged endpoint to indicate the immediate activation has been processed
-                set_staged_activation_time(model.connection_resources, id_type.first);
-
-                // on failure, set the activation not pending (or to anything else...)
-
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Notifying connection API - immediate activation processed";
-                model.notify();
+                throw std::logic_error("timed out waiting for in-flight immediate activation to complete");
             }
 
             auto& resources = model.connection_resources;
@@ -392,11 +355,11 @@ namespace nmos
             // Validate JSON syntax according to the schema
             details::validate_staged_core(id_type.second, patch);
 
+            const auto patch_state = details::get_activation_state(nmos::fields::activation(patch));
+
             auto resource = find_resource(resources, id_type);
             if (resources.end() != resource)
             {
-                const auto patch_state = details::get_activation_state(nmos::fields::activation(patch));
-
                 // Prevent changes to already-scheduled activations and in-flight immediate activations
 
                 const auto staged_state = details::get_activation_state(nmos::fields::activation(nmos::fields::endpoint_staged(resource->data)));
@@ -413,15 +376,21 @@ namespace nmos
                 }
                 else if (details::immediate_activation_pending == staged_state)
                 {
-                    // We actually need to use wait_immediate_activation_not_pending and then find the resource again!
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/49
+                    if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation";
 
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation";
-
-                    set_reply(res, status_codes::InternalError);
-                    return;
+                        set_reply(res, status_codes::InternalError);
+                        return;
+                    }
+                    // find resource again just in case, since waiting releases and reacquires the lock
+                    resource = find_resource(resources, id_type);
                 }
+            }
 
+            if (resources.end() != resource)
+            {
                 // Merge this patch request into a *copy* of the current staged endpoint
                 // so that the merged parameters can be validated against the constraints
                 // before the current values are overwritten.
@@ -722,16 +691,22 @@ namespace nmos
 
                     if (details::immediate_activation_pending == staged_state)
                     {
-                        // We actually need to use wait_immediate_activation_not_pending and then must find the resource again!
                         // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/49
+                        if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting GET request for " << id_type << " due to a pending immediate activation";
 
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting GET request for " << id_type << " due to a pending immediate activation";
-
-                        set_reply(res, status_codes::InternalError);
-                        return pplx::task_from_result(true);
+                            set_reply(res, status_codes::InternalError);
+                            return pplx::task_from_result(true);
+                        }
+                        // find resource again just in case, since waiting releases and reacquires the lock
+                        resource = find_resource(resources, id_type);
                     }
                 }
+            }
 
+            if (resources.end() != resource)
+            {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << stagingType << " data for " << id_type;
 
                 const web::json::field_as_value endpoint_staging{ stagingType };

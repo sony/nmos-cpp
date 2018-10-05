@@ -20,15 +20,12 @@ namespace slog
 
 namespace nmos
 {
-    struct model;
+    struct node_model;
 
-    // handler for the Node API /receivers/{receiverId}/target endpoiint
+    // handler for the Node API /receivers/{receiverId}/target endpoint
     typedef std::function<pplx::task<void>(const nmos::id&, const web::json::value&)> node_api_target_handler;
 
-    // function to connect or disconnect (when sdp is empty) the specified receiver
-    typedef std::function<pplx::task<void>(const nmos::id& receiver_id, const utility::string_t& sdp)> connect_function;
-
-    node_api_target_handler make_node_api_target_handler(nmos::model& model, connect_function connect, slog::base_gate& gate);
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, slog::base_gate& gate);
 }
 
 #endif

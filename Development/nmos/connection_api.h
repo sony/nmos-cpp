@@ -2,7 +2,7 @@
 #define NMOS_CONNECTION_API_H
 
 #include "cpprest/api_router.h"
-#include "nmos/resources.h" // for nmos::resources, id, tai
+#include "nmos/id.h"
 
 namespace slog
 {
@@ -14,13 +14,13 @@ namespace slog
 namespace nmos
 {
     struct node_model;
+    struct type;
 
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate);
 
     namespace details
     {
-        void set_staged_activation_time(nmos::resources& connection_resources, const nmos::id& id, const nmos::tai& tai = tai_now());
-        void set_staged_activation_not_pending(nmos::resources& connection_resources, const nmos::id& id);
+        void handle_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate);
     }
 }
 

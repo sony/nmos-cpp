@@ -2,15 +2,17 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include "cpprest/http_client.h"
+#include "nmos/activation_mode.h"
+#include "nmos/connection_api.h"
 #include "nmos/json_fields.h"
 #include "nmos/model.h"
 #include "nmos/slog.h"
 
 namespace nmos
 {
-    node_api_target_handler make_node_api_target_handler(nmos::model& model, connect_function connect, slog::base_gate& gate)
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, slog::base_gate& gate)
     {
-        return [&, connect](const nmos::id& receiver_id, const web::json::value& sender_data)
+        return [&](const nmos::id& receiver_id, const web::json::value& sender_data)
         {
             using web::json::value;
             using web::json::value_of;
@@ -48,45 +50,45 @@ namespace nmos
                     }
 
                     return res.extract_string(true);
-                }).then([connect, receiver_id](const utility::string_t& sdp)
+                }).then([&model, receiver_id, sender_id, &gate](const utility::string_t& sdp)
                 {
-                    return connect(receiver_id, sdp);
-                }).then([&, receiver_id, sender_id]
-                {
-                    auto lock = model.write_lock();
+                    // "The Connection Management API supersedes the now deprecated method of updating the 'target' resource on Node API Receivers in order to establish connections."
+                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#support-for-legacy-is-04-connection-management
 
-                    modify_resource(model.node_resources, receiver_id, [&sender_id](nmos::resource& resource)
-                    {
-                        resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                        nmos::fields::subscription(resource.data) = value_of({
-                            { nmos::fields::active, true },
-                            { nmos::fields::sender_id, sender_id }
-                        });
+                    const auto patch = value_of({
+                        { nmos::fields::sender_id, sender_id },
+                        { nmos::fields::master_enable, true },
+                        { nmos::fields::activation, value_of({
+                            { nmos::fields::mode, nmos::activation_modes::activate_immediate.name }
+                        })},
+                        { nmos::fields::transport_file, value_of({
+                            { nmos::fields::data, sdp },
+                            { nmos::fields::type, U("application/sdp") }
+                        })}
                     });
 
-                    // notify anyone who cares...
-                    model.notify();
+                    // fire and forget...
+                    web::http::http_response res;
+                    nmos::details::handle_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
                 });
             }
             else
             {
                 // no sender data means disconnect
 
-                return connect(receiver_id, U("")).then([&, receiver_id]
+                return pplx::create_task([] {}).then([&model, receiver_id, &gate]
                 {
-                    auto lock = model.write_lock();
-
-                    modify_resource(model.node_resources, receiver_id, [](nmos::resource& resource)
-                    {
-                        resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                        nmos::fields::subscription(resource.data) = value_of({
-                            { nmos::fields::active, false },
-                            { nmos::fields::sender_id, {} }
-                        });
+                    const auto patch = value_of({
+                        { nmos::fields::sender_id, value::null() },
+                        { nmos::fields::master_enable, false },
+                        { nmos::fields::activation, value_of({
+                            { nmos::fields::mode, value::null() }
+                        }) }
                     });
 
-                    // notify anyone who cares...
-                    model.notify();
+                    // fire and forget...
+                    web::http::http_response res;
+                    nmos::details::handle_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
                 });
             }
         };
