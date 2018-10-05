@@ -285,7 +285,7 @@ namespace web
                     merge_patch(value.at(patch_field.first), patch_field.second);
                 }
             }
-            else if (value.type() == patch.type() || patch.is_null())
+            else if (value.type() == patch.type() || value.is_null() || patch.is_null())
             {
                 value = patch;
             }
