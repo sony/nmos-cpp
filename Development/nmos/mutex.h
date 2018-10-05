@@ -19,6 +19,13 @@ namespace nmos
         nmos::read_lock lock(mutex);
         return func();
     }
+
+    template <typename Func>
+    auto with_write_lock(nmos::mutex& mutex, Func&& func) -> decltype(func())
+    {
+        nmos::write_lock lock(mutex);
+        return func();
+    }
 }
 
 #endif

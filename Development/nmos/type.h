@@ -7,11 +7,7 @@
 namespace nmos
 {
     // Resources have a type
-    struct type : public string_enum<type>
-    {
-        explicit type(utility::string_t name = U("")) : string_enum{ std::move(name) } {}
-    };
-
+    DEFINE_STRING_ENUM(type)
     namespace types
     {
         const type node{ U("node") };

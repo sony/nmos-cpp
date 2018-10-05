@@ -1,6 +1,5 @@
 #include "nmos/query_ws_api.h"
 
-#include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/rational.h"
