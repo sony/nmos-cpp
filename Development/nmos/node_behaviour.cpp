@@ -6,7 +6,6 @@
 #include "mdns/service_discovery.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::type_from_resourceType
-#include "nmos/log_manip.h"
 #include "nmos/mdns.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"

@@ -7,7 +7,6 @@
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
-#include "nmos/slog.h"
 #include "nmos/thread_utils.h"
 
 namespace nmos

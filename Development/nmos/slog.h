@@ -4,6 +4,8 @@
 #include "cpprest/basic_utils.h"
 #include "cpprest/api_router.h" // for web::http::experimental::listener::route_parameters
 #include "cpprest/logging_utils.h"
+#include "nmos/id.h"
+#include "nmos/type.h"
 #include "slog/all_in_one.h"
 
 namespace slog
@@ -18,6 +20,12 @@ namespace slog
 
 namespace nmos
 {
+    // (defined in an associated namespace to ensure slog::nolog_statement::operator<< also finds it via ADL)
+    inline slog::log_statement& operator<<(slog::log_statement& s, const std::pair<nmos::id, nmos::type>& id_type)
+    {
+        return s << id_type.second.name << ": " << id_type.first;
+    }
+
     // Log message categories
     typedef std::string category;
 

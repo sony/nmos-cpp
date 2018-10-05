@@ -44,12 +44,6 @@ namespace nmos
                 << by_type.count(false) << " non-extant resources";
         });
     }
-
-    // (defined in an associated namespace to ensure slog::nolog_statement::operator<< also finds it via ADL)
-    inline slog::log_statement& operator<<(slog::log_statement& s, const std::pair<nmos::id, nmos::type>& id_type)
-    {
-        return s << id_type.second.name << ": " << id_type.first;
-    }
 }
 
 #endif
