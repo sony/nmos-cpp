@@ -47,7 +47,7 @@ namespace nmos
         using web::json::value;
         using web::json::value_of;
 
-        auto transport_params = value::array({ smpte2022_7 ? 2 : 1, value::object() });
+        auto transport_params = smpte2022_7 ? value_of({ value::object(), value::object() }) : value_of({ value::object() });
 
         // There isn't much of a specification for interpreting SDP files and updating the
         // equivalent transport parameters, just some examples...
