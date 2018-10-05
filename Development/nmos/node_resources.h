@@ -72,15 +72,12 @@ namespace nmos
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_data.json
     nmos::resource make_sdianc_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
+
+    nmos::resource make_connection_sender(const nmos::id& id, const utility::string_t& transportfile_href);
+    nmos::resource make_connection_receiver(const nmos::id& id);
 }
 
-#include "nmos/mutex.h"
 #include "nmos/resources.h"
-
-namespace slog
-{
-    class base_gate;
-}
 
 // This currently serves as an example of the resources that an NMOS node would construct
 namespace nmos
@@ -92,9 +89,6 @@ namespace nmos
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
         std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings);
-
-        // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::node_model& model, slog::base_gate& gate);
     }
 }
 
