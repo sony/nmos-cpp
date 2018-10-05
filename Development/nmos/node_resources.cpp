@@ -324,7 +324,37 @@ namespace nmos
 
     namespace details
     {
-        web::json::value make_connection_resource_core(const nmos::id& id)
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
+        web::json::value make_connection_resource_staging_core(bool smpte2022_7)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::master_enable, false },
+                { nmos::fields::activation, value_of({
+                    { nmos::fields::mode, value::null() },
+                    { nmos::fields::requested_time, value::null() },
+                    { nmos::fields::activation_time, value::null() }
+                }) },
+                { nmos::fields::transport_params, smpte2022_7 ? value_of({ value::object(), value::object() }) : value_of({ value::object() }) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
+        web::json::value make_connection_receiver_staging_transport_file()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::data, value::null() },
+                { nmos::fields::type, U("application/sdp") }
+            });
+        }
+
+        web::json::value make_connection_resource_core(const nmos::id& id, bool smpte2022_7)
         {
             using web::json::value;
             using web::json::value_of;
@@ -332,31 +362,52 @@ namespace nmos
             return value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::endpoint_constraints, value_of({
-                    value::object(),
-                    value::object()
-                }) },
-                { nmos::fields::endpoint_staged, value::object() },
-                { nmos::fields::endpoint_active, value::object() }
+                { nmos::fields::endpoint_constraints, smpte2022_7 ? value_of({ value::object(), value::object() }) : value_of({ value::object() }) },
+                { nmos::fields::endpoint_staged, make_connection_resource_staging_core(smpte2022_7) },
+                { nmos::fields::endpoint_active, make_connection_resource_staging_core(smpte2022_7) }
             });
         }
     }
 
-    nmos::resource make_connection_sender(const nmos::id& id, const utility::string_t& transportfile_href)
+    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
     {
         using web::json::value;
+        using web::json::value_of;
 
-        auto data = details::make_connection_resource_core(id);
-        data[nmos::fields::transport_file][nmos::fields::href] = value::string(transportfile_href);
+        auto data = details::make_connection_resource_core(id, smpte2022_7);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_active][nmos::fields::receiver_id] = value::null();
+
+        const utility::string_t sdp_magic(U("v=0"));
+
+        if (sdp_magic == transportfile.substr(0, sdp_magic.size()))
+        {
+            data[nmos::fields::endpoint_transportfile] = value_of({
+                { nmos::fields::data, transportfile },
+                { nmos::fields::type, U("application/sdp") }
+            });
+        }
+        else
+        {
+            data[nmos::fields::endpoint_transportfile] = value_of({
+                { nmos::fields::href, transportfile }
+            });
+        }
 
         return{ is05_versions::v1_0, types::sender, data, false };
     }
 
-    nmos::resource make_connection_receiver(const nmos::id& id)
+    nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7)
     {
         using web::json::value;
 
-        auto data = details::make_connection_resource_core(id);
+        auto data = details::make_connection_resource_core(id, smpte2022_7);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
+        data[nmos::fields::endpoint_active][nmos::fields::sender_id] = value::null();
+        data[nmos::fields::endpoint_active][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
 
         return{ is05_versions::v1_0, types::receiver, data, false };
     }
