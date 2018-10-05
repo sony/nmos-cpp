@@ -10,8 +10,6 @@ namespace nmos
     DEFINE_STRING_ENUM(activation_mode)
     namespace activation_modes
     {
-        const activation_mode none{};
-
         const activation_mode activate_immediate{ U("activate_immediate") };
         const activation_mode activate_scheduled_relative{ U("activate_scheduled_relative") };
         const activation_mode activate_scheduled_absolute{ U("activate_scheduled_absolute") };
