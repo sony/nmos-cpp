@@ -758,13 +758,25 @@ namespace nmos
             {
                 if (nmos::fields::master_enable(nmos::fields::endpoint_active(resource->data)))
                 {
-                    // The transportfile endpoint data in the resource could support "data", "type" and an optional "encoding" field
-                    // as an alternative to "href"; data conversion to the specified encoding would be needed here
+                    // The transportfile endpoint data in the resource must have either "data" and "type", or an "href" for the redirect
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Redirecting to transport file for " << id_type;
+                    auto& transportfile = nmos::fields::endpoint_transportfile(resource->data);
+                    auto& data = nmos::fields::data(transportfile);
 
-                    set_reply(res, status_codes::TemporaryRedirect);
-                    res.headers().add(web::http::header_names::location, nmos::fields::href(nmos::fields::endpoint_transportfile(resource->data)));
+                    if (!data.is_null())
+                    {
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning transport file for " << id_type;
+
+                        // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
+                        set_reply(res, status_codes::OK, data.as_string(), nmos::fields::type(transportfile));
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Redirecting to transport file for " << id_type;
+
+                        set_reply(res, status_codes::TemporaryRedirect);
+                        res.headers().add(web::http::header_names::location, nmos::fields::href(transportfile));
+                    }
                 }
                 else
                 {
