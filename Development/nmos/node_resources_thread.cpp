@@ -161,10 +161,20 @@ a=mid:SECONDARY
                             resource.data[nmos::fields::version] = now;
 
                             // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
-                            nmos::fields::subscription(resource.data) = value_of({
-                                { nmos::fields::active, active },
-                                { nmos::types::sender == resource.type ? nmos::fields::receiver_id : nmos::fields::sender_id, connected_id }
-                            });
+                            // (depending on the API version)
+                            if (nmos::is04_versions::v1_2 <= resource.version)
+                            {
+                                nmos::fields::subscription(resource.data) = value_of({
+                                    { nmos::fields::active, active },
+                                    { nmos::types::sender == resource.type ? nmos::fields::receiver_id : nmos::fields::sender_id, connected_id }
+                                });
+                            }
+                            else if (nmos::types::receiver == resource.type)
+                            {
+                                nmos::fields::subscription(resource.data) = value_of({
+                                    { nmos::fields::sender_id, connected_id }
+                                });
+                            }
                         });
 
                         notify = true;

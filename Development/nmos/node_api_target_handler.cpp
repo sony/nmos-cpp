@@ -67,9 +67,8 @@ namespace nmos
                         })}
                     });
 
-                    // fire and forget...
-                    web::http::http_response res;
-                    nmos::details::handle_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
+                    web::http::http_response res; // ignore the Connection API response
+                    nmos::details::handle_connection_resource_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
                 });
             }
             else
@@ -82,13 +81,12 @@ namespace nmos
                         { nmos::fields::sender_id, value::null() },
                         { nmos::fields::master_enable, false },
                         { nmos::fields::activation, value_of({
-                            { nmos::fields::mode, value::null() }
+                            { nmos::fields::mode, nmos::activation_modes::activate_immediate.name }
                         }) }
                     });
 
-                    // fire and forget...
-                    web::http::http_response res;
-                    nmos::details::handle_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
+                    web::http::http_response res; // ignore the Connection API response
+                    nmos::details::handle_connection_resource_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
                 });
             }
         };

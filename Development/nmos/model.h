@@ -37,11 +37,17 @@ namespace nmos
             condition.wait(lock, pred);
         }
 
+        template <class ReadOrWriteLock, class TimePoint, class Predicate>
+        bool wait_until(ReadOrWriteLock& lock, const TimePoint& abs_time, Predicate pred)
+        {
+            return details::wait_until(condition, lock, abs_time, pred);
+        }
+
         template <class ReadOrWriteLock, class Rep, class Period, class Predicate>
         bool wait_for(ReadOrWriteLock& lock, const std::chrono::duration<Rep, Period>& rel_time, Predicate pred)
         {
-            // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
-            return condition.wait_until(lock, std::chrono::steady_clock::now() + rel_time, pred);
+            // using wait_until rather than condition.wait_for directly as a workaround for an awful bug in VS2015, resolved in VS2017
+            return wait_until(lock, std::chrono::steady_clock::now() + rel_time, pred);
         }
 
         void controlled_shutdown()

@@ -344,7 +344,7 @@ namespace nmos
             model.notify();
         }
 
-        void handle_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -509,7 +509,6 @@ namespace nmos
                 // in a parallel fashion internally. This is an implementation decision and is not a
                 // requirement of this specification."
                 // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md
-                // Choose life. Just say no.
                 const auto type = nmos::type_from_resourceType(resourceType);
                 for (auto& patch : patches)
                 {
@@ -520,7 +519,7 @@ namespace nmos
                     // try-catch based on the exception handler in nmos::add_api_finally_handler
                     try
                     {
-                        details::handle_patch(res, model, { id, type }, patch[nmos::fields::params], gate);
+                        details::handle_connection_resource_patch(res, model, { id, type }, patch[nmos::fields::params], gate);
                     }
                     catch (const web::json::json_exception& e)
                     {
@@ -666,7 +665,7 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Operation requested for single " << id_type;
 
-                details::handle_patch(res, model, id_type, body, gate);
+                details::handle_connection_resource_patch(res, model, id_type, body, gate);
 
                 return true;
             });
