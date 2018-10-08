@@ -96,7 +96,7 @@ a=mid:SECONDARY
                 model.wait_until(lock, earliest_scheduled_activation, [&] { return model.shutdown || most_recent_update < nmos::most_recent_update(model.connection_resources); });
                 if (model.shutdown) break;
 
-                auto& by_updated = model.connection_resources.get<tags::updated>();
+                auto& by_updated = model.connection_resources.get<nmos::tags::updated>();
 
                 // go through all connection resources
                 // process any immediate activations
@@ -163,7 +163,10 @@ a=mid:SECONDARY
 
                     // Update the IS-05 connection resource
 
-                    nmos::modify_resource(model.connection_resources, resource.id, [&staged_mode, &right_now, &active, &connected_id](nmos::resource& resource)
+                    // hmm, this could be extracted as a function, e.g. activate_connection_resource(resources&, const id&, const tai& = tai_now())
+                    // it'd also need a function argument to resolve "auto" values in the staged settings
+                    // it'd return the boolean result, and for use here, ideally also have two output variables (bool active, value connected_id_or_null)
+                    nmos::modify_resource(model.connection_resources, resource.id, [&right_now, &active, &connected_id](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::version] = right_now;
 
@@ -172,13 +175,15 @@ a=mid:SECONDARY
                         // activation mode, requested_time, and activation_time, to null.
 
                         auto& staged = nmos::fields::endpoint_staged(resource.data);
+                        auto& staged_activation = staged[nmos::fields::activation];
+                        const nmos::activation_mode staged_mode{ nmos::fields::mode(staged_activation).as_string() };
 
                         active = nmos::fields::master_enable(staged);
                         // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
                         connected_id = nmos::types::sender == resource.type ? nmos::fields::receiver_id(staged) : nmos::fields::sender_id(staged);
 
                         // Set the time of activation (will be included in the PATCH response for an immediate activation)
-                        staged[nmos::fields::activation][nmos::fields::activation_time] = right_now;
+                        staged_activation[nmos::fields::activation_time] = right_now;
 
                         // "When a set of 'staged' settings is activated, these settings transition into the 'active' resource."
                         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/1.0.%20Overview.md#active
@@ -201,7 +206,7 @@ a=mid:SECONDARY
                             // "This field returns to null once the activation is completed on the staged endpoint."
                             // "On the staged endpoint this field returns to null once the activation is completed."
                             // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
-                            staged[nmos::fields::activation] = value_of({
+                            staged_activation = value_of({
                                 { nmos::fields::mode, value::null() },
                                 { nmos::fields::requested_time, value::null() },
                                 { nmos::fields::activation_time, value::null() }
@@ -215,6 +220,9 @@ a=mid:SECONDARY
                     // those used in a corresponding IS-04 implementation."
                     // Luckily enough.
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#sender--receiver-ids
+
+                    // hmm, this could be extracted as a function, e.g. modify_resource_subscription(resources&, id&, bool, value&, const tai& = tai_now())
+                    // it'd return the boolean result
                     nmos::modify_resource(model.node_resources, resource.id, [&right_now, &active, &connected_id](nmos::resource& resource)
                     {
                         // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters

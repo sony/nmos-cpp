@@ -10,6 +10,7 @@
 
 namespace nmos
 {
+    // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation
     node_api_target_handler make_node_api_target_handler(nmos::node_model& model, slog::base_gate& gate)
     {
         return [&](const nmos::id& receiver_id, const web::json::value& sender_data)

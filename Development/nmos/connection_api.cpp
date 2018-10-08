@@ -381,7 +381,7 @@ namespace nmos
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation";
 
-                        set_reply(res, status_codes::InternalError);
+                        set_reply(res, status_codes::InternalError); // or ServiceUnavailable? probably not NotFound even if that's true after the timeout?
                         return;
                     }
                     // find resource again just in case, since waiting releases and reacquires the lock
@@ -695,7 +695,7 @@ namespace nmos
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting GET request for " << id_type << " due to a pending immediate activation";
 
-                            set_reply(res, status_codes::InternalError);
+                            set_reply(res, status_codes::InternalError); // or ServiceUnavailable? probably not NotFound even if that's true after the timeout?
                             return pplx::task_from_result(true);
                         }
                         // find resource again just in case, since waiting releases and reacquires the lock
