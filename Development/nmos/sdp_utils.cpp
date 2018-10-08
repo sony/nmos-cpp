@@ -25,7 +25,7 @@ namespace nmos
 #if BOOST_VERSION >= 106600
             const auto ip_address = boost::asio::ip::make_address(utility::us2s(address));
 #else
-            const auto ip_address = boost::asio::ip::address::from_string(utility::us2s(ip));
+            const auto ip_address = boost::asio::ip::address::from_string(utility::us2s(address));
 #endif
 
             if (ip_address.is_multicast())

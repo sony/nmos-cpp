@@ -464,7 +464,7 @@ namespace nmos
             {
                 set_reply(res, status_codes::NotFound);
             }
-        };
+        }
     }
 
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate)

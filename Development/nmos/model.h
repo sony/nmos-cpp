@@ -4,6 +4,7 @@
 #include "nmos/mutex.h"
 #include "nmos/resources.h"
 #include "nmos/settings.h"
+#include "nmos/thread_utils.h"
 
 // NMOS Node and Registry models
 namespace nmos
