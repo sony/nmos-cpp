@@ -123,21 +123,33 @@ namespace nmos
 
                         details::set_multicast_ip_interface_ip(params, sdp::fields::destination_address(sf));
                         params[nmos::fields::source_ip] = sdp::fields::source_addresses(sf).at(source_address);
+                        source_address = 0;
                     }
+                }
+
+                if (0 != source_address)
+                {
+                    --source_address;
+                    continue;
                 }
 
                 params[nmos::fields::destination_port] = value::number(sdp::fields::port(media));
 
-                // media connection data overrides session connection data
-                auto& mcda = sdp::fields::connection_data(media_description);
-                if (0 != mcda.size())
+                // media connection data overrides session connection data (if no source filter)
+                if (params[nmos::fields::source_ip].is_null())
                 {
-                    // hmm, how to handle multiple connection data?
-                    auto& media_connection_data = mcda.at(0);
-                    details::set_multicast_ip_interface_ip(params, details::connection_base_address(sdp::fields::connection_address(media_connection_data)));
+                    auto& mcda = sdp::fields::connection_data(media_description);
+                    if (0 != mcda.size())
+                    {
+                        // hmm, how to handle multiple connection data?
+                        auto& media_connection_data = mcda.at(0);
+                        details::set_multicast_ip_interface_ip(params, details::connection_base_address(sdp::fields::connection_address(media_connection_data)));
+                    }
                 }
 
                 params[nmos::fields::rtp_enabled] = value::boolean(true);
+
+                break;
             }
         }
 
