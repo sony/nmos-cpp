@@ -743,6 +743,11 @@ namespace nmos
 
                         // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
                         set_reply(res, status_codes::OK, data.as_string(), nmos::fields::type(transportfile));
+
+                        // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
+                        // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md#transport-files--caching
+                        res.headers().set_cache_control(U("no-cache"));
                     }
                     else
                     {
