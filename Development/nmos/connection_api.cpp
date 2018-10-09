@@ -563,6 +563,12 @@ namespace nmos
                     }
                     else
                     {
+                        // don't replace an existing response body which might contain richer error information
+                        if (!res.body())
+                        {
+                            res.set_body(nmos::make_error_response_body(res.status_code()));
+                        }
+
                         // make a bulk response error item from the standard NMOS error response
                         auto result = res.extract_json().get();
                         result[nmos::fields::id] = value::string(id);
