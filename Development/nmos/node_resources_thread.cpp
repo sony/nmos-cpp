@@ -2,6 +2,7 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 #include "nmos/activation_mode.h"
+#include "nmos/connection_api.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
@@ -156,95 +157,36 @@ a=mid:SECONDARY
                         continue;
                     }
 
-                    const auto right_now = value::string(nmos::make_version());
+                    const auto activation_time = tai_now();
 
                     bool active = false;
-                    value connected_id;
+                    nmos::id connected_id;
 
                     // Update the IS-05 connection resource
 
-                    // hmm, this could be extracted as a function, e.g. activate_connection_resource(resources&, const id&, const tai& = tai_now())
-                    // it'd also need a function argument to resolve "auto" values in the staged settings
-                    // it'd return the boolean result, and for use here, ideally also have two output variables (bool active, value connected_id_or_null)
-                    nmos::modify_resource(model.connection_resources, resource.id, [&right_now, &active, &connected_id](nmos::resource& resource)
+                    nmos::modify_resource(model.connection_resources, resource.id, [&activation_time, &active, &connected_id](nmos::resource& resource)
                     {
-                        resource.data[nmos::fields::version] = right_now;
-
-                        // This demonstrates a successful activation. When an activation is unsuccessful,
-                        // make whatever changes are necessary to the active endpoint, and set the staged endpoint
-                        // activation mode, requested_time, and activation_time, to null.
-
-                        auto& staged = nmos::fields::endpoint_staged(resource.data);
-                        auto& staged_activation = staged[nmos::fields::activation];
-                        const nmos::activation_mode staged_mode{ nmos::fields::mode(staged_activation).as_string() };
-
-                        active = nmos::fields::master_enable(staged);
-                        // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
-                        connected_id = nmos::types::sender == resource.type ? nmos::fields::receiver_id(staged) : nmos::fields::sender_id(staged);
-
-                        // Set the time of activation (will be included in the PATCH response for an immediate activation)
-                        staged_activation[nmos::fields::activation_time] = right_now;
-
-                        // "When a set of 'staged' settings is activated, these settings transition into the 'active' resource."
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/1.0.%20Overview.md#active
-                        resource.data[nmos::fields::endpoint_active] = resource.data[nmos::fields::endpoint_staged];
-
-                        // "On activation all instances of "auto" should be resolved into the actual values that will be used"
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
-                        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-                        // Currently, left as an exercise...
-
-                        // Unclear whether the activation in the active endpoint should have values for mode, requested_time
-                        // (and even activation_time?) or whether they should be null? The examples have them with values.
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-receiver-active-get-200.json
-                        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-sender-active-get-200.json
-
-                        if (nmos::activation_modes::activate_scheduled_absolute == staged_mode ||
-                            nmos::activation_modes::activate_scheduled_relative == staged_mode)
+                        nmos::set_connection_resource_active(resource, [&resource](web::json::value& endpoint_active)
                         {
-                            // "This parameter returns to null on the staged endpoint once an activation is completed."
-                            // "This field returns to null once the activation is completed on the staged endpoint."
-                            // "On the staged endpoint this field returns to null once the activation is completed."
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
-                            staged_activation = value_of({
-                                { nmos::fields::mode, value::null() },
-                                { nmos::fields::requested_time, value::null() },
-                                { nmos::fields::activation_time, value::null() }
-                            });
-                        }
+                            // "In some cases the behaviour is more complex, and may be determined by the vendor."
+                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+                            // E.g. sender "source_ip" and receiver "interface_ip" currently left as an exercise...
+
+                            nmos::resolve_auto(resource.type, endpoint_active[nmos::fields::transport_params]);
+                        }, activation_time);
+
+                        auto& endpoint_active = nmos::fields::endpoint_active(resource.data);
+                        active = nmos::fields::master_enable(endpoint_active);
+                        // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
+                        auto& connected_id_or_null = nmos::types::sender == resource.type ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
+                        if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                     });
 
                     // Update the IS-04 resource
 
-                    // "The UUIDs used to advertise Senders and Receivers in the Connection Management API must match
-                    // those used in a corresponding IS-04 implementation."
-                    // Luckily enough.
-                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#sender--receiver-ids
-
-                    // hmm, this could be extracted as a function, e.g. modify_resource_subscription(resources&, id&, bool, value&, const tai& = tai_now())
-                    // it'd return the boolean result
-                    nmos::modify_resource(model.node_resources, resource.id, [&right_now, &active, &connected_id](nmos::resource& resource)
+                    nmos::modify_resource(model.node_resources, resource.id, [&activation_time, &active, &connected_id](nmos::resource& resource)
                     {
-                        // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters
-                        // is performed, the 'version' attribute of the relevant IS-04 Sender or Receiver must be incremented."
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#version-increments
-                        resource.data[nmos::fields::version] = right_now;
-
-                        // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
-                        // (depending on the API version)
-                        if (nmos::is04_versions::v1_2 <= resource.version)
-                        {
-                            nmos::fields::subscription(resource.data) = value_of({
-                                { nmos::fields::active, active },
-                                { nmos::types::sender == resource.type ? nmos::fields::receiver_id : nmos::fields::sender_id, connected_id }
-                            });
-                        }
-                        else if (nmos::types::receiver == resource.type)
-                        {
-                            nmos::fields::subscription(resource.data) = value_of({
-                                { nmos::fields::sender_id, connected_id }
-                            });
-                        }
+                        nmos::set_resource_subscription(resource, active, connected_id, activation_time);
                     });
 
                     notify = true;

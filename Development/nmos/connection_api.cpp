@@ -510,6 +510,164 @@ namespace nmos
         }
     }
 
+    // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource
+    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value&)> resolve_auto, const nmos::tai& activation_time)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto& resource = connection_resource;
+        const auto at = value::string(nmos::make_version(activation_time));
+
+        resource.data[nmos::fields::version] = at;
+
+        auto& staged = nmos::fields::endpoint_staged(resource.data);
+        auto& staged_activation = staged[nmos::fields::activation];
+        const nmos::activation_mode staged_mode{ nmos::fields::mode(staged_activation).as_string() };
+
+        // Set the time of activation (will be included in the PATCH response for an immediate activation)
+        staged_activation[nmos::fields::activation_time] = at;
+
+        // "When a set of 'staged' settings is activated, these settings transition into the 'active' resource."
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/1.0.%20Overview.md#active
+        resource.data[nmos::fields::endpoint_active] = resource.data[nmos::fields::endpoint_staged];
+
+        // "On activation all instances of "auto" should be resolved into the actual values that will be used"
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        resolve_auto(resource.data[nmos::fields::endpoint_active]);
+
+        // Unclear whether the activation in the active endpoint should have values for mode, requested_time
+        // (and even activation_time?) or whether they should be null? The examples have them with values.
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-receiver-active-get-200.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-sender-active-get-200.json
+
+        if (nmos::activation_modes::activate_scheduled_absolute == staged_mode ||
+            nmos::activation_modes::activate_scheduled_relative == staged_mode)
+        {
+            set_connection_resource_not_pending(resource);
+        }
+        // nmos::details::handle_immediate_activation_pending finishes the transition of the staged parameters back to null
+        // in the case of an immediate activation, as explained above nmos::details::handle_connection_resource_patch!
+    }
+
+    // Clear any pending activation of an IS-05 sender or receiver
+    // (This function should not be called after nmos::set_connection_resource_active.)
+    void set_connection_resource_not_pending(nmos::resource& connection_resource)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto& resource = connection_resource;
+
+        auto& staged = nmos::fields::endpoint_staged(resource.data);
+        auto& staged_activation = staged[nmos::fields::activation];
+
+        // "This parameter returns to null on the staged endpoint once an activation is completed."
+        // "This field returns to null once the activation is completed on the staged endpoint."
+        // "On the staged endpoint this field returns to null once the activation is completed."
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
+
+        // "A resource may be unlocked by setting `mode` in `activation` to `null`, which will cancel the pending activation."
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L244
+
+        staged_activation = value_of({
+            { nmos::fields::mode, value::null() },
+            { nmos::fields::requested_time, value::null() },
+            { nmos::fields::activation_time, value::null() }
+        });
+    }
+
+    // Update the IS-04 sender or receiver after the active connection is changed in any way
+    // (This function should be called after nmos::set_connection_resource_active.)
+    void set_resource_subscription(nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto& resource = node_resource;
+        const auto at = value::string(nmos::make_version(activation_time));
+        const auto ci = !connected_id.empty() ? value::string(connected_id) : value::null();
+
+        // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters
+        // is performed, the 'version' attribute of the relevant IS-04 Sender or Receiver must be incremented."
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#version-increments
+        resource.data[nmos::fields::version] = at;
+
+        // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
+        // (depending on the API version)
+        if (nmos::is04_versions::v1_2 <= resource.version)
+        {
+            nmos::fields::subscription(resource.data) = value_of({
+                { nmos::fields::active, active },
+                { nmos::types::sender == resource.type ? nmos::fields::receiver_id : nmos::fields::sender_id, ci }
+            });
+        }
+        else if (nmos::types::receiver == resource.type)
+        {
+            nmos::fields::subscription(resource.data) = value_of({
+                { nmos::fields::sender_id, ci }
+            });
+        }
+    }
+
+    namespace details
+    {
+        template <typename AutoFun>
+        void resolve_auto(web::json::value& params, const utility::string_t& key, AutoFun auto_fun)
+        {
+            if (!params.has_field(key)) return;
+            auto& param = params.at(key);
+            if (param.is_string() && U("auto") == param.as_string())
+            {
+                param = auto_fun();
+            }
+        }
+    }
+
+    // "On activation all instances of "auto" should be resolved into the actual values that will be used"
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+    // "In some cases the behaviour is more complex, and may be determined by the vendor."
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+    // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
+    void resolve_auto(const nmos::type& type, web::json::value& transport_params)
+    {
+        if (nmos::types::sender == type)
+        {
+            for (auto& params : transport_params.as_array())
+            {
+                // nmos::fields::source_ip
+                // nmos::fields::destination_ip
+                details::resolve_auto(params, nmos::fields::source_port, [] { return 5004; });
+                details::resolve_auto(params, nmos::fields::destination_port, [] { return 5004; });
+                details::resolve_auto(params, nmos::fields::fec_destination_ip, [&] { return params[nmos::fields::destination_ip]; });
+                details::resolve_auto(params, nmos::fields::fec1D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 2; });
+                details::resolve_auto(params, nmos::fields::fec2D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 4; });
+                details::resolve_auto(params, nmos::fields::fec1D_source_port, [&] { return params[nmos::fields::source_port].as_integer() + 2; });
+                details::resolve_auto(params, nmos::fields::fec2D_source_port, [&] { return params[nmos::fields::source_port].as_integer() + 4; });
+                details::resolve_auto(params, nmos::fields::rtcp_destination_ip, [&] { return params[nmos::fields::destination_ip]; });
+                details::resolve_auto(params, nmos::fields::rtcp_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 1; });
+                details::resolve_auto(params, nmos::fields::rtcp_source_port, [&] { return params[nmos::fields::source_port].as_integer() + 1; });
+            }
+        }
+        else if (nmos::types::receiver == type)
+        {
+            for (auto& params : transport_params.as_array())
+            {
+                // nmos::fields::interface_ip
+                details::resolve_auto(params, nmos::fields::destination_port, [] { return 5004; });
+                details::resolve_auto(params, nmos::fields::fec_destination_ip, [&] { return !nmos::fields::multicast_ip(params).is_null() ? params[nmos::fields::multicast_ip] : params[nmos::fields::interface_ip]; });
+                // nmos::fields::fec_mode
+                details::resolve_auto(params, nmos::fields::fec1D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 2; });
+                details::resolve_auto(params, nmos::fields::fec2D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 4; });
+                details::resolve_auto(params, nmos::fields::rtcp_destination_ip, [&] { return !nmos::fields::multicast_ip(params).is_null() ? params[nmos::fields::multicast_ip] : params[nmos::fields::interface_ip]; });
+                details::resolve_auto(params, nmos::fields::rtcp_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 1; });
+            }
+        }
+    }
+
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
