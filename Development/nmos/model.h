@@ -71,6 +71,9 @@ namespace nmos
     struct node_model : model
     {
         // IS-05 senders and receivers for this node
+        // "The UUIDs used to advertise Senders and Receivers in the Connection Management API must match
+        // those used in a corresponding IS-04 implementation."
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#sender--receiver-ids
         // Whereas the data of the IS-04 resources corresponds to a particular Node API resource endpoint,
         // each IS-05 resource's data is a json object with an "id" field and a field for each Connection API
         // endpoint of that logical single resource
