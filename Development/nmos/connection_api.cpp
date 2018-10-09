@@ -690,14 +690,14 @@ namespace nmos
 
             const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
             auto resource = find_resource(resources, id_type);
-            if (resources.end() == resource)
-            {
-                set_reply(res, status_codes::NotFound);
-            }
-            else
+            if (resources.end() != resource)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning constraints for " << id_type;
                 set_reply(res, status_codes::OK, nmos::fields::endpoint_constraints(resource->data));
+            }
+            else
+            {
+                set_reply(res, status_codes::NotFound);
             }
 
             return pplx::task_from_result(true);
