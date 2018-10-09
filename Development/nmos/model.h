@@ -71,8 +71,17 @@ namespace nmos
     struct node_model : model
     {
         // IS-05 senders and receivers for this node
-        // Each resource's data is a json object with a field for each endpoint
-        // i.e. "constraints", "staged", "active", and for senders, "transportfile"
+        // Whereas the data of the IS-04 resources corresponds to a particular Node API resource endpoint,
+        // each IS-05 resource's data is a json object with an "id" field and a field for each Connection API
+        // endpoint of that logical single resource
+        // i.e.
+        // a "constraints" field, which must have an array value conforming to the v1.0-constraints-schema,
+        // "staged" and "active" fields, which must each have a value conforming to the v1.0-sender-response-schema or v1.0-receiver-response-schema,
+        // and for senders, also a "transportfile" field, the value of which must be an object, with either
+        // "data" and "type" fields, or an "href" field
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
         nmos::resources connection_resources;
     };
 

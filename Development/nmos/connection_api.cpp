@@ -23,7 +23,7 @@ namespace nmos
 
         connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("x-nmos/" })));
+            set_reply(res, status_codes::OK, value_of({ JU("x-nmos/") }));
             return pplx::task_from_result(true);
         });
 
@@ -344,6 +344,49 @@ namespace nmos
             model.notify();
         }
 
+        // Basic theory of implementation of PATCH /staged
+        //
+        // 1. Reject any patch, other than cancellation, when a scheduled activation is outstanding.
+        // 2. Validate the patch, apply it and notify anyone who cares via model condition variable, e.g. a scheduling thread.
+        // 3. Then return the response.
+        // 
+        // That would work, except for those pesky immediate activations...
+        //
+        // Actual implementation of PATCH /staged
+        //
+        // Since immediate activations may take some time, we want to release the model lock so we can e.g. accept patch requests
+        // on *other* senders or receivers.
+        // But if we release the model lock at any point during an in-flight immediate activation, then we also have to handle
+        // patch requests on the *same* sender or receiver arriving while this immediate activation is in flight.
+        // And (according to the spec, probably) we're supposed to block rather than reject them...
+        //
+        // Similarly we also have to handle get requests while the immediate activation is in flight. Here there are two choices,
+        // we need to either return the previous staged parameters or block until the immediate activation is completed.
+        // Might as well do the latter, having necessarily implemented it for patch...
+        //
+        // To achieve this, we need to write something into the model to be able to identify when an immediate activation is in
+        // flight, and when it's completed, i.e. a kind of 'per-resource lock'.
+        //
+        // We could choose a number of different ways of storing the in-flight activation 'lock' and data in the model, but what
+        // I've done is to use the staged endpoint like this:
+        //
+        // * Activation mode is set to "activate_immediate". This is the per-resource 'lock' which allows concurrent patch and
+        //   get requests to be blocked (and therefore this in-flight state never to be returned).
+        // * Activation requested_time is set to current timestamp. This uniquely identifies this immediate activation (in case
+        //   some other thread decides to trample all over our in-flight activation).
+        // * Activation activation_time is set to null. This indicates this activation is not complete.
+        //
+        // Then notify the scheduling thread, release the model lock and wait for the immediate activation to be done.
+        //
+        // If it's successful, the activation_time should be set and will be used in the response.
+        // If it fails, the requested_time should be set to null.
+        //
+        // This obviously requires co-operation from other threads that are manipulating these connection resources.
+        // nmos::experimental::node_resources_thread currently serves as an example of how to handle sender/receiver activations.
+        //
+        // By the time we reacquire the model lock anything may have happened, but we can identify with the above whether to send
+        // a success response or an error, and in the success case, release the 'per-resource lock' by updating the staged
+        // activation mode, requested_time and activation_time.
         void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
