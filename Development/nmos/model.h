@@ -11,13 +11,15 @@ namespace nmos
 {
     struct base_model
     {
-        // mutex should be used to protect the members of the model from simultaneous access by multiple threads
+        // mutex to be used to protect the members of the model from simultaneous access by multiple threads
         mutable nmos::mutex mutex;
 
-        // condition should be used to wait for, and notify other threads about, changes to any member of the model
+        // condition to be used to wait for, and notify other threads about, changes to any member of the model
+        // including the shutdown flag
         mutable nmos::condition_variable condition;
 
-        // condition should be used to wait for, and notify other threads when shutdown is initiated
+        // condition to be used to wait until, and notify other threads when, shutdown is initiated
+        // by setting the shutdown flag
         mutable nmos::condition_variable shutdown_condition;
 
         // application-wide configuration
@@ -27,15 +29,28 @@ namespace nmos
         bool shutdown = false;
 
         // convenience functions
+        // (the mutex and conditions may be used directly as well)
 
         nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
         nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
         void notify() const { return condition.notify_all(); }
 
+        template <class ReadOrWriteLock>
+        void wait(ReadOrWriteLock& lock)
+        {
+            condition.wait(lock);
+        }
+
         template <class ReadOrWriteLock, class Predicate>
         void wait(ReadOrWriteLock& lock, Predicate pred)
         {
             condition.wait(lock, pred);
+        }
+
+        template <class ReadOrWriteLock, class TimePoint>
+        cv_status wait_until(ReadOrWriteLock& lock, const TimePoint& abs_time)
+        {
+            return details::wait_until(condition, lock, abs_time);
         }
 
         template <class ReadOrWriteLock, class TimePoint, class Predicate>
@@ -44,11 +59,16 @@ namespace nmos
             return details::wait_until(condition, lock, abs_time, pred);
         }
 
-        template <class ReadOrWriteLock, class Rep, class Period, class Predicate>
-        bool wait_for(ReadOrWriteLock& lock, const std::chrono::duration<Rep, Period>& rel_time, Predicate pred)
+        template <class ReadOrWriteLock, class Duration>
+        cv_status wait_for(ReadOrWriteLock& lock, const Duration& rel_time)
         {
-            // using wait_until rather than condition.wait_for directly as a workaround for an awful bug in VS2015, resolved in VS2017
-            return wait_until(lock, std::chrono::steady_clock::now() + rel_time, pred);
+            return details::wait_for(condition, lock, rel_time);
+        }
+
+        template <class ReadOrWriteLock, class Duration, class Predicate>
+        bool wait_for(ReadOrWriteLock& lock, const Duration& rel_time, Predicate pred)
+        {
+            return details::wait_for(condition, lock, rel_time, pred);
         }
 
         void controlled_shutdown()

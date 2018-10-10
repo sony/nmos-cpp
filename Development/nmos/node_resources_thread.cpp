@@ -60,8 +60,7 @@ a=mid:SECONDARY
 
             const auto insert_resource_after = [&](unsigned int milliseconds, nmos::resource&& resource, slog::base_gate& gate)
             {
-                // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
-                if (!model.shutdown_condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
+                if (!details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
                 {
                     const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
                     const bool success = insert_resource(model.node_resources, std::move(resource)).second;

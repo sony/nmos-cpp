@@ -12,6 +12,7 @@ namespace nmos
     typedef std::unique_lock<mutex> write_lock;
 
     typedef std::condition_variable_any condition_variable;
+    typedef std::cv_status cv_status;
 
     template <typename Func>
     auto with_read_lock(nmos::mutex& mutex, Func&& func) -> decltype(func())

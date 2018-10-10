@@ -38,6 +38,50 @@ namespace nmos
             }
         }
 
+        template <typename ConditionVariable, typename Lock, typename Rep, typename Period, typename Predicate>
+        inline bool wait_for(ConditionVariable& condition, Lock& lock, const std::chrono::duration<Rep, Period>& duration, Predicate predicate)
+        {
+            if ((std::chrono::duration<Rep, Period>::max)() == duration)
+            {
+                condition.wait(lock, predicate);
+                return true;
+            }
+            else
+            {
+                // using wait_until as a workaround for bug in VS2015, resolved in VS2017
+                // see https://developercommunity.visualstudio.com/content/problem/274532/bug-in-visual-studio-2015-implementation-of-stdcon.html
+                return condition.wait_until(lock, std::chrono::steady_clock::now() + duration, predicate);
+            }
+        }
+
+        template <typename ConditionVariable, typename Lock, typename TimePoint>
+        inline cv_status wait_until(ConditionVariable& condition, Lock& lock, const TimePoint& tp)
+        {
+            if ((TimePoint::max)() == tp)
+            {
+                condition.wait(lock);
+                return cv_status::no_timeout;
+            }
+            else
+            {
+                return condition.wait_until(lock, tp);
+            }
+        }
+
+        template <typename ConditionVariable, typename Lock, typename Rep, typename Period>
+        inline cv_status wait_for(ConditionVariable& condition, Lock& lock, const std::chrono::duration<Rep, Period>& duration)
+        {
+            if ((std::chrono::duration<Rep, Period>::max)() == duration)
+            {
+                condition.wait(lock);
+                return cv_status::no_timeout;
+            }
+            else
+            {
+                return condition.wait_until(lock, std::chrono::steady_clock::now() + duration);
+            }
+        }
+
         // RAII helper for starting and later joining threads which may require unblocking before join
         template <typename Function, typename PreJoin>
         class thread_guard
