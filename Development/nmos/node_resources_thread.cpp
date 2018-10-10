@@ -60,7 +60,7 @@ a=mid:SECONDARY
 
             const auto insert_resource_after = [&](unsigned int milliseconds, nmos::resource&& resource, slog::base_gate& gate)
             {
-                if (!details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
+                if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
                 {
                     const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
                     const bool success = insert_resource(model.node_resources, std::move(resource)).second;
