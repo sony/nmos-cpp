@@ -20,35 +20,37 @@ namespace nmos
         return subscriptions.second != resource ? resources.project<0>(resource) : resources.end();
     }
 
-    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate)
+    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::registry_model& model, slog::base_gate& gate)
     {
-        return [&model, &mutex, &gate](const utility::string_t& ws_resource_path)
+        return [&model, &gate](const utility::string_t& ws_resource_path)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.registry_resources;
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating websocket connection to: " << ws_resource_path;
 
-            const bool has_subscription = model.resources.end() != find_subscription(model.resources, ws_resource_path);
+            const bool has_subscription = resources.end() != find_subscription(resources, ws_resource_path);
 
             if (!has_subscription) slog::log<slog::severities::error>(gate, SLOG_FLF) << "Invalid websocket connection to: " << ws_resource_path;
             return has_subscription;
         };
     }
 
-    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
 
-        return [source_id, &model, &websockets, &mutex, &condition, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
+        return [source_id, &model, &websockets, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& resources = model.registry_resources;
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Opening websocket connection to: " << ws_resource_path;
 
-            auto subscription = find_subscription(model.resources, ws_resource_path);
+            auto subscription = find_subscription(resources, ws_resource_path);
 
-            if (model.resources.end() != subscription)
+            if (resources.end() != subscription)
             {
                 // create a websocket connection resource
 
@@ -65,14 +67,14 @@ namespace nmos
 
                 // populate it with the initial (unchanged, a.k.a. sync) data
 
-                nmos::fields::message_grain_data(data) = make_resource_events(model.resources, subscription->version, resource_path, subscription->data.at(U("params")));
+                nmos::fields::message_grain_data(data) = make_resource_events(resources, subscription->version, resource_path, subscription->data.at(U("params")));
 
                 // track the grain for the websocket connection as a sub-resource of the subscription
 
                 // never expire the grain resource, they are only deleted when the connection is closed
                 resource grain{ subscription->version, nmos::types::grain, data, true };
 
-                insert_resource(model.resources, std::move(grain));
+                insert_resource(resources, std::move(grain));
 
                 // never expire a subscription while it has connections
                 // note, since health is mutable, no need for:
@@ -84,7 +86,7 @@ namespace nmos
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Creating websocket connection: " << id << " to subscription: " << subscription->id;
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
-                condition.notify_all();
+                model.notify();
             }
             else
             {
@@ -93,25 +95,26 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::model& model, nmos::websockets& websockets, nmos::mutex& mutex, slog::base_gate& gate)
+    web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
     {
-        return [&model, &websockets, &mutex, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
+        return [&model, &websockets, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& resources = model.registry_resources;
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing websocket connection to: " << ws_resource_path;
 
             auto websocket = websockets.right.find(connection_id);
             if (websockets.right.end() != websocket)
             {
-                auto grain = find_resource(model.resources, { websocket->second, nmos::types::grain });
+                auto grain = find_resource(resources, { websocket->second, nmos::types::grain });
 
-                if (model.resources.end() != grain)
+                if (resources.end() != grain)
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Deleting websocket connection: " << grain->id;
 
                     // a non-persistent subscription for which this was the last websocket connection should now expire unless a new connection is made soon
-                    modify_resource(model.resources, nmos::fields::subscription_id(grain->data), [&](nmos::resource& subscription)
+                    modify_resource(resources, nmos::fields::subscription_id(grain->data), [&](nmos::resource& subscription)
                     {
                         subscription.sub_resources.erase(grain->id);
                         if (!nmos::fields::persist(subscription.data) && subscription.sub_resources.empty())
@@ -120,7 +123,7 @@ namespace nmos
                         }
                     });
 
-                    erase_resource(model.resources, grain->id);
+                    erase_resource(resources, grain->id);
                 }
 
                 websockets.right.erase(websocket);
@@ -128,13 +131,17 @@ namespace nmos
         };
     }
 
-    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::model& model, nmos::websockets& websockets, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
     {
         using utility::string_t;
         using web::json::value;
 
         // could start out as a shared/read lock, only upgraded to an exclusive/write lock when a grain in the resources is actually modified
-        nmos::write_lock lock(mutex);
+        auto lock = model.write_lock();
+        auto& condition = model.condition;
+        auto& shutdown = model.shutdown;
+        auto& resources = model.registry_resources;
+
         tai most_recent_message{};
         auto earliest_necessary_update = (tai_clock::time_point::max)();
 
@@ -142,9 +149,9 @@ namespace nmos
         {
             // wait for the thread to be interrupted either because there are resource changes, or because the server is being shut down
             // or because message sending was throttled earlier
-            details::wait_until(condition, lock, earliest_necessary_update, [&]{ return shutdown || most_recent_message < most_recent_update(model.resources); });
+            details::wait_until(condition, lock, earliest_necessary_update, [&]{ return shutdown || most_recent_message < most_recent_update(resources); });
             if (shutdown) break;
-            most_recent_message = most_recent_update(model.resources);
+            most_recent_message = most_recent_update(resources);
 
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Got notification on query websockets thread";
 
@@ -157,10 +164,10 @@ namespace nmos
             for (const auto& websocket : websockets.left)
             {
                 // for each websocket connection that has valid grain and subscription resources
-                const auto grain = find_resource(model.resources, { websocket.first, nmos::types::grain });
-                if (model.resources.end() == grain) continue;
-                const auto subscription = find_resource(model.resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
-                if (model.resources.end() == subscription) continue;
+                const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
+                if (resources.end() == grain) continue;
+                const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
+                if (resources.end() == subscription) continue;
                 // and has events to send
                 if (0 == nmos::fields::message_grain_data(grain->data).size()) continue;
 
@@ -196,7 +203,7 @@ namespace nmos
                 // or less recent since it hasn't been adjusted in the same way as the update timestamps
                 const auto sync_timestamp = value::string(nmos::make_version(tai_from_time_point(now)));
 
-                model.resources.modify(grain, [&origin_timestamp, &sync_timestamp](nmos::resource& grain)
+                resources.modify(grain, [&origin_timestamp, &sync_timestamp](nmos::resource& grain)
                 {
                     nmos::fields::message(grain.data)[nmos::fields::origin_timestamp] = origin_timestamp;
                     nmos::fields::message(grain.data)[nmos::fields::sync_timestamp] = sync_timestamp;
@@ -236,10 +243,10 @@ namespace nmos
                 outgoing_messages.push_back({ websocket.second, message });
 
                 // reset the grain for next time
-                model.resources.modify(grain, [&model](nmos::resource& grain)
+                resources.modify(grain, [&resources](nmos::resource& grain)
                 {
                     nmos::fields::message_grain_data(grain.data) = value::array();
-                    grain.updated = strictly_increasing_update(model.resources);
+                    grain.updated = strictly_increasing_update(resources);
                 });
             }
 

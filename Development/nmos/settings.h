@@ -84,6 +84,9 @@ namespace nmos
         // query_paging_default/query_paging_limit [registry]: default/maximum number of results per "page" when using the Query API (a client may request a lower limit)
         const web::json::field_as_integer_or query_paging_default{ U("query_paging_default"), 10 };
         const web::json::field_as_integer_or query_paging_limit{ U("query_paging_limit"), 100 };
+
+        // immediate_activation_max [node]: timeout for immediate activations within the Connection API /staged endpoint
+        const web::json::field_as_integer_or immediate_activation_max{ U("immediate_activation_max"), 30 };
     }
 }
 

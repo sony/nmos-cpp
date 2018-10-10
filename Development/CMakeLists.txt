@@ -428,10 +428,12 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/node_behaviour.cpp
     nmos/node_resource.cpp
     nmos/node_resources.cpp
+    nmos/node_resources_thread.cpp
     nmos/process_utils.cpp
     nmos/query_utils.cpp
     nmos/resource.cpp
     nmos/resources.cpp
+    nmos/sdp_utils.cpp
     nmos/settings_api.cpp
     )
 set(NMOS_CPP_NODE_NMOS_HEADERS
@@ -461,12 +463,14 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/node_behaviour.h
     nmos/node_resource.h
     nmos/node_resources.h
+    nmos/node_resources_thread.h
     nmos/paging_utils.h
     nmos/process_utils.h
     nmos/query_utils.h
     nmos/rational.h
     nmos/resource.h
     nmos/resources.h
+    nmos/sdp_utils.h
     nmos/settings.h
     nmos/settings_api.h
     nmos/slog.h

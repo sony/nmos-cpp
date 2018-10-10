@@ -13,7 +13,6 @@
 #include "nmos/node_resource.h"
 #include "nmos/resource.h"
 #include "nmos/slog.h"
-#include "nmos/thread_utils.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
 #include "nmos/version.h"
@@ -323,11 +322,182 @@ namespace nmos
         return resource;
     }
 
+    namespace details
+    {
+        web::json::value legs_of(const web::json::value& value, bool smpte2022_7)
+        {
+            using web::json::value_of;
+            return smpte2022_7 ? value_of({ value, value }) : value_of({ value });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
+        web::json::value make_connection_resource_staging_core(bool smpte2022_7)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::master_enable, false },
+                { nmos::fields::activation, value_of({
+                    { nmos::fields::mode, value::null() },
+                    { nmos::fields::requested_time, value::null() },
+                    { nmos::fields::activation_time, value::null() }
+                }) },
+                { nmos::fields::transport_params, legs_of(value::object(), smpte2022_7) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
+        web::json::value make_connection_receiver_staging_transport_file()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::data, value::null() },
+                { nmos::fields::type, U("application/sdp") }
+            });
+        }
+
+        web::json::value make_connection_resource_core(const nmos::id& id, bool smpte2022_7)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::id, id },
+                { nmos::fields::device_id, U("these are not the droids you are looking for") },
+                { nmos::fields::endpoint_constraints, legs_of(value::object(), smpte2022_7) },
+                { nmos::fields::endpoint_staged, make_connection_resource_staging_core(smpte2022_7) },
+                { nmos::fields::endpoint_active, make_connection_resource_staging_core(smpte2022_7) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
+        web::json::value make_connection_sender_core_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::source_ip, unconstrained },
+                { nmos::fields::destination_ip, unconstrained },
+                { nmos::fields::source_port, unconstrained },
+                { nmos::fields::destination_port, unconstrained },
+                { nmos::fields::rtp_enabled, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
+        web::json::value make_connection_sender_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::source_ip, U("auto") },
+                { nmos::fields::destination_ip, U("auto") },
+                { nmos::fields::source_port, U("auto") },
+                { nmos::fields::destination_port, U("auto") },
+                { nmos::fields::rtp_enabled, true }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
+        web::json::value make_connection_receiver_core_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::source_ip, unconstrained },
+                { nmos::fields::interface_ip, unconstrained },
+                { nmos::fields::destination_port, unconstrained },
+                { nmos::fields::rtp_enabled, unconstrained },
+                { nmos::fields::multicast_ip, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+        web::json::value make_connection_receiver_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::source_ip, value::null() },
+                { nmos::fields::interface_ip, U("auto") },
+                { nmos::fields::destination_port, U("auto") },
+                { nmos::fields::rtp_enabled, true },
+                { nmos::fields::multicast_ip, value::null() }
+            });
+        }
+    }
+
+    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto data = details::make_connection_resource_core(id, smpte2022_7);
+
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_sender_core_constraints(), smpte2022_7);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_sender_staged_core_parameter_set(), smpte2022_7);
+
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+        // Hmm, all instances of "auto" should be resolved into the actual values that will be used
+
+        const utility::string_t sdp_magic(U("v=0"));
+
+        if (sdp_magic == transportfile.substr(0, sdp_magic.size()))
+        {
+            data[nmos::fields::endpoint_transportfile] = value_of({
+                { nmos::fields::data, transportfile },
+                { nmos::fields::type, U("application/sdp") }
+            });
+        }
+        else
+        {
+            data[nmos::fields::endpoint_transportfile] = value_of({
+                { nmos::fields::href, transportfile }
+            });
+        }
+
+        return{ is05_versions::v1_0, types::sender, data, false };
+    }
+
+    nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7)
+    {
+        using web::json::value;
+
+        auto data = details::make_connection_resource_core(id, smpte2022_7);
+
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_receiver_core_constraints(), smpte2022_7);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_receiver_staged_core_parameter_set(), smpte2022_7);
+
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+        // Hmm, all instances of "auto" should be resolved into the actual values that will be used
+
+        return{ is05_versions::v1_0, types::receiver, data, false };
+    }
+
     namespace experimental
     {
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
-        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings)
+        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings)
         {
             const auto& seed_id = nmos::experimental::fields::seed_id(settings);
             auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
@@ -337,58 +507,13 @@ namespace nmos
             auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
             auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
 
-            auto result = insert_resource(resources, make_node(node_id, settings));
-            insert_resource(resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));
-            insert_resource(resources, make_video_source(source_id, device_id, { 25, 1 }, settings));
-            insert_resource(resources, make_raw_video_flow(flow_id, source_id, device_id, settings));
-            insert_resource(resources, make_sender(sender_id, flow_id, device_id, {}, settings));
-            insert_resource(resources, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, settings));
+            auto result = insert_resource(node_resources, make_node(node_id, settings));
+            insert_resource(node_resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));
+            insert_resource(node_resources, make_video_source(source_id, device_id, { 25, 1 }, settings));
+            insert_resource(node_resources, make_raw_video_flow(flow_id, source_id, device_id, settings));
+            insert_resource(node_resources, make_sender(sender_id, flow_id, device_id, {}, settings));
+            insert_resource(node_resources, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, settings));
             return result;
-        }
-
-        // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate)
-        {
-            const auto seed_id = nmos::with_read_lock(mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
-            auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
-            auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
-            auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
-            auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
-            auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
-            auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
-
-            nmos::write_lock lock(mutex); // in order to update the resources
-
-            // any delay between updates to the model resources is unnecessary
-            // this just serves as a slightly more realistic example!
-            const unsigned int delay_millis{ 50 };
-
-            const auto insert_resource_after = [&](unsigned int milliseconds, nmos::resource&& resource, slog::base_gate& gate)
-            {
-                // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
-                if (!shutdown_condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds), [&] { return shutdown; }))
-                {
-                    const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-                    const bool success = insert_resource(model.resources, std::move(resource)).second;
-
-                    if (success)
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
-                    else
-                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
-
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
-                    condition.notify_all();
-                }
-            };
-
-            insert_resource_after(delay_millis, make_node(node_id, model.settings), gate);
-            insert_resource_after(delay_millis, make_device(device_id, node_id, { sender_id }, { receiver_id }, model.settings), gate);
-            insert_resource_after(delay_millis, make_video_source(source_id, device_id, { 25, 1 }, model.settings), gate);
-            insert_resource_after(delay_millis, make_raw_video_flow(flow_id, source_id, device_id, model.settings), gate);
-            insert_resource_after(delay_millis, make_sender(sender_id, flow_id, device_id, {}, model.settings), gate);
-            insert_resource_after(delay_millis, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, model.settings), gate);
-
-            shutdown_condition.wait(lock, [&] { return shutdown; });
         }
     }
 }

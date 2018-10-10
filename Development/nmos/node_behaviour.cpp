@@ -19,22 +19,22 @@ namespace nmos
     namespace details
     {
         // registered operation
-        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate);
 
         // peer to peer operation
-        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
+        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
 
         // service advertisement/discovery
-        void advertise_node_service(const nmos::settings& settings, nmos::mutex& mutex, mdns::service_advertiser& advertiser);
-        void discover_registration_services(const nmos::settings& settings, nmos::mutex& mutex, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate);
+        void advertise_node_service(const nmos::base_model& model, mdns::service_advertiser& advertiser);
+        void discover_registration_services(const nmos::base_model& model, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate);
 
         // a (fake) subscription to keep track of all resource events
         nmos::resource make_node_behaviour_subscription(const nmos::id& id);
         nmos::resource make_node_behaviour_grain(const nmos::id& id, const nmos::id& subscription_id);
     }
 
-    void node_behaviour_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, slog::base_gate& gate)
+    void node_behaviour_thread(nmos::model& model, slog::base_gate& gate)
     {
         // The possible states of node behaviour represent the two primary modes (registered operation and peer-to-peer operation)
         // and a few hopefully ephemeral states as the node works through the "Standard Registration Sequences".
@@ -55,7 +55,7 @@ namespace nmos
         // "3. The Node produces an mDNS advertisement of type '_nmos-node._tcp' in the '.local' domain as specified in Node API."
         std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
         mdns::service_advertiser_guard advertiser_guard(*advertiser);
-        details::advertise_node_service(model.settings, mutex, *advertiser);
+        details::advertise_node_service(model, *advertiser);
 
         // "If the chosen Registration API does not respond correctly at any time, another Registration API should be selected from the discovered list."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
@@ -67,11 +67,11 @@ namespace nmos
         // a (fake) subscription to keep track of all resource events
         auto grain_id = nmos::make_id();
         {
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
             auto subscription_id = nmos::make_id();
 
-            insert_resource(model.resources, details::make_node_behaviour_subscription(subscription_id));
-            insert_resource(model.resources, details::make_node_behaviour_grain(grain_id, subscription_id));
+            insert_resource(model.node_resources, details::make_node_behaviour_subscription(subscription_id));
+            insert_resource(model.node_resources, details::make_node_behaviour_grain(grain_id, subscription_id));
         }
 
         // there should be exactly one node resource, but it may not have been added yet
@@ -82,7 +82,7 @@ namespace nmos
         // continue until the server is being shut down
         for (;;)
         {
-            if (with_read_lock(mutex, [&] { return shutdown; })) break;
+            if (with_read_lock(model.mutex, [&] { return model.shutdown; })) break;
 
             switch (mode)
             {
@@ -90,14 +90,13 @@ namespace nmos
             case rediscovery:
                 if (0 != discovery_backoff)
                 {
-                    nmos::read_lock lock(mutex);
-                    // using wait_until rather than wait_for as a workaround for an awful bug in VS2015, resolved in VS2017
-                    condition.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return shutdown; });
-                    if (shutdown) break;
+                    auto lock = model.read_lock();
+                    model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return model.shutdown; });
+                    if (model.shutdown) break;
                 }
 
                 // "4. The Node performs a DNS-SD browse for services of type '_nmos-registration._tcp' as specified."
-                details::discover_registration_services(model.settings, mutex, registration_services, *discovery, gate);
+                details::discover_registration_services(model, registration_services, *discovery, gate);
 
                 if (!registration_services.empty())
                 {
@@ -106,7 +105,7 @@ namespace nmos
                     // "Should a 5xx error be encountered when interacting with all discoverable Registration APIs it is recommended that clients
                     // implement an exponential backoff algorithm in their next attempts until a non-5xx response code is received."
                     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
-                    nmos::read_lock lock(mutex);
+                    auto lock = model.read_lock();
                     discovery_backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), discovery_backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
                 }
                 else
@@ -118,7 +117,7 @@ namespace nmos
 
             case initial_registration:
                 // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
-                details::initial_registration(self_id, model, grain_id, shutdown, mutex, condition, registration_services, gate);
+                details::initial_registration(self_id, model, grain_id, registration_services, gate);
 
                 if (!registration_services.empty())
                 {
@@ -135,7 +134,7 @@ namespace nmos
             case registered_operation:
                 // "6. The Node persists itself in the registry by issuing heartbeats."
                 // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
-                details::registered_operation(self_id, model, grain_id, shutdown, mutex, condition, registration_services, gate);
+                details::registered_operation(self_id, model, grain_id, registration_services, gate);
 
                 if (!registration_services.empty())
                 {
@@ -152,7 +151,7 @@ namespace nmos
                 break;
 
             case peer_to_peer_operation:
-                details::peer_to_peer_operation(model, grain_id, shutdown, mutex, condition, registration_services, *discovery, *advertiser, gate);
+                details::peer_to_peer_operation(model, grain_id, registration_services, *discovery, *advertiser, gate);
 
                 if (!registration_services.empty())
                 {
@@ -178,9 +177,9 @@ namespace nmos
             }
         }
 
-        void advertise_node_service(const nmos::settings& settings, nmos::mutex& mutex, mdns::service_advertiser& advertiser)
+        void advertise_node_service(const nmos::base_model& model, mdns::service_advertiser& advertiser)
         {
-            advertise_node_service(advertiser, with_read_lock(mutex, [&] { return settings; }));
+            advertise_node_service(advertiser, with_read_lock(model.mutex, [&] { return model.settings; }));
         }
 
         std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, const std::chrono::seconds& timeout, slog::base_gate& gate)
@@ -233,14 +232,15 @@ namespace nmos
                 : web::uri();
         }
 
-        void discover_registration_services(const nmos::settings& settings, nmos::mutex& mutex, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
+        void discover_registration_services(const nmos::base_model& model, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
         {
             std::string browse_domain;
             std::pair<nmos::service_priority, nmos::service_priority> priorities;
             web::uri fallback_registration_service;
             std::chrono::seconds discovery_interval;
             {
-                nmos::read_lock lock(mutex);
+                auto lock = model.read_lock();
+                auto& settings = model.settings;
                 browse_domain = utility::us2s(nmos::fields::domain(settings));
                 priorities = { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
                 fallback_registration_service = get_registration_service(settings);
@@ -586,14 +586,17 @@ namespace nmos
         }
 
         // there is significant similarity between initial_registration and registered_operation but I'm too tired to refactor again right now...
-        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting initial registration";
 
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& condition = model.condition;
+            auto& shutdown = model.shutdown;
+            auto& resources = model.node_resources;
 
-            const auto grain = nmos::find_resource(model.resources, { grain_id, nmos::types::grain });
-            if (model.resources.end() == grain) return;
+            const auto grain = nmos::find_resource(resources, { grain_id, nmos::types::grain });
+            if (resources.end() == grain) return;
 
             std::unique_ptr<web::http::client::http_client> registration_client;
 
@@ -601,14 +604,14 @@ namespace nmos
 
             // reset the node behaviour subscription grain; if the node resource has already been added to the model then
             // the first event will be a 'sync' event for the node (and if not, there really should be no events at all!)
-            model.resources.modify(grain, [&model](nmos::resource& grain)
+            resources.modify(grain, [&resources](nmos::resource& grain)
             {
                 auto& events = nmos::fields::message_grain_data(grain.data);
 
                 // the node behaviour subscription version, resource_path and params are currently fixed (see make_node_behaviour_subscription)
-                events = make_resource_events(model.resources, nmos::is04_versions::v1_2, U(""), web::json::value::object());
+                events = make_resource_events(resources, nmos::is04_versions::v1_2, U(""), web::json::value::object());
 
-                grain.updated = strictly_increasing_update(model.resources);
+                grain.updated = strictly_increasing_update(resources);
             });
 
             bool registration_service_error(false);
@@ -654,7 +657,7 @@ namespace nmos
                 }
 
                 events = web::json::value::array();
-                node_behaviour_grain_guard guard(model.resources, grain, events);
+                node_behaviour_grain_guard guard(resources, grain, events);
                 most_recent_update = grain->updated;
 
                 while (0 != events.size())
@@ -678,7 +681,7 @@ namespace nmos
                     auto token = cancellation_source.get_token();
                     request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
                     {
-                        nmos::write_lock lock(mutex); // in order to update local state
+                        auto lock = model.write_lock(); // in order to update local state
 
                         try
                         {
@@ -721,14 +724,17 @@ namespace nmos
             request.wait();
         }
 
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::multimap<service_priority, web::uri>& registration_services, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting registered operation";
 
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& condition = model.condition;
+            auto& shutdown = model.shutdown;
+            auto& resources = model.node_resources;
 
-            const auto grain = nmos::find_resource(model.resources, { grain_id, nmos::types::grain });
-            if (model.resources.end() == grain) return;
+            const auto grain = nmos::find_resource(resources, { grain_id, nmos::types::grain });
+            if (resources.end() == grain) return;
 
             std::unique_ptr<web::http::client::http_client> registration_client;
             std::unique_ptr<web::http::client::http_client> heartbeat_client;
@@ -793,7 +799,7 @@ namespace nmos
                     heartbeat_time = std::chrono::system_clock::now();
                     heartbeats = update_node_health(*heartbeat_client, self_id, gate, token).then([&](bool success)
                     {
-                        nmos::write_lock lock(mutex); // in order to update local state
+                        auto lock = model.write_lock(); // in order to update local state
 
                         node_registered = success;
                         if (!node_registered)
@@ -801,7 +807,7 @@ namespace nmos
                             node_unregistered = true;
                         }
 
-                        condition.notify_all();
+                        model.notify();
                     }).then([=, &heartbeat_time, &heartbeat_client, &gate]
                     {
                         // "6. The Node persists itself in the registry by issuing heartbeats."
@@ -816,7 +822,7 @@ namespace nmos
                         }, token);
                     }).then([&](pplx::task<void> finally)
                     {
-                        nmos::write_lock lock(mutex); // in order to update local state
+                        auto lock = model.write_lock(); // in order to update local state
 
                         try
                         {
@@ -835,7 +841,7 @@ namespace nmos
                             registration_service_error = true;
                         }
 
-                        condition.notify_all();
+                        model.notify();
                     });
 
                     // wait for the response from the first heartbeat that the Node is still registered (or not!)
@@ -844,7 +850,7 @@ namespace nmos
                 }
 
                 events = web::json::value::array();
-                node_behaviour_grain_guard guard(model.resources, grain, events);
+                node_behaviour_grain_guard guard(resources, grain, events);
                 most_recent_update = grain->updated;
 
                 while (0 != events.size())
@@ -857,7 +863,7 @@ namespace nmos
                     auto token = cancellation_source.get_token();
                     request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
                     {
-                        nmos::write_lock lock(mutex); // in order to update state variables
+                        auto lock = model.write_lock(); // in order to update local state
 
                         try
                         {
@@ -944,14 +950,17 @@ namespace nmos
             }
         }
 
-        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& condition, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate)
+        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting peer-to-peer operation";
 
-            nmos::write_lock lock(mutex);
+            auto lock = model.write_lock();
+            auto& condition = model.condition;
+            auto& shutdown = model.shutdown;
+            auto& resources = model.node_resources;
 
-            const auto grain = nmos::find_resource(model.resources, { grain_id, nmos::types::grain });
-            if (model.resources.end() == grain) return;
+            const auto grain = nmos::find_resource(resources, { grain_id, nmos::types::grain });
+            if (resources.end() == grain) return;
 
             api_resource_versions ver;
             update_node_service(advertiser, model.settings, ver);
@@ -978,11 +987,11 @@ namespace nmos
                 });
             }, token).then([&]
             {
-                nmos::write_lock lock(mutex); // in order to update local state
+                auto lock = model.write_lock(); // in order to update local state
 
                 registration_services_discovered = !registration_services.empty();
 
-                condition.notify_all();
+                model.notify();
             });
 
             tai most_recent_update{};
@@ -997,7 +1006,7 @@ namespace nmos
 
                 {
                     auto events = web::json::value::array();
-                    node_behaviour_grain_guard guard(model.resources, grain, events);
+                    node_behaviour_grain_guard guard(resources, grain, events);
                     most_recent_update = grain->updated;
 
                     // update the 'ver_' TXT records, without the lock on the resources

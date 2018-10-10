@@ -2,14 +2,15 @@
 
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/model.h"
 #include "nmos/slog.h"
 #include "cpprest/host_utils.h"
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, node_api_target_handler target_handler, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_node_api(const nmos::resources& resources, nmos::mutex& mutex, node_api_target_handler target_handler, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -33,14 +34,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(resources, mutex, target_handler, gate));
+        node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(model, target_handler, gate));
 
         nmos::add_api_finally_handler(node_api, gate);
 
         return node_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::resources& resources, nmos::mutex& mutex, node_api_target_handler target_handler, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -52,9 +53,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/self/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/self/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.node_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
 
@@ -73,9 +75,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.node_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
@@ -95,9 +98,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&resources, &mutex, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.node_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
@@ -117,9 +121,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&resources, &mutex, target_handler, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&model, target_handler, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::read_lock lock(mutex);
+            auto lock = model.read_lock();
+            auto& resources = model.node_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -153,5 +158,4 @@ namespace nmos
 
         return node_api;
     }
-
 }

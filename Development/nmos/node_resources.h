@@ -72,29 +72,24 @@ namespace nmos
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_data.json
     nmos::resource make_sdianc_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
+
+    // transportfile may be URL or the contents of the SDP file (yeah, yuck)
+    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
+    nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7);
 }
 
-#include "nmos/mutex.h"
 #include "nmos/resources.h"
-
-namespace slog
-{
-    class base_gate;
-}
 
 // This currently serves as an example of the resources that an NMOS node would construct
 namespace nmos
 {
-    struct model;
+    struct node_model;
 
     namespace experimental
     {
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
-        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& resources, const nmos::settings& settings);
-
-        // insert a node resource, and sub-resources, according to the settings, and then wait for shutdown
-        void node_resources_thread(nmos::model& model, const bool& shutdown, nmos::mutex& mutex, nmos::condition_variable& shutdown_condition, nmos::condition_variable& condition, slog::base_gate& gate);
+        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings);
     }
 }
 

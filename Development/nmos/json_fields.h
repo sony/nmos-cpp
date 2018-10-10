@@ -68,11 +68,34 @@ namespace nmos
         // IS-05 Connection Management
 
         // for connection_api
+        const web::json::field_as_value endpoint_constraints{ U("constraints") }; // array
+        const web::json::field_as_value endpoint_staged{ U("staged") }; // object
+        const web::json::field_as_value endpoint_active{ U("active") }; // object
+        const web::json::field_as_value endpoint_transportfile{ U("transportfile") }; // object
+        const web::json::field_as_string href{ U("href") };
         const web::json::field_as_bool master_enable{ U("master_enable") };
-        const web::json::field_as_value activation{ U("activation") };
-        const web::json::field_as_string mode{ U("mode") };
-        const web::json::field<tai> requested_time{ U("requested_time") };
-        const web::json::field_as_array transport_params{ U("transport_params") };
+        const web::json::field_as_value_or activation{ U("activation"), {} }; // object
+        const web::json::field_as_value_or mode{ U("mode"), {} }; // string or null
+        const web::json::field_as_value_or requested_time{ U("requested_time"), {} }; // string or null
+        const web::json::field_as_value_or activation_time{ U("activation_time"), {} }; // string or null
+        const web::json::field_as_value_or transport_file{ U("transport_file"), {} }; // object
+        const web::json::field_as_value transport_params{ U("transport_params") }; // array
+        const web::json::field_as_value_or multicast_ip{ U("multicast_ip"), {} }; // string or null
+        const web::json::field_as_value_or interface_ip{ U("interface_ip"), {} }; // string or null
+        const web::json::field_as_value_or source_ip{ U("source_ip"), {} }; // string or null
+        const web::json::field_as_value_or destination_port{ U("destination_port"), {} }; // string or integer
+        const web::json::field_as_value_or destination_ip{ U("destination_ip"), {} }; // string
+        const web::json::field_as_value_or source_port{ U("source_port"), {} }; // string or integer
+        const web::json::field_as_bool_or rtp_enabled{ U("rtp_enabled"), false };
+        const web::json::field_as_value_or fec_destination_ip{ U("fec_destination_ip"), {} }; // string
+        const web::json::field_as_value_or fec1D_destination_port{ U("fec1D_destination_port"), {} }; // string or integer
+        const web::json::field_as_value_or fec2D_destination_port{ U("fec2D_destination_port"), {} }; // string or integer
+        const web::json::field_as_value_or fec1D_source_port{ U("fec1D_source_port"), {} }; // string or integer
+        const web::json::field_as_value_or fec2D_source_port{ U("fec2D_source_port"), {} }; // string or integer
+        const web::json::field_as_value_or rtcp_destination_ip{ U("rtcp_destination_ip"), {} }; // string
+        const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
+        const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
+        const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
     }
 
     // Fields for experimental extensions

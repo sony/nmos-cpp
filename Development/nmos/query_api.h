@@ -2,7 +2,6 @@
 #define NMOS_QUERY_API_H
 
 #include "cpprest/api_router.h"
-#include "nmos/mutex.h"
 #include "nmos/settings.h"
 
 namespace slog
@@ -14,9 +13,9 @@ namespace slog
 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml
 namespace nmos
 {
-    struct model;
+    struct registry_model;
 
-    web::http::experimental::listener::api_router make_query_api(nmos::model& model, nmos::mutex& mutex, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, slog::base_gate& gate);
 
     struct resource_paging;
 

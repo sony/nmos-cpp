@@ -57,7 +57,19 @@ namespace nmos
             // Unfortunately, std::system_clock is not guaranteed to be steady, it may be adjusted at any moment.
             // Therefore, use a steady clock adjusted by a fixed offset.
             // Note that on VS 2013 and earlier, the resolution of these clocks is woeful (10ms).
-            static const duration steady_epoch = std::chrono::system_clock::now().time_since_epoch() - std::chrono::steady_clock::now().time_since_epoch();
+            // On the other hand, the fact that system_clock is UTC, means that it is offset from the PTP/SMPTE
+            // Epoch by a number of seconds that increases every time a leap second is introduced.
+            // A nice solution would be to wait for std::chrono::tai_clock (C++20), or to use Howard Hinnant's
+            // date library, but for now, just fix the offset to the current value...
+            // "As of December 2017, UTC is 37 seconds behind TAI, reflecting the 10-second initial offset and
+            // the 27 leap seconds inserted between 1958 and 2017. Thus, 2018-01-01 00:00:00 UTC is equivalent
+            // to 2018-01-01 00:00:37 TAI."
+            // See https://en.cppreference.com/w/cpp/chrono/tai_clock
+            // and https://en.wikipedia.org/wiki/International_Atomic_Time
+            // and https://github.com/HowardHinnant/date/issues/129
+            // and https://cr.yp.to/proto/utctai.html
+            static const duration tai_offset = std::chrono::seconds(37);
+            static const duration steady_epoch = std::chrono::system_clock::now().time_since_epoch() + tai_offset - std::chrono::steady_clock::now().time_since_epoch();
 
             return time_point(steady_epoch + std::chrono::steady_clock::now().time_since_epoch());
         }
