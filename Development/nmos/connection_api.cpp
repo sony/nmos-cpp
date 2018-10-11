@@ -111,9 +111,13 @@ namespace nmos
             {
                 return scheduled_activation_pending;
             }
-            else // if (nmos::activation_modes::activate_immediate == mode)
+            else if (nmos::activation_modes::activate_immediate == mode)
             {
                 return immediate_activation_pending;
+            }
+            else
+            {
+                throw web::json::json_exception(U("invalid activation mode"));
             }
         }
 
@@ -942,14 +946,14 @@ namespace nmos
                     // The transportfile endpoint data in the resource must have either "data" and "type", or an "href" for the redirect
 
                     auto& transportfile = nmos::fields::endpoint_transportfile(resource->data);
-                    auto& data = nmos::fields::data(transportfile);
+                    auto& data = nmos::fields::transportfile_data(transportfile);
 
                     if (!data.is_null())
                     {
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning transport file for " << id_type;
 
                         // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
-                        set_reply(res, status_codes::OK, data.as_string(), nmos::fields::type(transportfile));
+                        set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
 
                         // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
                         // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
@@ -961,7 +965,7 @@ namespace nmos
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Redirecting to transport file for " << id_type;
 
                         set_reply(res, status_codes::TemporaryRedirect);
-                        res.headers().add(web::http::header_names::location, nmos::fields::href(transportfile));
+                        res.headers().add(web::http::header_names::location, nmos::fields::transportfile_href(transportfile));
                     }
                 }
                 else

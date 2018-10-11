@@ -4,6 +4,7 @@
 #include "cpprest/uri_builder.h"
 #include "nmos/channels.h"
 #include "nmos/colorspace.h"
+#include "nmos/connection_api.h" // for nmos::resolve_auto
 #include "nmos/components.h"
 #include "nmos/device_type.h"
 #include "nmos/format.h"
@@ -454,21 +455,24 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_sender_staged_core_parameter_set(), smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
-        // Hmm, all instances of "auto" should be resolved into the actual values that will be used
+        // All instances of "auto" should be resolved into the actual values that will be used
+        // but in some cases the behaviour is more complex, and may be determined by the vendor.
+        // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
+        nmos::resolve_auto(types::sender, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
         const utility::string_t sdp_magic(U("v=0"));
 
         if (sdp_magic == transportfile.substr(0, sdp_magic.size()))
         {
             data[nmos::fields::endpoint_transportfile] = value_of({
-                { nmos::fields::data, transportfile },
-                { nmos::fields::type, U("application/sdp") }
+                { nmos::fields::transportfile_data, transportfile },
+                { nmos::fields::transportfile_type, U("application/sdp") }
             });
         }
         else
         {
             data[nmos::fields::endpoint_transportfile] = value_of({
-                { nmos::fields::href, transportfile }
+                { nmos::fields::transportfile_href, transportfile }
             });
         }
 
@@ -488,7 +492,10 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_receiver_staged_core_parameter_set(), smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
-        // Hmm, all instances of "auto" should be resolved into the actual values that will be used
+        // All instances of "auto" should be resolved into the actual values that will be used
+        // but in some cases the behaviour is more complex, and may be determined by the vendor.
+        // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
+        nmos::resolve_auto(types::receiver, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
         return{ is05_versions::v1_0, types::receiver, data, false };
     }
