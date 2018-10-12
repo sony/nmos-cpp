@@ -55,11 +55,12 @@ namespace nmos
         }
 
         template <typename ConditionVariable, typename Lock, typename TimePoint>
-        inline cv_status wait_until(ConditionVariable& condition, Lock& lock, const TimePoint& tp)
+        inline auto wait_until(ConditionVariable& condition, Lock& lock, const TimePoint& tp) -> decltype(condition.wait_until(lock, tp))
         {
             if ((TimePoint::max)() == tp)
             {
                 condition.wait(lock);
+                typedef decltype(condition.wait_until(lock, tp)) cv_status;
                 return cv_status::no_timeout;
             }
             else
@@ -69,11 +70,12 @@ namespace nmos
         }
 
         template <typename ConditionVariable, typename Lock, typename Rep, typename Period>
-        inline cv_status wait_for(ConditionVariable& condition, Lock& lock, const std::chrono::duration<Rep, Period>& duration)
+        inline auto wait_for(ConditionVariable& condition, Lock& lock, const std::chrono::duration<Rep, Period>& duration) -> decltype(condition.wait_for(lock, duration))
         {
             if ((std::chrono::duration<Rep, Period>::max)() == duration)
             {
                 condition.wait(lock);
+                typedef decltype(condition.wait_for(lock, duration)) cv_status;
                 return cv_status::no_timeout;
             }
             else
