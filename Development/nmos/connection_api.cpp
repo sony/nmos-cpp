@@ -122,7 +122,7 @@ namespace nmos
         }
 
         // Calculate the absolute TAI from the requested time of a scheduled activation
-        nmos::tai get_absolute_requested_time(const web::json::value& activation)
+        nmos::tai get_absolute_requested_time(const web::json::value& activation, const nmos::tai& request_time)
         {
             const auto& mode_or_null = nmos::fields::mode(activation);
             const auto& requested_time_or_null = nmos::fields::requested_time(activation);
@@ -135,7 +135,7 @@ namespace nmos
             }
             else if (nmos::activation_modes::activate_scheduled_relative == mode)
             {
-                return tai_from_time_point(tai_clock::now() + duration_from_tai(web::json::as<nmos::tai>(requested_time_or_null)));
+                return tai_from_time_point(time_point_from_tai(request_time) + duration_from_tai(web::json::as<nmos::tai>(requested_time_or_null)));
             }
             else
             {
@@ -144,7 +144,7 @@ namespace nmos
         }
 
         // Set the appropriate fields of the response/staged activation from the specified patch
-        void merge_activation(web::json::value& activation, const web::json::value& patch_activation)
+        void merge_activation(web::json::value& activation, const web::json::value& patch_activation, const nmos::tai& request_time)
         {
             using web::json::value;
 
@@ -183,7 +183,7 @@ namespace nmos
                 // "For an immediate activation this field will always be null on the staged endpoint,
                 // even in the response to the PATCH request."
                 // However, here it is set to indicate an in-flight immediate activation
-                activation[nmos::fields::requested_time] = value::string(nmos::make_version());
+                activation[nmos::fields::requested_time] = value::string(nmos::make_version(request_time));
 
                 // "For immediate activations on the staged endpoint this property will be the time the activation actually
                 // occurred in the response to the PATCH request, but null in response to any GET requests thereafter."
@@ -199,7 +199,7 @@ namespace nmos
 
                 // "For scheduled activations `activation_time` should be the absolute TAI time the parameters will actually transition."
                 // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
-                auto absolute_requested_time = get_absolute_requested_time(activation);
+                auto absolute_requested_time = get_absolute_requested_time(activation, request_time);
                 activation[nmos::fields::activation_time] = value::string(nmos::make_version(absolute_requested_time));
 
                 break;
@@ -344,8 +344,16 @@ namespace nmos
                 staged_activation[nmos::fields::activation_time] = value::null();
             });
 
+            // this is especially important to unblock other patch requests in details::wait_immediate_activation_not_pending
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection API - immediate activation completed";
             model.notify();
+        }
+
+        typedef std::pair<web::http::status_code, web::json::value> connection_resource_patch_response;
+
+        inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const utility::string_t& debug = {})
+        {
+            return{ code, make_error_response_body(code, {}, debug) };
         }
 
         // Basic theory of implementation of PATCH /staged
@@ -391,12 +399,11 @@ namespace nmos
         // By the time we reacquire the model lock anything may have happened, but we can identify with the above whether to send
         // a success response or an error, and in the success case, release the 'per-resource lock' by updating the staged
         // activation mode, requested_time and activation_time.
-        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
+        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
-            // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the sender/receiver in the resources is actually modified
-            auto lock = model.write_lock();
+            // lock.owns_lock() must be true initially
             auto& resources = model.connection_resources;
 
             // Validate JSON syntax according to the schema
@@ -409,7 +416,8 @@ namespace nmos
             {
                 // Prevent changes to already-scheduled activations and in-flight immediate activations
 
-                const auto staged_state = details::get_activation_state(nmos::fields::activation(nmos::fields::endpoint_staged(resource->data)));
+                const auto& staged_activation = nmos::fields::activation(nmos::fields::endpoint_staged(resource->data));
+                const auto staged_state = details::get_activation_state(staged_activation);
 
                 if (details::scheduled_activation_pending == staged_state && details::activation_not_pending != patch_state)
                 {
@@ -418,18 +426,24 @@ namespace nmos
 
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending scheduled activation";
 
-                    set_reply(res, status_codes::Locked);
-                    return;
+                    return details::make_connection_resource_patch_error_response(status_codes::Locked);
                 }
                 else if (details::immediate_activation_pending == staged_state)
                 {
+                    const auto& requested_time_or_null = nmos::fields::requested_time(staged_activation);
+
+                    if (!requested_time_or_null.is_null() && request_time == web::json::as<nmos::tai>(requested_time_or_null))
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation from the same bulk request";
+
+                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest);
+                    }
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/49
-                    if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
+                    else if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation";
 
-                        set_reply(res, status_codes::InternalError); // or ServiceUnavailable? probably not NotFound even if that's true after the timeout?
-                        return;
+                        return details::make_connection_resource_patch_error_response(status_codes::InternalError); // or ServiceUnavailable? probably not NotFound even if that's true after the timeout?
                     }
                     // find resource again just in case, since waiting releases and reacquires the lock
                     resource = find_resource(resources, id_type);
@@ -467,7 +481,7 @@ namespace nmos
 
                 // Then, prepare the activation response
 
-                details::merge_activation(merged[nmos::fields::activation], nmos::fields::activation(patch));
+                details::merge_activation(merged[nmos::fields::activation], nmos::fields::activation(patch), request_time);
 
                 // Validate merged JSON according to the constraints
 
@@ -483,33 +497,59 @@ namespace nmos
 
                     nmos::fields::endpoint_staged(resource.data) = merged;
                     // In the case of an immediate activation, this is not yet a valid response
-                    // to a 'subsequent' GET request on the staged endpoint; that is dealt with below!
+                    // to a 'subsequent' GET request on the staged endpoint; that should be dealt with
+                    // by calling details::handle_immediate_activation_pending
                 });
 
                 if (details::staging_only == patch_state)
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection thread - staged endpoint updated";
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Staged endpoint updated for" << id_type;
                 else if (details::activation_not_pending == patch_state)
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Notifying connection thread - scheduled activation cancelled";
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Scheduled activation cancelled for" << id_type;
                 else if (details::scheduled_activation_pending == patch_state)
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Notifying connection thread - scheduled activation requested";
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Scheduled activation requested for" << id_type;
                 else if (details::immediate_activation_pending == patch_state)
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection thread - immediate activation requested";
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Immediate activation requested for" << id_type;
 
-                model.notify();
+                // details::notify_connection_resource_patch also needs to be called!
 
-                // OK, that wasn't finally; immediate activations need to be processed...
-                if (details::immediate_activation_pending == patch_state)
-                {
-                    details::handle_immediate_activation_pending(model, lock, id_type, merged[nmos::fields::activation], gate);
-                }
-
-                // Finally, really finally, send the response
-
-                set_reply(res, details::scheduled_activation_pending == patch_state ? status_codes::Accepted : status_codes::OK, merged);
+                return{ details::scheduled_activation_pending == patch_state ? status_codes::Accepted : status_codes::OK, merged };
             }
             else
             {
-                set_reply(res, status_codes::NotFound);
+                return details::make_connection_resource_patch_error_response(status_codes::NotFound);
+            }
+        }
+
+        void notify_connection_resource_patch(const nmos::node_model& model, slog::base_gate& gate)
+        {
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection thread";
+
+            model.notify();
+        }
+
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
+        {
+            auto lock = model.write_lock();
+            const auto request_time = tai_now(); // during write lock to ensure uniqueness
+
+            auto result = handle_connection_resource_patch(model, lock, id_type, patch, request_time, gate);
+
+            if (web::http::is_success_status_code(result.first))
+            {
+                notify_connection_resource_patch(model, gate);
+
+                // immediate activations need to be processed before sending the response
+                if (details::immediate_activation_pending == details::get_activation_state(nmos::fields::activation(patch)))
+                {
+                    details::handle_immediate_activation_pending(model, lock, id_type, result.second[nmos::fields::activation], gate);
+                }
+
+                set_reply(res, result.first, result.second);
+            }
+            else
+            {
+                // don't replace an existing response body which might contain richer error information
+                set_reply(res, result.first, !result.second.is_null() ? result.second : nmos::make_error_response_body(result.first));
             }
         }
     }
@@ -700,13 +740,16 @@ namespace nmos
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
+                auto lock = model.write_lock();
+                const auto request_time = tai_now(); // during write lock to ensure uniqueness
+
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
 
                 auto& patches = body.as_array();
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Bulk operation requested for " << patches.size() << " " << resourceType;
 
-                std::vector<value> results;
+                std::vector<details::connection_resource_patch_response> results;
                 results.reserve(patches.size());
 
                 // "Where a server implementation supports concurrent application of settings changes to
@@ -714,74 +757,120 @@ namespace nmos
                 // in a parallel fashion internally. This is an implementation decision and is not a
                 // requirement of this specification."
                 // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md
+
                 const auto type = nmos::type_from_resourceType(resourceType);
-                for (auto& patch : patches)
+
+                const auto handle_connection_resource_exception = [&](const nmos::id& id)
                 {
-                    const auto id = nmos::fields::id(patch);
-
-                    web::http::http_response res;
-
                     // try-catch based on the exception handler in nmos::add_api_finally_handler
                     try
                     {
-                        details::handle_connection_resource_patch(res, model, { id, type }, patch[nmos::fields::params], gate);
+                        throw;
                     }
                     catch (const web::json::json_exception& e)
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error for " << id << " in bulk request: " << e.what();
-                        details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, utility::s2us(e.what()));
                     }
                     catch (const web::http::http_exception& e)
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error for " << id << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
-                        details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, utility::s2us(e.what()));
                     }
                     catch (const std::runtime_error& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error for " << id << " in bulk request: " << e.what();
-                        details::set_error_reply(res, status_codes::NotImplemented, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::NotImplemented, utility::s2us(e.what()));
                     }
                     catch (const std::logic_error& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error for " << id << " in bulk request: " << e.what();
-                        details::set_error_reply(res, status_codes::InternalError, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::InternalError, utility::s2us(e.what()));
                     }
                     catch (const std::exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected exception for " << id << " in bulk request: " << e.what();
-                        details::set_error_reply(res, status_codes::InternalError, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::InternalError, utility::s2us(e.what()));
                     }
                     catch (...)
                     {
                         slog::log<slog::severities::severe>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected unknown exception for " << id << " in bulk request";
-                        details::set_error_reply(res, status_codes::InternalError);
+                        return details::make_connection_resource_patch_error_response(status_codes::InternalError);
+                    }
+                };
+
+                for (auto& patch : patches)
+                {
+                    const auto id = nmos::fields::id(patch);
+
+                    details::connection_resource_patch_response result;
+
+                    try
+                    {
+                        result = details::handle_connection_resource_patch(model, lock, { id, type }, patch[nmos::fields::params], request_time, gate);
+                    }
+                    catch (...)
+                    {
+                        result = handle_connection_resource_exception(id);
                     }
 
-                    if (web::http::is_success_status_code(res.status_code()))
+                    results.push_back(result);
+                }
+
+                if (0 != patches.size()) details::notify_connection_resource_patch(model, gate);
+
+                auto rit = results.begin();
+                for (auto pit = patches.begin(); patches.end() != pit; ++pit, ++rit)
+                {
+                    auto& patch = *pit;
+                    auto& result = *rit;
+
+                    const auto id = nmos::fields::id(patch);
+
+                    if (web::http::is_success_status_code(result.first))
+                    {
+                        auto& response_activation = result.second[nmos::fields::activation];
+
+                        // only pending immediate activations need to be processed before sending the response
+                        if (details::immediate_activation_pending == details::get_activation_state(response_activation))
+                        {
+                            try
+                            {
+                                details::handle_immediate_activation_pending(model, lock, { id, type }, response_activation, gate);
+                            }
+                            catch (...)
+                            {
+                                result = handle_connection_resource_exception(id);
+                            }
+                        }
+                    }
+
+                    if (web::http::is_success_status_code(result.first))
                     {
                         // make a bulk response success item
                         // see https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-bulk-response-schema.json
-                        results.push_back(value_of({
+                        result.second = value_of({
                             { nmos::fields::id, id },
-                            { U("code"), res.status_code() }
-                        }));
+                            { U("code"), result.first }
+                        });
                     }
                     else
                     {
                         // don't replace an existing response body which might contain richer error information
-                        if (!res.body())
+                        if (result.second.is_null())
                         {
-                            res.set_body(nmos::make_error_response_body(res.status_code()));
+                            result.second = nmos::make_error_response_body(result.first);
                         }
 
                         // make a bulk response error item from the standard NMOS error response
-                        auto result = res.extract_json().get();
-                        result[nmos::fields::id] = value::string(id);
-                        results.push_back(std::move(result));
+                        result.second[nmos::fields::id] = value::string(id);
                     }
                 }
 
-                set_reply(res, status_codes::OK, web::json::serialize(results), U("application/json"));
+                set_reply(res, status_codes::OK,
+                    web::json::serialize(results,
+                        [](const details::connection_resource_patch_response& result) { return result.second; }),
+                    U("application/json"));
                 return true;
             });
         });
