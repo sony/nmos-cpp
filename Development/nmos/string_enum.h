@@ -30,7 +30,8 @@ namespace nmos
 #define DEFINE_STRING_ENUM(Type) \
     struct Type : public nmos::string_enum<Type> \
     { \
-        explicit Type(utility::string_t name = U("")) : string_enum{ std::move(name) } {} \
+        Type() {} \
+        explicit Type(utility::string_t name) : string_enum{ std::move(name) } {} \
     };
 
 #endif
