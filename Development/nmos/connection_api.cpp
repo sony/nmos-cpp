@@ -311,22 +311,28 @@ namespace nmos
             auto& resources = model.connection_resources;
 
             // after releasing and reacquiring the lock, must find the resource again!
-            if (resources.end() == find_resource(resources, id_type))
+            const auto found = find_resource(resources, id_type);
+            if (resources.end() == found)
             {
                 // since this has happened while the activation was in flight, the response is 500 Internal Error rather than 404 Not Found
                 throw std::logic_error("resource vanished during in-flight immediate activation");
+            }
+            else
+            {
+                auto& staged = nmos::fields::endpoint_staged(found->data);
+                auto& staged_activation = staged.at(nmos::fields::activation);
+
+                // use requested time to identify it's still the same in-flight immediate activation
+                if (staged_activation.at(nmos::fields::requested_time) != response_activation.at(nmos::fields::requested_time))
+                {
+                    throw std::logic_error("activation modified during in-flight immediate activation");
+                }
             }
 
             modify_resource(resources, id_type.first, [&response_activation](nmos::resource& resource)
             {
                 auto& staged = nmos::fields::endpoint_staged(resource.data);
                 auto& staged_activation = staged[nmos::fields::activation];
-
-                // use requested time to identify it's still the same in-flight immediate activation
-                if (staged_activation[nmos::fields::requested_time] != response_activation[nmos::fields::requested_time])
-                {
-                    throw std::logic_error("activation modified during in-flight immediate activation");
-                }
 
                 resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
 
