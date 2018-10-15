@@ -94,10 +94,23 @@ namespace nmos
 
         auto pre = found->data;
 
+        // "If an exception is thrown by some user-provided operation, then the element pointed to by position is erased."
+        // This seems too surprising, despite the fact that it means that a modification may have been partially completed,
+        // so capture and rethrow.
+        // See https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/reference/ord_indices.html#modify
+        std::exception_ptr modifier_exception;
+
         auto resource_updated = nmos::strictly_increasing_update(resources);
-        auto result = resources.modify(found, [&resource_updated, &modifier](resource& resource)
+        auto result = resources.modify(found, [&resource_updated, &modifier, &modifier_exception](resource& resource)
         {
-            modifier(resource);
+            try
+            {
+                modifier(resource);
+            }
+            catch (...)
+            {
+                modifier_exception = std::current_exception();
+            }
 
             // set the update timestamp
             resource.updated = resource_updated;
@@ -107,6 +120,11 @@ namespace nmos
         {
             auto& modified = *found;
             insert_resource_events(resources, modified.version, modified.type, pre, modified.data);
+        }
+
+        if (modifier_exception)
+        {
+            std::rethrow_exception(modifier_exception);
         }
 
         return result;
