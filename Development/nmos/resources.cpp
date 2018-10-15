@@ -90,7 +90,7 @@ namespace nmos
     bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier)
     {
         auto found = resources.find(id);
-        if (resources.end() == found) return false;
+        if (resources.end() == found || !found->has_data()) return false;
 
         auto pre = found->data;
 
