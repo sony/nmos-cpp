@@ -1,7 +1,5 @@
 # Architecture of nmos-cpp
 
-<style>.x-more-info { font-size: 90% }</style>
-
 The [nmos](../Development/nmos/) module fundamentally provides three things. 
 
 1. A C++ data model for the AMWA IS-04 and IS-05 NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
@@ -159,19 +157,22 @@ The state machine implemented by the ``nmos::node_behaviour_thread`` is shown be
 
 ![NMOS Node Behaviour](images/node-behaviour.png)  
 
-<div class="x-more-info">
+<details>
+<summary>More details...</summary>
+
 Notes:
 
 - in **Registered Operation**, "POST sub-resources" is short-hand for queuing up resource-added events for all the sub-resources on the transition from the **Initial Registration** state
 - the exponential backoff is not described
 - "(5xx) Error" also covers connectivity issues, timeouts
 - HTTP response status codes that are not explicitly mentioned do not cause a state transition
-</div>
+
+</details>
 
 #### Vendor-specific Node Behaviour
 
 > [nmos/node_resources_thread.cpp](../Development/nmos/node_resources_thread.cpp)
-> 
+
 It is a principle of both AMWA IS-04 and IS-05 that the resources exposed by the APIs should reflect the current state of the underlying implementation.
 
 It is therefore expected that a Node implementation using ``nmos-cpp`` will contain one or more additional threads that synchronise the NMOS data model with the underlying state.
@@ -212,7 +213,9 @@ This is configured to write error messages in a plain text file format, to write
 also used by the Apache HTTP Server and others, and to expose recent log messages via a JSON-based REST API in the same style as the NMOS Query API.
 Both applications also allow the logging verbosity to be changed at run-time - up to the compile-time level.)
 
-<div class="x-more-info">
+<details>
+<summary>More details...</summary>
+
 In full, a ``slog`` logging statement may specify:
 
 - the logging gateway that it uses
@@ -223,10 +226,12 @@ In full, a ``slog`` logging statement may specify:
 - the message itself, using stream-based or ``printf``-style message preparation
 
 A logging statement at run-time:
+
 - checks conditions that would make the log message irrelevant, and if not:
   - uses the logging gateway to decide if the log message will be pertinent, and if so:
     - constructs the log message with the logging attributes
     - prepares the message itself, including any additional statement-specific attributes (e.g. event id/error code, category)
     - sends the prepared message through the logging gateway
   - terminates the application if its severity level is fatal
-</div>
+
+</details>
