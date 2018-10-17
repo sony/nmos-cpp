@@ -1,6 +1,5 @@
 #include "nmos/mdns.h"
 
-#include <random>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -10,6 +9,7 @@
 #include "cpprest/uri_builder.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
+#include "nmos/random.h"
 
 namespace nmos
 {
@@ -223,32 +223,6 @@ namespace nmos
             advertiser.update_record(service_name(service, settings), service, domain, mdns::make_txt_records(records));
         }
 
-        namespace details
-        {
-            // this isn't a proper SeedSequence because two instances of random_device aren't going to produce the same values
-            // so the constructors, and size and param member functions are provided only to meet the syntactic requirements
-            class seed_generator
-            {
-            public:
-                seed_generator() {}
-                template <typename InputIterator> seed_generator(InputIterator first, InputIterator last) {}
-                template <typename T> seed_generator(const std::initializer_list<T>&) {}
-
-                template <typename RandomAccessorIterator>
-                void generate(const RandomAccessorIterator first, const RandomAccessorIterator last)
-                {
-                    std::uniform_int_distribution<std::uint32_t> uint32s;
-                    std::generate(first, last, [&] { return uint32s(device); });
-                }
-
-                size_t size() const { return 0; }
-                template <typename OutputIterator> void param(OutputIterator) {}
-
-            private:
-                std::random_device device;
-            };
-        }
-
         // helper function for resolving instances of the specified service (API)
         // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
         std::multimap<service_priority, web::uri> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, bool randomize, const std::chrono::seconds& timeout)
@@ -269,7 +243,7 @@ namespace nmos
                 // "The Node selects a Registration API to use based on the priority, and a random selection if multiple Registration APIs
                 // with the same priority are identified."
                 // Therefore shuffle the browse results before inserting any into the resulting priority queue...
-                details::seed_generator seeder;
+                nmos::details::seed_generator seeder;
                 std::shuffle(browsed.begin(), browsed.end(), std::default_random_engine(seeder));
             }
 

@@ -467,6 +467,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/paging_utils.h
     nmos/process_utils.h
     nmos/query_utils.h
+    nmos/random.h
     nmos/rational.h
     nmos/resource.h
     nmos/resources.h
@@ -640,6 +641,7 @@ set(NMOS_CPP_REGISTRY_NMOS_HEADERS
     nmos/query_api.h
     nmos/query_utils.h
     nmos/query_ws_api.h
+    nmos/random.h
     nmos/rational.h
     nmos/registration_api.h
     nmos/registry_resources.h

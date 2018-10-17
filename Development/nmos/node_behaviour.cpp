@@ -9,6 +9,7 @@
 #include "nmos/mdns.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
+#include "nmos/random.h"
 #include "nmos/rational.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h" // for wait_until, reverse_lock_guard
@@ -62,6 +63,8 @@ namespace nmos
         std::unique_ptr<mdns::service_discovery> discovery = mdns::make_discovery(gate);
         std::multimap<service_priority, web::uri> registration_services;
 
+        nmos::details::seed_generator discovery_backoff_seeder;
+        std::default_random_engine discovery_backoff_engine(discovery_backoff_seeder);
         double discovery_backoff = 0;
 
         // a (fake) subscription to keep track of all resource events
@@ -91,7 +94,9 @@ namespace nmos
                 if (0 != discovery_backoff)
                 {
                     auto lock = model.read_lock();
-                    model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * discovery_backoff)), [&] { return model.shutdown; });
+                    const auto random_backoff = std::uniform_real_distribution<>(0, discovery_backoff)(discovery_backoff_engine);
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry Registration API discovery for about " << std::fixed << std::setprecision(3) << random_backoff << " seconds (current backoff limit: " << discovery_backoff << " seconds)";
+                    model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
                     if (model.shutdown) break;
                 }
 
