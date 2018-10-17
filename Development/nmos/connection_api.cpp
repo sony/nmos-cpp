@@ -396,8 +396,9 @@ namespace nmos
         //
         // Then notify the scheduling thread, release the model lock and wait for the immediate activation to be done.
         //
-        // If it's successful, the activation_time should be set and will be used in the response.
-        // If it fails, the requested_time should be set to null.
+        // If it's successful, the activation_time should be set (e.g. by nmos::set_connection_resource_active) and will be used
+        // in the response.
+        // If it fails, the mode and requested_time should be set to null (e.g. by nmos::set_connection_resource_not_pending).
         //
         // This obviously requires co-operation from other threads that are manipulating these connection resources.
         // nmos::experimental::node_resources_thread currently serves as an example of how to handle sender/receiver activations.
