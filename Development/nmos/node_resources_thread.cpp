@@ -109,8 +109,10 @@ a=mid:SECONDARY
 
                 bool notify = false;
 
-                for (auto& resource : by_updated | boost::adaptors::reversed)
+                for (const auto& resource : by_updated | boost::adaptors::reversed)
                 {
+                    if (!resource.has_data()) continue;
+
                     const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
 
                     auto& staged = nmos::fields::endpoint_staged(resource.data);
