@@ -69,6 +69,13 @@ namespace nmos
         {
             return channel_symbol{ U("U") + utility::ostringstreamed(channel_number) };
         }
+
+#include "cpprest/details/push_undef_u.h"
+        inline const channel_symbol U(unsigned int channel_number)
+        {
+            return Undefined(channel_number);
+        }
+#include "cpprest/details/pop_u.h"
     }
 
     struct channel

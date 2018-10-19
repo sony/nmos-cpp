@@ -95,6 +95,7 @@ add_definitions(/DBST_SHARED_MUTEX_BOOST)
 # find boost
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
+set(Boost_VERSION_COMPONENTS "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -143,7 +144,14 @@ link_directories(
     ${BONJOUR_LIB_DIR}
     )
 
-# common preprocessor definitions
+# additional configuration for common dependencies
+
+# cpprestsdk
+if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"cpprest/details/boost_u_workaround.h\"")
+endif()
+
+# slog
 add_definitions(/DSLOG_STATIC /DSLOG_LOGGING_SEVERITY=slog::max_verbosity)
 
 # mdns library
