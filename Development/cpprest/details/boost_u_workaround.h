@@ -2,5 +2,5 @@
 #pragma once
 #include "cpprest/details/push_undef_u.h"
 // See https://stackoverflow.com/questions/43245055/issue-with-boost-1-64-and-visual-studio-2017
-#include <boost/move/traits.hpp>
+#include <boost/move/detail/type_traits.hpp>
 #include "cpprest/details/pop_u.h"

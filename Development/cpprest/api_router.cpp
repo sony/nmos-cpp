@@ -12,7 +12,7 @@ namespace web
                 utility::string_t api_router::get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path)
                 {
                     // If the route path is empty, then just return the listener-relative URI.
-                    if (route_path.empty() || route_path == U("/"))
+                    if (route_path.empty() || route_path == _XPLATSTR("/"))
                     {
                         return req.relative_uri().path();
                     }
@@ -27,7 +27,7 @@ namespace web
                     }
                     else
                     {
-                        throw web::http::http_exception(U("Error: request was not prefixed with route path"));
+                        throw web::http::http_exception(_XPLATSTR("Error: request was not prefixed with route path"));
                     }
                 }
 

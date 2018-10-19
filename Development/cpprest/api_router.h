@@ -33,11 +33,11 @@ namespace web
                 inline web::uri make_listener_uri(int port)
                 {
 #if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-                    auto host_wildcard = U("*"); // "weak wildcard"
+                    auto host_wildcard = _XPLATSTR("*"); // "weak wildcard"
 #else
-                    auto host_wildcard = U("0.0.0.0");
+                    auto host_wildcard = _XPLATSTR("0.0.0.0");
 #endif
-                    return web::uri_builder().set_scheme(U("http")).set_host(host_wildcard).set_port(port).to_uri();
+                    return web::uri_builder().set_scheme(_XPLATSTR("http")).set_host(host_wildcard).set_port(port).to_uri();
                 }
 
                 typedef std::unordered_map<utility::string_t, utility::string_t> route_parameters;

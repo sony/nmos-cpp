@@ -34,7 +34,7 @@ namespace utility
 }
 
 #ifndef _TURN_OFF_PLATFORM_STRING
-#define US(x) utility::string_t{U(x)}
+#define US(x) utility::string_t{_XPLATSTR(x)}
 #endif
 
 // more convenient utility functions dependent on utility::char_t

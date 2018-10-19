@@ -298,7 +298,7 @@ namespace web
         template <typename ForwardRange, typename Pred, typename Transform>
         inline void serialize_if(utility::ostream_t& os, const ForwardRange& range, Pred pred, Transform transform)
         {
-            os << U('[');
+            os << _XPLATSTR('[');
             bool empty = true;
             for (auto& element : range)
             {
@@ -306,7 +306,7 @@ namespace web
                 {
                     if (!empty)
                     {
-                        os << U(',');
+                        os << _XPLATSTR(',');
                     }
                     else
                     {
@@ -315,7 +315,7 @@ namespace web
                     transform(element).serialize(os);
                 }
             }
-            os << U(']');
+            os << _XPLATSTR(']');
         }
 
         template <typename ForwardRange, typename Pred, typename Transform>

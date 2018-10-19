@@ -12,9 +12,9 @@ namespace web
 
         // Set response fields like the equivalent http_request::reply() functions
         void set_reply(web::http::http_response& res, web::http::status_code code);
-        void set_reply(web::http::http_response& res, web::http::status_code code, const concurrency::streams::istream& body, const utility::string_t& content_type = U("application/octet-stream"));
-        void set_reply(web::http::http_response& res, web::http::status_code code, const concurrency::streams::istream& body, utility::size64_t content_length, const utility::string_t& content_type = U("application/octet-stream"));
-        void set_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& body_text, const utility::string_t& content_type = U("text/plain"));
+        void set_reply(web::http::http_response& res, web::http::status_code code, const concurrency::streams::istream& body, const utility::string_t& content_type = _XPLATSTR("application/octet-stream"));
+        void set_reply(web::http::http_response& res, web::http::status_code code, const concurrency::streams::istream& body, utility::size64_t content_length, const utility::string_t& content_type = _XPLATSTR("application/octet-stream"));
+        void set_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& body_text, const utility::string_t& content_type = _XPLATSTR("text/plain"));
         void set_reply(web::http::http_response& res, web::http::status_code code, const web::json::value& body_data);
 
         // "The first digit of the status-code defines the class of response.
@@ -68,15 +68,15 @@ namespace web
             namespace header_names
             {
                 // CORS request headers
-                const web::http::http_headers::key_type request_method{ U("Access-Control-Request-Method") };
-                const web::http::http_headers::key_type request_headers{ U("Access-Control-Request-Headers") };
+                const web::http::http_headers::key_type request_method{ _XPLATSTR("Access-Control-Request-Method") };
+                const web::http::http_headers::key_type request_headers{ _XPLATSTR("Access-Control-Request-Headers") };
                 // CORS response headers
-                const web::http::http_headers::key_type allow_origin{ U("Access-Control-Allow-Origin") };
-                const web::http::http_headers::key_type allow_credentials{ U("Access-Control-Allow-Credentials") };
-                const web::http::http_headers::key_type allow_methods{ U("Access-Control-Allow-Methods") };
-                const web::http::http_headers::key_type allow_headers{ U("Access-Control-Allow-Headers") };
-                const web::http::http_headers::key_type max_age{ U("Access-Control-Max-Age") };
-                const web::http::http_headers::key_type expose_headers{ U("Access-Control-Expose-Headers") };
+                const web::http::http_headers::key_type allow_origin{ _XPLATSTR("Access-Control-Allow-Origin") };
+                const web::http::http_headers::key_type allow_credentials{ _XPLATSTR("Access-Control-Allow-Credentials") };
+                const web::http::http_headers::key_type allow_methods{ _XPLATSTR("Access-Control-Allow-Methods") };
+                const web::http::http_headers::key_type allow_headers{ _XPLATSTR("Access-Control-Allow-Headers") };
+                const web::http::http_headers::key_type max_age{ _XPLATSTR("Access-Control-Max-Age") };
+                const web::http::http_headers::key_type expose_headers{ _XPLATSTR("Access-Control-Expose-Headers") };
             }
         }
 

@@ -26,7 +26,7 @@ namespace web
             utility::string_t::size_type key_first = 0;
             do
             {
-                const utility::string_t::size_type key_last = key_path.find_first_of(U("."), key_first);
+                const utility::string_t::size_type key_last = key_path.find_first_of(_XPLATSTR("."), key_first);
                 const utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
                 if (utility::string_t::npos != key_last)
                 {
@@ -60,7 +60,7 @@ namespace web
             utility::string_t::size_type key_first = 0;
             do
             {
-                const utility::string_t::size_type key_last = key_path.find_first_of(U("."), key_first);
+                const utility::string_t::size_type key_last = key_path.find_first_of(_XPLATSTR("."), key_first);
                 const utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
                 if (utility::string_t::npos != key_last)
                 {
@@ -146,9 +146,9 @@ namespace web
             utility::string_t::size_type field_first = 0;
             do
             {
-                const utility::string_t::size_type field_last = query.find_first_of(U("=&;"), field_first);
-                const utility::string_t::size_type value_first = utility::string_t::npos != field_last && U('=') == query[field_last] ? field_last + 1 : field_last;
-                const utility::string_t::size_type value_last = query.find_first_of(U("&;"), value_first);
+                const utility::string_t::size_type field_last = query.find_first_of(_XPLATSTR("=&;"), field_first);
+                const utility::string_t::size_type value_first = utility::string_t::npos != field_last && _XPLATSTR('=') == query[field_last] ? field_last + 1 : field_last;
+                const utility::string_t::size_type value_last = query.find_first_of(_XPLATSTR("&;"), value_first);
                 const utility::string_t field = uri::decode(query.substr(field_first, details::count(field_first, field_last)));
                 // could distinguish the two cases (no '=' vs. from empty value) but at the moment, map both to empty string
                 const utility::string_t value = utility::string_t::npos == value_first ? utility::string_t() : query.substr(value_first, details::count(value_first, value_last));
@@ -170,8 +170,8 @@ namespace web
             bool first = true;
             for (auto& param : params.as_object())
             {
-                if (first) first = false; else query << U('&');
-                query << uri::encode_uri(param.first, uri::components::query) << U('=');
+                if (first) first = false; else query << _XPLATSTR('&');
+                query << uri::encode_uri(param.first, uri::components::query) << _XPLATSTR('=');
                 if (param.second.is_string())
                     query << param.second.as_string();
                 else
@@ -264,7 +264,7 @@ namespace web
             {
                 if (value.size() != patch.size())
                 {
-                    throw web::json::json_exception(U("patch error - inconsistent array size"));
+                    throw web::json::json_exception(_XPLATSTR("patch error - inconsistent array size"));
                 }
                 auto vb = value.as_array().begin(), ve = value.as_array().end();
                 auto pb = patch.as_array().begin();
@@ -280,7 +280,7 @@ namespace web
                     // can't use value.as_object().find(patch_field.first) because it's const!
                     if (!value.has_field(patch_field.first))
                     {
-                        throw web::json::json_exception(U("patch error - unexpected object field"));
+                        throw web::json::json_exception(_XPLATSTR("patch error - unexpected object field"));
                     }
                     merge_patch(value.at(patch_field.first), patch_field.second);
                 }
@@ -292,7 +292,7 @@ namespace web
             }
             else
             {
-                throw web::json::json_exception(U("patch error - inconsistent type"));
+                throw web::json::json_exception(_XPLATSTR("patch error - inconsistent type"));
             }
         }
     }

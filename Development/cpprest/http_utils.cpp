@@ -114,7 +114,7 @@ namespace web
         utility::string_t get_default_reason_phrase(web::http::status_code code)
         {
             auto found = details::default_reason_phrases.find(code);
-            return details::default_reason_phrases.end() != found ? found->second : U("");
+            return details::default_reason_phrases.end() != found ? found->second : _XPLATSTR("");
         }
 
         namespace details
