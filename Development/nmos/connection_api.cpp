@@ -398,7 +398,8 @@ namespace nmos
         //
         // If it's successful, the activation_time should be set (e.g. by nmos::set_connection_resource_active) and will be used
         // in the response.
-        // If it fails, the mode and requested_time should be set to null (e.g. by nmos::set_connection_resource_not_pending).
+        // If it fails, the requested_time should be changed (e.g. set to null) so that an error response is sent; the mode must
+        // also be set back to null to unblock concurrent patch operations (nmos::set_connection_resource_not_pending does both).
         //
         // This obviously requires co-operation from other threads that are manipulating these connection resources.
         // nmos::experimental::node_resources_thread currently serves as an example of how to handle sender/receiver activations.
@@ -509,13 +510,13 @@ namespace nmos
                 });
 
                 if (details::staging_only == patch_state)
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Staged endpoint updated for" << id_type;
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Staged endpoint updated for " << id_type;
                 else if (details::activation_not_pending == patch_state)
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Scheduled activation cancelled for" << id_type;
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Scheduled activation cancelled for " << id_type;
                 else if (details::scheduled_activation_pending == patch_state)
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Scheduled activation requested for" << id_type;
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Scheduled activation requested for " << id_type;
                 else if (details::immediate_activation_pending == patch_state)
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Immediate activation requested for" << id_type;
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Immediate activation requested for " << id_type;
 
                 // details::notify_connection_resource_patch also needs to be called!
 
