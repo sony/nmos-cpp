@@ -123,7 +123,7 @@ namespace nmos
                         }
                     });
 
-                    erase_resource(resources, grain->id);
+                    erase_resource(resources, grain->id, false);
                 }
 
                 websockets.right.erase(websocket);

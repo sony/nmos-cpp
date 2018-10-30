@@ -74,13 +74,18 @@ namespace nmos
 
     // erase the resource with the specified id from the specified resources (if present)
     // and return the count of the number of resources erased (including sub-resources)
-    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
-    resources::size_type erase_resource(resources& resources, const id& id);
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
+    resources::size_type erase_resource(resources& resources, const id& id, bool forget_now = true);
+
+    // forget all erased resources which expired *before* the specified time from the specified resources
+    // and return the count of the number of resources forgotten
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
+    resources::size_type forget_erased_resources(resources& resources, const health& forget_health = health_forever);
 
     // erase all resources which expired *before* the specified time from the specified resources
     // and return the count of the number of resources erased
-    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
-    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, const health& forget_health = health_forever);
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
+    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, bool forget_now = true);
 
     // find the resource with the specified id in the specified resources (if present) and
     // set the health of the resource and all of its sub-resources, to prevent them expiring

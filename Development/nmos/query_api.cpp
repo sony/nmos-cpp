@@ -413,7 +413,7 @@ namespace nmos
                 if (nmos::fields::persist(subscription->data))
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
-                    erase_resource(resources, subscription->id);
+                    erase_resource(resources, subscription->id, false);
 
                     set_reply(res, status_codes::NoContent);
                 }

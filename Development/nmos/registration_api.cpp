@@ -44,8 +44,11 @@ namespace nmos
             expire_health = health_now() - nmos::fields::registration_expiry_interval(model.settings);
             forget_health = expire_health - nmos::fields::registration_expiry_interval(model.settings);
 
+            // forget all resources expired in the previous interval
+            forget_erased_resources(resources, forget_health);
+
             // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
-            const auto expired = erase_expired_resources(resources, expire_health, forget_health);
+            const auto expired = erase_expired_resources(resources, expire_health, false);
 
             if (0 != expired)
             {
@@ -456,7 +459,7 @@ namespace nmos
                 // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
                 // on the Node's behalf in order to prevent stale entries remaining in the registry."
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
-                erase_resource(resources, resource->id);
+                erase_resource(resources, resource->id, false);
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
                 model.notify();

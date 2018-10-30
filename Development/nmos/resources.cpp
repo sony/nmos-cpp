@@ -132,8 +132,8 @@ namespace nmos
 
     // erase the resource with the specified id from the specified resources (if present)
     // and return the count of the number of resources erased (including sub-resources)
-    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
-    resources::size_type erase_resource(resources& resources, const id& id)
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
+    resources::size_type erase_resource(resources& resources, const id& id, bool forget_now)
     {
         // also erase all sub-resources of this resource, i.e.
         // for a node, all devices with matching node_id
@@ -146,7 +146,7 @@ namespace nmos
         {
             for (auto& sub_resource : found->sub_resources)
             {
-                count += erase_resource(resources, sub_resource);
+                count += erase_resource(resources, sub_resource, forget_now);
             }
 
             const auto pre = found->data;
@@ -163,14 +163,19 @@ namespace nmos
             auto& erased = *found;
             insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
 
+            if (forget_now)
+            {
+                resources.erase(found);
+            }
+
             ++count;
         }
         return count;
     }
 
-    // forget all erased resources which expired *before* the specified time from the specified model
+    // forget all erased resources which expired *before* the specified time from the specified resources
     // and return the count of the number of resources forgotten
-    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
     resources::size_type forget_erased_resources(resources& resources, const health& forget_health)
     {
         resources::size_type count = 0;
@@ -192,10 +197,10 @@ namespace nmos
         return count;
     }
 
-    // erase all resources of the specified type which expired *before* the specified time from the specified model
+    // erase all resources of the specified type which expired *before* the specified time from the specified resources
     // and return the count of the number of resources erased; sub-resources are *not* erased
-    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
-    resources::size_type erase_expired_resources(resources& resources, const nmos::type& type, const health& expire_health)
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
+    resources::size_type erase_expired_resources(resources& resources, const nmos::type& type, const health& expire_health, bool forget_now)
     {
         resources::size_type count = 0;
         auto& by_type = resources.get<tags::type>();
@@ -224,6 +229,11 @@ namespace nmos
                 auto& erased = *found;
                 insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
 
+                if (forget_now)
+                {
+                    by_type.erase(found);
+                }
+
                 found = next;
                 ++count;
             }
@@ -231,18 +241,16 @@ namespace nmos
         return count;
     }
 
-    // erase all resources which expired *before* the specified time from the specified model
+    // erase all resources which expired *before* the specified time from the specified resources
     // and return the count of the number of resources erased
-    // note, resources are initially "erased" by setting data to null, and remain in this non-extant state until they are forgotten (or reinserted)
-    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, const health& forget_health)
+    // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
+    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, bool forget_now)
     {
-        forget_erased_resources(resources, forget_health);
-
         resources::size_type count = 0;
         // reverse order to ensure sub-resources are erased before super-resources
         for (const auto& type : nmos::types::all | boost::adaptors::reversed)
         {
-            count += erase_expired_resources(resources, type, expire_health);
+            count += erase_expired_resources(resources, type, expire_health, forget_now);
         }
         return count;
     }
