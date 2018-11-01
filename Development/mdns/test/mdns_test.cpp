@@ -267,7 +267,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
         if (resolving.name == "test-mdns-resolve-1")
         {
             std::vector<mdns::service_discovery::resolve_result> r;
-            BST_REQUIRE(resolver->resolve(r, resolving.name, resolving.type, resolving.domain, resolving.interface_id, 2));
+            BST_REQUIRE(resolver->resolve(r, resolving.name, resolving.type, resolving.domain, resolving.interface_id, std::chrono::seconds(2)));
             resolved.insert(resolved.end(), r.begin(), r.end());
         }
     }
@@ -305,7 +305,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     // Now resolve again and check the txt records
     auto& resolving = browsed[0];
-    BST_REQUIRE(resolver->resolve(resolved, resolving.name, resolving.type, resolving.domain, resolving.interface_id, 2));
+    BST_REQUIRE(resolver->resolve(resolved, resolving.name, resolving.type, resolving.domain, resolving.interface_id, std::chrono::seconds(2)));
 
     BST_REQUIRE(!resolved.empty());
     for (auto& result : resolved)

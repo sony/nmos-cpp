@@ -1,6 +1,7 @@
 #ifndef MDNS_SERVICE_DISCOVERY_H
 #define MDNS_SERVICE_DISCOVERY_H
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include "mdns/core.h"
@@ -41,8 +42,19 @@ namespace mdns
             std::vector<std::string> ip_addresses;
         };
 
-        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, unsigned int latest_timeout_seconds = default_latest_timeout_seconds, unsigned int earliest_timeout_seconds = default_earliest_timeout_seconds) = 0;
-        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, unsigned int latest_timeout_seconds = default_latest_timeout_seconds, unsigned int earliest_timeout_seconds = default_earliest_timeout_seconds) = 0;
+        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout, const std::chrono::steady_clock::duration& earliest_timeout) = 0;
+        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout, const std::chrono::steady_clock::duration& earliest_timeout) = 0;
+
+        template <typename Rep1 = std::chrono::seconds::rep, typename Period1 = std::chrono::seconds::period, typename Rep2 = std::chrono::seconds::rep, typename Period2 = std::chrono::seconds::period>
+        bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, const std::chrono::duration<Rep1, Period1>& latest_timeout = std::chrono::seconds(default_latest_timeout_seconds), const std::chrono::duration<Rep2, Period2>& earliest_timeout = std::chrono::seconds(default_earliest_timeout_seconds))
+        {
+            return browse(results, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(latest_timeout), std::chrono::duration_cast<std::chrono::steady_clock::duration>(earliest_timeout));
+        }
+        template <typename Rep1 = std::chrono::seconds::rep, typename Period1 = std::chrono::seconds::period, typename Rep2 = std::chrono::seconds::rep, typename Period2 = std::chrono::seconds::period>
+        bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, const std::chrono::duration<Rep1, Period1>& latest_timeout = std::chrono::seconds(default_latest_timeout_seconds), const std::chrono::duration<Rep2, Period2>& earliest_timeout = std::chrono::seconds(default_earliest_timeout_seconds))
+        {
+            return resolve(results, name, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(latest_timeout), std::chrono::duration_cast<std::chrono::steady_clock::duration>(earliest_timeout));
+        }
     };
 
     // make a default implementation of the mDNS Service Discovery browsing interface

@@ -750,7 +750,7 @@ namespace nmos
 
             web::json::value events;
 
-            std::chrono::system_clock::time_point heartbeat_time;
+            std::chrono::steady_clock::time_point heartbeat_time;
 
             // background tasks may read/write the above local state by reference
             pplx::cancellation_token_source cancellation_source;
@@ -801,7 +801,7 @@ namespace nmos
 
                     const std::chrono::seconds heartbeat_interval(nmos::fields::registration_heartbeat_interval(model.settings));
                     auto token = cancellation_source.get_token();
-                    heartbeat_time = std::chrono::system_clock::now();
+                    heartbeat_time = std::chrono::steady_clock::now();
                     heartbeats = update_node_health(*heartbeat_client, self_id, gate, token).then([&](bool success)
                     {
                         auto lock = model.write_lock(); // in order to update local state
@@ -821,7 +821,7 @@ namespace nmos
                         {
                             return pplx::complete_at(heartbeat_time + heartbeat_interval, token).then([=, &heartbeat_time, &heartbeat_client, &gate]() mutable
                             {
-                                heartbeat_time = std::chrono::system_clock::now();
+                                heartbeat_time = std::chrono::steady_clock::now();
                                 return update_node_health(*heartbeat_client, self_id, gate, token);
                             });
                         }, token);
@@ -973,21 +973,29 @@ namespace nmos
             // intermittently attempting discovery of a Registration API while in peer-to-peer mode seems like a good idea?
             bool registration_services_discovered(false);
 
-            auto discovery_time = std::chrono::system_clock::now();
+            auto discovery_time = std::chrono::steady_clock::now();
             const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
             const std::pair<nmos::service_priority, nmos::service_priority> priorities(nmos::fields::highest_pri(model.settings), nmos::fields::lowest_pri(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
-            const std::chrono::seconds discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
+
+            nmos::details::seed_generator discovery_interval_seeder;
+            std::default_random_engine discovery_interval_engine(discovery_interval_seeder);
+            const auto discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
 
             // background tasks may read/write the above local state by reference
             pplx::cancellation_token_source cancellation_source;
             auto token = cancellation_source.get_token();
             pplx::task<void> background_discovery = pplx::do_while([&]
             {
-                return pplx::complete_at(discovery_time + discovery_interval, token).then([&]
+                const auto random_interval = std::uniform_real_distribution<>(0, discovery_interval)(discovery_interval_engine);
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry Registration API discovery for about " << std::fixed << std::setprecision(3) << random_interval << " seconds (current backoff limit: " << (double)discovery_interval << " seconds)";
+                return pplx::complete_at(discovery_time + std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * random_interval)), token).then([&]
                 {
-                    discovery_time = std::chrono::system_clock::now();
-                    registration_services = discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, discovery_interval, gate);
+                    discovery_time = std::chrono::steady_clock::now();
+                    // hmm, it should be possible to poll the DNS-SD daemon by passing a zero duration timeout
+                    // however, in some configurations/environments, no matter how many times we poll, the browse call
+                    // or the resolve call never succeeds...
+                    registration_services = discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, std::chrono::seconds(discovery_interval), gate);
                     return registration_services.empty();
                 });
             }, token).then([&]

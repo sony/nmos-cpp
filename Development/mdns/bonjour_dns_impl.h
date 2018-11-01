@@ -6,6 +6,8 @@
 
 namespace mdns
 {
+    // implementation of mdns::service_advertiser, mdns::service_discovery using dns_sd.h
+    // tested with Bonjour (mDNSResponder) and Avahi (using avahi-compat-libdns_sd)
     class bonjour_dns_impl : public mdns::service_advertiser, public mdns::service_discovery
     {
     public:
@@ -21,8 +23,8 @@ namespace mdns
         virtual void start();
 
         // Discovery - not thread-safe!
-        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds);
-        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds);
+        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout, const std::chrono::steady_clock::duration& earliest_timeout);
+        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout, const std::chrono::steady_clock::duration& earliest_timeout);
 
         struct service
         {

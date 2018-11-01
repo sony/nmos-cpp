@@ -358,7 +358,7 @@ namespace mdns
         }
     }
 
-    bool bonjour_dns_impl::browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
+    bool bonjour_dns_impl::browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, const std::chrono::steady_clock::duration& earliest_timeout_)
     {
         m_browsed = &results;
 
@@ -366,8 +366,9 @@ namespace mdns
 
         m_browsed->clear();
 
-        const auto latest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(latest_timeout_seconds);
-        const auto earliest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(earliest_timeout_seconds);
+        const auto now = std::chrono::steady_clock::now();
+        const auto latest_timeout = now + latest_timeout_;
+        const auto earliest_timeout = now + earliest_timeout_;
 
         // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
         slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceBrowse for regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
@@ -380,7 +381,7 @@ namespace mdns
             {
                 // wait for up to timeout seconds for a response
                 const auto& absolute_timeout = m_browsed->empty() ? latest_timeout : earliest_timeout;
-                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                 // process the next browse responses (callback may be called more than once, or (at least with Avahi!) not at all, in any call to DNSServiceProcessResult)
                 m_more_coming = false;
@@ -402,7 +403,7 @@ namespace mdns
                     break;
                 }
 
-            } while ((m_browsed->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+            } while ((m_browsed->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::steady_clock::now());
 
             DNSServiceRefDeallocate(client);
         }
@@ -540,16 +541,17 @@ namespace mdns
     }
 #endif
 
-    bool bonjour_dns_impl::resolve(std::vector<resolve_result>& resolved, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, unsigned int latest_timeout_seconds, unsigned int earliest_timeout_seconds)
+    bool bonjour_dns_impl::resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, const std::chrono::steady_clock::duration& earliest_timeout_)
     {
-        m_resolved = &resolved;
+        m_resolved = &results;
 
         DNSServiceRef client = nullptr;
 
         m_resolved->clear();
 
-        const auto latest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(latest_timeout_seconds);
-        const auto earliest_timeout = std::chrono::system_clock::now() + std::chrono::seconds(earliest_timeout_seconds);
+        const auto now = std::chrono::steady_clock::now();
+        const auto latest_timeout = now + latest_timeout_;
+        const auto earliest_timeout = now + earliest_timeout_;
 
         // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
         slog::log<slog::severities::more_info>(m_gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
@@ -562,7 +564,7 @@ namespace mdns
             {
                 // wait for up to timeout seconds for a response
                 const auto& absolute_timeout = m_resolved->empty() ? latest_timeout : earliest_timeout;
-                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+                int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                 // process the next resolve responses (callback may be called more than once, or not at all, in any call to DNSServiceProcessResult)
                 m_more_coming = false;
@@ -584,7 +586,7 @@ namespace mdns
                     break;
                 }
 
-            } while ((m_resolved->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+            } while ((m_resolved->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::steady_clock::now());
 
             DNSServiceRefDeallocate(client);
 
@@ -617,7 +619,7 @@ namespace mdns
                         {
                             // wait for up to timeout seconds for a response
                             const auto& absolute_timeout = m_ip_addresses->empty() ? latest_timeout : earliest_timeout;
-                            int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::system_clock::now()).count());
+                            int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                             // process the next lookup responses (callback may be called more than once, or potentially not at all, in any call to DNSServiceProcessResult)
                             m_more_coming = false;
@@ -639,7 +641,7 @@ namespace mdns
                                 break;
                             }
 
-                        } while ((m_ip_addresses->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::system_clock::now());
+                        } while ((m_ip_addresses->empty() || m_more_coming ? latest_timeout : earliest_timeout) > std::chrono::steady_clock::now());
 
                         DNSServiceRefDeallocate(client);
                     }
@@ -671,7 +673,7 @@ namespace mdns
             slog::log<slog::severities::error>(m_gate, SLOG_FLF) << "DNSServiceResolve reported error: " << errorCode;
         }
 
-        return !resolved.empty();
+        return !results.empty();
     }
 
     void bonjour_dns_impl::start()
