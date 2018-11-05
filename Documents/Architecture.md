@@ -141,7 +141,7 @@ The AMWA IS-04 and IS-05 specifications also define the "active" or "proactive" 
 
 The ``nmos`` module implements these behaviours as long-running threads that interact with the NMOS data model.
 
-(Both the ``nmos-cpp-node`` simulated Node, and the ``nmos-cpp-registry`` Registry application, of course also have a ``main`` thread. After set-up this simply blocks waiting for a shutdown signal from the user.)
+(Both the **nmos-cpp-node** simulated Node, and the **nmos-cpp-registry** Registry application, of course also have a ``main`` thread. After set-up this simply blocks waiting for a shutdown signal from the user.)
 
 ### Node Behaviour
 
@@ -175,7 +175,7 @@ Notes:
 
 It is a principle of both AMWA IS-04 and IS-05 that the resources exposed by the APIs should reflect the current state of the underlying implementation.
 
-It is therefore expected that a Node implementation using ``nmos-cpp`` will contain one or more additional threads that synchronise the NMOS data model with the underlying state.
+It is therefore expected that a Node implementation using **nmos-cpp** will contain one or more additional threads that synchronise the NMOS data model with the underlying state.
 For example, such a thread may wait to be notified of changes in the data model as a result of Connection API activation requests.
 Similarly, when an activation is actually performed, it should update the model and notify the condition variable.
 At any time, it may make changes to the model to reflect other events in the underlying implementation, provided it correctly locks the model mutex and notifies the condition variable.
@@ -193,11 +193,17 @@ The required Registry behaviour includes:
 
 These functions are implemented by ``nmos::send_query_ws_events_thread`` and ``nmos::erase_expired_resources_thread`` respectively.
 
+The diagram below shows a sequence of events witin and between an **nmos-cpp** Node, the **nmos-cpp-registry** Registry and a Client.
+Resource events initiated in a vendor-specific resource-scheduling thread in the Node (such as ``nmos::experimental::node_resources_thread``) are propagated via the Registration API to the Registry model.
+Events in the Registry model are sent in WebSocket messages to each Client with a matching Query API subscription.
+
+![Sequence Diagram](images/node-registry-sequence.png)  
+
 ## Logging
 
 > [slog/all_in_one.h](../Development/slog/all_in_one.h)
 
-Logging is a mundane but important feature of production software. Slog is a library for logging or tracing in C++. Most logging statements in ``nmos-cpp`` look a bit like this:
+Logging is a mundane but important feature of production software. Slog is a library for logging or tracing in C++. Most logging statements in **nmos-cpp** look a bit like this:
 
 ```C++
 slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Beware the Jabberwock, my son!";
@@ -208,7 +214,7 @@ These logging statements can be easily disabled at compile-time (via the ``SLOG_
 
 Most top-level functions in the ``nmos`` module have a Logging Gateway as a final parameter. All log messages will be sent through the specified gateway.
 
-(Both the ``nmos-cpp-node`` simulated Node, and the ``nmos-cpp-registry`` Registry application, have a ``main_gate`` logging gateway.
+(Both the **nmos-cpp-node** simulated Node, and the **nmos-cpp-registry** Registry application, have a ``main_gate`` logging gateway.
 This is configured to write error messages in a plain text file format, to write an access log in the [Common Log Format](https://httpd.apache.org/docs/2.4/logs.html#accesslog)
 also used by the Apache HTTP Server and others, and to expose recent log messages via a JSON-based REST API in the same style as the NMOS Query API.
 Both applications also allow the logging verbosity to be changed at run-time - up to the compile-time level.)
