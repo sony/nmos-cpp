@@ -107,13 +107,13 @@ int main(int argc, char* argv[])
 
         web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(node_model, level, gate);
         web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(node_model.settings)));
-        nmos::support_api(settings_listener, settings_api);
+        nmos::support_api(settings_listener, settings_api, gate);
 
         // Configure the Logging API
 
         web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, gate);
         web::http::experimental::listener::http_listener logging_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::logging_port(node_model.settings)));
-        nmos::support_api(logging_listener, logging_api);
+        nmos::support_api(logging_listener, logging_api, gate);
 
         // Configure the NMOS APIs
 
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
         nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, gate);
         web::http::experimental::listener::api_router node_api = nmos::make_node_api(node_model, target_handler, gate);
         web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(node_model.settings)), listener_config);
-        nmos::support_api(node_listener, node_api);
+        nmos::support_api(node_listener, node_api, gate);
 
         // set up the node resources
         auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 
         web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, gate);
         web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
-        nmos::support_api(connection_listener, connection_api);
+        nmos::support_api(connection_listener, connection_api, gate);
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 

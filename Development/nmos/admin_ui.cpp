@@ -21,7 +21,7 @@ namespace nmos
 
             admin_ui.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ JU("admin/") }));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("admin/") }, res));
                 return pplx::task_from_result(true);
             });
 
@@ -44,8 +44,6 @@ namespace nmos
             };
 
             admin_ui.mount(U("/") + nmos::experimental::patterns::admin_ui.pattern, web::http::methods::GET, nmos::experimental::make_filesystem_route(filesystem_root, nmos::experimental::make_relative_path_content_type_validator(valid_extensions), gate));
-
-            nmos::add_api_finally_handler(admin_ui, gate);
 
             return admin_ui;
         }

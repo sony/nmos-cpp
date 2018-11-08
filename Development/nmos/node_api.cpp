@@ -18,25 +18,23 @@ namespace nmos
 
         node_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("x-nmos/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
             return pplx::task_from_result(true);
         });
 
         node_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("node/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("node/") }, res));
             return pplx::task_from_result(true);
         });
 
         node_api.support(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("v1.0/"), JU("v1.1/"), JU("v1.2/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/") }, res));
             return pplx::task_from_result(true);
         });
 
         node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(model, target_handler, gate));
-
-        nmos::add_api_finally_handler(node_api, gate);
 
         return node_api;
     }
@@ -49,7 +47,7 @@ namespace nmos
 
         node_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("self/"), JU("devices/"), JU("sources/"), JU("flows/"), JU("senders/"), JU("receivers/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("self/"), U("devices/"), U("sources/"), U("flows/"), U("senders/"), U("receivers/") }, res));
             return pplx::task_from_result(true);
         });
 

@@ -15,13 +15,13 @@ namespace nmos
 
             settings_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ JU("settings/") }));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("settings/") }, res));
                 return pplx::task_from_result(true);
             });
 
             settings_api.support(U("/settings/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ JU("all/") }));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("all/") }, res));
                 return pplx::task_from_result(true);
             });
 
@@ -54,8 +54,6 @@ namespace nmos
                     return true;
                 });
             });
-
-            nmos::add_api_finally_handler(settings_api, gate);
 
             return settings_api;
         }

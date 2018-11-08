@@ -19,19 +19,17 @@ namespace nmos
 
             mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ value(U("x-dns-sd/")) }));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-dns-sd/") }, res));
                 return pplx::task_from_result(true);
             });
 
             mdns_api.support(U("/x-dns-sd/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, value_of({ value(U("v1.0/")) }));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, res));
                 return pplx::task_from_result(true);
             });
 
             mdns_api.mount(U("/x-dns-sd/v1.0"), make_unmounted_mdns_api(model, gate));
-
-            nmos::add_api_finally_handler(mdns_api, gate);
 
             return mdns_api;
         }

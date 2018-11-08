@@ -111,19 +111,19 @@ int main(int argc, char* argv[])
 
         web::http::experimental::listener::api_router mdns_api = nmos::experimental::make_mdns_api(registry_model, gate);
         web::http::experimental::listener::http_listener mdns_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::mdns_port(registry_model.settings)));
-        nmos::support_api(mdns_listener, mdns_api);
+        nmos::support_api(mdns_listener, mdns_api, gate);
 
         // Configure the Settings API
 
         web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(registry_model, level, gate);
         web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(registry_model.settings)));
-        nmos::support_api(settings_listener, settings_api);
+        nmos::support_api(settings_listener, settings_api, gate);
 
         // Configure the Logging API
 
         web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, gate);
         web::http::experimental::listener::http_listener logging_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::logging_port(registry_model.settings)));
-        nmos::support_api(logging_listener, logging_api);
+        nmos::support_api(logging_listener, logging_api, gate);
 
         // Configure the NMOS APIs
 
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 
         web::http::experimental::listener::api_router query_api = nmos::make_query_api(registry_model, gate);
         web::http::experimental::listener::http_listener query_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::query_port(registry_model.settings)), listener_config);
-        nmos::support_api(query_listener, query_api);
+        nmos::support_api(query_listener, query_api, gate);
 
         // "Source ID of the Query API instance issuing the data Grain"
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/queryapi-subscriptions-websocket.json
@@ -154,13 +154,13 @@ int main(int argc, char* argv[])
 
         web::http::experimental::listener::api_router registration_api = nmos::make_registration_api(registry_model, gate);
         web::http::experimental::listener::http_listener registration_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::registration_port(registry_model.settings)), listener_config);
-        nmos::support_api(registration_listener, registration_api);
+        nmos::support_api(registration_listener, registration_api, gate);
 
         // Configure the Node API
 
         web::http::experimental::listener::api_router node_api = nmos::make_node_api(registry_model, {}, gate);
         web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(registry_model.settings)), listener_config);
-        nmos::support_api(node_listener, node_api);
+        nmos::support_api(node_listener, node_api, gate);
 
         // set up the node resources
         auto & self_resources = registry_model.node_resources;
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
         const utility::string_t admin_filesystem_root = U("./admin");
         web::http::experimental::listener::api_router admin_ui = nmos::experimental::make_admin_ui(admin_filesystem_root, gate);
         web::http::experimental::listener::http_listener admin_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::admin_port(registry_model.settings)));
-        nmos::support_api(admin_listener, admin_ui);
+        nmos::support_api(admin_listener, admin_ui, gate);
 
         // Configure the mDNS advertisements for our APIs
 

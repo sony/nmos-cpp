@@ -72,25 +72,23 @@ namespace nmos
 
         registration_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("x-nmos/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
             return pplx::task_from_result(true);
         });
 
         registration_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("registration/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("registration/") }, res));
             return pplx::task_from_result(true);
         });
 
         registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("v1.0/"), JU("v1.1/"), JU("v1.2/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/") }, res));
             return pplx::task_from_result(true);
         });
 
         registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, gate));
-
-        nmos::add_api_finally_handler(registration_api, gate);
 
         return registration_api;
     }
@@ -115,7 +113,7 @@ namespace nmos
 
         registration_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("resource/"), JU("health/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("resource/"), U("health/") }, res));
             return pplx::task_from_result(true);
         });
 

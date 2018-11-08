@@ -23,25 +23,23 @@ namespace nmos
 
         connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("x-nmos/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
             return pplx::task_from_result(true);
         });
 
         connection_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("connection/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("connection/") }, res));
             return pplx::task_from_result(true);
         });
 
         connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("v1.0/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, res));
             return pplx::task_from_result(true);
         });
 
         connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, gate));
-
-        nmos::add_api_finally_handler(connection_api, gate);
 
         return connection_api;
     }
@@ -728,13 +726,13 @@ namespace nmos
 
         connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("bulk/"), JU("single/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulk/"), U("single/") }, res));
             return pplx::task_from_result(true);
         });
 
         connection_api.support(U("/bulk/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("senders/"), JU("receivers/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/") }, res));
             return pplx::task_from_result(true);
         });
 
@@ -885,7 +883,7 @@ namespace nmos
 
         connection_api.support(U("/single/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, value_of({ JU("senders/"), JU("receivers/") }));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/") }, res));
             return pplx::task_from_result(true);
         });
 
@@ -924,11 +922,11 @@ namespace nmos
             {
                 if (nmos::types::sender == resource->type)
                 {
-                    set_reply(res, status_codes::OK, value_of({ JU("constraints/"), JU("staged/"), JU("active/"), JU("transportfile/") }));
+                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("constraints/"), U("staged/"), U("active/"), U("transportfile/") }, res));
                 }
                 else // if (nmos::types::receiver == resource->type)
                 {
-                    set_reply(res, status_codes::OK, value_of({ JU("constraints/"), JU("staged/"), JU("active/") }));
+                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("constraints/"), U("staged/"), U("active/") }, res));
                 }
             }
             else

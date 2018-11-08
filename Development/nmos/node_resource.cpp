@@ -24,7 +24,7 @@ namespace nmos
 
         data[U("href")] = value::string(uri.to_string());
         data[U("hostname")] = value::string(hostname);
-        data[U("api")][U("versions")] = value_of({ value(U("v1.0")), value(U("v1.1")), value(U("v1.2")) });
+        data[U("api")][U("versions")] = value_of({ U("v1.0"), U("v1.1"), U("v1.2") });
 
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();

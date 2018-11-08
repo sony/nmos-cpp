@@ -1,5 +1,6 @@
 #include "nmos/api_utils.h"
 
+#include <set>
 #include <boost/algorithm/string/trim.hpp>
 #include "nmos/slog.h"
 
@@ -66,6 +67,7 @@ namespace nmos
             }
         }
 
+        // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res)
         {
             // NMOS specification says "all NMOS APIs MUST implement valid CORS HTTP headers in responses"
@@ -98,6 +100,7 @@ namespace nmos
             return res;
         }
 
+        // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_headers(web::http::http_response& res)
         {
             // Indicate that any Origin is allowed
@@ -154,6 +157,29 @@ namespace nmos
         return details::resourceTypes_from_type.at(type);
     }
 
+    // construct a standard NMOS "child resources" response, sorting the specified sub-routes lexicographically
+    // and optionally merging with ones from an existing response
+    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
+    web::json::value make_sub_routes_body(std::initializer_list<utility::string_t> sub_routes, web::http::http_response res)
+    {
+        using namespace web::http::experimental::listener::api_router_using_declarations;
+
+        std::set<utility::string_t> sorted_unique(sub_routes);
+
+        if (res.body())
+        {
+            auto body = res.extract_json().get();
+
+            for (auto& element : body.as_array())
+            {
+                sorted_unique.insert(element.as_string());
+            }
+        }
+
+        return web::json::value_from_elements(sorted_unique);
+    }
+
+    // construct a standard NMOS error response, using the default reason phrase if no user error information is specified
     web::json::value make_error_response_body(web::http::status_code code, const utility::string_t& error, const utility::string_t& debug)
     {
         web::json::value result = web::json::value::object(true);
@@ -165,6 +191,7 @@ namespace nmos
 
     namespace details
     {
+        // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -227,6 +254,7 @@ namespace nmos
         }
     }
 
+    // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
     void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -279,9 +307,19 @@ namespace nmos
         });
     }
 
-    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api)
+    // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener - captures api by reference!
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api, slog::base_gate& gate)
     {
+        add_api_finally_handler(api, gate);
         listener.support(std::ref(api));
         listener.support(web::http::methods::OPTIONS, std::ref(api)); // to handle CORS preflight requests
+    }
+
+    // construct an http_listener on the specified port, using the specified API to handle all requests
+    web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
+    {
+        web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(port), std::move(config));
+        nmos::support_api(api_listener, api, gate);
+        return api_listener;
     }
 }

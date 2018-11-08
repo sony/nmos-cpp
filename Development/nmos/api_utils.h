@@ -64,14 +64,23 @@ namespace nmos
 
     // Other utility functions for generating NMOS response headers and body
 
+    // construct a standard NMOS "child resources" response, sorting the specified sub-routes lexicographically
+    // and merging with ones from an existing response
+    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
+    web::json::value make_sub_routes_body(std::initializer_list<utility::string_t> sub_routes, web::http::http_response res);
+
     // construct a standard NMOS error response, using the default reason phrase if no user error information is specified
     web::json::value make_error_response_body(web::http::status_code code, const utility::string_t& error = {}, const utility::string_t& debug = {});
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
     void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate);
 
-    // use an API to handle all requests (including CORS preflight requests via "OPTIONS") - captures api by reference!
-    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api);
+    // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener - captures api by reference!
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api, slog::base_gate& gate);
+
+    // construct an http_listener on the specified port, modifying the specified API to handle all requests
+    // (including CORS preflight requests via "OPTIONS") - captures api by reference!
+    web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
 
     namespace details
     {
