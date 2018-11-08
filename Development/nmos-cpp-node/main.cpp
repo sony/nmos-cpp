@@ -103,50 +103,47 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
 
+        // Set up the APIs, assigning them to the configured ports
+
+        std::map<int, web::http::experimental::listener::api_router> port_routers;
+
         // Configure the Settings API
 
-        web::http::experimental::listener::api_router settings_api = nmos::experimental::make_settings_api(node_model, level, gate);
-        web::http::experimental::listener::http_listener settings_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::settings_port(node_model.settings)));
-        nmos::support_api(settings_listener, settings_api, gate);
+        port_routers[nmos::experimental::fields::settings_port(node_model.settings)].mount({}, nmos::experimental::make_settings_api(node_model, level, gate));
 
         // Configure the Logging API
 
-        web::http::experimental::listener::api_router logging_api = nmos::experimental::make_logging_api(log_model, gate);
-        web::http::experimental::listener::http_listener logging_listener(web::http::experimental::listener::make_listener_uri(nmos::experimental::fields::logging_port(node_model.settings)));
-        nmos::support_api(logging_listener, logging_api, gate);
-
-        // Configure the NMOS APIs
-
-        web::http::experimental::listener::http_listener_config listener_config;
-        listener_config.set_backlog(nmos::fields::listen_backlog(node_model.settings));
+        port_routers[nmos::experimental::fields::logging_port(node_model.settings)].mount({}, nmos::experimental::make_logging_api(log_model, gate));
 
         // Configure the Node API
 
         nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, gate);
-        web::http::experimental::listener::api_router node_api = nmos::make_node_api(node_model, target_handler, gate);
-        web::http::experimental::listener::http_listener node_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::node_port(node_model.settings)), listener_config);
-        nmos::support_api(node_listener, node_api, gate);
+        port_routers[nmos::fields::node_port(node_model.settings)].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
         // set up the node resources
         auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         // Configure the Connection API
 
-        web::http::experimental::listener::api_router connection_api = nmos::make_connection_api(node_model, gate);
-        web::http::experimental::listener::http_listener connection_listener(web::http::experimental::listener::make_listener_uri(nmos::fields::connection_port(node_model.settings)), listener_config);
-        nmos::support_api(connection_listener, connection_api, gate);
+        port_routers[nmos::fields::connection_port(node_model.settings)].mount({}, nmos::make_connection_api(node_model, gate));
+
+        // Set up the listeners for each API port
+
+        // try to use the configured TCP listen backlog
+        web::http::experimental::listener::http_listener_config listener_config;
+        listener_config.set_backlog(nmos::fields::listen_backlog(node_model.settings));
+
+        std::vector<web::http::experimental::listener::http_listener> port_listeners;
+        for (auto& port_router : port_routers) port_listeners.push_back(nmos::make_api_listener(port_router.first, port_router.second, listener_config, gate));
+
+        // Open the API ports
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
-        // open in an order that means NMOS APIs don't expose references to others that aren't open yet
+        std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
+        for (auto& port_listener : port_listeners) port_guards.push_back({ port_listener });
 
-        web::http::experimental::listener::http_listener_guard logging_guard(logging_listener);
-        web::http::experimental::listener::http_listener_guard settings_guard(settings_listener);
-
-        web::http::experimental::listener::http_listener_guard node_guard(node_listener);
-        web::http::experimental::listener::http_listener_guard connection_guard(connection_listener);
-
-        // start up node operation (including the mDNS advertisements) once all NMOS APIs are open
+        // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 
         auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
