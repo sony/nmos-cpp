@@ -22,9 +22,14 @@ namespace web
                 // RAII helper for http_listener sessions (could be extracted to another header)
                 struct http_listener_guard
                 {
-                    http_listener_guard(web::http::experimental::listener::http_listener& listener) : listener(listener) { listener.open().wait(); }
-                    ~http_listener_guard() { listener.close().wait(); }
-                    web::http::experimental::listener::http_listener& listener;
+                    http_listener_guard() : guarded() {}
+                    http_listener_guard(http_listener& listener) : guarded(&listener) { guarded->open().wait(); }
+                    ~http_listener_guard() { if (0 != guarded) guarded->close().wait(); }
+                    http_listener_guard(http_listener_guard&& other) : guarded(other.guarded) { other.guarded = 0; }
+                    http_listener_guard& operator=(http_listener_guard&& other) { if (this != &other) { if (0 != guarded) guarded->close().wait(); guarded = other.guarded; } return *this; }
+                    http_listener_guard(const http_listener_guard&) = delete;
+                    http_listener_guard& operator=(const http_listener_guard&) = delete;
+                    web::http::experimental::listener::http_listener* guarded;
                 };
 
                 // using namespace api_router_using_declarations; // to make defining routers less verbose
