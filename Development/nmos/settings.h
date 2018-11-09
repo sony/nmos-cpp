@@ -53,6 +53,9 @@ namespace nmos
 
         // port numbers [registry, node]: ports on which to listen for each API
 
+        // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
+        const web::json::field_as_integer_or http_port{ U("http_port"), 0 };
+
         const web::json::field_as_integer_or query_port{ U("query_port"), 3211 };
         const web::json::field_as_integer_or query_ws_port{ U("query_ws_port"), 3213 };
         // registration_port [node]: used to construct request URLs for the registry's Registration API (if not discovered via DNS-SD)
@@ -105,11 +108,13 @@ namespace nmos
             const web::json::field_as_string_or label{ U("label"), U("") };
 
             // port numbers [registry, node]: ports on which to listen for each API
+            // see http_port
 
             const web::json::field_as_integer_or settings_port{ U("settings_port"), 3209 };
             const web::json::field_as_integer_or logging_port{ U("logging_port"), 5106 };
 
             // port numbers [registry]: ports on which to listen for each API
+            // see http_port
 
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3214 };

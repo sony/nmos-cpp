@@ -3,8 +3,8 @@
 #include "cpprest/host_utils.h"
 #include "cpprest/ws_listener.h"
 #include "mdns/service_advertiser.h"
-#include "nmos/api_utils.h"
 #include "nmos/admin_ui.h"
+#include "nmos/api_utils.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/mdns.h"
@@ -87,6 +87,21 @@ int main(int argc, char* argv[])
         if (registry_model.settings.has_field(nmos::fields::host_addresses))
         {
             web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(registry_model.settings)[0]));
+        }
+
+        // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
+        if (registry_model.settings.has_field(nmos::fields::http_port))
+        {
+            const auto http_port = nmos::fields::http_port(registry_model.settings);
+            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_port, http_port));
+            // can't share a port between an http_listener and a websocket_listener, so don't apply this one...
+            //web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_ws_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::node_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::mdns_port, http_port));
         }
 
         // Reconfigure the logging streams according to settings

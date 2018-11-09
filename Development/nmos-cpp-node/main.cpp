@@ -87,6 +87,17 @@ int main(int argc, char* argv[])
             web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(node_model.settings)[0]));
         }
 
+        // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
+        if (node_model.settings.has_field(nmos::fields::http_port))
+        {
+            const auto http_port = nmos::fields::http_port(node_model.settings);
+            web::json::insert(node_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
+            web::json::insert(node_model.settings, std::make_pair(nmos::fields::node_port, http_port));
+            web::json::insert(node_model.settings, std::make_pair(nmos::fields::connection_port, http_port));
+            web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
+            web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
+        }
+
         // Reconfigure the logging streams according to settings
         // (obviously, until this point, the logging gateway has its default behaviour...)
 
