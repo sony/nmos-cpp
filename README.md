@@ -14,6 +14,7 @@ This software is a **work in progress**, tracking the ongoing development of the
 - The [nmos-cpp-node application](Development/nmos-cpp-node) provides an example NMOS Node, also utilising the nmos module.
 
 The [repository structure](Documents/Repository-Structure.md), and the [external dependencies](Documents/Dependencies.md), are outlined in the documentation.
+Some information about the overall design of **nmos-cpp** is also included in the [architecture](Documents/Architecture.md) documentation.
 
 ### Getting Started
 
@@ -25,7 +26,7 @@ Next, try out the registry and node applications in the [tutorial](Documents/Tut
 
 ## Work In Progress
 
-The implementation is functional and has been used successfully in several Networked Media Incubator workshop "plug-fests", interoperating with other NMOS implementations.
+The implementation is functional and has been used successfully in several Networked Media Incubator workshop "plug-fests", interoperating with other NMOS implementations, and is being used to build NMOS support for several products.
 
 The implementation is incomplete in some areas. Development is ongoing! The NMOS specifications are being continuously developed, as enhancements are proposed and prototyped by the Incubator participants.
 
@@ -38,6 +39,11 @@ Other open-source NMOS implementations:
 
 Recent activity on the project:
 
+- Simpler run-time configuration of the **nmos-cpp-node** and **nmos-cpp-registry** settings
+- Some documentation about the overall design of **nmos-cpp** for developers
+- An implementation of the Connection API
+- A fix for a potential memory leak
+- An SDP parser/generator (to/from a JSON representation)
 - JSON Schema validation in the Registration API and the Query API
 - Cross-platform build support using CMake
 - An initial release of the **nmos-cpp-node** example application

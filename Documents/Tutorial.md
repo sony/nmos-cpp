@@ -13,10 +13,16 @@ Notes:
 
 ## Start an NMOS Registry
 
-Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line as JSON. Each named parameter is specified as a field in a JSON object.
+Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line, or in a configuration file, as JSON. Each named parameter is specified as a field in a JSON object.
 The parameters that can be specified, and default values where applicable, are described in [nmos/settings.h](../Development/nmos/settings.h), in the repository.
 
-For example, to launch the application without verbose logging, try ``./nmos-cpp-registry "{\"logging_level\":0}"``.
+For example, to launch the application without verbose logging, try ``./nmos-cpp-registry "{\"logging_level\":0}"``, or ``./nmos-cpp-registry config.json`` with a file config.json:
+
+```json
+{
+    "logging_level": 0
+}
+```
 
 The initial output should appear something like this:
 
@@ -41,8 +47,10 @@ This shows the nmos-cpp-registry starting up and advertising its APIs via DNS Se
 Run the **nmos-cpp-node** application one or more times. Like the registry application, configuration parameters may be passed on the command-line as JSON.
 The parameters that can be specified, and default values where applicable, are described in [nmos/settings.h](../Development/nmos/settings.h), in the repository.
 
-When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to set unique port numbers for each instance. In the case of the node application,
-``"node_port"``, ``"connection_port"``, ``"settings_port"`` and ``"logging_port"`` must be set uniquely.
+When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to make the port numbers of each instance unique.
+In the case of the node application, there are four APIs to consider;
+``"node_port"``, ``"connection_port"``, ``"settings_port"`` and ``"logging_port"`` must be configured for each instance.
+The default port for _all_ the APIs can be overridden by using the ``"http_port"`` parameter.
 
 Otherwise, the command may be as simple as ``./nmos-cpp-node "{\"logging_level\":0}"``.
 
