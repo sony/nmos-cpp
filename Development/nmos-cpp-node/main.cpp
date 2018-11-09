@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include "cpprest/host_utils.h"
 #include "nmos/admin_ui.h"
@@ -37,14 +38,15 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting nmos-cpp node";
 
-        // Settings can be passed on the command-line, and some may be changed dynamically by POST to /settings/all on the Settings API
+        // Settings can be passed on the command-line, directly or in a configuration file, and some may be changed dynamically by POST to /settings/all on the Settings API
         //
         // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
         // * "registry_address": used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         //
         // E.g.
         //
-        // # nmos-cpp-node.exe "{\"logging_level\":-40}"
+        // # ./nmos-cpp-node "{\"logging_level\":-40}"
+        // # ./nmos-cpp-node config.json
         // # curl -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
         //
         // In either case, omitted settings will assume their defaults (invisibly, currently)
@@ -53,10 +55,15 @@ int main(int argc, char* argv[])
         {
             std::error_code error;
             node_model.settings = web::json::value::parse(utility::s2us(argv[1]), error);
+            if (error)
+            {
+                std::ifstream file(argv[1]);
+                node_model.settings = web::json::value::parse(file, error);
+            }
             if (error || !node_model.settings.is_object())
             {
-                node_model.settings = web::json::value::null();
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bad command-line settings [" << error << "]";
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Bad command-line settings [" << error << "]";
+                return -1;
             }
         }
 
