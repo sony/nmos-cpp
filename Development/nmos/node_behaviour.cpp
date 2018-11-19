@@ -187,22 +187,17 @@ namespace nmos
             advertise_node_service(advertiser, with_read_lock(model.mutex, [&] { return model.settings; }));
         }
 
-        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, slog::base_gate& gate)
+        // query DNS Service Discovery for any Registration API in the specified browse domain, having priority in the specified range
+        // otherwise, after timeout or cancellation, returning the fallback registration service
+        std::multimap<service_priority, web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             std::multimap<service_priority, web::uri> registration_services;
-            
+
             if (nmos::service_priorities::no_priority != priorities.first)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
-                // use a short timeout that's long enough to ensure the daemon's cache is exhausted
-                // to avoid bothering with cancellation
-                registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, nmos::is04_versions::all, true, std::chrono::seconds(1)).get();
-
-                // erase results with unsuitable priorities (too high or too low) to avoid development and live systems colliding
-                // only services between priorities.first and priorities.second (inclusive) should be returned
-                registration_services.erase(registration_services.begin(), registration_services.lower_bound(priorities.first));
-                registration_services.erase(registration_services.upper_bound(priorities.second), registration_services.end());
+                registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, nmos::is04_versions::all, priorities, true, timeout, token).get();
 
                 if (!registration_services.empty())
                 {
@@ -238,6 +233,7 @@ namespace nmos
                 : web::uri();
         }
 
+        // poll DNS Service Discovery for any Registration API
         void discover_registration_services(const nmos::base_model& model, std::multimap<service_priority, web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
         {
             std::string browse_domain;
@@ -251,7 +247,9 @@ namespace nmos
                 fallback_registration_service = get_registration_service(settings);
             }
 
-            registration_services = details::discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, gate);
+            // use a short timeout that's long enough to ensure the daemon's cache is exhausted
+            // and thus avoid bothering with cancellation
+            registration_services = details::discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, gate, std::chrono::seconds(1));
         }
 
         // "The Node selects a Registration API to use based on the priority"
@@ -972,13 +970,10 @@ namespace nmos
             // intermittently attempting discovery of a Registration API while in peer-to-peer mode seems like a good idea?
             bool registration_services_discovered(false);
 
-            auto discovery_time = std::chrono::steady_clock::now();
             const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
             const std::pair<nmos::service_priority, nmos::service_priority> priorities(nmos::fields::highest_pri(model.settings), nmos::fields::lowest_pri(model.settings));
             const web::uri fallback_registration_service(get_registration_service(model.settings));
 
-            nmos::details::seed_generator discovery_interval_seeder;
-            std::default_random_engine discovery_interval_engine(discovery_interval_seeder);
             const auto discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
 
             // background tasks may read/write the above local state by reference
@@ -986,12 +981,10 @@ namespace nmos
             auto token = cancellation_source.get_token();
             pplx::task<void> background_discovery = pplx::do_while([&]
             {
-                const auto random_interval = std::uniform_real_distribution<>(0, discovery_interval)(discovery_interval_engine);
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry Registration API discovery for about " << std::fixed << std::setprecision(3) << random_interval << " seconds (current backoff limit: " << (double)discovery_interval << " seconds)";
-                return pplx::complete_at(discovery_time + std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * random_interval)), token).then([&]
+                return pplx::create_task([&]
                 {
-                    discovery_time = std::chrono::steady_clock::now();
-                    registration_services = discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, gate);
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)discovery_interval << " seconds";
+                    registration_services = discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, gate, std::chrono::seconds(discovery_interval), token);
                     return registration_services.empty();
                 });
             }, token).then([&]

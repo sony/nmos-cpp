@@ -225,11 +225,55 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API)
         // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        pplx::task<std::multimap<service_priority, web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+        pplx::task<std::multimap<service_priority, web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
         {
             const auto absolute_timeout = std::chrono::steady_clock::now() + timeout;
 
-            return discovery.browse(service, browse_domain, 0, absolute_timeout - std::chrono::steady_clock::now(), token).then([=, &discovery](std::vector<mdns::browse_result> browsed)
+            std::shared_ptr<std::vector<std::pair<service_priority, web::uri>>> results(new std::vector<std::pair<service_priority, web::uri>>);
+
+            return discovery.browse([=, &discovery](const mdns::browse_result& resolving)
+            {
+                discovery.resolve([=](const mdns::resolve_result& resolved)
+                {
+                    // note, since we specified the interface_id, we expect only one result...
+
+                    // parse into structured TXT records
+                    auto records = mdns::parse_txt_records(resolved.txt_records);
+
+                    // 'pri' must not be omitted for Registration API and Query API (see nmos::make_txt_records)
+                    auto resolved_pri = nmos::parse_pri_record(records);
+                    if (service != nmos::service_types::node)
+                    {
+                        // ignore results with unsuitable priorities (too high or too low) to avoid development and live systems colliding
+                        // only services between priorities.first and priorities.second (inclusive) should be returned
+                        if (resolved_pri < priorities.first) return true;
+                        if (priorities.second < resolved_pri) return true;
+                    }
+
+                    // for now, HTTP only
+                    auto resolved_proto = nmos::parse_api_proto_record(records);
+                    if (nmos::service_protocols::http != resolved_proto) return true;
+
+                    // check the advertisement includes a version we support
+                    auto resolved_vers = nmos::parse_api_ver_record(records);
+                    auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.begin(), api_ver.end());
+                    if (resolved_vers.rend() == resolved_ver) return !results->empty();
+
+                    for (const auto& ip_address : resolved.ip_addresses)
+                    {
+                        results->push_back({ resolved_pri, web::uri_builder()
+                            .set_scheme(utility::s2us(resolved_proto))
+                            .set_host(utility::s2us(ip_address))
+                            .set_port(resolved.port)
+                            .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*resolved_ver))
+                            .to_uri()
+                        });
+                    }
+
+                    return true;
+                }, resolving.name, resolving.type, resolving.domain, resolving.interface_id, absolute_timeout - std::chrono::steady_clock::now(), token).get();
+                return !results->empty();
+            }, service, browse_domain, 0, absolute_timeout - std::chrono::steady_clock::now(), token).then([results, randomize](bool)
             {
                 // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri),
                 // filtering out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."
@@ -239,61 +283,12 @@ namespace nmos
                 {
                     // "The Node selects a Registration API to use based on the priority, and a random selection if multiple Registration APIs
                     // with the same priority are identified."
-                    // Therefore shuffle the browse results before inserting any into the resulting priority queue...
+                    // Therefore shuffle the results before inserting any into the resulting priority queue...
                     nmos::details::seed_generator seeder;
-                    std::shuffle(browsed.begin(), browsed.end(), std::default_random_engine(seeder));
+                    std::shuffle(results->begin(), results->end(), std::default_random_engine(seeder));
                 }
 
-                std::shared_ptr<std::multimap<service_priority, web::uri>> by_priority(new std::multimap<service_priority, web::uri>());
-
-                // add a continuation for each discovered service to resolve it
-                // but, to simplify inserting these into the priority map, the continuations are sequential
-                // rather than parallelised using pplx::when_all
-                auto resolve_all = pplx::task_from_result();
-                for (auto& resolving : browsed)
-                {
-                    resolve_all = resolve_all.then([=, &discovery]
-                    {
-                        return discovery.resolve(resolving.name, resolving.type, resolving.domain, resolving.interface_id, absolute_timeout - std::chrono::steady_clock::now(), token)
-                            .then([=](std::vector<mdns::resolve_result> resolved)
-                        {
-                            if (resolved.empty()) return;
-
-                            // note, since we specified the interface_id, we expect only one result...
-
-                            // parse into structured TXT records
-                            auto records = mdns::parse_txt_records(resolved.front().txt_records);
-
-                            // 'pri' must not be omitted for Registration API and Query API (see nmos::make_txt_records)
-                            auto resolved_pri = nmos::parse_pri_record(records);
-                            if (service != nmos::service_types::node && nmos::service_priorities::no_priority == resolved_pri) return;
-
-                            // for now, HTTP only
-                            auto resolved_proto = nmos::parse_api_proto_record(records);
-                            if (nmos::service_protocols::http != resolved_proto) return;
-
-                            // check the advertisement includes a version we support
-                            auto resolved_vers = nmos::parse_api_ver_record(records);
-                            auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.begin(), api_ver.end());
-                            if (resolved_vers.rend() == resolved_ver) return;
-
-                            for (const auto& ip_address : resolved.front().ip_addresses)
-                            {
-                                by_priority->insert({ resolved_pri, web::uri_builder()
-                                    .set_scheme(utility::s2us(resolved_proto))
-                                    .set_host(utility::s2us(ip_address))
-                                    .set_port(resolved.front().port)
-                                    .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)) + U("/") + make_api_version(*resolved_ver))
-                                    .to_uri()
-                                });
-                            }
-                        });
-                    });
-
-                    // even if absolute_timeout has now passed, continue to try to resolve all browse results
-                }
-
-                return resolve_all.then([by_priority] { return *by_priority; });
+                return std::multimap<service_priority, web::uri>(results->begin(), results->end());
             });
         }
     }

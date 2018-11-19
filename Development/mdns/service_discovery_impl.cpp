@@ -12,10 +12,18 @@ namespace mdns_details
 {
     using namespace mdns;
 
+    static inline const std::chrono::steady_clock::time_point& reply_timeout(bool had_enough, bool more_coming, const std::chrono::steady_clock::time_point& latest_timeout, const std::chrono::steady_clock::time_point& earliest_timeout)
+    {
+        return had_enough
+            ? more_coming ? earliest_timeout : (std::min)(earliest_timeout, latest_timeout)
+            : more_coming ? (std::max)(earliest_timeout, latest_timeout) : latest_timeout;
+    }
+
     struct browse_context
     {
         // browse in-flight state
-        std::vector<browse_result>& browsed;
+        const browse_handler& handler;
+        bool& had_enough;
         bool& more_coming;
         slog::base_gate& gate;
     };
@@ -34,15 +42,14 @@ namespace mdns_details
 
         if (errorCode == kDNSServiceErr_NoError)
         {
-            auto& results = impl->browsed;
-
             if (0 != (flags & kDNSServiceFlagsAdd))
             {
                 // map kDNSServiceInterfaceIndexLocalOnly to kDNSServiceInterfaceIndexAny, to handle AVAHI_IF_UNSPEC escaping from the Avahi compatibility layer
-                results.push_back({ serviceName, regtype, replyDomain, kDNSServiceInterfaceIndexLocalOnly == interfaceIndex ? kDNSServiceInterfaceIndexAny : interfaceIndex });
-                const auto& result = results.back();
+                const browse_result result{ serviceName, regtype, replyDomain, kDNSServiceInterfaceIndexLocalOnly == interfaceIndex ? kDNSServiceInterfaceIndexAny : interfaceIndex };
 
                 slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << result.interface_id;
+
+                impl->had_enough = impl->handler(result);
             }
 
             impl->more_coming = 0 != (flags & kDNSServiceFlagsMoreComing);
@@ -53,15 +60,15 @@ namespace mdns_details
         }
     }
 
-    static std::vector<browse_result> browse(const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
+    static bool browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
         // in order to ensure the daemon actually performs a query rather than just returning results from its cache
         // apply a minimum timeout rather than giving up the first time the more_coming flag is false
         // see https://github.com/lathiat/avahi/blob/v0.7/avahi-core/multicast-lookup.c#L120
-        const auto earliest_timeout_ = std::chrono::seconds(1) < latest_timeout_ ? std::chrono::seconds(1) : latest_timeout_;
+        const auto earliest_timeout_ = std::chrono::seconds(1);
 
-        std::vector<browse_result> browsed;
-        bool more_coming;
+        bool had_enough = false;
+        bool more_coming = true;
 
         DNSServiceRef client = nullptr;
 
@@ -72,7 +79,7 @@ namespace mdns_details
         // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceBrowse for regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
 
-        browse_context context{ browsed, more_coming, gate };
+        browse_context context{ handler, had_enough, more_coming, gate };
         DNSServiceErrorType errorCode = DNSServiceBrowse(&client, 0, interface_id, type.c_str(), !domain.empty() ? domain.c_str() : NULL, browse_reply, &context);
 
         if (errorCode == kDNSServiceErr_NoError)
@@ -80,11 +87,10 @@ namespace mdns_details
             do
             {
                 // wait for up to timeout for a response
-                const auto& absolute_timeout = browsed.empty() ? latest_timeout : earliest_timeout;
+                const auto& absolute_timeout = reply_timeout(had_enough, more_coming, latest_timeout, earliest_timeout);
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                 // process the next browse responses (callback may be called more than once, or (at least with Avahi!) not at all, in any call to DNSServiceProcessResult)
-                more_coming = false;
                 errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
 
                 if (errorCode == kDNSServiceErr_NoError)
@@ -103,7 +109,7 @@ namespace mdns_details
                     break;
                 }
 
-            } while (more_coming || (browsed.empty() ? latest_timeout : earliest_timeout) > std::chrono::steady_clock::now());
+            } while (reply_timeout(had_enough, more_coming, latest_timeout, earliest_timeout) > std::chrono::steady_clock::now());
 
             DNSServiceRefDeallocate(client);
         }
@@ -112,7 +118,7 @@ namespace mdns_details
             slog::log<slog::severities::error>(gate, SLOG_FLF) << "DNSServiceBrowse reported error: " << errorCode;
         }
 
-        return browsed;
+        return had_enough;
     }
 
     static txt_records parse_txt_records(const unsigned char* txtRecord, size_t txtLen)
@@ -150,7 +156,8 @@ namespace mdns_details
     struct resolve_context
     {
         // resolve in-flight state
-        std::vector<resolve_result>& resolved;
+        const resolve_handler& handler;
+        bool& had_enough;
         bool& more_coming;
         slog::base_gate& gate;
     };
@@ -169,14 +176,15 @@ namespace mdns_details
     {
         resolve_context* impl = (resolve_context*)context;
 
-        auto& results = impl->resolved;
-
         if (errorCode == kDNSServiceErr_NoError)
         {
-            results.push_back({ hosttarget, ntohs(port), parse_txt_records(txtRecord, txtLen) });
-            auto& result = results.back();
+            {
+                const resolve_result result{ hosttarget, ntohs(port), parse_txt_records(txtRecord, txtLen) };
 
-            slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got host: " << result.host_name << " port: " << (int)result.port;
+                slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got host: " << result.host_name << " port: " << (int)result.port;
+
+                impl->had_enough = impl->handler(result);
+            }
 
             impl->more_coming = 0 != (flags & kDNSServiceFlagsMoreComing);
         }
@@ -186,11 +194,25 @@ namespace mdns_details
         }
     }
 
+    struct address_result
+    {
+        address_result() {}
+        address_result(const std::string& host_name, const std::string& ip_address, std::uint32_t ttl = 0) : host_name(host_name), ip_address(ip_address), ttl(ttl) {}
+
+        std::string host_name;
+        std::string ip_address;
+        std::uint32_t ttl;
+    };
+
+    // return true from the address result callback if the operation should be ended before its specified timeout once no more results are "imminent"
+    typedef std::function<bool(const address_result&)> address_handler;
+
 #ifdef HAVE_DNSSERVICEGETADDRINFO
     struct getaddrinfo_context
     {
         // getaddrinfo in-flight state
-        std::vector<std::string>& ip_addresses;
+        const address_handler& handler;
+        bool& had_enough;
         bool& more_coming;
         slog::base_gate& gate;
     };
@@ -234,17 +256,17 @@ namespace mdns_details
     {
         getaddrinfo_context* impl = (getaddrinfo_context*)context;
 
-        auto& results = impl->ip_addresses;
-
         if (errorCode == kDNSServiceErr_NoError)
         {
-            if (0 != address)
+            if (0 != (flags & kDNSServiceFlagsAdd) && 0 != address)
             {
                 const auto ip_address = from_sockaddr(*address);
                 if (!ip_address.is_unspecified())
                 {
-                    results.push_back(ip_address.to_string());
-                    slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceGetAddrInfoReply got address: " << results.back() << " for host: " << hostname;
+                    const address_result result{ hostname, ip_address.to_string(), ttl };
+                    slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceGetAddrInfoReply got address: " << result.ip_address << " for host: " << result.host_name;
+
+                    impl->had_enough = impl->handler(result);
                 }
             }
 
@@ -257,12 +279,12 @@ namespace mdns_details
     }
 #endif
 
-    static std::vector<resolve_result> resolve(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
+    static bool resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
         const auto earliest_timeout_ = std::chrono::seconds(0);
 
-        std::vector<resolve_result> resolved;
-        bool more_coming;
+        bool had_enough = false;
+        bool more_coming = true;
 
         DNSServiceRef client = nullptr;
 
@@ -273,7 +295,7 @@ namespace mdns_details
         // could use if_indextoname to get a name for the interface (remembering that 0 means "do the right thing", i.e. usually any interface, and there are some other special values too; see dns_sd.h)
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceResolve for name: " << name << " regtype: " << type << " domain: " << domain << " on interface: " << interface_id;
 
-        resolve_context context{ resolved, more_coming, gate };
+        resolve_context context{ handler, had_enough, more_coming, gate };
         DNSServiceErrorType errorCode = DNSServiceResolve(&client, 0, interface_id, name.c_str(), type.c_str(), domain.c_str(), (DNSServiceResolveReply)resolve_reply, &context);
 
         if (errorCode == kDNSServiceErr_NoError)
@@ -281,11 +303,10 @@ namespace mdns_details
             do
             {
                 // wait for up to timeout for a response
-                const auto& absolute_timeout = resolved.empty() ? latest_timeout : earliest_timeout;
+                const auto& absolute_timeout = reply_timeout(had_enough, more_coming, latest_timeout, earliest_timeout);
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                 // process the next resolve responses (callback may be called more than once, or not at all, in any call to DNSServiceProcessResult)
-                more_coming = false;
                 errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
 
                 if (errorCode == kDNSServiceErr_NoError)
@@ -304,93 +325,108 @@ namespace mdns_details
                     break;
                 }
 
-            } while (more_coming || (resolved.empty() ? latest_timeout : earliest_timeout) > std::chrono::steady_clock::now());
+            } while (reply_timeout(had_enough, more_coming, latest_timeout, earliest_timeout) > std::chrono::steady_clock::now());
 
             DNSServiceRefDeallocate(client);
-
-            for (auto& r : resolved)
-            {
-#ifdef HAVE_DNSSERVICEGETADDRINFO
-                client = nullptr;
-
-                // for now, limited to IPv4
-                const DNSServiceProtocol protocol = kDNSServiceProtocol_IPv4;
-
-#ifdef _WIN32
-                if (protocol == kDNSServiceProtocol_IPv4 && interface_id >= kIPv6IfIndexBase)
-                {
-                    // no point trying in this case!
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << r.host_name << " on interface: " << interface_id;
-                }
-                else
-#endif
-                {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << r.host_name << " on interface: " << interface_id;
-
-                    getaddrinfo_context context{ r.ip_addresses, more_coming, gate };
-                    errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, protocol, r.host_name.c_str(), getaddrinfo_reply, &context);
-
-                    if (errorCode == kDNSServiceErr_NoError)
-                    {
-                        do
-                        {
-                            // wait for up to timeout for a response
-                            const auto& absolute_timeout = r.ip_addresses.empty() ? latest_timeout : earliest_timeout;
-                            int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
-
-                            // process the next lookup responses (callback may be called more than once, or potentially not at all, in any call to DNSServiceProcessResult)
-                            more_coming = false;
-                            errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
-
-                            if (errorCode == kDNSServiceErr_NoError)
-                            {
-                                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
-                                // callback called, potentially more results coming
-                            }
-                            else if (errorCode == kDNSServiceErr_Timeout_)
-                            {
-                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out or was cancelled";
-                                break;
-                            }
-                            else
-                            {
-                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult reported error: " << errorCode;
-                                break;
-                            }
-
-                        } while (more_coming || (r.ip_addresses.empty() ? latest_timeout : earliest_timeout) > std::chrono::steady_clock::now());
-
-                        DNSServiceRefDeallocate(client);
-                    }
-                    else
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
-                    }
-                }
-#endif
-
-                if (r.ip_addresses.empty())
-                {
-                    // hmmm, plain old getaddrinfo uses all name resolution mechanisms so isn't specific to a particular interface
-#ifdef _WIN32
-                    // on Windows, resolution of multicast .local domain names doesn't seem to work even with the Bonjour service running?
-                    const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(r.host_name)));
-#else
-                    // on Linux, the name-service switch should be configured to use Avahi to resolve multicast .local domain names
-                    // by including 'mdns4' or 'mdns4_minimal' in the hosts stanza of /etc/nsswitch.conf
-                    const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(r.host_name));
-#endif
-                    std::transform(ip_addresses.begin(), ip_addresses.end(), std::back_inserter(r.ip_addresses), utility::us2s);
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "After DNSServiceResolve, got " << r.ip_addresses.size() << " address(es) for hostname: " << r.host_name;
-                }
-            }
         }
         else
         {
             slog::log<slog::severities::error>(gate, SLOG_FLF) << "DNSServiceResolve reported error: " << errorCode;
         }
 
-        return resolved;
+        return had_enough;
+    }
+
+    static bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
+    {
+        const auto earliest_timeout_ = std::chrono::seconds(0);
+
+        bool had_enough = false;
+        bool more_coming = true;
+
+#ifdef HAVE_DNSSERVICEGETADDRINFO
+        DNSServiceRef client = nullptr;
+
+        const auto now = std::chrono::steady_clock::now();
+        const auto latest_timeout = now + latest_timeout_;
+        const auto earliest_timeout = now + earliest_timeout_;
+
+        // for now, limited to IPv4
+        const DNSServiceProtocol protocol = kDNSServiceProtocol_IPv4;
+
+#ifdef _WIN32
+        if (protocol == kDNSServiceProtocol_IPv4 && interface_id >= kIPv6IfIndexBase)
+        {
+            // no point trying in this case!
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo not tried for hostname: " << host_name << " on interface: " << interface_id;
+        }
+        else
+#endif
+        {
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo for hostname: " << host_name << " on interface: " << interface_id;
+
+            getaddrinfo_context context{ handler, had_enough, more_coming, gate };
+            DNSServiceErrorType errorCode = DNSServiceGetAddrInfo(&client, 0, interface_id, protocol, host_name.c_str(), getaddrinfo_reply, &context);
+
+            if (errorCode == kDNSServiceErr_NoError)
+            {
+                do
+                {
+                    // wait for up to timeout for a response
+                    const auto& absolute_timeout = reply_timeout(had_enough, more_coming, latest_timeout, earliest_timeout);
+                    int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
+
+                    // process the next lookup responses (callback may be called more than once, or potentially not at all, in any call to DNSServiceProcessResult)
+                    errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
+
+                    if (errorCode == kDNSServiceErr_NoError)
+                    {
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult succeeded";
+                        // callback called, potentially more results coming
+                    }
+                    else if (errorCode == kDNSServiceErr_Timeout_)
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult timed out or was cancelled";
+                        break;
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceProcessResult reported error: " << errorCode;
+                        break;
+                    }
+
+                } while (reply_timeout(had_enough, more_coming, latest_timeout, earliest_timeout) > std::chrono::steady_clock::now());
+
+                DNSServiceRefDeallocate(client);
+            }
+            else
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "DNSServiceGetAddrInfo reported error: " << errorCode;
+            }
+        }
+#endif
+
+        if (!had_enough)
+        {
+            // hmmm, plain old getaddrinfo uses all name resolution mechanisms so isn't specific to a particular interface
+#ifdef _WIN32
+            // on Windows, resolution of multicast .local domain names doesn't seem to work even with the Bonjour service running?
+            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(host_name)));
+#else
+            // on Linux, the name-service switch should be configured to use Avahi to resolve multicast .local domain names
+            // by including 'mdns4' or 'mdns4_minimal' in the hosts stanza of /etc/nsswitch.conf
+            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(host_name));
+#endif
+            for (auto& ip_address : ip_addresses)
+            {
+                const address_result result{ host_name, utility::us2s(ip_address) };
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using getaddrinfo, got address: " << result.ip_address << " for host: " << result.host_name;
+
+                had_enough = handler(result);
+            }
+        }
+
+        return had_enough;
     }
 }
 
@@ -434,26 +470,39 @@ namespace mdns
             {
             }
 
-            pplx::task<std::vector<browse_result>> browse(const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+            pplx::task<bool> browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
             {
+                auto gate_ = &this->gate;
                 return pplx::create_task([=]
                 {
                     cancellation_guard guard(token);
-                    auto result = mdns_details::browse(type, domain, interface_id, timeout, guard.target, this->gate);
+                    auto result = mdns_details::browse(handler, type, domain, interface_id, timeout, guard.target, *gate_);
                     // when this task is cancelled, make sure it doesn't just return an empty/partial result
                     if (token.is_canceled()) pplx::cancel_current_task();
+                    // hmm, perhaps should throw an exception on timeout, rather than returning an empty result?
                     return result;
                 }, token);
             }
 
-            pplx::task<std::vector<resolve_result>> resolve(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+            pplx::task<bool> resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
             {
+                auto gate_ = &this->gate;
                 return pplx::create_task([=]
                 {
                     cancellation_guard guard(token);
-                    auto result = mdns_details::resolve(name, type, domain, interface_id, timeout, guard.target, this->gate);
+                    auto result = mdns_details::resolve([&](const mdns::resolve_result& resolved_)
+                    {
+                        auto resolved = resolved_;
+                        mdns_details::getaddrinfo([&](const mdns_details::address_result& address)
+                        {
+                            resolved.ip_addresses.push_back(address.ip_address);
+                            return true;
+                        }, resolved.host_name, interface_id, timeout, guard.target, *gate_);
+                        return handler(resolved);
+                    }, name, type, domain, interface_id, timeout, guard.target, *gate_);
                     // when this task is cancelled, make sure it doesn't just return an empty/partial result
                     if (token.is_canceled()) pplx::cancel_current_task();
+                    // hmm, perhaps should throw an exception on timeout, rather than returning an empty result?
                     return result;
                 }, token);
             }
@@ -486,13 +535,13 @@ namespace mdns
     {
     }
 
-    pplx::task<std::vector<browse_result>> service_discovery::browse(const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+    pplx::task<bool> service_discovery::browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
     {
-        return impl->browse(type, domain, interface_id, timeout, token);
+        return impl->browse(handler, type, domain, interface_id, timeout, token);
     }
 
-    pplx::task<std::vector<resolve_result>> service_discovery::resolve(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+    pplx::task<bool> service_discovery::resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
     {
-        return impl->resolve(name, type, domain, interface_id, timeout, token);
+        return impl->resolve(handler, name, type, domain, interface_id, timeout, token);
     }
 }
