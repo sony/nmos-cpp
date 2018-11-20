@@ -27,6 +27,36 @@ namespace web
             }
         }
 
+        bool has_header_value(const http_headers& headers, const utility::string_t& name, const utility::string_t& value)
+        {
+            const auto header = headers.find(name);
+            if (headers.end() == header || header->second.empty())
+            {
+                return false;
+            }
+            else
+            {
+                // this provides protection against substring matches but relies on a comma being followed by single space
+                // consistently, and doesn't handle quoted string values that may contain this delimiter
+                const auto comma = _XPLATSTR(", ");
+                const auto searchable = comma + header->second + comma;
+                return utility::string_t::npos != searchable.find(comma + value + comma);
+            }
+        }
+
+        bool add_header_value(http_headers& headers, const utility::string_t& name, utility::string_t value)
+        {
+            if (has_header_value(headers, name, value))
+            {
+                return false;
+            }
+            else
+            {
+                headers.add(name, value);
+                return true;
+            }
+        }
+
         void set_reply(web::http::http_response& res, web::http::status_code code)
         {
             res.set_status_code(code);

@@ -141,7 +141,7 @@ namespace web
                     }
                     // hmm, it's not a guarantee that the route.handler for this route.method would in fact result in a response being sent,
                     // but it seems nice to add the "Allow" header even so?
-                    res.headers().add(header_names::allow, route.method);
+                    add_header_value(res.headers(), header_names::allow, route.method);
 
                     // there doesn't seem to be an elegant way to save the route_path or parameters for diagnostics
                 }

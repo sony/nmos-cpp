@@ -10,6 +10,22 @@ namespace web
     {
         std::pair<utility::string_t, int> get_host_port(const web::http::http_request& req);
 
+        // Determine if a value is found in a header that represents a set of values, like "Allow", "Accept" or "Link"
+        bool has_header_value(const http_headers& headers, const utility::string_t& name, const utility::string_t& value);
+        template <typename T>
+        bool has_header_value(const http_headers& headers, const utility::string_t& name, const T& value)
+        {
+            return has_header_value(headers, name, utility::conversions::details::print_string(value));
+        }
+
+        // Add a value to a header that represents a set of values, like "Allow", "Accept" or "Link"
+        bool add_header_value(http_headers& headers, const utility::string_t& name, utility::string_t value);
+        template <typename T>
+        bool add_header_value(http_headers& headers, const utility::string_t& name, const T& value)
+        {
+            return add_header_value(headers, name, utility::conversions::details::print_string(value));
+        }
+
         // Set response fields like the equivalent http_request::reply() functions
         void set_reply(web::http::http_response& res, web::http::status_code code);
         void set_reply(web::http::http_response& res, web::http::status_code code, const concurrency::streams::istream& body, const utility::string_t& content_type = _XPLATSTR("application/octet-stream"));

@@ -111,7 +111,7 @@ namespace nmos
             {
                 if (!web::http::cors::is_cors_response_header(header.first) && !web::http::cors::is_cors_safelisted_response_header(header.first))
                 {
-                    res.headers().add(web::http::cors::header_names::expose_headers, header.first);
+                    web::http::add_header_value(res.headers(), web::http::cors::header_names::expose_headers, header.first);
                 }
             }
             return res;
@@ -191,6 +191,8 @@ namespace nmos
 
     namespace details
     {
+        static const utility::string_t actual_method{ U("X-Actual-Method") };
+
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate)
         {
@@ -198,32 +200,51 @@ namespace nmos
 
             return [&gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                // if it was a HEAD request, restore that and discard any response body
+                // since RFC 7231 says "the server MUST NOT send a message body in the response"
+                // see https://tools.ietf.org/html/rfc7231#section-4.3.2
+                if (web::http::has_header_value(req.headers(), actual_method, methods::HEAD))
+                {
+                    req.set_method(methods::HEAD);
+                    req.headers().remove(actual_method);
+                    if (res.body()) res.body() = concurrency::streams::bytestream::open_istream(std::vector<unsigned char>{});
+                }
+
                 if (web::http::empty_status_code == res.status_code())
                 {
                     res.set_status_code(status_codes::NotFound);
                 }
 
-                if (methods::OPTIONS == req.method() && status_codes::MethodNotAllowed == res.status_code())
+                if (status_codes::MethodNotAllowed == res.status_code())
                 {
-                    res.set_status_code(status_codes::OK);
-
                     // obviously, OPTIONS requests are allowed in addition to any methods that have been identified already
-                    res.headers().add(web::http::header_names::allow, methods::OPTIONS);
+                    web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::OPTIONS);
 
-                    // distinguish a vanilla OPTIONS request from a CORS preflight request
-                    if (req.headers().has(web::http::cors::header_names::request_method))
+                    // and HEAD requests are allowed if GET requests are
+                    if (web::http::has_header_value(res.headers(), web::http::header_names::allow, web::http::methods::GET))
                     {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "CORS preflight request";
-                        nmos::details::add_cors_preflight_headers(req, res);
+                        web::http::add_header_value(res.headers(), web::http::header_names::allow, web::http::methods::HEAD);
+                    }
+
+                    if (methods::OPTIONS == req.method())
+                    {
+                        res.set_status_code(status_codes::OK);
+
+                        // distinguish a vanilla OPTIONS request from a CORS preflight request
+                        if (req.headers().has(web::http::cors::header_names::request_method))
+                        {
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "CORS preflight request";
+                            nmos::details::add_cors_preflight_headers(req, res);
+                        }
+                        else
+                        {
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "OPTIONS request";
+                        }
                     }
                     else
                     {
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "OPTIONS request";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Method not allowed for this route";
                     }
-                }
-                else if (status_codes::MethodNotAllowed == res.status_code())
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Method not allowed for this route";
                 }
                 else if (status_codes::NotFound == res.status_code())
                 {
@@ -313,6 +334,13 @@ namespace nmos
         add_api_finally_handler(api, gate);
         listener.support(std::ref(api));
         listener.support(web::http::methods::OPTIONS, std::ref(api)); // to handle CORS preflight requests
+        listener.support(web::http::methods::HEAD, [&api](web::http::http_request req) // to handle HEAD requests
+        {
+            // this naive approach means that the API may well generate a response body
+            req.headers().add(details::actual_method, web::http::methods::HEAD);
+            req.set_method(web::http::methods::GET);
+            api(req);
+        });
     }
 
     // construct an http_listener on the specified port, using the specified API to handle all requests
