@@ -736,11 +736,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
-        {
-            set_reply(res, status_codes::MethodNotAllowed);
-            return pplx::task_from_result(true);
-        });
+        // "The API should actively return an HTTP 405 if a GET is called on the [/bulk/senders and /bulk/receivers] endpoint[s]."
+        // This is provided for free by the api_router which also identifies the handler for POST as a "near miss"
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L39-L44
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L73-L78
 
         connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {

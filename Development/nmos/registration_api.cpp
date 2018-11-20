@@ -393,6 +393,8 @@ namespace nmos
                 }
                 else
                 {
+                    res.headers().add(web::http::header_names::allow, methods::POST);
+                    res.headers().add(web::http::header_names::allow, methods::GET);
                     set_reply(res, status_codes::MethodNotAllowed);
                 }
             }
