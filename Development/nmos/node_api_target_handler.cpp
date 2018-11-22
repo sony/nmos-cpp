@@ -76,7 +76,7 @@ namespace nmos
             {
                 // no sender data means disconnect
 
-                return pplx::create_task([] {}).then([&model, receiver_id, &gate]
+                return pplx::create_task([&model, receiver_id, &gate]
                 {
                     const auto patch = value_of({
                         { nmos::fields::sender_id, value::null() },
