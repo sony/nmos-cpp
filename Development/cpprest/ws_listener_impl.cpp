@@ -86,24 +86,24 @@ namespace web
                         bool dynamic_test(websocketpp::log::level) { return true; }
 
                         // only custom interface
-                        void set_callback(web::logging::experimental::callback_function callback) { this->callback = callback; }
+                        void set_log_handler(web::logging::experimental::log_handler log) { this->log = log; }
 
                     private:
                         websocketpp::log::channel_type_hint::value hint;
-                        web::logging::experimental::callback_function callback;
+                        web::logging::experimental::log_handler log;
                     };
 
                     void websocketpp_log::write(websocketpp::log::level channel, const std::string& message)
                     {
-                        if (callback)
+                        if (log)
                         {
                             if (websocketpp::log::channel_type_hint::access == hint)
                             {
-                                callback(level_from_alevel(channel), message, websocketpp::log::alevel::channel_name(channel));
+                                log(level_from_alevel(channel), message, websocketpp::log::alevel::channel_name(channel));
                             }
                             else // if (websocketpp::log::channel_type_hint::error == hint)
                             {
-                                callback(level_from_elevel(channel), message, {});
+                                log(level_from_elevel(channel), message, {});
                             }
                         }
                     }
@@ -166,11 +166,11 @@ namespace web
                     class websocket_listener_impl
                     {
                     public:
-                        explicit websocket_listener_impl(web::logging::experimental::callback_function callback)
+                        explicit websocket_listener_impl(web::logging::experimental::log_handler log)
                         {
                             // since we cannot set the callback function before the server constructor we can't get log message from that
-                            server.get_alog().set_callback(callback);
-                            server.get_elog().set_callback(callback);
+                            server.get_alog().set_log_handler(log);
+                            server.get_elog().set_log_handler(log);
                         }
 
                         ~websocket_listener_impl()
@@ -383,7 +383,7 @@ namespace web
                     };
                 }
 
-                websocket_listener::websocket_listener(int port, web::logging::experimental::callback_function log)
+                websocket_listener::websocket_listener(int port, web::logging::experimental::log_handler log)
                     : impl(new details::websocket_listener_impl(log))
                     , port(port)
                 {

@@ -57,7 +57,7 @@ namespace web
                 class websocket_listener
                 {
                 public:
-                    explicit websocket_listener(int port = 80, web::logging::experimental::callback_function log = {});
+                    explicit websocket_listener(int port = 80, web::logging::experimental::log_handler log = {});
                     ~websocket_listener();
 
                     void set_validate_handler(validate_handler handler);

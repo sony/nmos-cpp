@@ -141,7 +141,7 @@ namespace nmos
 
     SLOG_DETAIL_BEGIN_ANONYMOUS_NAMESPACE_IF_CONFIG_PER_TRANSLATION_UNIT
 
-    inline web::logging::experimental::callback_function make_slog_logging_callback(slog::base_gate& gate)
+    inline web::logging::experimental::log_handler make_slog_logging_callback(slog::base_gate& gate)
     {
         return [&gate](web::logging::experimental::level level_, const std::string& message, const std::string& category)
         {

@@ -37,9 +37,9 @@ namespace web
 
             // A logging callback includes the level, a message and optionally (i.e. maybe empty) category identifier
             // (similar to http_exception, use std::string rather than utility::string_t to simplify integration with <system_error>, etc.)
-            typedef void (callback_signature)(level level, const std::string& message, const std::string& category);
-            typedef callback_signature* callback_ptr;
-            typedef std::function<callback_signature> callback_function;
+            typedef void (log_signature)(level level, const std::string& message, const std::string& category);
+            typedef log_signature* log_ptr;
+            typedef std::function<log_signature> log_handler;
         }
     }
 }
