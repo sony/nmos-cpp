@@ -49,7 +49,7 @@ namespace nmos
 
         // all types (other than nodes, and subscriptions) must* be a sub-resource of an existing resource
         // (*assuming not out-of-order insertion by the allow_invalid_resources setting)
-        auto super_resource = find_resource(resources, get_super_resource(resource.data, resource.type));
+        auto super_resource = find_resource(resources, get_super_resource(resource));
         if (super_resource != resources.end())
         {
             // this isn't modifying the visible data of the super_resouce, so no resource events need to be generated
@@ -276,8 +276,9 @@ namespace nmos
 
     static const std::pair<id, type> no_resource{};
 
-    // get the super-resource id and type
-    std::pair<id, type> get_super_resource(const web::json::value& data, const type& type)
+    // get the super-resource id and type, according to the guidelines on referential integrity
+    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
+    std::pair<id, type> get_super_resource(const api_version& version, const type& type, const web::json::value& data)
     {
         if (data.is_null())
         {
@@ -297,7 +298,12 @@ namespace nmos
         }
         else if (nmos::types::flow == type)
         {
-            return{ nmos::fields::source_id(data), nmos::types::source };
+            // "Version v1.0 Flows do not have a device_id and should be garbage collected based on their parent source_id."
+            if (nmos::is04_versions::v1_0 >= version)
+            {
+                return{ nmos::fields::source_id(data), nmos::types::source };
+            }
+            return{ nmos::fields::device_id(data), nmos::types::device };
         }
         else if (nmos::types::sender == type)
         {
@@ -378,7 +384,7 @@ namespace nmos
         std::set<nmos::id> result;
         for (const auto& sub_resource : resources)
         {
-            if (id_type == get_super_resource(sub_resource.data, sub_resource.type))
+            if (id_type == get_super_resource(sub_resource))
             {
                 result.insert(sub_resource.id);
             }

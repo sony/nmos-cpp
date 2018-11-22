@@ -175,8 +175,8 @@ namespace nmos
 
                 // it must not change the super-resource either
                 const std::pair<nmos::id, nmos::type> no_resource{};
-                const auto super_id_type = nmos::get_super_resource(data, type);
-                const bool valid_super_id_type = creating || nmos::get_super_resource(resource->data, resource->type) == super_id_type;
+                const auto super_id_type = nmos::get_super_resource(version, type, data);
+                const bool valid_super_id_type = creating || nmos::get_super_resource(*resource) == super_id_type;
                 valid = valid && valid_super_id_type;
 
                 // the super-resource should exist in this registry (and must be of the right type)
@@ -204,7 +204,7 @@ namespace nmos
                 else if (!valid_api_version)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " would modify API version from " << nmos::make_api_version(resource->version);
                 else if (!valid_super_id_type)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on " << super_id_type << " would modify super-resource from " << nmos::get_super_resource(resource->data, resource->type);
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on " << super_id_type << " would modify super-resource from " << nmos::get_super_resource(*resource);
                 else if (!valid_super_resource)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on unknown " << super_id_type;
                 else if (!valid_super_type)
@@ -228,7 +228,7 @@ namespace nmos
                     // Therefore, issue warnings rather than errors here and don't worry too much about other issues such as whether to
                     // merge senders and receivers with existing device if present?
                     // or remove previous senders and receivers?
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/24
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.2.%20Behaviour%20-%20Querying.md#referential-integrity
 
                     for (auto& element : nmos::fields::senders(data))
                     {
@@ -256,13 +256,14 @@ namespace nmos
                 }
                 else if (nmos::types::flow == type)
                 {
-                    // v1.1 introduced device_id for flow
+                    // v1.1 introduced device_id for flow, and uses it for referential integrity rather than source_id
+                    // so if the source is not (yet) registered, issue a warning not an error, and don't treat this as invalid?
+                    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
                     if (nmos::is04_versions::v1_1 <= version)
                     {
-                        const auto& device_id = nmos::fields::device_id(data);
-                        const bool valid_device = nmos::has_resource(resources, { device_id, nmos::types::device });
-                        if (!valid_device) slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " on unknown device: " << device_id;
-                        valid = valid && valid_device;
+                        const auto& source_id = nmos::fields::source_id(data);
+                        const bool valid_source = nmos::has_resource(resources, { source_id, nmos::types::source });
+                        if (!valid_source) slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " from unknown source: " << source_id;
                     }
 
                     // the parent flows might not be registered in this registry, so issue a warning not an error, and don't treat this as invalid?
@@ -278,10 +279,9 @@ namespace nmos
                     const auto& flow_id = nmos::fields::flow_id(data);
                     const bool valid_flow = nmos::has_resource(resources, { flow_id, nmos::types::flow });
                     if (!valid_flow)
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " of unknown flow: " << flow_id;
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " of unknown flow: " << flow_id;
                     else
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Registration requested for " << id_type << " of flow: " << flow_id;
-                    valid = valid && valid_flow;
 
                     // v1.2 introduced subscription for sender
                     if (nmos::is04_versions::v1_2 <= version)
@@ -445,7 +445,7 @@ namespace nmos
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
 
                 // remove this resource from its super-resource's sub-resources
-                auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(resource->data, resource->type));
+                auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(*resource));
                 if (super_resource != resources.end())
                 {
                     // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
