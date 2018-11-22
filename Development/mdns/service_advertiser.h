@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include "pplx/pplx_utils.h"
 #include "mdns/core.h"
 
 namespace slog
@@ -13,29 +14,36 @@ namespace slog
 // An interface for straightforward mDNS Service Discovery advertisement
 namespace mdns
 {
+    // service advertiser implementation
+    namespace details
+    {
+        class service_advertiser_impl;
+    }
+
     class service_advertiser
     {
     public:
-        virtual ~service_advertiser() {}
+        explicit service_advertiser(slog::base_gate& gate); // or web::logging::experimental::callback_function to avoid the dependency on slog?
+        ~service_advertiser(); // do not destroy this object with outstanding tasks!
 
-        virtual bool register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain = {}) = 0;
-        virtual bool register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain = {}, const std::string& host_name = {}, const txt_records& txt_records = {}) = 0;
-        virtual bool update_record(const std::string& name, const std::string& type, const std::string& domain = {}, const txt_records& txt_records = {}) = 0;
+        pplx::task<void> open();
+        pplx::task<void> close();
+        pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain = {});
+        pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain = {}, const std::string& host_name = {}, const txt_records& txt_records = {});
+        pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain = {}, const txt_records& txt_records = {});
 
-        virtual void stop() = 0;
-        virtual void start() = 0;
+        service_advertiser(service_advertiser&& other);
+        service_advertiser& operator=(service_advertiser&& other);
+
+    private:
+        service_advertiser(const service_advertiser& other);
+        service_advertiser& operator=(const service_advertiser& other);
+
+        std::unique_ptr<details::service_advertiser_impl> impl;
     };
 
     // RAII helper for service advertisement sessions
-    struct service_advertiser_guard
-    {
-        service_advertiser_guard(service_advertiser& advertiser) : advertiser(advertiser) { advertiser.start(); }
-        ~service_advertiser_guard() { advertiser.stop(); }
-        service_advertiser& advertiser;
-    };
-
-    // make a default implementation of the mDNS Service Discovery advertisement interface
-    std::unique_ptr<service_advertiser> make_advertiser(slog::base_gate& gate);
+    typedef pplx::open_close_guard<service_advertiser> service_advertiser_guard;
 }
 
 #endif

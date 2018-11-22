@@ -72,6 +72,24 @@ namespace pplx
     ///     Cancellation token for cancellation of the do-while loop.
     /// </param>
     pplx::task<void> do_while(const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token = pplx::cancellation_token::none());
+
+    // 
+    /// <summary>
+    ///     RAII helper for classes that have asynchronous open/close member functions.
+    /// </summary>
+    template <typename T>
+    struct open_close_guard
+    {
+        typedef T guarded_t;
+        open_close_guard() : guarded() {}
+        open_close_guard(T& t) : guarded(&t) { guarded->open().wait(); }
+        ~open_close_guard() { if (0 != guarded) guarded->close().wait(); }
+        open_close_guard(open_close_guard&& other) : guarded(other.guarded) { other.guarded = 0; }
+        open_close_guard& operator=(open_close_guard&& other) { if (this != &other) { if (0 != guarded) guarded->close().wait(); guarded = other.guarded; } return *this; }
+        open_close_guard(const open_close_guard&) = delete;
+        open_close_guard& operator=(const open_close_guard&) = delete;
+        guarded_t* guarded;
+    };
 }
 
 #endif

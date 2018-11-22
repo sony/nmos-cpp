@@ -34,7 +34,7 @@ namespace nmos
             return mdns_api;
         }
 
-        web::json::value make_mdns_result(const std::string& name, const ::mdns::service_discovery::resolve_result& resolved)
+        web::json::value make_mdns_result(const std::string& name, const ::mdns::resolve_result& resolved)
         {
             using web::json::value;
 
@@ -81,81 +81,98 @@ namespace nmos
 
             mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                return pplx::create_task([]{}).then([&, req, res, parameters]() mutable
+                // hmm, something to think about... the regex patterns are presumably being used on encoded paths?
+                const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
+
+                // get the browse domain from the query parameters or settings
+
+                auto flat_query_params = web::json::value_from_query(req.request_uri().query());
+                nmos::details::decode_elements(flat_query_params);
+
+                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
+                const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+
+                std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(gate));
+
+                // hmm, how to add cancellation on shutdown to the browse and resolve operations?
+                return discovery->browse(serviceType, browse_domain).then([res, discovery](std::vector<::mdns::browse_result> browsed) mutable
                 {
-                    // hmm, something to think about... the regex patterns are presumably being used on encoded paths?
-                    const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
-
-                    // get the browse domain from the query parameters or settings
-
-                    auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-                    nmos::details::decode_elements(flat_query_params);
-
-                    const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
-                    const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
-
-                    std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
-                    std::vector<::mdns::service_discovery::browse_result> found;
-
-                    if (discovery->browse(found, serviceType, browse_domain))
+                    if (!browsed.empty())
                     {
-                        std::map<std::string, value> results;
+                        std::shared_ptr<std::map<std::string, value>> results(new std::map<std::string, value>());
 
-                        for (const auto& f : found)
+                        // add a continuation for each discovered service to resolve it
+                        // but, to simplify inserting these into the priority map, the continuations are sequential
+                        // rather than parallelised using pplx::when_all
+                        auto resolve_all = pplx::task_from_result();
+                        for (const auto& resolving : browsed)
                         {
-                            // check if we already have resolved this service
-                            if (results.end() != results.find(f.name)) continue;
-
-                            std::vector<::mdns::service_discovery::resolve_result> resolved;
-
-                            if (discovery->resolve(resolved, f.name, f.type, f.domain, f.interface_id))
+                            resolve_all = resolve_all.then([discovery, results, resolving]
                             {
-                                results[f.name] = make_mdns_result(f.name, resolved.front());
-                            }
-                        }
+                                const auto& serviceName = resolving.name;
 
-                        if (!results.empty())
-                        {
-                            set_reply(res, status_codes::OK,
-                                web::json::serialize(results, [](const std::map<std::string, value>::value_type& kv) { return kv.second; }),
-                                U("application/json"));
-                            res.headers().add(U("X-Total-Count"), results.size());
+                                // check if we already have resolved this service
+                                if (results->end() != results->find(serviceName)) return pplx::task_from_result();
+
+                                // if not, resolve and add a result for it
+                                return discovery->resolve(resolving.name, resolving.type, resolving.domain, resolving.interface_id)
+                                    .then([results, serviceName](std::vector<::mdns::resolve_result> resolved)
+                                {
+                                    if (!resolved.empty())
+                                    {
+                                        (*results)[serviceName] = make_mdns_result(serviceName, resolved.front());
+                                    }
+                                });
+                            });
                         }
-                        else
+                        return resolve_all.then([res, results]() mutable
                         {
-                            set_reply(res, status_codes::NotFound);
-                        }
+                            if (!results->empty())
+                            {
+                                set_reply(res, status_codes::OK,
+                                    web::json::serialize(*results, [](const std::map<std::string, value>::value_type& kv) { return kv.second; }),
+                                    U("application/json"));
+                                res.headers().add(U("X-Total-Count"), results->size());
+                            }
+                            else
+                            {
+                                set_reply(res, status_codes::NotFound);
+                            }
+                            return true;
+                        });
                     }
                     else
                     {
-                        set_reply(res, status_codes::NotFound);
+                        return pplx::create_task([] {}).then([res]() mutable
+                        {
+                            set_reply(res, status_codes::NotFound);
+                            return true;
+                        });
                     }
-
-                    return true;
                 });
             });
 
             mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                return pplx::create_task([]{}).then([&, req, res, parameters]() mutable
+                const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
+                const std::string serviceName = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceName.name)));
+
+                // get the service domain from the query parameters or settings
+
+                auto flat_query_params = web::json::value_from_query(req.request_uri().query());
+                nmos::details::decode_elements(flat_query_params);
+
+                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
+                const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+
+                std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(gate));
+
+                // When browsing, we resolve using the browse results' domain and interface
+                // so this can give different results...
+                return discovery->resolve(serviceName, serviceType, service_domain.empty() ? "local." : service_domain)
+                    .then([res, serviceName, discovery](std::vector<::mdns::resolve_result> resolved) mutable
                 {
-                    const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
-                    const std::string serviceName = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceName.name)));
-
-                    // get the service domain from the query parameters or settings
-
-                    auto flat_query_params = web::json::value_from_query(req.request_uri().query());
-                    nmos::details::decode_elements(flat_query_params);
-
-                    const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
-                    const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
-
-                    std::unique_ptr<::mdns::service_discovery> discovery = ::mdns::make_discovery(gate);
-                    std::vector<::mdns::service_discovery::resolve_result> resolved;
-
-                    // When browsing, we resolve using the browse results' domain and interface
-                    // so this can give different results...
-                    if (discovery->resolve(resolved, serviceName, serviceType, service_domain.empty() ? "local." : service_domain))
+                    if (!resolved.empty())
                     {
                         // for now, pick one result, even though there may be one per interface
                         value result = make_mdns_result(serviceName, resolved.front());

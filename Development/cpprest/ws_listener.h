@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-#include "pplx/pplxtasks.h"
+#include "pplx/pplx_utils.h"
 #include "cpprest/logging_utils.h" // for web::logging::experimental::callback_function
 #include "cpprest/ws_client.h" // for web::websockets::client::websocket_outgoing_message and web::websockets::client::websocket_exception
 
@@ -83,12 +83,7 @@ namespace web
                 };
 
                 // RAII helper for websocket_listener sessions (could be extracted to another header)
-                struct websocket_listener_guard
-                {
-                    websocket_listener_guard(web::websockets::experimental::listener::websocket_listener& listener) : listener(listener) { listener.open().wait(); }
-                    ~websocket_listener_guard() { listener.close().wait(); }
-                    web::websockets::experimental::listener::websocket_listener& listener;
-                };
+                typedef pplx::open_close_guard<websocket_listener> websocket_listener_guard;
             }
         }
     }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include "pplx/pplxtasks.h"
 #include "mdns/core.h"
 
 namespace slog
@@ -14,51 +15,64 @@ namespace slog
 // An interface for straightforward mDNS Service Discovery browsing
 namespace mdns
 {
+    // service discovery implementation
+    namespace details
+    {
+        class service_discovery_impl;
+    }
+
+    struct browse_result
+    {
+        browse_result() : interface_id(0) {}
+        browse_result(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id) : name(name), type(type), domain(domain), interface_id(interface_id) {}
+
+        std::string name;
+        std::string type;
+        std::string domain;
+        std::uint32_t interface_id;
+    };
+
+    struct resolve_result
+    {
+        resolve_result() {}
+        resolve_result(const std::string& host_name, std::uint16_t port, const mdns::txt_records& txt_records) : host_name(host_name), port(port), txt_records(txt_records) {}
+
+        std::string host_name;
+        std::uint16_t port;
+        mdns::txt_records txt_records;
+
+        std::vector<std::string> ip_addresses;
+    };
+
     class service_discovery
     {
     public:
-        virtual ~service_discovery() {}
+        explicit service_discovery(slog::base_gate& gate); // or web::logging::experimental::callback_function to avoid the dependency on slog?
+        ~service_discovery(); // do not destroy this object with outstanding tasks!
 
-        struct browse_result
+        pplx::task<std::vector<browse_result>> browse(const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
+        pplx::task<std::vector<resolve_result>> resolve(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
+
+        template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
+        pplx::task<std::vector<browse_result>> browse(const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
-            browse_result() : interface_id(0) {}
-            browse_result(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id) : name(name), type(type), domain(domain), interface_id(interface_id) {}
-
-            std::string name;
-            std::string type;
-            std::string domain;
-            std::uint32_t interface_id;
-        };
-
-        struct resolve_result
-        {
-            resolve_result() {}
-            resolve_result(const std::string& host_name, std::uint16_t port, const mdns::txt_records& txt_records) : host_name(host_name), port(port), txt_records(txt_records) {}
-
-            std::string host_name;
-            std::uint16_t port;
-            mdns::txt_records txt_records;
-
-            std::vector<std::string> ip_addresses;
-        };
-
-        virtual bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout, const std::chrono::steady_clock::duration& earliest_timeout) = 0;
-        virtual bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout, const std::chrono::steady_clock::duration& earliest_timeout) = 0;
-
-        template <typename Rep1 = std::chrono::seconds::rep, typename Period1 = std::chrono::seconds::period, typename Rep2 = std::chrono::seconds::rep, typename Period2 = std::chrono::seconds::period>
-        bool browse(std::vector<browse_result>& results, const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, const std::chrono::duration<Rep1, Period1>& latest_timeout = std::chrono::seconds(default_latest_timeout_seconds), const std::chrono::duration<Rep2, Period2>& earliest_timeout = std::chrono::seconds(default_earliest_timeout_seconds))
-        {
-            return browse(results, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(latest_timeout), std::chrono::duration_cast<std::chrono::steady_clock::duration>(earliest_timeout));
+            return browse(type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
         }
-        template <typename Rep1 = std::chrono::seconds::rep, typename Period1 = std::chrono::seconds::period, typename Rep2 = std::chrono::seconds::rep, typename Period2 = std::chrono::seconds::period>
-        bool resolve(std::vector<resolve_result>& results, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, const std::chrono::duration<Rep1, Period1>& latest_timeout = std::chrono::seconds(default_latest_timeout_seconds), const std::chrono::duration<Rep2, Period2>& earliest_timeout = std::chrono::seconds(default_earliest_timeout_seconds))
+        template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
+        pplx::task<std::vector<resolve_result>> resolve(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
-            return resolve(results, name, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(latest_timeout), std::chrono::duration_cast<std::chrono::steady_clock::duration>(earliest_timeout));
+            return resolve(name, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
         }
+
+        service_discovery(service_discovery&& other);
+        service_discovery& operator=(service_discovery&& other);
+
+    private:
+        service_discovery(const service_discovery& other);
+        service_discovery& operator=(const service_discovery& other);
+
+        std::unique_ptr<details::service_discovery_impl> impl;
     };
-
-    // make a default implementation of the mDNS Service Discovery browsing interface
-    std::unique_ptr<service_discovery> make_discovery(slog::base_gate& gate);
 }
 
 #endif

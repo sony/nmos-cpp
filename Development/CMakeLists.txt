@@ -157,14 +157,14 @@ add_definitions(/DSLOG_STATIC /DSLOG_LOGGING_SEVERITY=slog::max_verbosity)
 # mdns library
 
 set(MDNS_SOURCES
-    mdns/bonjour_dns_impl.cpp
     mdns/core.cpp
-    mdns/service_advertiser.cpp
-    mdns/service_discovery.cpp
+    mdns/dns_sd_impl.cpp
+    mdns/service_advertiser_impl.cpp
+    mdns/service_discovery_impl.cpp
     )
 set(MDNS_HEADERS
-    mdns/bonjour_dns_impl.h
     mdns/core.h
+    mdns/dns_sd_impl.h
     mdns/service_advertiser.h
     mdns/service_discovery.h
     )

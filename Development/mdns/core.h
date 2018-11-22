@@ -7,8 +7,7 @@
 namespace mdns
 {
     // browse and resolve timeouts
-    const unsigned int default_latest_timeout_seconds = 30; // wait no longer than this even when no services have been discovered/resolved
-    const unsigned int default_earliest_timeout_seconds = 0; // wait at least this long even when one or more services have been discovered/resolved
+    const unsigned int default_timeout_seconds = 30; // wait no longer than this even when no services have been discovered/resolved
 
     // DNS TXT records "are used to hold descriptive text. The semantics of the text depends on the domain where it is found."
     // See https://tools.ietf.org/html/rfc1035#section-3.3.14

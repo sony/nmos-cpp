@@ -193,17 +193,6 @@ int main(int argc, char* argv[])
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
         for (auto& port_router : port_routers) port_listeners.push_back(nmos::make_api_listener(port_router.first, port_router.second, listener_config, gate));
 
-        // Configure the mDNS advertisements for our APIs
-
-        std::unique_ptr<mdns::service_advertiser> advertiser = mdns::make_advertiser(gate);
-        const auto pri = nmos::fields::pri(registry_model.settings);
-        if (nmos::service_priorities::no_priority != pri) // no_priority allows the registry to run unadvertised
-        {
-            nmos::experimental::register_service(*advertiser, nmos::service_types::query, registry_model.settings, nmos::make_txt_records(nmos::service_types::query, pri));
-            nmos::experimental::register_service(*advertiser, nmos::service_types::registration, registry_model.settings, nmos::make_txt_records(nmos::service_types::registration, pri));
-            nmos::experimental::register_service(*advertiser, nmos::service_types::node, registry_model.settings, nmos::make_txt_records(nmos::service_types::node));
-        }
-
         // Start up registry management before any NMOS APIs are open
 
         auto send_query_ws_events = nmos::details::make_thread_guard([&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, registry_websockets, gate); }, [&] { registry_model.controlled_shutdown(); });
@@ -216,7 +205,18 @@ int main(int argc, char* argv[])
         std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
         for (auto& port_listener : port_listeners) port_guards.push_back({ port_listener });
         web::websockets::experimental::listener::websocket_listener_guard query_ws_guard(query_ws_listener);
-        mdns::service_advertiser_guard advertiser_guard(*advertiser);
+
+        // Configure the mDNS advertisements for our APIs
+
+        mdns::service_advertiser advertiser(gate);
+        mdns::service_advertiser_guard advertiser_guard(advertiser);
+        const auto pri = nmos::fields::pri(registry_model.settings);
+        if (nmos::service_priorities::no_priority != pri) // no_priority allows the registry to run unadvertised
+        {
+            nmos::experimental::register_service(advertiser, nmos::service_types::query, registry_model.settings, nmos::make_txt_records(nmos::service_types::query, pri));
+            nmos::experimental::register_service(advertiser, nmos::service_types::registration, registry_model.settings, nmos::make_txt_records(nmos::service_types::registration, pri));
+            nmos::experimental::register_service(advertiser, nmos::service_types::node, registry_model.settings, nmos::make_txt_records(nmos::service_types::node));
+        }
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
