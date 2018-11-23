@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace is04_schemas
     {
-        namespace v1_2
+        namespace v1_2_1
         {
             extern const char* registrationapi_resource_post_request;
             extern const char* clock_internal;

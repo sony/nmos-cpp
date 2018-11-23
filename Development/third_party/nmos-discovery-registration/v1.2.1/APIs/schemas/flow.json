@@ -3,7 +3,7 @@
   "type": "object",
   "description": "Describes a Flow",
   "title": "Flow resource",
-  "oneOf": [
+  "anyOf": [
     { "$ref": "flow_video_raw.json" },
     { "$ref": "flow_video_coded.json" },
     { "$ref": "flow_audio_raw.json" },

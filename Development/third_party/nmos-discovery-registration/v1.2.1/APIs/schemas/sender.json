@@ -59,7 +59,7 @@
           "format": "uri"
         },
         "interface_bindings": {
-          "description": "Binding of Sender egress ports to interfaces on the parent Node. Should contain a single network interface unless a redundancy mechanism such as ST.2022-7 is in use, in which case each 'leg' should have a matching interface listed.",
+          "description": "Binding of Sender egress ports to interfaces on the parent Node. Should contain a single network interface unless a redundancy mechanism such as ST.2022-7 is in use, in which case each 'leg' should have its matching interface listed. Where the redundancy mechanism sends more than one copy of the stream via the same interface, that interface should be listed a corresponding number of times.",
           "type": "array",
           "items": {
             "type":"string"

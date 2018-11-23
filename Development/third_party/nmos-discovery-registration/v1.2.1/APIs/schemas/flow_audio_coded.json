@@ -16,12 +16,7 @@
           "type": "string",
           "pattern": "^audio\\/[^\\s\\/]+$",
           "not": {
-            "enum": [
-              "audio/L24",
-              "audio/L20",
-              "audio/L16",
-              "audio/L8"
-            ]
+            "pattern": "^audio\\/L[0-9]+$"
           }
         }
       }

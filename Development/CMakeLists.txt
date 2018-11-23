@@ -190,7 +190,7 @@ set(NMOS_IS04_SCHEMAS_HEADERS
     nmos/is04_schemas/is04_schemas.h
     )
 
-set(NMOS_IS04_V1_2_TAG v1.2)
+set(NMOS_IS04_V1_2_TAG v1.2.1)
 set(NMOS_IS04_V1_1_TAG v1.1.1)
 set(NMOS_IS04_V1_0_TAG v1.0.2)
 
@@ -199,7 +199,6 @@ set(NMOS_IS04_V1_2_SCHEMAS_JSON
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/clock_ptp.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/device.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/devices.json
-    third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/empty.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/error.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/flow.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/flows.json
@@ -215,6 +214,7 @@ set(NMOS_IS04_V1_2_SCHEMAS_JSON
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/flow_video_raw.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/node.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/nodeapi-base.json
+    third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/nodeapi-receiver-target.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/nodes.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/queryapi-base.json
     third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/queryapi-subscription-response.json
