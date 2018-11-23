@@ -73,7 +73,7 @@ namespace nmos
             extern const char* queryapi_subscriptions_post_request;
         }
 
-        namespace v1_0_2
+        namespace v1_0_3
         {
             extern const char* registrationapi_v1_0_resource_post_request;
             extern const char* device;

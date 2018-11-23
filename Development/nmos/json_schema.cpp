@@ -36,8 +36,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
-            using namespace nmos::is04_schemas::v1_0_2;
-            const utility::string_t tag(_XPLATSTR("v1.0.2"));
+            using namespace nmos::is04_schemas::v1_0_3;
+            const utility::string_t tag(_XPLATSTR("v1.0.3"));
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-v1.0-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json"));
