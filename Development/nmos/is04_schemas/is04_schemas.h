@@ -40,7 +40,7 @@ namespace nmos
             extern const char* queryapi_subscriptions_post_request;
         }
 
-        namespace v1_1_1
+        namespace v1_1_2
         {
             extern const char* registrationapi_resource_post_request;
             extern const char* clock_internal;
