@@ -78,12 +78,17 @@ a=mid:SECONDARY
                 }
             };
 
-            insert_resource_after(delay_millis, make_node(node_id, model.settings), gate);
+            {
+                // for now, just add one example network interface
+                auto node = make_node(node_id, model.settings);
+                node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() }, { U("port_id"), U("ff-ff-ff-ff-ff-ff") }, { U("name"), U("example") } }) });
+                insert_resource_after(delay_millis, std::move(node), gate);
+            }
             insert_resource_after(delay_millis, make_device(device_id, node_id, { sender_id }, { receiver_id }, model.settings), gate);
             insert_resource_after(delay_millis, make_video_source(source_id, device_id, { 25, 1 }, model.settings), gate);
             insert_resource_after(delay_millis, make_raw_video_flow(flow_id, source_id, device_id, model.settings), gate);
-            insert_resource_after(delay_millis, make_sender(sender_id, flow_id, device_id, {}, model.settings), gate);
-            insert_resource_after(delay_millis, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, model.settings), gate);
+            insert_resource_after(delay_millis, make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings), gate);
+            insert_resource_after(delay_millis, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings), gate);
 
             auto most_recent_update = tai_min();
             auto earliest_scheduled_activation = (tai_clock::time_point::max)();
