@@ -737,6 +737,7 @@ set(NMOS_CPP_REGISTRY_TEST_CPPREST_SOURCES
     cpprest/api_router.cpp
     cpprest/host_utils.cpp
     cpprest/http_utils.cpp
+    cpprest/json_utils.cpp
     )
 set(NMOS_CPP_REGISTRY_TEST_CPPREST_HEADERS
     )
@@ -744,6 +745,7 @@ set(NMOS_CPP_REGISTRY_TEST_CPPREST_HEADERS
 set(NMOS_CPP_REGISTRY_TEST_CPPREST_TEST_SOURCES
     cpprest/test/api_router_test.cpp
     cpprest/test/http_utils_test.cpp
+    cpprest/test/json_utils_test.cpp
     cpprest/test/regex_utils_test.cpp
     )
 set(NMOS_CPP_REGISTRY_TEST_CPPREST_TEST_HEADERS

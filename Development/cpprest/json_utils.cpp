@@ -255,37 +255,76 @@ namespace web
         }
 
         // merge source into target value
-        void merge_patch(web::json::value& value, const web::json::value& patch)
+        void merge_patch(web::json::value& value, const web::json::value& patch, bool permissive)
         {
             // similar to, though not the same as, RFC 7386 JSON Merge Patch
-            // due to the different handling of null values and arrays
+            // due to the different handling of null values, arrays and fields that don't exist in target
             // see https://tools.ietf.org/html/rfc7386
-            if (value.is_array() && patch.is_array())
+            if (patch.is_array())
             {
+                if (!value.is_array())
+                {
+                    if (!permissive) throw web::json::json_exception(_XPLATSTR("patch error - inconsistent type"));
+                    value = value::array();
+                }
                 if (value.size() != patch.size())
                 {
-                    throw web::json::json_exception(_XPLATSTR("patch error - inconsistent array size"));
+                    if (!permissive) throw web::json::json_exception(_XPLATSTR("patch error - inconsistent array size"));
                 }
-                auto vb = value.as_array().begin(), ve = value.as_array().end();
-                auto pb = patch.as_array().begin();
-                while (vb != ve)
+                auto& va = value.as_array(), pa = patch.as_array();
+                auto vi = va.begin(), pi = pa.begin();
+                while (vi != va.end() && pi != pa.end())
                 {
-                    merge_patch(*vb++, *pb++);
+                    if (permissive && pi->is_null())
+                    {
+                        vi = va.erase(vi);
+                        ++pi;
+                    }
+                    else
+                    {
+                        merge_patch(*vi++, *pi++, permissive);
+                    }
+                }
+                while (vi != va.end())
+                {
+                    vi = va.erase(vi);
+                }
+                while (pi != pa.end())
+                {
+                    if (permissive && !pi->is_null())
+                    {
+                        merge_patch(va[va.size()], *pi, permissive);
+                    }
+                    ++pi;
                 }
             }
-            else if (value.is_object() && patch.is_object())
+            else if (patch.is_object())
             {
+                if (!value.is_object())
+                {
+                    if (!permissive) throw web::json::json_exception(_XPLATSTR("patch error - inconsistent type"));
+                    value = value::object();
+                }
                 for (auto& patch_field : patch.as_object())
                 {
-                    // can't use value.as_object().find(patch_field.first) because it's const!
-                    if (!value.has_field(patch_field.first))
+                    if (permissive && patch_field.second.is_null())
                     {
-                        throw web::json::json_exception(_XPLATSTR("patch error - unexpected object field"));
+                        if (value.has_field(patch_field.first))
+                        {
+                            value.erase(patch_field.first);
+                        }
                     }
-                    merge_patch(value.at(patch_field.first), patch_field.second);
+                    else
+                    {
+                        if (!value.has_field(patch_field.first))
+                        {
+                            if (!permissive) throw web::json::json_exception(_XPLATSTR("patch error - unexpected object field"));
+                        }
+                        merge_patch(value[patch_field.first], patch_field.second, permissive);
+                    }
                 }
             }
-            else if (0 == value.size() && 0 == patch.size())
+            else if (!(value.is_object() || value.is_array()) || permissive)
             {
                 // allow substitution of non-composites (not objects or arrays) by non-composites
                 value = patch;

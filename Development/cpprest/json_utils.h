@@ -392,7 +392,7 @@ namespace web
         bool match_query(const web::json::value& value, const web::json::value& query, match_flag_type match_flags = match_default);
 
         // merge source into target value
-        void merge_patch(web::json::value& value, const web::json::value& patch);
+        void merge_patch(web::json::value& value, const web::json::value& patch, bool permissive = false);
     }
 }
 
