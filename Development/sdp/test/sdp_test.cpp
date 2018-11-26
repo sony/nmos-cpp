@@ -10,7 +10,7 @@ BST_TEST_CASE(testSdpRoundtrip)
     // a black box style test/example of SDP conversion
 
     const std::string test_sdp = R"(v=0
-o=- 2358175406662690538 2358175406662690538 IN IP4 192.168.9.142
+o=- 16088568667046861078 16088568667046861078 IN IP4 192.168.9.142
 s=Example Sender 1 (Video)
 t=0 0
 a=group:DUP PRIMARY SECONDARY
@@ -94,8 +94,8 @@ a=mid:SECONDARY
         { sdp::fields::protocol_version, 0 },
         { sdp::fields::origin, web::json::value_of({
             { sdp::fields::user_name, U("-") },
-            { sdp::fields::session_id, 2358175406662690538 },
-            { sdp::fields::session_version, 2358175406662690538 },
+            { sdp::fields::session_id, 16088568667046861077 },
+            { sdp::fields::session_version, 16088568667046861078 },
             { sdp::fields::network_type, sdp::network_types::IN.name },
             { sdp::fields::address_type, sdp::address_types::IP4.name },
             { sdp::fields::unicast_address, U("192.168.9.142") }
