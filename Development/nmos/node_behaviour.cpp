@@ -970,12 +970,6 @@ namespace nmos
             // intermittently attempting discovery of a Registration API while in peer-to-peer mode seems like a good idea?
             bool registration_services_discovered(false);
 
-            const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
-            const std::pair<nmos::service_priority, nmos::service_priority> priorities(nmos::fields::highest_pri(model.settings), nmos::fields::lowest_pri(model.settings));
-            const web::uri fallback_registration_service(get_registration_service(model.settings));
-
-            const auto discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
-
             // background tasks may read/write the above local state by reference
             pplx::cancellation_token_source cancellation_source;
             auto token = cancellation_source.get_token();
@@ -983,6 +977,16 @@ namespace nmos
             {
                 return pplx::create_task([&]
                 {
+                    auto lock = model.read_lock();
+
+                    const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
+                    const std::pair<nmos::service_priority, nmos::service_priority> priorities(nmos::fields::highest_pri(model.settings), nmos::fields::lowest_pri(model.settings));
+                    const web::uri fallback_registration_service(get_registration_service(model.settings));
+
+                    const auto discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
+
+                    lock.unlock();
+
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)discovery_interval << " seconds";
                     registration_services = discover_registration_services(discovery, browse_domain, priorities, fallback_registration_service, gate, std::chrono::seconds(discovery_interval), token);
                     return registration_services.empty();

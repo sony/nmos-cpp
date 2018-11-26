@@ -32,7 +32,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/all/?"), methods::POST, [&model, &logging_level, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            settings_api.support(U("/settings/all/?"), methods::PATCH, [&model, &logging_level, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 return details::extract_json(req, parameters, gate).then([&, req, res](value body) mutable
                 {
@@ -40,7 +40,9 @@ namespace nmos
 
                     // Validate request?
 
-                    model.settings = body;
+                    // Merge the settings updates
+
+                    web::json::merge_patch(model.settings, body, true);
 
                     // for the moment, logging_level is a special case because we want to turn it into an atomic value
                     // that can be read by logging statements without locking the mutex protecting the settings
