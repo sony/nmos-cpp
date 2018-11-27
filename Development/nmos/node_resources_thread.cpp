@@ -3,6 +3,7 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include "nmos/activation_mode.h"
 #include "nmos/connection_api.h"
+#include "nmos/group_hint.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
@@ -78,17 +79,35 @@ a=mid:SECONDARY
                 }
             };
 
+            // example node
             {
-                // for now, just add one example network interface
                 auto node = make_node(node_id, model.settings);
+                // add one example network interface
                 node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() }, { U("port_id"), U("ff-ff-ff-ff-ff-ff") }, { U("name"), U("example") } }) });
                 insert_resource_after(delay_millis, std::move(node), gate);
             }
+            // example device
             insert_resource_after(delay_millis, make_device(device_id, node_id, { sender_id }, { receiver_id }, model.settings), gate);
+            // example source
             insert_resource_after(delay_millis, make_video_source(source_id, device_id, { 25, 1 }, model.settings), gate);
+            // example flow
             insert_resource_after(delay_millis, make_raw_video_flow(flow_id, source_id, device_id, model.settings), gate);
-            insert_resource_after(delay_millis, make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings), gate);
-            insert_resource_after(delay_millis, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings), gate);
+            // example sender
+            {
+                // add example network interface binding for both primary and secondary
+                auto sender = make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings);
+                // add example "natural grouping" hint
+                web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
+                insert_resource_after(delay_millis, std::move(sender), gate);
+            }
+            // example receiver
+            {
+                // add example network interface binding for both primary and secondary
+                auto receiver = make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
+                // add example "natural grouping" hint
+                web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
+                insert_resource_after(delay_millis, std::move(receiver), gate);
+            }
 
             auto most_recent_update = tai_min();
             auto earliest_scheduled_activation = (tai_clock::time_point::max)();

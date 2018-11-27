@@ -432,6 +432,7 @@ set(NMOS_CPP_NODE_NMOS_SOURCES
     nmos/api_utils.cpp
     nmos/components.cpp
     nmos/connection_api.cpp
+    nmos/group_hint.cpp
     nmos/id.cpp
     nmos/logging_api.cpp
     nmos/mdns.cpp
@@ -460,6 +461,7 @@ set(NMOS_CPP_NODE_NMOS_HEADERS
     nmos/connection_api.h
     nmos/device_type.h
     nmos/format.h
+    nmos/group_hint.h
     nmos/health.h
     nmos/id.h
     nmos/interlace_mode.h
