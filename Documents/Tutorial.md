@@ -91,3 +91,14 @@ On the other side, this operation should be reflected in the nmos-cpp-registry o
 2018-06-25 16:25:23.982: info: 11200: Registration requested for sender: 4214b159-58d5-5484-9d08-3c2553240f09 on device: b89caa85-556f-52e4-aec3-2c625a314bb5
 2018-06-25 16:25:24.089: info: 11836: Registration requested for receiver: 45a18912-db55-5953-a9f8-b87f4d70d386 on device: b89caa85-556f-52e4-aec3-2c625a314bb5
 ```
+
+## Adjust settings of a running **nmos-cpp* server
+
+A few settings may be changed dynamically by PATCH to /settings/all on the experimental Settings API.
+
+For example:
+
+```
+curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
+curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -T config.json
+```

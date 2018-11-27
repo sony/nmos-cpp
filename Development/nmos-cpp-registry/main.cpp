@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting nmos-cpp registry";
 
-        // Settings can be passed on the command-line, directly or in a configuration file, and some may be changed dynamically by POST to /settings/all on the Settings API
+        // Settings can be passed on the command-line, directly or in a configuration file, and a few may be changed dynamically by PATCH to /settings/all on the Settings API
         //
         // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
         //
@@ -49,9 +49,8 @@ int main(int argc, char* argv[])
         //
         // # ./nmos-cpp-registry "{\"logging_level\":-40}"
         // # ./nmos-cpp-registry config.json
-        // # curl -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
-        //
-        // In either case, omitted settings will assume their defaults (invisibly, currently)
+        // # curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
+        // # curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -T config.json
 
         if (argc > 1)
         {
