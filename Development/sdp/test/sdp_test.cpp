@@ -94,8 +94,8 @@ a=mid:SECONDARY
         { sdp::fields::protocol_version, 0 },
         { sdp::fields::origin, web::json::value_of({
             { sdp::fields::user_name, U("-") },
-            { sdp::fields::session_id, 16088568667046861078ull },
-            { sdp::fields::session_version, 16088568667046861078ull },
+            { sdp::fields::session_id, 16088568667046861078ul },
+            { sdp::fields::session_version, 16088568667046861078ul },
             { sdp::fields::network_type, sdp::network_types::IN.name },
             { sdp::fields::address_type, sdp::address_types::IP4.name },
             { sdp::fields::unicast_address, U("192.168.9.142") }

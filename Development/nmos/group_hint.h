@@ -25,6 +25,12 @@ namespace nmos
         utility::string_t group_name;
         utility::string_t role_in_group;
         group_scope optional_group_scope;
+
+        group_hint(const utility::string_t& group_name, const utility::string_t& role_in_group, const group_scope& optional_group_scope = {})
+            : group_name(group_name)
+            , role_in_group(role_in_group)
+            , optional_group_scope(optional_group_scope)
+        {}
     };
 
     utility::string_t make_group_hint(const group_hint& group_hint);
