@@ -342,9 +342,9 @@ namespace mdns_details
         const auto earliest_timeout_ = std::chrono::seconds(0);
 
         bool had_enough = false;
+#ifdef HAVE_DNSSERVICEGETADDRINFO
         bool more_coming = true;
 
-#ifdef HAVE_DNSSERVICEGETADDRINFO
         DNSServiceRef client = nullptr;
 
         const auto now = std::chrono::steady_clock::now();
