@@ -409,6 +409,8 @@ namespace mdns_details
         if (!had_enough)
         {
             // hmmm, plain old getaddrinfo uses all name resolution mechanisms so isn't specific to a particular interface
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "getaddrinfo for hostname: " << host_name;
+
 #ifdef _WIN32
             // on Windows, resolution of multicast .local domain names doesn't seem to work even with the Bonjour service running?
             const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(host_name)));
@@ -424,6 +426,8 @@ namespace mdns_details
 
                 had_enough = handler(result);
             }
+
+            if (ip_addresses.empty()) slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using getaddrinfo, got no addresses for host: " << host_name;
         }
 
         return had_enough;
