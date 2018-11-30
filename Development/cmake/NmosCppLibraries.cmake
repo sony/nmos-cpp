@@ -2,7 +2,7 @@
 
 # caller can set NMOS_HOME_DIR if the project is differend
 if (NOT DEFINED NMOS_HOME_DIR)
-    set (NMOS_HOME_DIR ${PROJECT_SOURCE_DIR}
+    set (NMOS_HOME_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
 # mdns library

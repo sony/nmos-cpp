@@ -2,7 +2,7 @@
 
 # caller can set NMOS_HOME_DIR if the project is differend
 if (NOT DEFINED NMOS_HOME_DIR)
-    set (NMOS_HOME_DIR ${PROJECT_SOURCE_DIR}
+    set (NMOS_HOME_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
 # caller can set SLOG_LOGGING_SEVERITY for something other than max_verbosity
