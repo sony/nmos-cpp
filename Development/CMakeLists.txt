@@ -4,22 +4,27 @@ cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 # project name
 project(nmos-cpp)
 
+# The default nmos home directory
 set(NMOS_HOME_DIR ${PROJECT_SOURCE_DIR})
-set(SLOG_LOGGING_SEVVERITY slog::max_verbosity)
 
+# The default logging severity
+set(SLOG_LOGGING_SEVERITY slog::max_verbosity)
+
+# General setup and dependency checking
 include (${NMOS_HOME_DIR}/cmake/NmosCppGeneral.cmake)
 
+# Setup for the libraries
 include (${NMOS_HOME_DIR}/cmake/NmosCppLibraries.cmake)
 
-# nmos-cpp-node
+# nmos-cpp-node executable
 
 set(NMOS_CPP_NODE_SOURCES
     ${NMOS_HOME_DIR}/nmos-cpp-node/main.cpp
-    ${NMOS_HOME_DIR}/nmos/node_resources_thread.cpp
+    ${NMOS_HOME_DIR}/nmos-cpp-node/node_resources_thread.cpp
     )
 set(NMOS_CPP_NODE_HEADERS
     ${NMOS_HOME_DIR}/nmos-cpp-node/main_gate.h
-    ${NMOS_HOME_DIR}/nmos/node_resources_thread.h
+    ${NMOS_HOME_DIR}/nmos-cpp-node/node_resources_thread.h
     )
 
 add_executable(    
@@ -40,7 +45,7 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     )
  
-# nmos-cpp-registry
+# nmos-cpp-registry executable
  
 set(NMOS_CPP_REGISTRY_SOURCES
     ${NMOS_HOME_DIR}/nmos-cpp-registry/main.cpp
@@ -68,35 +73,6 @@ target_link_libraries(
     ${Boost_LIBRARIES} 
     )     
 
-# nmos-cpp-registry-test
-
-set(NMOS_CPP_REGISTRY_TEST_SOURCES
-    ${NMOS_HOME_DIR}/nmos-cpp-registry/test/main.cpp
-    )
-set(NMOS_CPP_REGISTRY_TEST_HEADERS
-    )
- 
-add_executable(
-    nmos-cpp-registry-test
-    ${NMOS_CPP_REGISTRY_TEST_SOURCES} 
-    ${NMOS_CPP_REGISTRY_TEST_HEADERS}
-)
-
-source_group("Source Files" FILES ${NMOS_CPP_REGISTRY_TEST_SOURCES})
-source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_TEST_HEADERS})
-
-target_link_libraries(
-    nmos-cpp-registry-test
-    nmos_cpp_registry_test_static
-    mdns_static
-    cpprestsdk::cpprest
-    ${BONJOUR_LIB}
-    ${PLATFORM_LIBS}
-    ${Boost_LIBRARIES}
-    )
-
-include(Catch)
-
-catch_discover_tests(nmos-cpp-registry-test EXTRA_ARGS -r compact)
-
+# make the Registry test program    
+include (${NMOS_HOME_DIR}/cmake/NmosCppRegTest.cmake)
 

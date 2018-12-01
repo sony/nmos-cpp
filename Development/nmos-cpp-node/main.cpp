@@ -9,7 +9,7 @@
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_resources.h"
-#include "nmos/node_resources_thread.h"
+#include "node_resources_thread.h"
 #include "nmos/process_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
