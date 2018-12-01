@@ -1,4 +1,4 @@
-#include "nmos/node_resources_thread.h"
+#include "node_resources_thread.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 #include "nmos/activation_mode.h"
