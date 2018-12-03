@@ -41,7 +41,21 @@ namespace nmos
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-    void resolve_auto(const nmos::type& type, web::json::value& transport_params);
+    void resolve_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port = 5004);
+
+    namespace details
+    {
+        template <typename AutoFun>
+        inline void resolve_auto(web::json::value& params, const utility::string_t& key, AutoFun auto_fun)
+        {
+            if (!params.has_field(key)) return;
+            auto& param = params.at(key);
+            if (param.is_string() && U("auto") == param.as_string())
+            {
+                param = auto_fun();
+            }
+        }
+    }
 }
 
 #endif

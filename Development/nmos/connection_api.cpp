@@ -661,20 +661,6 @@ namespace nmos
         }
     }
 
-    namespace details
-    {
-        template <typename AutoFun>
-        void resolve_auto(web::json::value& params, const utility::string_t& key, AutoFun auto_fun)
-        {
-            if (!params.has_field(key)) return;
-            auto& param = params.at(key);
-            if (param.is_string() && U("auto") == param.as_string())
-            {
-                param = auto_fun();
-            }
-        }
-    }
-
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
     // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
@@ -682,7 +668,7 @@ namespace nmos
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-    void resolve_auto(const nmos::type& type, web::json::value& transport_params)
+    void resolve_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port)
     {
         if (nmos::types::sender == type)
         {
@@ -690,8 +676,8 @@ namespace nmos
             {
                 // nmos::fields::source_ip
                 // nmos::fields::destination_ip
-                details::resolve_auto(params, nmos::fields::source_port, [] { return 5004; });
-                details::resolve_auto(params, nmos::fields::destination_port, [] { return 5004; });
+                details::resolve_auto(params, nmos::fields::source_port, [&] { return auto_rtp_port; });
+                details::resolve_auto(params, nmos::fields::destination_port, [&] { return auto_rtp_port; });
                 details::resolve_auto(params, nmos::fields::fec_destination_ip, [&] { return params[nmos::fields::destination_ip]; });
                 details::resolve_auto(params, nmos::fields::fec1D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 2; });
                 details::resolve_auto(params, nmos::fields::fec2D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 4; });
@@ -707,7 +693,7 @@ namespace nmos
             for (auto& params : transport_params.as_array())
             {
                 // nmos::fields::interface_ip
-                details::resolve_auto(params, nmos::fields::destination_port, [] { return 5004; });
+                details::resolve_auto(params, nmos::fields::destination_port, [&] { return auto_rtp_port; });
                 details::resolve_auto(params, nmos::fields::fec_destination_ip, [&] { return !nmos::fields::multicast_ip(params).is_null() ? params[nmos::fields::multicast_ip] : params[nmos::fields::interface_ip]; });
                 // nmos::fields::fec_mode
                 details::resolve_auto(params, nmos::fields::fec1D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 2; });
