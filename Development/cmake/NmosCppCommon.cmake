@@ -1,15 +1,15 @@
-# nmos-cpp General make setup and dependency checking
+# nmos-cpp Common CMake setup and dependency checking
 
-# caller can set NMOS_HOME_DIR if the project is differend
-if (NOT DEFINED NMOS_HOME_DIR)
-    set (NMOS_HOME_DIR ${PROJECT_SOURCE_DIR})
+# caller can set NMOS_CPP_DIR if the project is different
+if (NOT DEFINED NMOS_CPP_DIR)
+    set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
 # caller can set SLOG_LOGGING_SEVERITY for something other than max_verbosity
 if (NOT DEFINED SLOG_LOGGING_SEVERITY)
     set (SLOG_LOGGING_SEVERITY slog::max_verbosity)
 endif()
-    
+
 # enable C++11
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 11)
@@ -21,11 +21,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # so after changing code under test, it is important to "make all" (or build "ALL_BUILD")
 enable_testing()
 
-# location of additional cmake modules
+# location of additional CMake modules
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
-    ${NMOS_HOME_DIR}/third_party/cmake
-    ${NMOS_HOME_DIR}/cmake
+    ${NMOS_CPP_DIR}/third_party/cmake
+    ${NMOS_CPP_DIR}/cmake
     )
 
 # guard against in-source builds and bad build-type strings
@@ -130,18 +130,18 @@ elseif(MSVC)
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     endif()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_HOME_DIR}/detail/vc_disable_warnings.h\"")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/detail/vc_disable_warnings.h\"")
 endif()
 
 # location of header files (should be using specific target_include_directories?)
 include_directories(
-    ${NMOS_HOME_DIR}
-    ${NMOS_HOME_DIR}/third_party
+    ${NMOS_CPP_DIR}
+    ${NMOS_CPP_DIR}/third_party
     ${CPPREST_INCLUDE_DIR} # defined above from target cpprestsdk::cpprest of find_package(cpprestsdk)
     ${WEBSOCKETPP_INCLUDE_DIR} # defined by find_package(websocketpp)
-    ${Boost_INCLUDE_DIRS} # defined by find_package(Boost) 
+    ${Boost_INCLUDE_DIRS} # defined by find_package(Boost)
     ${BONJOUR_INCLUDE} # defined above
-    ${NMOS_HOME_DIR}/third_party/nlohmann
+    ${NMOS_CPP_DIR}/third_party/nlohmann
     )
 
 # location of libraries
@@ -154,9 +154,8 @@ link_directories(
 
 # cpprestsdk
 if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_HOME_DIR}/cpprest/details/boost_u_workaround.h\"")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h\"")
 endif()
 
 # slog
 add_definitions(/DSLOG_STATIC /DSLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY})
-
