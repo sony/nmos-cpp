@@ -380,6 +380,7 @@ set(NMOS_CPP_SDP_SOURCES
     )
 set(NMOS_CPP_SDP_HEADERS
     ${NMOS_CPP_DIR}/sdp/json.h
+    ${NMOS_CPP_DIR}/sdp/ntp.h
     ${NMOS_CPP_DIR}/sdp/sdp.h
     ${NMOS_CPP_DIR}/sdp/sdp_grammar.h
     )
