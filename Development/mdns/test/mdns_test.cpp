@@ -180,7 +180,7 @@ BST_TEST_CASE(testMdnsBrowseCancellation)
 
     mdns::service_discovery browser(gate);
     std::vector<mdns::browse_result> browsed;
-    
+
     auto browse = browser.browse("_sea-lion-test0._tcp", {}, 0, std::chrono::seconds(1));
 
     BST_REQUIRE_EQUAL(pplx::task_status::completed, browse.wait());

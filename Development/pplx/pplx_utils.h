@@ -73,7 +73,6 @@ namespace pplx
     /// </param>
     pplx::task<void> do_while(const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
-    // 
     /// <summary>
     ///     RAII helper for classes that have asynchronous open/close member functions.
     /// </summary>

@@ -26,7 +26,7 @@ namespace nmos
         // host_name [registry, node]: the host name for which to advertise services or an empty string to use the default
         const web::json::field_as_string_or host_name{ U("host_name"), U("") };
 
-        // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS) 
+        // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS)
         const web::json::field_as_string_or domain{ U("domain"), U("") };
 
         // host_address/host_addresses [registry, node]: used to construct response headers (e.g. 'Link' or 'Location') and URL fields in the data model
@@ -36,7 +36,7 @@ namespace nmos
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
-        // highest_pri, lowest_pri [node]: used to specify the (inclusive) range of suitable 'pri' values of discovered APIs, to avoid development and live systems colliding 
+        // highest_pri, lowest_pri [node]: used to specify the (inclusive) range of suitable 'pri' values of discovered APIs, to avoid development and live systems colliding
         const web::json::field_as_integer_or highest_pri{ U("highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
         const web::json::field_as_integer_or lowest_pri{ U("lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
 

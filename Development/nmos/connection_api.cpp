@@ -365,7 +365,7 @@ namespace nmos
         // 1. Reject any patch, other than cancellation, when a scheduled activation is outstanding.
         // 2. Validate the patch, apply it and notify anyone who cares via model condition variable, e.g. a scheduling thread.
         // 3. Then return the response.
-        // 
+        //
         // That would work, except for those pesky immediate activations...
         //
         // Actual implementation of PATCH /staged

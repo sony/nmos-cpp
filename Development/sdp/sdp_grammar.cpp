@@ -103,7 +103,6 @@ namespace sdp
                     for (auto& field : field_converters)
                     {
                         if (!s.empty()) s += delimiter;
- 
                         s += field.second.format(!field.first.empty() ? v.at(field.first) : v);
                     }
                     return s;
@@ -486,7 +485,11 @@ namespace sdp
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::format_specific_parameters] = named_values_converter.parse(substr_find(s, pos));
+                            // named_values_converter ignores a (correct, probably?) trailing "; " and equally copes if it's not present
+                            //  but needs a helping hand with a trailing ";" but no space
+                            auto params = substr_find(s, pos);
+                            if (!params.empty() && ';' == params.back()) params.push_back(' ');
+                            v[sdp::fields::format_specific_parameters] = named_values_converter.parse(params);
                             return v;
                         },
                     }

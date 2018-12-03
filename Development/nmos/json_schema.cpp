@@ -60,7 +60,7 @@ namespace nmos
 
             return
             {
-                // v1.2 
+                // v1.2
                 { make_schema_uri(v1_2::tag, _XPLATSTR("registrationapi-resource-post-request.json")), make_schema(v1_2::registrationapi_resource_post_request) },
                 { make_schema_uri(v1_2::tag, _XPLATSTR("clock_internal.json")), make_schema(v1_2::clock_internal) },
                 { make_schema_uri(v1_2::tag, _XPLATSTR("clock_ptp.json")), make_schema(v1_2::clock_ptp) },
