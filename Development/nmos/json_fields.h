@@ -38,6 +38,36 @@ namespace nmos
         // (mostly) for node_api and registration_api
         const web::json::field_as_string type{ U("type") };
         const web::json::field_as_value data{ U("data") };
+        // resource_core
+        const web::json::field_as_string label{ U("label") };
+        const web::json::field_as_string description{ U("description") };
+        // node
+        const web::json::field_as_array interfaces{ U("interfaces") };
+        const web::json::field_as_string name{ U("name") };
+        const web::json::field_as_string chassis_id{ U("chassis_id") };
+        const web::json::field_as_string port_id{ U("port_id") };
+        // sender
+        const web::json::field_as_array interface_bindings{ U("interface_bindings") };
+        const web::json::field_as_string transport{ U("transport") };
+        // flow_core
+        const web::json::field_as_value grain_rate{ U("grain_rate") }; // or field<nmos::rational> with a bit of work!
+        const web::json::field_as_integer numerator{ U("numerator") };
+        const web::json::field_as_integer denominator{ U("denominator") };
+        // flow_video
+        const web::json::field_as_integer frame_width{ U("frame_width") };
+        const web::json::field_as_integer frame_height{ U("frame_height") };
+        const web::json::field_as_string colorspace{ U("colorspace") };
+        // flow_video_raw
+        const web::json::field_as_array components{ U("components") };
+        const web::json::field_as_string_or transfer_characteristic{ U("transfer_characteristic"), U("") }; // or "SDR"?
+        const web::json::field_as_string_or interlace_mode{ U("interlace_mode"), U("") }; // or "progressive"?
+        const web::json::field_as_integer bit_depth{ U("bit_depth") }; // also used in flow_audio_raw
+        // flow_audio
+        const web::json::field_as_value sample_rate{ U("sample_rate") };
+        // source_audio
+        const web::json::field_as_array channels{ U("channels") };
+
+        // lots more to be sorted!
         const web::json::field_as_string node_id{ U("node_id") };
         const web::json::field_as_string device_id{ U("device_id") };
         const web::json::field_as_string source_id{ U("source_id") };
@@ -51,6 +81,7 @@ namespace nmos
         const web::json::field_as_array senders{ U("senders") };
         const web::json::field_as_array receivers{ U("receivers") };
         const web::json::field_as_array parents{ U("parents") };
+
         // (mostly) for query_api
         const web::json::field_as_bool persist{ U("persist") };
         const web::json::field_as_bool secure{ U("secure") };
@@ -59,6 +90,7 @@ namespace nmos
         const web::json::field_as_integer max_update_rate_ms{ U("max_update_rate_ms") };
         const web::json::field_as_string ws_href{ U("ws_href") };
         const web::json::field_as_string subscription_id{ U("subscription_id") };
+
         // (mostly) for query_ws_api
         const web::json::field<tai> creation_timestamp{ U("creation_timestamp") };
         const web::json::field<tai> origin_timestamp{ U("origin_timestamp") };

@@ -364,4 +364,28 @@ namespace sdp
     namespace mediaclk_sources = media_clock_sources;
 }
 
+// SDP Format Specific Parameters
+// See https://tools.ietf.org/html/rfc4566#section-6
+namespace sdp
+{
+    namespace fields
+    {
+        // See https://tools.ietf.org/html/rfc4175
+        // and SMPTE ST2110-21:2017
+        // and VSF TR-05:2018
+        const web::json::field<uint32_t> width{ U("width") };
+        const web::json::field<uint32_t> height{ U("height") };
+        const web::json::field_as_string exactframerate{ U("exactframerate") };
+        const web::json::field_as_bool_or interlace{ U("interlace"), false };
+        const web::json::field_as_string sampling{ U("sampling") };
+        const web::json::field<uint32_t> depth{ U("depth") };
+        const web::json::field_as_string TCS{ U("TCS") };
+        const web::json::field_as_string colorimetry{ U("colorimetry") };
+        const web::json::field_as_string PM{ U("PM") };
+        const web::json::field_as_string SSN{ U("SSN") };
+        const web::json::field_as_string TP{ U("TP") };
+        const web::json::field_as_string channel_order{ U("channel-order") };
+    }
+}
+
 #endif

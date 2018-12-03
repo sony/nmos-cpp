@@ -442,7 +442,7 @@ namespace nmos
         }
     }
 
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
+    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7)
     {
         using web::json::value;
         using web::json::value_of;
@@ -460,23 +460,45 @@ namespace nmos
         // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
         nmos::resolve_auto(types::sender, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
+        return{ is05_versions::v1_0, types::sender, data, false };
+    }
+
+    web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::transportfile_data, transportfile },
+            { nmos::fields::transportfile_type, U("application/sdp") }
+        });
+    }
+
+    web::json::value make_connection_sender_transportfile(const web::uri& transportfile)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::transportfile_href, transportfile.to_string() }
+        });
+    }
+
+    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
+    {
+        auto resource = make_connection_sender(id, smpte2022_7);
+
         const utility::string_t sdp_magic(U("v=0"));
 
         if (sdp_magic == transportfile.substr(0, sdp_magic.size()))
         {
-            data[nmos::fields::endpoint_transportfile] = value_of({
-                { nmos::fields::transportfile_data, transportfile },
-                { nmos::fields::transportfile_type, U("application/sdp") }
-            });
+            resource.data[nmos::fields::endpoint_transportfile] = make_connection_sender_transportfile(transportfile);
         }
         else
         {
-            data[nmos::fields::endpoint_transportfile] = value_of({
-                { nmos::fields::transportfile_href, transportfile }
-            });
+            resource.data[nmos::fields::endpoint_transportfile] = make_connection_sender_transportfile(web::uri(transportfile));
         }
-
-        return{ is05_versions::v1_0, types::sender, data, false };
+        return resource;
     }
 
     nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7)
