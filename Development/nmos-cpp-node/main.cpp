@@ -9,12 +9,12 @@
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_resources.h"
-#include "nmos/node_resources_thread.h"
 #include "nmos/process_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
 #include "main_gate.h"
+#include "node_implementation.h"
 
 int main(int argc, char* argv[])
 {
@@ -137,8 +137,8 @@ int main(int argc, char* argv[])
         nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, gate);
         port_routers[nmos::fields::node_port(node_model.settings)].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
-        // set up the node resources
-        auto node_resources = nmos::details::make_thread_guard([&] { nmos::experimental::node_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+        // start the underlying implementation and set up the node resources
+        auto node_resources = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         // Configure the Connection API
 
