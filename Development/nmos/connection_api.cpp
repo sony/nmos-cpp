@@ -1032,8 +1032,16 @@ namespace nmos
                     {
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning transport file for " << id_type;
 
-                        // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
-                        set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
+                        const auto accept = req.headers().find(web::http::header_names::accept);
+                        if (req.headers().end() != accept && U("application/json") == accept->second && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
+                        {
+                            set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
+                        }
+                        else
+                        {
+                            // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
+                            set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
+                        }
 
                         // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
                         // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
