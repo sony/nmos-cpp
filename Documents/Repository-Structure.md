@@ -16,6 +16,8 @@
       An example **NMOS Node**, utilising the nmos module
     - [nmos-cpp-registry](../Development/nmos-cpp-registry)  
       A simple but functional instance of an **NMOS Registration & Discovery System (RDS)**, utilising the nmos module
+    - [nmos-cpp-test](../Development/nmos-cpp-test)  
+      The test suite runner, incorporating the tests for all modules
     - [rql](../Development/rql)  
       An implementation of the [Resource Query Language](https://github.com/persvr/rql)
     - [slog](../Development/slog)  

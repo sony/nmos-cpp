@@ -40,19 +40,27 @@ cmake ^
 
 On Windows, open and build the generated nmos-cpp Visual Studio Solution.
 
+Or on the Developer command line:
+```
+msbuild nmos-cpp.sln
+```
+
 ## Run Tests
 
-All the tests are currently packaged into a single test suite, as the **nmos-cpp-registry-test** application.
+All the tests are currently packaged into a single test suite, as the **nmos-cpp-test** application.
 This may be run automatically by building RUN_TESTS, but note that to see the output of any failed tests,
 it is necessary to set ``CTEST_OUTPUT_ON_FAILURE`` to ``1`` in the environment first.
 
-The output should conclude something like this:
+The build output should conclude something like this:
 
 ```
-  100% tests passed, 0 tests failed out of 29
+  100% tests passed, 0 tests failed out of 35
   
-  Total Test time (real) =  38.08 sec
+  Total Test time (real) =  14.03 sec
 ```
+
+The application can also be run with other options, for example to run a single test case.
+Use ``--help`` to display usage information.
 
 Note: On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
 
