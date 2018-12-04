@@ -214,7 +214,7 @@ namespace nmos
 
         // construct "video/raw" SDP parameters with sensible defaults for unspecified fields
         sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {})
-            : origin(U("-"), sdp::ntp_now())
+            : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
             , timing()
@@ -231,7 +231,7 @@ namespace nmos
 
         // construct "audio/L" SDP parameters with sensible defaults for unspecified fields
         sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {})
-            : origin(U("-"), sdp::ntp_now())
+            : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
             , timing()
@@ -248,7 +248,7 @@ namespace nmos
 
         // construct "video/smpte291" SDP parameters with sensible defaults for unspecified fields
         sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {})
-            : origin(U("-"), sdp::ntp_now())
+            : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
             , timing()
