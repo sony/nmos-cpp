@@ -83,9 +83,9 @@ DLLStub::GetProcAddress( FARPROC * func, LPCSTR lpProcName )
 dnssd_sock_t DNSSD_API
 DNSServiceRefSockFD(DNSServiceRef sdRef)
 {
-	typedef int (DNSSD_API * Func)(DNSServiceRef sdRef);
+	typedef dnssd_sock_t (DNSSD_API * Func)(DNSServiceRef sdRef);
 	static Func func = NULL;
-	int ret = INVALID_SOCKET;
+        dnssd_sock_t ret = INVALID_SOCKET;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -354,7 +354,7 @@ DNSServiceRegisterRecord
 		void                                *context    /* may be NULL */
 		)
 {
-	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef, DNSRecordRef*, DNSServiceFlags, uint32_t, const char*, uint16_t, uint16_t, uint16_t, const void*, uint16_t, DNSServiceRegisterRecordReply, void* );
+	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef, DNSRecordRef*, DNSServiceFlags, uint32_t, const char*, uint16_t, uint16_t, uint16_t, const void*, uint32_t, DNSServiceRegisterRecordReply, void* );
 	static Func func = NULL;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
@@ -432,7 +432,7 @@ DNSServiceNATPortMappingCreate
 		void                             *context           /* may be NULL             */
 		)
 {
-	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, DNSServiceProtocol, uint16_t, uint16_t, uint16_t, DNSServiceNATPortMappingReply, void* );
+	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, DNSServiceProtocol, uint16_t, uint16_t, uint32_t, DNSServiceNATPortMappingReply, void* );
 	static Func func = NULL;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
