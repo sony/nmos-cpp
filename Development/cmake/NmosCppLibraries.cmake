@@ -24,10 +24,12 @@ add_library(
     mdns_static STATIC
     ${MDNS_SOURCES}
     ${MDNS_HEADERS}
+    ${BONJOUR_SOURCES}
+    ${BONJOUR_HEADERS}
     )
 
-source_group("Source Files" FILES ${MDNS_SOURCES})
-source_group("Header Files" FILES ${MDNS_HEADERS})
+source_group("Source Files" FILES ${MDNS_SOURCES} ${BONJOUR_SOURCES})
+source_group("Header Files" FILES ${MDNS_HEADERS} ${BONJOUR_HEADERS})
 
 # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
 target_link_libraries(

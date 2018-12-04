@@ -136,8 +136,8 @@ DNSServiceErrorType DNSServiceWaitForReply(DNSServiceRef sdRef, int timeout_mill
     // wait for up to timeout milliseconds (converted to secs and usecs)
     struct timeval tv{ timeout_millis / 1000, (timeout_millis % 1000) * 1000 };
     // first parameter is ignored on Windows but required e.g. on Linux
-    int nfds = dnssd_SocketValid(cancel_fd) && cancel_fd > fd ? cancel_fd + 1 : fd + 1;
-    int res = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
+    auto nfds = dnssd_SocketValid(cancel_fd) && cancel_fd > fd ? cancel_fd + 1 : fd + 1;
+    int res = select((int)nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
     // map cancelled (or at least fd not readable) to timed out
     if (res > 0 && !FD_ISSET(fd, &readfds)) res = 0;
 

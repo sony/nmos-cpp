@@ -75,10 +75,29 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find bonjour (for mdns_static)
-    # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
-    set (BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
-    set (BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
-    set (BONJOUR_LIB dnssd)
+    set (MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
+    if(MDNS_SYSTEM_BONJOUR)
+        # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
+        set (BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
+        set (BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
+        set (BONJOUR_LIB dnssd)
+    else()
+        # note: use the patched files rather than the system installed version
+        set (BONJOUR_INCLUDE "${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSShared")
+        unset (BONJOUR_LIB_DIR)
+        unset (BONJOUR_LIB)
+        set (BONJOUR_SOURCES
+            ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
+            )
+        set_property(
+            SOURCE ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
+            PROPERTY COMPILE_DEFINITIONS
+                WIN32_LEAN_AND_MEAN
+            )
+        set (BONJOUR_HEADERS
+            ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
+            )
+    endif()
 
     # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
     # notes:
