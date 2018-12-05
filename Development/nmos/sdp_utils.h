@@ -49,12 +49,14 @@ namespace nmos
     // Receiver helper functions
 
     // Get transport parameters from the parsed SDP file
-    web::json::value get_session_description_transport_params(const web::json::value& session_description, bool smpte2022_7);
+    web::json::value get_session_description_transport_params(const web::json::value& session_description);
 
     // Get other SDP parameters from the parsed SDP file
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& session_description);
 
     std::pair<sdp_parameters, web::json::value> parse_session_description(const web::json::value& session_description);
+
+    void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params);
 
     struct sdp_parameters
     {

@@ -211,30 +211,7 @@ namespace nmos
             return std::logic_error("Transport file error - " + message);
         }
 
-        // Set appropriate transport parameters based on the specified transport file
-        // This is a potential customisation point e.g. to change the handling of "application/sdp", or handle more transport types
-        void merge_transport_file(web::json::value& transport_params, const utility::string_t& transport_data, const utility::string_t& transport_type)
-        {
-            if (transport_type != U("application/sdp"))
-            {
-                throw transport_file_error("unexpected type: " + utility::us2s(transport_type));
-            }
-
-            try
-            {
-                const auto session_description = sdp::parse_session_description(utility::us2s(transport_data));
-                const bool smpte2022_7 = 2 == transport_params.size();
-                const auto patch = nmos::get_session_description_transport_params(session_description, smpte2022_7);
-                web::json::merge_patch(transport_params, patch);
-            }
-            catch (const web::json::json_exception& e)
-            {
-                throw transport_file_error(e.what());
-            }
-        }
-
-        // Set appropriate transport parameters based on the specified transport file
-        void merge_transport_file(web::json::value& transport_params, const web::json::value& transport_file)
+        std::pair<utility::string_t, utility::string_t> get_transport_type_data(const web::json::value& transport_file)
         {
             // "Why would you want to set the transport file without also setting it's type? I mean, IS-05 doesn't
             // strictly prohibit it but I don't imagine you can expect the receiver to do anything useful if you do."
@@ -249,12 +226,13 @@ namespace nmos
                 auto& transport_type = transport_file.at(nmos::fields::type);
                 if (transport_type.is_null()) throw transport_file_error("type is required");
 
-                merge_transport_file(transport_params, transport_data.as_string(), transport_type.as_string());
+                return{ transport_type.as_string(), transport_data.as_string() };
             }
             else
             {
                 // Check for unexpected transport file type? In the future, could be a range of supported types...
                 // Or only allow the type to be omitted? Or null?
+                return{};
             }
         }
 
@@ -471,14 +449,65 @@ namespace nmos
                 // "In all other cases the most recently received PATCH request takes priority."
                 // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#interpretation-of-sdp-files
 
-                // First, merge the transport file (it must be a receiver)
+                // First, validate and merge the transport file (this resource must be a receiver)
+                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L344-L363
 
                 auto& transport_file = nmos::fields::transport_file(patch);
                 if (!transport_file.is_null() && !transport_file.as_object().empty())
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Processing transport file";
+                    const auto transport_type_data = details::get_transport_type_data(transport_file);
 
-                    details::merge_transport_file(nmos::fields::transport_params(merged), transport_file);
+                    if (!transport_type_data.second.empty())
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Processing transport file";
+
+                        if (transport_type_data.first != U("application/sdp"))
+                        {
+                            throw transport_file_error("unexpected type: " + utility::us2s(transport_type_data.first));
+                        }
+
+                        try
+                        {
+                            const auto session_description = sdp::parse_session_description(utility::us2s(transport_type_data.second));
+                            auto sdp_transport_params = nmos::parse_session_description(session_description);
+
+                            // Validate transport file according to the IS-04 receiver
+
+                            auto receiver = find_resource(model.node_resources, id_type);
+                            if (model.node_resources.end() != receiver)
+                            {
+                                validate_sdp_parameters(receiver->data, sdp_transport_params.first);
+                            }
+
+                            // Merge the transport file into the transport parameters
+
+                            auto& transport_params = nmos::fields::transport_params(merged);
+
+                            if (1 == transport_params.size() && 2 == sdp_transport_params.second.size())
+                            {
+                                web::json::pop_back(sdp_transport_params.second);
+                            }
+
+                            // "Where a Receiver supports SMPTE 2022-7 but is required to Receive a non-SMPTE 2022-7 stream,
+                            // only the first set of transport parameters should be used. rtp_enabled in the second set of parameters
+                            // must be set to false"
+                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#operation-with-smpte-2022-7
+                            if (2 == transport_params.size() && 1 == sdp_transport_params.second.size())
+                            {
+                                web::json::push_back(sdp_transport_params.second, web::json::value_of({ { U("rtp_enabled"), false } }));
+                            }
+
+                            web::json::merge_patch(transport_params, sdp_transport_params.second);
+                        }
+                        catch (const web::json::json_exception& e)
+                        {
+                            throw transport_file_error(e.what());
+                        }
+                        catch (const std::runtime_error& e)
+                        {
+                            throw transport_file_error(e.what());
+                        }
+                    }
                 }
 
                 // Second, merge the transport parameters (in fact, all fields, including "sender_id", "master_enabled", etc.)

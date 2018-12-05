@@ -39,6 +39,7 @@ Other open-source NMOS implementations:
 
 Recent activity on the project:
 
+- Simpler creation/processing of the types of SDP files required to support ST 2110 and ST 2022-7
 - Simpler run-time configuration of the **nmos-cpp-node** and **nmos-cpp-registry** settings
 - Some documentation about the overall design of **nmos-cpp** for developers
 - An implementation of the Connection API

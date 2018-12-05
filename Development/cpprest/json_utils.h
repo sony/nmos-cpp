@@ -211,6 +211,11 @@ namespace web
             value[value.size()] = std::move(element);
         }
 
+        inline void pop_back(web::json::value& value)
+        {
+            value.erase(value.size() - 1);
+        }
+
         template <typename Values>
         inline web::json::value value_from_elements(const Values& elements)
         {

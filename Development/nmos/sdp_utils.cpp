@@ -498,12 +498,12 @@ namespace nmos
     }
 
     // Get transport parameters from the parsed SDP file
-    web::json::value get_session_description_transport_params(const web::json::value& session_description, bool smpte2022_7)
+    web::json::value get_session_description_transport_params(const web::json::value& session_description)
     {
         using web::json::value;
         using web::json::value_of;
 
-        auto transport_params = smpte2022_7 ? value_of({ value::object(), value::object() }) : value_of({ value::object() });
+        web::json::value transport_params;
 
         // There isn't much of a specification for interpreting SDP files and updating the
         // equivalent transport parameters, just some examples...
@@ -522,11 +522,9 @@ namespace nmos
 
         auto& media_descriptions = sdp::fields::media_descriptions(session_description);
 
-        for (size_t leg = 0; leg < transport_params.size(); ++leg)
+        for (size_t leg = 0; leg < 2; ++leg)
         {
-            auto& params = transport_params[leg];
-
-            params[nmos::fields::rtp_enabled] = value::boolean(false);
+            web::json::value params;
 
             params[nmos::fields::source_ip] = value::string(sdp::fields::unicast_address(sdp::fields::origin(session_description)));
 
@@ -601,6 +599,8 @@ namespace nmos
                 }
 
                 params[nmos::fields::rtp_enabled] = value::boolean(true);
+
+                web::json::push_back(transport_params, params);
 
                 break;
             }
@@ -837,10 +837,23 @@ namespace nmos
 
     std::pair<sdp_parameters, web::json::value> parse_session_description(const web::json::value& session_description)
     {
-        const auto& media_descriptions = sdp::fields::media_descriptions(session_description).as_array();
-        const bool smpte2022_7 = 2 == media_descriptions.size();
+        return{ get_session_description_sdp_parameters(session_description), get_session_description_transport_params(session_description) };
+    }
 
-        return{ get_session_description_sdp_parameters(session_description), nmos::get_session_description_transport_params(session_description, smpte2022_7) };
+    void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params)
+    {
+        const auto format = details::get_format(sdp_params);
+        const auto media_type = details::get_media_type(sdp_params);
+
+        if (nmos::format{ nmos::fields::format(receiver) } != format) throw details::sdp_processing_error("unexpected media type/encoding name");
+
+        const auto& caps = receiver.at(U("caps"));
+        if (caps.has_field(U("media_types")))
+        {
+            const auto& media_types = caps.at(U("media_types")).as_array();
+            const auto found = std::find(media_types.begin(), media_types.end(), web::json::value::string(media_type.name));
+            if (media_types.end() == found) throw details::sdp_processing_error("unsupported encoding name");
+        }
     }
 }
 
