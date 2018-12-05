@@ -1,6 +1,7 @@
 #include "nmos/sdp_utils.h"
 
 #include <map>
+#include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
@@ -17,81 +18,50 @@ namespace nmos
         nmos::sampling make_sampling(const web::json::array& components)
         {
             // https://tools.ietf.org/html/rfc4175#section-6.1
-            if (components.size() == 0)
-            {
-                throw std::logic_error("no component, cannot determine video sampling and depth");
-            }
+
             // convert json to component name vs dimension lookup for easy access,
             // as components can be in any order inside the json
-            struct dimension
+            struct dimension { int width; int height; };
+            const auto dimensions = boost::copy_range<std::map<utility::string_t, dimension>>(components | boost::adaptors::transformed([](const web::json::value& component)
             {
-                int width;
-                int height;
-            };
-            std::map<utility::string_t, dimension> dimensions;
-            for (const auto& component : components)
-            {
-                auto& name = component.at(U("name")).as_string();
-                dimensions[name] = { component.at(U("width")).as_integer(), component.at(U("height")).as_integer() };
-            }
-
+                return std::map<utility::string_t, dimension>::value_type{ nmos::fields::name(component), dimension{ nmos::fields::width(component), nmos::fields::height(component) } };
+            }));
             const auto de = dimensions.end();
 
-            utility::string_t sampling;
             if (de != dimensions.find(U("R")) && de != dimensions.find(U("G")) && de != dimensions.find(U("B")) && de != dimensions.find(U("A")))
             {
-                sampling = U("RGBA");
+                return nmos::samplings::RGBA;
             }
             else if (de != dimensions.find(U("R")) && de != dimensions.find(U("G")) && de != dimensions.find(U("B")))
             {
-                sampling = U("RGB");
+                return nmos::samplings::RGB;
             }
             else if (de != dimensions.find(U("Y")) && de != dimensions.find(U("Cb")) && de != dimensions.find(U("Cr")))
             {
-                sampling = U("YCbCr-");
-                const auto& Y = dimensions[U("Y")];
-                const auto& Cb = dimensions[U("Cb")];
-                const auto& Cr = dimensions[U("Cr")];
-                if (Y.width == Cb.width && Y.width == Cr.width)
+                const auto& Y = dimensions.at(U("Y"));
+                const auto& Cb = dimensions.at(U("Cb"));
+                const auto& Cr = dimensions.at(U("Cr"));
+                if (Cb.width != Cr.width || Cb.height != Cr.height) throw std::logic_error("unsupported YCbCr dimensions");
+                const auto& C = Cb;
+                if (Y.width == C.width)
                 {
-                    if (Y.height == Cb.height && Y.height == Cr.height)
-                    {
-                        sampling += U("4:4:4");
-                    }
-                    else if (Y.height / 2 == Cb.height && Y.height / 2 == Cr.height)
-                    {
-                        sampling += U("4:2:2");
-                    }
-                    else if (Y.height / 4 == Cb.height && Y.height / 4 == Cr.height)
-                    {
-                        sampling += U("4:1:1");
-                    }
-                    else
-                    {
-                        throw std::logic_error("unknown colorspace dimension");
-                    }
+                    if (Y.height == C.height) return nmos::samplings::YCbCr_4_4_4;
+                    else if (Y.height / 2 == C.height) return nmos::samplings::YCbCr_4_2_2;
+                    else if (Y.height / 4 == C.height) return nmos::samplings::YCbCr_4_1_1;
+                    else throw std::logic_error("unsupported YCbCr dimensions");
                 }
-                else if (Y.width / 2 == Cb.width && Y.width / 2 == Cr.width)
+                else if (Y.width / 2 == C.width)
                 {
-                    if (Y.height / 2 == Cb.height && Y.height / 2 == Cr.height)
-                    {
-                        sampling += U("4:2:0");
-                    }
-                    else
-                    {
-                        throw std::logic_error("unknown colorspace dimension");
-                    }
+                    if (Y.height / 2 == C.height) return nmos::samplings::YCbCr_4_2_0;
+                    else throw std::logic_error("unsupported YCbCr dimensions");
                 }
+                else throw std::logic_error("unsupported YCbCr dimensions");
             }
-            else
-            {
-                throw std::logic_error("unknown components");
-            }
-            return nmos::sampling{ sampling };
+            else throw std::logic_error("unsupported components");
         };
     }
 
-    sdp_parameters make_video_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    static sdp_parameters make_video_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::video_t params;
         params.tp = nmos::sender_type_parameters::type_N;
@@ -114,11 +84,11 @@ namespace nmos
         // grain_rate is optional in the flow, but if it's not there, for a video flow, it must be in the source
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
         params.exactframerate = nmos::rational(nmos::fields::numerator(grain_rate), nmos::fields::denominator(grain_rate));
-       
+
         return{ sender.at(nmos::fields::label).as_string(), params, 96, media_stream_ids };
     }
 
-    sdp_parameters make_audio_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    static sdp_parameters make_audio_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::audio_t params;
 
@@ -138,7 +108,7 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, 97, media_stream_ids };
     }
 
-    sdp_parameters make_data_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    static sdp_parameters make_data_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::data_t params;
 
@@ -158,7 +128,7 @@ namespace nmos
             throw std::logic_error("unsuported media format");
     }
 
-    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp)
+    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp)
     {
         using web::json::value;
         using web::json::value_of;
@@ -366,7 +336,7 @@ namespace nmos
         return session_description;
     }
 
-    web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
     {
         using web::json::value_of;
 
@@ -414,7 +384,7 @@ namespace nmos
         return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
     }
 
-    web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
     {
         using web::json::value_of;
 
@@ -455,7 +425,7 @@ namespace nmos
         return make_session_description(sdp_params, transport_params, ptime, rtpmap, fmtp);
     }
 
-    web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
     {
         using web::json::value_of;
 
@@ -475,39 +445,29 @@ namespace nmos
         return make_session_description(sdp_params, transport_params, {}, rtpmap, {});
     }
 
-    bool is_video(sdp::media_type media_type, const utility::string_t& encoding_name, uint64_t clock_rate)
+    namespace details
     {
-        return sdp::media_types::video == media_type && U("raw") == encoding_name && 90000 == clock_rate;
-    }
+        nmos::format get_format(const sdp_parameters& sdp_params)
+        {
+            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::audio == sdp_params.media_type) return nmos::formats::audio;
+            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
+            return{};
+        }
 
-    bool is_data(sdp::media_type media_type, const utility::string_t& encoding_name, uint64_t clock_rate)
-    {
-        return sdp::media_types::video == media_type && U("smpte291") == encoding_name && 90000 == clock_rate;
-    }
-
-    bool is_audio(sdp::media_type media_type)
-    {
-        return sdp::media_types::audio == media_type;
+        static nmos::media_type get_media_type(const sdp_parameters& sdp_params)
+        {
+            return nmos::media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
+        }
     }
 
     web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
     {
-        if (is_video(sdp_params.media_type, sdp_params.rtpmap.encoding_name, sdp_params.rtpmap.clock_rate))
-        {
-            return make_video_session_description(sdp_params, transport_params);
-        }
-        else if (is_data(sdp_params.media_type, sdp_params.rtpmap.encoding_name, sdp_params.rtpmap.clock_rate))
-        {
-            return make_data_session_description(sdp_params, transport_params);
-        }
-        else if (is_audio(sdp_params.media_type))
-        {
-            return make_audio_session_description(sdp_params, transport_params);
-        }
-        else
-        {
-            throw std::logic_error("unsupported ST2110 media");
-        }
+        const auto format = details::get_format(sdp_params);
+        if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params);
+        if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params);
+        if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params);
+        throw std::logic_error("unsupported ST2110 media");
     }
 
     namespace details
@@ -602,9 +562,6 @@ namespace nmos
                 {
                     auto& ma = media_attributes.as_array();
 
-                    // should check rtpmap attribute's encoding name, e.g. "raw"
-                    // (vs. IS-04 receiver's caps.media_types)
-
                     auto source_filter = sdp::find_name(ma, sdp::attributes::source_filter);
                     if (ma.end() != source_filter)
                     {
@@ -652,6 +609,14 @@ namespace nmos
         return transport_params;
     }
 
+    namespace details
+    {
+        std::runtime_error sdp_processing_error(const std::string& message)
+        {
+            return std::runtime_error{ "sdp processing error - " + message };
+        }
+    }
+
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& sdp)
     {
         using web::json::value;
@@ -661,7 +626,7 @@ namespace nmos
 
         // Protocol Version
         // See https://tools.ietf.org/html/rfc4566#section-5.1
-        if (0 != sdp::fields::protocol_version(sdp)) throw std::runtime_error("unsupported SDP protocol version");
+        if (0 != sdp::fields::protocol_version(sdp)) throw details::sdp_processing_error("unsupported protocol version");
 
         // Origin
         // See https://tools.ietf.org/html/rfc4566#section-5.2
@@ -718,11 +683,8 @@ namespace nmos
 
         // Media Descriptions
         // See https://tools.ietf.org/html/rfc4566#section-5
-        const auto& media_descriptions = sdp::fields::media_descriptions(sdp).as_array();
-        if(0 == media_descriptions.size())
-        {
-            throw std::runtime_error("no media descriptions");
-        }
+        const auto& media_descriptions = sdp::fields::media_descriptions(sdp);
+        if (0 == media_descriptions.size()) throw details::sdp_processing_error("missing media descriptions");
         const auto& media_description = media_descriptions.at(0);
 
         // Connection Data
@@ -771,18 +733,16 @@ namespace nmos
         // rtmap attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
         auto rtpmap = sdp::find_name(attributes, sdp::attributes::rtpmap);
-        if (attributes.end() == rtpmap)
-        {
-            throw std::runtime_error("missing rtpmap");
-        }
+        if (attributes.end() == rtpmap) throw details::sdp_processing_error("missing attribute: rtpmap");
         const auto& rtpmap_value = sdp::fields::value(*rtpmap);
 
         sdp_params.rtpmap.encoding_name = sdp::fields::encoding_name(rtpmap_value);
         sdp_params.rtpmap.payload_type = sdp::fields::payload_type(rtpmap_value);
         sdp_params.rtpmap.clock_rate = sdp::fields::clock_rate(rtpmap_value);
 
-        const auto is_video_sdp = is_video(sdp_params.media_type, sdp_params.rtpmap.encoding_name, sdp_params.rtpmap.clock_rate);
-        const auto is_audio_sdp = is_audio(sdp_params.media_type);
+        const auto format = details::get_format(sdp_params);
+        const auto is_video_sdp = nmos::formats::video == format;
+        const auto is_audio_sdp = nmos::formats::audio == format;
 
         if (is_audio_sdp)
         {
@@ -799,10 +759,7 @@ namespace nmos
             auto ptime = sdp::find_name(attributes, sdp::attributes::ptime);
             if (is_audio_sdp)
             {
-                if (attributes.end() == ptime)
-                {
-                    throw std::runtime_error("missing ptime attribute");
-                }
+                if (attributes.end() == ptime) throw details::sdp_processing_error("missing attribute: ptime");
                 sdp_params.audio.packet_time = sdp::fields::value(*ptime).as_integer();
             }
         }
@@ -812,21 +769,18 @@ namespace nmos
         auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
         if (is_video_sdp || is_audio_sdp)
         {
-            if (attributes.end() == fmtp)
-            {
-                throw std::runtime_error("missing fmtp attribute");
-            }
+            if (attributes.end() == fmtp) throw details::sdp_processing_error("missing attribute: fmtp");
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
 
             if (is_video_sdp)
             {
                 const auto width = sdp::find_name(format_specific_parameters, sdp::fields::width);
-                if (format_specific_parameters.end() == width) throw std::runtime_error("missing width");
+                if (format_specific_parameters.end() == width) throw details::sdp_processing_error("missing format parameter: width");
                 sdp_params.video.width = utility::istringstreamed<uint32_t>(sdp::fields::value(*width).as_string());
 
                 const auto height = sdp::find_name(format_specific_parameters, sdp::fields::height);
-                if (format_specific_parameters.end() == height) throw std::runtime_error("missing height");
+                if (format_specific_parameters.end() == height) throw details::sdp_processing_error("missing format parameter: height");
                 sdp_params.video.height = utility::istringstreamed<uint32_t>(sdp::fields::value(*height).as_string());
 
                 auto parse_rational = [](const utility::string_t& rational_string)
@@ -835,7 +789,7 @@ namespace nmos
                     return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
                 };
                 const auto exactframerate = sdp::find_name(format_specific_parameters, sdp::fields::exactframerate);
-                if (format_specific_parameters.end() == exactframerate) throw std::runtime_error("missing exactframerate");
+                if (format_specific_parameters.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
                 sdp_params.video.exactframerate = parse_rational(sdp::fields::value(*exactframerate).as_string());
 
                 // optional
@@ -843,11 +797,11 @@ namespace nmos
                 sdp_params.video.interlace = format_specific_parameters.end() != interlace;
 
                 const auto sampling = sdp::find_name(format_specific_parameters, sdp::fields::sampling);
-                if (format_specific_parameters.end() == sampling) throw std::runtime_error("missing sampling");
+                if (format_specific_parameters.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
                 sdp_params.video.sampling = nmos::sampling{ sdp::fields::value(*sampling).as_string() };
 
                 const auto depth = sdp::find_name(format_specific_parameters, sdp::fields::depth);
-                if (format_specific_parameters.end() == depth) throw std::runtime_error("missing depth");
+                if (format_specific_parameters.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
                 auto test = sdp::fields::value(*depth);
                 sdp_params.video.depth = utility::istringstreamed<uint32_t>(sdp::fields::value(*depth).as_string());
 
@@ -859,7 +813,7 @@ namespace nmos
                 }
 
                 const auto colorimetry = sdp::find_name(format_specific_parameters, sdp::fields::colorimetry);
-                if (format_specific_parameters.end() == colorimetry) throw std::runtime_error("missing colorimetry");
+                if (format_specific_parameters.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
                 sdp_params.video.colorimetry = nmos::colorspace{ sdp::fields::value(*colorimetry).as_string() };
 
                 // don't check "PM" (packing mode)
@@ -867,16 +821,13 @@ namespace nmos
                 // don't check "SSN" (SMPTE Standard Number)
 
                 const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::TP);
-                if (format_specific_parameters.end() == tp) throw std::runtime_error("missing TP");
+                if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
                 sdp_params.video.tp = nmos::sender_type_parameter{ sdp::fields::value(*tp).as_string() };
             }
             else
             {
                 const auto channel_order = sdp::find_name(format_specific_parameters, sdp::fields::channel_order);
-                if (format_specific_parameters.end() == channel_order)
-                {
-                    throw std::runtime_error("missing channel_order");
-                }
+                if (format_specific_parameters.end() == channel_order) throw details::sdp_processing_error("missing format parameter: channel_order");
                 sdp_params.audio.channel_order = sdp::fields::value(*channel_order).as_string();
             }
         }

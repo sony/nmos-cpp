@@ -61,6 +61,8 @@ namespace nmos
         const web::json::field_as_array components{ U("components") };
         const web::json::field_as_string_or transfer_characteristic{ U("transfer_characteristic"), U("") }; // or "SDR"?
         const web::json::field_as_string_or interlace_mode{ U("interlace_mode"), U("") }; // or "progressive"?
+        const web::json::field_as_integer width{ U("width") };
+        const web::json::field_as_integer height{ U("height") };
         const web::json::field_as_integer bit_depth{ U("bit_depth") }; // also used in flow_audio_raw
         // flow_audio
         const web::json::field_as_value sample_rate{ U("sample_rate") };
