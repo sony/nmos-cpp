@@ -58,7 +58,7 @@ namespace nmos
                 else throw std::logic_error("unsupported YCbCr dimensions");
             }
             else throw std::logic_error("unsupported components");
-        };
+        }
     }
 
     static sdp_parameters make_video_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
@@ -134,8 +134,8 @@ namespace nmos
         using web::json::value_of;
         using web::json::array;
 
-        // check to ensure enough media_stream_ids for transport_params
-        if (transport_params.size() > sdp_params.group.media_stream_ids.size())
+        // check to ensure enough media_stream_ids for multi-leg transport_params
+        if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())
         {
             throw std::logic_error("not enough sdp parameters media stream ids for transport_params");
         }
@@ -192,9 +192,6 @@ namespace nmos
         int idx = 0;
         for(const auto& transport_param : transport_params.as_array())
         {
-            // build up mids based on media_stream_ids
-            web::json::push_back(mids, sdp_params.group.media_stream_ids[idx]);
-
             // setup Connection Data's connection address
             const auto& connection_address = transport_param.at(address_type_multicast.second ? nmos::fields::source_ip : nmos::fields::destination_ip);
 
@@ -299,20 +296,23 @@ namespace nmos
             // insert "media stream identification" if there are more than 1 leg
             // a=mid:<identification-tag>
             // See https://tools.ietf.org/html/rfc5888
-            if((transport_params.size() > 1) && (sdp_params.group.media_stream_ids.size() > idx))
+            if (transport_params.size() > 1)
             {
+                const auto& mid = sdp_params.group.media_stream_ids[idx++];
+
+                // build up mids based on group::media_stream_ids
+                web::json::push_back(mids, mid);
+
                 auto& attributes = media_description.at(sdp::fields::attributes);
                 web::json::push_back(
                     attributes, value_of({
                         { sdp::fields::name, sdp::attributes::mid },
-                        { sdp::fields::value, sdp_params.group.media_stream_ids[idx] }
+                        { sdp::fields::value, mid }
                     }, keep_order)
                 );
             }
 
             web::json::push_back(media_descriptions, media_description);
-
-            ++idx;
         }
 
         // add group attribute if there are more than 1 leg
