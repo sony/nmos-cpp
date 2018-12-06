@@ -808,6 +808,7 @@ namespace sdp
         std::istringstream is(session_description);
         web::json::value result;
         read_description(is, result, grammar);
+        if (!is.eof()) throw sdp_exception("sdp parse error - unexpected characters before end-of-file");
         return result;
     }
 

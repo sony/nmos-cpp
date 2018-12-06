@@ -252,3 +252,33 @@ a=mid:SECONDARY
     BST_CHECK_EQUAL(session_description3, session_description2);
     BST_CHECK_EQUAL(session_description3.serialize(), session_description2.serialize());
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpParseErrors)
+{
+    const std::string not_enough = "v=0\r\no=- 42 42 IN IP4 10.0.0.1\r\ns= \r\n";
+
+    // an incomplete SDP file results in e.g. "sdp parse error - expected a line for timing"
+    // hmm, could do with BST_REQUIRE_THROW_WITH to be able to check the message
+    BST_REQUIRE_THROW(sdp::parse_session_description(not_enough), std::runtime_error);
+
+    const std::string enough = not_enough + "t=0 0\r\n";
+
+    // a complete (though minimal!) SDP file parses successfully
+    BST_REQUIRE_EQUAL(4, sdp::parse_session_description(enough).size());
+
+    // appending just a single 'a' results in an "sdp parse error - expected '='"
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "a"), std::runtime_error);
+    // appending a complete 'a' line (even without a final CRLF) parses successfully
+    BST_REQUIRE_EQUAL(5, sdp::parse_session_description(enough + "a=foo").size());
+
+    // appending an invalid type character results in "sdp parse error - unexpected characters before end-of-file"
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "x"), std::runtime_error);
+    // ... even if the whole line has valid syntax
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "x=foo"), std::runtime_error);
+
+    // appending an empty line also results in "sdp parse error - unexpected characters before end-of-file"
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\n"), std::runtime_error);
+    // ... even if there's a complete valid line after it
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\na=foo"), std::runtime_error);
+}
