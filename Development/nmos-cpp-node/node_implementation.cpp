@@ -131,7 +131,6 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
                     if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                 }, activation_time);
 
-                // NEVER doesn't make sense to use initial sdp_params if (nmos::types::sender == type) set_connection_sender_transportfile(connection_resource, sdp_params);
             });
 
             // Update the IS-04 resource
