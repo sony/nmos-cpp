@@ -478,16 +478,20 @@ namespace sdp
                         [](const web::json::value& v) {
                             std::string s;
                             s += string_converter.format(v.at(sdp::fields::format));
-                            s += " " + named_values_converter.format(v.at(sdp::fields::format_specific_parameters)) + "; ";
+                            s += " ";
+                            // <format specific parameters> are required but may be empty
+                            const auto& params = v.at(sdp::fields::format_specific_parameters);
+                            if (0 != params.size()) s += named_values_converter.format(params) + "; ";
                             return s;
                         },
                         [](const std::string& s) {
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, " "));
+                            // handle no space after <format> if there are no <format specific parameters>
+                            auto params = std::string::npos != pos ? substr_find(s, pos) : "";
                             // named_values_converter ignores a (correct, probably?) trailing "; " and equally copes if it's not present
-                            //  but needs a helping hand with a trailing ";" but no space
-                            auto params = substr_find(s, pos);
+                            // but needs a helping hand with a trailing ";" but no space
                             if (!params.empty() && ';' == params.back()) params.push_back(' ');
                             v[sdp::fields::format_specific_parameters] = named_values_converter.parse(params);
                             return v;

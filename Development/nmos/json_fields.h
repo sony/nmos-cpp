@@ -68,6 +68,7 @@ namespace nmos
         const web::json::field_as_value sample_rate{ U("sample_rate") };
         // source_audio
         const web::json::field_as_array channels{ U("channels") };
+        const web::json::field_as_string_or symbol{ U("symbol"), U("") }; // or nmos::channel_symbol?
 
         // lots more to be sorted!
         const web::json::field_as_string node_id{ U("node_id") };

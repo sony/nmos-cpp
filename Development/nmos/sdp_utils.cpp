@@ -93,14 +93,17 @@ namespace nmos
         sdp_parameters::audio_t params;
 
         // rtpmap
+
         params.channel_count = (uint32_t)nmos::fields::channels(source).size();
         params.bit_depth = nmos::fields::bit_depth(flow);
         const auto& sample_rate(flow.at(nmos::fields::sample_rate));
         params.sample_rate = nmos::rational(nmos::fields::numerator(sample_rate), nmos::fields::denominator(sample_rate));
 
         // format_specific_parameters
-        // hmm, should be created from source json "channels"
-        params.channel_order = U("SMPTE2110.(ST)");
+
+        // hmm, params.channel_order should be created from source json "channels"
+        // this requires careful mapping from the VSF TR-03 Appendix A channel symbols
+        // to the SMPTE ST 2110-30 Table 1 grouping symbols
 
         // ptime
         params.packet_time = 1;
@@ -344,7 +347,7 @@ namespace nmos
 
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto& rtpmap = value_of({
+        const auto rtpmap = value_of({
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
@@ -373,7 +376,7 @@ namespace nmos
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::SSN, U("ST2110-20:2017"))); // or soon, "ST2110-20:2019"?
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::TP, sdp_params.video.tp.name));
 
-        const auto& fmtp = web::json::value_of({
+        const auto fmtp = web::json::value_of({
             { sdp::fields::name, sdp::attributes::fmtp },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
@@ -386,20 +389,21 @@ namespace nmos
 
     static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
     {
+        using web::json::value;
         using web::json::value_of;
 
         const bool keep_order = true;
 
         // a=ptime:<packet time>
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto& ptime = value_of({
+        const auto ptime = value_of({
             { sdp::fields::name, sdp::attributes::ptime },
             { sdp::fields::value, sdp_params.audio.packet_time }
         }, keep_order);
 
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto& rtpmap = value_of({
+        const auto rtpmap = value_of({
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
@@ -411,10 +415,10 @@ namespace nmos
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto& format_specific_parameters = value_of({
+        const auto format_specific_parameters = sdp_params.audio.channel_order.empty() ? value::array() : value_of({
             sdp::named_value(sdp::fields::channel_order, sdp_params.audio.channel_order)
         });
-        const auto& fmtp = web::json::value_of({
+        const auto fmtp = web::json::value_of({
             { sdp::fields::name, sdp::attributes::fmtp },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
@@ -433,7 +437,7 @@ namespace nmos
 
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto& rtpmap = value_of({
+        const auto rtpmap = value_of({
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
@@ -767,67 +771,70 @@ namespace nmos
         // fmtp attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
         auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
-        if (is_video_sdp || is_audio_sdp)
+        if (is_video_sdp)
         {
             if (attributes.end() == fmtp) throw details::sdp_processing_error("missing attribute: fmtp");
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
 
-            if (is_video_sdp)
+            const auto width = sdp::find_name(format_specific_parameters, sdp::fields::width);
+            if (format_specific_parameters.end() == width) throw details::sdp_processing_error("missing format parameter: width");
+            sdp_params.video.width = utility::istringstreamed<uint32_t>(sdp::fields::value(*width).as_string());
+
+            const auto height = sdp::find_name(format_specific_parameters, sdp::fields::height);
+            if (format_specific_parameters.end() == height) throw details::sdp_processing_error("missing format parameter: height");
+            sdp_params.video.height = utility::istringstreamed<uint32_t>(sdp::fields::value(*height).as_string());
+
+            auto parse_rational = [](const utility::string_t& rational_string)
             {
-                const auto width = sdp::find_name(format_specific_parameters, sdp::fields::width);
-                if (format_specific_parameters.end() == width) throw details::sdp_processing_error("missing format parameter: width");
-                sdp_params.video.width = utility::istringstreamed<uint32_t>(sdp::fields::value(*width).as_string());
+                const auto slash = rational_string.find(U('/'));
+                return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
+            };
+            const auto exactframerate = sdp::find_name(format_specific_parameters, sdp::fields::exactframerate);
+            if (format_specific_parameters.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
+            sdp_params.video.exactframerate = parse_rational(sdp::fields::value(*exactframerate).as_string());
 
-                const auto height = sdp::find_name(format_specific_parameters, sdp::fields::height);
-                if (format_specific_parameters.end() == height) throw details::sdp_processing_error("missing format parameter: height");
-                sdp_params.video.height = utility::istringstreamed<uint32_t>(sdp::fields::value(*height).as_string());
+            // optional
+            const auto interlace = sdp::find_name(format_specific_parameters, sdp::fields::interlace);
+            sdp_params.video.interlace = format_specific_parameters.end() != interlace;
 
-                auto parse_rational = [](const utility::string_t& rational_string)
-                {
-                    const auto slash = rational_string.find(U('/'));
-                    return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
-                };
-                const auto exactframerate = sdp::find_name(format_specific_parameters, sdp::fields::exactframerate);
-                if (format_specific_parameters.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
-                sdp_params.video.exactframerate = parse_rational(sdp::fields::value(*exactframerate).as_string());
+            const auto sampling = sdp::find_name(format_specific_parameters, sdp::fields::sampling);
+            if (format_specific_parameters.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
+            sdp_params.video.sampling = nmos::sampling{ sdp::fields::value(*sampling).as_string() };
 
-                // optional
-                const auto interlace = sdp::find_name(format_specific_parameters, sdp::fields::interlace);
-                sdp_params.video.interlace = format_specific_parameters.end() != interlace;
+            const auto depth = sdp::find_name(format_specific_parameters, sdp::fields::depth);
+            if (format_specific_parameters.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
+            auto test = sdp::fields::value(*depth);
+            sdp_params.video.depth = utility::istringstreamed<uint32_t>(sdp::fields::value(*depth).as_string());
 
-                const auto sampling = sdp::find_name(format_specific_parameters, sdp::fields::sampling);
-                if (format_specific_parameters.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
-                sdp_params.video.sampling = nmos::sampling{ sdp::fields::value(*sampling).as_string() };
-
-                const auto depth = sdp::find_name(format_specific_parameters, sdp::fields::depth);
-                if (format_specific_parameters.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
-                auto test = sdp::fields::value(*depth);
-                sdp_params.video.depth = utility::istringstreamed<uint32_t>(sdp::fields::value(*depth).as_string());
-
-                // optional
-                const auto tcs = sdp::find_name(format_specific_parameters, sdp::fields::TCS);
-                if (format_specific_parameters.end() != tcs)
-                {
-                    sdp_params.video.tcs = nmos::transfer_characteristic{ sdp::fields::value(*tcs).as_string() };
-                }
-
-                const auto colorimetry = sdp::find_name(format_specific_parameters, sdp::fields::colorimetry);
-                if (format_specific_parameters.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
-                sdp_params.video.colorimetry = nmos::colorspace{ sdp::fields::value(*colorimetry).as_string() };
-
-                // don't check "PM" (packing mode)
-
-                // don't check "SSN" (SMPTE Standard Number)
-
-                const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::TP);
-                if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
-                sdp_params.video.tp = nmos::sender_type_parameter{ sdp::fields::value(*tp).as_string() };
+            // optional
+            const auto tcs = sdp::find_name(format_specific_parameters, sdp::fields::TCS);
+            if (format_specific_parameters.end() != tcs)
+            {
+                sdp_params.video.tcs = nmos::transfer_characteristic{ sdp::fields::value(*tcs).as_string() };
             }
-            else
+
+            const auto colorimetry = sdp::find_name(format_specific_parameters, sdp::fields::colorimetry);
+            if (format_specific_parameters.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
+            sdp_params.video.colorimetry = nmos::colorspace{ sdp::fields::value(*colorimetry).as_string() };
+
+            // don't check "PM" (packing mode)
+
+            // don't check "SSN" (SMPTE Standard Number)
+
+            const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::TP);
+            if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
+            sdp_params.video.tp = nmos::sender_type_parameter{ sdp::fields::value(*tp).as_string() };
+        }
+        else if (is_audio_sdp && attributes.end() != fmtp)
+        {
+            const auto& fmtp_value = sdp::fields::value(*fmtp);
+            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
+
+            // optional
+            const auto channel_order = sdp::find_name(format_specific_parameters, sdp::fields::channel_order);
+            if (format_specific_parameters.end() != channel_order)
             {
-                const auto channel_order = sdp::find_name(format_specific_parameters, sdp::fields::channel_order);
-                if (format_specific_parameters.end() == channel_order) throw details::sdp_processing_error("missing format parameter: channel_order");
                 sdp_params.audio.channel_order = sdp::fields::value(*channel_order).as_string();
             }
         }
