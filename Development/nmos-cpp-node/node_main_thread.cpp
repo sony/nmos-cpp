@@ -16,7 +16,7 @@
 #include "main_gate.h"
 #include "node_implementation.h"
 
-int main(int argc, char* argv[])
+int node_main_thread(int argc, char* argv[])
 {
     // Construct our data models including mutexes to protect them
 
