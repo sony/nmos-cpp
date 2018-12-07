@@ -674,9 +674,9 @@ namespace nmos
         };
         {
             const auto& connection_data = sdp::fields::connection_data(sdp);
-            if (!connection_data.is_null() && 0 != connection_data.size())
+            if (!connection_data.is_null())
             {
-                auto connection_address_ttl = parse_connection_address(sdp::fields::connection_address(connection_data.at(0)));
+                auto connection_address_ttl = parse_connection_address(sdp::fields::connection_address(connection_data));
                 sdp_params.connection_data.ttl = connection_address_ttl.second;
             }
         }
