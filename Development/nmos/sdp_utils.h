@@ -69,12 +69,12 @@ namespace nmos
 
         struct group_t
         {
-            utility::string_t semantics;
+            sdp::group_semantics_type semantics;
             // stream identifiers for each leg when redundancy is being used, in the appropriate order
             std::vector<utility::string_t> media_stream_ids;
 
             group_t() {}
-            group_t(const utility::string_t& semantics, const std::vector<utility::string_t>& media_stream_ids) : semantics(semantics), media_stream_ids(media_stream_ids) {}
+            group_t(const sdp::group_semantics_type& semantics, const std::vector<utility::string_t>& media_stream_ids) : semantics(semantics), media_stream_ids(media_stream_ids) {}
         } group;
 
         sdp::media_type media_type;
@@ -190,7 +190,7 @@ namespace nmos
             , session_name(session_name)
             , connection_data(32)
             , timing()
-            , group(media_stream_ids.empty() ? U("") : sdp::group_semantics::duplication.name, media_stream_ids)
+            , group(!media_stream_ids.empty() ? group_t{ sdp::group_semantics::duplication, media_stream_ids } : group_t{})
             , media_type(sdp::media_types::video)
             , protocol(sdp::protocols::RTP_AVP)
             , rtpmap(payload_type, U("raw"), 90000)
@@ -207,7 +207,7 @@ namespace nmos
             , session_name(session_name)
             , connection_data(32)
             , timing()
-            , group(media_stream_ids.empty() ? U("") : sdp::group_semantics::duplication.name, media_stream_ids)
+            , group(!media_stream_ids.empty() ? group_t{ sdp::group_semantics::duplication, media_stream_ids } : group_t{})
             , media_type(sdp::media_types::audio)
             , protocol(sdp::protocols::RTP_AVP)
             , rtpmap(payload_type, U("L") + utility::ostringstreamed(audio.bit_depth), uint64_t(double(audio.sample_rate.numerator()) / double(audio.sample_rate.denominator()) + 0.5))
@@ -224,7 +224,7 @@ namespace nmos
             , session_name(session_name)
             , connection_data(32)
             , timing()
-            , group(media_stream_ids.empty() ? U("") : sdp::group_semantics::duplication.name, media_stream_ids)
+            , group(!media_stream_ids.empty() ? group_t{ sdp::group_semantics::duplication, media_stream_ids } : group_t{})
             , media_type(sdp::media_types::video)
             , protocol(sdp::protocols::RTP_AVP)
             , rtpmap(payload_type, U("smpte291"), 90000)

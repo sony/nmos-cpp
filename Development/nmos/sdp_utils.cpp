@@ -342,7 +342,7 @@ namespace nmos
                 web::json::value_of({
                     { sdp::fields::name, sdp::attributes::group },
                     { sdp::fields::value, web::json::value_of({
-                        { sdp::fields::semantics, sdp_params.group.semantics },
+                        { sdp::fields::semantics, sdp_params.group.semantics.name },
                         { sdp::fields::mids, mids }
                     }, keep_order) },
                 }, keep_order)
@@ -692,7 +692,7 @@ namespace nmos
             {
                 const auto& value = sdp::fields::value(*group);
 
-                sdp_params.group.semantics = sdp::fields::semantics(value);
+                sdp_params.group.semantics = sdp::group_semantics_type{ sdp::fields::semantics(value) };
                 for (const auto& mid : sdp::fields::mids(value))
                 {
                     sdp_params.group.media_stream_ids.push_back(mid.as_string());
