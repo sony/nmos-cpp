@@ -3,11 +3,21 @@
 
 #include <atomic>
 #include <ostream>
-#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/find_format.hpp>
+#include <boost/algorithm/string/finder.hpp>
+#include <boost/algorithm/string/formatter.hpp>
 #include "nmos/logging_api.h"
 
 namespace
 {
+    inline std::string indent_new_lines(const std::string& input)
+    {
+        return boost::find_format_all_copy(input,
+            boost::token_finder(boost::is_any_of("\r\n"), boost::algorithm::token_compress_on),
+            boost::const_formatter("\n\t"));
+    }
+
     inline slog::omanip_function error_log_format(const slog::async_log_message& message)
     {
         return slog::omanip([&](std::ostream& os)
@@ -18,7 +28,7 @@ namespace
                 << slog::put_severity_name(message.level()) << ": "
                 << message.thread_id() << ": "
                 << (category.empty() ? "" : category + ": ")
-                << boost::replace_all_copy(message.str(), "\n", "\n\t") // indent multi-line messages
+                << indent_new_lines(message.str())
                 << std::endl;
         });
     }
