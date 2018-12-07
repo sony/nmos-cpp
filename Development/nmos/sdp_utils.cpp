@@ -1,6 +1,7 @@
 #include "nmos/sdp_utils.h"
 
 #include <map>
+#include <boost/asio/ip/address.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/format.h"
@@ -13,7 +14,20 @@ namespace nmos
 {
     namespace details
     {
-        std::pair<sdp::address_type, bool> get_address_type_multicast(const utility::string_t& address);
+        std::logic_error sdp_creation_error(const std::string& message)
+        {
+            return std::logic_error{ "sdp creation error - " + message };
+        }
+
+        std::pair<sdp::address_type, bool> get_address_type_multicast(const utility::string_t& address)
+        {
+#if BOOST_VERSION >= 106600
+            const auto ip_address = boost::asio::ip::make_address(utility::us2s(address));
+#else
+            const auto ip_address = boost::asio::ip::address::from_string(utility::us2s(address));
+#endif
+            return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
+        }
 
         nmos::sampling make_sampling(const web::json::array& components)
         {
@@ -41,23 +55,23 @@ namespace nmos
                 const auto& Y = dimensions.at(U("Y"));
                 const auto& Cb = dimensions.at(U("Cb"));
                 const auto& Cr = dimensions.at(U("Cr"));
-                if (Cb.width != Cr.width || Cb.height != Cr.height) throw std::logic_error("unsupported YCbCr dimensions");
+                if (Cb.width != Cr.width || Cb.height != Cr.height) throw sdp_creation_error("unsupported YCbCr dimensions");
                 const auto& C = Cb;
                 if (Y.width == C.width)
                 {
                     if (Y.height == C.height) return nmos::samplings::YCbCr_4_4_4;
                     else if (Y.height / 2 == C.height) return nmos::samplings::YCbCr_4_2_2;
                     else if (Y.height / 4 == C.height) return nmos::samplings::YCbCr_4_1_1;
-                    else throw std::logic_error("unsupported YCbCr dimensions");
+                    else throw sdp_creation_error("unsupported YCbCr dimensions");
                 }
                 else if (Y.width / 2 == C.width)
                 {
                     if (Y.height / 2 == C.height) return nmos::samplings::YCbCr_4_2_0;
-                    else throw std::logic_error("unsupported YCbCr dimensions");
+                    else throw sdp_creation_error("unsupported YCbCr dimensions");
                 }
-                else throw std::logic_error("unsupported YCbCr dimensions");
+                else throw sdp_creation_error("unsupported YCbCr dimensions");
             }
-            else throw std::logic_error("unsupported components");
+            else throw sdp_creation_error("unsupported components");
         }
     }
 
@@ -128,7 +142,7 @@ namespace nmos
         else if (nmos::formats::data.name == format)
             return make_data_sdp_parameters(source, flow, sender, media_stream_ids);
         else
-            throw std::logic_error("unsuported media format");
+            throw details::sdp_creation_error("unsuported media format");
     }
 
     static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp)
@@ -140,7 +154,7 @@ namespace nmos
         // check to ensure enough media_stream_ids for multi-leg transport_params
         if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())
         {
-            throw std::logic_error("not enough sdp parameters media stream ids for transport_params");
+            throw details::sdp_creation_error("not enough sdp parameters media stream ids for transport_params");
         }
 
         // so far so good, now build the session_description
@@ -161,7 +175,7 @@ namespace nmos
                 { sdp::fields::user_name, sdp_params.origin.user_name },
                 { sdp::fields::session_id, sdp_params.origin.session_id },
                 { sdp::fields::session_version, sdp_params.origin.session_version },
-                { sdp::fields::network_type, sdp::network_types::IN.name },
+                { sdp::fields::network_type, sdp::network_types::internet.name },
                 { sdp::fields::address_type, address_type_multicast.first.name },
                 { sdp::fields::unicast_address, nmos::fields::source_ip(transport_params.at(0)) }
             }, keep_order) },
@@ -213,7 +227,7 @@ namespace nmos
                 // See https://tools.ietf.org/html/rfc4566#section-5.7
                 { sdp::fields::connection_data, value_of({
                     value_of({
-                        { sdp::fields::network_type, sdp::network_types::IN.name },
+                        { sdp::fields::network_type, sdp::network_types::internet.name },
                         { sdp::fields::address_type, address_type_multicast.first.name },
                         { sdp::fields::connection_address, sdp::address_types::IP4 == address_type_multicast.first && address_type_multicast.second
                             ? connection_address.as_string() + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
@@ -260,7 +274,7 @@ namespace nmos
                         { sdp::fields::name, sdp::attributes::source_filter },
                         { sdp::fields::value, value_of({
                             { sdp::fields::filter_mode, sdp::filter_modes::incl.name },
-                            { sdp::fields::network_type, sdp::network_types::IN.name },
+                            { sdp::fields::network_type, sdp::network_types::internet.name },
                             { sdp::fields::address_types, address_type_multicast.first.name },
                             { sdp::fields::destination_address, transport_param.at(nmos::fields::destination_ip) },
                             { sdp::fields::source_addresses, value_of({ transport_param.at(nmos::fields::source_ip) }) }
@@ -459,7 +473,7 @@ namespace nmos
             return{};
         }
 
-        static nmos::media_type get_media_type(const sdp_parameters& sdp_params)
+        nmos::media_type get_media_type(const sdp_parameters& sdp_params)
         {
             return nmos::media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
         }
@@ -471,7 +485,7 @@ namespace nmos
         if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params);
         if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params);
         if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params);
-        throw std::logic_error("unsupported ST2110 media");
+        throw details::sdp_creation_error("unsupported ST2110 media");
     }
 
     namespace details
@@ -860,24 +874,6 @@ namespace nmos
             const auto& media_types = caps.at(U("media_types")).as_array();
             const auto found = std::find(media_types.begin(), media_types.end(), web::json::value::string(media_type.name));
             if (media_types.end() == found) throw details::sdp_processing_error("unsupported encoding name");
-        }
-    }
-}
-
-#include <boost/asio/ip/address.hpp> // included late to avoid trouble from the IN preprocessor definition on Windows
-
-namespace nmos
-{
-    namespace details
-    {
-        std::pair<sdp::address_type, bool> get_address_type_multicast(const utility::string_t& address)
-        {
-#if BOOST_VERSION >= 106600
-            const auto ip_address = boost::asio::ip::make_address(utility::us2s(address));
-#else
-            const auto ip_address = boost::asio::ip::address::from_string(utility::us2s(address));
-#endif
-            return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
         }
     }
 }

@@ -76,16 +76,16 @@ a=mid:SECONDARY
 
     auto format_specific_parameters = web::json::value_of({
         sdp::named_value(U("colorimetry"), U("BT709")),
-        sdp::named_value(U("exactframerate"),U("30000/1001")),
-        sdp::named_value(U("depth"),U("10")),
-        sdp::named_value(U("TCS"),U("SDR")),
-        sdp::named_value(U("sampling"),U("YCbCr-4:2:2")),
-        sdp::named_value(U("width"),U("1920")),
+        sdp::named_value(U("exactframerate"), U("30000/1001")),
+        sdp::named_value(U("depth"), U("10")),
+        sdp::named_value(U("TCS"), U("SDR")),
+        sdp::named_value(U("sampling"), U("YCbCr-4:2:2")),
+        sdp::named_value(U("width"), U("1920")),
         sdp::named_value(U("interlace")),
-        sdp::named_value(U("TP"),U("2110TPN")),
-        sdp::named_value(U("PM"),U("2110GPM")),
-        sdp::named_value(U("height"),U("1080")),
-        sdp::named_value(U("SSN"),U("ST2110-20:2017"))
+        sdp::named_value(U("TP"), U("2110TPN")),
+        sdp::named_value(U("PM"), U("2110GPM")),
+        sdp::named_value(U("height"), U("1080")),
+        sdp::named_value(U("SSN"), U("ST2110-20:2017"))
     });
 
     const bool keep_order = true;
@@ -96,7 +96,7 @@ a=mid:SECONDARY
             { sdp::fields::user_name, U("-") },
             { sdp::fields::session_id, 3745911798u },
             { sdp::fields::session_version, 3745911798u },
-            { sdp::fields::network_type, sdp::network_types::IN.name },
+            { sdp::fields::network_type, sdp::network_types::internet.name },
             { sdp::fields::address_type, sdp::address_types::IP4.name },
             { sdp::fields::unicast_address, U("192.168.9.142") }
         }, keep_order) },
@@ -113,7 +113,7 @@ a=mid:SECONDARY
             web::json::value_of({
                 { sdp::fields::name, sdp::attributes::group },
                 { sdp::fields::value, web::json::value_of({
-                    { sdp::fields::semantics, U("DUP") },
+                    { sdp::fields::semantics, sdp::group_semantics::duplication.name },
                     { sdp::fields::mids, web::json::value_of({
                         U("PRIMARY"),
                         U("SECONDARY")
@@ -133,7 +133,7 @@ a=mid:SECONDARY
                 }, keep_order) },
                 { sdp::fields::connection_data, web::json::value_of({
                     web::json::value_of({
-                        { sdp::fields::network_type, sdp::network_types::IN.name },
+                        { sdp::fields::network_type, sdp::network_types::internet.name },
                         { sdp::fields::address_type, sdp::address_types::IP4.name },
                         { sdp::fields::connection_address, U("239.22.142.1/32") }
                     }, keep_order)
@@ -142,7 +142,7 @@ a=mid:SECONDARY
                     web::json::value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },
                         { sdp::fields::value, web::json::value_of({
-                            { sdp::fields::clock_source, sdp::ts_refclk_sources::PTP.name },
+                            { sdp::fields::clock_source, sdp::ts_refclk_sources::ptp.name },
                             { sdp::fields::ptp_version, sdp::ptp_versions::IEEE1588_2008.name },
                             { sdp::fields::traceable, true }
                         }, keep_order) }
@@ -151,7 +151,7 @@ a=mid:SECONDARY
                         { sdp::fields::name, sdp::attributes::source_filter },
                         { sdp::fields::value, web::json::value_of({
                             { sdp::fields::filter_mode, sdp::filter_modes::incl.name },
-                            { sdp::fields::network_type, sdp::network_types::IN.name },
+                            { sdp::fields::network_type, sdp::network_types::internet.name },
                             { sdp::fields::address_types, sdp::address_types::IP4.name },
                             { sdp::fields::destination_address, U("239.22.142.1") },
                             { sdp::fields::source_addresses, web::json::value_of({
@@ -195,7 +195,7 @@ a=mid:SECONDARY
                 }, keep_order) },
                 { sdp::fields::connection_data, web::json::value_of({
                     web::json::value_of({
-                        { sdp::fields::network_type, sdp::network_types::IN.name },
+                        { sdp::fields::network_type, sdp::network_types::internet.name },
                         { sdp::fields::address_type, sdp::address_types::IP4.name },
                         { sdp::fields::connection_address, U("239.122.142.1/32") }
                     }, keep_order)
@@ -204,7 +204,7 @@ a=mid:SECONDARY
                     web::json::value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },
                         { sdp::fields::value, web::json::value_of({
-                            { sdp::fields::clock_source, sdp::ts_refclk_sources::PTP.name },
+                            { sdp::fields::clock_source, sdp::ts_refclk_sources::ptp.name },
                             { sdp::fields::ptp_version, sdp::ptp_versions::IEEE1588_2008.name },
                             { sdp::fields::traceable, true }
                         }, keep_order) }
@@ -213,7 +213,7 @@ a=mid:SECONDARY
                         { sdp::fields::name, sdp::attributes::source_filter },
                         { sdp::fields::value, web::json::value_of({
                             { sdp::fields::filter_mode, sdp::filter_modes::incl.name },
-                            { sdp::fields::network_type, sdp::network_types::IN.name },
+                            { sdp::fields::network_type, sdp::network_types::internet.name },
                             { sdp::fields::address_types, sdp::address_types::IP4.name },
                             { sdp::fields::destination_address, U("239.122.142.1") },
                             { sdp::fields::source_addresses, web::json::value_of({

@@ -163,7 +163,7 @@ namespace sdp
 
         // a=group:<semantics>[ <identification-tag>]*
         // See https://tools.ietf.org/html/rfc5888
-        const web::json::field_as_string semantics{ U("semantics") }; // "DUP", etc.
+        const web::json::field_as_string semantics{ U("semantics") }; // see sdp::group_semantics
         const web::json::field_as_array mids{ U("mids") };
 
         // a=source-filter: <filter-mode> <nettype> <address-types> <dest-address> <src-list>
@@ -233,6 +233,7 @@ namespace sdp
 
     // Media Types
     // See https://tools.ietf.org/html/rfc4566#section-8.2.1
+    // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-1
     DEFINE_STRING_ENUM(media_type)
     namespace media_types
     {
@@ -245,6 +246,7 @@ namespace sdp
 
     // Transport Protocols
     // See https://tools.ietf.org/html/rfc4566#section-8.2.2
+    // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-2
     DEFINE_STRING_ENUM(protocol)
     namespace protocols
     {
@@ -258,29 +260,41 @@ namespace sdp
 
     // Bandwidth Specifiers
     // See https://tools.ietf.org/html/rfc4566#section-8.2.5
+    // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-3
     DEFINE_STRING_ENUM(bandwidth_type)
     namespace bandwidth_types
     {
         // "conference total" bandwidth
-        const bandwidth_type CT{ U("CT") };
+        const bandwidth_type conference_total{ U("CT") };
+        const bandwidth_type CT = conference_total;
         // application specific (maximum bandwidth)
-        const bandwidth_type AS{ U("AS") };
+        const bandwidth_type application_specific{ U("AS") };
+        const bandwidth_type AS = application_specific;
     }
 
     // Network Types
     // See https://tools.ietf.org/html/rfc4566#section-8.2.6
+    // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-4
     DEFINE_STRING_ENUM(network_type)
     namespace network_types
     {
-        const network_type IN{ U("IN") };
+        // internet
+        const network_type internet{ U("IN") };
+#pragma push_macro("IN")
+#undef IN
+        const network_type IN = internet;
+#pragma pop_macro("IN")
     }
 
     // Address Types
     // See https://tools.ietf.org/html/rfc4566#section-8.2.8
+    // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-5
     DEFINE_STRING_ENUM(address_type)
     namespace address_types
     {
+        // IPv4
         const address_type IP4{ U("IP4") };
+        // IPv6
         const address_type IP6{ U("IP6") };
     }
 }
@@ -293,7 +307,9 @@ namespace sdp
     DEFINE_STRING_ENUM(filter_mode)
     namespace filter_modes
     {
+        // inclusive
         const filter_mode incl{ U("incl") };
+        // exclusive
         const filter_mode excl{ U("excl") };
     }
 
@@ -301,6 +317,22 @@ namespace sdp
     namespace address_types
     {
         const address_type wildcard{ U("*") };
+    }
+}
+
+// Session Description Protocol (SDP) Grouping Framework
+// See https://tools.ietf.org/html/rfc5888
+// and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-13
+// and https://tools.ietf.org/html/rfc5576
+// and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xml#sdp-parameters-17
+namespace sdp
+{
+    // Group semantics
+    DEFINE_STRING_ENUM(group_semantics_type)
+    namespace group_semantics
+    {
+        // See https://tools.ietf.org/html/rfc7104
+        const group_semantics_type duplication{ U("DUP") };
     }
 }
 
@@ -315,23 +347,23 @@ namespace sdp
     namespace timestamp_reference_clock_sources
     {
         // Network Time Protocol
-        const timestamp_reference_clock_source NTP{ U("ntp") };
+        const timestamp_reference_clock_source ntp{ U("ntp") };
         // Precision Time Protocol
-        const timestamp_reference_clock_source PTP{ U("ptp") };
+        const timestamp_reference_clock_source ptp{ U("ptp") };
         // Global Positioning System
-        const timestamp_reference_clock_source GPS{ U("gps") };
+        const timestamp_reference_clock_source gps{ U("gps") };
         // Galileo
-        const timestamp_reference_clock_source GAL{ U("gal") };
+        const timestamp_reference_clock_source galileo{ U("gal") };
         // Global Navigation Satellite System
-        const timestamp_reference_clock_source GLONASS{ U("glonass") };
+        const timestamp_reference_clock_source glonass{ U("glonass") };
         // Local Clock
-        const timestamp_reference_clock_source LOCAL{ U("local") };
+        const timestamp_reference_clock_source local_clock{ U("local") };
         // Private Clock
-        const timestamp_reference_clock_source PRIVATE{ U("private") };
+        const timestamp_reference_clock_source private_clock{ U("private") };
 
         // Local MAC
         // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
-        const timestamp_reference_clock_source LOCAL_MAC{ U("localmac") };
+        const timestamp_reference_clock_source local_mac{ U("localmac") };
     }
     typedef timestamp_reference_clock_source ts_refclk_source;
     namespace ts_refclk_sources = timestamp_reference_clock_sources;
@@ -379,11 +411,11 @@ namespace sdp
         const web::json::field_as_bool_or interlace{ U("interlace"), false };
         const web::json::field_as_string sampling{ U("sampling") };
         const web::json::field<uint32_t> depth{ U("depth") };
-        const web::json::field_as_string TCS{ U("TCS") };
+        const web::json::field_as_string TCS{ U("TCS") }; // transfer characteristic system
         const web::json::field_as_string colorimetry{ U("colorimetry") };
-        const web::json::field_as_string PM{ U("PM") };
-        const web::json::field_as_string SSN{ U("SSN") };
-        const web::json::field_as_string TP{ U("TP") };
+        const web::json::field_as_string PM{ U("PM") }; // packing mode
+        const web::json::field_as_string SSN{ U("SSN") }; // SMPTE standard number
+        const web::json::field_as_string TP{ U("TP") }; // type parameter
         const web::json::field_as_string channel_order{ U("channel-order") };
     }
 }

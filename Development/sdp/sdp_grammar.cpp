@@ -14,6 +14,16 @@ namespace sdp
         sdp_exception(const std::string& message) : std::runtime_error(message) {}
     };
 
+    static sdp_exception sdp_format_error(std::string message)
+    {
+        return{ "sdp format error - " + std::move(message) };
+    }
+
+    static sdp_exception sdp_parse_error(std::string message)
+    {
+        return{ "sdp parse error - " + std::move(message) };
+    }
+
     namespace grammar
     {
         // for easy reading and simple equality comparison of the json representation
@@ -112,7 +122,7 @@ namespace sdp
                     size_t pos = 0;
                     for (auto& field : field_converters)
                     {
-                        if (std::string::npos == pos) throw sdp_exception("sdp parse error - expected a value for " + utility::us2s(field.first));
+                        if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(field.first));
                         auto each = substr_find(s, pos, delimiter);
                         // ignore consecutive delimiters?
 
@@ -293,7 +303,7 @@ namespace sdp
                     do
                     {
                         auto time = substr_find(s, pos, " ");
-                        if (std::string::npos == pos) throw sdp_exception("sdp parse error - expected a value for " + utility::us2s(sdp::fields::adjustment));
+                        if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::adjustment));
                         auto adjustment = substr_find(s, pos, " ");
                         web::json::push_back(v, web::json::value_of({
                             { sdp::fields::time, number_converter.parse(time) },
@@ -337,7 +347,7 @@ namespace sdp
                         }
                         else
                         {
-                            if (!sdp::fields::value(v).is_null()) throw sdp_exception("sdp format error - property attribute has unexpected value");
+                            if (!sdp::fields::value(v).is_null()) throw sdp_format_error("property attribute has unexpected value");
                             return utility::us2s(name);
                         }
                     },
@@ -362,7 +372,7 @@ namespace sdp
                         }
                         else
                         {
-                            if (std::string::npos != colon) throw sdp_exception("sdp parse error - property attribute has unexpected value");
+                            if (std::string::npos != colon) throw sdp_parse_error("property attribute has unexpected value");
                         }
 
                         return v;
@@ -562,20 +572,20 @@ namespace sdp
                             std::string s;
                             s += string_converter.format(v.at(sdp::fields::clock_source));
                             const sdp::ts_refclk_source clock_source{ sdp::fields::clock_source(v) };
-                            if (sdp::ts_refclk_sources::NTP == clock_source)
+                            if (sdp::ts_refclk_sources::ntp == clock_source)
                             {
                                 s += '=';
                                 if (sdp::fields::traceable(v)) s += "/traceable/";
                                 else s += string_converter.format(v.at(sdp::fields::ntp_server));
                             }
-                            else if (sdp::ts_refclk_sources::PTP == clock_source)
+                            else if (sdp::ts_refclk_sources::ptp == clock_source)
                             {
                                 s += '=';
                                 s += string_converter.format(v.at(sdp::fields::ptp_version)) + ':';
                                 if (sdp::fields::traceable(v)) s += "traceable";
                                 else s += string_converter.format(v.at(sdp::fields::ptp_server)); // <ptp gmid>[:<ptp domain>]
                             }
-                            else if (sdp::ts_refclk_sources::PRIVATE == clock_source)
+                            else if (sdp::ts_refclk_sources::private_clock == clock_source)
                             {
                                 if (sdp::fields::traceable(v)) s += ":traceable";
                             }
@@ -586,27 +596,27 @@ namespace sdp
                             size_t pos = s.find_first_of("=:");
                             v[sdp::fields::clock_source] = string_converter.parse(s.substr(0, pos));
                             const sdp::ts_refclk_source clock_source{ utility::s2us(s.substr(0, pos)) };
-                            if (sdp::ts_refclk_sources::NTP == clock_source)
+                            if (sdp::ts_refclk_sources::ntp == clock_source)
                             {
-                                if (std::string::npos == pos) throw sdp_exception("sdp parse error - expected a value for " + utility::us2s(sdp::fields::ntp_server));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ntp_server));
                                 const auto server = s.substr(++pos);
                                 if ("/traceable/" == server) v[sdp::fields::traceable] = web::json::value::boolean(true);
                                 else v[sdp::fields::ntp_server] = string_converter.parse(server);
                             }
-                            else if (sdp::ts_refclk_sources::PTP == clock_source)
+                            else if (sdp::ts_refclk_sources::ptp == clock_source)
                             {
-                                if (std::string::npos == pos) throw sdp_exception("sdp parse error - expected a value for " + utility::us2s(sdp::fields::ptp_server));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ptp_server));
                                 v[sdp::fields::ptp_version] = string_converter.parse(substr_find(s, ++pos, ":"));
-                                if (std::string::npos == pos) throw sdp_exception("sdp parse error - expected a value for " + utility::us2s(sdp::fields::ntp_server));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ntp_server));
                                 const auto server = s.substr(pos);
                                 if ("traceable" == server) v[sdp::fields::traceable] = web::json::value::boolean(true);
                                 else v[sdp::fields::ptp_server] = string_converter.parse(server);
                             }
-                            else if (sdp::ts_refclk_sources::GPS == clock_source || sdp::ts_refclk_sources::GLONASS == clock_source || sdp::ts_refclk_sources::GAL == clock_source)
+                            else if (sdp::ts_refclk_sources::gps == clock_source || sdp::ts_refclk_sources::glonass == clock_source || sdp::ts_refclk_sources::galileo == clock_source)
                             {
                                 v[sdp::fields::traceable] = web::json::value::boolean(true);
                             }
-                            else if (sdp::ts_refclk_sources::PRIVATE == clock_source)
+                            else if (sdp::ts_refclk_sources::private_clock == clock_source)
                             {
                                 if (std::string::npos != pos && ":traceable" == s.substr(pos)) v[sdp::fields::traceable] = web::json::value::boolean(true);
                             }
@@ -631,7 +641,7 @@ namespace sdp
         {
             // if required, must be a non-empty array; otherwise, must be either a (possibly empty) array or null
             const bool valid = grammar.required ? line.is_array() && 0 < line.size() : line.is_array() || line.is_null();
-            if (!valid) throw sdp_exception("sdp format error - expected an array for " + utility::us2s(grammar.name));
+            if (!valid) throw sdp_format_error("expected an array for " + utility::us2s(grammar.name));
             if (line.is_null()) return;
 
             for (const auto& each : line.as_array())
@@ -643,7 +653,7 @@ namespace sdp
         {
             // if required, must be non-null
             const bool valid = !grammar.required || !line.is_null();
-            if (!valid) throw sdp_exception("sdp format error - expected a value for " + utility::us2s(grammar.name));
+            if (!valid) throw sdp_format_error("expected a value for " + utility::us2s(grammar.name));
             if (line.is_null()) return;
 
             os << grammar.type << '=' << grammar.value_converter.format(line) << "\r\n";
@@ -658,12 +668,12 @@ namespace sdp
         {
             // if required, must be a non-empty array; otherwise, must be either a (possibly empty) array or null
             const bool valid = grammar.required ? description.is_array() && 0 < description.size() : description.is_array() || description.is_null();
-            if (!valid) throw sdp_exception("sdp format error - expected an array for " + utility::us2s(grammar.name));
+            if (!valid) throw sdp_format_error("expected an array for " + utility::us2s(grammar.name));
             if (description.is_null()) return;
 
             for (const auto& each : description.as_array())
             {
-                if (!each.is_object()) throw sdp_exception("sdp format error - expected an object for each " + utility::us2s(grammar.name));
+                if (!each.is_object()) throw sdp_format_error("expected an object for each " + utility::us2s(grammar.name));
                 write_elements(os, each, grammar.elements);
             }
         }
@@ -671,7 +681,7 @@ namespace sdp
         {
             // if required, must be an object; otherwise, must be either an object or null
             const bool valid = grammar.required ? description.is_object() : description.is_object() || description.is_null();
-            if (!valid) throw sdp_exception("sdp format error - expected an object for " + utility::us2s(grammar.name));
+            if (!valid) throw sdp_format_error("expected an object for " + utility::us2s(grammar.name));
             if (description.is_null()) return;
 
             write_elements(os, description, grammar.elements);
@@ -705,12 +715,12 @@ namespace sdp
 
     web::json::value read_equals_value(std::istream& is, const grammar::converter& value_converter)
     {
-        if ('=' != is.get()) throw sdp_exception("sdp parse error - expected '='");
+        if ('=' != is.get()) throw sdp_parse_error("expected '='");
 
         std::string line;
         std::getline(is, line, '\n');
         if ('\r' == line.back()) line.pop_back();
-        // else throw sdp_exception("sdp parse error - expected CRLF");
+        // else throw sdp_parse_error("expected CRLF");
 
         return value_converter.parse(line);
     }
@@ -723,7 +733,7 @@ namespace sdp
 
             // if required, must be correct type
             const bool valid = !grammar.required || grammar.type == peek_type;
-            if (!valid) throw sdp_exception("sdp parse error - expected a line for " + utility::us2s(grammar.name));
+            if (!valid) throw sdp_parse_error("expected a line for " + utility::us2s(grammar.name));
             if (grammar.type != peek_type) return;
 
             auto lines = web::json::value::array();
@@ -740,7 +750,7 @@ namespace sdp
 
             // if required, must be correct type
             const bool valid = !grammar.required || grammar.type == peek_type;
-            if (!valid) throw sdp_exception("sdp parse error - expected a line for " + utility::us2s(grammar.name));
+            if (!valid) throw sdp_parse_error("expected a line for " + utility::us2s(grammar.name));
             if (grammar.type != peek_type) return;
 
             is.get();
@@ -763,7 +773,7 @@ namespace sdp
 
             // if required, must be correct type
             const bool valid = !grammar.required || sub_grammar->type == peek_type;
-            if (!valid) throw sdp_exception("sdp parse error - expected a line for " + utility::us2s(sub_grammar->name));
+            if (!valid) throw sdp_parse_error("expected a line for " + utility::us2s(sub_grammar->name));
             if (sub_grammar->type != peek_type) return;
 
             description = web::json::value::array();
@@ -779,7 +789,7 @@ namespace sdp
 
             // if required, must be correct type
             const bool valid = !grammar.required || sub_grammar->type == peek_type;
-            if (!valid) throw sdp_exception("sdp parse error - expected a line for " + utility::us2s(sub_grammar->name));
+            if (!valid) throw sdp_parse_error("expected a line for " + utility::us2s(sub_grammar->name));
             if (sub_grammar->type != peek_type) return;
 
             description = web::json::value::object(sdp::grammar::keep_order);
@@ -812,7 +822,7 @@ namespace sdp
         std::istringstream is(session_description);
         web::json::value result;
         read_description(is, result, grammar);
-        if (!is.eof()) throw sdp_exception("sdp parse error - unexpected characters before end-of-file");
+        if (!is.eof()) throw sdp_parse_error("unexpected characters before end-of-file");
         return result;
     }
 
