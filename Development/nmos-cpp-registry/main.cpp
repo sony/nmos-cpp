@@ -108,14 +108,14 @@ int main(int argc, char* argv[])
 
         if (!nmos::fields::error_log(registry_model.settings).empty())
         {
-            error_log_buf.open(nmos::fields::error_log(registry_model.settings), std::ios_base::out | std::ios_base::ate);
+            error_log_buf.open(nmos::fields::error_log(registry_model.settings), std::ios_base::in | std::ios_base::out | std::ios_base::ate);
             auto lock = log_model.write_lock();
             error_log.rdbuf(&error_log_buf);
         }
 
         if (!nmos::fields::access_log(registry_model.settings).empty())
         {
-            access_log_buf.open(nmos::fields::access_log(registry_model.settings), std::ios_base::out | std::ios_base::ate);
+            access_log_buf.open(nmos::fields::access_log(registry_model.settings), std::ios_base::in | std::ios_base::out | std::ios_base::ate);
             auto lock = log_model.write_lock();
             access_log.rdbuf(&access_log_buf);
         }
