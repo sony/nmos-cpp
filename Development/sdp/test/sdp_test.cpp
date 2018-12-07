@@ -75,17 +75,17 @@ a=mid:SECONDARY
     // example constructing json representation from scratch...
 
     auto format_specific_parameters = web::json::value_of({
-        sdp::named_value(U("colorimetry"), U("BT709")),
-        sdp::named_value(U("exactframerate"), U("30000/1001")),
-        sdp::named_value(U("depth"), U("10")),
-        sdp::named_value(U("TCS"), U("SDR")),
-        sdp::named_value(U("sampling"), U("YCbCr-4:2:2")),
-        sdp::named_value(U("width"), U("1920")),
-        sdp::named_value(U("interlace")),
-        sdp::named_value(U("TP"), U("2110TPN")),
-        sdp::named_value(U("PM"), U("2110GPM")),
-        sdp::named_value(U("height"), U("1080")),
-        sdp::named_value(U("SSN"), U("ST2110-20:2017"))
+        sdp::named_value(sdp::fields::colorimetry, sdp::colorimetries::BT709.name),
+        sdp::named_value(sdp::fields::exactframerate, U("30000/1001")),
+        sdp::named_value(sdp::fields::depth, U("10")),
+        sdp::named_value(sdp::fields::transfer_characteristic_system, sdp::transfer_characteristic_systems::SDR.name),
+        sdp::named_value(sdp::fields::sampling, sdp::samplings::YCbCr_4_2_2.name),
+        sdp::named_value(sdp::fields::width, U("1920")),
+        sdp::named_value(sdp::fields::interlace),
+        sdp::named_value(sdp::fields::type_parameter, sdp::type_parameters::type_N.name),
+        sdp::named_value(sdp::fields::packing_mode, sdp::packing_modes::general.name),
+        sdp::named_value(sdp::fields::height, U("1080")),
+        sdp::named_value(sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name)
     });
 
     const bool keep_order = true;

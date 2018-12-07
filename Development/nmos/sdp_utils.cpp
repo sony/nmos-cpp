@@ -29,7 +29,7 @@ namespace nmos
             return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
         }
 
-        nmos::sampling make_sampling(const web::json::array& components)
+        sdp::sampling make_sampling(const web::json::array& components)
         {
             // https://tools.ietf.org/html/rfc4175#section-6.1
 
@@ -44,11 +44,11 @@ namespace nmos
 
             if (de != dimensions.find(U("R")) && de != dimensions.find(U("G")) && de != dimensions.find(U("B")) && de != dimensions.find(U("A")))
             {
-                return nmos::samplings::RGBA;
+                return sdp::samplings::RGBA;
             }
             else if (de != dimensions.find(U("R")) && de != dimensions.find(U("G")) && de != dimensions.find(U("B")))
             {
-                return nmos::samplings::RGB;
+                return sdp::samplings::RGB;
             }
             else if (de != dimensions.find(U("Y")) && de != dimensions.find(U("Cb")) && de != dimensions.find(U("Cr")))
             {
@@ -59,14 +59,14 @@ namespace nmos
                 const auto& C = Cb;
                 if (Y.width == C.width)
                 {
-                    if (Y.height == C.height) return nmos::samplings::YCbCr_4_4_4;
-                    else if (Y.height / 2 == C.height) return nmos::samplings::YCbCr_4_2_2;
-                    else if (Y.height / 4 == C.height) return nmos::samplings::YCbCr_4_1_1;
+                    if (Y.height == C.height) return sdp::samplings::YCbCr_4_4_4;
+                    else if (Y.height / 2 == C.height) return sdp::samplings::YCbCr_4_2_2;
+                    else if (Y.height / 4 == C.height) return sdp::samplings::YCbCr_4_1_1;
                     else throw sdp_creation_error("unsupported YCbCr dimensions");
                 }
                 else if (Y.width / 2 == C.width)
                 {
-                    if (Y.height / 2 == C.height) return nmos::samplings::YCbCr_4_2_0;
+                    if (Y.height / 2 == C.height) return sdp::samplings::YCbCr_4_2_0;
                     else throw sdp_creation_error("unsupported YCbCr dimensions");
                 }
                 else throw sdp_creation_error("unsupported YCbCr dimensions");
@@ -78,19 +78,20 @@ namespace nmos
     static sdp_parameters make_video_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::video_t params;
-        params.tp = nmos::sender_type_parameters::type_N;
+        params.tp = sdp::type_parameters::type_N;
 
         // colorimetry map directly to flow_video json "colorspace"
-        params.colorimetry = nmos::colorspace{ nmos::fields::colorspace(flow) };
+        params.colorimetry = sdp::colorimetry{ nmos::fields::colorspace(flow) };
 
-        // use flow json "components" to workout sampling
+        // use flow json "components" to work out sampling
         const auto& components = nmos::fields::components(flow);
         params.sampling = details::make_sampling(components);
         params.width = nmos::fields::frame_width(flow);
         params.height = nmos::fields::frame_height(flow);
         params.depth = nmos::fields::bit_depth(components.at(0));
 
-        params.tcs = nmos::transfer_characteristic{ nmos::fields::transfer_characteristic(flow) };
+        // also maps directly
+        params.tcs = sdp::transfer_characteristic_system{ nmos::fields::transfer_characteristic(flow) };
 
         const auto& interlace_mode = nmos::fields::interlace_mode(flow);
         params.interlace = !interlace_mode.empty() && nmos::interlace_modes::progressive.name != interlace_mode;
@@ -385,10 +386,10 @@ namespace nmos
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::sampling, sdp_params.video.sampling.name));
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::depth, utility::ostringstreamed(sdp_params.video.depth)));
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::colorimetry, sdp_params.video.colorimetry.name));
-        if (!sdp_params.video.tcs.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::TCS, sdp_params.video.tcs.name));
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::PM, U("2110GPM"))); // or "2110BPM"
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::SSN, U("ST2110-20:2017"))); // or soon, "ST2110-20:2019"?
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::TP, sdp_params.video.tp.name));
+        if (!sdp_params.video.tcs.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::transfer_characteristic_system, sdp_params.video.tcs.name));
+        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::packing_mode, sdp::packing_modes::general.name)); // or block...
+        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name));
+        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.video.tp.name));
 
         const auto fmtp = web::json::value_of({
             { sdp::fields::name, sdp::attributes::fmtp },
@@ -814,7 +815,7 @@ namespace nmos
 
             const auto sampling = sdp::find_name(format_specific_parameters, sdp::fields::sampling);
             if (format_specific_parameters.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
-            sdp_params.video.sampling = nmos::sampling{ sdp::fields::value(*sampling).as_string() };
+            sdp_params.video.sampling = sdp::sampling{ sdp::fields::value(*sampling).as_string() };
 
             const auto depth = sdp::find_name(format_specific_parameters, sdp::fields::depth);
             if (format_specific_parameters.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
@@ -822,23 +823,23 @@ namespace nmos
             sdp_params.video.depth = utility::istringstreamed<uint32_t>(sdp::fields::value(*depth).as_string());
 
             // optional
-            const auto tcs = sdp::find_name(format_specific_parameters, sdp::fields::TCS);
+            const auto tcs = sdp::find_name(format_specific_parameters, sdp::fields::transfer_characteristic_system);
             if (format_specific_parameters.end() != tcs)
             {
-                sdp_params.video.tcs = nmos::transfer_characteristic{ sdp::fields::value(*tcs).as_string() };
+                sdp_params.video.tcs = sdp::transfer_characteristic_system{ sdp::fields::value(*tcs).as_string() };
             }
 
             const auto colorimetry = sdp::find_name(format_specific_parameters, sdp::fields::colorimetry);
             if (format_specific_parameters.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
-            sdp_params.video.colorimetry = nmos::colorspace{ sdp::fields::value(*colorimetry).as_string() };
+            sdp_params.video.colorimetry = sdp::colorimetry{ sdp::fields::value(*colorimetry).as_string() };
 
             // don't check "PM" (packing mode)
 
-            // don't check "SSN" (SMPTE Standard Number)
+            // don't check "SSN" (SMPTE standard number)
 
-            const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::TP);
+            const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
             if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
-            sdp_params.video.tp = nmos::sender_type_parameter{ sdp::fields::value(*tp).as_string() };
+            sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
         }
         else if (is_audio_sdp && attributes.end() != fmtp)
         {

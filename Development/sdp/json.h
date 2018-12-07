@@ -266,10 +266,8 @@ namespace sdp
     {
         // "conference total" bandwidth
         const bandwidth_type conference_total{ U("CT") };
-        const bandwidth_type CT = conference_total;
         // application specific (maximum bandwidth)
         const bandwidth_type application_specific{ U("AS") };
-        const bandwidth_type AS = application_specific;
     }
 
     // Network Types
@@ -280,10 +278,6 @@ namespace sdp
     {
         // internet
         const network_type internet{ U("IN") };
-#pragma push_macro("IN")
-#undef IN
-        const network_type IN = internet;
-#pragma pop_macro("IN")
     }
 
     // Address Types
@@ -411,12 +405,102 @@ namespace sdp
         const web::json::field_as_bool_or interlace{ U("interlace"), false };
         const web::json::field_as_string sampling{ U("sampling") };
         const web::json::field<uint32_t> depth{ U("depth") };
-        const web::json::field_as_string TCS{ U("TCS") }; // transfer characteristic system
+        const web::json::field_as_string transfer_characteristic_system{ U("TCS") };
         const web::json::field_as_string colorimetry{ U("colorimetry") };
-        const web::json::field_as_string PM{ U("PM") }; // packing mode
-        const web::json::field_as_string SSN{ U("SSN") }; // SMPTE standard number
-        const web::json::field_as_string TP{ U("TP") }; // type parameter
+        const web::json::field_as_string packing_mode{ U("PM") };
+        const web::json::field_as_string smpte_standard_number{ U("SSN") };
+        const web::json::field_as_string type_parameter{ U("TP") };
         const web::json::field_as_string channel_order{ U("channel-order") };
+    }
+}
+
+namespace sdp
+{
+    // Colour (sub-)sampling mode of the video stream, e.g. "YCbCr-4:2:2"
+    // See https://tools.ietf.org/html/rfc4175
+    // and SMPTE ST 2110-20:2107 Section 7.4.1 Samping
+    // and VSF TR-05:2018, etc.
+    DEFINE_STRING_ENUM(sampling)
+    namespace samplings
+    {
+        const sampling RGBA{ U("RGBA") };
+        const sampling RGB{ U("RGB") };
+        // Non-constant luminance YCbCr
+        const sampling YCbCr_4_4_4{ U("YCbCr-4:4:4") };
+        const sampling YCbCr_4_2_2{ U("YCbCr-4:2:2") };
+        const sampling YCbCr_4_2_0{ U("YCbCr-4:2:0") };
+        const sampling YCbCr_4_1_1{ U("YCbCr-4:1:1") };
+        // Constant intensity ICtCp
+        const sampling ICtCp_4_4_4{ U("ICtCp-4:4:4") };
+        const sampling ICtCp_4_2_2{ U("ICtCp-4:2:2") };
+        const sampling ICtCp_4_2_0{ U("ICtCp-4:2:0") };
+        // XYZ
+        const sampling XYZ{ U("XYZ") };
+    }
+
+    // Colorimetry
+    // See https://tools.ietf.org/html/rfc4175
+    // and SMPTE ST 2110-20:2017 Section 7.5 Permitted values of Colorimetry
+    // and AMWA IS-04 v1.2 "colorspace"
+    DEFINE_STRING_ENUM(colorimetry)
+    namespace colorimetries
+    {
+        // ITU-R BT.601-7
+        // hmm, RFC 4175 defines "BT601-5" for ITU Recommendation BT.601-5?
+        const colorimetry BT601{ U("BT601") };
+        // ITU-R BT.709-6
+        // hmm, RFC 5175 defines "BT709-2" for ITU Recommendation BT.709-2 and then uses "BT.709-2" in an example!!
+        const colorimetry BT709{ U("BT709") };
+        // ITU-R BT.2020-2
+        const colorimetry BT2020{ U("BT2020") };
+        // ITU-R BT.2100 Table 2
+        const colorimetry BT2110{ U("BT2100") };
+    }
+
+    // Packing Mode
+    // See SMPTE ST 2110-20:2017 Section 6.3.1 Packing Modes, etc.
+    DEFINE_STRING_ENUM(packing_mode)
+    namespace packing_modes
+    {
+        // General Packing Mode
+        const packing_mode general{ U("2110GPM") };
+        // Block Packing Mode
+        const packing_mode block{ U("2110BPM") };
+    }
+
+    // SMPTE Standard Number
+    // See SMPTE ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+    DEFINE_STRING_ENUM(smpte_standard_number)
+    namespace smpte_standard_numbers
+    {
+        const smpte_standard_number ST2110_20_2017{ U("ST2110-20:2017") };
+    }
+
+    // TP (Media Type Parameter)
+    // See SMPTE ST 2110-21:2017 Section 7.1 Compliance Definitions - Senders
+    DEFINE_STRING_ENUM(type_parameter)
+    namespace type_parameters
+    {
+        // Narrow Senders (Type N)
+        const type_parameter type_N{ U("2110TPN") };
+        // Narrow Linear Senders (Type NL)
+        const type_parameter type_NL{ U("2110TPNL") };
+        // Wide Senders (Type W)
+        const type_parameter type_W{ U("2110TPW") };
+    }
+
+    // TCS (Transfer Characteristic System)
+    // See SMPTE ST 2110-21:2017 Section 7.6 Permitted values of TCS
+    // and AMWA IS-04 v1.2 "transfer_characteristic"
+    DEFINE_STRING_ENUM(transfer_characteristic_system)
+    namespace transfer_characteristic_systems
+    {
+        // Standard Dynamic Range
+        const transfer_characteristic_system SDR{ U("SDR") };
+        // Perceptual Quantization
+        const transfer_characteristic_system PQ{ U("PQ") };
+        // Hybrid Log Gamma
+        const transfer_characteristic_system HLG{ U("HLG") };
     }
 }
 

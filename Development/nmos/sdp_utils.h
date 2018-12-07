@@ -4,40 +4,10 @@
 #include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
-#include "nmos/colorspace.h"
 #include "nmos/rational.h"
-#include "nmos/transfer_characteristic.h"
 
 namespace nmos
 {
-    // Colour (sub-)sampling mode of the video stream, e.g. "YCbCr-4:2:2"
-    DEFINE_STRING_ENUM(sampling)
-    namespace samplings
-    {
-        const sampling RGBA{ U("RGBA") };
-        const sampling RGB{ U("RGB") };
-        const sampling YCbCr_4_4_4{ U("YCbCr-4:4:4") };
-        const sampling YCbCr_4_2_2{ U("YCbCr-4:2:2") };
-        const sampling YCbCr_4_2_0{ U("YCbCr-4:2:0") };
-        const sampling YCbCr_4_1_1{ U("YCbCr-4:1:1") };
-        const sampling ICtCp_4_4_4{ U("ICtCp-4:4:4") };
-        const sampling ICtCp_4_2_2{ U("ICtCp-4:2:2") };
-        const sampling ICtCp_4_2_0{ U("ICtCp-4:2:0") };
-    }
-
-    // TP (Media Type Parameter)
-    // See SMPTE ST 2110-21:2017 Section 7.1 Compliance Definitions - Senders
-    DEFINE_STRING_ENUM(sender_type_parameter)
-    namespace sender_type_parameters
-    {
-        // Narrow Senders (Type N)
-        const sender_type_parameter type_N{ U("2110TPN") };
-        // Narrow Linear Senders (Type NL)
-        const sender_type_parameter type_NL{ U("2110TPNL") };
-        // Wide Senders (Type W)
-        const sender_type_parameter type_W{ U("2110TPW") };
-    }
-
     struct sdp_parameters;
 
     // Sender helper functions
@@ -133,14 +103,14 @@ namespace nmos
             uint32_t height;
             nmos::rational exactframerate;
             bool interlace;
-            nmos::sampling sampling;
+            sdp::sampling sampling;
             uint32_t depth;
-            nmos::transfer_characteristic tcs; // "transfer characteristic system"
-            nmos::colorspace colorimetry;
-            nmos::sender_type_parameter tp;
+            sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is a subset
+            sdp::colorimetry colorimetry; // nmos::colorspace is a subset
+            sdp::type_parameter tp;
 
             video_t() : width(), height(), depth() {}
-            video_t(uint32_t width, uint32_t height, const nmos::rational& exactframerate, bool interlace, const nmos::sampling& sampling, uint32_t depth, const nmos::transfer_characteristic& tcs, const nmos::colorspace& colorimetry, const nmos::sender_type_parameter& tp)
+            video_t(uint32_t width, uint32_t height, const nmos::rational& exactframerate, bool interlace, const sdp::sampling& sampling, uint32_t depth, const sdp::transfer_characteristic_system& tcs, const sdp::colorimetry& colorimetry, const sdp::type_parameter& tp)
                 : width(width)
                 , height(height)
                 , exactframerate(exactframerate)
