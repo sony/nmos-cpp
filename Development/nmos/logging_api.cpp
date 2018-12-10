@@ -219,6 +219,10 @@ namespace nmos
                 }
 
                 // any non-string query parameters need parsing after decoding...
+                if (flat_query_params.has_field(nmos::fields::paging_limit))
+                {
+                    flat_query_params[nmos::fields::paging_limit] = web::json::value::parse(nmos::fields::paging_limit(flat_query_params));
+                }
 
                 return flat_query_params;
             }

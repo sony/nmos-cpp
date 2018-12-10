@@ -107,7 +107,8 @@ namespace nmos
 
     namespace fields
     {
-        const web::json::field_as_string_or query_rql{ U("query.rql"), U("") };
+        const web::json::field_as_string_or query_rql{ U("query.rql"), {} };
+        const web::json::field_as_string_or paging_limit{ U("paging.limit"), {} };
 
         const web::json::field_as_value message{ U("message") };
         const web::json::field_path<utility::string_t> grain_topic{ { U("grain"), U("topic") } };
@@ -119,7 +120,7 @@ namespace nmos
     {
         namespace fields
         {
-            const web::json::field_as_string_or query_strip{ U("query.strip"), U("true") };
+            const web::json::field_as_string_or query_strip{ U("query.strip"), {} };
         }
     }
 

@@ -114,7 +114,7 @@ namespace nmos
                 else if (field.first == U("limit"))
                 {
                     // "If the client had requested a page size which the server is unable to honour, the actual page size would be returned"
-                    limit = utility::istringstreamed<size_t>(field.second.as_string());
+                    limit = (size_t)field.second.as_integer();
                     if (limit > max_limit) limit = max_limit;
                 }
                 // as for resource_query, an error is reported for unimplemented parameters
@@ -309,7 +309,8 @@ namespace nmos
         std::vector<web::json::value> events;
 
         // resources are traversed in order of increasing creation timestamp, so that events for super-resources are inserted before events for sub-resources
-        // (assuming not out-of-order insertion by the allow_invalid_resources setting, hmm)
+        // hmm, that's assuming not out-of-order insertion by the allow_invalid_resources setting
+        // maybe better if resources were traversed in order of nmos::types::all?
         auto& by_created = resources.get<tags::created>();
         for (const auto& resource : by_created | boost::adaptors::reversed)
         {
