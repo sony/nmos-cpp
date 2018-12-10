@@ -186,7 +186,12 @@ namespace nmos
                     continue;
                 }
 
-                // set the grain timestamps
+                // experimental extension, to limit maximum number of events per message
+
+                resource_paging paging(subscription->data.at(U("params")), most_recent_message, (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
+                auto next_events = value::array();
+
+                // determine the grain timestamps
 
                 // these are underspecified in the specification
                 // see https://github.com/AMWA-TV/nmos-discovery-registration/issues/54
@@ -203,11 +208,27 @@ namespace nmos
                 // or less recent since it hasn't been adjusted in the same way as the update timestamps
                 const auto sync_timestamp = value::string(nmos::make_version(tai_from_time_point(now)));
 
-                resources.modify(grain, [&origin_timestamp, &sync_timestamp](nmos::resource& grain)
+                // prepare the message
+
+                resources.modify(grain, [&paging, &next_events, &origin_timestamp, &sync_timestamp](nmos::resource& grain)
                 {
-                    nmos::fields::message(grain.data)[nmos::fields::origin_timestamp] = origin_timestamp;
-                    nmos::fields::message(grain.data)[nmos::fields::sync_timestamp] = sync_timestamp;
-                    nmos::fields::message(grain.data)[nmos::fields::creation_timestamp] = sync_timestamp;
+                    auto& message = nmos::fields::message(grain.data);
+
+                    // postpone all the events after the specified limit
+                    auto& next_storage = web::json::storage_of(next_events.as_array());
+                    auto& message_storage = web::json::storage_of(nmos::fields::grain_data(message).as_array());
+                    if (paging.limit < message_storage.size())
+                    {
+                        const auto b = message_storage.begin() + paging.limit, e = message_storage.end();
+                        next_storage.assign(std::make_move_iterator(b), std::make_move_iterator(e));
+                        message_storage.erase(b, e);
+                        // hmm, feels like origin_timestamp should be adjusted in this case, but how?
+                    }
+
+                    // set the timestamps
+                    message[nmos::fields::origin_timestamp] = origin_timestamp;
+                    message[nmos::fields::sync_timestamp] = sync_timestamp;
+                    message[nmos::fields::creation_timestamp] = sync_timestamp;
                 });
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
@@ -242,10 +263,21 @@ namespace nmos
 
                 outgoing_messages.push_back({ websocket.second, message });
 
-                // reset the grain for next time
-                resources.modify(grain, [&resources](nmos::resource& grain)
+                if (0 != next_events.size())
                 {
-                    nmos::fields::message_grain_data(grain.data) = value::array();
+                    // make sure to send a message as soon as allowed
+                    if (now + max_update_rate < earliest_necessary_update)
+                    {
+                        earliest_necessary_update = now + max_update_rate;
+                    }
+                }
+
+                // reset the grain for next time
+                resources.modify(grain, [&next_events, &resources](nmos::resource& grain)
+                {
+                    using std::swap;
+                    swap(nmos::fields::message_grain_data(grain.data), next_events);
+                    next_events = value::array(); // unnecessary
                     grain.updated = strictly_increasing_update(resources);
                 });
             }
