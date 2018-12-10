@@ -322,15 +322,16 @@ namespace nmos
                 // restore any remaining events to the grain
                 resources.modify(grain, [&](nmos::resource& grain)
                 {
-                    // don't overwrite any events that have subsequently been inserted into the grain
-                    // (web::json::value has a rather limited interface for the manipulation of arrays)
-                    for (const auto& event : nmos::fields::message_grain_data(grain.data).as_array())
+                    auto& events_storage = web::json::storage_of(events.as_array());
+                    auto& grain_storage = web::json::storage_of(nmos::fields::message_grain_data(grain.data).as_array());
+                    if (!grain_storage.empty())
                     {
-                        web::json::push_back(events, event);
+                        events_storage.insert(events_storage.end(), std::make_move_iterator(grain_storage.begin()), std::make_move_iterator(grain_storage.end()));
+                        grain_storage.clear();
                     }
-
                     using std::swap;
-                    swap(nmos::fields::message_grain_data(grain.data), events);
+                    swap(grain_storage, events_storage);
+
                     grain.updated = strictly_increasing_update(resources);
                 });
             }
