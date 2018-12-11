@@ -207,8 +207,8 @@ namespace sdp
             sdp::fields::session_name,
             's',
             {
-                [](const web::json::value& v) { auto s = js2s(v); return !s.empty() ? s : "-"; },
-                [](const std::string& s) { return s2js(!s.empty() ? s : "-"); },
+                [](const web::json::value& v) { auto s = js2s(v); return !s.empty() ? s : " "; },
+                [](const std::string& s) { return s2js(!s.empty() ? s : " "); },
             }
         );
 
