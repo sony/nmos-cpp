@@ -1,9 +1,11 @@
 #include "nmos/connection_api.h"
 
 #include "cpprest/http_utils.h"
+#include "cpprest/json_validator.h"
 #include "nmos/activation_mode.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -46,51 +48,142 @@ namespace nmos
 
     namespace details
     {
-        // A poor substitute for schema validation
+        // Validate against specification schema
         // throws web::json::json_exception on failure, which results in a 400 Bad Request
         void validate_staged_core(const nmos::type& type, const web::json::value& staged)
         {
-            static const std::map<nmos::type, std::set<utility::string_t>> stage_fields
+            static const web::json::experimental::json_validator validator
+            {
+                nmos::experimental::load_json_schema,
+                {
+                    nmos::experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, nmos::types::sender),
+                    nmos::experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, nmos::types::receiver)
+                }
+            };
+            
+            // Validate JSON syntax according to the schema
+
+            validator.validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, type));
+        }
+
+        // Extend an existing schema with "auto" as a valid value
+        web::json::value make_auto_schema(const web::json::value& schema)
+        {
+            using web::json::value_of;
+
+            const bool keep_order = true;
+
+            return value_of({
+                { U("anyOf"), value_of({
+                    value_of({
+                        { U("type"), U("string") },
+                        { U("pattern"), U("^auto$") }
+                    }, keep_order),
+                    schema
+                }) }
+            });
+        }
+
+        // Make a json schema from /constraints
+        web::json::value make_constraints_schema(const nmos::type& type, const web::json::value& constraints)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const bool keep_order = true;
+
+            auto items = value::array();
+
+            // These are the constraints that support "auto" in /staged; cf. resolve_auto
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+            static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
-                    // https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-stage-schema.json
                     nmos::types::sender,
                     {
-                        nmos::fields::receiver_id,
-                        nmos::fields::master_enable,
-                        nmos::fields::activation,
-                        nmos::fields::transport_params
+                        nmos::fields::source_ip,
+                        nmos::fields::destination_ip,
+                        nmos::fields::source_port,
+                        nmos::fields::destination_port,
+                        nmos::fields::fec_destination_ip,
+                        nmos::fields::fec1D_destination_port,
+                        nmos::fields::fec2D_destination_port,
+                        nmos::fields::fec1D_source_port,
+                        nmos::fields::fec2D_source_port,
+                        nmos::fields::rtcp_destination_ip,
+                        nmos::fields::rtcp_destination_port,
+                        nmos::fields::rtcp_source_port
                     }
                 },
                 {
-                    // https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-stage-schema.json
                     nmos::types::receiver,
                     {
-                        nmos::fields::sender_id,
-                        nmos::fields::master_enable,
-                        nmos::fields::activation,
-                        nmos::fields::transport_file,
-                        nmos::fields::transport_params
+                        nmos::fields::interface_ip,
+                        nmos::fields::destination_port,
+                        nmos::fields::fec_destination_ip,
+                        nmos::fields::fec_mode,
+                        nmos::fields::fec1D_destination_port,
+                        nmos::fields::fec2D_destination_port,
+                        nmos::fields::rtcp_destination_ip,
+                        nmos::fields::rtcp_destination_port
                     }
                 }
             };
-            const auto& type_fields = stage_fields.at(type);
-            const auto& o = staged.as_object();
-            const auto found_invalid = std::find_if_not(o.begin(), o.end(), [&](const std::pair<utility::string_t, web::json::value>& field)
+
+            auto& type_auto_constraints = auto_constraints.at(type);
+
+            for (const auto& leg : constraints.as_array())
             {
-                return type_fields.end() != type_fields.find(field.first);
-            });
-            if (o.end() != found_invalid)
-            {
-                throw web::json::json_exception((U("invalid field - ") + found_invalid->first).c_str());
+                auto properties = value::object();
+
+                for (const auto& constraint : leg.as_object())
+                {
+                    if (type_auto_constraints.end() != type_auto_constraints.find(constraint.first))
+                    {
+                        properties[constraint.first] = make_auto_schema(constraint.second);
+                    }
+                    else
+                    {
+                        properties[constraint.first] = constraint.second;
+                    }
+                }
+
+                web::json::push_back(items, value_of({
+                    { U("type"), U("object") },
+                    { U("properties"), properties }
+                }, keep_order));
             }
+                
+            return value_of({
+                { U("$schema"), U("http://json-schema.org/draft-04/schema#") },
+                { U("type"), U("object") },
+                { U("properties"), value_of({
+                    { U("transport_params"),  value_of({
+                        { U("type"), U("array") },
+                        { U("items"), items }
+                    }, keep_order) }
+                }, keep_order) }
+            }, keep_order);
         }
 
         // Validate staged endpoint against constraints
-        // This is a potential customisation point e.g. to validate semantics not representable by the constraints endpoint
-        void validate_staged_constraints(const web::json::value& constraints, const web::json::value& staged)
-        {
-            // hmm, should do this...
+        void validate_staged_constraints(const nmos::type& type, const web::json::value& constraints, const web::json::value& staged)
+        {            
+            const auto schema = make_constraints_schema(type, constraints);
+            const auto uri = web::uri{U("/constraints")};
+
+            // Validate staged JSON syntax according to the schema
+
+            const web::json::experimental::json_validator validator
+            {
+                [&](const web::uri& ) { return schema; },
+                { uri }
+            };
+
+            // Validate JSON syntax according to the schema
+
+            validator.validate(staged, uri);
         }
 
         enum activation_state { immediate_activation_pending, scheduled_activation_pending, activation_not_pending, staging_only };
@@ -522,7 +615,7 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating staged transport parameters against constraints";
 
-                details::validate_staged_constraints(nmos::fields::endpoint_constraints(resource->data), merged);
+                details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), merged);
 
                 // Finally, update the staged endpoint
 
@@ -964,7 +1057,17 @@ namespace nmos
             if (resources.end() != resource)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning constraints for " << id_type;
-                set_reply(res, status_codes::OK, nmos::fields::endpoint_constraints(resource->data));
+
+                const auto accept = req.headers().find(web::http::header_names::accept);
+                if (req.headers().end() != accept && U("application/schema+json") == accept->second)
+                {
+                    // Experimental extension - constraints as JSON Schema
+                    set_reply(res, status_codes::OK, nmos::details::make_constraints_schema(resource->type, nmos::fields::endpoint_constraints(resource->data)));
+                }
+                else
+                {
+                    set_reply(res, status_codes::OK, nmos::fields::endpoint_constraints(resource->data));
+                }
             }
             else
             {
@@ -1064,6 +1167,7 @@ namespace nmos
                         const auto accept = req.headers().find(web::http::header_names::accept);
                         if (req.headers().end() != accept && U("application/json") == accept->second && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
                         {
+                            // Experimental extension - SDP as JSON
                             set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
                         }
                         else

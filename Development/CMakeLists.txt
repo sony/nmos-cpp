@@ -31,7 +31,7 @@ add_executable(
     nmos-cpp-node
     ${NMOS_CPP_NODE_SOURCES}
     ${NMOS_CPP_NODE_HEADERS}
-)
+    )
 
 source_group("Source Files" FILES ${NMOS_CPP_NODE_SOURCES})
 source_group("Header Files" FILES ${NMOS_CPP_NODE_HEADERS})
@@ -54,12 +54,12 @@ set(NMOS_CPP_REGISTRY_SOURCES
 set(NMOS_CPP_REGISTRY_HEADERS
     ${NMOS_CPP_DIR}/nmos-cpp-registry/main_gate.h
     )
-    
+
 add_executable(
     nmos-cpp-registry
     ${NMOS_CPP_REGISTRY_SOURCES}
     ${NMOS_CPP_REGISTRY_HEADERS}
-)
+    )
 
 source_group("Source Files" FILES ${NMOS_CPP_REGISTRY_SOURCES})
 source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
@@ -67,8 +67,6 @@ source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
 target_link_libraries(
     nmos-cpp-registry
     nmos-cpp_static
-	nmos_is04_schemas_static
-	json_schema_validator_static
     mdns_static
     cpprestsdk::cpprest
     ${BONJOUR_LIB}

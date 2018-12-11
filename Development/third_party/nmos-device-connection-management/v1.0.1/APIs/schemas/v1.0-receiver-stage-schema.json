@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a receiver",
+  "title": "Receiver resource",
+  "additionalProperties": false,
+  "properties": {
+    "sender_id": {
+      "description": "ID of the Sender subscribed to by this Receiver. This will be null if the receiver has not been configured to receive anything, or if it is receiving from a non-NMOS sender.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "master_enable": {
+      "description": "Master on/off control for receiver",
+      "type": "boolean"
+    },
+    "activation": {
+      "$ref": "v1.0-activation-schema.json"
+    },
+    "transport_file": {
+      "type": "object",
+      "description": "Transport file parameters",
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "description": "Content of the transport file",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "IANA assigned media type for file (e.g application/sdp)",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "transport_params": {
+      "description": "Transport-specific parameters",
+      "oneOf": [{
+          "$ref": "v1.0_receiver_transport_params_rtp.json"
+        },
+        {
+          "$ref": "v1.0_receiver_transport_params_dash.json"
+        }
+      ]
+    }
+  }
+}

@@ -3,6 +3,8 @@
 #include "cpprest/basic_utils.h"
 #include "nmos/api_version.h"
 #include "nmos/is04_schemas/is04_schemas.h"
+#include "nmos/is05_schemas/is05_schemas.h"
+#include "nmos/type.h"
 
 namespace nmos
 {
@@ -43,6 +45,24 @@ namespace nmos
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json"));
         }
     }
+
+    namespace is05_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-device-connection-management/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/
+        namespace v1_0
+        {
+            using namespace nmos::is05_schemas::v1_0_1;
+            const utility::string_t tag(_XPLATSTR("v1.0.1"));
+
+            const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-sender-stage-schema.json"));
+            const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-receiver-stage-schema.json"));
+        }
+    }
 }
 
 namespace nmos
@@ -54,7 +74,7 @@ namespace nmos
             return web::json::value::parse(utility::s2us(schema));
         }
 
-        static std::map<web::uri, web::json::value> make_schemas()
+        static std::map<web::uri, web::json::value> make_is04_schemas()
         {
             using namespace nmos::is04_schemas;
 
@@ -132,6 +152,31 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is05_schemas()
+        {
+            using namespace nmos::is05_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0-sender-stage-schema.json")), make_schema(v1_0::v1_0_sender_stage_schema) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0-receiver-stage-schema.json")), make_schema(v1_0::v1_0_receiver_stage_schema) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0-activation-schema.json")), make_schema(v1_0::v1_0_activation_schema) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0_sender_transport_params_rtp.json")), make_schema(v1_0::v1_0_sender_transport_params_rtp) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0_sender_transport_params_dash.json")), make_schema(v1_0::v1_0_sender_transport_params_dash) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0_receiver_transport_params_rtp.json")), make_schema(v1_0::v1_0_receiver_transport_params_rtp) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0_receiver_transport_params_dash.json")), make_schema(v1_0::v1_0_receiver_transport_params_dash) }
+            };
+        }
+
+        static std::map<web::uri, web::json::value> make_schemas()
+        {
+            auto result = make_is04_schemas();
+            auto merge = make_is05_schemas();
+            result.insert(merge.begin(), merge.end()); // std::map::merge in C++17
+            return result;
+        }
+
         static std::map<web::uri, web::json::value> schemas = make_schemas();
     }
 
@@ -149,6 +194,13 @@ namespace nmos
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::queryapi_subscriptions_post_request_uri;
             if (is04_versions::v1_1 == version) return is04_schemas::v1_1::queryapi_subscriptions_post_request_uri;
             return is04_schemas::v1_0::queryapi_subscriptions_post_request_uri;
+        }
+
+        web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version&, const nmos::type& type)
+        {
+            return nmos::types::sender == type
+                ? is05_schemas::v1_0::connectionapi_sender_staged_patch_request_uri
+                : is05_schemas::v1_0::connectionapi_receiver_staged_patch_request_uri;
         }
 
         // load the json schema for the specified base URI

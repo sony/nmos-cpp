@@ -223,6 +223,78 @@ target_link_libraries(
     nmos_is04_schemas_static
     )
 
+# nmos_is05_schemas library
+
+set(NMOS_IS05_SCHEMAS_HEADERS
+    ${NMOS_CPP_DIR}/nmos/is05_schemas/is05_schemas.h
+    )
+
+set(NMOS_IS05_V1_0_TAG v1.0.1)
+
+set(NMOS_IS05_V1_0_SCHEMAS_JSON
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/error.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0_receiver_transport_params_dash.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0_sender_transport_params_dash.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0_sender_transport_params_rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-activation-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-activation-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-bulk-receiver-post-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-bulk-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-bulk-sender-post-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-constraints-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-receiver-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-receiver-stage-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-sender-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-sender-stage-schema.json
+    )
+
+set(NMOS_IS05_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS05_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is05_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_0_SCHEMAS_SOURCES "${NMOS_IS05_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS05_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is05_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is05_schemas_static STATIC
+    ${NMOS_IS05_SCHEMAS_HEADERS}
+    ${NMOS_IS05_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is05_schemas\\Header Files" FILES ${NMOS_IS05_SCHEMAS_HEADERS})
+source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_0_TAG}\\Source Files" FILES ${NMOS_IS05_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is05_schemas_static
+    )
+
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
@@ -428,7 +500,8 @@ target_link_libraries(
     mdns_static
     cpprestsdk::cpprest
     json_schema_validator_static
-	nmos_is04_schemas_static
+    nmos_is04_schemas_static
+    nmos_is05_schemas_static
     ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
