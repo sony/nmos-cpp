@@ -156,16 +156,27 @@ namespace nmos
 
         struct ts_refclk_t
         {
-            // support ptp, and localmac?
             sdp::ts_refclk_source clock_source;
+            // for sdp::ts_refclk_sources::ptp
             sdp::ptp_version ptp_version;
             utility::string_t ptp_server;
+            // for sdp::ts_refclk_sources::local_mac
+            utility::string_t mac_address;
 
+            static ts_refclk_t ptp(const sdp::ptp_version& ptp_version, const utility::string_t& ptp_server)
+            {
+                return{ sdp::ts_refclk_sources::ptp, ptp_version, ptp_server, {} };
+            }
+            static ts_refclk_t local_mac(const utility::string_t& mac_address)
+            {
+                return{ sdp::ts_refclk_sources::local_mac, {}, {}, mac_address };
+            }
             ts_refclk_t() {}
-            ts_refclk_t(const sdp::ts_refclk_source& clock_source, const sdp::ptp_version& ptp_version, const utility::string_t& ptp_server)
+            ts_refclk_t(const sdp::ts_refclk_source& clock_source, const sdp::ptp_version& ptp_version, const utility::string_t& ptp_server, const utility::string_t& mac_address)
                 : clock_source(clock_source)
                 , ptp_version(ptp_version)
                 , ptp_server(ptp_server)
+                , mac_address(mac_address)
             {}
         } ts_refclk;
 
@@ -197,7 +208,7 @@ namespace nmos
             , video(video)
             , audio()
             , data()
-            , ts_refclk(sdp::ts_refclk_sources::ptp, sdp::ptp_versions::IEEE1588_2008, U("traceable"))
+            , ts_refclk(ts_refclk_t::ptp(sdp::ptp_versions::IEEE1588_2008, U("traceable")))
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
         {}
 
@@ -214,7 +225,7 @@ namespace nmos
             , video()
             , audio(audio)
             , data()
-            , ts_refclk(sdp::ts_refclk_sources::ptp, sdp::ptp_versions::IEEE1588_2008, U("traceable"))
+            , ts_refclk(ts_refclk_t::ptp(sdp::ptp_versions::IEEE1588_2008, U("traceable")))
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
         {}
 
@@ -231,7 +242,7 @@ namespace nmos
             , video()
             , audio()
             , data(data)
-            , ts_refclk(sdp::ts_refclk_sources::ptp, sdp::ptp_versions::IEEE1588_2008, U("traceable"))
+            , ts_refclk(ts_refclk_t::ptp(sdp::ptp_versions::IEEE1588_2008, U("traceable")))
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
         {}
     };

@@ -566,7 +566,7 @@ namespace sdp
                     // a=ts-refclk:local
                     // a=ts-refclk:private[:traceable]
                     // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
-                    // a=ts-refclk:localmac=7C-E9-D3-1B-9A-AF
+                    // a=ts-refclk:localmac=<mac-address-of-sender>
                     {
                         [](const web::json::value& v) {
                             std::string s;
@@ -589,6 +589,11 @@ namespace sdp
                             {
                                 if (sdp::fields::traceable(v)) s += ":traceable";
                             }
+                            else if (sdp::ts_refclk_sources::local_mac == clock_source)
+                            {
+                                s += '=';
+                                s += string_converter.format(v.at(sdp::fields::mac_address));
+                            }
                             return s;
                         },
                         [](const std::string& s) {
@@ -605,9 +610,9 @@ namespace sdp
                             }
                             else if (sdp::ts_refclk_sources::ptp == clock_source)
                             {
-                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ptp_server));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ptp_version));
                                 v[sdp::fields::ptp_version] = string_converter.parse(substr_find(s, ++pos, ":"));
-                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ntp_server));
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::ptp_server));
                                 const auto server = s.substr(pos);
                                 if ("traceable" == server) v[sdp::fields::traceable] = web::json::value::boolean(true);
                                 else v[sdp::fields::ptp_server] = string_converter.parse(server);
@@ -619,6 +624,12 @@ namespace sdp
                             else if (sdp::ts_refclk_sources::private_clock == clock_source)
                             {
                                 if (std::string::npos != pos && ":traceable" == s.substr(pos)) v[sdp::fields::traceable] = web::json::value::boolean(true);
+                            }
+                            else if (sdp::ts_refclk_sources::local_mac == clock_source)
+                            {
+                                if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(sdp::fields::mac_address));
+                                const auto mac_address = s.substr(++pos);
+                                v[sdp::fields::mac_address] = string_converter.parse(mac_address);
                             }
                             return v;
                         }

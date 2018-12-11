@@ -242,15 +242,18 @@ namespace nmos
                     // a=ts-refclk:ptp=<ptp version>:<ptp gmid>[:<ptp domain>]
                     // a=ts-refclk:ptp=<ptp version>:traceable
                     // See https://tools.ietf.org/html/rfc7273
-                    // a=ts-refclk:localmac=7C-E9-D3-1B-9A-AF
+                    // a=ts-refclk:localmac=<mac-address-of-sender>
                     // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
                     value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },
-                        { sdp::fields::value, value_of({
-                            { sdp::fields::clock_source, sdp_params.ts_refclk.clock_source.name },
+                        { sdp::fields::value, sdp::ts_refclk_sources::ptp == sdp_params.ts_refclk.clock_source ? value_of({
+                            { sdp::fields::clock_source, sdp::ts_refclk_sources::ptp.name },
                             { sdp::fields::ptp_version, sdp_params.ts_refclk.ptp_version.name },
                             { sdp::fields::ptp_server, !sdp_params.ts_refclk.ptp_server.empty() ? sdp_params.ts_refclk.ptp_server : U("traceable") }
-                        }, keep_order) }
+                        }, keep_order) : sdp::ts_refclk_sources::local_mac == sdp_params.ts_refclk.clock_source ? value_of({
+                            { sdp::fields::clock_source, sdp::ts_refclk_sources::local_mac.name },
+                            { sdp::fields::mac_address, sdp_params.ts_refclk.mac_address }
+                        }, keep_order) : value::null() }
                     }, keep_order),
 
                     // a=mediaclk:[id=<clock id> ]<clock source>[=<clock parameters>]
@@ -727,7 +730,7 @@ namespace nmos
         // media description attributes
         auto& attributes = sdp::fields::attributes(media_description).as_array();
 
-        // ts_refclk attribute
+        // ts-refclk attribute
         // See https://tools.ietf.org/html/rfc7273
         auto ts_refclk = sdp::find_name(attributes, sdp::attributes::ts_refclk);
         if (attributes.end() != ts_refclk)
@@ -735,8 +738,16 @@ namespace nmos
             const auto& value = sdp::fields::value(*ts_refclk);
 
             sdp_params.ts_refclk.clock_source = sdp::ts_refclk_source{ sdp::fields::clock_source(value) };
-            sdp_params.ts_refclk.ptp_version = sdp::ptp_version{ sdp::fields::ptp_version(value) };
-            sdp_params.ts_refclk.ptp_server = sdp::fields::ptp_server(value);
+            if (sdp::ts_refclk_sources::ptp == sdp_params.ts_refclk.clock_source)
+            {
+                sdp_params.ts_refclk.ptp_version = sdp::ptp_version{ sdp::fields::ptp_version(value) };
+                sdp_params.ts_refclk.ptp_server = sdp::fields::ptp_server(value);
+            }
+            else if (sdp::ts_refclk_sources::local_mac == sdp_params.ts_refclk.clock_source)
+            {
+                sdp_params.ts_refclk.mac_address = sdp::fields::mac_address(value);
+            }
+            else throw details::sdp_processing_error("unsupported timestamp reference clock source");
         }
 
         // mediaclk attribute
@@ -749,7 +760,7 @@ namespace nmos
             sdp_params.mediaclk = { sdp::media_clock_source{ value.substr(0, eq) }, utility::string_t::npos != eq ? value.substr(eq + 1) : utility::string_t{} };
         }
 
-        // rtmap attribute
+        // rtpmap attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
         auto rtpmap = sdp::find_name(attributes, sdp::attributes::rtpmap);
         if (attributes.end() == rtpmap) throw details::sdp_processing_error("missing attribute: rtpmap");

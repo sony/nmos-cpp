@@ -184,13 +184,14 @@ namespace sdp
         // a=ts-refclk:local
         // a=ts-refclk:private[:traceable]
         // See https://tools.ietf.org/html/rfc7273
-        // a=ts-refclk:localmac=7C-E9-D3-1B-9A-AF
+        // a=ts-refclk:localmac=<mac-address-of-sender>
         // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
         const web::json::field_as_string clock_source{ U("clock_source") }; // see sdp::timestamp_reference_clock_sources
         const web::json::field_with_default<bool> traceable{ U("traceable"), false };
         const web::json::field_as_string_or ntp_server{ U("ntp_server"), {} };
-        const web::json::field_as_string ptp_version{ U("ptp_version") };
-        const web::json::field_as_string_or ptp_server{ U("ptp_server"), {} };
+        const web::json::field_as_string ptp_version{ U("ptp_version") }; // see sdp::ptp_versions
+        const web::json::field_as_string_or ptp_server{ U("ptp_server"), {} }; // <ptp gmid>[:<ptp domain>]
+        const web::json::field_as_string mac_address{ U("mac_address") };
 
         // a=mediaclk:[id=<clock id> ]<clock source>[=<clock parameters>]
         // See https://tools.ietf.org/html/rfc7273#section-5
