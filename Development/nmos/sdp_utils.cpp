@@ -491,12 +491,53 @@ namespace nmos
 
     namespace details
     {
-        // Remove any suffixed <ttl> and/or <number of addresses> value
+        // Syntax of <connection-address> depends on <addrtype>:
+        // IP4 <unicast address>
+        // IP6 <unicast address>
+        // IP4 <base multicast address>/<ttl>[/<number of addresses>]
+        // IP6 <base multicast address>[/<number of addresses>]
         // See https://tools.ietf.org/html/rfc4566#section-5.7
-        inline utility::string_t connection_base_address(const utility::string_t& connection_address)
+        struct connection_address
         {
-            return connection_address.substr(0, connection_address.find(U('/')));
-        }
+            utility::string_t base_address;
+            uint32_t ttl;
+            uint32_t number_of_addresses;
+
+            connection_address(const utility::string_t& base_address, uint32_t ttl, uint32_t number_of_addresses)
+                : base_address(base_address)
+                , ttl(ttl)
+                , number_of_addresses(number_of_addresses)
+            {}
+        };
+
+        connection_address parse_connection_address(const sdp::address_type& address_type, const utility::string_t& connection_address)
+        {
+            const auto slash = connection_address.find(U('/'));
+
+            if (utility::string_t::npos == slash) return{ connection_address, 0, 1 };
+
+            if (sdp::address_types::IP6 == address_type)
+            {
+                return{
+                    connection_address.substr(0, slash),
+                    0,
+                    utility::istringstreamed<uint32_t>(connection_address.substr(slash + 1))
+                };
+            }
+            else // if (sdp::address_types::IP4 == address_type)
+            {
+                const auto slash2 = connection_address.find(U('/'), slash + 1);
+                return{
+                    connection_address.substr(0, slash),
+                    utility::string_t::npos == slash2
+                        ? utility::istringstreamed<uint32_t>(connection_address.substr(slash + 1))
+                        : utility::istringstreamed<uint32_t>(connection_address.substr(slash + 1, slash2 - (slash + 1))),
+                    utility::string_t::npos == slash2
+                        ? 1
+                        : utility::istringstreamed<uint32_t>(connection_address.substr(slash2 + 1))
+                };
+            }
+        };
 
         // Set appropriate transport parameters depending on whether the specified address is multicast
         void set_multicast_ip_interface_ip(web::json::value& params, const utility::string_t& address)
@@ -551,7 +592,10 @@ namespace nmos
             auto& session_connection_data = sdp::fields::connection_data(session_description);
             if (!session_connection_data.is_null())
             {
-                details::set_multicast_ip_interface_ip(params, details::connection_base_address(sdp::fields::connection_address(session_connection_data)));
+                // hmm, how to handle multiple connection addresses?
+                const auto address_type = sdp::address_type{ sdp::fields::address_type(session_connection_data) };
+                const auto connection_address = details::parse_connection_address(address_type, sdp::fields::connection_address(session_connection_data));
+                details::set_multicast_ip_interface_ip(params, connection_address.base_address);
             }
 
             // Look for the media description corresponding to this element in the transport parameters
@@ -608,12 +652,13 @@ namespace nmos
                 // media connection data overrides session connection data (if no source filter)
                 if (params[nmos::fields::source_ip].is_null())
                 {
-                    auto& mcda = sdp::fields::connection_data(media_description);
-                    if (0 != mcda.size())
+                    auto& media_connection_data = sdp::fields::connection_data(media_description);
+                    if (!media_connection_data.is_null() && 0 != media_connection_data.size())
                     {
-                        // hmm, how to handle multiple connection data?
-                        auto& media_connection_data = mcda.at(0);
-                        details::set_multicast_ip_interface_ip(params, details::connection_base_address(sdp::fields::connection_address(media_connection_data)));
+                        // hmm, how to handle multiple connection addresses?
+                        const auto address_type = sdp::address_type{ sdp::fields::address_type(media_connection_data.at(0)) };
+                        const auto connection_address = details::parse_connection_address(address_type, sdp::fields::connection_address(media_connection_data.at(0)));
+                        details::set_multicast_ip_interface_ip(params, connection_address.base_address);
                     }
                 }
 
@@ -667,17 +712,14 @@ namespace nmos
 
         // Connection Data
         // See https://tools.ietf.org/html/rfc4566#section-5.7
-        auto parse_connection_address = [](const utility::string_t& address)
         {
-            const auto slash = address.find(U('/'));
-            return std::make_pair(address.substr(0, slash), utility::string_t::npos != slash ? utility::istringstreamed<uint32_t>(address.substr(slash + 1)) : 0);
-        };
-        {
-            const auto& connection_data = sdp::fields::connection_data(sdp);
-            if (!connection_data.is_null())
+            const auto& session_connection_data = sdp::fields::connection_data(sdp);
+            if (!session_connection_data.is_null())
             {
-                auto connection_address_ttl = parse_connection_address(sdp::fields::connection_address(connection_data));
-                sdp_params.connection_data.ttl = connection_address_ttl.second;
+                // hmm, how to handle multiple connection addresses?
+                const auto address_type = sdp::address_type{ sdp::fields::address_type(session_connection_data) };
+                const auto connection_address = details::parse_connection_address(address_type, sdp::fields::connection_address(session_connection_data));
+                sdp_params.connection_data.ttl = connection_address.ttl;
             }
         }
 
@@ -710,11 +752,13 @@ namespace nmos
         // get default multicast_ip via Connection Data
         // see https://tools.ietf.org/html/rfc4566#section-5.7
         {
-            const auto& connection_data = sdp::fields::connection_data(media_description);
-            if (!connection_data.is_null() && 0 != connection_data.size())
+            const auto& media_connection_data = sdp::fields::connection_data(media_description);
+            if (!media_connection_data.is_null() && 0 != media_connection_data.size())
             {
-                auto connection_address_ttl = parse_connection_address(sdp::fields::connection_address(connection_data.at(0)));
-                sdp_params.connection_data.ttl = connection_address_ttl.second;
+                // hmm, how to handle multiple connection addresses?
+                const auto address_type = sdp::address_type{ sdp::fields::address_type(media_connection_data.at(0)) };
+                const auto connection_address = details::parse_connection_address(address_type, sdp::fields::connection_address(media_connection_data.at(0)));
+                sdp_params.connection_data.ttl = connection_address.ttl;
             }
         }
 
