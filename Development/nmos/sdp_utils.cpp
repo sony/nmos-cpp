@@ -208,11 +208,8 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4566#section-5
         auto media_descriptions = value::array();
         int idx = 0;
-        for(const auto& transport_param : transport_params.as_array())
+        for (const auto& transport_param : transport_params.as_array())
         {
-            // setup Connection Data's connection address
-            const auto& connection_address = transport_param.at(address_type_multicast.second ? nmos::fields::source_ip : nmos::fields::destination_ip);
-
             // build media_description
             auto media_description = value_of({
                 // Media
@@ -231,8 +228,8 @@ namespace nmos
                         { sdp::fields::network_type, sdp::network_types::internet.name },
                         { sdp::fields::address_type, address_type_multicast.first.name },
                         { sdp::fields::connection_address, sdp::address_types::IP4 == address_type_multicast.first && address_type_multicast.second
-                            ? connection_address.as_string() + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
-                            : connection_address.as_string() }
+                            ? nmos::fields::destination_ip(transport_param).as_string() + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
+                            : nmos::fields::destination_ip(transport_param).as_string() }
                     }, keep_order)
                 }) },
 
