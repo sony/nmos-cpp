@@ -84,7 +84,7 @@ namespace pplx
         open_close_guard(T& t) : guarded(&t) { guarded->open().wait(); }
         ~open_close_guard() { if (0 != guarded) guarded->close().wait(); }
         open_close_guard(open_close_guard&& other) : guarded(other.guarded) { other.guarded = 0; }
-        open_close_guard& operator=(open_close_guard&& other) { if (this != &other) { if (0 != guarded) guarded->close().wait(); guarded = other.guarded; } return *this; }
+        open_close_guard& operator=(open_close_guard&& other) { if (this != &other) { if (0 != guarded) guarded->close().wait(); guarded = other.guarded; other.guarded = 0; } return *this; }
         open_close_guard(const open_close_guard&) = delete;
         open_close_guard& operator=(const open_close_guard&) = delete;
         guarded_t* guarded;
