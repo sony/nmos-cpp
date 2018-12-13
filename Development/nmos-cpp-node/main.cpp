@@ -158,7 +158,10 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
         std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
-        for (auto& port_listener : port_listeners) port_guards.push_back({ port_listener });
+        for (auto& port_listener : port_listeners)
+        {
+            if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
+        }
 
         // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 

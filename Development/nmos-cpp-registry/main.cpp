@@ -202,8 +202,12 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
         std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
-        for (auto& port_listener : port_listeners) port_guards.push_back({ port_listener });
-        web::websockets::experimental::listener::websocket_listener_guard query_ws_guard(query_ws_listener);
+        for (auto& port_listener : port_listeners)
+        {
+            if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
+        }
+        web::websockets::experimental::listener::websocket_listener_guard query_ws_guard;
+        if (0 <= query_ws_listener.port()) query_ws_guard = { query_ws_listener };
 
         // Configure the mDNS advertisements for our APIs
 
