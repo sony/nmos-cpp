@@ -395,7 +395,7 @@ namespace nmos
             template <typename T>
             inline utility::string_t ostringstreamed(const T& value)
             {
-                return [&] { std::ostringstream os; os << value; return utility::s2us(os.str()); }();
+                std::ostringstream os; os << value; return utility::s2us(os.str());
             }
 
             inline web::json::value json_from_message(const slog::async_log_message& message, const tai& cursor)

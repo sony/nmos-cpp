@@ -537,7 +537,7 @@ namespace nmos
                         : utility::istringstreamed<uint32_t>(connection_address.substr(slash2 + 1))
                 };
             }
-        };
+        }
 
         // Set appropriate transport parameters depending on whether the specified address is multicast
         void set_multicast_ip_interface_ip(web::json::value& params, const utility::string_t& address)
