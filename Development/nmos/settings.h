@@ -107,6 +107,9 @@ namespace nmos
             // label [registry, node]: used in resource description/label fields
             const web::json::field_as_string_or label{ U("label"), U("") };
 
+            // registration_available [registry]: used to flag the Registration API as temporarily unavailable
+            const web::json::field_as_bool_or registration_available{ U("registration_available"), true };
+
             // port numbers [registry, node]: ports on which to listen for each API
             // see http_port
 

@@ -111,6 +111,18 @@ namespace nmos
 
         api_router registration_api;
 
+        // experimental extension, to enable the Registration API to be flagged as temporarily unavailable
+        registration_api.support(U(".*"), [&model](http_request, http_response res, const string_t&, const route_parameters&)
+        {
+            const auto available = with_read_lock(model.mutex, [&model] { return nmos::experimental::fields::registration_available(model.settings); });
+            if (!available)
+            {
+                set_reply(res, status_codes::ServiceUnavailable, nmos::make_error_response_body(status_codes::ServiceUnavailable));
+                throw std::logic_error("Service Unavailable"); // in order to skip other route handlers and then send the response
+            }
+            return pplx::task_from_result(true);
+        });
+
         registration_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("resource/"), U("health/") }, res));
