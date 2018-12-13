@@ -736,7 +736,7 @@ namespace sdp
         return value_converter.parse(line);
     }
 
-    void read_line(std::istream& is, web::json::value& line, const grammar::line& grammar)
+    void read_line(std::istream& is, int& line_number, web::json::value& line, const grammar::line& grammar)
     {
         if (grammar.list)
         {
@@ -752,6 +752,7 @@ namespace sdp
             {
                 is.get();
                 web::json::push_back(lines, read_equals_value(is, grammar.value_converter));
+                ++line_number;
             } while (grammar.type == is.peek());
             line = std::move(lines);
         }
@@ -766,12 +767,13 @@ namespace sdp
 
             is.get();
             line = read_equals_value(is, grammar.value_converter);
+            ++line_number;
         }
     }
 
-    void read_elements(std::istream& is, web::json::value& description, const std::vector<grammar::description::element>& elements);
+    void read_elements(std::istream& is, int& line_number, web::json::value& description, const std::vector<grammar::description::element>& elements);
 
-    void read_description(std::istream& is, web::json::value& description, const grammar::description& grammar)
+    void read_description(std::istream& is, int& line_number, web::json::value& description, const grammar::description& grammar)
     {
         // for simplicity of implementation, thankfully a description grammar always begins with a required line
         if (grammar.elements.empty()) throw std::logic_error("a description grammar  must not be empty");
@@ -791,7 +793,7 @@ namespace sdp
             do
             {
                 web::json::push_back(description, web::json::value::object(sdp::grammar::keep_order));
-                read_elements(is, web::json::back(description), grammar.elements);
+                read_elements(is, line_number, web::json::back(description), grammar.elements);
             } while (sub_grammar->type == is.peek());
         }
         else
@@ -804,24 +806,24 @@ namespace sdp
             if (sub_grammar->type != peek_type) return;
 
             description = web::json::value::object(sdp::grammar::keep_order);
-            read_elements(is, description, grammar.elements);
+            read_elements(is, line_number, description, grammar.elements);
         }
     }
 
-    void read_elements(std::istream& is, web::json::value& description, const std::vector<grammar::description::element>& elements)
+    void read_elements(std::istream& is, int& line_number, web::json::value& description, const std::vector<grammar::description::element>& elements)
     {
         for (auto& element : elements)
         {
             if (const sdp::grammar::line* sub_grammar = boost::get<sdp::grammar::line>(&element))
             {
                 web::json::value v;
-                read_line(is, v, *sub_grammar);
+                read_line(is, line_number, v, *sub_grammar);
                 if (!v.is_null()) description[sub_grammar->name] = std::move(v);
             }
             else if (const sdp::grammar::description* sub_grammar = boost::get<sdp::grammar::description>(&element))
             {
                 web::json::value v;
-                read_description(is, v, *sub_grammar);
+                read_description(is, line_number, v, *sub_grammar);
                 if (!v.is_null()) description[sub_grammar->name] = std::move(v);
             }
         }
@@ -831,10 +833,19 @@ namespace sdp
     web::json::value parse_session_description(const std::string& session_description, const grammar::description& grammar)
     {
         std::istringstream is(session_description);
-        web::json::value result;
-        read_description(is, result, grammar);
-        if (!is.eof()) throw sdp_parse_error("unexpected characters before end-of-file");
-        return result;
+        int line_number = 1; // could stash this in the stream?
+        try
+        {
+            web::json::value result;
+            read_description(is, line_number, result, grammar);
+            if (!is.eof()) throw sdp_parse_error("unexpected characters before end-of-file");
+            return result;
+        }
+        catch (const sdp_exception& e)
+        {
+            std::ostringstream os; os << e.what() << " at line " << line_number;
+            throw sdp_exception(os.str());
+        }
     }
 
     // make a complete SDP session description out of its json representation, using the default attribute formatters
