@@ -57,7 +57,7 @@ namespace web
                 class websocket_listener
                 {
                 public:
-                    explicit websocket_listener(int port = 80, web::logging::experimental::log_handler log = {});
+                    explicit websocket_listener(int listen_port = 80, web::logging::experimental::log_handler log = {});
                     ~websocket_listener();
 
                     void set_validate_handler(validate_handler handler);
@@ -74,12 +74,14 @@ namespace web
                     websocket_listener(websocket_listener&& other);
                     websocket_listener& operator=(websocket_listener&& other);
 
+                    int port() const;
+
                 private:
                     websocket_listener(const websocket_listener& other);
                     websocket_listener& operator=(const websocket_listener& other);
 
                     std::unique_ptr<details::websocket_listener_impl> impl;
-                    int port;
+                    int listen_port;
                 };
 
                 // RAII helper for websocket_listener sessions (could be extracted to another header)

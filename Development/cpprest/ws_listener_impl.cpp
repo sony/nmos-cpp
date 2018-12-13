@@ -201,6 +201,10 @@ namespace web
 
                         pplx::task<void> open(int port)
                         {
+                            if ((uint16_t)port != port) return pplx::task_from_exception<void>(websocket_exception("Invalid port"));
+                            // hmm, opening port 0 indicates a free port should be assigned; one might want to know which one...
+                            // since WebSocket++ 0.7.0, server.get_local_endpoint().port() can be used when the server is listening
+
                             try
                             {
                                 server.init_asio();
@@ -383,15 +387,15 @@ namespace web
                     };
                 }
 
-                websocket_listener::websocket_listener(int port, web::logging::experimental::log_handler log)
+                websocket_listener::websocket_listener(int listen_port, web::logging::experimental::log_handler log)
                     : impl(new details::websocket_listener_impl(log))
-                    , port(port)
+                    , listen_port(listen_port)
                 {
                 }
 
                 websocket_listener::websocket_listener(websocket_listener&& other)
                     : impl(std::move(other.impl))
-                    , port(other.port)
+                    , listen_port(other.listen_port)
                 {
                 }
 
@@ -400,7 +404,7 @@ namespace web
                     if (this != &other)
                     {
                         impl = std::move(other.impl);
-                        port = other.port;
+                        listen_port = other.listen_port;
                     }
                     return *this;
                 }
@@ -426,7 +430,7 @@ namespace web
 
                 pplx::task<void> websocket_listener::open()
                 {
-                    return impl->open(port);
+                    return impl->open(listen_port);
                 }
 
                 pplx::task<void> websocket_listener::close()
@@ -437,6 +441,11 @@ namespace web
                 pplx::task<void> websocket_listener::send(const connection_id& connection, websocket_outgoing_message message)
                 {
                     return impl->send(connection, message);
+                }
+
+                int websocket_listener::port() const
+                {
+                    return listen_port;
                 }
             }
         }
