@@ -378,6 +378,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/resources.cpp
     ${NMOS_CPP_DIR}/nmos/sdp_utils.cpp
     ${NMOS_CPP_DIR}/nmos/settings_api.cpp
+    ${NMOS_CPP_DIR}/nmos/event_tally_api.cpp
     )
 set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/activation_mode.h
@@ -433,6 +434,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/transport.h
     ${NMOS_CPP_DIR}/nmos/type.h
     ${NMOS_CPP_DIR}/nmos/version.h
+    ${NMOS_CPP_DIR}/nmos/event_tally_api.h
     )
 
 set(NMOS_CPP_PPLX_SOURCES

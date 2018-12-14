@@ -15,6 +15,8 @@
 #include "nmos/thread_utils.h"
 #include "main_gate.h"
 #include "node_implementation.h"
+#include "nmos/event_tally_api.h"
+//#include "nmos/event_tally_ws.h"
 
 int main(int argc, char* argv[])
 {
@@ -144,6 +146,10 @@ int main(int argc, char* argv[])
 
         port_routers[nmos::fields::connection_port(node_model.settings)].mount({}, nmos::make_connection_api(node_model, gate));
 
+        // Configure the Event and Tally API
+
+        port_routers[nmos::experimental::fields::event_tally_port(node_model.settings)].mount({}, nmos::experimental::make_event_tally_api(node_model, gate));
+
         // Set up the listeners for each API port
 
         // try to use the configured TCP listen backlog
@@ -166,6 +172,9 @@ int main(int argc, char* argv[])
         // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 
         auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+
+        // Start event-tally operatiron
+        // auto event_tally_thread = nmos::details::make_thread_guard([&] { nmos::event_tally::event_tally_ws_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

@@ -16,6 +16,8 @@ namespace nmos
         const transport rtp_ucast{ U("urn:x-nmos:transport:rtp.ucast") };
         const transport rtp_mcast{ U("urn:x-nmos:transport:rtp.mcast") };
         const transport dash{ U("urn:x-nmos:transport:dash") };
+        const transport mqtt{ U("urn:x-nmos:transport:mqtt") };
+        const transport websocket{ U("urn:x-nmos:transport:websocket") };
     }
 }
 

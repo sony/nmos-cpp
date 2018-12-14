@@ -17,6 +17,8 @@ namespace nmos
         const type sender{ U("sender") };
         const type receiver{ U("receiver") };
 
+        const type event_tally{ U("event_tally") };
+
         // a subscription isn't strictly a resource but has many of the same behaviours (it is
         // exposed from the Query API in the same way), and can largely be managed identically
         const type subscription{ U("subscription") };

@@ -55,6 +55,8 @@ namespace nmos
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_sdianc_data.json
     nmos::resource make_sdianc_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings);
 
+    nmos::resource make_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings);
+
     web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings);
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/sender.json
@@ -80,6 +82,10 @@ namespace nmos
     nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
 
     nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7);
+
+    // IS-07 resources
+    nmos::resource make_type_event_source(const nmos::id& id, const nmos::id& device_id, utility::string_t event_type, const nmos::settings& settings);
+    nmos::resource make_state_event_source(const nmos::id& id, const nmos::id& device_id, utility::string_t event_state, const nmos::settings& settings);
 }
 
 #include "nmos/resources.h"
@@ -94,6 +100,8 @@ namespace nmos
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
         // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
         std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings);
+
+        void insert_event_tally(nmos::resources& node_resources, nmos::resources& event_tally_resources, nmos::resources& connection_resources, const nmos::id& device_id, const nmos::settings& settings);
     }
 }
 

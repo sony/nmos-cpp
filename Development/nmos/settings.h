@@ -121,6 +121,9 @@ namespace nmos
 
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3214 };
+
+            // port number for event-tally api
+            const web::json::field_as_integer_or event_tally_port{ U("event_tally_port"), 3220 };
         }
     }
 }

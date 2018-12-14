@@ -133,6 +133,20 @@ namespace nmos
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+
+        // IS-07 Event & Tally Management
+        const web::json::field_as_value event_tally_types{ U("event_types") }; // array
+        const web::json::field_as_value event_tally_states{ U("event_states") }; // array
+        const web::json::field_as_value_or endpoint_event_tally_type{ U("type"), {} }; // string
+        const web::json::field_as_value_or endpoint_event_tally_state{ U("state"), {} }; // string
+        // Connection api for IS-07
+        const web::json::field_as_value_or destination_host { U("destination_host "), {} }; // string
+        const web::json::field_as_value_or broker_topic { U("broker_topic "), {} }; // string
+        const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string
+        const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string
+        const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string
+        const web::json::field_as_value_or source_host { U("source_host "), {} }; // string
+        
     }
 
     // Fields for experimental extensions

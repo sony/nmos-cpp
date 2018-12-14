@@ -30,6 +30,7 @@ namespace nmos
         const route_pattern query_api = make_route_pattern(U("api"), U("query"));
         const route_pattern registration_api = make_route_pattern(U("api"), U("registration"));
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
+        const route_pattern eventTally_api = make_route_pattern(U("api"), U("events"));
 
         // AMWA IS-04 Discovery and Registration specifies the Node, Query and Registration APIs
         const route_pattern is04_version = make_route_pattern(U("version"), U("v1\\.[0-2]")); // for now, just v1.0, v1.1, v1.2
@@ -50,6 +51,10 @@ namespace nmos
         const route_pattern stagingType = make_route_pattern(U("stagingType"), U("active|staged"));
 
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
+
+        // Event and tally API 
+        const route_pattern eventTallyType = make_route_pattern(U("resourceType"), U("sources"));
+        const route_pattern eventTallyStateType = make_route_pattern(U("eventTappyType"), U("type|state"));
     }
 
     // Note that a resourceType does not have the same value as a "proper" type, use this mapping instead!
