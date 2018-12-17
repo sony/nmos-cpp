@@ -368,6 +368,19 @@ namespace web
     }
 }
 
+// json parsing helpers
+namespace web
+{
+    namespace json
+    {
+        namespace experimental
+        {
+            // preprocess a json-like string to remove C++/JavaScript-style comments
+            utility::string_t preprocess(const utility::string_t& value);
+        }
+    }
+}
+
 // json query/patch helpers
 namespace web
 {

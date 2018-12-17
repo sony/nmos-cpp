@@ -178,3 +178,33 @@ BST_TEST_CASE(testMergePatchRFC7386)
 
     BST_REQUIRE_EQUAL(expected, merged_permissive(target, source));
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testPreprocess)
+{
+    const auto example = utility::conversions::to_string_t(R"({ //" foo /*
+  "bar": /*
+baz
+qux */ 42,
+  "quux": "/*//\r\n\"quuux\\"
+/** /* **/ }
+)");
+
+    const auto stripped = utility::conversions::to_string_t(R"({  
+   "bar":   42,
+   "quux":  "/*//\r\n\"quuux\\"
+  }
+)");
+
+    BST_REQUIRE_STRING_EQUAL(stripped, web::json::experimental::preprocess(example));
+
+    const auto parsed = web::json::value_of({
+        { U("bar"), 42 },
+        { U("quux"), U("/*//\r\n\"quuux\\") }
+    });
+
+    BST_REQUIRE_EQUAL(parsed, web::json::value::parse(web::json::experimental::preprocess(example)));
+
+    // ho hum, turns out web::json::value::parse doesn't advertise the fact, but it actually handles single- and multi-line comments already...
+    BST_REQUIRE_EQUAL(parsed, web::json::value::parse(example));
+}

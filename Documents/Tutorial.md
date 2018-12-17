@@ -15,6 +15,7 @@ Notes:
 
 Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line, or in a configuration file, as JSON. Each named parameter is specified as a field in a JSON object.
 The provided [nmos-cpp-registry/config.json](../Development/nmos-cpp-registry/config.json) may be used as a starting point, or refer directly to the source code in [nmos/settings.h](../Development/nmos/settings.h).
+Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
 For example, to launch the application without verbose logging, try ``./nmos-cpp-registry "{\"logging_level\":0}"``, or ``./nmos-cpp-registry config.json`` with a file config.json:
 
@@ -46,6 +47,7 @@ This shows the nmos-cpp-registry starting up and advertising its APIs via DNS Se
 
 Run the **nmos-cpp-node** application one or more times. Like the registry application, configuration parameters may be passed on the command-line as JSON.
 The provided [nmos-cpp-node/config.json](../Development/nmos-cpp-node/config.json) may be used as a starting point, or refer directly to the source code in [nmos/settings.h](../Development/nmos/settings.h).
+Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
 When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to make the port numbers of each instance unique.
 In the case of the node application, there are four APIs to consider;

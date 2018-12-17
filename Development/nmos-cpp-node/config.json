@@ -1,3 +1,5 @@
+// Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files
+
 // Configuration settings and defaults for the NMOS Node and Registration APIs, and the Connection API
 {
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr
