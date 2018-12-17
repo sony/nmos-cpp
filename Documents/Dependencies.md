@@ -115,6 +115,10 @@ msbuild cpprestsdk.sln /p:Configuration=<Debug-or-Release>
 msbuild INSTALL.vcxproj /p:Configuration=<Debug-or-Release>
 ```
 
+Note: With the configuration above, **nmos-cpp** apps may need to be run with administrator privileges on Windows.
+This is because the C++ REST SDK implementation uses Windows HTTP Services (WinHTTP) by default, which enforces this requirement when using the "*" wildcard to listen on all interfaces.
+Administrator privileges are not required if C++ REST SDK is built with ``CPPREST_HTTP_LISTENER_IMPL`` (STRING) set to ``asio`` (and for consistency ``CPPREST_HTTP_CLIENT_IMPL`` (STRING) also set to ``asio``).
+
 **Linux**
 
 For example, using the default toolchain and dependencies:
