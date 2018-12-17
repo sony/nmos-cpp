@@ -25,7 +25,7 @@ On Linux and other platforms, the steps vary slightly.
 2. Use CMake to generate build/project files, and then build  
    The "Visual Studio 14 2015 Win64" generator has been tested
 
-#### Windows
+**Windows**
 
 For example, for Visual Studio 2015:
 ```
@@ -48,7 +48,7 @@ Or on the Developer command line:
 msbuild nmos-cpp.sln /p:Configuration=<Debug-or-Release>
 ```
 
-#### Linux
+**Linux**
 
 For example, using the default toolchain and dependencies:
 
