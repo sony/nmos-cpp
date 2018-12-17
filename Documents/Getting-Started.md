@@ -79,7 +79,10 @@ The build output should conclude something like this:
 The application can also be run with other options, for example to run a single test case.
 Use ``--help`` to display usage information.
 
-Note: On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
+Notes:
+- On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
+- Intermittent failures of the DNS Service Discovery (DNS-SD) tests may be encountered because short time-outs and no retries are used in the test code.
+  However if these tests fail repeatedly a system problem may need to be diagnosed.
 
 ## What Next?
 
