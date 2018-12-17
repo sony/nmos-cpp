@@ -7,9 +7,6 @@ project(nmos-cpp)
 # The default nmos-cpp root directory
 set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 
-# The default logging severity
-set(SLOG_LOGGING_SEVERITY slog::max_verbosity)
-
 # Common setup and dependency checking
 include (${NMOS_CPP_DIR}/cmake/NmosCppCommon.cmake)
 

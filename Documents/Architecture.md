@@ -193,7 +193,7 @@ The required Registry behaviour includes:
 
 These functions are implemented by ``nmos::send_query_ws_events_thread`` and ``nmos::erase_expired_resources_thread`` respectively.
 
-The diagram below shows a sequence of events witin and between an **nmos-cpp** Node, the **nmos-cpp-registry** Registry and a Client.
+The diagram below shows a sequence of events within and between an **nmos-cpp** Node, the **nmos-cpp-registry** Registry and a Client.
 Resource events initiated in a vendor-specific resource-scheduling thread in the Node (such as ``nmos::experimental::node_resources_thread``) are propagated via the Registration API to the Registry model.
 Events in the Registry model are sent in WebSocket messages to each Client with a matching Query API subscription.
 
@@ -212,12 +212,16 @@ slog::log<slog::severities::info>(gate, SLOG_FLF) << "A picture is worth " << 10
 
 These logging statements can be easily disabled at compile-time (via the ``SLOG_LOGGING_SEVERITY`` preprocessor symbol) or at run-time, controlled by the specified logging gateway.
 
+(The compile-time level used by the nmos-cpp apps can be configured via CMake.
+Set the value of the CMake variable ``SLOG_LOGGING_SEVERITY`` to ``slog::never_log_severity`` to strip all logging at compile-time, or ``slog::max_verbosity`` for full control at run-time.)
+
 Most top-level functions in the ``nmos`` module have a Logging Gateway as a final parameter. All log messages will be sent through the specified gateway.
 
 (Both the **nmos-cpp-node** simulated Node, and the **nmos-cpp-registry** Registry application, have a ``main_gate`` logging gateway.
-This is configured to write error messages in a plain text file format, to write an access log in the [Common Log Format](https://httpd.apache.org/docs/2.4/logs.html#accesslog)
+This can be configured to write error messages in a plain text file format, to also write an access log in the [Common Log Format](https://httpd.apache.org/docs/2.4/logs.html#accesslog)
 also used by the Apache HTTP Server and others, and to expose recent log messages via a JSON-based REST API in the same style as the NMOS Query API.
-Both applications also allow the logging verbosity to be changed at run-time - up to the compile-time level.)
+Both applications also allow the logging verbosity to be changed at run-time - up to the compile-time level.
+See the [Tutorial](Tutorial.md) and the provided [nmos-cpp-node/config.json](../Development/nmos-cpp-node/config.json) and [nmos-cpp-registry/config.json](../Development/nmos-cpp-registry/config.json) files for more information.)
 
 <details>
 <summary>More details...</summary>
