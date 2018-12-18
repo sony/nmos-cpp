@@ -4,7 +4,7 @@
 #include <map>
 #include "bst/regex.h"
 
-// An implementation of named capture on top of std::basic_regex (could be extracted from the cpprest module)
+// An implementation of named capture on top of bst::basic_regex (could be extracted from the cpprest module)
 namespace xregex
 {
     // parse_regex_named_sub_matches parses a regular expression that is appropriate for bst::regex_match, etc.

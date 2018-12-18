@@ -22,7 +22,7 @@ namespace web
                 static const utility::regex_t string_or_comment(U(R"-regex-(("[^"\\]*(?:\\.[^"\\]*)*")|(?:\/\/[^\r\n]+)|(?:\/\*[\s\S]*?\*\/))-regex-"));
                 // format pattern uses the first capture group to copy strings into the output
                 // having inserted a single space to ensure tokens are not coalesced
-                return std::regex_replace(value, string_or_comment, U(" $1"));
+                return bst::regex_replace(value, string_or_comment, U(" $1"));
             }
         }
     }

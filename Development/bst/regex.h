@@ -57,6 +57,21 @@ namespace bst
 
     using bst_regex::regex_match;
     using bst_regex::regex_search;
+    using bst_regex::regex_replace;
+
+    using bst_regex::regex_traits;
+
+    using bst_regex::regex_iterator;
+    using bst_regex::cregex_iterator;
+    using bst_regex::wcregex_iterator;
+    using bst_regex::sregex_iterator;
+    using bst_regex::wsregex_iterator;
+
+    using bst_regex::regex_token_iterator;
+    using bst_regex::cregex_token_iterator;
+    using bst_regex::wcregex_token_iterator;
+    using bst_regex::sregex_token_iterator;
+    using bst_regex::wsregex_token_iterator;
 
     namespace regex_constants
     {
