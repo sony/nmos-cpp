@@ -759,7 +759,13 @@ namespace nmos
 
         auto& resource = node_resource;
         const auto at = value::string(nmos::make_version(activation_time));
-        const auto ci = !connected_id.empty() ? value::string(connected_id) : value::null();
+        // "It isn't completely clear how a Sender/Receiver's subscribed ID should be set when the Sender or Receiver is in a
+        // 'parked' or unsubscribed state. Whilst the 'active' flag is the authoritative reference for this in v1.2+, in order
+        // to maintain backwards compatibility for v1.1/v1.0 the Receiver's subscription sender_id needs to be set to 'null'
+        // when it is not subscribed to anything."
+        // Therefore consider active as well as connected_id
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/76
+        const auto ci = active && !connected_id.empty() ? value::string(connected_id) : value::null();
 
         // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters
         // is performed, the 'version' attribute of the relevant IS-04 Sender or Receiver must be incremented."
