@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Node API base resource",
+  "title": "Node API base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "self/",
+      "sources/",
+      "flows/",
+      "devices/",
+      "senders/",
+      "receivers/"
+    ],
+    "minItems": 6,
+    "maxItems": 6,
+    "uniqueItems": true
+  }
+}

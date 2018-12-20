@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a coded audio Flow",
+  "title": "Coded Audio Flow resource",
+  "allOf": [
+    { "$ref": "flow_audio.json" },
+    {
+      "type": "object",
+      "required": [
+        "media_type"
+      ],
+      "properties": {
+        "media_type": {
+          "description": "Subclassification of the format using IANA assigned media types",
+          "type": "string",
+          "pattern": "^audio\\/[^\\s\\/]+$",
+          "not": {
+            "pattern": "^audio\\/L[0-9]+$"
+          }
+        }
+      }
+    }
+  ]
+}

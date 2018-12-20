@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Query API base resource",
+  "title": "Query API base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "nodes/",
+      "sources/",
+      "flows/",
+      "devices/",
+      "senders/",
+      "receivers/",
+      "subscriptions/"
+    ],
+    "minItems": 7,
+    "maxItems": 7,
+    "uniqueItems": true
+  }
+}

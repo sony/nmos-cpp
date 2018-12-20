@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a Source",
+  "title": "Source resource",
+  "oneOf": [
+    { "$ref": "source_generic.json" },
+    { "$ref": "source_audio.json" }
+  ]
+}

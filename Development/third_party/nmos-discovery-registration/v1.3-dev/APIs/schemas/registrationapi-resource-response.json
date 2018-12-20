@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Returning a registered resource from the Registration API",
+  "title": "Registered resource",
+  "oneOf": [
+    {"$ref": "node.json"},
+    {"$ref": "device.json"},
+    {"$ref": "source.json"},
+    {"$ref": "flow.json"},
+    {"$ref": "sender.json"},
+    {"$ref": "receiver.json"}
+  ]
+}
