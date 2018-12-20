@@ -144,7 +144,7 @@ cmake .. ^
   -DWERROR:BOOL="0"
 ```
 
-Then, open and build the generated nmos-cpp Visual Studio Solution.
+Then, open and build the generated cpprestsdk Visual Studio Solution.
 
 Or on the Developer command line:
 ```
