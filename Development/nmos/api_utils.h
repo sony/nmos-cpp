@@ -32,7 +32,7 @@ namespace nmos
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
 
         // AMWA IS-04 Discovery and Registration specifies the Node, Query and Registration APIs
-        const route_pattern is04_version = make_route_pattern(U("version"), U("v1\\.[0-2]")); // for now, just v1.0, v1.1, v1.2
+        const route_pattern is04_version = make_route_pattern(U("version"), U("v1\\.[0-3]")); // v1.0, v1.1, v1.2 and v1.3
 
         // AMWA IS-05 Connection Management specifies the Connection APIs
         const route_pattern is05_version = make_route_pattern(U("version"), U("v1\\.0")); // for now, just v1.0

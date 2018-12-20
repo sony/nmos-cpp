@@ -34,7 +34,7 @@ namespace nmos
 
         query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/"), U("v1.3/") }, res));
             return pplx::task_from_result(true);
         });
 
