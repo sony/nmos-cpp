@@ -1,5 +1,7 @@
 #include "nmos/connection_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/join.hpp>
 #include "cpprest/http_utils.h"
 #include "cpprest/json_validator.h"
 #include "nmos/activation_mode.h"
@@ -37,7 +39,7 @@ namespace nmos
 
         connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/") }, res));
             return pplx::task_from_result(true);
         });
 
@@ -55,14 +57,15 @@ namespace nmos
             static const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
-                {
-                    nmos::experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, nmos::types::sender),
-                    nmos::experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, nmos::types::receiver)
-                }
+                boost::copy_range<std::vector<web::uri>>(boost::join(
+                    is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::sender)),
+                    is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::receiver))
+                ))
             };
             
             // Validate JSON syntax according to the schema
 
+            // hmm, need to plumb the version through from the request
             validator.validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, type));
         }
 

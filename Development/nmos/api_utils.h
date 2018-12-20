@@ -35,7 +35,7 @@ namespace nmos
         const route_pattern is04_version = make_route_pattern(U("version"), U("v1\\.[0-3]")); // v1.0, v1.1, v1.2 and v1.3
 
         // AMWA IS-05 Connection Management specifies the Connection APIs
-        const route_pattern is05_version = make_route_pattern(U("version"), U("v1\\.0")); // for now, just v1.0
+        const route_pattern is05_version = make_route_pattern(U("version"), U("v1\\.[0-1]")); // v1.0 and v1.1
 
         // Registration API supports registering all resource types
         const route_pattern resourceType = make_route_pattern(U("resourceType"), U("nodes|devices|sources|flows|senders|receivers"));

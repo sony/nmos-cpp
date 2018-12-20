@@ -40,6 +40,9 @@ namespace nmos
     namespace is05_versions
     {
         const api_version v1_0{ 1, 0 };
+        const api_version v1_1{ 1, 1 };
+
+        const std::vector<api_version> all{ nmos::is05_versions::v1_0, nmos::is05_versions::v1_1 };
     }
 
     inline utility::string_t make_api_version(const api_version& version)
