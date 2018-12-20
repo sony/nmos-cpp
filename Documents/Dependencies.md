@@ -27,14 +27,25 @@ On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 relea
    Notes:
    - C++ REST SDK currently requires CMake 3.9 or higher, and using Boost 1.66.0 or higher requires CMake 3.11
    - Pre-built binary distributions are available for many platforms
+   - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
+     Fetch, build and install a suitable version:  
+     ```
+     wget "https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz"
+     tar -zxvf cmake-3.12.3.tar.gz
+     cd cmake-3.12.3
+     ./bootstrap
+     make
+     sudo make install
+     cd ..
+     ```
    - Some CMake modules derived from third-party sources are included in the [third_party/cmake](../Development/third_party/cmake) directory
 
 ### Boost C++ Libraries
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
-   - Several Boost releases have been tested, including Version 1.67.0 (current release) and Version 1.54.0
-   - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS (long-term support) has Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.67.0 (latest release at the time) and Version 1.54.0
+   - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
 2. Expand the archive so that, for example, the boost\_1\_67\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - chrono
@@ -46,12 +57,38 @@ On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 relea
 For example, on Windows, for Visual Studio 2015:
 ```
 bootstrap
-b2 toolset=msvc-14.0 --prefix=. --with-chrono --with-date_time --with-regex --with-system --with-thread --stagedir=x64 stage address-model=64
+b2 toolset=msvc-14.0 ^
+  --prefix=. ^
+  --with-chrono ^
+  --with-date_time ^
+  --with-regex ^
+  --with-system ^
+  --with-thread ^
+  --stagedir=x64 ^
+  stage ^
+  address-model=64
+```
+
+For example, on Linux:
+```
+./bootstrap.sh
+sudo ./b2 \
+  '--prefix=`pwd`' \
+  --with-atomic \
+  --with-chrono \
+  --with-date_time \
+  --with-filesystem \
+  --with-random \
+  --with-regex \
+  --with-system \
+  --with-thread \
+  --stagedir=. \
+  stage
 ```
 
 ### WebSocket++
 
-WebSocket++ v0.8.1 (latest release) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
+WebSocket++ v0.8.1 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
 Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
 
 (The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
@@ -64,7 +101,7 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The [Win64 OpenSSL v1.0.2o Light](https://slproweb.com/download/Win64OpenSSL_Light-1_0_2o.exe) installer has been tested
+     The Win64 OpenSSL v1.0.2q installer (latest release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be installed, e.g. Ubuntu 14.04 LTS has version 1.01f
 
 ### C++ REST SDK
@@ -93,7 +130,7 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
 
 For example, for Visual Studio 2015:
 ```
-cd <home-dir>/cpprestsdk/Release
+cd <home-dir>\cpprestsdk\Release
 mkdir build
 cd build
 cmake .. ^
@@ -127,12 +164,14 @@ For example, using the default toolchain and dependencies:
 cd <home-dir>/cpprestsdk/Release
 mkdir build
 cd build
-cmake .. ^
-  -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" ^
+cmake .. \
+  -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" \
   -DWERROR:BOOL="0"
 make
 sudo make install
 ```
+
+(To speed up the build, the make ``-j`` option can be used to utilise multiple processor cores, e.g. ``make -j 4``.)
 
 ### Modern C++ JSON schema validator
 
@@ -158,7 +197,7 @@ On Windows:
 
 The [Avahi](https://www.avahi.org/) project provides a DNS-SD daemon for Linux, and the *avahi-compat-libdns_sd* library which enables applications to use the original Bonjour *dns_sd.h* API to communicate with the Avahi daemon.
 
-Alternatively, [Apple's mDNSResponder (also known as ``mdnsd``)](https://opensource.apple.com/tarballs/mDNSResponder/) can itself be built from source for Linux, and this is the currently tested approach. Version 878.30.4 (latest release) has been tested.
+Alternatively, [Apple's mDNSResponder (also known as ``mdnsd``)](https://opensource.apple.com/tarballs/mDNSResponder/) can itself be built from source for Linux, and this is the currently tested approach. Version 878.30.4 (latest release at the time) has been tested.
 
 The ``mDNSResponder`` build instructions are quite straightforward. For example, to build and install:
 ```

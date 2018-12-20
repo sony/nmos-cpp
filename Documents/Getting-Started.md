@@ -29,7 +29,7 @@ On Linux and other platforms, the steps vary slightly.
 
 For example, for Visual Studio 2015:
 ```
-cd <home-dir>/nmos-cpp/Development
+cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
@@ -56,15 +56,20 @@ For example, using the default toolchain and dependencies:
 cd <home-dir>/nmos-cpp/Development
 mkdir build
 cd build
-cmake .. ^
-  -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" ^
+cmake .. \
+  -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" \
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
 make
 ```
 
 ## Run Tests
 
-All the tests are currently packaged into a single test suite, as the **nmos-cpp-test** application.
+Unit tests for parts of the nmos-cpp software are included in this repo.
+The AMWA NMOS API Testing Tool may be used to test the REST APIs and behaviour of Node and Registry applications.
+
+### Unit tests
+
+The unit tests are currently packaged into a single test suite, as the **nmos-cpp-test** application.
 This may be run automatically by building RUN_TESTS, but note that to see the output of any failed tests,
 it is necessary to set ``CTEST_OUTPUT_ON_FAILURE`` to ``1`` in the environment first.
 
@@ -83,6 +88,51 @@ Notes:
 - On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
 - Intermittent failures of the DNS Service Discovery (DNS-SD) tests may be encountered because short time-outs and no retries are used in the test code.
   However if these tests fail repeatedly a system problem may need to be diagnosed.
+
+### API tests
+
+The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is a Python 3 application that creates a simple web service which tests implementations of the NMOS APIs.
+
+Having cloned the GitHub repository, install required dependencies with pip:
+
+```
+cd nmos-testing
+python3 -m pip install -r requirements.txt
+```
+
+Then, launch the web service:
+
+```
+python3 nmos-test.py
+```
+
+It takes some time to start as it fetches the RAML and JSON Schema files from the AMWA NMOS specification repositories on GitHub.
+
+Check the web service is running by opening http://localhost:5000/ in a browser.
+
+There are several test suites for NMOS Nodes which can be run from the web service.
+
+For example, to test **nmos-cpp-node**, try:
+
+```
+nmos-cpp-node "{\"http_port\":1080}"
+```
+
+Check it is running by opening http://localhost:1080/ in a browser.
+
+Then run the "IS-04 Node API", "IS-05 Connection Management API" and "IS-05 Interaction with Node API" test suites from the web service.
+
+There are also test suites for NMOS Registries.
+
+For example, to test **nmos-cpp-registry**, try:
+
+```
+nmos-cpp-registry "{\"http_port\":8080}"
+```
+
+Check it is running by opening http://localhost:8080/ in a browser.
+
+Then try running the "IS-04 Registry APIs" test suites from the web service.
 
 ## What Next?
 
