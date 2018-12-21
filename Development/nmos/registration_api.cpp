@@ -117,7 +117,7 @@ namespace nmos
             const auto available = with_read_lock(model.mutex, [&model] { return nmos::experimental::fields::registration_available(model.settings); });
             if (!available)
             {
-                set_reply(res, status_codes::ServiceUnavailable, nmos::make_error_response_body(status_codes::ServiceUnavailable));
+                set_error_reply(res, status_codes::ServiceUnavailable);
                 throw std::logic_error("Service Unavailable"); // in order to skip other route handlers and then send the response
             }
             return pplx::task_from_result(true);

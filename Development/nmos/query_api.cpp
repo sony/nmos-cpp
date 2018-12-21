@@ -422,7 +422,7 @@ namespace nmos
                 else
                 {
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
-                    set_reply(res, status_codes::Forbidden, nmos::make_error_response_body(status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted")));
+                    set_error_reply(res, status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted"));
                 }
             }
             else

@@ -426,9 +426,14 @@ namespace nmos
 
         typedef std::pair<web::http::status_code, web::json::value> connection_resource_patch_response;
 
-        inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const utility::string_t& debug = {})
+        inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const utility::string_t& error = {}, const utility::string_t& debug = {})
         {
-            return{ code, make_error_response_body(code, {}, debug) };
+            return{ code, make_error_response_body(code, error, debug) };
+        }
+
+        inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const std::exception& debug)
+        {
+            return make_connection_resource_patch_error_response(code,{}, utility::s2us(debug.what()));
         }
 
         // Basic theory of implementation of PATCH /staged
@@ -889,27 +894,27 @@ namespace nmos
                     catch (const web::json::json_exception& e)
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error for " << id << " in bulk request: " << e.what();
-                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const web::http::http_exception& e)
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error for " << id << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
-                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const std::runtime_error& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error for " << id << " in bulk request: " << e.what();
-                        return details::make_connection_resource_patch_error_response(status_codes::NotImplemented, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::NotImplemented, e);
                     }
                     catch (const std::logic_error& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error for " << id << " in bulk request: " << e.what();
-                        return details::make_connection_resource_patch_error_response(status_codes::InternalError, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (const std::exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected exception for " << id << " in bulk request: " << e.what();
-                        return details::make_connection_resource_patch_error_response(status_codes::InternalError, utility::s2us(e.what()));
+                        return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (...)
                     {
