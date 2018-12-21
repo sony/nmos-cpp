@@ -211,6 +211,14 @@ cmake .. \
 make
 ```
 
+Note that the following error may be reported after linking nmos-cpp-test.
+
+```
+nmos-cpp-test: Syntax error: word unexpected (expecting ")")
+```
+
+It is because the dynamic test discovery attempts to run the cross-compiled nmos-cpp-test, which of course doesn't work.
+
 ## Prepare the Raspberry Pi
 
 1. On the Raspberry Pi, prepare directories for the software
