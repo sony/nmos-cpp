@@ -21,6 +21,8 @@ On Windows, Visual Studio is required. Visual Studio 2015 is the primary develop
 
 On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series has been tested, although a more recent compiler is to be recommended!
 
+Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
+
 ### CMake
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  

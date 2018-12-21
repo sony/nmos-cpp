@@ -39,6 +39,7 @@ Other open-source NMOS implementations:
 
 Recent activity on the project:
 
+- Instructions for cross-compiling for the Raspberry Pi
 - Instructions for running the official AMWA NMOS API Testing Tool
 - Updates to build instructions and required dependencies
 - Simpler creation/processing of the types of SDP files required to support ST 2110 and ST 2022-7
@@ -54,7 +55,6 @@ Recent activity on the project:
 
 In the next few weeks, we intend to bring to this repository:
 
-- Instructions for configuring a CMake toolchain for cross-compiling for embedded Linux on ARM
 - Additional documentation
 
 And of course, the software will continue to be updated to track the ongoing development of the NMOS specifications, and the work of the Networked Media Incubator.
