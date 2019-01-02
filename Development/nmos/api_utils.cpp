@@ -182,11 +182,11 @@ namespace nmos
     // construct a standard NMOS error response, using the default reason phrase if no user error information is specified
     web::json::value make_error_response_body(web::http::status_code code, const utility::string_t& error, const utility::string_t& debug)
     {
-        web::json::value result = web::json::value::object(true);
-        result[U("code")] = code; // must be 400..599
-        result[U("error")] = !error.empty() ? web::json::value::string(error) : web::json::value::string(web::http::get_default_reason_phrase(code));
-        result[U("debug")] = !debug.empty() ? web::json::value::string(debug) : web::json::value::null();
-        return result;
+        return web::json::value_of({
+            { U("code"), code }, // must be 400..599
+            { U("error"), !error.empty() ? error : web::http::get_default_reason_phrase(code) },
+            { U("debug"), !debug.empty() ? web::json::value::string(debug) : web::json::value::null() }
+        }, true);
     }
 
     namespace details
@@ -268,15 +268,23 @@ namespace nmos
                 return pplx::task_from_result(false); // don't continue matching routes
             };
         }
+    }
 
-        void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& debug)
+    // set up a standard NMOS error response, using the default reason phrase if no user error information is specified
+    // but don't replace an existing error response
+    void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& error, const utility::string_t& debug)
+    {
+        if (!web::http::is_error_status_code(res.status_code()))
         {
-            // don't replace an existing error response
-            if (!web::http::is_error_status_code(res.status_code()))
-            {
-                set_reply(res, code, nmos::make_error_response_body(code, {}, debug));
-            }
+            set_reply(res, code, nmos::make_error_response_body(code, error, debug));
         }
+    }
+
+    // set up a standard NMOS error response, using the default reason phrase and the specified debug information
+    // but don't replace an existing error response
+    void set_error_reply(web::http::http_response& res, web::http::status_code code, const std::exception& debug)
+    {
+        set_error_reply(res, code, {}, utility::s2us(debug.what()));
     }
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
@@ -296,36 +304,36 @@ namespace nmos
             catch (const web::json::json_exception& e)
             {
                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
-                details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
+                set_error_reply(res, status_codes::BadRequest, e);
             }
             // likewise an HTTP error, e.g. from http_request::extract_json
             catch (const web::http::http_exception& e)
             {
                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
-                details::set_error_reply(res, status_codes::BadRequest, utility::s2us(e.what()));
+                set_error_reply(res, status_codes::BadRequest, e);
             }
             // while a runtime_error (often) indicates an unimplemented feature
             catch (const std::runtime_error& e)
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
-                details::set_error_reply(res, status_codes::NotImplemented, utility::s2us(e.what()));
+                set_error_reply(res, status_codes::NotImplemented, e);
             }
             // and a logic_error (probably) indicates some other implementation error
             catch (const std::logic_error& e)
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
-                details::set_error_reply(res, status_codes::InternalError, utility::s2us(e.what()));
+                set_error_reply(res, status_codes::InternalError, e);
             }
             // and other exception types are unexpected errors
             catch (const std::exception& e)
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected exception: " << e.what();
-                details::set_error_reply(res, status_codes::InternalError, utility::s2us(e.what()));
+                set_error_reply(res, status_codes::InternalError, e);
             }
             catch (...)
             {
                 slog::log<slog::severities::severe>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected unknown exception";
-                details::set_error_reply(res, status_codes::InternalError);
+                set_error_reply(res, status_codes::InternalError);
             }
 
             return pplx::task_from_result(true); // continue matching routes, e.g. the 'finally' handler

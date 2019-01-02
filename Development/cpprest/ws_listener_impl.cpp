@@ -222,8 +222,11 @@ namespace web
                                 websocketpp::lib::error_code ec;
                                 server.listen((uint16_t)port, ec);
                                 // if the error is "Underlying Transport Error" (pass_through), this might be a platform that doesn't support IPv6
-                                // (and we can't detect boost::asio::error::address_family_not_supported directly)
-                                if (websocketpp::transport::asio::error::make_error_code(websocketpp::transport::asio::error::pass_through) == ec)
+                                // (and depending on configuration, one can't detect boost::asio::error::address_family_not_supported directly)
+                                // since WebSocket++ 0.8.0, the error category and code used in this case seem to have changed
+                                if (make_error_code(boost::asio::error::address_family_not_supported) == ec
+                                    || make_error_code(websocketpp::transport::asio::error::pass_through) == ec
+                                    || make_error_code(websocketpp::transport::error::pass_through) == ec)
                                 {
                                     // retry, limiting ourselves to IPv4
                                     server.get_alog().write(websocketpp::log::alevel::app, "listening with IPv6 failed; retrying with IPv4 only");

@@ -77,6 +77,14 @@ namespace nmos
     // construct a standard NMOS error response, using the default reason phrase if no user error information is specified
     web::json::value make_error_response_body(web::http::status_code code, const utility::string_t& error = {}, const utility::string_t& debug = {});
 
+    // set up a standard NMOS error response, using the default reason phrase if no user error information is specified
+    // but don't replace an existing error response
+    void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& error = {}, const utility::string_t& debug = {});
+
+    // set up a standard NMOS error response, using the default reason phrase and the specified debug information
+    // but don't replace an existing error response
+    void set_error_reply(web::http::http_response& res, web::http::status_code code, const std::exception& debug);
+
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
     void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate);
 
@@ -104,8 +112,6 @@ namespace nmos
 
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate);
-
-        void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& debug = {});
     }
 }
 

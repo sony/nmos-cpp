@@ -8,13 +8,15 @@ Follow the [Getting Started](Getting-Started.md) instructions before proceeding.
 
 Notes:
 - On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140d_2_10.dll) needs to be on the ``PATH``.
+- On Windows, the nmos-cpp apps may need to be run with administrator privileges on Windows. This is explained in the [build instructions for the C++ REST SDK](Dependencies.md#c-rest-sdk).
 - The Bonjour service (Windows) or ``mdnsd`` daemon (Linux) must be started to enable NMOS Nodes, and the Registry, to use DNS Service Discovery.
 - When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to select unique port numbers, as described below.
 
 ## Start an NMOS Registry
 
 Run the **nmos-cpp-registry** application. Configuration parameters may be passed on the command-line, or in a configuration file, as JSON. Each named parameter is specified as a field in a JSON object.
-The parameters that can be specified, and default values where applicable, are described in [nmos/settings.h](../Development/nmos/settings.h), in the repository.
+The provided [nmos-cpp-registry/config.json](../Development/nmos-cpp-registry/config.json) may be used as a starting point, or refer directly to the source code in [nmos/settings.h](../Development/nmos/settings.h).
+Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
 For example, to launch the application without verbose logging, try ``./nmos-cpp-registry "{\"logging_level\":0}"``, or ``./nmos-cpp-registry config.json`` with a file config.json:
 
@@ -45,14 +47,21 @@ This shows the nmos-cpp-registry starting up and advertising its APIs via DNS Se
 ## Start several NMOS Nodes
 
 Run the **nmos-cpp-node** application one or more times. Like the registry application, configuration parameters may be passed on the command-line as JSON.
-The parameters that can be specified, and default values where applicable, are described in [nmos/settings.h](../Development/nmos/settings.h), in the repository.
+The provided [nmos-cpp-node/config.json](../Development/nmos-cpp-node/config.json) may be used as a starting point, or refer directly to the source code in [nmos/settings.h](../Development/nmos/settings.h).
+Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
 When running more than one nmos-cpp application on the same host, configuration parameters **must** be used to make the port numbers of each instance unique.
 In the case of the node application, there are four APIs to consider;
 ``"node_port"``, ``"connection_port"``, ``"settings_port"`` and ``"logging_port"`` must be configured for each instance.
-The default port for _all_ the APIs can be overridden by using the ``"http_port"`` parameter.
+For brevity, the default port for _all_ the APIs can be overridden by using the ``"http_port"`` parameter.
 
-Otherwise, the command may be as simple as ``./nmos-cpp-node "{\"logging_level\":0}"``.
+Otherwise, the command may be as simple as ``./nmos-cpp-node "{\"logging_level\":0}"``, or ``./nmos-cpp-node config.json`` with a file config.json:
+
+```json
+{
+    "logging_level": 0
+}
+```
 
 Each node's initial output should appear something like this:
 
@@ -92,7 +101,7 @@ On the other side, this operation should be reflected in the nmos-cpp-registry o
 2018-06-25 16:25:24.089: info: 11836: Registration requested for receiver: 45a18912-db55-5953-a9f8-b87f4d70d386 on device: b89caa85-556f-52e4-aec3-2c625a314bb5
 ```
 
-## Adjust settings of a running **nmos-cpp* server
+## Adjust settings of a running nmos-cpp application
 
 A few settings may be changed dynamically by PATCH to /settings/all on the experimental Settings API.
 

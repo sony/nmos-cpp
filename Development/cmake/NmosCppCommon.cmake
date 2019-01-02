@@ -5,10 +5,9 @@ if (NOT DEFINED NMOS_CPP_DIR)
     set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
-# caller can set SLOG_LOGGING_SEVERITY for something other than max_verbosity
-if (NOT DEFINED SLOG_LOGGING_SEVERITY)
-    set (SLOG_LOGGING_SEVERITY slog::max_verbosity)
-endif()
+# compile-time control of logging loquacity
+# use slog::never_log_severity to strip all logging at compile-time, or slog::max_verbosity for full control at run-time
+set (SLOG_LOGGING_SEVERITY slog::max_verbosity CACHE STRING "Compile-time logging level, e.g. between 40 (least verbose, only fatal messages) and -40 (most verbose)")
 
 # enable C++11
 enable_language(CXX)

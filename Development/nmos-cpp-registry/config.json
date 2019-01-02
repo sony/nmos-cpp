@@ -1,0 +1,76 @@
+// Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files
+
+// Configuration settings and defaults for the NMOS Node, Query and Registration APIs
+{
+    // error_log [registry, node]: filename for the error log or an empty string to write to stderr
+    //"error_log": "",
+
+    // access_log [registry, node]: filename for the access log (in Common Log Format) or an empty string to discard
+    //"access_log": "",
+
+    // logging_level [registry, node]: integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
+    //"logging_level": 0,
+
+    // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
+    //"allow_invalid_resources": false,
+
+    // host_name [registry, node]: the host name for which to advertise services or an empty string to use the default
+    //"host_name": "",
+
+    // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS)
+    //"domain": "",
+
+    // host_address/host_addresses [registry, node]: used to construct response headers (e.g. 'Link' or 'Location') and URL fields in the data model
+    //"host_address": "127.0.0.1",
+    //"host_addresses": array-of-ip-address-strings,
+
+    // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
+    //"pri": 100,
+
+    // port numbers [registry, node]: ports on which to listen for each API
+
+    // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
+    //"http_port": 0,
+
+    //"query_port": 3211,
+    //"query_ws_port": 3213,
+    //"registration_port": 3210,
+    //"node_port": 3212,
+
+    // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
+    //"listen_backlog": 0,
+
+    // registration_expiry_interval [registry]:
+    // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+    //"registration_expiry_interval": 12,
+
+    // query_paging_default/query_paging_limit [registry]: default/maximum number of results per "page" when using the Query API (a client may request a lower limit)
+    //"query_paging_default": 10,
+    //"query_paging_limit": 100,
+
+    // Configuration settings and defaults for experimental extensions
+
+    // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
+    //"seed_id": uuid-string,
+
+    // label [registry, node]: used in resource description/label fields
+    //"label": "",
+
+    // registration_available [registry]: used to flag the Registration API as temporarily unavailable
+    //"registration_available": true,
+
+    // port numbers [registry, node]: ports on which to listen for each API
+    // see http_port
+
+    //"settings_port": 3209,
+    //"logging_port": 5106,
+
+    // port numbers [registry]: ports on which to listen for each API
+    // see http_port
+
+    //"admin_port": 3208,
+    //"mdns_port": 3214,
+
+    "don't worry": "about trailing commas"
+}

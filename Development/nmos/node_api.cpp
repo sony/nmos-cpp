@@ -1,7 +1,10 @@
 #include "nmos/node_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
+#include "cpprest/json_validator.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/slog.h"
 #include "cpprest/host_utils.h"
@@ -119,7 +122,13 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&model, target_handler, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        const web::json::experimental::json_validator validator
+        {
+            nmos::experimental::load_json_schema,
+            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_nodeapi_receiver_target_put_request_schema_uri))
+        };
+
+        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&model, target_handler, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
@@ -132,8 +141,10 @@ namespace nmos
             {
                 if (target_handler)
                 {
-                    return details::extract_json(req, parameters, gate).then([target_handler, resourceId, res](value sender_data) mutable
+                    return details::extract_json(req, parameters, gate).then([target_handler, validator, version, resourceId, res](value sender_data) mutable
                     {
+                        validator.validate(sender_data, experimental::make_nodeapi_receiver_target_put_request_schema_uri(version));
+
                         return target_handler(resourceId, sender_data).then([res, sender_data]() mutable
                         {
                             set_reply(res, status_codes::Accepted, sender_data);

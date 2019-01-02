@@ -4,7 +4,29 @@
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include "cpprest/base_uri.h" // for web::uri::decode
+#include "cpprest/regex_utils.h"
 #include "detail/private_access.h"
+
+// json parsing helpers
+namespace web
+{
+    namespace json
+    {
+        namespace experimental
+        {
+            // preprocess a json-like string to remove C++/JavaScript-style comments
+            utility::string_t preprocess(const utility::string_t& value)
+            {
+                // regex pattern matches JSON strings, or single or multi-line comments
+                // only strings are captured
+                static const utility::regex_t string_or_comment(U(R"-regex-(("[^"\\]*(?:\\.[^"\\]*)*")|(?:\/\/[^\r\n]+)|(?:\/\*[\s\S]*?\*\/))-regex-"));
+                // format pattern uses the first capture group to copy strings into the output
+                // having inserted a single space to ensure tokens are not coalesced
+                return bst::regex_replace(value, string_or_comment, U(" $1"));
+            }
+        }
+    }
+}
 
 // json query helpers
 namespace web

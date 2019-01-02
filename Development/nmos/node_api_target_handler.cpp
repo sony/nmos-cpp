@@ -22,8 +22,6 @@ namespace nmos
             {
                 // get sdp from sender, and then use this to connect
 
-                // hmm, should add json validation of sender data
-
                 const auto sender_id = nmos::fields::id(sender_data);
                 const auto manifest_href = nmos::fields::manifest_href(sender_data);
 

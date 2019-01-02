@@ -1,5 +1,6 @@
 #include "nmos/mdns_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
 #include "mdns/service_discovery.h"
 #include "nmos/api_utils.h"
 #include "nmos/mdns.h"
@@ -66,17 +67,33 @@ namespace nmos
 
             api_router mdns_api;
 
-            mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                // the list of available service types cannot easily be enumerated so it might be better to respond with status_codes::NoContent
-                // rather than return a misleading list?
-                set_reply(res, status_codes::OK, value_of(
+                // get the browse domain from the query parameters or settings
+
+                auto flat_query_params = web::json::value_from_query(req.request_uri().query());
+                nmos::details::decode_elements(flat_query_params);
+
+                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
+                const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+
+                std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(gate));
+
+                // note, only the list of available service types that are explicitly being advertised is returned by "_services._dns-sd._udp"
+                // see https://tools.ietf.org/html/rfc6763#section-9
+                return discovery->browse("_services._dns-sd._udp", browse_domain).then([res, &gate](std::vector<::mdns::browse_result> browsed) mutable
                 {
-                    value::string(utility::s2us(nmos::service_types::query) + U("/")),
-                    value::string(utility::s2us(nmos::service_types::registration) + U("/")),
-                    value::string(utility::s2us(nmos::service_types::node) + U("/"))
-                }));
-                return pplx::task_from_result(true);
+                    const auto results = boost::copy_range<std::set<utility::string_t>>(browsed | boost::adaptors::transformed([](const ::mdns::browse_result& br)
+                    {
+                        // results for this query seem to be e.g. name = "_nmos-query", type = "_tcp.local."
+                        return utility::s2us(br.name + '.' + br.type.substr(0, br.type.find('.')) + '/');
+                    }));
+                    set_reply(res, status_codes::OK,
+                        web::json::serialize(results, [](const utility::string_t& s) { return value::string(s); }),
+                        U("application/json"));
+                    res.headers().add(U("X-Total-Count"), results.size());
+                    return true;
+                });
             });
 
             mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
