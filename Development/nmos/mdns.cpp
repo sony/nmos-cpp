@@ -224,12 +224,13 @@ namespace nmos
         }
 
         // helper function for resolving instances of the specified service (API)
-        // with the highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        pplx::task<std::multimap<service_priority, web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+        // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
+        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
         {
             const auto absolute_timeout = std::chrono::steady_clock::now() + timeout;
 
-            std::shared_ptr<std::vector<std::pair<service_priority, web::uri>>> results(new std::vector<std::pair<service_priority, web::uri>>);
+            typedef std::pair<std::pair<api_version, service_priority>, web::uri> resolved_service;
+            std::shared_ptr<std::vector<resolved_service>> results(new std::vector<resolved_service>);
 
             return discovery.browse([=, &discovery](const mdns::browse_result& resolving)
             {
@@ -256,12 +257,12 @@ namespace nmos
 
                     // check the advertisement includes a version we support
                     auto resolved_vers = nmos::parse_api_ver_record(records);
-                    auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.begin(), api_ver.end());
-                    if (resolved_vers.rend() == resolved_ver) return !results->empty();
+                    auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.rbegin(), api_ver.rend());
+                    if (resolved_vers.rend() == resolved_ver) return true;
 
                     for (const auto& ip_address : resolved.ip_addresses)
                     {
-                        results->push_back({ resolved_pri, web::uri_builder()
+                        results->push_back({ { *resolved_ver, resolved_pri }, web::uri_builder()
                             .set_scheme(utility::s2us(resolved_proto))
                             .set_host(utility::s2us(ip_address))
                             .set_port(resolved.port)
@@ -288,7 +289,13 @@ namespace nmos
                     std::shuffle(results->begin(), results->end(), std::default_random_engine(seeder));
                 }
 
-                return std::multimap<service_priority, web::uri>(results->begin(), results->end());
+                std::stable_sort(results->begin(), results->end(), [](const resolved_service& lhs, const resolved_service& rhs)
+                {
+                    // the higher version is preferred; for the same version, the 'higher' priority is preferred
+                    return lhs.first.first > rhs.first.first || (lhs.first.first == rhs.first.first && lhs.first.second < rhs.first.second);
+                });
+
+                return boost::copy_range<std::list<web::uri>>(*results | boost::adaptors::transformed([](const resolved_service& s) { return s.second; }));
             });
         }
     }
