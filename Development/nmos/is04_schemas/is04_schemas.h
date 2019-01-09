@@ -71,6 +71,7 @@ namespace nmos
             extern const char* source_audio;
             extern const char* source_core;
             extern const char* queryapi_subscriptions_post_request;
+            extern const char* nodeapi_receiver_target;
         }
 
         namespace v1_1_2
@@ -104,6 +105,7 @@ namespace nmos
             extern const char* source_audio;
             extern const char* source_core;
             extern const char* queryapi_subscriptions_post_request;
+            extern const char* nodeapi_receiver_target;
         }
 
         namespace v1_0_3
@@ -116,6 +118,7 @@ namespace nmos
             extern const char* sender;
             extern const char* source;
             extern const char* queryapi_v1_0_subscriptions_post_request;
+            extern const char* nodeapi_receiver_target;
         }
     }
 }

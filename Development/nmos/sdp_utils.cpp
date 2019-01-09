@@ -820,7 +820,7 @@ namespace nmos
             const auto& encoding_name = sdp::fields::encoding_name(rtpmap_value);
             sdp_params.audio.bit_depth = !encoding_name.empty() && U('L') == encoding_name.front() ? utility::istringstreamed<uint32_t>(encoding_name.substr(1)) : 0;
 
-            sdp_params.audio.sample_rate = nmos::rational{ sdp::fields::clock_rate(rtpmap_value) };
+            sdp_params.audio.sample_rate = nmos::rational{ (nmos::rational::int_type)sdp::fields::clock_rate(rtpmap_value) };
             sdp_params.audio.channel_count = (uint32_t)sdp::fields::encoding_parameters(rtpmap_value);
         }
 

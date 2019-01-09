@@ -1,7 +1,9 @@
 # Getting Started
 
-The following instructions describe how to set up and build this software on Windows with Visual Studio 2015.
-On Linux and other platforms, the steps vary slightly.
+The following instructions describe how to set up and build this software.
+
+The test platforms are Windows with Visual Studio 2015 and Linux with GCC 4.8 or higher.
+Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 ## Preparation
 

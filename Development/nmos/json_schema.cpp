@@ -33,6 +33,7 @@ namespace nmos
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
+            const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
 
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.1.x/APIs/schemas/
@@ -43,6 +44,7 @@ namespace nmos
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
+            const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
 
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.0.x/APIs/schemas/
@@ -53,6 +55,7 @@ namespace nmos
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-v1.0-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json"));
+            const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
     }
 
@@ -160,6 +163,7 @@ namespace nmos
                 { make_schema_uri(v1_2::tag, _XPLATSTR("source_audio.json")), make_schema(v1_2::source_audio) },
                 { make_schema_uri(v1_2::tag, _XPLATSTR("source_core.json")), make_schema(v1_2::source_core) },
                 { make_schema_uri(v1_2::tag, _XPLATSTR("queryapi-subscriptions-post-request.json")), make_schema(v1_2::queryapi_subscriptions_post_request) },
+                { make_schema_uri(v1_2::tag, _XPLATSTR("nodeapi-receiver-target.json")), make_schema(v1_2::nodeapi_receiver_target) },
                 // v1.1
                 { make_schema_uri(v1_1::tag, _XPLATSTR("registrationapi-resource-post-request.json")), make_schema(v1_1::registrationapi_resource_post_request) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("clock_internal.json")), make_schema(v1_1::clock_internal) },
@@ -190,6 +194,7 @@ namespace nmos
                 { make_schema_uri(v1_1::tag, _XPLATSTR("source_audio.json")), make_schema(v1_1::source_audio) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("source_core.json")), make_schema(v1_1::source_core) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("queryapi-subscriptions-post-request.json")), make_schema(v1_1::queryapi_subscriptions_post_request) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("nodeapi-receiver-target.json")), make_schema(v1_1::nodeapi_receiver_target) },
                 // v1.0
                 { make_schema_uri(v1_0::tag, _XPLATSTR("registrationapi-v1.0-resource-post-request.json")), make_schema(v1_0::registrationapi_v1_0_resource_post_request) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("device.json")), make_schema(v1_0::device) },
@@ -198,7 +203,8 @@ namespace nmos
                 { make_schema_uri(v1_0::tag, _XPLATSTR("receiver.json")), make_schema(v1_0::receiver) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("sender.json")), make_schema(v1_0::sender) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("source.json")), make_schema(v1_0::source) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json")), make_schema(v1_0::queryapi_v1_0_subscriptions_post_request) }
+                { make_schema_uri(v1_0::tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json")), make_schema(v1_0::queryapi_v1_0_subscriptions_post_request) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("nodeapi-receiver-target.json")), make_schema(v1_0::nodeapi_receiver_target) },
             };
         }
 
@@ -254,6 +260,13 @@ namespace nmos
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::queryapi_subscriptions_post_request_uri;
             if (is04_versions::v1_1 == version) return is04_schemas::v1_1::queryapi_subscriptions_post_request_uri;
             return is04_schemas::v1_0::queryapi_subscriptions_post_request_uri;
+        }
+
+        web::uri make_nodeapi_receiver_target_put_request_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::nodeapi_receiver_target_put_request_uri;
+            if (is04_versions::v1_1 == version) return is04_schemas::v1_1::nodeapi_receiver_target_put_request_uri;
+            return is04_schemas::v1_0::nodeapi_receiver_target_put_request_uri;
         }
 
         web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version& version, const nmos::type& type)
