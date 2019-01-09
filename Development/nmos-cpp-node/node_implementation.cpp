@@ -30,7 +30,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
     auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
     auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
-    auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+    auto receiver_id1 = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1"));
+    auto receiver_id2 = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/2"));
 
     auto lock = model.write_lock(); // in order to update the resources
 
@@ -86,7 +87,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example device
-    insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, { sender_id }, { receiver_id }, model.settings), gate);
+    insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, { sender_id }, { receiver_id1, receiver_id2 }, model.settings), gate);
 
     // example source, flow and sender
     nmos::sdp_parameters sdp_params;
@@ -112,14 +113,28 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate);
     }
 
-    // example receiver
+    // example receiver 1
     {
         // add example network interface binding for both primary and secondary
-        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
+        auto receiver = nmos::make_video_receiver(receiver_id1, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
         // add example "natural grouping" hint
         web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
 
-        auto connection_receiver = nmos::make_connection_receiver(receiver_id, true);
+        auto connection_receiver = nmos::make_connection_receiver(receiver_id1, true);
+        resolve_auto(connection_receiver.type, connection_receiver.data[nmos::fields::endpoint_active]);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
+    }
+
+    // example receiver 2
+    {
+        // add example network interface binding for both primary and secondary
+        auto receiver = nmos::make_video_receiver(receiver_id2, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
+
+        auto connection_receiver = nmos::make_connection_receiver(receiver_id2, true);
         resolve_auto(connection_receiver.type, connection_receiver.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
@@ -150,7 +165,13 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
         bool notify = false;
 
+        std::vector<nmos::resource> by_updated_copy;
         for (const auto& resource : by_updated | boost::adaptors::reversed)
+        {
+            by_updated_copy.push_back(resource);
+        }
+
+        for (const auto& resource : by_updated_copy)
         {
             if (!resource.has_data()) continue;
 
