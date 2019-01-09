@@ -9,10 +9,11 @@
       "constraints/",
       "staged/",
       "active/",
-      "transportfile/"
+      "transportfile/",
+      "transporttype/"
     ],
-    "minItems": 4,
-    "maxItems": 4,
+    "minItems": 5,
+    "maxItems": 5,
     "uniqueItems": true
   }
 }

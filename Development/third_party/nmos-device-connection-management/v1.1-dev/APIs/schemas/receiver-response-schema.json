@@ -54,11 +54,17 @@
     },
     "transport_params": {
       "description": "Transport-specific parameters",
-      "oneOf": [{
+      "anyOf": [{
           "$ref": "receiver_transport_params_rtp.json"
         },
         {
           "$ref": "receiver_transport_params_dash.json"
+        },
+        {
+          "$ref": "receiver_transport_params_websocket.json"
+        },
+        {
+          "$ref": "receiver_transport_params_mqtt.json"
         }
       ]
     }
