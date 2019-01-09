@@ -295,16 +295,27 @@ set(NMOS_IS05_V1_1_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-receiver.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-sender.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-single.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraint-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema-mqtt.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema-rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema-websocket.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/error.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_dash.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_ext.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_mqtt.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_websocket.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver-response-schema.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver-stage-schema.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_dash.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_ext.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_mqtt.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_websocket.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender-response-schema.json
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender-stage-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/transporttype-response-schema.json
     )
 
 set(NMOS_IS05_V1_0_SCHEMAS_JSON

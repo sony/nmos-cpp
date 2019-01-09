@@ -220,8 +220,14 @@ namespace nmos
                 { make_schema_uri(v1_1::tag, _XPLATSTR("activation-schema.json")), make_schema(v1_1::activation_schema) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_rtp.json")), make_schema(v1_1::sender_transport_params_rtp) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_dash.json")), make_schema(v1_1::sender_transport_params_dash) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_websocket.json")), make_schema(v1_1::sender_transport_params_websocket) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_mqtt.json")), make_schema(v1_1::sender_transport_params_mqtt) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_ext.json")), make_schema(v1_1::sender_transport_params_ext) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("receiver_transport_params_rtp.json")), make_schema(v1_1::receiver_transport_params_rtp) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("receiver_transport_params_dash.json")), make_schema(v1_1::receiver_transport_params_dash) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("receiver_transport_params_websocket.json")), make_schema(v1_1::receiver_transport_params_websocket) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("receiver_transport_params_mqtt.json")), make_schema(v1_1::receiver_transport_params_mqtt) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("receiver_transport_params_ext.json")), make_schema(v1_1::receiver_transport_params_ext) },
                 // v1.0
                 { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0-sender-stage-schema.json")), make_schema(v1_0::v1_0_sender_stage_schema) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("v1.0-receiver-stage-schema.json")), make_schema(v1_0::v1_0_receiver_stage_schema) },
@@ -250,7 +256,7 @@ namespace nmos
         {
             if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::registrationapi_resource_post_request_uri;
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::registrationapi_resource_post_request_uri;
-            if (is04_versions::v1_1 == version) return is04_schemas::v1_1::registrationapi_resource_post_request_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::registrationapi_resource_post_request_uri;
             return is04_schemas::v1_0::registrationapi_resource_post_request_uri;
         }
 
@@ -258,14 +264,14 @@ namespace nmos
         {
             if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::queryapi_subscriptions_post_request_uri;
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::queryapi_subscriptions_post_request_uri;
-            if (is04_versions::v1_1 == version) return is04_schemas::v1_1::queryapi_subscriptions_post_request_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::queryapi_subscriptions_post_request_uri;
             return is04_schemas::v1_0::queryapi_subscriptions_post_request_uri;
         }
 
         web::uri make_nodeapi_receiver_target_put_request_schema_uri(const nmos::api_version& version)
         {
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::nodeapi_receiver_target_put_request_uri;
-            if (is04_versions::v1_1 == version) return is04_schemas::v1_1::nodeapi_receiver_target_put_request_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::nodeapi_receiver_target_put_request_uri;
             return is04_schemas::v1_0::nodeapi_receiver_target_put_request_uri;
         }
 
