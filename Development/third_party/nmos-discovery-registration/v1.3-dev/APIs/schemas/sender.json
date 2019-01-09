@@ -33,12 +33,7 @@
           "type": "string",
           "oneOf": [
             {
-              "enum": [
-                "urn:x-nmos:transport:rtp",
-                "urn:x-nmos:transport:rtp.ucast",
-                "urn:x-nmos:transport:rtp.mcast",
-                "urn:x-nmos:transport:dash"
-              ]
+              "pattern": "^urn:x-nmos:transport:"
             },
             {
               "not": {

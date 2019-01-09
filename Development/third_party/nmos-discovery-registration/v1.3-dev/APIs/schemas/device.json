@@ -20,10 +20,7 @@
           "type": "string",
           "oneOf": [
             {
-              "enum": [
-                "urn:x-nmos:device:generic",
-                "urn:x-nmos:device:pipeline"
-              ]
+              "pattern": "^urn:x-nmos:device:"
             },
             {
               "not": {
