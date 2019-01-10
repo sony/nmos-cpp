@@ -37,7 +37,7 @@ namespace nmos
 
         connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(nmos::is05_versions::all), res));
             return pplx::task_from_result(true);
         });
 
