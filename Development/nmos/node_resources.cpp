@@ -469,7 +469,7 @@ namespace nmos
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
 
-        return{ is05_versions::v1_0, types::sender, data, false };
+        return{ is05_versions::v1_1, types::sender, data, false };
     }
 
     web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile)
@@ -530,7 +530,7 @@ namespace nmos
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
 
-        return{ is05_versions::v1_0, types::receiver, data, false };
+        return{ is05_versions::v1_1, types::receiver, data, false };
     }
 
     namespace experimental
