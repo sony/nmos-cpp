@@ -1042,20 +1042,20 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.connection_resources;
 
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
             if (resources.end() != resource)
             {
-                if (nmos::types::sender == resource->type)
-                {
-                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("constraints/"), U("staged/"), U("active/"), U("transportfile/") }, res));
-                }
-                else // if (nmos::types::receiver == resource->type)
-                {
-                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("constraints/"), U("staged/"), U("active/") }, res));
-                }
+                std::set<utility::string_t> sub_routes{ U("constraints/"), U("staged/"), U("active/") };
+                if (nmos::types::sender == resource->type) sub_routes.insert(U("transportfile/"));
+
+                // The transporttype endpoint is introduced in v1.1
+                if (nmos::is05_versions::v1_1 <= version) sub_routes.insert(U("transporttype/"));
+
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(sub_routes, res));
             }
             else
             {
@@ -1218,6 +1218,46 @@ namespace nmos
                     // "When the `master_enable` parameter is false [...] the `/transportfile` endpoint should return an HTTP 404 response."
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L163-L165
                     set_reply(res, status_codes::NotFound);
+                }
+            }
+            else
+            {
+                set_reply(res, status_codes::NotFound);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transporttype/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            // The transporttype endpoint is introduced in v1.1
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+            if (nmos::is05_versions::v1_1 > version)
+            {
+                set_reply(res, status_codes::NotFound);
+                return pplx::task_from_result(true);
+            }
+
+            auto lock = model.read_lock();
+            auto& resources = model.connection_resources;
+
+            const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
+            const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+            const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
+            auto resource = find_resource(resources, id_type);
+            if (resources.end() != resource)
+            {
+                auto matching_resource = find_resource(model.node_resources, id_type);
+                if (model.node_resources.end() == matching_resource)
+                {
+                    throw std::logic_error("matching IS-04 resource not found");
+                }
+                else
+                {
+                    // hmm, currently unclear whether subclassifications such as e.g. "urn:x-nmos:transport:rtp.mcast"
+                    // should be presented as the top-level category, e.g. "urn:x-nmos:transport:rtp"
+                    set_reply(res, status_codes::OK, matching_resource->data.at(nmos::fields::transport));
                 }
             }
             else
