@@ -39,18 +39,21 @@ namespace nmos
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
 
-        for (const auto& host_address : host_addresses)
+        for (const auto& version : nmos::is05_versions::from_settings(settings))
         {
-            value control;
             auto connection_uri = web::uri_builder()
                 .set_scheme(U("http"))
-                .set_host(host_address.as_string())
                 .set_port(nmos::fields::connection_port(settings))
-                .set_path(U("/x-nmos/connection/v1.0"))
-                .to_uri();
-            control[U("href")] = value::string(connection_uri.to_string());
-            control[U("type")] = value::string(U("urn:x-nmos:control:sr-ctrl/v1.0"));
-            web::json::push_back(data[U("controls")], control);
+                .set_path(U("/x-nmos/connection/") + make_api_version(version));
+            auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
+
+            for (const auto& host_address : host_addresses)
+            {
+                web::json::push_back(data[U("controls")], value_of({
+                    { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                    { U("type"), type }
+                }));
+            }
         }
 
         return{ is04_versions::v1_2, types::device, data, false };
@@ -218,11 +221,13 @@ namespace nmos
 
     web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings)
     {
+        const auto version = *nmos::is05_versions::from_settings(settings).begin();
+
         return web::uri_builder()
             .set_scheme(U("http"))
             .set_host(nmos::fields::host_address(settings))
             .set_port(nmos::fields::connection_port(settings))
-            .set_path(U("/x-nmos/connection/v1.0/single/senders/") + sender_id + U("/transportfile"))
+            .set_path(U("/x-nmos/connection/") + make_api_version(version) + U("/single/senders/") + sender_id + U("/transportfile"))
             .to_uri();
     }
 
@@ -462,6 +467,8 @@ namespace nmos
         // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
         nmos::resolve_auto(types::sender, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
+        // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
+
         return{ is05_versions::v1_0, types::sender, data, false };
     }
 
@@ -520,6 +527,8 @@ namespace nmos
         // but in some cases the behaviour is more complex, and may be determined by the vendor.
         // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
         nmos::resolve_auto(types::receiver, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+        // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
 
         return{ is05_versions::v1_0, types::receiver, data, false };
     }

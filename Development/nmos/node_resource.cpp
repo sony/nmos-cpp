@@ -11,6 +11,7 @@ namespace nmos
     nmos::resource make_node(const nmos::id& id, const nmos::settings& settings)
     {
         using web::json::value;
+        using web::json::value_from_elements;
         using web::json::value_of;
 
         const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
@@ -25,7 +26,7 @@ namespace nmos
 
         data[U("href")] = value::string(uri.to_string());
         data[U("hostname")] = value::string(hostname);
-        data[U("api")][U("versions")] = value_of({ U("v1.0"), U("v1.1"), U("v1.2") });
+        data[U("api")][U("versions")] = value_from_elements(nmos::is04_versions::from_settings(settings) | boost::adaptors::transformed(make_api_version));
 
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();

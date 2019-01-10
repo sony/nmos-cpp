@@ -83,9 +83,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(nmos::is04_versions::all), res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
             return pplx::task_from_result(true);
         });
 
@@ -113,7 +114,8 @@ namespace nmos
         api_router registration_api;
 
         // check for supported API version
-        registration_api.support(U(".*"), details::make_api_version_handler(nmos::is04_versions::all, gate));
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        registration_api.support(U(".*"), details::make_api_version_handler(versions, gate));
 
         // experimental extension, to enable the Registration API to be flagged as temporarily unavailable
         registration_api.support(U(".*"), [&model](http_request, http_response res, const string_t&, const route_parameters&)
@@ -136,7 +138,7 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
+            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
         };
 
         registration_api.support(U("/resource/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)

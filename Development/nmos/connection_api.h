@@ -13,6 +13,7 @@ namespace slog
 // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
 namespace nmos
 {
+    struct api_version;
     struct node_model;
     struct resource;
     struct tai;
@@ -22,7 +23,7 @@ namespace nmos
 
     namespace details
     {
-        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate);
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate);
     }
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource

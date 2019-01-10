@@ -33,9 +33,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(nmos::is04_versions::all), res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
             return pplx::task_from_result(true);
         });
 
@@ -180,7 +181,8 @@ namespace nmos
         api_router query_api;
 
         // check for supported API version
-        query_api.support(U(".*"), details::make_api_version_handler(nmos::is04_versions::all, gate));
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        query_api.support(U(".*"), details::make_api_version_handler(versions, gate));
 
         query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -275,7 +277,7 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
+            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
         };
 
         query_api.support(U("/subscriptions/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
