@@ -4,6 +4,7 @@
 #include "cpprest/json_validator.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
@@ -38,7 +39,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_query_api(model, gate));
+        query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_query_api(model, gate));
 
         return query_api;
     }
@@ -178,6 +179,9 @@ namespace nmos
 
         api_router query_api;
 
+        // check for supported API version
+        query_api.support(U(".*"), details::make_api_version_handler(nmos::is04_versions::all, gate));
+
         query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("nodes/"), U("devices/"), U("sources/"), U("flows/"), U("senders/"), U("receivers/"), U("subscriptions/") }, res));
@@ -189,7 +193,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
 
             // Extract and decode the query string
@@ -237,7 +241,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -282,7 +286,7 @@ namespace nmos
                 auto lock = model.write_lock();
                 auto& resources = model.registry_resources;
 
-                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
                 // Validate JSON syntax according to the schema
 
@@ -405,7 +409,7 @@ namespace nmos
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t subscriptionId = parameters.at(nmos::patterns::resourceId.name);
 
             auto subscription = find_resource(resources, { subscriptionId, nmos::types::subscription });

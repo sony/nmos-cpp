@@ -34,11 +34,8 @@ namespace nmos
         const route_pattern registration_api = make_route_pattern(U("api"), U("registration"));
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
 
-        // AMWA IS-04 Discovery and Registration specifies the Node, Query and Registration APIs
-        const route_pattern is04_version = make_route_pattern(U("version"), U("v1\\.[0-2]")); // for now, just v1.0, v1.1, v1.2
-
-        // AMWA IS-05 Connection Management specifies the Connection APIs
-        const route_pattern is05_version = make_route_pattern(U("version"), U("v1\\.0")); // for now, just v1.0
+        // API version pattern
+        const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));
 
         // Registration API supports registering all resource types
         const route_pattern resourceType = make_route_pattern(U("resourceType"), U("nodes|devices|sources|flows|senders|receivers"));
@@ -110,6 +107,9 @@ namespace nmos
         // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res);
         web::http::http_response& add_cors_headers(web::http::http_response& res);
+
+        // make handler to check supported API version, and set error response otherwise
+        web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate);
 
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate);

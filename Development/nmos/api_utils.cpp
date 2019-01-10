@@ -197,6 +197,24 @@ namespace nmos
 
     namespace details
     {
+        // make handler to check supported API version, and set error response otherwise
+        web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate)
+        {
+            using namespace web::http::experimental::listener::api_router_using_declarations;
+
+            return [versions, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                const auto version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+                if (versions.end() == versions.find(version))
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unsupported API version";
+                    set_error_reply(res, status_codes::NotFound);
+                    throw std::runtime_error("Not Found"); // in order to skip other route handlers and then send the response
+                }
+                return pplx::task_from_result(true);
+            };
+        }
+
         static const utility::string_t actual_method{ U("X-Actual-Method") };
 
         // make handler to set appropriate response headers, and error response body if indicated

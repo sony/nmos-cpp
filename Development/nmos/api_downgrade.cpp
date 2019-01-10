@@ -1,6 +1,7 @@
 #include "nmos/api_downgrade.h"
 
 #include <map>
+#include "nmos/is04_versions.h"
 #include "nmos/resource.h"
 
 namespace nmos

@@ -2,6 +2,7 @@
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
+#include "nmos/is04_versions.h"
 #include "nmos/resource.h"
 
 namespace nmos

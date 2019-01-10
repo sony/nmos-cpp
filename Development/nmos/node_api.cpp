@@ -4,6 +4,7 @@
 #include "cpprest/json_validator.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/slog.h"
@@ -37,7 +38,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_node_api(model, target_handler, gate));
+        node_api.mount(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_node_api(model, target_handler, gate));
 
         return node_api;
     }
@@ -47,6 +48,9 @@ namespace nmos
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
         api_router node_api;
+
+        // check for supported API version
+        node_api.support(U(".*"), details::make_api_version_handler(nmos::is04_versions::all, gate));
 
         node_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -59,7 +63,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
             auto resource = nmos::find_self_resource(resources);
             if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
@@ -81,7 +85,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
 
             const auto match = [&](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType) && nmos::is_permitted_downgrade(resource, version); };
@@ -104,7 +108,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -133,7 +137,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::types::receiver });

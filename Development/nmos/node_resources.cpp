@@ -9,6 +9,8 @@
 #include "nmos/device_type.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
+#include "nmos/is04_versions.h"
+#include "nmos/is05_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"

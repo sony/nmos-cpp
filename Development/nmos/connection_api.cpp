@@ -5,6 +5,8 @@
 #include "nmos/activation_mode.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
+#include "nmos/is05_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
@@ -41,7 +43,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_connection_api(model, gate));
 
         return connection_api;
     }
@@ -842,6 +844,9 @@ namespace nmos
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
         api_router connection_api;
+
+        // check for supported API version
+        connection_api.support(U(".*"), details::make_api_version_handler(nmos::is05_versions::all, gate));
 
         connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {

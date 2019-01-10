@@ -4,7 +4,7 @@
 #include <list>
 #include "cpprest/base_uri.h"
 #include "mdns/core.h" // for mdns::structured_txt_records
-#include "nmos/api_version.h"
+#include "nmos/is04_versions.h"
 #include "nmos/settings.h" // just a forward declaration of nmos::settings required for nmos::experimental functions
 
 namespace mdns
