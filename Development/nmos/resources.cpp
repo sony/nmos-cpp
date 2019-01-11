@@ -392,4 +392,15 @@ namespace nmos
         }
         return result;
     }
+
+    namespace details
+    {
+        // return true if the resource is "erased" but not forgotten
+        bool is_erased_resource(const resources& resources, const std::pair<id, type>& id_type)
+        {
+            if (no_resource == id_type) return false;
+            auto resource = resources.find(id_type.first);
+            return resources.end() != resource && id_type.second == resource->type && !resource->has_data();
+        }
+    }
 }

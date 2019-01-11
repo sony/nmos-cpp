@@ -255,16 +255,27 @@ namespace nmos
             const resource_query match(version, U('/') + resourceType, flat_query_params);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                set_reply(res, status_codes::OK, match.downgrade(*resource));
-
-                // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
-                if (!match.strip || resource->version < match.version)
+                if (nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
                 {
-                    res.headers().add(U("X-API-Version"), make_api_version(resource->version));
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    set_reply(res, status_codes::OK, match.downgrade(*resource));
+
+                    // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
+                    if (!match.strip || resource->version < match.version)
+                    {
+                        res.headers().add(U("X-API-Version"), make_api_version(resource->version));
+                    }
                 }
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, match.version, match.downgrade_version));
+                }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {
@@ -415,21 +426,32 @@ namespace nmos
             const string_t subscriptionId = parameters.at(nmos::patterns::resourceId.name);
 
             auto subscription = find_resource(resources, { subscriptionId, nmos::types::subscription });
-            // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
-            if (resources.end() != subscription && subscription->version == version)
+            if (resources.end() != subscription)
             {
-                if (nmos::fields::persist(subscription->data))
+                // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
+                if (subscription->version == version)
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
-                    erase_resource(resources, subscription->id, false);
+                    if (nmos::fields::persist(subscription->data))
+                    {
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
+                        erase_resource(resources, subscription->id, false);
 
-                    set_reply(res, status_codes::NoContent);
+                        set_reply(res, status_codes::NoContent);
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
+                        set_error_reply(res, status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted"));
+                    }
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
-                    set_error_reply(res, status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted"));
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*subscription, version));
                 }
+            }
+            else if (details::is_erased_resource(resources, { subscriptionId, nmos::types::subscription }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {

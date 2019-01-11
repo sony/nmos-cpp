@@ -68,15 +68,23 @@ namespace nmos
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
             auto resource = nmos::find_self_resource(resources);
-            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning self resource: " << resource->id;
-                set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
+                if (nmos::is_permitted_downgrade(*resource, version))
+                {
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning self resource: " << resource->id;
+                    set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
+                }
+                else
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Self resource version is incorrect!";
+                    set_error_reply(res, status_codes::InternalError, U("Internal Error; ") + details::make_permitted_downgrade_error(*resource, version));
+                }
             }
             else
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Self resource not found!";
-                set_reply(res, status_codes::NotFound);
+                set_reply(res, status_codes::InternalError); // rather than Not Found, since the Node API doesn't allow a 404 response
             }
 
             return pplx::task_from_result(true);
@@ -115,10 +123,17 @@ namespace nmos
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
+                if (nmos::is_permitted_downgrade(*resource, version))
+                {
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
+                }
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                }
             }
             else
             {
@@ -143,24 +158,31 @@ namespace nmos
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::types::receiver });
-            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, version))
+            if (resources.end() != resource)
             {
-                if (target_handler)
+                if (nmos::is_permitted_downgrade(*resource, version))
                 {
-                    return details::extract_json(req, parameters, gate).then([target_handler, validator, version, resourceId, res](value sender_data) mutable
+                    if (target_handler)
                     {
-                        validator.validate(sender_data, experimental::make_nodeapi_receiver_target_put_request_schema_uri(version));
-
-                        return target_handler(resourceId, sender_data).then([res, sender_data]() mutable
+                        return details::extract_json(req, parameters, gate).then([target_handler, validator, version, resourceId, res](value sender_data) mutable
                         {
-                            set_reply(res, status_codes::Accepted, sender_data);
-                            return true;
+                            validator.validate(sender_data, experimental::make_nodeapi_receiver_target_put_request_schema_uri(version));
+
+                            return target_handler(resourceId, sender_data).then([res, sender_data]() mutable
+                            {
+                                set_reply(res, status_codes::Accepted, sender_data);
+                                return true;
+                            });
                         });
-                    });
+                    }
+                    else
+                    {
+                        set_reply(res, status_codes::NotImplemented);
+                    }
                 }
                 else
                 {
-                    set_reply(res, status_codes::NotImplemented);
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
                 }
             }
             else

@@ -108,6 +108,9 @@ namespace nmos
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res);
         web::http::http_response& add_cors_headers(web::http::http_response& res);
 
+        // make user error information (to be used with status_codes::NotFound)
+        utility::string_t make_erased_resource_error();
+
         // make handler to check supported API version, and set error response otherwise
         web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate);
 

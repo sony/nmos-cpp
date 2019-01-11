@@ -2,6 +2,7 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
+#include "nmos/api_downgrade.h" // for details::make_permitted_downgrade_error
 #include "nmos/api_utils.h"
 #include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
@@ -394,27 +395,38 @@ namespace nmos
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::types::node });
-            if (resources.end() != resource && resource->version == version)
+            if (resources.end() != resource)
             {
-                if (methods::POST == req.method())
+                if (resource->version == version)
                 {
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
+                    if (methods::POST == req.method())
+                    {
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
 
-                    const auto health = nmos::health_now();
-                    set_resource_health(resources, resourceId, health);
+                        const auto health = nmos::health_now();
+                        set_resource_health(resources, resource->id, health);
 
-                    set_reply(res, web::http::status_codes::OK, make_health_response_body(health));
-                }
-                else if (methods::GET == req.method())
-                {
-                    set_reply(res, web::http::status_codes::OK, make_health_response_body(resource->health));
+                        set_reply(res, web::http::status_codes::OK, make_health_response_body(health));
+                    }
+                    else if (methods::GET == req.method())
+                    {
+                        set_reply(res, web::http::status_codes::OK, make_health_response_body(resource->health));
+                    }
+                    else
+                    {
+                        web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::POST);
+                        web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::GET);
+                        set_reply(res, status_codes::MethodNotAllowed);
+                    }
                 }
                 else
                 {
-                    web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::POST);
-                    web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::GET);
-                    set_reply(res, status_codes::MethodNotAllowed);
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
                 }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::types::node }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {
@@ -434,10 +446,22 @@ namespace nmos
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && resource->version == version)
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                set_reply(res, status_codes::OK, resource->data);
+                // downgrade doesn't apply to the Registration API; version must be equal to resource->version
+                if (resource->version == version)
+                {
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    set_reply(res, status_codes::OK, resource->data);
+                }
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {
@@ -458,31 +482,42 @@ namespace nmos
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && resource->version == version)
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
-
-                // remove this resource from its super-resource's sub-resources
-                auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(*resource));
-                if (super_resource != resources.end())
+                if (resource->version == version)
                 {
-                    // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
-                    // hence resources.modify(...) rather than modify_resource(resources, ...)
-                    resources.modify(super_resource, [&resource](nmos::resource& super_resource)
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
+
+                    // remove this resource from its super-resource's sub-resources
+                    auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(*resource));
+                    if (super_resource != resources.end())
                     {
-                        super_resource.sub_resources.erase(resource->id);
-                    });
+                        // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
+                        // hence resources.modify(...) rather than modify_resource(resources, ...)
+                        resources.modify(super_resource, [&resource](nmos::resource& super_resource)
+                        {
+                            super_resource.sub_resources.erase(resource->id);
+                        });
+                    }
+
+                    // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
+                    // on the Node's behalf in order to prevent stale entries remaining in the registry."
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
+                    erase_resource(resources, resource->id, false);
+
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
+                    model.notify();
+
+                    set_reply(res, status_codes::NoContent);
                 }
-
-                // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
-                // on the Node's behalf in order to prevent stale entries remaining in the registry."
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
-                erase_resource(resources, resource->id, false);
-
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
-                model.notify();
-
-                set_reply(res, status_codes::NoContent);
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {

@@ -1217,7 +1217,8 @@ namespace nmos
 
                     // "When the `master_enable` parameter is false [...] the `/transportfile` endpoint should return an HTTP 404 response."
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L163-L165
-                    set_reply(res, status_codes::NotFound);
+                    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L277
+                    set_error_reply(res, status_codes::NotFound, U("Sender is not currently configured"));
                 }
             }
             else

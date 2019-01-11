@@ -35,6 +35,25 @@ namespace nmos
         return true;
     }
 
+    namespace details
+    {
+        utility::string_t make_permitted_downgrade_error(const nmos::resource& resource, const nmos::api_version& version)
+        {
+            return make_permitted_downgrade_error(resource, version, version);
+        }
+
+        utility::string_t make_permitted_downgrade_error(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+        {
+            return make_permitted_downgrade_error(resource.version, resource.type, version, downgrade_version);
+        }
+
+        utility::string_t make_permitted_downgrade_error(const nmos::api_version& resource_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+        {
+            return (version == downgrade_version ? make_api_version(version) + U(" request") : make_api_version(downgrade_version) + U(" downgrade request"))
+                + U(" is not permitted for a ") + make_api_version(resource_version) + U(" resource");
+        }
+    }
+
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version)
     {
         return downgrade(resource, version, version);

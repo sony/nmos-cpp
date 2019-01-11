@@ -197,6 +197,12 @@ namespace nmos
 
     namespace details
     {
+        // make user error information (to be used with status_codes::NotFound)
+        utility::string_t make_erased_resource_error()
+        {
+            return U("resource has recently expired or been deleted");
+        }
+
         // make handler to check supported API version, and set error response otherwise
         web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate)
         {
@@ -208,7 +214,7 @@ namespace nmos
                 if (versions.end() == versions.find(version))
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unsupported API version";
-                    set_error_reply(res, status_codes::NotFound);
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; unsupported API version"));
                     throw std::runtime_error("Not Found"); // in order to skip other route handlers and then send the response
                 }
                 return pplx::task_from_result(true);
@@ -301,6 +307,8 @@ namespace nmos
         if (!web::http::is_error_status_code(res.status_code()))
         {
             set_reply(res, code, nmos::make_error_response_body(code, error, debug));
+            // https://stackoverflow.com/questions/38654336/is-it-good-practice-to-modify-the-reason-phrase-of-an-http-response/38655533#38655533
+            //res.set_reason_phrase(error);
         }
     }
 

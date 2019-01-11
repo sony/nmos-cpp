@@ -16,6 +16,14 @@ namespace nmos
     bool is_permitted_downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version);
     bool is_permitted_downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version);
 
+    namespace details
+    {
+        // make user error information (to be used with status_codes::NotFound)
+        utility::string_t make_permitted_downgrade_error(const nmos::resource& resource, const nmos::api_version& version);
+        utility::string_t make_permitted_downgrade_error(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version);
+        utility::string_t make_permitted_downgrade_error(const nmos::api_version& resource_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version);
+    }
+
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version);
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version);
     web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version);
