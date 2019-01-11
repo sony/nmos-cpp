@@ -286,7 +286,7 @@ namespace nmos
             data[nmos::fields::resource_path] = value::string(node_behaviour_resource_path);
             data[nmos::fields::params] = value::object();
             // no ws_href since subscriptions are inaccessible on the Node API anyway
-            return{ nmos::is04_versions::v1_2, nmos::types::subscription, data, true };
+            return{ nmos::is04_versions::v1_3, nmos::types::subscription, data, true };
         }
 
         nmos::resource make_node_behaviour_grain(const nmos::id& id, const nmos::id& subscription_id)
@@ -297,7 +297,7 @@ namespace nmos
             data[nmos::fields::subscription_id] = value::string(subscription_id);
             data[nmos::fields::message] = details::make_grain(nmos::make_id(), subscription_id, node_behaviour_topic);
             nmos::fields::message_grain_data(data) = value::array();
-            return{ nmos::is04_versions::v1_2, nmos::types::grain, data, true };
+            return{ nmos::is04_versions::v1_3, nmos::types::grain, data, true };
         }
 
         struct node_behaviour_grain_guard
@@ -354,7 +354,7 @@ namespace nmos
             return web::json::value_of(
             {
                 { U("type"), web::json::value::string(type.name) },
-                { U("data"), nmos::downgrade(nmos::is04_versions::v1_2, type, data, registry_version, registry_version) }
+                { U("data"), nmos::downgrade(nmos::is04_versions::v1_3, type, data, registry_version, registry_version) }
             });
         }
 
@@ -614,7 +614,7 @@ namespace nmos
                 auto& events = nmos::fields::message_grain_data(grain.data);
 
                 // the node behaviour subscription version, resource_path and params are currently fixed (see make_node_behaviour_subscription)
-                events = make_resource_events(resources, nmos::is04_versions::v1_2, U(""), web::json::value::object());
+                events = make_resource_events(resources, nmos::is04_versions::v1_3, U(""), web::json::value::object());
 
                 grain.updated = strictly_increasing_update(resources);
             });

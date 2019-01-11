@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Registration API base resource",
+  "title": "Registration API base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "resource/",
+      "health/"
+    ],
+    "minItems": 2,
+    "maxItems": 2,
+    "uniqueItems": true
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes MQTT Sender transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. MQTT Senders must support all properties in this schema.",
+  "title": "MQTT Sender Transport Parameters",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "title": "Sender Output",
+    "allOf": [
+      { "$ref": "sender_transport_params_ext.json" },
+      {
+        "type": "object",
+        "properties": {
+          "destination_host": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hostname or IP hosting the MQTT broker. The sender should provide an enum in the constraints endpoint, which should contain 'auto', and the available interface addresses formatted as connection URIs. If the parameter is set to auto the sender should establish for itself which broker it should use, based on a discovery mechanism or its own internal configuration. A null value indicates that the sender has not yet been configured.",
+            "anyOf": [{
+                "pattern": "^auto$"
+              },
+              {
+                "format": "hostname"
+              },
+              {
+                "format": "ipv4"
+              },
+              {
+                "format": "ipv6"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "destination_port": {
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Destination port for MQTT traffic.  If the parameter is set to auto the sender should establish for itself which broker it should use, based on a discovery mechanism or its own internal configuration.",
+            "minimum": 1,
+            "maximum": 65535,
+            "pattern": "^auto$"
+          },
+          "broker_topic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The topic which MQTT messages will be sent to on the MQTT broker. A null value indicates that the sender has not yet been configured."
+          }
+        }
+      }
+    ]
+  }
+}

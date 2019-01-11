@@ -11,8 +11,9 @@ namespace nmos
     namespace is05_versions
     {
         const api_version v1_0{ 1, 0 };
+        const api_version v1_1{ 1, 1 };
 
-        const std::set<api_version> all{ nmos::is05_versions::v1_0 };
+        const std::set<api_version> all{ nmos::is05_versions::v1_0, nmos::is05_versions::v1_1 };
 
         inline std::set<api_version> from_settings(const nmos::settings& settings)
         {

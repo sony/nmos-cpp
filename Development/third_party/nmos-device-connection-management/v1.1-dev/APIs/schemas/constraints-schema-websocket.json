@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Used to express the dynamic constraints on WebSocket transport parameters. These constraints may be set and changed at run time. Every transport parameter must have an entry, even if it is only an empty object.",
+  "patternProperties": {
+    "^ext_[a-z A-Z 0-9 _]+$":{
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    }
+  },
+  "properties": {
+    "connection_uri": {
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    }
+  }
+}

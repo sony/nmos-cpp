@@ -48,6 +48,6 @@ namespace nmos
 
         data[U("interfaces")] = value::array();
 
-        return{ is04_versions::v1_2, types::node, data, false };
+        return{ is04_versions::v1_3, types::node, data, false };
     }
 }

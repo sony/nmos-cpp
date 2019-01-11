@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes an audio Receiver",
+  "title": "Audio Receiver resource",
+  "allOf": [
+    { "$ref": "receiver_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "format",
+        "caps"
+      ],
+      "properties": {
+        "format": {
+          "description": "Type of Flow accepted by the Receiver as a URN",
+          "type": "string",
+          "enum": [
+            "urn:x-nmos:format:audio"
+          ],
+          "format": "uri"
+        },
+        "caps": {
+          "description": "Capabilities",
+          "type": "object",
+          "properties": {
+            "media_types": {
+              "description": "Subclassification of the formats accepted using IANA assigned media types",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "anyOf": [
+                  {
+                    "enum": [
+                      "audio/L24",
+                      "audio/L20",
+                      "audio/L16",
+                      "audio/L8"
+                    ]
+                  },
+                  {
+                    "pattern": "^audio\\/[^\\s\\/]+$"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

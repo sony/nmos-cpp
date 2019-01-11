@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes WebSocket Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. Receivers must support at least the `connection_uri` parameter.",
+  "title": "WebSocket Receiver Transport Parameters",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "title": "Receiver Input",
+    "allOf": [
+      { "$ref": "receiver_transport_params_ext.json" },
+      {
+        "type": "object",
+        "properties": {
+          "connection_uri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URI hosting the WebSocket server as defined in RFC 6455 Section 3. A null value indicates that the receiver has not yet been configured.",
+            "anyOf": [{
+                "pattern": "^wss?:\/\/.*"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

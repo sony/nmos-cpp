@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a Flow",
+  "title": "Flow resource",
+  "allOf": [
+    { "$ref": "resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "source_id",
+        "device_id",
+        "parents"
+      ],
+      "properties": {
+        "grain_rate" : {
+          "description": "Number of Grains per second for this Flow. Must be an integer division of, or equal to the Grain rate specified by the parent Source. Grain rate matches the frame rate for video (see NMOS Content Model). Specified for periodic Flows only.",
+          "type": "object",
+          "required" : [
+            "numerator"
+          ],
+          "properties" : {
+            "numerator" : {
+              "description" : "Numerator",
+              "type" : "integer"
+            },
+            "denominator" : {
+              "description" : "Denominator",
+              "type" : "integer",
+              "default" : 1
+            }
+          }
+        },
+        "source_id": {
+          "description": "Globally unique identifier for the Source which initially created the Flow",
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "device_id": {
+          "description": "Globally unique identifier for the Device which initially created the Flow",
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "parents": {
+          "description": "Array of UUIDs representing the Flow IDs of Grains which came together to generate this Flow (may change over the lifetime of this Flow)",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        }
+      }
+    }
+  ]
+}

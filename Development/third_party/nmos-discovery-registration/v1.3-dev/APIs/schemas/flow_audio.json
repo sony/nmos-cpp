@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes an audio Flow",
+  "title": "Audio Flow resource",
+  "allOf": [
+    { "$ref": "flow_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "format",
+        "sample_rate"
+      ],
+      "properties": {
+        "format": {
+          "description": "Format of the data coming from the Flow as a URN",
+          "type": "string",
+          "enum": [
+            "urn:x-nmos:format:audio"
+          ],
+          "format": "uri"
+        },
+        "sample_rate" : {
+          "description": "Number of audio samples per second for this Flow",
+          "type": "object",
+          "required" : [
+            "numerator"
+          ],
+          "properties" : {
+            "numerator" : {
+              "description" : "Numerator",
+              "type" : "integer"
+            },
+            "denominator" : {
+              "description" : "Denominator",
+              "type" : "integer",
+              "default" : 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

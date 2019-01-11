@@ -56,7 +56,7 @@ namespace nmos
             }
         }
 
-        return{ is04_versions::v1_2, types::device, data, false };
+        return{ is04_versions::v1_3, types::device, data, false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_core.json
@@ -72,7 +72,7 @@ namespace nmos
         data[U("parents")] = value::array();
         data[U("clock_name")] = value::null();
 
-        return{ is04_versions::v1_2, types::source, data, false };
+        return{ is04_versions::v1_3, types::source, data, false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
@@ -131,7 +131,7 @@ namespace nmos
         data[U("device_id")] = value::string(device_id);
         data[U("parents")] = value::array();
 
-        return{ is04_versions::v1_2, types::flow, data, false };
+        return{ is04_versions::v1_3, types::flow, data, false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_video.json
@@ -256,7 +256,7 @@ namespace nmos
         subscription[U("active")] = value::boolean(false);
         data[U("subscription")] = std::move(subscription);
 
-        return{ is04_versions::v1_2, types::sender, data, false };
+        return{ is04_versions::v1_3, types::sender, data, false };
     }
 
     nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::id& device_id, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
@@ -285,7 +285,7 @@ namespace nmos
         subscription[U("active")] = value::boolean(false);
         data[U("subscription")] = std::move(subscription);
 
-        return{ is04_versions::v1_2, types::receiver, data, false };
+        return{ is04_versions::v1_3, types::receiver, data, false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_video.json
@@ -469,7 +469,7 @@ namespace nmos
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
 
-        return{ is05_versions::v1_0, types::sender, data, false };
+        return{ is05_versions::v1_1, types::sender, data, false };
     }
 
     web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile)
@@ -530,7 +530,7 @@ namespace nmos
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
 
-        return{ is05_versions::v1_0, types::receiver, data, false };
+        return{ is05_versions::v1_1, types::receiver, data, false };
     }
 
     namespace experimental
