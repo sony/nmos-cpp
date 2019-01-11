@@ -24,6 +24,7 @@ namespace nmos
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
+            const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
 
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/APIs/schemas/
@@ -134,6 +135,7 @@ namespace nmos
                 { make_schema_uri(v1_3::tag, _XPLATSTR("source_audio.json")), make_schema(v1_3::source_audio) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("source_core.json")), make_schema(v1_3::source_core) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("queryapi-subscriptions-post-request.json")), make_schema(v1_3::queryapi_subscriptions_post_request) },
+                { make_schema_uri(v1_3::tag, _XPLATSTR("nodeapi-receiver-target.json")), make_schema(v1_3::nodeapi_receiver_target) },
                 // v1.2
                 { make_schema_uri(v1_2::tag, _XPLATSTR("registrationapi-resource-post-request.json")), make_schema(v1_2::registrationapi_resource_post_request) },
                 { make_schema_uri(v1_2::tag, _XPLATSTR("clock_internal.json")), make_schema(v1_2::clock_internal) },
@@ -271,6 +273,7 @@ namespace nmos
 
         web::uri make_nodeapi_receiver_target_put_request_schema_uri(const nmos::api_version& version)
         {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::nodeapi_receiver_target_put_request_uri;
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::nodeapi_receiver_target_put_request_uri;
             if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::nodeapi_receiver_target_put_request_uri;
             return is04_schemas::v1_0::nodeapi_receiver_target_put_request_uri;
