@@ -487,6 +487,8 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/health.h
     ${NMOS_CPP_DIR}/nmos/id.h
     ${NMOS_CPP_DIR}/nmos/interlace_mode.h
+    ${NMOS_CPP_DIR}/nmos/is04_versions.h
+    ${NMOS_CPP_DIR}/nmos/is05_versions.h
     ${NMOS_CPP_DIR}/nmos/json_fields.h
     ${NMOS_CPP_DIR}/nmos/json_schema.h
     ${NMOS_CPP_DIR}/nmos/log_manip.h

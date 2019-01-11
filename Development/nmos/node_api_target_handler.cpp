@@ -4,6 +4,7 @@
 #include "cpprest/http_client.h"
 #include "nmos/activation_mode.h"
 #include "nmos/connection_api.h"
+#include "nmos/is05_versions.h"
 #include "nmos/json_fields.h"
 #include "nmos/model.h"
 #include "nmos/slog.h"
@@ -67,7 +68,8 @@ namespace nmos
                     });
 
                     web::http::http_response res; // ignore the Connection API response
-                    nmos::details::handle_connection_resource_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
+                    const auto version = nmos::is05_versions::v1_0; // hmm, could be based on supported API versions from settings?
+                    nmos::details::handle_connection_resource_patch(res, model, version, { receiver_id, nmos::types::receiver }, patch, gate);
                 });
             }
             else
@@ -85,7 +87,8 @@ namespace nmos
                     });
 
                     web::http::http_response res; // ignore the Connection API response
-                    nmos::details::handle_connection_resource_patch(res, model, { receiver_id, nmos::types::receiver }, patch, gate);
+                    const auto version = nmos::is05_versions::v1_0; // hmm, could be based on supported API versions from settings?
+                    nmos::details::handle_connection_resource_patch(res, model, version, { receiver_id, nmos::types::receiver }, patch, gate);
                 });
             }
         };

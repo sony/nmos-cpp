@@ -1,6 +1,6 @@
 #include "node_implementation.h"
 
-#include <boost/range/adaptor/reversed.hpp>
+#include "detail/for_each_reversed.h"
 #include "nmos/activation_mode.h"
 #include "nmos/connection_api.h"
 #include "nmos/group_hint.h"
@@ -150,9 +150,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
         bool notify = false;
 
-        for (const auto& resource : by_updated | boost::adaptors::reversed)
+        // since modify reorders the resource in this index, use for_each_reversed
+        detail::for_each_reversed(by_updated.begin(), by_updated.end(), [&](const nmos::resource& resource)
         {
-            if (!resource.has_data()) continue;
+            if (!resource.has_data()) return;
 
             const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
 
@@ -160,7 +161,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
             auto& staged_activation = nmos::fields::activation(staged);
             auto& staged_mode_or_null = nmos::fields::mode(staged_activation);
 
-            if (staged_mode_or_null.is_null()) continue;
+            if (staged_mode_or_null.is_null()) return;
 
             const nmos::activation_mode staged_mode{ staged_mode_or_null.as_string() };
 
@@ -181,22 +182,22 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
                         earliest_scheduled_activation = scheduled_activation;
                     }
 
-                    continue;
+                    return;
                 }
             }
             else if (nmos::activation_modes::activate_immediate == staged_mode)
             {
                 // check for cancelled in-flight immediate activation
-                if (nmos::fields::requested_time(staged_activation).is_null()) continue;
+                if (nmos::fields::requested_time(staged_activation).is_null()) return;
                 // check for processed in-flight immediate activation
-                if (!nmos::fields::activation_time(staged_activation).is_null()) continue;
+                if (!nmos::fields::activation_time(staged_activation).is_null()) return;
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Processing immediate activation for " << id_type;
             }
             else
             {
                 slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected activation mode for " << id_type;
-                continue;
+                return;
             }
 
             const auto activation_time = nmos::tai_now();
@@ -229,7 +230,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
             });
 
             notify = true;
-        }
+        });
 
         if ((nmos::tai_clock::time_point::max)() != earliest_scheduled_activation)
         {

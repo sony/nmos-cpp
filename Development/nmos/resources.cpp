@@ -1,6 +1,7 @@
 #include "nmos/resources.h"
 
 #include <boost/range/adaptor/reversed.hpp>
+#include "nmos/is04_versions.h"
 #include "nmos/query_utils.h"
 
 namespace nmos

@@ -1,12 +1,13 @@
 #include "nmos/connection_api.h"
 
-#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
 #include "cpprest/http_utils.h"
 #include "cpprest/json_validator.h"
 #include "nmos/activation_mode.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
+#include "nmos/is05_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
@@ -37,13 +38,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is05_versions::from_settings(model.settings); });
+        connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::is05_version.pattern, make_unmounted_connection_api(model, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_connection_api(model, gate));
 
         return connection_api;
     }
@@ -52,8 +54,9 @@ namespace nmos
     {
         // Validate against specification schema
         // throws web::json::json_exception on failure, which results in a 400 Bad Request
-        void validate_staged_core(const nmos::type& type, const web::json::value& staged)
+        void validate_staged_core(const nmos::api_version& version, const nmos::type& type, const web::json::value& staged)
         {
+            // hmm, could be based on supported API versions from settings, like other APIs' validators?
             static const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
@@ -62,11 +65,10 @@ namespace nmos
                     is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::receiver))
                 ))
             };
-            
+
             // Validate JSON syntax according to the schema
 
-            // hmm, need to plumb the version through from the request
-            validator.validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(is05_versions::v1_0, type));
+            validator.validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(version, type));
         }
 
         // Extend an existing schema with "auto" as a valid value
@@ -484,7 +486,7 @@ namespace nmos
         // By the time we reacquire the model lock anything may have happened, but we can identify with the above whether to send
         // a success response or an error, and in the success case, release the 'per-resource lock' by updating the staged
         // activation mode, requested_time and activation_time.
-        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, slog::base_gate& gate)
+        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -492,7 +494,7 @@ namespace nmos
             auto& resources = model.connection_resources;
 
             // Validate JSON syntax according to the schema
-            details::validate_staged_core(id_type.second, patch);
+            details::validate_staged_core(version, id_type.second, patch);
 
             const auto patch_state = details::get_activation_state(nmos::fields::activation(patch));
 
@@ -663,12 +665,12 @@ namespace nmos
             model.notify();
         }
 
-        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
         {
             auto lock = model.write_lock();
             const auto request_time = tai_now(); // during write lock to ensure uniqueness
 
-            auto result = handle_connection_resource_patch(model, lock, id_type, patch, request_time, gate);
+            auto result = handle_connection_resource_patch(model, lock, version, id_type, patch, request_time, gate);
 
             if (web::http::is_success_status_code(result.first))
             {
@@ -846,6 +848,10 @@ namespace nmos
 
         api_router connection_api;
 
+        // check for supported API version
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is05_versions::from_settings(model.settings); });
+        connection_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+
         connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulk/"), U("single/") }, res));
@@ -870,6 +876,7 @@ namespace nmos
                 auto lock = model.write_lock();
                 const auto request_time = tai_now(); // during write lock to ensure uniqueness
 
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
 
                 auto& patches = body.as_array();
@@ -934,7 +941,7 @@ namespace nmos
 
                     try
                     {
-                        result = details::handle_connection_resource_patch(model, lock, { id, type }, patch[nmos::fields::params], request_time, gate);
+                        result = details::handle_connection_resource_patch(model, lock, version, { id, type }, patch[nmos::fields::params], request_time, gate);
                     }
                     catch (...)
                     {
@@ -1095,6 +1102,7 @@ namespace nmos
         {
             return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
             {
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -1102,7 +1110,7 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Operation requested for single " << id_type;
 
-                details::handle_connection_resource_patch(res, model, id_type, body, gate);
+                details::handle_connection_resource_patch(res, model, version, id_type, body, gate);
 
                 return true;
             });

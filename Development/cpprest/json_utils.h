@@ -220,7 +220,7 @@ namespace web
         inline web::json::value value_from_elements(const Values& elements)
         {
             web::json::value result = web::json::value::array();
-            for (auto& element : elements)
+            for (const auto& element : elements)
             {
                 push_back(result, element);
             }

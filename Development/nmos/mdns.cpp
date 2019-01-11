@@ -54,21 +54,25 @@ namespace nmos
 
     namespace details
     {
-        inline std::string make_api_ver_value(const std::vector<api_version>& api_ver = is04_versions::all)
+        inline std::string make_api_ver_value(const std::set<api_version>& api_ver = is04_versions::all)
         {
             return boost::algorithm::join(api_ver | boost::adaptors::transformed(make_api_version) | boost::adaptors::transformed(utility::us2s), ",");
         }
 
-        inline std::vector<api_version> parse_api_ver_value(const std::string& api_ver)
+        inline std::set<api_version> parse_api_ver_value(const std::string& api_ver)
         {
+            // "The value of this TXT record is a comma separated list of API versions supported by the server. For example: 'v1.0,v1.1,v2.0'.
+            // There should be no whitespace between commas, and versions should be listed in ascending order."
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L33
             std::vector<std::string> api_vers;
             boost::algorithm::split(api_vers, api_ver, [](char c){ return ',' == c; });
-            return boost::copy_range<std::vector<api_version>>(api_vers | boost::adaptors::transformed(utility::s2us) | boost::adaptors::transformed(parse_api_version));
+            // Since ascending order is recommended, not required, convert straight to an ordered set without checking that.
+            return boost::copy_range<std::set<api_version>>(api_vers | boost::adaptors::transformed(utility::s2us) | boost::adaptors::transformed(parse_api_version));
         }
     }
 
     // find and parse the 'api_ver' TXT record (or return the default)
-    std::vector<api_version> parse_api_ver_record(const mdns::structured_txt_records& records)
+    std::set<api_version> parse_api_ver_record(const mdns::structured_txt_records& records)
     {
         return mdns::parse_txt_record(records, txt_record_keys::api_ver, details::parse_api_ver_value, is04_versions::unspecified);
     }
@@ -115,7 +119,7 @@ namespace nmos
     }
 
     // make the required TXT records from the specified values (or sensible default values)
-    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri, const std::vector<api_version>& api_ver, const service_protocol& api_proto)
+    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri, const std::set<api_version>& api_ver, const service_protocol& api_proto)
     {
         if (service == nmos::service_types::node)
         {
@@ -225,7 +229,7 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API)
         // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::vector<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
         {
             const auto absolute_timeout = std::chrono::steady_clock::now() + timeout;
 

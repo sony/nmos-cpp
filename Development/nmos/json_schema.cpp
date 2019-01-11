@@ -1,8 +1,9 @@
 #include "nmos/json_schema.h"
 
 #include "cpprest/basic_utils.h"
-#include "nmos/api_version.h"
+#include "nmos/is04_versions.h"
 #include "nmos/is04_schemas/is04_schemas.h"
+#include "nmos/is05_versions.h"
 #include "nmos/is05_schemas/is05_schemas.h"
 #include "nmos/type.h"
 

@@ -1,8 +1,10 @@
 #include "nmos/api_utils.h"
 
-#include <set>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include "nmos/api_version.h"
 #include "nmos/slog.h"
+#include "nmos/type.h"
 
 namespace nmos
 {
@@ -157,14 +159,12 @@ namespace nmos
         return details::resourceTypes_from_type.at(type);
     }
 
-    // construct a standard NMOS "child resources" response, sorting the specified sub-routes lexicographically
-    // and optionally merging with ones from an existing response
+    // construct a standard NMOS "child resources" response, from the specified sub-routes
+    // merging with ones from an existing response
     // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
-    web::json::value make_sub_routes_body(std::initializer_list<utility::string_t> sub_routes, web::http::http_response res)
+    web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, web::http::http_response res)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
-
-        std::set<utility::string_t> sorted_unique(sub_routes);
 
         if (res.body())
         {
@@ -172,11 +172,17 @@ namespace nmos
 
             for (auto& element : body.as_array())
             {
-                sorted_unique.insert(element.as_string());
+                sub_routes.insert(element.as_string());
             }
         }
 
-        return web::json::value_from_elements(sorted_unique);
+        return web::json::value_from_elements(sub_routes);
+    }
+
+    // construct sub-routes for the specified API versions
+    std::set<utility::string_t> make_api_version_sub_routes(const std::set<nmos::api_version>& versions)
+    {
+        return boost::copy_range<std::set<utility::string_t>>(versions | boost::adaptors::transformed([](const nmos::api_version& v) { return make_api_version(v) + U("/"); }));
     }
 
     // construct a standard NMOS error response, using the default reason phrase if no user error information is specified
@@ -191,6 +197,24 @@ namespace nmos
 
     namespace details
     {
+        // make handler to check supported API version, and set error response otherwise
+        web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate)
+        {
+            using namespace web::http::experimental::listener::api_router_using_declarations;
+
+            return [versions, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                const auto version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+                if (versions.end() == versions.find(version))
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unsupported API version";
+                    set_error_reply(res, status_codes::NotFound);
+                    throw std::runtime_error("Not Found"); // in order to skip other route handlers and then send the response
+                }
+                return pplx::task_from_result(true);
+            };
+        }
+
         static const utility::string_t actual_method{ U("X-Actual-Method") };
 
         // make handler to set appropriate response headers, and error response body if indicated

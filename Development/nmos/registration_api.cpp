@@ -3,6 +3,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
@@ -82,13 +83,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/"), U("v1.3/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
             return pplx::task_from_result(true);
         });
 
-        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, gate));
+        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_registration_api(model, gate));
 
         return registration_api;
     }
@@ -111,6 +113,10 @@ namespace nmos
 
         api_router registration_api;
 
+        // check for supported API version
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        registration_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+
         // experimental extension, to enable the Registration API to be flagged as temporarily unavailable
         registration_api.support(U(".*"), [&model](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -132,7 +138,7 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
+            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
         };
 
         registration_api.support(U("/resource/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
@@ -144,7 +150,7 @@ namespace nmos
                 auto lock = model.write_lock();
                 auto& resources = model.registry_resources;
 
-                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
                 // Validate JSON syntax according to the schema
 
@@ -384,7 +390,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::types::node });
@@ -423,7 +429,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -447,7 +453,7 @@ namespace nmos
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
