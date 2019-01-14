@@ -11,6 +11,7 @@
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
 #include "nmos/transport.h"
+#include "nmos/channels.h"
 #include "sdp/sdp.h"
 #include "node_application_hooks.h"
 
@@ -120,12 +121,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
             // Update the IS-05 connection resource
 
-            nmos::modify_resource(model.connection_resources, resource.id, [&resolve_auto, &sdp_params, &activation_time, &active, &connected_id](nmos::resource& connection_resource)
+            nmos::modify_resource(model.connection_resources, resource.id, [&activation_time, &active, &connected_id](nmos::resource& connection_resource)
             {
                 const auto& type = connection_resource.type;
                 nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
                 {
-                    resolve_auto(type, endpoint_active);
+                    nmos::resolve_auto(type, endpoint_active[nmos::fields::transport_params]);
                     active = nmos::fields::master_enable(endpoint_active);
                     // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
                     auto& connected_id_or_null = nmos::types::sender == type ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
