@@ -1258,7 +1258,12 @@ namespace nmos
                 {
                     // hmm, currently unclear whether subclassifications such as e.g. "urn:x-nmos:transport:rtp.mcast"
                     // should be presented as the top-level category, e.g. "urn:x-nmos:transport:rtp"
-                    set_reply(res, status_codes::OK, matching_resource->data.at(nmos::fields::transport));
+                    // proposed solution is to trim to the first ‘.’ after the last ‘:’
+                    // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/57
+                    const auto& transport_subclassification = nmos::fields::transport(matching_resource->data);
+                    const auto last_colon = transport_subclassification.find_last_of(U(':'));
+                    const auto next_dot = transport_subclassification.find(U('.', last_colon + 1));
+                    set_reply(res, status_codes::OK, web::json::value::string(transport_subclassification.substr(0, next_dot)));
                 }
             }
             else
