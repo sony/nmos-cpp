@@ -1258,7 +1258,7 @@ namespace nmos
                 {
                     // hmm, currently unclear whether subclassifications such as e.g. "urn:x-nmos:transport:rtp.mcast"
                     // should be presented as the top-level category, e.g. "urn:x-nmos:transport:rtp"
-                    // proposed solution is to trim to the first ‘.’ after the last ‘:’
+                    // proposed solution is to trim to the first '.' after the last ':'
                     // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/57
                     const auto& transport_subclassification = nmos::fields::transport(matching_resource->data);
                     const auto last_colon = transport_subclassification.find_last_of(U(':'));
