@@ -1262,7 +1262,7 @@ namespace nmos
                     // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/57
                     const auto& transport_subclassification = nmos::fields::transport(matching_resource->data);
                     const auto last_colon = transport_subclassification.find_last_of(U(':'));
-                    const auto next_dot = transport_subclassification.find(U('.', last_colon + 1));
+                    const auto next_dot = transport_subclassification.find(U('.'), last_colon + 1);
                     set_reply(res, status_codes::OK, web::json::value::string(transport_subclassification.substr(0, next_dot)));
                 }
             }
