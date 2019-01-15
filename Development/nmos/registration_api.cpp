@@ -125,7 +125,7 @@ namespace nmos
             if (!available)
             {
                 set_error_reply(res, status_codes::ServiceUnavailable);
-                throw std::logic_error("Service Unavailable"); // in order to skip other route handlers and then send the response
+                throw details::to_api_finally_handler{}; // in order to skip other route handlers and then send the response
             }
             return pplx::task_from_result(true);
         });

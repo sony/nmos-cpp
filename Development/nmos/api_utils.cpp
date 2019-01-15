@@ -215,7 +215,7 @@ namespace nmos
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unsupported API version";
                     set_error_reply(res, status_codes::NotFound, U("Not Found; unsupported API version"));
-                    throw std::runtime_error("Not Found"); // in order to skip other route handlers and then send the response
+                    throw details::to_api_finally_handler{}; // in order to skip other route handlers and then send the response
                 }
                 return pplx::task_from_result(true);
             };
@@ -301,19 +301,14 @@ namespace nmos
     }
 
     // set up a standard NMOS error response, using the default reason phrase if no user error information is specified
-    // but don't replace an existing error response
     void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& error, const utility::string_t& debug)
     {
-        if (!web::http::is_error_status_code(res.status_code()))
-        {
-            set_reply(res, code, nmos::make_error_response_body(code, error, debug));
-            // https://stackoverflow.com/questions/38654336/is-it-good-practice-to-modify-the-reason-phrase-of-an-http-response/38655533#38655533
-            //res.set_reason_phrase(error);
-        }
+        set_reply(res, code, nmos::make_error_response_body(code, error, debug));
+        // https://stackoverflow.com/questions/38654336/is-it-good-practice-to-modify-the-reason-phrase-of-an-http-response/38655533#38655533
+        //res.set_reason_phrase(error);
     }
 
     // set up a standard NMOS error response, using the default reason phrase and the specified debug information
-    // but don't replace an existing error response
     void set_error_reply(web::http::http_response& res, web::http::status_code code, const std::exception& debug)
     {
         set_error_reply(res, code, {}, utility::s2us(debug.what()));
@@ -355,6 +350,14 @@ namespace nmos
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
                 set_error_reply(res, status_codes::InternalError, e);
+            }
+            // and this one asks to skip other route handlers and then send the response 
+            catch (const details::to_api_finally_handler&)
+            {
+                if (web::http::empty_status_code == res.status_code())
+                {
+                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected to_api_finally_handler exception";
+                }
             }
             // and other exception types are unexpected errors
             catch (const std::exception& e)

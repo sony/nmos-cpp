@@ -76,11 +76,9 @@ namespace nmos
     web::json::value make_error_response_body(web::http::status_code code, const utility::string_t& error = {}, const utility::string_t& debug = {});
 
     // set up a standard NMOS error response, using the default reason phrase if no user error information is specified
-    // but don't replace an existing error response
     void set_error_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& error = {}, const utility::string_t& debug = {});
 
     // set up a standard NMOS error response, using the default reason phrase and the specified debug information
-    // but don't replace an existing error response
     void set_error_reply(web::http::http_response& res, web::http::status_code code, const std::exception& debug);
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
@@ -95,6 +93,9 @@ namespace nmos
 
     namespace details
     {
+        // exception to skip other route handlers and then send the response (see add_api_finally_handler)
+        struct to_api_finally_handler {};
+
         // decode URI-encoded string value elements in a JSON object
         void decode_elements(web::json::value& value);
 
