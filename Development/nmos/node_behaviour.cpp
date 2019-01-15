@@ -177,8 +177,7 @@ namespace nmos
             // no_priority allows the node to run unadvertised
             if (nmos::service_priorities::no_priority != pri)
             {
-                auto records = nmos::make_txt_records(nmos::service_types::node, pri, nmos::is04_versions::from_settings(settings));
-                nmos::experimental::register_service(advertiser, nmos::service_types::node, settings, records);
+                nmos::experimental::register_service(advertiser, nmos::service_types::node, settings);
             }
         }
 
@@ -937,10 +936,7 @@ namespace nmos
             const auto pri = nmos::fields::pri(settings);
             if (nmos::service_priorities::no_priority != pri)
             {
-                auto records = nmos::make_txt_records(nmos::service_types::node, pri, nmos::is04_versions::from_settings(settings));
-                auto ver_records = nmos::make_ver_records(ver);
-                records.insert(records.end(), std::make_move_iterator(ver_records.begin()), std::make_move_iterator(ver_records.end()));
-                nmos::experimental::update_service(advertiser, nmos::service_types::node, settings, records);
+                nmos::experimental::update_service(advertiser, nmos::service_types::node, settings, nmos::make_ver_records(ver));
             }
         }
 
@@ -950,8 +946,7 @@ namespace nmos
             const auto pri = nmos::fields::pri(settings);
             if (nmos::service_priorities::no_priority != pri)
             {
-                auto records = nmos::make_txt_records(nmos::service_types::node, nmos::service_priorities::no_priority, nmos::is04_versions::from_settings(settings));
-                nmos::experimental::update_service(advertiser, nmos::service_types::node, settings, records);
+                nmos::experimental::update_service(advertiser, nmos::service_types::node, settings);
             }
         }
 

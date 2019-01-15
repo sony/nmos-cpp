@@ -202,7 +202,7 @@ namespace nmos
         }
 
         // helper function for registering the specified service (API)
-        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
+        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings)
         {
             // if a host_name has been explicitly specified, attempt to register it in the specified domain
             const auto host_name = utility::us2s(nmos::fields::host_name(settings));
@@ -217,14 +217,37 @@ namespace nmos
                 }
             }
 
-            advertiser.register_service(service_name(service, settings), service, (uint16_t)details::service_port(service, settings), domain, host_name, mdns::make_txt_records(records)).wait();
+            const auto instance_name = service_name(service, settings);
+            const auto instance_port = (uint16_t)details::service_port(service, settings);
+            const auto api_ver = nmos::is04_versions::from_settings(settings);
+            const auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver);
+            const auto txt_records = mdns::make_txt_records(records);
+
+            // temporary approach to also advertise "_nmos-register._tcp" for v1.3
+            if (nmos::service_types::registration == service)
+            {
+                if (*api_ver.begin() < nmos::is04_versions::v1_3)
+                {
+                    advertiser.register_service(instance_name, service, instance_port, domain, host_name, txt_records).wait();
+                }
+                advertiser.register_service(instance_name, "_nmos-register._tcp", instance_port, domain, host_name, txt_records).wait();
+            }
+            else
+            {
+                advertiser.register_service(instance_name, service, instance_port, domain, host_name, txt_records).wait();
+            }
         }
 
         // helper function for updating the specified service (API) TXT records
-        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records)
+        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, mdns::structured_txt_records add_records)
         {
             const auto domain = utility::us2s(nmos::fields::domain(settings));
-            advertiser.update_record(service_name(service, settings), service, domain, mdns::make_txt_records(records)).wait();
+            const auto instance_name = service_name(service, settings);
+            auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), nmos::is04_versions::from_settings(settings));
+            records.insert(records.end(), std::make_move_iterator(add_records.begin()), std::make_move_iterator(add_records.end()));
+            const auto txt_records = mdns::make_txt_records(records);
+
+            advertiser.update_record(instance_name, service, domain, txt_records).wait();
         }
 
         // helper function for resolving instances of the specified service (API)

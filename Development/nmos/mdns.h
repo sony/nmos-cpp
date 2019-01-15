@@ -24,6 +24,11 @@ namespace nmos
     {
         const service_type node{ "_nmos-node._tcp" };
         const service_type query{ "_nmos-query._tcp" };
+        // "RFC6763 Section 7.2 specifies that the maximum service name length for an mDNS advertisement
+        // is 16 characters when including the leading underscore, but "_nmos-registration" is 18 characters."
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/APIs/RegistrationAPI.raml#L19
+        // This is to be addressed in v1.3, by specifying a shorter service type, "_nmos-register._tcp".
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/71
         const service_type registration{ "_nmos-registration._tcp" };
     }
 
@@ -101,10 +106,10 @@ namespace nmos
     namespace experimental
     {
         // helper function for registering the specified service (API)
-        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records);
+        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings);
 
         // helper function for updating the specified service (API) TXT records
-        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, const mdns::structured_txt_records& records);
+        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, mdns::structured_txt_records add_records = {});
 
         // helper function for resolving instances of the specified service (API)
         // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
