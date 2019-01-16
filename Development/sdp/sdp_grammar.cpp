@@ -2,6 +2,7 @@
 #include "sdp/sdp.h"
 
 #include <stdexcept>
+#include "bst/regex.h"
 #include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 
@@ -44,6 +45,17 @@ namespace sdp
             const std::string::size_type end = !delimiter.empty() ? str.find(delimiter, pos) : std::string::npos;
             std::string substr = std::string::npos != end ? str.substr(pos, end - pos) : str.substr(pos);
             pos = std::string::npos != end ? end + delimiter.size() : std::string::npos;
+            return substr;
+        }
+
+        // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)
+        // set pos to the end of the delimiter
+        inline std::string substr_find(const std::string& str, std::string::size_type& pos, const bst::regex& delimiter)
+        {
+            bst::smatch match;
+            const std::string::size_type end = bst::regex_search(str.begin() + pos, str.end(), match, delimiter) ? match[0].first - str.begin() : std::string::npos;
+            std::string substr = std::string::npos != end ? str.substr(pos, end - pos) : str.substr(pos);
+            pos = std::string::npos != end ? end + (match[0].second - match[0].first) : std::string::npos;
             return substr;
         }
 
@@ -103,9 +115,42 @@ namespace sdp
             };
         }
 
+        // identical to above except that parse_delimiter is a regex pattern
+        // hmm, yes, should therefore refactor
+        converter array_converter(const converter& converter, const std::string& format_delimiter, const std::string& parse_delimiter)
+        {
+            return{
+                [=](const web::json::value& v) {
+                    std::string s;
+                    for (const auto& each : v.as_array())
+                    {
+                        if (!each.is_null())
+                        {
+                            if (!s.empty()) s += format_delimiter;
+                            s += converter.format(each);
+                        }
+                    }
+                    return s;
+                },
+                [=](const std::string& s) {
+                    const bst::regex delimiter{ parse_delimiter };
+                    auto v = web::json::value::array();
+                    size_t pos = 0;
+                    while (std::string::npos != pos && s.size() != pos)
+                    {
+                        auto each = substr_find(s, pos, delimiter);
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
+                        web::json::push_back(v, converter.parse(each));
+                    }
+                    return v;
+                }
+            };
+        }
+
         const converter strings_converter = array_converter(string_converter, " ");
 
-        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ");
+        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", ";[ \\t]+");
 
         converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
         {
@@ -515,7 +560,8 @@ namespace sdp
                         [](const std::string& s) {
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
-                            v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, " "));
+                            const bst::regex whitespace{ "[ \\t]+" };
+                            v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, whitespace));
                             // handle no space after <format> if there are no <format specific parameters>
                             auto params = std::string::npos != pos ? substr_find(s, pos) : "";
                             // named_values_converter ignores a (correct, probably?) trailing "; " and equally copes if it's not present
