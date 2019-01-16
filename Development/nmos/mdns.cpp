@@ -389,6 +389,17 @@ namespace nmos
 
             return resolve_task.then([results, randomize](bool)
             {
+                // since each advertisement may be discovered via multiple interfaces and, in the case of the Registration API, via two service types
+                // remove duplicate uris, after sorting to ensure the highest advertised priority is kept for each
+                std::stable_sort(results->begin(), results->end(), [](const details::resolved_service& lhs, const details::resolved_service& rhs)
+                {
+                    return lhs.second < rhs.second || (lhs.second == rhs.second && details::less_api_ver_pri(lhs.first, rhs.first));
+                });
+                results->erase(std::unique(results->begin(), results->end(), [](const details::resolved_service& lhs, const details::resolved_service& rhs)
+                {
+                    return lhs.second == rhs.second;
+                }), results->end());
+
                 if (randomize)
                 {
                     // "The Node selects a Registration API to use based on the priority, and a random selection if multiple Registration APIs
