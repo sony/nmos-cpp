@@ -558,14 +558,16 @@ namespace sdp
                         [](const web::json::value& v) {
                             std::string s;
                             s += string_converter.format(v.at(sdp::fields::semantics));
-                            s += " " + strings_converter.format(v.at(sdp::fields::mids));
+                            const auto& mids = v.at(sdp::fields::mids);
+                            if (0 != mids.size()) s += " " + strings_converter.format(v.at(sdp::fields::mids));
                             return s;
                         },
                         [](const std::string& s) {
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::semantics] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::mids] = strings_converter.parse(substr_find(s, pos));
+                            auto mids = std::string::npos != pos ? substr_find(s, pos) : "";
+                            v[sdp::fields::mids] = strings_converter.parse(mids);
                             return v;
                         },
                     }
