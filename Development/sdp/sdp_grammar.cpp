@@ -258,7 +258,7 @@ namespace sdp
                 { sdp::fields::session_version, number_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
-                { sdp::fields::unicast_address, string_converter },
+                { sdp::fields::unicast_address, string_converter }
             })
         );
 
@@ -267,8 +267,8 @@ namespace sdp
             sdp::fields::session_name,
             's',
             {
-                [](const web::json::value& v) { auto s = js2s(v); return !s.empty() ? s : " "; },
-                [](const std::string& s) { return s2js(!s.empty() ? s : " "); },
+                [](const web::json::value& v) { auto s = utility::us2s(v.as_string()); return !s.empty() ? s : " "; },
+                [](const std::string& s) { return web::json::value::string(utility::s2us(!s.empty() ? s : " ")); }
             }
         );
 
