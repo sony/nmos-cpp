@@ -31,8 +31,8 @@ namespace sdp
 
         // SDP structured text conversion to/from json
 
-        inline std::string js2s(const web::json::value& v) { return utility::us2s(v.as_string()); }
-        inline web::json::value s2js(const std::string& s) { return web::json::value::string(utility::s2us(s)); }
+        inline std::string js2s(const web::json::value& v) { auto s = utility::us2s(v.as_string()); if (!s.empty()) return s; else throw sdp_format_error("expected a non-empty string"); }
+        inline web::json::value s2js(const std::string& s) { if (!s.empty()) return web::json::value::string(utility::s2us(s)); else throw sdp_parse_error("expected a non-empty string"); }
 
         inline std::string jn2s(const web::json::value& v) { return v.as_number(), utility::us2s(v.serialize()); }
         inline web::json::value s2jn(const std::string& s) { auto v = web::json::value::parse(utility::s2us(s)); return v.as_number(), v; }
@@ -47,6 +47,7 @@ namespace sdp
             return substr;
         }
 
+        // <byte-string>
         const converter string_converter{ js2s, s2js };
 
         const converter number_converter{ jn2s, s2jn };
@@ -90,12 +91,13 @@ namespace sdp
                 [=](const std::string& s) {
                     auto v = web::json::value::array();
                     size_t pos = 0;
-                    do
+                    while (std::string::npos != pos && s.size() != pos)
                     {
                         auto each = substr_find(s, pos, delimiter);
-                        // ignore leading, trailing and consecutive delimiters
-                        if (!each.empty()) web::json::push_back(v, converter.parse(each));
-                    } while (std::string::npos != pos);
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
+                        web::json::push_back(v, converter.parse(each));
+                    }
                     return v;
                 }
             };
@@ -124,7 +126,8 @@ namespace sdp
                     {
                         if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(field.first));
                         auto each = substr_find(s, pos, delimiter);
-                        // ignore consecutive delimiters?
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
 
                         auto vv = field.second.parse(each);
                         if (!field.first.empty()) v[field.first] = vv;
@@ -146,6 +149,18 @@ namespace sdp
                 return !s.empty() && std::string::npos != time_units.find(s.back())
                     ? web::json::value_of({ { sdp::fields::time_value, s2jn(s.substr(0, s.size() - 1)) }, { sdp::fields::time_unit, s2js({ s.back() }) } }, keep_order)
                     : web::json::value_of({ { sdp::fields::time_value, s2jn(s) } }, keep_order);
+            }
+        };
+
+        // empty <byte-string> for <att-value> (after the colon) is prohibited so it is used to indicate no <att-value> at all
+        // i.e. a property attribute
+        const converter default_attribute_converter
+        {
+            [](const web::json::value& v) {
+                return !v.is_null() ? js2s(v) : "";
+            },
+            [](const std::string& s) {
+                return !s.empty() ? s2js(s) : web::json::value::null();
             }
         };
 
@@ -355,10 +370,13 @@ namespace sdp
                         auto v = web::json::value::object(keep_order);
 
                         const auto colon = s.find(':');
-                        // empty token for att-field (before the colon) is prohibited
+                        // empty <token> for <att-field> (before the colon) is prohibited
                         const auto name = utility::s2us(s.substr(0, colon));
 
                         v[sdp::fields::name] = web::json::value::string(name);
+
+                        // empty <byte-string> for <att-value> (after the colon) is prohibited
+                        if (std::string::npos != colon && s.size() == colon + 1) throw sdp_parse_error("expected an attribute value after ':'");
 
                         const auto found = converters.find(name);
                         const auto& parse = (converters.end() != found ? found->second : default_converter).parse;
@@ -643,7 +661,7 @@ namespace sdp
         }
 
         const attribute_converters default_attribute_converters = get_default_attribute_converters();
-        const description default_grammar = session_description(default_attribute_converters, string_converter);
+        const description default_grammar = session_description(default_attribute_converters, default_attribute_converter);
     }
 
     void write_line(std::ostream& os, const web::json::value& line, const grammar::line& grammar)
