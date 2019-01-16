@@ -60,7 +60,7 @@ namespace nmos
             static const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
-                boost::copy_range<std::vector<web::uri>>(boost::join(
+                boost::copy_range<std::vector<web::uri>>(boost::range::join(
                     is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::sender)),
                     is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::receiver))
                 ))
