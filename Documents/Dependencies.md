@@ -130,7 +130,7 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
      - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0`` to match the suggested ``b2`` command
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
-3. Use CMake to generate build/project files, and then build and install  
+3. Use CMake to generate build/project files, and then build *and* install  
    On Windows, the "Visual Studio 14 2015 Win64" generator has been tested
 
 **Windows**
@@ -151,7 +151,9 @@ cmake .. ^
   -DWERROR:BOOL="0"
 ```
 
-Then, open and build the generated cpprestsdk Visual Studio Solution.
+Then, open and build the INSTALL project in the generated cpprestsdk Visual Studio Solution.
+
+Note: Depending on the current user permissions, Visual Studio may need to be run with administrator privileges in order to install C++ REST SDK.
 
 Or on the Developer command line:
 ```
@@ -159,7 +161,7 @@ msbuild cpprestsdk.sln /p:Configuration=<Debug-or-Release>
 msbuild INSTALL.vcxproj /p:Configuration=<Debug-or-Release>
 ```
 
-Note: With the configuration above, **nmos-cpp** apps may need to be run with administrator privileges on Windows.
+Note: With the CMake configuration options for C++ REST SDK described above, **nmos-cpp** apps themselves may need to be run with administrator privileges on Windows.
 This is because the C++ REST SDK implementation uses Windows HTTP Services (WinHTTP) by default, which enforces this requirement when using the "*" wildcard to listen on all interfaces.
 Administrator privileges are not required if C++ REST SDK is built with ``CPPREST_HTTP_LISTENER_IMPL`` (STRING) set to ``asio`` (and for consistency ``CPPREST_HTTP_CLIENT_IMPL`` (STRING) also set to ``asio``).
 
