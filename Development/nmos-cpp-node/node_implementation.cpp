@@ -38,7 +38,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     // this just serves as a slightly more realistic example!
     const unsigned int delay_millis{ 10 };
 
-    const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource resource, slog::base_gate& gate)
+    const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
         if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
         {
