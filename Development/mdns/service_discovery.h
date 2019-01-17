@@ -34,6 +34,7 @@ namespace mdns
     };
 
     // return true from the browse result callback if the operation should be ended before its specified timeout once no more results are "imminent"
+    // the callback must not throw
     typedef std::function<bool(const browse_result&)> browse_handler;
 
     struct resolve_result
@@ -49,6 +50,7 @@ namespace mdns
     };
 
     // return true from the resolve result callback if the operation should be ended before its specified timeout once no more results are "imminent"
+    // the callback must not throw
     typedef std::function<bool(const resolve_result&)> resolve_handler;
 
     class service_discovery

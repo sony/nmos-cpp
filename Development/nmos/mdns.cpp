@@ -268,7 +268,7 @@ namespace nmos
             {
                 return discovery.browse([=, &discovery](const mdns::browse_result& resolving)
                 {
-                    discovery.resolve([=](const mdns::resolve_result& resolved)
+                    const bool cancel = pplx::canceled == discovery.resolve([=](const mdns::resolve_result& resolved)
                     {
                         // "The Node [filters] out any APIs which do not support its required API version and protocol (TXT api_ver and api_proto)."
                         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#registration
@@ -309,8 +309,8 @@ namespace nmos
                         }
 
                         return true;
-                    }, resolving.name, resolving.type, resolving.domain, resolving.interface_id, timeout - std::chrono::steady_clock::now(), token).get();
-                    return !results->empty();
+                    }, resolving.name, resolving.type, resolving.domain, resolving.interface_id, timeout - std::chrono::steady_clock::now(), token).wait();
+                    return cancel || !results->empty();
                 }, service, browse_domain, 0, timeout - std::chrono::steady_clock::now(), token);
             }
 
@@ -363,8 +363,10 @@ namespace nmos
                         linked_source.cancel();
 
                         return both_tasks[0 == first_result.second ? 1 : 0];
-                    }).then([results, both_results](pplx::task<bool>)
+                    }).then([results, both_results](pplx::task<bool> finally)
                     {
+                        finally.wait();
+
                         results->insert(results->end(), std::make_move_iterator(both_results[0]->begin()), std::make_move_iterator(both_results[0]->end()));
                         results->insert(results->end(), std::make_move_iterator(both_results[1]->begin()), std::make_move_iterator(both_results[1]->end()));
                         return !results->empty();
