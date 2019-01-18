@@ -90,21 +90,6 @@ int main(int argc, char* argv[])
             // In this sample app, notify does not need to be set
             return false;
         },
-#if NEVER
-        // set_base_sdp_params
-        // Function to save base_sdp_params for senders
-        // Called when resources are being created
-        // In this sample app, save the params in a map for later retrieval
-        [&](const nmos::resource& resource, const nmos::sdp_parameters& sdp_params) -> void
-        {
-            // For senders, use the returned map of sdp_params to retrieve the base sdp
-            if (resource.type == nmos::types::sender)
-            {
-                map_sender_sdp_params[resource.id] = sdp_params;
-            }
-            return;
-        },
-#endif
         // get_base_sdp_params
         // Function to get the base_sdp_params for senders
         // Called when the base_sdp_params for senders are needed (during activation)
@@ -162,16 +147,6 @@ int main(int argc, char* argv[])
 
             nmos::resolve_auto(type, transport_params);
         },
-#if NEVER
-        // set_defaults_for_autos
-        // Function to save the default "auto" values for a resource
-        // This function is called from node_initial_resources for the sample app but may not be called
-        // for a real app
-        [&map_resource_id_default_autos](const nmos::id& resource_id, const web::json::value& defaults_for_autos) -> void
-        {
-            map_resource_id_default_autos[resource_id] = defaults_for_autos;
-        },
-#endif
         // get_defaults_for_autos
         // Function to retrieve the default "auto" values for a resource
         // This function is called from the app_hook.resolve_auto
