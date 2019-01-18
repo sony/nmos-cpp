@@ -33,7 +33,7 @@ namespace nmos
     id id_generator::operator()()
     {
         return details::to<id>(impl->gen());
-    };
+    }
 
     // generate a random number-based UUID (v4)
     // note, when creating multiple UUIDs, using a generator can be more efficient depending on platform and dependencies
