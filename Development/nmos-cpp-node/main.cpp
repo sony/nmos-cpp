@@ -16,191 +16,112 @@
 #include "main_gate.h"
 #include "node_implementation.h"
 
-int node_main_thread(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-    // Construct our data models including mutexes to protect them
-
-    nmos::node_model node_model;
-
-    nmos::experimental::log_model log_model;
-    std::atomic<slog::severity> level{ slog::severities::more_info };
-
-    // Streams for logging, initially configured to write errors to stderr and to discard the access log
-    std::filebuf error_log_buf;
-    std::ostream error_log(std::cerr.rdbuf());
-    std::filebuf access_log_buf;
-    std::ostream access_log(&access_log_buf);
-
-    // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model, level);
-
-    try
+    std::map<nmos::id, nmos::sdp_parameters> map_sender_sdp_params;
+    std::map<nmos::id, web::json::value> map_resource_id_default_autos;
+    
+    nmos::experimental::app_hooks app_hooks = 
     {
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting nmos-cpp node";
-
-        // Settings can be passed on the command-line, directly or in a configuration file, and a few may be changed dynamically by PATCH to /settings/all on the Settings API
-        //
-        // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
-        // * "registry_address": used to construct request URLs for registry APIs (if not discovered via DNS-SD)
-        //
-        // E.g.
-        //
-        // # ./nmos-cpp-node "{\"logging_level\":-40}"
-        // # ./nmos-cpp-node config.json
-        // # curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
-        // # curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -T config.json
-
-        if (argc > 1)
+        // app initialize
+        [&](nmos::node_model& model, slog::base_gate& gate) -> bool
         {
-            std::error_code error;
-            node_model.settings = web::json::value::parse(utility::s2us(argv[1]), error);
-            if (error)
+            ::node_initial_resources (model, gate, app_hooks);
+            return false;
+        },
+        // app check_for_work
+        []() -> bool
+        {
+            // By default, there is no work
+            return false;
+        },
+        // app process_work
+        []() -> bool
+        {
+            // By default, notify does not need to be set
+            return false;
+        },
+        // app resource_activation
+        [](const nmos::id& resource_id) -> bool
+        {
+            // By default, notify does not need to be set
+            return false;
+        },
+        // set_base_sdp_params
+        [&](const nmos::resource& resource, const nmos::sdp_parameters& sdp_params) -> void
+        {
+            // For senders, use the returned map of sdp_params to retrieve the base sdp
+            if (resource.type == nmos::types::sender)
             {
-                std::ifstream file(argv[1]);
-                node_model.settings = web::json::value::parse(file, error);
+                map_sender_sdp_params[resource.id] = sdp_params;
             }
-            if (error || !node_model.settings.is_object())
+            return;
+        },
+        // get_base_sdp_params
+        [&](const nmos::resource& resource) -> nmos::sdp_parameters
+        {
+            // For senders, use the returned map of sdp_params to retrieve the base sdp
+            if (resource.type == nmos::types::sender)
             {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Bad command-line settings [" << error << "]";
-                return -1;
+                if (map_sender_sdp_params.count(resource.id))
+                {
+                    return map_sender_sdp_params[resource.id];
+                }
             }
-        }
-
-        // Prepare run-time default settings (different than header defaults)
-
-        web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
-
-        web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
-        level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
-
-        // if the "host_addresses" setting was omitted, add all the interface addresses
-        const auto interface_addresses = web::http::experimental::interface_addresses();
-        if (!interface_addresses.empty())
+            return nmos::sdp_parameters();
+        },
+        // resolve_auto
+        [](nmos::resource& connection_resource, web::json::value& endpoint_active, const nmos::experimental::app_hooks& app_hooks) -> void
         {
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
-        }
+            auto type = connection_resource.type;
 
-        // if the "host_address" setting was omitted, use the first of the "host_addresses"
-        if (node_model.settings.has_field(nmos::fields::host_addresses))
+            auto& transport_params = endpoint_active[nmos::fields::transport_params];
+            
+            web::json::value default_autos = app_hooks.get_defaults_for_autos (connection_resource.id);
+
+            if (default_autos.is_null() == false)
+            {
+                // "In some cases the behaviour is more complex, and may be determined by the vendor."
+                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+                if (nmos::types::sender == type)
+                {
+                    nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&default_autos] { return default_autos[0][nmos::fields::source_ip]; });
+                    nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&default_autos] { return default_autos[0][nmos::fields::destination_ip]; });
+                    if (transport_params.size() > 1)
+                    {
+                        nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&default_autos] { return default_autos[1][nmos::fields::source_ip]; });
+                        nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&default_autos] { return default_autos[1][nmos::fields::destination_ip]; });
+                    }
+                }
+                else // if (nmos::types::receiver == type)
+                {
+                    nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&default_autos] { return default_autos[0][nmos::fields::interface_ip]; });
+                    if (transport_params.size() > 1)
+                    {
+                        nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&default_autos] { return default_autos[1][nmos::fields::interface_ip]; });
+                    }
+                }
+            }
+
+            nmos::resolve_auto(type, transport_params);
+        },
+        // set_defaults_for_autos
+        [&map_resource_id_default_autos](const nmos::id& resource_id, const web::json::value& defaults_for_autos) -> void
         {
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(node_model.settings)[0]));
-        }
-
-        // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
-        if (node_model.settings.has_field(nmos::fields::http_port))
+            map_resource_id_default_autos[resource_id] = defaults_for_autos;
+        },
+        // get_defaults_for_autos
+        [&map_resource_id_default_autos](const nmos::id& resource_id) -> web::json::value
         {
-            const auto http_port = nmos::fields::http_port(node_model.settings);
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::node_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::connection_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
+            if (map_resource_id_default_autos.count(resource_id))
+            {
+                return map_resource_id_default_autos[resource_id];
+            }
+            return web::json::value();
         }
+    };
+    // Call the main thread with default functions for all the application hooks
+    return node_main_thread(argc, argv, app_hooks);
+        
 
-        // Reconfigure the logging streams according to settings
-        // (obviously, until this point, the logging gateway has its default behaviour...)
-
-        if (!nmos::fields::error_log(node_model.settings).empty())
-        {
-            error_log_buf.open(nmos::fields::error_log(node_model.settings), std::ios_base::out | std::ios_base::app);
-            auto lock = log_model.write_lock();
-            error_log.rdbuf(&error_log_buf);
-        }
-
-        if (!nmos::fields::access_log(node_model.settings).empty())
-        {
-            access_log_buf.open(nmos::fields::access_log(node_model.settings), std::ios_base::out | std::ios_base::app);
-            auto lock = log_model.write_lock();
-            access_log.rdbuf(&access_log_buf);
-        }
-
-        // Log the process ID and the API addresses we'll be using
-
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
-
-        // Set up the APIs, assigning them to the configured ports
-
-        std::map<int, web::http::experimental::listener::api_router> port_routers;
-
-        // Configure the Settings API
-
-        port_routers[nmos::experimental::fields::settings_port(node_model.settings)].mount({}, nmos::experimental::make_settings_api(node_model, level, gate));
-
-        // Configure the Logging API
-
-        port_routers[nmos::experimental::fields::logging_port(node_model.settings)].mount({}, nmos::experimental::make_logging_api(log_model, gate));
-
-        // Configure the Node API
-
-        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, gate);
-        port_routers[nmos::fields::node_port(node_model.settings)].mount({}, nmos::make_node_api(node_model, target_handler, gate));
-
-        // start the underlying implementation and set up the node resources
-        auto node_resources = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-
-        // Configure the Connection API
-
-        port_routers[nmos::fields::connection_port(node_model.settings)].mount({}, nmos::make_connection_api(node_model, gate));
-
-        // Set up the listeners for each API port
-
-        // try to use the configured TCP listen backlog
-        web::http::experimental::listener::http_listener_config listener_config;
-        listener_config.set_backlog(nmos::fields::listen_backlog(node_model.settings));
-
-        std::vector<web::http::experimental::listener::http_listener> port_listeners;
-        for (auto& port_router : port_routers) port_listeners.push_back(nmos::make_api_listener(port_router.first, port_router.second, listener_config, gate));
-
-        // Open the API ports
-
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
-
-        std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
-        for (auto& port_listener : port_listeners)
-        {
-            if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
-        }
-
-        // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
-
-        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
-
-        // Wait for a process termination signal
-        nmos::details::wait_term_signal();
-
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
-    }
-    catch (const web::json::json_exception& e)
-    {
-        // most likely from incorrect types in the command line settings
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what();
-    }
-    catch (const web::http::http_exception& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
-    }
-    catch (const std::system_error& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "System error: " << e.what() << " [" << e.code() << "]";
-    }
-    catch (const std::runtime_error& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
-    }
-    catch (const std::exception& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
-    }
-    catch (...)
-    {
-        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
-    }
-
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
-
-    return 0;
 }

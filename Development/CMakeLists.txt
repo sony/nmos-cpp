@@ -17,12 +17,11 @@ include (${NMOS_CPP_DIR}/cmake/NmosCppLibraries.cmake)
 
 set(NMOS_CPP_NODE_SOURCES
     ${NMOS_CPP_DIR}/nmos-cpp-node/main.cpp
-    ${NMOS_CPP_DIR}/nmos-cpp-node/node_application_hooks.cpp
+    ${NMOS_CPP_DIR}/nmos-cpp-node/node_main_thread.cpp
     ${NMOS_CPP_DIR}/nmos-cpp-node/node_implementation.cpp
     )
 set(NMOS_CPP_NODE_HEADERS
     ${NMOS_CPP_DIR}/nmos-cpp-node/main_gate.h
-    ${NMOS_CPP_DIR}/nmos-cpp-node/node_application_hooks.h
     ${NMOS_CPP_DIR}/nmos-cpp-node/node_implementation.h
     )
 
