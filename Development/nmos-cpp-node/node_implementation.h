@@ -39,7 +39,7 @@ namespace nmos
             // The app may need to do its own processing with respect to making and breaking connections
             // or changing resources
             // Returns true if model.notify() should be called
-            std::function<bool(const id& resource_id)> resource_activation;
+            std::function<bool(const resource& resource)> resource_activation;
 
             // Function to retrieve the base_sdp_params for a particular sender
             // Called when senders are being activated

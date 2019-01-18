@@ -146,7 +146,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
             notify = true;
             
             // Tell the application that the resource has been updated
-            app_hooks.resource_activation(resource.id);
+            app_hooks.resource_activation(resource);
         });
 
         if ((nmos::tai_clock::time_point::max)() != earliest_scheduled_activation)

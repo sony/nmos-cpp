@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
         // Deal with a resource which has been activated
         // This could involve making or breaking connections or modifying app resources.
         // Return true if model.notify() needs to be called (i.e. the app makes resource changes)
-        [](const nmos::id& resource_id) -> bool
+        [](const nmos::resource& resource) -> bool
         {
             // In this sample app, notify does not need to be set
             return false;
