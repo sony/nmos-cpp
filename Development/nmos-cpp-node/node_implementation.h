@@ -40,13 +40,7 @@ namespace nmos
             // or changing resources
             // Returns true if model.notify() should be called
             std::function<bool(const id& resource_id)> resource_activation;
-#if NEVER
-            // Function to set the base_sdp_params for a particular sender
-            // If the app has more than one sender, this function may be needed
-            // The function is only called when creating resources. If the app has some
-            // other way to save the base_sdp_params, then this function does not need to be called
-            std::function<void(const nmos::resource& resource, const nmos::sdp_parameters& sdp_params)>  set_base_sdp_params;
-#endif
+
             // Function to retrieve the base_sdp_params for a particular sender
             // Called when senders are being activated
             // The app can either retrieve the params saved statically at init time or get
@@ -57,15 +51,7 @@ namespace nmos
             // both senders and receivers.
             // The function could call get_defaults_for_autos which can either retrieve static or dynamic values
             std::function<void(resource& connection_resource, web::json::value& endpoint_active, const app_hooks& app_hooks)>  resolve_auto;
-#if NEVER
-            // Function to save the default values for "auto" resolution
-            // the value is an array of values. typically an array of 1 or 2 elements
-            // Each element of the array has different values saved depending on whether the resource is
-            // a sender or receiver. 
-            // Sender: source_ip and destination_ip
-            // Receiver: interface_ip
-            std::function<void(const nmos::id& resource_id, const web::json::value& defaults_for_autos)> set_defaults_for_autos;
-#endif
+
             // Function to retrieve the default values for "auto" resolution for a sender or receiver
             // The app can get previously saved values or get values based on dynamic conditions.
             std::function<web::json::value(const nmos::id& resource_id)> get_defaults_for_autos;
