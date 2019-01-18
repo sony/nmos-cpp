@@ -63,7 +63,7 @@ namespace nmos
         web::http::experimental::listener::api_router make_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate);
 
         // push a log event into the model keeping a maximum size (lock the mutex before calling this)
-        void insert_log_event(events& events, const slog::async_log_message& message);
+        void insert_log_event(events& events, const slog::async_log_message& message, const id& id);
     }
 }
 

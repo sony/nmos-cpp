@@ -398,7 +398,7 @@ namespace nmos
                 std::ostringstream os; os << value; return utility::s2us(os.str());
             }
 
-            inline web::json::value json_from_message(const slog::async_log_message& message, const tai& cursor)
+            inline web::json::value json_from_message(const slog::async_log_message& message, const id& id, const tai& cursor)
             {
                 auto json_message = web::json::value_of({
                     { U("timestamp"), ostringstreamed(slog::put_timestamp(message.timestamp(), "%Y-%m-%dT%H:%M:%06.3SZ")) },
@@ -412,7 +412,7 @@ namespace nmos
                     }, true) },
                     { U("message"), utility::s2us(message.str()) },
                     // adding a unique id, and unique cursor, just to allow the API to provide access to events in the standard REST manner
-                    { U("id"), nmos::make_id() },
+                    { U("id"), id },
                     { U("cursor"), nmos::make_version(cursor) }
                 }, true);
 
@@ -435,7 +435,7 @@ namespace nmos
             return cursor > most_recent ? cursor : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
         }
 
-        void insert_log_event(events& events, const slog::async_log_message& message)
+        void insert_log_event(events& events, const slog::async_log_message& message, const id& id)
         {
             // capacity ought to be part of log/settings
             const std::size_t capacity = 1234;
@@ -443,7 +443,7 @@ namespace nmos
             {
                 events.pop_back();
             }
-            events.push_front({ details::json_from_message(message, strictly_increasing_cursor(events)) });
+            events.push_front({ details::json_from_message(message, id, strictly_increasing_cursor(events)) });
         }
     }
 }

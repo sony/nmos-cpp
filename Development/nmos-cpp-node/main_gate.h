@@ -47,6 +47,7 @@ namespace
         std::ostream& error_log;
         std::ostream& access_log;
         nmos::experimental::log_model& model;
+        nmos::id_generator generate_id;
         std::atomic<slog::severity>& level;
 
         struct service_function
@@ -71,7 +72,7 @@ namespace
             {
                 access_log << nmos::common_log_format(message);
             }
-            nmos::experimental::insert_log_event(model.events, message);
+            nmos::experimental::insert_log_event(model.events, message, generate_id());
         }
 
         mutable slog::async_log_service<service_function> async_service;

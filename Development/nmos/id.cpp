@@ -8,10 +8,31 @@
 
 namespace nmos
 {
+    struct id_generator::impl_t
+    {
+        boost::uuids::random_generator gen;
+    };
+
+    id_generator::id_generator()
+        : impl(new impl_t)
+    {
+    }
+
+    id_generator::~id_generator()
+    {
+        // explicitly defined so that impl_t is a complete type for the unique_ptr destructor
+    }
+
+    id id_generator::operator()()
+    {
+        return utility::s2us(boost::uuids::to_string(impl->gen()));
+    };
+
     // generate a random number-based UUID (v4)
+    // note, when creating multiple UUIDs, using a generator can be more efficient depending on platform and dependencies
     id make_id()
     {
-        return utility::s2us(boost::uuids::to_string(boost::uuids::random_generator()()));
+        return id_generator()();
     }
 
     // generate a name-based UUID (v5)
