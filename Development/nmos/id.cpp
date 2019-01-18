@@ -23,9 +23,16 @@ namespace nmos
         // explicitly defined so that impl_t is a complete type for the unique_ptr destructor
     }
 
+    namespace details
+    {
+        template <typename StringT> StringT to(const boost::uuids::uuid& u);
+        template <> inline std::string to(const boost::uuids::uuid& u) { return boost::uuids::to_string(u); }
+        template <> inline std::wstring to(const boost::uuids::uuid& u) { return boost::uuids::to_wstring(u); }
+    }
+
     id id_generator::operator()()
     {
-        return utility::s2us(boost::uuids::to_string(impl->gen()));
+        return details::to<id>(impl->gen());
     };
 
     // generate a random number-based UUID (v4)
@@ -38,6 +45,6 @@ namespace nmos
     // generate a name-based UUID (v5)
     id make_repeatable_id(id namespace_id, const utility::string_t& name)
     {
-        return utility::s2us(boost::uuids::to_string(boost::uuids::name_generator(boost::uuids::string_generator()(namespace_id))(utility::us2s(name))));
+        return details::to<id>(boost::uuids::name_generator(boost::uuids::string_generator()(namespace_id))(utility::us2s(name)));
     }
 }
