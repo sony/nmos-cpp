@@ -10,12 +10,10 @@
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
-#include "nmos/transport.h"
-#include "nmos/channels.h"
+
 #include "sdp/sdp.h"
 
-// as part of activation, the sender /transportfile should be updated based on the active transport parameters
-void set_connection_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params);
+
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
@@ -24,9 +22,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
 {
     using web::json::value;
     using web::json::value_of;
-
-    //const auto seed_id = nmos::with_read_lock(model.mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
-    
+   
     // Initialize the app and create initial resources
     app_hooks.initialize(model, gate);
 
@@ -40,6 +36,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
         // wait for the thread to be interrupted because there may be new scheduled activations, or immediate activations to process
         // or because the server is being shut down
         // or because it's time for the next scheduled activation
+        // or because the application has work to do (presumably nmos related)
         model.wait_until(lock, earliest_scheduled_activation, [&] { 
             return model.shutdown || 
                 most_recent_update < nmos::most_recent_update(model.connection_resources) ||
@@ -49,6 +46,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
         
         bool notify = false;
         
+        // Have the application process any work that it has (might not have any work)
+        // set the notify flag if the app says it is needed
         if (app_hooks.process_work())
             notify = true;
         
@@ -132,11 +131,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
                     if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                 }, activation_time);
 
-                // if we really want to set the sender sdp_params back to the original/current, then we need to ask
-                // the application what the original/current sdp_params are. Just using the sdp_params that were used
-                // to construct the sample senders does not seem appropriate.
+                // If this is a sender, then update the transport file
                 if (nmos::types::sender == type) 
-                    set_connection_sender_transportfile(connection_resource, app_hooks.get_base_sdp_params(resource));
+                    node_set_connection_sender_transportfile(connection_resource, app_hooks.get_base_sdp_params(resource));
             });
 
             // Update the IS-04 resource
@@ -169,14 +166,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
 }
 
 // as part of activation, the sender /transportfile should be updated based on the active transport parameters
-void set_connection_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params)
+void node_set_connection_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params)
 {
     auto& transport_params = connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params];
     auto session_description = nmos::make_session_description(sdp_params, transport_params);
     auto sdp = utility::s2us(sdp::make_session_description(session_description));
     connection_sender.data[nmos::fields::endpoint_transportfile] = nmos::make_connection_sender_transportfile(sdp);
 }
+#if NEVER
 
+// sample function which creates initial video and audio senders and receivers
 void node_initial_resources(nmos::node_model& model, slog::base_gate& gate, 
     const nmos::experimental::app_hooks& app_hooks, 
     nmos::id existing_node_id)
@@ -216,43 +215,6 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
             model.notify();
         }
     };
-
-    const auto resolve_auto = [](const nmos::resource& resource, value& endpoint_active)
-    {
-        auto type = resource.type;
-
-        auto& transport_params = endpoint_active[nmos::fields::transport_params];
-        // Make a unique last octet for each call to this function
-        static int last_octet = 0;
-        utility::stringstream_t stream_last_octet;
-        stream_last_octet << last_octet;
-        last_octet++;
-        utility::string_t str_last_octet = stream_last_octet.str();
-
-        // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-        if (nmos::types::sender == type)
-        {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&str_last_octet] { return value::string(U("192.168.240.") + str_last_octet); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&str_last_octet] { return value::string(U("239.255.240.") + str_last_octet); });
-            if (transport_params.size() > 1)
-            {
-                nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&str_last_octet] { return value::string(U("192.168.241.") + str_last_octet); });
-                nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&str_last_octet] { return value::string(U("239.255.241.") + str_last_octet); });
-            }
-        }
-        else // if (nmos::types::receiver == type)
-        {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&str_last_octet] { return value::string(U("192.168.242.") + str_last_octet); });
-            if (transport_params.size() > 1)
-            {
-                nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&str_last_octet] { return value::string(U("192.168.243.") + str_last_octet); });
-            }
-        }
-
-        nmos::resolve_auto(type, transport_params);
-    };
-
 
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
@@ -302,8 +264,8 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         app_hooks.set_defaults_for_autos (sender_id, sender_auto_defaults);
 
         auto connection_sender = nmos::make_connection_sender(sender_id, true);
-        resolve_auto(connection_sender, connection_sender.data[nmos::fields::endpoint_active]);
-        set_connection_sender_transportfile(connection_sender, sdp_params);
+        app_hooks.resolve_auto(connection_sender, connection_sender.data[nmos::fields::endpoint_active], app_hooks);
+        node_set_connection_sender_transportfile(connection_sender, sdp_params);
 
         app_hooks.set_base_sdp_params (connection_sender, sdp_params);
         
@@ -332,7 +294,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         app_hooks.set_defaults_for_autos (receiver_id, receiver_auto_defaults);
 
         auto connection_receiver = nmos::make_connection_receiver(receiver_id, true);
-        resolve_auto(connection_receiver, connection_receiver.data[nmos::fields::endpoint_active]);
+        app_hooks.resolve_auto(connection_receiver, connection_receiver.data[nmos::fields::endpoint_active], app_hooks);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
@@ -369,8 +331,8 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         app_hooks.set_defaults_for_autos (audio_sender_id, sender_auto_defaults);
 
         auto connection_sender = nmos::make_connection_sender(audio_sender_id, false);
-        resolve_auto(connection_sender, connection_sender.data[nmos::fields::endpoint_active]);
-        set_connection_sender_transportfile(connection_sender, sdp_params);
+        app_hooks.resolve_auto(connection_sender, connection_sender.data[nmos::fields::endpoint_active], app_hooks);
+        node_set_connection_sender_transportfile(connection_sender, sdp_params);
 
         app_hooks.set_base_sdp_params (connection_sender, sdp_params);
 
@@ -396,9 +358,10 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         app_hooks.set_defaults_for_autos (audio_receiver_id, receiver_auto_defaults);
 
         auto connection_receiver = nmos::make_connection_receiver(audio_receiver_id, false);
-        resolve_auto(connection_receiver, connection_receiver.data[nmos::fields::endpoint_active]);
+        app_hooks.resolve_auto(connection_receiver, connection_receiver.data[nmos::fields::endpoint_active], app_hooks);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
     }
 }
+#endif
