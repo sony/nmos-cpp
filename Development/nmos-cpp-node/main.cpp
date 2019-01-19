@@ -192,7 +192,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
 
     auto lock = model.write_lock(); // in order to update the resources
 
-    const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource resource, slog::base_gate& gate)
+    const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
         if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
         {
