@@ -18,6 +18,15 @@ namespace web
         {
             namespace details
             {
+                // see https://stackoverflow.com/a/3824105
+                static const bst::regex ipv4_regex(R"((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))");
+                // see https://stackoverflow.com/a/17871737
+                static const bst::regex ipv6_regex(R"((([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])))");
+#ifdef JSON_VALIDATOR_CHECK_HOSTNAME
+                // see https://stackoverflow.com/a/106223
+                static const bst::regex hostname_regex(R"(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*)");
+#endif
+
                 // string format checking function for use with pboettch/json_schema_validator
                 // with some of the defined formats in the JSON Schema specification (draft 4)
                 // see https://tools.ietf.org/html/draft-fge-json-schema-validation-00#section-7
@@ -30,28 +39,22 @@ namespace web
                     }
                     else if (format == "ipv4")
                     {
-                        // see https://stackoverflow.com/a/3824105
-                        bst::regex re(R"((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))");
-                        if (!bst::regex_match(value, re))
+                        if (!bst::regex_match(value, ipv4_regex))
                             throw std::invalid_argument(value + " is not a valid ipv4");
 
                     }
                     else if (format == "ipv6")
                     {
-                        // see https://stackoverflow.com/a/17871737
-                        bst::regex re(R"((([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])))");
-                        if (!bst::regex_match(value, re))
+                        if (!bst::regex_match(value, ipv6_regex))
                             throw std::invalid_argument(value + " is not a valid ipv6");
                     }
-#if 0
+#ifdef JSON_VALIDATOR_CHECK_HOSTNAME
                     // validation of hostnames is disabled due to the unfortunate lack of consistency
                     // between implementations and the bewildering number of possibly relevant RFCs
                     // see https://github.com/sony/nmos-cpp/issues/11
                     else if (format == "hostname")
                     {
-                        // see https://stackoverflow.com/a/106223
-                        bst::regex re(R"(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*)");
-                        if (!bst::regex_match(value, re))
+                        if (!bst::regex_match(value, hostname_regex))
                             throw std::invalid_argument(value + " is not a valid hostname");
                     }
 #endif
