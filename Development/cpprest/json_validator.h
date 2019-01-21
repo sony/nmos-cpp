@@ -21,7 +21,7 @@ namespace web
             {
             public:
                 // initialize for the specified base URIs using the specified loader
-                explicit json_validator(std::function<web::json::value(const web::uri&)> load_schema, std::vector<web::uri> ids = {});
+                explicit json_validator(std::function<web::json::value(const web::uri&)> load_schema, const std::vector<web::uri>& ids = {});
 
                 // validate the specified instance with the schema identified by the specified base URI
                 void validate(const web::json::value& value, const web::uri& id = {}) const;

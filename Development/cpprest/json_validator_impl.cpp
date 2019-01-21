@@ -80,9 +80,9 @@ namespace web
                 class json_validator_impl
                 {
                 public:
-                    json_validator_impl(std::function<web::json::value(const web::uri&)> load_schema, std::vector<web::uri> ids)
+                    json_validator_impl(std::function<web::json::value(const web::uri&)> load_schema, const std::vector<web::uri>& ids)
                     {
-                        for (auto id : ids)
+                        for (const auto& id : ids)
                         {
                             nlohmann::json_schema_draft4::json_validator validator
                             {
@@ -100,7 +100,7 @@ namespace web
                                 { "$ref", utility::us2s(id.to_string()) }
                             });
 
-                            validators[id] = validator;
+                            validators.insert({ id, std::move(validator) });
                         }
                     }
 
@@ -129,7 +129,7 @@ namespace web
             }
 
             // initialize for the specified base URIs using the specified loader
-            json_validator::json_validator(std::function<web::json::value(const web::uri&)> load_schema, std::vector<web::uri> ids)
+            json_validator::json_validator(std::function<web::json::value(const web::uri&)> load_schema, const std::vector<web::uri>& ids)
                 : impl(new details::json_validator_impl(load_schema, ids))
             {
             }
