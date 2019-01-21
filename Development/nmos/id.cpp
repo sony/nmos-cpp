@@ -45,6 +45,6 @@ namespace nmos
     // generate a name-based UUID (v5)
     id make_repeatable_id(id namespace_id, const utility::string_t& name)
     {
-        return details::to<id>(boost::uuids::name_generator(boost::uuids::string_generator()(namespace_id))(utility::us2s(name)));
+        return details::to<id>(boost::uuids::name_generator(boost::uuids::string_generator()(namespace_id))(name));
     }
 }
