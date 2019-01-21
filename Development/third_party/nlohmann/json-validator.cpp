@@ -26,6 +26,7 @@
 #include <json-schema.hpp>
 
 #include <set>
+#include <sstream>
 
 using nlohmann::json;
 using nlohmann::json_uri;
