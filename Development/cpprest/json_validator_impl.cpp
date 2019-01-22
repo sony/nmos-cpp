@@ -100,7 +100,7 @@ namespace web
                                 { "$ref", utility::us2s(id.to_string()) }
                             });
 
-                            validators.insert({ id, std::move(validator) });
+                            validators.insert(std::make_pair(id, std::move(validator)));
                         }
                     }
 
