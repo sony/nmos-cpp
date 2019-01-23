@@ -2,7 +2,6 @@
 #define NMOS_REGISTRATION_API_H
 
 #include "cpprest/api_router.h"
-#include "nmos/mutex.h"
 
 namespace slog
 {
