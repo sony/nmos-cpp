@@ -109,11 +109,11 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
 ### C++ REST SDK
 
 1. Get the source code
-   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.8 tag  
+   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.9 tag  
      The ``git clone`` command option ``--recurse-submodules`` (formerly ``--recursive``) simplifies [cloning a project with submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules).  
      For example:
      ```
-     git clone --recurse-submodules --branch v2.10.8 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
+     git clone --recurse-submodules --branch v2.10.9 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
      ```
      Note: The downloadable archives created by GitHub cannot be used on their own since they don't include submodules.
 2. Use CMake to configure for your platform
@@ -130,6 +130,7 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
      - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0`` to match the suggested ``b2`` command
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
+   - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install  
    On Windows, the "Visual Studio 14 2015 Win64" generator has been tested
 
@@ -148,7 +149,9 @@ cmake .. ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
   -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_67_0" ^
   -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_67_0/x64/lib" ^
-  -DWERROR:BOOL="0"
+  -DWERROR:BOOL="0" ^
+  -DBUILD_SAMPLES:BOOL="0" ^
+  -DBUILD_TESTS:BOOL="0"
 ```
 
 Then, open and build the INSTALL project in the generated cpprestsdk Visual Studio Solution.
@@ -175,7 +178,9 @@ mkdir build
 cd build
 cmake .. \
   -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" \
-  -DWERROR:BOOL="0"
+  -DWERROR:BOOL="0" \
+  -DBUILD_SAMPLES:BOOL="0" \
+  -DBUILD_TESTS:BOOL="0"
 make
 sudo make install
 ```
