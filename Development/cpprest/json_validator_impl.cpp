@@ -41,7 +41,6 @@ namespace web
                     {
                         if (!bst::regex_match(value, ipv4_regex))
                             throw std::invalid_argument(value + " is not a valid ipv4");
-
                     }
                     else if (format == "ipv6")
                     {

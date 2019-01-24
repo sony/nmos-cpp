@@ -64,7 +64,7 @@ namespace nmos
         return downgrade(resource.version, resource.type, resource.data, version, downgrade_version);
     }
 
-    namespace details
+    static const std::map<nmos::type, std::map<nmos::api_version, std::vector<utility::string_t>>>& resources_versions()
     {
         static const std::map<nmos::type, std::map<nmos::api_version, std::vector<utility::string_t>>> resources_versions
         {
@@ -119,6 +119,7 @@ namespace nmos
                 }
             }
         };
+        return resources_versions;
     }
 
     web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
@@ -142,7 +143,7 @@ namespace nmos
         // could be an oversight...
         // See nmos-discovery-registration/APIs/schemas/receiver_core.json
 
-        auto& resource_versions = details::resources_versions.at(resource_type);
+        auto& resource_versions = resources_versions().at(resource_type);
         auto version_first = resource_versions.cbegin();
         auto version_last = resource_versions.upper_bound(version);
         for (auto version_properties = version_first; version_last != version_properties; ++version_properties)

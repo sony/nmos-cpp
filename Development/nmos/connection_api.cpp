@@ -52,9 +52,7 @@ namespace nmos
 
     namespace details
     {
-        // Validate against specification schema
-        // throws web::json::json_exception on failure, which results in a 400 Bad Request
-        void validate_staged_core(const nmos::api_version& version, const nmos::type& type, const web::json::value& staged)
+        static const web::json::experimental::json_validator& staged_core_validator()
         {
             // hmm, could be based on supported API versions from settings, like other APIs' validators?
             static const web::json::experimental::json_validator validator
@@ -65,10 +63,16 @@ namespace nmos
                     is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::receiver))
                 ))
             };
+            return validator;
+        }
 
+        // Validate against specification schema
+        // throws web::json::json_exception on failure, which results in a 400 Bad Request
+        void validate_staged_core(const nmos::api_version& version, const nmos::type& type, const web::json::value& staged)
+        {
             // Validate JSON syntax according to the schema
 
-            validator.validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(version, type));
+            staged_core_validator().validate(staged, experimental::make_connectionapi_staged_patch_request_schema_uri(version, type));
         }
 
         // Extend an existing schema with "auto" as a valid value
@@ -89,16 +93,8 @@ namespace nmos
             });
         }
 
-        // Make a json schema from /constraints
-        web::json::value make_constraints_schema(const nmos::type& type, const web::json::value& constraints)
+        static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints()
         {
-            using web::json::value;
-            using web::json::value_of;
-
-            const bool keep_order = true;
-
-            auto items = value::array();
-
             // These are the constraints that support "auto" in /staged; cf. resolve_auto
             // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
             // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
@@ -135,8 +131,20 @@ namespace nmos
                     }
                 }
             };
+            return auto_constraints;
+        }
 
-            auto& type_auto_constraints = auto_constraints.at(type);
+        // Make a json schema from /constraints
+        web::json::value make_constraints_schema(const nmos::type& type, const web::json::value& constraints)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const bool keep_order = true;
+
+            auto items = value::array();
+
+            auto& type_auto_constraints = auto_constraints().at(type);
 
             for (const auto& leg : constraints.as_array())
             {
