@@ -21,6 +21,10 @@ On Windows, Visual Studio is required. Visual Studio 2015 is the primary develop
 
 On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series has been tested, although a more recent compiler is to be recommended!
 
+Notes:
+- **Visual Studio 2013 is not supported**, because it does not implement C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables).
+- For the same reason, Visual Studio 2015 onwards with ``/Zc:threadSafeInit-``, and GCC with ``--fno-threadsafe-statics``, are also not supported.
+
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 ### CMake
