@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Used to express the dynamic constraints on MQTT transport parameters. These constraints may be set and changed at run time. Every transport parameter must have an entry, even if it is only an empty object.",
+  "patternProperties": {
+    "^ext_[a-z A-Z 0-9 _]+$":{
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    }
+  },
+  "properties": {
+    "destination_host": {
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    },
+    "source_host": {
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    },
+    "broker_topic": {
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    },
+    "source_port": {
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    },
+    "destination_port": {
+      "$ref": "constraint-schema.json#/definitions/constraint"
+    }
+  }
+}

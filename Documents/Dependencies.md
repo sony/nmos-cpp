@@ -21,6 +21,10 @@ On Windows, Visual Studio is required. Visual Studio 2015 is the primary develop
 
 On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series has been tested, although a more recent compiler is to be recommended!
 
+Notes:
+- **Visual Studio 2013 is not supported**, because it does not implement C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables).
+- For the same reason, Visual Studio 2015 onwards with ``/Zc:threadSafeInit-``, and GCC with ``--fno-threadsafe-statics``, are also not supported.
+
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 ### CMake
@@ -109,8 +113,13 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
 ### C++ REST SDK
 
 1. Get the source code
-   - Either clone the [repo](https://github.com/Microsoft/cpprestsdk/) and check out the v2.10.8 tag
-   - Or download and expand the [v2.10.8 archive](https://github.com/Microsoft/cpprestsdk/archive/v2.10.8.zip) from GitHub
+   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.9 tag  
+     The ``git clone`` command option ``--recurse-submodules`` (formerly ``--recursive``) simplifies [cloning a project with submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules).  
+     For example:
+     ```
+     git clone --recurse-submodules --branch v2.10.9 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
+     ```
+     Note: The downloadable archives created by GitHub cannot be used on their own since they don't include submodules.
 2. Use CMake to configure for your platform
    - If you're not familiar with CMake, the CMake GUI may be helpful
      - Set the CMake source directory to the Release directory in the cpprestsdk source tree
@@ -125,7 +134,8 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
      - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0`` to match the suggested ``b2`` command
      - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
-3. Use CMake to generate build/project files, and then build and install  
+   - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
+3. Use CMake to generate build/project files, and then build *and* install  
    On Windows, the "Visual Studio 14 2015 Win64" generator has been tested
 
 **Windows**
@@ -143,10 +153,14 @@ cmake .. ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
   -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_67_0" ^
   -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_67_0/x64/lib" ^
-  -DWERROR:BOOL="0"
+  -DWERROR:BOOL="0" ^
+  -DBUILD_SAMPLES:BOOL="0" ^
+  -DBUILD_TESTS:BOOL="0"
 ```
 
-Then, open and build the generated cpprestsdk Visual Studio Solution.
+Then, open and build the INSTALL project in the generated cpprestsdk Visual Studio Solution.
+
+Note: Depending on the current user permissions, Visual Studio may need to be run with administrator privileges in order to install C++ REST SDK.
 
 Or on the Developer command line:
 ```
@@ -154,7 +168,7 @@ msbuild cpprestsdk.sln /p:Configuration=<Debug-or-Release>
 msbuild INSTALL.vcxproj /p:Configuration=<Debug-or-Release>
 ```
 
-Note: With the configuration above, **nmos-cpp** apps may need to be run with administrator privileges on Windows.
+Note: With the CMake configuration options for C++ REST SDK described above, **nmos-cpp** apps themselves may need to be run with administrator privileges on Windows.
 This is because the C++ REST SDK implementation uses Windows HTTP Services (WinHTTP) by default, which enforces this requirement when using the "*" wildcard to listen on all interfaces.
 Administrator privileges are not required if C++ REST SDK is built with ``CPPREST_HTTP_LISTENER_IMPL`` (STRING) set to ``asio`` (and for consistency ``CPPREST_HTTP_CLIENT_IMPL`` (STRING) also set to ``asio``).
 
@@ -168,7 +182,9 @@ mkdir build
 cd build
 cmake .. \
   -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" \
-  -DWERROR:BOOL="0"
+  -DWERROR:BOOL="0" \
+  -DBUILD_SAMPLES:BOOL="0" \
+  -DBUILD_TESTS:BOOL="0"
 make
 sudo make install
 ```

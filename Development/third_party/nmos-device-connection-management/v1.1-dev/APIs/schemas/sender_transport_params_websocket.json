@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes WebSocket Sender transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. All senders must support `connection_uri`.",
+  "title": "WebSocket Sender Transport Parameters",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "title": "Sender Output",
+    "allOf": [
+      { "$ref": "sender_transport_params_ext.json" },
+      {
+        "type": "object",
+        "properties": {
+          "connection_uri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URI hosting the WebSocket server as defined in RFC 6455 Section 3. The sender should provide an enum in the constraints endpoint, which should contain 'auto', and the available interface addresses formatted as connection URIs. If the parameter is set to auto the sender should establish for itself which interface it should use, based on routing rules or its own internal configuration. A null value indicates that the sender has not yet been configured.",
+            "anyOf": [{
+                "pattern": "^auto$"
+              },
+              {
+                "pattern": "^wss?:\/\/.*"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

@@ -2,6 +2,7 @@
 #include "sdp/sdp.h"
 
 #include <stdexcept>
+#include "bst/regex.h"
 #include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 
@@ -31,8 +32,8 @@ namespace sdp
 
         // SDP structured text conversion to/from json
 
-        inline std::string js2s(const web::json::value& v) { return utility::us2s(v.as_string()); }
-        inline web::json::value s2js(const std::string& s) { return web::json::value::string(utility::s2us(s)); }
+        inline std::string js2s(const web::json::value& v) { auto s = utility::us2s(v.as_string()); if (!s.empty()) return s; else throw sdp_format_error("expected a non-empty string"); }
+        inline web::json::value s2js(const std::string& s) { if (!s.empty()) return web::json::value::string(utility::s2us(s)); else throw sdp_parse_error("expected a non-empty string"); }
 
         inline std::string jn2s(const web::json::value& v) { return v.as_number(), utility::us2s(v.serialize()); }
         inline web::json::value s2jn(const std::string& s) { auto v = web::json::value::parse(utility::s2us(s)); return v.as_number(), v; }
@@ -47,6 +48,18 @@ namespace sdp
             return substr;
         }
 
+        // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)
+        // set pos to the end of the delimiter
+        inline std::string substr_find(const std::string& str, std::string::size_type& pos, const bst::regex& delimiter)
+        {
+            bst::smatch match;
+            const std::string::size_type end = bst::regex_search(str.begin() + pos, str.end(), match, delimiter) ? match[0].first - str.begin() : std::string::npos;
+            std::string substr = std::string::npos != end ? str.substr(pos, end - pos) : str.substr(pos);
+            pos = std::string::npos != end ? end + (match[0].second - match[0].first) : std::string::npos;
+            return substr;
+        }
+
+        // <byte-string>
         const converter string_converter{ js2s, s2js };
 
         const converter number_converter{ jn2s, s2jn };
@@ -90,12 +103,46 @@ namespace sdp
                 [=](const std::string& s) {
                     auto v = web::json::value::array();
                     size_t pos = 0;
-                    do
+                    while (std::string::npos != pos && s.size() != pos)
                     {
                         auto each = substr_find(s, pos, delimiter);
-                        // ignore leading, trailing and consecutive delimiters
-                        if (!each.empty()) web::json::push_back(v, converter.parse(each));
-                    } while (std::string::npos != pos);
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
+                        web::json::push_back(v, converter.parse(each));
+                    }
+                    return v;
+                }
+            };
+        }
+
+        // identical to above except that parse_delimiter is a regex pattern
+        // hmm, yes, should therefore refactor
+        converter array_converter(const converter& converter, const std::string& format_delimiter, const std::string& parse_delimiter)
+        {
+            return{
+                [=](const web::json::value& v) {
+                    std::string s;
+                    for (const auto& each : v.as_array())
+                    {
+                        if (!each.is_null())
+                        {
+                            if (!s.empty()) s += format_delimiter;
+                            s += converter.format(each);
+                        }
+                    }
+                    return s;
+                },
+                [=](const std::string& s) {
+                    const bst::regex delimiter{ parse_delimiter };
+                    auto v = web::json::value::array();
+                    size_t pos = 0;
+                    while (std::string::npos != pos && s.size() != pos)
+                    {
+                        auto each = substr_find(s, pos, delimiter);
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
+                        web::json::push_back(v, converter.parse(each));
+                    }
                     return v;
                 }
             };
@@ -103,7 +150,7 @@ namespace sdp
 
         const converter strings_converter = array_converter(string_converter, " ");
 
-        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ");
+        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", ";[ \\t]+");
 
         converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
         {
@@ -124,7 +171,8 @@ namespace sdp
                     {
                         if (std::string::npos == pos) throw sdp_parse_error("expected a value for " + utility::us2s(field.first));
                         auto each = substr_find(s, pos, delimiter);
-                        // ignore consecutive delimiters?
+                        // leading or repeated delimiters are an error
+                        if (each.empty()) throw sdp_parse_error("unexpected delimiter");
 
                         auto vv = field.second.parse(each);
                         if (!field.first.empty()) v[field.first] = vv;
@@ -146,6 +194,18 @@ namespace sdp
                 return !s.empty() && std::string::npos != time_units.find(s.back())
                     ? web::json::value_of({ { sdp::fields::time_value, s2jn(s.substr(0, s.size() - 1)) }, { sdp::fields::time_unit, s2js({ s.back() }) } }, keep_order)
                     : web::json::value_of({ { sdp::fields::time_value, s2jn(s) } }, keep_order);
+            }
+        };
+
+        // empty <byte-string> for <att-value> (after the colon) is prohibited so it is used to indicate no <att-value> at all
+        // i.e. a property attribute
+        const converter default_attribute_converter
+        {
+            [](const web::json::value& v) {
+                return !v.is_null() ? js2s(v) : "";
+            },
+            [](const std::string& s) {
+                return !s.empty() ? s2js(s) : web::json::value::null();
             }
         };
 
@@ -198,7 +258,7 @@ namespace sdp
                 { sdp::fields::session_version, number_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
-                { sdp::fields::unicast_address, string_converter },
+                { sdp::fields::unicast_address, string_converter }
             })
         );
 
@@ -207,8 +267,8 @@ namespace sdp
             sdp::fields::session_name,
             's',
             {
-                [](const web::json::value& v) { auto s = js2s(v); return !s.empty() ? s : " "; },
-                [](const std::string& s) { return s2js(!s.empty() ? s : " "); },
+                [](const web::json::value& v) { auto s = utility::us2s(v.as_string()); return !s.empty() ? s : " "; },
+                [](const std::string& s) { return web::json::value::string(utility::s2us(!s.empty() ? s : " ")); }
             }
         );
 
@@ -355,10 +415,13 @@ namespace sdp
                         auto v = web::json::value::object(keep_order);
 
                         const auto colon = s.find(':');
-                        // empty token for att-field (before the colon) is prohibited
+                        // empty <token> for <att-field> (before the colon) is prohibited
                         const auto name = utility::s2us(s.substr(0, colon));
 
                         v[sdp::fields::name] = web::json::value::string(name);
+
+                        // empty <byte-string> for <att-value> (after the colon) is prohibited
+                        if (std::string::npos != colon && s.size() == colon + 1) throw sdp_parse_error("expected an attribute value after ':'");
 
                         const auto found = converters.find(name);
                         const auto& parse = (converters.end() != found ? found->second : default_converter).parse;
@@ -497,7 +560,8 @@ namespace sdp
                         [](const std::string& s) {
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
-                            v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, " "));
+                            const bst::regex whitespace{ "[ \\t]+" };
+                            v[sdp::fields::format] = string_converter.parse(substr_find(s, pos, whitespace));
                             // handle no space after <format> if there are no <format specific parameters>
                             auto params = std::string::npos != pos ? substr_find(s, pos) : "";
                             // named_values_converter ignores a (correct, probably?) trailing "; " and equally copes if it's not present
@@ -540,14 +604,16 @@ namespace sdp
                         [](const web::json::value& v) {
                             std::string s;
                             s += string_converter.format(v.at(sdp::fields::semantics));
-                            s += " " + strings_converter.format(v.at(sdp::fields::mids));
+                            const auto& mids = v.at(sdp::fields::mids);
+                            if (0 != mids.size()) s += " " + strings_converter.format(v.at(sdp::fields::mids));
                             return s;
                         },
                         [](const std::string& s) {
                             auto v = web::json::value::object(keep_order);
                             size_t pos = 0;
                             v[sdp::fields::semantics] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::mids] = strings_converter.parse(substr_find(s, pos));
+                            auto mids = std::string::npos != pos ? substr_find(s, pos) : "";
+                            v[sdp::fields::mids] = strings_converter.parse(mids);
                             return v;
                         },
                     }
@@ -643,7 +709,7 @@ namespace sdp
         }
 
         const attribute_converters default_attribute_converters = get_default_attribute_converters();
-        const description default_grammar = session_description(default_attribute_converters, string_converter);
+        const description default_grammar = session_description(default_attribute_converters, default_attribute_converter);
     }
 
     void write_line(std::ostream& os, const web::json::value& line, const grammar::line& grammar)

@@ -2,7 +2,9 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
+#include "nmos/api_downgrade.h" // for details::make_permitted_downgrade_error
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
@@ -82,13 +84,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
             return pplx::task_from_result(true);
         });
 
-        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_registration_api(model, gate));
+        registration_api.mount(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_registration_api(model, gate));
 
         return registration_api;
     }
@@ -111,6 +114,10 @@ namespace nmos
 
         api_router registration_api;
 
+        // check for supported API version
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        registration_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+
         // experimental extension, to enable the Registration API to be flagged as temporarily unavailable
         registration_api.support(U(".*"), [&model](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -118,7 +125,7 @@ namespace nmos
             if (!available)
             {
                 set_error_reply(res, status_codes::ServiceUnavailable);
-                throw std::logic_error("Service Unavailable"); // in order to skip other route handlers and then send the response
+                throw details::to_api_finally_handler{}; // in order to skip other route handlers and then send the response
             }
             return pplx::task_from_result(true);
         });
@@ -132,7 +139,7 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
+            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_registrationapi_resource_post_request_schema_uri))
         };
 
         registration_api.support(U("/resource/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
@@ -144,7 +151,7 @@ namespace nmos
                 auto lock = model.write_lock();
                 auto& resources = model.registry_resources;
 
-                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
                 // Validate JSON syntax according to the schema
 
@@ -384,31 +391,42 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::types::node });
-            if (resources.end() != resource && resource->version == version)
+            if (resources.end() != resource)
             {
-                if (methods::POST == req.method())
+                if (resource->version == version)
                 {
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
+                    if (methods::POST == req.method())
+                    {
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Heartbeat received for node: " << resourceId;
 
-                    const auto health = nmos::health_now();
-                    set_resource_health(resources, resourceId, health);
+                        const auto health = nmos::health_now();
+                        set_resource_health(resources, resource->id, health);
 
-                    set_reply(res, web::http::status_codes::OK, make_health_response_body(health));
-                }
-                else if (methods::GET == req.method())
-                {
-                    set_reply(res, web::http::status_codes::OK, make_health_response_body(resource->health));
+                        set_reply(res, web::http::status_codes::OK, make_health_response_body(health));
+                    }
+                    else if (methods::GET == req.method())
+                    {
+                        set_reply(res, web::http::status_codes::OK, make_health_response_body(resource->health));
+                    }
+                    else
+                    {
+                        web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::POST);
+                        web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::GET);
+                        set_reply(res, status_codes::MethodNotAllowed);
+                    }
                 }
                 else
                 {
-                    web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::POST);
-                    web::http::add_header_value(res.headers(), web::http::header_names::allow, methods::GET);
-                    set_reply(res, status_codes::MethodNotAllowed);
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
                 }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::types::node }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {
@@ -423,15 +441,27 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && resource->version == version)
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                set_reply(res, status_codes::OK, resource->data);
+                // downgrade doesn't apply to the Registration API; version must be equal to resource->version
+                if (resource->version == version)
+                {
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    set_reply(res, status_codes::OK, resource->data);
+                }
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {
@@ -447,36 +477,47 @@ namespace nmos
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && resource->version == version)
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
-
-                // remove this resource from its super-resource's sub-resources
-                auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(*resource));
-                if (super_resource != resources.end())
+                if (resource->version == version)
                 {
-                    // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
-                    // hence resources.modify(...) rather than modify_resource(resources, ...)
-                    resources.modify(super_resource, [&resource](nmos::resource& super_resource)
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting resource: " << resourceId;
+
+                    // remove this resource from its super-resource's sub-resources
+                    auto super_resource = nmos::find_resource(resources, nmos::get_super_resource(*resource));
+                    if (super_resource != resources.end())
                     {
-                        super_resource.sub_resources.erase(resource->id);
-                    });
+                        // this isn't modifying the visible data of the super_resouce though, so no resource events need to be generated
+                        // hence resources.modify(...) rather than modify_resource(resources, ...)
+                        resources.modify(super_resource, [&resource](nmos::resource& super_resource)
+                        {
+                            super_resource.sub_resources.erase(resource->id);
+                        });
+                    }
+
+                    // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
+                    // on the Node's behalf in order to prevent stale entries remaining in the registry."
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
+                    erase_resource(resources, resource->id, false);
+
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
+                    model.notify();
+
+                    set_reply(res, status_codes::NoContent);
                 }
-
-                // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
-                // on the Node's behalf in order to prevent stale entries remaining in the registry."
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
-                erase_resource(resources, resource->id, false);
-
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
-                model.notify();
-
-                set_reply(res, status_codes::NoContent);
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {

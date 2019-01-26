@@ -119,6 +119,12 @@ namespace nmos
 
     // get the id of each resource with the specified super-resource
     std::set<nmos::id> get_sub_resources(const resources& resources, const std::pair<id, type>& id_type);
+
+    namespace details
+    {
+        // return true if the resource is "erased" but not forgotten
+        bool is_erased_resource(const resources& resources, const std::pair<id, type>& id_type);
+    }
 }
 
 #endif

@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the Node and the services which run on it",
+  "title": "Node resource",
+  "allOf": [
+    { "$ref": "resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "href",
+        "caps",
+        "api",
+        "services",
+        "clocks",
+        "interfaces"
+      ],
+      "properties": {
+        "href": {
+          "description": "HTTP access href for the Node's API (deprecated)",
+          "type": "string",
+          "format": "uri"
+        },
+        "hostname": {
+          "description": "Node hostname (optional, deprecated)",
+          "type": "string",
+          "format": "hostname"
+        },
+        "api": {
+          "description": "URL fragments required to connect to the Node API",
+          "type": "object",
+          "required": ["versions", "endpoints"],
+          "properties": {
+            "versions": {
+              "description": "Supported API versions running on this Node",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^v[0-9]+\\.[0-9]+$"
+              }
+            },
+            "endpoints": {
+              "description": "Host, port and protocol details required to connect to the API",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["host", "port", "protocol"],
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "description": "IP address or hostname which the Node API is running on",
+                    "anyOf": [
+                      {"format": "hostname"},
+                      {"format": "ipv4"},
+                      {"format": "ipv6"}
+                    ]
+                  },
+                  "port": {
+                    "type": "integer",
+                    "description": "Port number which the Node API is running on",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "description": "Protocol supported by this instance of the Node API",
+                    "enum": ["http", "https"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "caps": {
+          "description": "Capabilities (not yet defined)",
+          "type": "object"
+        },
+        "services": {
+          "description": "Array of objects containing a URN format type and href",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["href", "type"],
+            "properties": {
+              "href": {
+                "type": "string",
+                "description": "URL to reach a service running on the Node",
+                "format": "uri"
+              },
+              "type": {
+                "type": "string",
+                "description": "URN identifying the type of service",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "clocks": {
+          "description": "Clocks made available to Devices owned by this Node",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "$ref": "clock_internal.json" },
+              { "$ref": "clock_ptp.json" }
+            ]
+          }
+        },
+        "interfaces": {
+          "description":"Network interfaces made available to devices owned by this Node. Port IDs and Chassis IDs are used to inform topology discovery via IS-06, and require that interfaces implement ARP at a minimum, and ideally LLDP.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["chassis_id", "port_id", "name"],
+            "properties": {
+              "chassis_id": {
+                "description": "Chassis ID of the interface, as signalled in LLDP from this node. Set to null where LLDP is unsuitable for use (ie. virtualised environments)",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^([0-9a-f]{2}-){5}([0-9a-f]{2})$",
+                    "description": "When the Chassis ID is a MAC address, use this format"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^.+$",
+                    "description": "When the Chassis ID is anything other than a MAC address, a freeform string may be used"
+                  },
+                  {
+                    "type": "null",
+                    "description": "When the Chassis ID is unavailable it should be set to null"
+                  }
+                ]
+              },
+              "port_id": {
+                "description": "Port ID of the interface, as signalled in LLDP or via ARP responses from this node. Must be a MAC address",
+                "type": "string",
+                "pattern": "^([0-9a-f]{2}-){5}([0-9a-f]{2})$"
+              },
+              "name": {
+                "description": "Name of the interface (unique in scope of this node).  This attribute is used by sub-resources of this node such as senders and receivers to refer to interfaces to which they are bound.",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

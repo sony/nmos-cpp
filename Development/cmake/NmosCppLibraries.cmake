@@ -43,9 +43,58 @@ set(NMOS_IS04_SCHEMAS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is04_schemas/is04_schemas.h
     )
 
+set(NMOS_IS04_V1_3_TAG v1.3-dev)
 set(NMOS_IS04_V1_2_TAG v1.2.1)
 set(NMOS_IS04_V1_1_TAG v1.1.2)
 set(NMOS_IS04_V1_0_TAG v1.0.3)
+
+set(NMOS_IS04_V1_3_SCHEMAS_JSON
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/clock_internal.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/clock_ptp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/device.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/devices.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/error.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flows.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_audio.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_audio_coded.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_audio_raw.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_core.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_data.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_mux.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_sdianc_data.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_video.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_video_coded.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/flow_video_raw.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/node.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/nodeapi-base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/nodeapi-receiver-target.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/nodes.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/queryapi-base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/queryapi-subscription-response.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/queryapi-subscriptions-post-request.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/queryapi-subscriptions-response.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/queryapi-subscriptions-websocket.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receiver.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receivers.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receiver_audio.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receiver_core.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receiver_data.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receiver_mux.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/receiver_video.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/registrationapi-base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/registrationapi-health-response.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/registrationapi-resource-post-request.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/registrationapi-resource-response.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/resource_core.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/sender.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/senders.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/source.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/sources.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/source_audio.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/source_core.json
+    ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/source_generic.json
+    )
 
 set(NMOS_IS04_V1_2_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_2_TAG}/APIs/schemas/clock_internal.json
@@ -173,11 +222,12 @@ set(NMOS_IS04_V1_0_SCHEMAS_JSON
 
 set(NMOS_IS04_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/([^/]+)/APIs/schemas/([^;]+)\\.json")
 set(NMOS_IS04_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is04_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_3_SCHEMAS_SOURCES "${NMOS_IS04_V1_3_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_2_SCHEMAS_SOURCES "${NMOS_IS04_V1_2_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_1_SCHEMAS_SOURCES "${NMOS_IS04_V1_1_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_0_SCHEMAS_SOURCES "${NMOS_IS04_V1_0_SCHEMAS_JSON}")
 
-foreach(JSON ${NMOS_IS04_V1_2_SCHEMAS_JSON} ${NMOS_IS04_V1_1_SCHEMAS_JSON} ${NMOS_IS04_V1_0_SCHEMAS_JSON})
+foreach(JSON ${NMOS_IS04_V1_3_SCHEMAS_JSON} ${NMOS_IS04_V1_2_SCHEMAS_JSON} ${NMOS_IS04_V1_1_SCHEMAS_JSON} ${NMOS_IS04_V1_0_SCHEMAS_JSON})
     string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
     string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
     string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
@@ -209,12 +259,14 @@ endforeach()
 add_library(
     nmos_is04_schemas_static STATIC
     ${NMOS_IS04_SCHEMAS_HEADERS}
+    ${NMOS_IS04_V1_3_SCHEMAS_SOURCES}
     ${NMOS_IS04_V1_2_SCHEMAS_SOURCES}
     ${NMOS_IS04_V1_1_SCHEMAS_SOURCES}
     ${NMOS_IS04_V1_0_SCHEMAS_SOURCES}
     )
 
 source_group("nmos\\is04_schemas\\Header Files" FILES ${NMOS_IS04_SCHEMAS_HEADERS})
+source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_3_TAG}\\Source Files" FILES ${NMOS_IS04_V1_3_SCHEMAS_SOURCES})
 source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_2_TAG}\\Source Files" FILES ${NMOS_IS04_V1_2_SCHEMAS_SOURCES})
 source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_1_TAG}\\Source Files" FILES ${NMOS_IS04_V1_1_SCHEMAS_SOURCES})
 source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_0_TAG}\\Source Files" FILES ${NMOS_IS04_V1_0_SCHEMAS_SOURCES})
@@ -229,7 +281,42 @@ set(NMOS_IS05_SCHEMAS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is05_schemas/is05_schemas.h
     )
 
+set(NMOS_IS05_V1_1_TAG v1.1-dev)
 set(NMOS_IS05_V1_0_TAG v1.0.1)
+
+set(NMOS_IS05_V1_1_SCHEMAS_JSON
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/activation-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/activation-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/bulk-receiver-post-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/bulk-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/bulk-sender-post-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-bulk.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-receiver.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-sender.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/connectionapi-single.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraint-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema-mqtt.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema-rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema-websocket.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/constraints-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/error.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_dash.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_ext.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_mqtt.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver_transport_params_websocket.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/receiver-stage-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_dash.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_ext.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_mqtt.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_rtp.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender_transport_params_websocket.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender-response-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/sender-stage-schema.json
+    ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/transporttype-response-schema.json
+    )
 
 set(NMOS_IS05_V1_0_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/error.json
@@ -251,9 +338,10 @@ set(NMOS_IS05_V1_0_SCHEMAS_JSON
 
 set(NMOS_IS05_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/([^/]+)/APIs/schemas/([^;]+)\\.json")
 set(NMOS_IS05_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is05_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_1_SCHEMAS_SOURCES "${NMOS_IS05_V1_1_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_0_SCHEMAS_SOURCES "${NMOS_IS05_V1_0_SCHEMAS_JSON}")
 
-foreach(JSON ${NMOS_IS05_V1_0_SCHEMAS_JSON})
+foreach(JSON ${NMOS_IS05_V1_1_SCHEMAS_JSON} ${NMOS_IS05_V1_0_SCHEMAS_JSON})
     string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
     string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
     string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
@@ -285,10 +373,12 @@ endforeach()
 add_library(
     nmos_is05_schemas_static STATIC
     ${NMOS_IS05_SCHEMAS_HEADERS}
+    ${NMOS_IS05_V1_1_SCHEMAS_SOURCES}
     ${NMOS_IS05_V1_0_SCHEMAS_SOURCES}
     )
 
 source_group("nmos\\is05_schemas\\Header Files" FILES ${NMOS_IS05_SCHEMAS_HEADERS})
+source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_1_TAG}\\Source Files" FILES ${NMOS_IS05_V1_1_SCHEMAS_SOURCES})
 source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_0_TAG}\\Source Files" FILES ${NMOS_IS05_V1_0_SCHEMAS_SOURCES})
 
 target_link_libraries(
@@ -398,6 +488,8 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/health.h
     ${NMOS_CPP_DIR}/nmos/id.h
     ${NMOS_CPP_DIR}/nmos/interlace_mode.h
+    ${NMOS_CPP_DIR}/nmos/is04_versions.h
+    ${NMOS_CPP_DIR}/nmos/is05_versions.h
     ${NMOS_CPP_DIR}/nmos/json_fields.h
     ${NMOS_CPP_DIR}/nmos/json_schema.h
     ${NMOS_CPP_DIR}/nmos/log_manip.h

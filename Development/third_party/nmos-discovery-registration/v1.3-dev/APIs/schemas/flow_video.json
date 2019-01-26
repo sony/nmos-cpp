@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a Video Flow",
+  "title": "Video Flow resource",
+  "allOf": [
+    { "$ref": "flow_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "format",
+        "frame_width",
+        "frame_height",
+        "colorspace"
+      ],
+      "properties": {
+        "format": {
+          "description": "Format of the data coming from the Flow as a URN",
+          "type": "string",
+          "enum": [
+            "urn:x-nmos:format:video"
+          ],
+          "format": "uri"
+        },
+        "frame_width": {
+          "description" : "Width of the picture in pixels",
+          "type" : "integer"
+        },
+        "frame_height" : {
+          "description" : "Height of the picture in pixels",
+          "type" : "integer"
+        },
+        "interlace_mode" : {
+          "description" : "Interlaced video mode for frames in this Flow",
+          "type" : "string",
+          "default": "progressive",
+          "enum" : [
+            "progressive",
+            "interlaced_tff",
+            "interlaced_bff",
+            "interlaced_psf"
+          ]
+        },
+        "colorspace" : {
+          "description" : "Colorspace used for the video",
+          "type" : "string",
+          "enum" : [
+            "BT601",
+            "BT709",
+            "BT2020",
+            "BT2100"
+          ]
+        },
+        "transfer_characteristic": {
+          "description": "Transfer characteristic",
+          "type": "string",
+          "default": "SDR",
+          "enum": [
+            "SDR",
+            "HLG",
+            "PQ"
+          ]
+        }
+      }
+    }
+  ]
+}

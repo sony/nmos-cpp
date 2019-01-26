@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the possible requests to a Node's Receiver target resource",
+  "title": "Receiver target resource",
+  "oneOf": [
+    { "$ref": "sender.json" },
+    {
+      "type": "object",
+      "description": "Describes an empty object",
+      "title": "Empty object schema",
+      "additionalProperties": false,
+      "required": [
+      ],
+      "properties": {
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 #include "nmos/api_downgrade.h"
 
 #include <map>
+#include "nmos/is04_versions.h"
 #include "nmos/resource.h"
 
 namespace nmos
@@ -34,6 +35,25 @@ namespace nmos
         return true;
     }
 
+    namespace details
+    {
+        utility::string_t make_permitted_downgrade_error(const nmos::resource& resource, const nmos::api_version& version)
+        {
+            return make_permitted_downgrade_error(resource, version, version);
+        }
+
+        utility::string_t make_permitted_downgrade_error(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+        {
+            return make_permitted_downgrade_error(resource.version, resource.type, version, downgrade_version);
+        }
+
+        utility::string_t make_permitted_downgrade_error(const nmos::api_version& resource_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+        {
+            return (version == downgrade_version ? make_api_version(version) + U(" request") : make_api_version(downgrade_version) + U(" downgrade request"))
+                + U(" is not permitted for a ") + make_api_version(resource_version) + U(" resource");
+        }
+    }
+
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version)
     {
         return downgrade(resource, version, version);
@@ -44,7 +64,7 @@ namespace nmos
         return downgrade(resource.version, resource.type, resource.data, version, downgrade_version);
     }
 
-    namespace details
+    static const std::map<nmos::type, std::map<nmos::api_version, std::vector<utility::string_t>>>& resources_versions()
     {
         static const std::map<nmos::type, std::map<nmos::api_version, std::vector<utility::string_t>>> resources_versions
         {
@@ -99,6 +119,7 @@ namespace nmos
                 }
             }
         };
+        return resources_versions;
     }
 
     web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
@@ -122,7 +143,7 @@ namespace nmos
         // could be an oversight...
         // See nmos-discovery-registration/APIs/schemas/receiver_core.json
 
-        auto& resource_versions = details::resources_versions.at(resource_type);
+        auto& resource_versions = resources_versions().at(resource_type);
         auto version_first = resource_versions.cbegin();
         auto version_last = resource_versions.upper_bound(version);
         for (auto version_properties = version_first; version_last != version_properties; ++version_properties)

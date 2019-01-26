@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <tuple>
-#include <vector>
 #include "cpprest/details/basic_types.h"
 
 namespace nmos
@@ -26,20 +25,6 @@ namespace nmos
         friend bool operator<=(const api_version& lhs, const api_version& rhs) { return !(rhs < lhs); }
         friend bool operator>=(const api_version& lhs, const api_version& rhs) { return !(lhs < rhs); }
     };
-
-    namespace is04_versions
-    {
-        const api_version v1_0{ 1, 0 };
-        const api_version v1_1{ 1, 1 };
-        const api_version v1_2{ 1, 2 };
-
-        const std::vector<api_version> all{ nmos::is04_versions::v1_0, nmos::is04_versions::v1_1, nmos::is04_versions::v1_2 };
-    }
-
-    namespace is05_versions
-    {
-        const api_version v1_0{ 1, 0 };
-    }
 
     inline utility::string_t make_api_version(const api_version& version)
     {

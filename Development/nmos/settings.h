@@ -33,6 +33,12 @@ namespace nmos
         const web::json::field_as_string_or host_address{ U("host_address"), U("127.0.0.1") };
         const web::json::field_as_array host_addresses{ U("host_addresses") };
 
+        // is04_versions [registry, node]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
+        const web::json::field_as_array is04_versions{ U("is04_versions") }; // when omitted, nmos::is04_versions::all is used
+
+        // is05_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is05_versions{ U("is05_versions") }; // when omitted, nmos::is05_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 

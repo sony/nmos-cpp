@@ -4,6 +4,7 @@
 #include "cpprest/json_validator.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
+#include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
@@ -32,13 +33,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/"), U("v1.1/"), U("v1.2/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
             return pplx::task_from_result(true);
         });
 
-        query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_query_api(model, gate));
+        query_api.mount(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_query_api(model, gate));
 
         return query_api;
     }
@@ -178,6 +180,10 @@ namespace nmos
 
         api_router query_api;
 
+        // check for supported API version
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
+        query_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+
         query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("nodes/"), U("devices/"), U("sources/"), U("flows/"), U("senders/"), U("receivers/"), U("subscriptions/") }, res));
@@ -189,7 +195,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
 
             // Extract and decode the query string
@@ -237,7 +243,7 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::queryType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -249,16 +255,27 @@ namespace nmos
             const resource_query match(version, U('/') + resourceType, flat_query_params);
 
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
-            if (resources.end() != resource && nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
+            if (resources.end() != resource)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
-                set_reply(res, status_codes::OK, match.downgrade(*resource));
-
-                // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
-                if (!match.strip || resource->version < match.version)
+                if (nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
                 {
-                    res.headers().add(U("X-API-Version"), make_api_version(resource->version));
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    set_reply(res, status_codes::OK, match.downgrade(*resource));
+
+                    // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
+                    if (!match.strip || resource->version < match.version)
+                    {
+                        res.headers().add(U("X-API-Version"), make_api_version(resource->version));
+                    }
                 }
+                else
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, match.version, match.downgrade_version));
+                }
+            }
+            else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {
@@ -271,7 +288,7 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(is04_versions::all | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
+            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
         };
 
         query_api.support(U("/subscriptions/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
@@ -282,7 +299,7 @@ namespace nmos
                 auto lock = model.write_lock();
                 auto& resources = model.registry_resources;
 
-                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
                 // Validate JSON syntax according to the schema
 
@@ -405,25 +422,36 @@ namespace nmos
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::is04_version.name));
+            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t subscriptionId = parameters.at(nmos::patterns::resourceId.name);
 
             auto subscription = find_resource(resources, { subscriptionId, nmos::types::subscription });
-            // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
-            if (resources.end() != subscription && subscription->version == version)
+            if (resources.end() != subscription)
             {
-                if (nmos::fields::persist(subscription->data))
+                // downgrade doesn't apply to subscriptions; at this point, version must be equal to subscription->version
+                if (subscription->version == version)
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
-                    erase_resource(resources, subscription->id, false);
+                    if (nmos::fields::persist(subscription->data))
+                    {
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
+                        erase_resource(resources, subscription->id, false);
 
-                    set_reply(res, status_codes::NoContent);
+                        set_reply(res, status_codes::NoContent);
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
+                        set_error_reply(res, status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted"));
+                    }
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
-                    set_error_reply(res, status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted"));
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*subscription, version));
                 }
+            }
+            else if (details::is_erased_resource(resources, { subscriptionId, nmos::types::subscription }))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
             }
             else
             {

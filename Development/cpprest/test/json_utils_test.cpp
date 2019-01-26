@@ -18,7 +18,7 @@ namespace
     }
 
     const auto non_composites = web::json::value_of({
-        _XPLATSTR("What do you get if you multiple six by nine?"),
+        _XPLATSTR("What do you get if you multiply six by nine?"),
         57,
         3.1419275,
         false,

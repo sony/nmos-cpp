@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes an SDI ancillary Flow",
+  "title": "SDI ancillary Flow resource",
+  "allOf": [
+    { "$ref": "flow_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "format",
+        "media_type"
+      ],
+      "properties": {
+        "format": {
+          "description": "Format of the data coming from the Flow as a URN",
+          "type": "string",
+          "enum": [
+            "urn:x-nmos:format:data"
+          ],
+          "format": "uri"
+        },
+        "media_type": {
+          "description": "Subclassification of the format using IANA assigned media types",
+          "type": "string",
+          "enum": [
+            "video/smpte291"
+          ]
+        },
+        "DID_SDID" : {
+          "description" : "List of Data identification and Secondary data identification words",
+          "type" : "array",
+          "items" : {
+            "title" : "entry",
+            "type" : "object",
+            "properties" : {
+              "DID" : {
+                "description" : "Data identification word",
+                "type" : "string",
+                "pattern" : "^0x[0-9a-fA-F]{2}$"
+              },
+              "SDID" : {
+                "description" : "Secondary data identification word",
+                "type" : "string",
+                "pattern" : "^0x[0-9a-fA-F]{2}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

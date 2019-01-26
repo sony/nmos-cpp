@@ -5,6 +5,10 @@ The following instructions describe how to set up and build this software.
 The test platforms are Windows with Visual Studio 2015 and Linux with GCC 4.8 or higher.
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
+Notes:
+- **Visual Studio 2013 is not supported**, because it does not implement C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables).
+- For the same reason, Visual Studio 2015 onwards with ``/Zc:threadSafeInit-``, and GCC with ``--fno-threadsafe-statics``, are also not supported.
+
 ## Preparation
 
 0. This software utilizes a number of great open-source projects  

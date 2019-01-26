@@ -88,7 +88,7 @@ namespace web
 
         namespace cors
         {
-            namespace details
+            bool is_cors_response_header(const web::http::http_headers::key_type& header)
             {
                 // See https://fetch.spec.whatwg.org/
                 static const std::set<web::http::http_headers::key_type> cors_response_headers
@@ -100,14 +100,10 @@ namespace web
                     web::http::cors::header_names::max_age,
                     web::http::cors::header_names::expose_headers
                 };
+                return cors_response_headers.end() != cors_response_headers.find(header);
             }
 
-            bool is_cors_response_header(const web::http::http_headers::key_type& header)
-            {
-                return details::cors_response_headers.end() != details::cors_response_headers.find(header);
-            }
-
-            namespace details
+            bool is_cors_safelisted_response_header(const web::http::http_headers::key_type& header)
             {
                 // See https://fetch.spec.whatwg.org/#cors-safelisted-response-header-name
                 static const std::set<web::http::http_headers::key_type> cors_safelisted_response_headers
@@ -120,15 +116,12 @@ namespace web
                     web::http::header_names::last_modified,
                     web::http::header_names::pragma
                 };
-            }
-
-            bool is_cors_safelisted_response_header(const web::http::http_headers::key_type& header)
-            {
-                return details::cors_safelisted_response_headers.end() != details::cors_safelisted_response_headers.find(header);
+                return cors_safelisted_response_headers.end() != cors_safelisted_response_headers.find(header);
             }
         }
 
-        namespace details
+        // based on existing function from cpprestsdk's internal_http_helpers.h
+        utility::string_t get_default_reason_phrase(web::http::status_code code)
         {
             static const std::map<web::http::status_code, const utility::char_t*> default_reason_phrases
             {
@@ -138,13 +131,9 @@ namespace web
 #undef _PHRASES
 #undef DAT
             };
-        }
 
-        // based on existing function from cpprestsdk's internal_http_helpers.h
-        utility::string_t get_default_reason_phrase(web::http::status_code code)
-        {
-            auto found = details::default_reason_phrases.find(code);
-            return details::default_reason_phrases.end() != found ? found->second : _XPLATSTR("");
+            auto found = default_reason_phrases.find(code);
+            return default_reason_phrases.end() != found ? found->second : _XPLATSTR("");
         }
 
         namespace details

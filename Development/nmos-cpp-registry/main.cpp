@@ -216,9 +216,9 @@ int main(int argc, char* argv[])
         const auto pri = nmos::fields::pri(registry_model.settings);
         if (nmos::service_priorities::no_priority != pri) // no_priority allows the registry to run unadvertised
         {
-            nmos::experimental::register_service(advertiser, nmos::service_types::query, registry_model.settings, nmos::make_txt_records(nmos::service_types::query, pri));
-            nmos::experimental::register_service(advertiser, nmos::service_types::registration, registry_model.settings, nmos::make_txt_records(nmos::service_types::registration, pri));
-            nmos::experimental::register_service(advertiser, nmos::service_types::node, registry_model.settings, nmos::make_txt_records(nmos::service_types::node));
+            nmos::experimental::register_service(advertiser, nmos::service_types::query, registry_model.settings);
+            nmos::experimental::register_service(advertiser, nmos::service_types::registration, registry_model.settings);
+            nmos::experimental::register_service(advertiser, nmos::service_types::node, registry_model.settings);
         }
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";

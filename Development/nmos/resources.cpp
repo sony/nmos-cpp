@@ -1,6 +1,7 @@
 #include "nmos/resources.h"
 
 #include <boost/range/adaptor/reversed.hpp>
+#include "nmos/is04_versions.h"
 #include "nmos/query_utils.h"
 
 namespace nmos
@@ -274,7 +275,7 @@ namespace nmos
         }
     }
 
-    static const std::pair<id, type> no_resource{};
+    static inline std::pair<id, type> no_resource() { return{}; }
 
     // get the super-resource id and type, according to the guidelines on referential integrity
     // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
@@ -282,11 +283,11 @@ namespace nmos
     {
         if (data.is_null())
         {
-            return no_resource;
+            return no_resource();
         }
         else if (nmos::types::node == type)
         {
-            return no_resource;
+            return no_resource();
         }
         else if (nmos::types::device == type)
         {
@@ -315,7 +316,7 @@ namespace nmos
         }
         else if (nmos::types::subscription == type)
         {
-            return no_resource;
+            return no_resource();
         }
         else if (nmos::types::grain == type)
         {
@@ -323,13 +324,13 @@ namespace nmos
         }
         else
         {
-            return no_resource;
+            return no_resource();
         }
     }
 
     bool has_resource(const resources& resources, const std::pair<id, type>& id_type)
     {
-        if (no_resource == id_type) return false;
+        if (no_resource() == id_type) return false;
         auto resource = resources.find(id_type.first);
         return resources.end() != resource && resource->has_data() && id_type.second == resource->type;
     }
@@ -390,5 +391,16 @@ namespace nmos
             }
         }
         return result;
+    }
+
+    namespace details
+    {
+        // return true if the resource is "erased" but not forgotten
+        bool is_erased_resource(const resources& resources, const std::pair<id, type>& id_type)
+        {
+            if (no_resource() == id_type) return false;
+            auto resource = resources.find(id_type.first);
+            return resources.end() != resource && id_type.second == resource->type && !resource->has_data();
+        }
     }
 }

@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes a video Receiver",
+  "title": "Video Receiver resource",
+  "allOf": [
+    { "$ref": "receiver_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "format",
+        "caps"
+      ],
+      "properties": {
+        "format": {
+          "description": "Type of Flow accepted by the Receiver as a URN",
+          "type": "string",
+          "enum": [
+            "urn:x-nmos:format:video"
+          ],
+          "format": "uri"
+        },
+        "caps": {
+          "description": "Capabilities",
+          "type": "object",
+          "properties": {
+            "media_types": {
+              "description": "Subclassification of the formats accepted using IANA assigned media types",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "anyOf": [
+                  {
+                    "enum": [
+                      "video/raw",
+                      "video/H264",
+                      "video/vc2"
+                    ]
+                  },
+                  {
+                    "pattern": "^video\\/[^\\s\\/]+$"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
