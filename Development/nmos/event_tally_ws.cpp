@@ -4,6 +4,9 @@
 #include <websocketpp/server.hpp>
 
 #include <cpprest/ws_client.h>
+//#include <websocketpp/config/asio_no_tls_client.hpp>
+//#include <websocketpp/client.hpp>
+
 #include <iostream>
 
 #include "nmos/event_tally_ws.h"
@@ -13,6 +16,8 @@
 #include "nmos/slog.h"
 
 typedef websocketpp::server<websocketpp::config::asio> server;
+//typedef websocketpp::client<websocketpp::config::asio_client> client;
+//typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
 
 using websocketpp::connection_hdl;
 using websocketpp::lib::placeholders::_1;
@@ -116,9 +121,9 @@ namespace nmos
             ~event_tally_client() {
                 for (auto c : m_client)
                     c.second.client.close().then([](){ /* Successfully closed the connection. */ });
-            }
+            }  
         private:
-            std::map<utility::string_t, server_subscription_data> m_client;
+            std::map<utility::string_t, server_subscription_data> m_client;    
         };
 
         resources::iterator find_connection_resource_activated(nmos::resources& resources, const std::vector<nmos::id> active_subscriptions) {

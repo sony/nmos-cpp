@@ -34,7 +34,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            event_tally_api.mount(U("/x-nmos/") + nmos::patterns::eventTally_api.pattern + U("/") + nmos::patterns::is04_version.pattern, make_unmounted_event_tally_api(node_model, gate));
+            event_tally_api.mount(U("/x-nmos/") + nmos::patterns::eventTally_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_event_tally_api(node_model, gate));
 
             return event_tally_api;
         }
