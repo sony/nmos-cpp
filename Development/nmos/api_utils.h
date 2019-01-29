@@ -89,7 +89,7 @@ namespace nmos
 
     // construct an http_listener on the specified port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS") - captures api by reference!
-    web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
+    web::http::experimental::listener::http_listener make_api_listener(const utility::char_t* address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
 
     namespace details
     {

@@ -10,7 +10,7 @@ BST_TEST_CASE(testMakeListenerUri)
 #if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
     BST_REQUIRE_STRING_EQUAL("http://*:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(42).to_string()));
 #else
-    BST_REQUIRE_STRING_EQUAL("http://0.0.0.0:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(42).to_string()));
+    BST_REQUIRE_STRING_EQUAL("http://0.0.0.0:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(web::http::experimental::listener::host_wildcard, 42).to_string()));
 #endif
 }
 

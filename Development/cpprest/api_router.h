@@ -23,17 +23,17 @@ namespace web
                 // RAII helper for http_listener sessions (could be extracted to another header)
                 typedef pplx::open_close_guard<http_listener> http_listener_guard;
 
+#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+                const auto host_wildcard = _XPLATSTR("*"); // "weak wildcard"
+#else
+                const auto host_wildcard = _XPLATSTR("0.0.0.0");
+#endif
+
                 // using namespace api_router_using_declarations; // to make defining routers less verbose
                 namespace api_router_using_declarations {}
-
-                inline web::uri make_listener_uri(int port)
+                inline web::uri make_listener_uri(const utility::string_t& address, int port)
                 {
-#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-                    auto host_wildcard = _XPLATSTR("*"); // "weak wildcard"
-#else
-                    auto host_wildcard = _XPLATSTR("0.0.0.0");
-#endif
-                    return web::uri_builder().set_scheme(_XPLATSTR("http")).set_host(host_wildcard).set_port(port).to_uri();
+                    return web::uri_builder().set_scheme(_XPLATSTR("http")).set_host(address).set_port(port).to_uri();
                 }
 
                 typedef std::unordered_map<utility::string_t, utility::string_t> route_parameters;

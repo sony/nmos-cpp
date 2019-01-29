@@ -121,6 +121,10 @@ namespace nmos
 
             const web::json::field_as_integer_or settings_port{ U("settings_port"), 3209 };
             const web::json::field_as_integer_or logging_port{ U("logging_port"), 5106 };
+            
+            // addresses (or host names?) on which to listen for each API
+
+            const web::json::field_as_string settings_address{ U("settings_address") };
 
             // port numbers [registry]: ports on which to listen for each API
             // see http_port
