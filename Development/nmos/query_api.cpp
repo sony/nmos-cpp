@@ -232,7 +232,7 @@ namespace nmos
             }
             else
             {
-                set_reply(res, status_codes::BadRequest);
+                set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_paging_error(paging));
             }
 
             return pplx::task_from_result(true);

@@ -167,6 +167,15 @@ namespace nmos
             return since <= until;
         }
 
+        namespace details
+        {
+            // make user error information (to be used with status_codes::BadRequest)
+            utility::string_t make_valid_paging_error(const nmos::experimental::event_paging& paging)
+            {
+                return U("the value of the 'paging.since' parameter must be less than or equal to the value of the 'paging.until' parameter");
+            }
+        }
+
         // Cursor-based paging customisation points
 
         inline nmos::tai extract_cursor(const nmos::experimental::events&, nmos::experimental::events::const_iterator it)
@@ -342,7 +351,7 @@ namespace nmos
                 }
                 else
                 {
-                    set_reply(res, status_codes::BadRequest);
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_paging_error(paging));
                 }
 
                 return pplx::task_from_result(true);

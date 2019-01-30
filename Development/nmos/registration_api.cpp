@@ -108,6 +108,51 @@ namespace nmos
         return U("/x-nmos/registration/") + nmos::make_api_version(resource.version) + U("/resource/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
     }
 
+    // registration error message details
+    namespace details
+    {
+        // only for these error message details
+        inline utility::string_t make_id_type(const std::pair<nmos::id, nmos::type>& id_type)
+        {
+            return id_type.second.name + U(' ') + id_type.first;
+        }
+
+        inline utility::string_t make_valid_type_error(const std::pair<nmos::id, nmos::type>& request_id_type, const nmos::type& resource_type)
+        {
+            return U("request for registration of ") + details::make_id_type(request_id_type) + U(" conflicts with the existing ") + resource_type.name + U(" registration with the same id");
+        }
+
+        inline utility::string_t make_valid_api_version_error(const nmos::api_version& request_version, const nmos::api_version& resource_version)
+        {
+            return nmos::make_api_version(request_version) + U(" request conflicts with the existing ") + nmos::make_api_version(resource_version) + U(" registration");
+        }
+
+        inline utility::string_t make_valid_super_id_type_error(const std::pair<nmos::id, nmos::type>& request_super_id_type, const std::pair<nmos::id, nmos::type>& resource_super_id_type)
+        {
+            return U("request for registration on parent ") + details::make_id_type(request_super_id_type) + U(" conflicts with the existing registration with parent ") + details::make_id_type(resource_super_id_type);
+        }
+
+        inline utility::string_t make_valid_super_resource_error(const std::pair<nmos::id, nmos::type>& request_super_id_type)
+        {
+            return U("request for registration on unknown parent ") + details::make_id_type(request_super_id_type);
+        }
+
+        inline utility::string_t make_valid_version_error(const nmos::tai& request_version, const nmos::tai& resource_version)
+        {
+            return U("request for registration with version ") + nmos::make_version(request_version) + U(" conflicts with the existing registration with version ") + nmos::make_version(resource_version);
+        }
+
+        inline utility::string_t make_valid_super_type_error(const std::pair<nmos::id, nmos::type>& request_super_id_type, const nmos::type& super_resource_type)
+        {
+            return U("request for registration on parent ") + details::make_id_type(request_super_id_type) + U(" conflicts with the existing ") + super_resource_type.name + U(" registration with the same id");
+        }
+
+        inline utility::string_t make_valid_super_api_version_error(const nmos::api_version& request_version, const nmos::api_version& super_resource_version)
+        {
+            return nmos::make_api_version(request_version) + U(" request conflicts with the existing ") + nmos::make_api_version(super_resource_version) + U(" registration of the parent");
+        }
+    }
+
     inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::registry_model& model, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -358,23 +403,48 @@ namespace nmos
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
                     model.notify();
                 }
-                else if (!valid_type || !valid_api_version || !valid_super_id_type || !valid_version)
+                else if (!valid_type)
                 {
                     // experimental extension, using a more specific status code to distinguish conflicts from validation errors
-                    set_reply(res, status_codes::Conflict);
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_type_error(id_type, resource->type));
 
                     // the Location header would enable an HTTP DELETE to be performed to explicitly clear the registry of the conflicting registration
                     // (assert !creating, i.e. resources.end() != resource in all these cases)
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
-                else if (!valid_super_type || !valid_super_api_version)
+                else if (!valid_api_version)
+                {
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
+                }
+                else if (!valid_super_id_type)
+                {
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_super_id_type_error(super_id_type, nmos::get_super_resource(*resource)));
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
+                }
+                else if (!valid_version)
+                {
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_version_error(nmos::fields::version(data), nmos::fields::version(resource->data)));
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
+                }
+                else if (!valid_super_type)
                 {
                     // the difference here is that it's the super-resource that conflicts
-                    set_reply(res, status_codes::Conflict);
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_super_type_error(super_id_type, super_resource->type));
 
                     // since the conflict is with the super-resource, a single HTTP DELETE cannot be enough to resolve the issue in this case...
                     // (assert !no_super_resource, i.e. resources.end() != super_resource in all these cases)
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*super_resource));
+                }
+                else if (!valid_super_api_version)
+                {
+                    // another super-resource conflict
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_super_api_version_error(version, super_resource->version));
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*super_resource));
+                }
+                else if (!valid_super_resource)
+                {
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_super_resource_error(super_id_type));
                 }
                 else
                 {

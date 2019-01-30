@@ -131,6 +131,15 @@ namespace nmos
         return since <= until;
     }
 
+    namespace details
+    {
+        // make user error information (to be used with status_codes::BadRequest)
+        utility::string_t make_valid_paging_error(const nmos::resource_paging& paging)
+        {
+            return U("the value of the 'paging.since' parameter must be less than or equal to the value of the 'paging.until' parameter");
+        }
+    }
+
     // Extend RQL with some NMOS-specific types
 
     web::json::value equal_to(const web::json::value& lhs, const web::json::value& rhs)
