@@ -1003,34 +1003,58 @@ namespace nmos
             });
 
             tai most_recent_update{};
+            auto earliest_allowed_update = (tai_clock::time_point::min)();
+            auto earliest_necessary_update = (tai_clock::time_point::max)();
 
             for (;;)
             {
                 // wait for the thread to be interrupted because there are resource events (or this is the first time through)
                 // or because a Registration API has been discovered so registered operation should be attempted
                 // or because the server is being shut down
-                condition.wait(lock, [&]{ return shutdown || registration_services_discovered || most_recent_update < grain->updated; });
+                // or because message sending was throttled earlier
+                details::wait_until(condition, lock, earliest_necessary_update, [&] { return shutdown || registration_services_discovered || most_recent_update < grain->updated; });
                 if (shutdown || registration_services_discovered) break;
 
+                // usually the daemon will be updated
+                earliest_necessary_update = (tai_clock::time_point::max)();
+
+                auto events = web::json::value::array();
+                node_behaviour_grain_guard guard(resources, grain, events);
+                most_recent_update = grain->updated;
+
+                // update the 'ver_' TXT records, without the lock on the resources
+                details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+
+                for (const auto& event : events.as_array())
                 {
-                    auto events = web::json::value::array();
-                    node_behaviour_grain_guard guard(resources, grain, events);
-                    most_recent_update = grain->updated;
-
-                    // update the 'ver_' TXT records, without the lock on the resources
-                    details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-
-                    for (const auto& event : events.as_array())
-                    {
-                        const auto id_type = get_resource_event_resource(node_behaviour_topic, event);
-                        update_resource_version(ver, id_type.second);
-                    }
-
-                    update_node_service(advertiser, model.settings, ver);
-
-                    // job done
-                    events = web::json::value::array();
+                    const auto id_type = get_resource_event_resource(node_behaviour_topic, event);
+                    update_resource_version(ver, id_type.second);
                 }
+
+                // job done
+                events = web::json::value::array();
+
+                // throttle updates to the DNS-SD daemon
+                // (because otherwise it may report that it's having to do that itself)
+                // "to protect the network against excessive packet flooding due to software
+                // bugs or malicious attack, a Multicast DNS responder MUST NOT multicast a
+                // record on a given interface until at least one second has elapsed since
+                // the last time that record was multicast on that particular interface."
+                // see https://tools.ietf.org/html/rfc6762#section-6
+                const auto max_update_rate = std::chrono::seconds(1);
+                const auto now = tai_clock::now();
+                if (earliest_allowed_update > now)
+                {
+                    // make sure to update the daemon as soon as allowed
+                    earliest_necessary_update = earliest_allowed_update;
+
+                    // just don't do it now!
+                    continue;
+                }
+
+                update_node_service(advertiser, model.settings, ver);
+
+                earliest_allowed_update = now + max_update_rate;
             }
 
             // withdraw the 'ver_' TXT records
