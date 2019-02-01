@@ -32,7 +32,7 @@ SOFTWARE.
 
 #define NLOHMANN_JSON_VERSION_MAJOR 3
 #define NLOHMANN_JSON_VERSION_MINOR 5
-#define NLOHMANN_JSON_VERSION_PATCH 0
+#define NLOHMANN_JSON_VERSION_PATCH 1 // unofficial patch
 
 #include <algorithm> // all_of, find, for_each
 #include <cassert> // assert
