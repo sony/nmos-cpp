@@ -1,6 +1,8 @@
 #include "nmos/system_api.h"
 
+#include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
 
@@ -69,6 +71,50 @@ namespace nmos
             }
 
             return pplx::task_from_result(true);
+        });
+
+        const web::json::experimental::json_validator validator
+        {
+            nmos::experimental::load_json_schema,
+            { experimental::make_systemapi_global_schema_uri({ 1, 0 }) }
+        };
+
+        // experimental extension, to allow the global configuration resource to be replaced
+        system_api.support(U("/global/?"), methods::PUT, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
+            {
+                auto lock = model.write_lock();
+
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+
+                // Validate JSON syntax according to the schema
+
+                const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
+                if (!allow_invalid_resources)
+                {
+                    validator.validate(body, experimental::make_systemapi_global_schema_uri(version));
+                }
+                else
+                {
+                    try
+                    {
+                        validator.validate(body, experimental::make_systemapi_global_schema_uri(version));
+                    }
+                    catch (const web::json::json_exception& e)
+                    {
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
+                    }
+                }
+
+                const auto& data = body;
+
+                model.system_global_resource = { { 1, 0 }, types::global, data, true };
+
+                set_reply(res, status_codes::Created, data);
+
+                return true;
+            });
         });
 
         return system_api;
