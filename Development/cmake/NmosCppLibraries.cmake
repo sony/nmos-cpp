@@ -385,6 +385,67 @@ target_link_libraries(
     nmos_is05_schemas_static
     )
 
+# nmos_system_schemas library
+
+set(NMOS_SYSTEM_SCHEMAS_HEADERS
+    ${NMOS_CPP_DIR}/nmos/system_schemas/system_schemas.h
+    )
+
+set(NMOS_SYSTEM_V1_0_TAG v1.0)
+
+set(NMOS_SYSTEM_V1_0_SCHEMAS_JSON
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/error.json
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/global.json
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/resource_core.json
+    )
+
+set(NMOS_SYSTEM_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-system/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_SYSTEM_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/system_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_SYSTEM_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_SYSTEM_V1_0_SCHEMAS_SOURCES "${NMOS_SYSTEM_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_SYSTEM_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}" "${NMOS_SYSTEM_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace system_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_system_schemas_static STATIC
+    ${NMOS_SYSTEM_SCHEMAS_HEADERS}
+    ${NMOS_SYSTEM_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\system_schemas\\Header Files" FILES ${NMOS_SYSTEM_SCHEMAS_HEADERS})
+source_group("nmos\\system_schemas\\${NMOS_SYSTEM_V1_0_TAG}\\Source Files" FILES ${NMOS_SYSTEM_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_system_schemas_static
+    )
+
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
@@ -599,6 +660,7 @@ target_link_libraries(
     json_schema_validator_static
     nmos_is04_schemas_static
     nmos_is05_schemas_static
+    nmos_system_schemas_static
     ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
