@@ -33,6 +33,7 @@ namespace nmos
         const route_pattern query_api = make_route_pattern(U("api"), U("query"));
         const route_pattern registration_api = make_route_pattern(U("api"), U("registration"));
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
+        const route_pattern system_api = make_route_pattern(U("api"), U("system"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));

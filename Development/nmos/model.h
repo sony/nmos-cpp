@@ -110,7 +110,11 @@ namespace nmos
 
     struct registry_model : model
     {
+        // Resources added by IS-04 Registration API
         nmos::resources registry_resources;
+
+        // Global configuration resource for TR-1001-1:2018 System API
+        nmos::resource system_global_resource;
     };
 }
 

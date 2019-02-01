@@ -16,6 +16,8 @@
 #include "nmos/registration_api.h"
 #include "nmos/registry_resources.h"
 #include "nmos/settings_api.h"
+#include "nmos/system_api.h"
+#include "nmos/system_resources.h"
 #include "nmos/thread_utils.h"
 #include "main_gate.h"
 
@@ -97,6 +99,7 @@ int main(int argc, char* argv[])
             //web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_ws_port, http_port));
             web::json::insert(registry_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
             web::json::insert(registry_model.settings, std::make_pair(nmos::fields::node_port, http_port));
+            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::system_port, http_port));
             web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
             web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
             web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));
@@ -178,6 +181,13 @@ int main(int argc, char* argv[])
         // (for now just copy them directly, since these resources currently do not change and are configured to never expire)
         registry_model.registry_resources.insert(self_resources.begin(), self_resources.end());
 
+        // Configure the System API
+
+        // set up the system global configuration resource
+        nmos::experimental::assign_system_global_resource(registry_model.system_global_resource, registry_model.settings);
+
+        port_routers[nmos::fields::system_port(registry_model.settings)].mount({}, nmos::make_system_api(registry_model, gate));
+
         // Configure the Admin UI
 
         const utility::string_t admin_filesystem_root = U("./admin");
@@ -219,6 +229,7 @@ int main(int argc, char* argv[])
             nmos::experimental::register_service(advertiser, nmos::service_types::query, registry_model.settings);
             nmos::experimental::register_service(advertiser, nmos::service_types::registration, registry_model.settings);
             nmos::experimental::register_service(advertiser, nmos::service_types::node, registry_model.settings);
+            nmos::experimental::register_service(advertiser, nmos::service_types::system, registry_model.settings);
         }
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";

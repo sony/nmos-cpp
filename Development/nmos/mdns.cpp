@@ -184,6 +184,7 @@ namespace nmos
                 if (nmos::service_types::query == service) return nmos::fields::query_port(settings);
                 if (nmos::service_types::registration == service) return nmos::fields::registration_port(settings);
                 if (nmos::service_types::register_ == service) return nmos::fields::registration_port(settings);
+                if (nmos::service_types::system == service) return nmos::fields::system_port(settings);
                 return 0;
             }
 
@@ -193,6 +194,7 @@ namespace nmos
                 if (nmos::service_types::query == service) return "query";
                 if (nmos::service_types::registration == service) return "registration";
                 if (nmos::service_types::register_ == service) return "registration";
+                if (nmos::service_types::system == service) return "system";
                 return{};
             }
 

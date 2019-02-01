@@ -469,6 +469,8 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/resources.cpp
     ${NMOS_CPP_DIR}/nmos/sdp_utils.cpp
     ${NMOS_CPP_DIR}/nmos/settings_api.cpp
+    ${NMOS_CPP_DIR}/nmos/system_api.cpp
+    ${NMOS_CPP_DIR}/nmos/system_resources.cpp
     )
 set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/activation_mode.h
@@ -520,6 +522,8 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/settings_api.h
     ${NMOS_CPP_DIR}/nmos/slog.h
     ${NMOS_CPP_DIR}/nmos/string_enum.h
+    ${NMOS_CPP_DIR}/nmos/system_api.h
+    ${NMOS_CPP_DIR}/nmos/system_resources.h
     ${NMOS_CPP_DIR}/nmos/tai.h
     ${NMOS_CPP_DIR}/nmos/thread_utils.h
     ${NMOS_CPP_DIR}/nmos/transfer_characteristic.h
