@@ -152,6 +152,19 @@ using json = basic_json<>;
     #define JSON_DEPRECATED
 #endif
 
+// allow for portable nodiscard warnings
+#if defined(__has_cpp_attribute)
+    #if __has_cpp_attribute(nodiscard)
+        #define JSON_NODISCARD [[nodiscard]]
+    #elif __has_cpp_attribute(gnu::warn_unused_result)
+        #define JSON_NODISCARD [[gnu::warn_unused_result]]
+    #else
+        #define JSON_NODISCARD
+    #endif
+#else
+    #define JSON_NODISCARD
+#endif
+
 // allow to disable exceptions
 #if (defined(__cpp_exceptions) || defined(__EXCEPTIONS) || defined(_CPPUNWIND)) && !defined(JSON_NOEXCEPTION)
     #define JSON_THROW(exception) throw exception
@@ -1700,13 +1713,13 @@ template <typename IteratorType> class iteration_proxy_value
     }
 
     /// equality operator (needed for InputIterator)
-    bool operator==(const iteration_proxy_value& o) const noexcept
+    bool operator==(const iteration_proxy_value& o) const
     {
         return anchor == o.anchor;
     }
 
     /// inequality operator (needed for range-based for)
-    bool operator!=(const iteration_proxy_value& o) const noexcept
+    bool operator!=(const iteration_proxy_value& o) const
     {
         return anchor != o.anchor;
     }
@@ -2151,6 +2164,8 @@ constexpr const auto& to_json = detail::static_const<detail::to_json_fn>::value;
 #include <type_traits> // enable_if, is_base_of, is_pointer, is_integral, remove_pointer
 #include <utility> // pair, declval
 #include <cstdio> //FILE *
+
+// #include <nlohmann/detail/iterators/iterator_traits.hpp>
 
 // #include <nlohmann/detail/macro_scope.hpp>
 
@@ -3829,7 +3844,7 @@ scan_number_done:
         if (current == '\n')
         {
             ++position.lines_read;
-            ++position.chars_read_current_line = 0;
+            position.chars_read_current_line = 0;
         }
 
         return current;
@@ -4236,13 +4251,14 @@ struct is_sax_static_asserts
 // #include <nlohmann/detail/input/json_sax.hpp>
 
 
+#include <cassert>
 #include <cstddef>
 #include <string>
 #include <vector>
 
-// #include <nlohmann/detail/input/parser.hpp>
-
 // #include <nlohmann/detail/exceptions.hpp>
+
+// #include <nlohmann/detail/macro_scope.hpp>
 
 
 namespace nlohmann
@@ -5597,6 +5613,8 @@ template<typename BasicJsonType> struct internal_iterator
 // #include <nlohmann/detail/macro_scope.hpp>
 
 // #include <nlohmann/detail/meta/cpp_future.hpp>
+
+// #include <nlohmann/detail/meta/type_traits.hpp>
 
 // #include <nlohmann/detail/value_t.hpp>
 
@@ -7273,7 +7291,7 @@ class binary_reader
     */
     bool get_cbor_object(const std::size_t len)
     {
-        if (not JSON_UNLIKELY(sax->start_object(len)))
+        if (JSON_UNLIKELY(not sax->start_object(len)))
         {
             return false;
         }
@@ -9374,7 +9392,7 @@ class binary_writer
                 assert(false);
                 return 0ul;
                 // LCOV_EXCL_STOP
-        };
+        }
     }
 
     /*!
@@ -9418,7 +9436,7 @@ class binary_writer
                 assert(false);
                 return;
                 // LCOV_EXCL_STOP
-        };
+        }
     }
 
     /*!
@@ -9805,6 +9823,8 @@ class binary_writer
 #include <cmath>   // signbit, isfinite
 #include <cstdint> // intN_t, uintN_t
 #include <cstring> // memcpy, memmove
+#include <limits> // numeric_limits
+#include <type_traits> // conditional
 
 namespace nlohmann
 {
@@ -11337,6 +11357,16 @@ class serializer
                                     string_buffer[bytes++] = detail::binary_writer<BasicJsonType, char>::to_char_type('\xBF');
                                     string_buffer[bytes++] = detail::binary_writer<BasicJsonType, char>::to_char_type('\xBD');
                                 }
+
+                                // write buffer and reset index; there must be 13 bytes
+                                // left, as this is the maximal number of bytes to be
+                                // written ("\uxxxx\uxxxx\0") for one code point
+                                if (string_buffer.size() - bytes < 13)
+                                {
+                                    o->write_characters(string_buffer.data(), bytes);
+                                    bytes = 0;
+                                }
+
                                 bytes_after_last_accept = bytes;
                             }
 
@@ -11411,6 +11441,40 @@ class serializer
     }
 
     /*!
+    @brief count digits
+
+    Count the number of decimal (base 10) digits for an input unsigned integer.
+
+    @param[in] x  unsigned integer number to count its digits
+    @return    number of decimal digits
+    */
+    inline unsigned int count_digits(number_unsigned_t x) noexcept
+    {
+        unsigned int n_digits = 1;
+        for (;;)
+        {
+            if (x < 10)
+            {
+                return n_digits;
+            }
+            if (x < 100)
+            {
+                return n_digits + 1;
+            }
+            if (x < 1000)
+            {
+                return n_digits + 2;
+            }
+            if (x < 10000)
+            {
+                return n_digits + 3;
+            }
+            x = x / 10000u;
+            n_digits += 4;
+        }
+    }
+
+    /*!
     @brief dump an integer
 
     Dump a given integer to output stream @a o. Works internally with
@@ -11425,6 +11489,22 @@ class serializer
                  int> = 0>
     void dump_integer(NumberType x)
     {
+        static constexpr std::array<std::array<char, 2>, 100> digits_to_99
+        {
+            {
+                {'0', '0'}, {'0', '1'}, {'0', '2'}, {'0', '3'}, {'0', '4'}, {'0', '5'}, {'0', '6'}, {'0', '7'}, {'0', '8'}, {'0', '9'},
+                {'1', '0'}, {'1', '1'}, {'1', '2'}, {'1', '3'}, {'1', '4'}, {'1', '5'}, {'1', '6'}, {'1', '7'}, {'1', '8'}, {'1', '9'},
+                {'2', '0'}, {'2', '1'}, {'2', '2'}, {'2', '3'}, {'2', '4'}, {'2', '5'}, {'2', '6'}, {'2', '7'}, {'2', '8'}, {'2', '9'},
+                {'3', '0'}, {'3', '1'}, {'3', '2'}, {'3', '3'}, {'3', '4'}, {'3', '5'}, {'3', '6'}, {'3', '7'}, {'3', '8'}, {'3', '9'},
+                {'4', '0'}, {'4', '1'}, {'4', '2'}, {'4', '3'}, {'4', '4'}, {'4', '5'}, {'4', '6'}, {'4', '7'}, {'4', '8'}, {'4', '9'},
+                {'5', '0'}, {'5', '1'}, {'5', '2'}, {'5', '3'}, {'5', '4'}, {'5', '5'}, {'5', '6'}, {'5', '7'}, {'5', '8'}, {'5', '9'},
+                {'6', '0'}, {'6', '1'}, {'6', '2'}, {'6', '3'}, {'6', '4'}, {'6', '5'}, {'6', '6'}, {'6', '7'}, {'6', '8'}, {'6', '9'},
+                {'7', '0'}, {'7', '1'}, {'7', '2'}, {'7', '3'}, {'7', '4'}, {'7', '5'}, {'7', '6'}, {'7', '7'}, {'7', '8'}, {'7', '9'},
+                {'8', '0'}, {'8', '1'}, {'8', '2'}, {'8', '3'}, {'8', '4'}, {'8', '5'}, {'8', '6'}, {'8', '7'}, {'8', '8'}, {'8', '9'},
+                {'9', '0'}, {'9', '1'}, {'9', '2'}, {'9', '3'}, {'9', '4'}, {'9', '5'}, {'9', '6'}, {'9', '7'}, {'9', '8'}, {'9', '9'},
+            }
+        };
+
         // special case for "0"
         if (x == 0)
         {
@@ -11432,28 +11512,57 @@ class serializer
             return;
         }
 
-        const bool is_negative = std::is_same<NumberType, number_integer_t>::value and not (x >= 0);  // see issue #755
-        std::size_t i = 0;
+        // use a pointer to fill the buffer
+        auto buffer_ptr = begin(number_buffer);
 
-        while (x != 0)
-        {
-            // spare 1 byte for '\0'
-            assert(i < number_buffer.size() - 1);
+        const bool is_negative = std::is_same<NumberType, number_integer_t>::value and not(x >= 0); // see issue #755
+        number_unsigned_t abs_value;
 
-            const auto digit = std::labs(static_cast<long>(x % 10));
-            number_buffer[i++] = static_cast<char>('0' + digit);
-            x /= 10;
-        }
+        unsigned int n_chars;
 
         if (is_negative)
         {
-            // make sure there is capacity for the '-'
-            assert(i < number_buffer.size() - 2);
-            number_buffer[i++] = '-';
+            *buffer_ptr = '-';
+            abs_value = static_cast<number_unsigned_t>(-1 - x) + 1;
+
+            // account one more byte for the minus sign
+            n_chars = 1 + count_digits(abs_value);
+        }
+        else
+        {
+            abs_value = static_cast<number_unsigned_t>(x);
+            n_chars = count_digits(abs_value);
         }
 
-        std::reverse(number_buffer.begin(), number_buffer.begin() + i);
-        o->write_characters(number_buffer.data(), i);
+        // spare 1 byte for '\0'
+        assert(n_chars < number_buffer.size() - 1);
+
+        // jump to the end to generate the string from backward
+        // so we later avoid reversing the result
+        buffer_ptr += n_chars;
+
+        // Fast int2ascii implementation inspired by "Fastware" talk by Andrei Alexandrescu
+        // See: https://www.youtube.com/watch?v=o4-CwDo2zpg
+        while (abs_value >= 100)
+        {
+            const auto digits_index = static_cast<unsigned>((abs_value % 100));
+            abs_value /= 100;
+            *(--buffer_ptr) = digits_to_99[digits_index][1];
+            *(--buffer_ptr) = digits_to_99[digits_index][0];
+        }
+
+        if (abs_value >= 10)
+        {
+            const auto digits_index = static_cast<unsigned>(abs_value);
+            *(--buffer_ptr) = digits_to_99[digits_index][1];
+            *(--buffer_ptr) = digits_to_99[digits_index][0];
+        }
+        else
+        {
+            *(--buffer_ptr) = static_cast<char>('0' + abs_value);
+        }
+
+        o->write_characters(number_buffer.data(), n_chars);
     }
 
     /*!
@@ -11698,6 +11807,7 @@ class json_ref
 // #include <nlohmann/detail/json_pointer.hpp>
 
 
+#include <algorithm> // all_of
 #include <cassert> // assert
 #include <numeric> // accumulate
 #include <string> // string
@@ -11777,6 +11887,52 @@ class json_pointer
     }
 
     /*!
+    @brief append another JSON pointer at the end of this JSON pointer
+    */
+    json_pointer& operator/=(const json_pointer& ptr)
+    {
+        reference_tokens.insert(reference_tokens.end(), ptr.reference_tokens.begin(), ptr.reference_tokens.end());
+        return *this;
+    }
+
+    /// @copydoc push_back(std::string&&)
+    json_pointer& operator/=(std::string token)
+    {
+        push_back(std::move(token));
+        return *this;
+    }
+
+    /// @copydoc operator/=(std::string)
+    json_pointer& operator/=(std::size_t array_index)
+    {
+        return *this /= std::to_string(array_index);
+    }
+
+    /*!
+    @brief create a new JSON pointer by appending the right JSON pointer at the end of the left JSON pointer
+    */
+    friend json_pointer operator/(const json_pointer& left_ptr, const json_pointer& right_ptr)
+    {
+        return json_pointer(left_ptr) /= right_ptr;
+    }
+
+    /*!
+    @brief create a new JSON pointer by appending the unescaped token at the end of the JSON pointer
+    */
+    friend json_pointer operator/(const json_pointer& ptr, std::string token)
+    {
+        return json_pointer(ptr) /= std::move(token);
+    }
+
+    /*!
+    @brief create a new JSON pointer by appending the array-index-token at the end of the JSON pointer
+    */
+    friend json_pointer operator/(const json_pointer& lhs, std::size_t array_index)
+    {
+        return json_pointer(lhs) /= array_index;
+    }
+
+    /*!
     @param[in] s  reference token to be converted into an array index
 
     @return integer representation of @a s
@@ -11797,9 +11953,8 @@ class json_pointer
         return res;
     }
 
-  private:
     /*!
-    @brief remove and return last reference pointer
+    @brief remove and return last reference token
     @throw out_of_range.405 if JSON pointer has no parent
     */
     std::string pop_back()
@@ -11814,6 +11969,21 @@ class json_pointer
         return last;
     }
 
+    /*!
+    @brief append an unescaped token at the end of the reference pointer
+    */
+    void push_back(const std::string& token)
+    {
+        reference_tokens.push_back(token);
+    }
+
+    /// @copydoc push_back(const std::string&)
+    void push_back(std::string&& token)
+    {
+        reference_tokens.push_back(std::move(token));
+    }
+
+  private:
     /// return whether pointer points to the root document
     bool is_root() const noexcept
     {
@@ -12697,6 +12867,7 @@ class basic_json
 
     @since 2.1.0
     */
+    JSON_NODISCARD
     static basic_json meta()
     {
         basic_json result;
@@ -13869,6 +14040,7 @@ class basic_json
 
     @since version 1.0.0
     */
+    JSON_NODISCARD
     static basic_json array(initializer_list_t init = {})
     {
         return basic_json(init, false, value_t::array);
@@ -13912,6 +14084,7 @@ class basic_json
 
     @since version 1.0.0
     */
+    JSON_NODISCARD
     static basic_json object(initializer_list_t init = {})
     {
         return basic_json(init, false, value_t::object);
@@ -18402,7 +18575,9 @@ class basic_json
     @param[in] allow_exceptions  whether to throw exceptions in case of a
     parse error (optional, true by default)
 
-    @return result of the deserialization
+    @return deserialized JSON value; in case of a parse error and
+            @a allow_exceptions set to `false`, the return value will be
+            value_t::discarded.
 
     @throw parse_error.101 if a parse error occurs; example: `""unexpected end
     of input; expected string literal""`
@@ -18429,6 +18604,7 @@ class basic_json
 
     @since version 2.0.3 (contiguous containers)
     */
+    JSON_NODISCARD
     static basic_json parse(detail::input_adapter&& i,
                             const parser_callback_t cb = nullptr,
                             const bool allow_exceptions = true)
@@ -18544,7 +18720,9 @@ class basic_json
     @param[in] allow_exceptions  whether to throw exceptions in case of a
     parse error (optional, true by default)
 
-    @return result of the deserialization
+    @return deserialized JSON value; in case of a parse error and
+            @a allow_exceptions set to `false`, the return value will be
+            value_t::discarded.
 
     @throw parse_error.101 in case of an unexpected token
     @throw parse_error.102 if to_unicode fails or surrogate error
@@ -19175,7 +19353,9 @@ class basic_json
     @param[in] allow_exceptions  whether to throw exceptions in case of a
     parse error (optional, true by default)
 
-    @return deserialized JSON value
+    @return deserialized JSON value; in case of a parse error and
+            @a allow_exceptions set to `false`, the return value will be
+            value_t::discarded.
 
     @throw parse_error.110 if the given input ends prematurely or the end of
     file was not reached when @a strict was set to true
@@ -19200,6 +19380,7 @@ class basic_json
            @a strict parameter since 3.0.0; added @a allow_exceptions parameter
            since 3.2.0
     */
+    JSON_NODISCARD
     static basic_json from_cbor(detail::input_adapter&& i,
                                 const bool strict = true,
                                 const bool allow_exceptions = true)
@@ -19215,6 +19396,7 @@ class basic_json
     */
     template<typename A1, typename A2,
              detail::enable_if_t<std::is_constructible<detail::input_adapter, A1, A2>::value, int> = 0>
+    JSON_NODISCARD
     static basic_json from_cbor(A1 && a1, A2 && a2,
                                 const bool strict = true,
                                 const bool allow_exceptions = true)
@@ -19278,7 +19460,9 @@ class basic_json
     @param[in] allow_exceptions  whether to throw exceptions in case of a
     parse error (optional, true by default)
 
-    @return deserialized JSON value
+    @return deserialized JSON value; in case of a parse error and
+            @a allow_exceptions set to `false`, the return value will be
+            value_t::discarded.
 
     @throw parse_error.110 if the given input ends prematurely or the end of
     file was not reached when @a strict was set to true
@@ -19305,6 +19489,7 @@ class basic_json
            @a strict parameter since 3.0.0; added @a allow_exceptions parameter
            since 3.2.0
     */
+    JSON_NODISCARD
     static basic_json from_msgpack(detail::input_adapter&& i,
                                    const bool strict = true,
                                    const bool allow_exceptions = true)
@@ -19320,6 +19505,7 @@ class basic_json
     */
     template<typename A1, typename A2,
              detail::enable_if_t<std::is_constructible<detail::input_adapter, A1, A2>::value, int> = 0>
+    JSON_NODISCARD
     static basic_json from_msgpack(A1 && a1, A2 && a2,
                                    const bool strict = true,
                                    const bool allow_exceptions = true)
@@ -19365,7 +19551,9 @@ class basic_json
     @param[in] allow_exceptions  whether to throw exceptions in case of a
     parse error (optional, true by default)
 
-    @return deserialized JSON value
+    @return deserialized JSON value; in case of a parse error and
+            @a allow_exceptions set to `false`, the return value will be
+            value_t::discarded.
 
     @throw parse_error.110 if the given input ends prematurely or the end of
     file was not reached when @a strict was set to true
@@ -19389,6 +19577,7 @@ class basic_json
 
     @since version 3.1.0; added @a allow_exceptions parameter since 3.2.0
     */
+    JSON_NODISCARD
     static basic_json from_ubjson(detail::input_adapter&& i,
                                   const bool strict = true,
                                   const bool allow_exceptions = true)
@@ -19404,6 +19593,7 @@ class basic_json
     */
     template<typename A1, typename A2,
              detail::enable_if_t<std::is_constructible<detail::input_adapter, A1, A2>::value, int> = 0>
+    JSON_NODISCARD
     static basic_json from_ubjson(A1 && a1, A2 && a2,
                                   const bool strict = true,
                                   const bool allow_exceptions = true)
@@ -19454,7 +19644,9 @@ class basic_json
     @param[in] allow_exceptions  whether to throw exceptions in case of a
     parse error (optional, true by default)
 
-    @return deserialized JSON value
+    @return deserialized JSON value; in case of a parse error and
+            @a allow_exceptions set to `false`, the return value will be
+            value_t::discarded.
 
     @throw parse_error.114 if an unsupported BSON record type is encountered
 
@@ -19472,6 +19664,7 @@ class basic_json
     @sa @ref from_ubjson(detail::input_adapter&&, const bool, const bool) for the
         related UBJSON format
     */
+    JSON_NODISCARD
     static basic_json from_bson(detail::input_adapter&& i,
                                 const bool strict = true,
                                 const bool allow_exceptions = true)
@@ -19487,6 +19680,7 @@ class basic_json
     */
     template<typename A1, typename A2,
              detail::enable_if_t<std::is_constructible<detail::input_adapter, A1, A2>::value, int> = 0>
+    JSON_NODISCARD
     static basic_json from_bson(A1 && a1, A2 && a2,
                                 const bool strict = true,
                                 const bool allow_exceptions = true)
@@ -20078,6 +20272,7 @@ class basic_json
 
     @since version 2.0.0
     */
+    JSON_NODISCARD
     static basic_json diff(const basic_json& source, const basic_json& target,
                            const std::string& path = "")
     {
@@ -20397,6 +20592,7 @@ inline nlohmann::json::json_pointer operator "" _json_pointer(const char* s, std
 #undef JSON_LIKELY
 #undef JSON_UNLIKELY
 #undef JSON_DEPRECATED
+#undef JSON_NODISCARD
 #undef JSON_HAS_CPP_14
 #undef JSON_HAS_CPP_17
 #undef NLOHMANN_BASIC_JSON_TPL_DECLARATION
