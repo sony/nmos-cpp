@@ -83,11 +83,11 @@ namespace web
                     {
                         for (const auto& id : ids)
                         {
-                            nlohmann::json_schema_draft4::json_validator validator
+                            nlohmann::json_schema::json_validator validator
                             {
                                 [load_schema](const nlohmann::json_uri& id_impl, nlohmann::json& value_impl)
                                 {
-                                    const auto id = web::uri(utility::s2us(id_impl.to_string()));
+                                    const auto id = web::uri(utility::s2us(id_impl.url()));
                                     const auto value = load_schema(id);
                                     value_impl = nlohmann::json::parse(utility::us2s(value.serialize()));
                                 },
@@ -114,7 +114,7 @@ namespace web
                         try
                         {
                             auto instance = nlohmann::json::parse(utility::us2s(value.serialize()));
-                            const_cast<nlohmann::json_schema_draft4::json_validator&>(validator->second).validate(instance);
+                            const_cast<nlohmann::json_schema::json_validator&>(validator->second).validate(instance);
                         }
                         catch (const std::exception& e)
                         {
@@ -123,7 +123,7 @@ namespace web
                     }
 
                 private:
-                    std::map<web::uri, nlohmann::json_schema_draft4::json_validator> validators;
+                    std::map<web::uri, nlohmann::json_schema::json_validator> validators;
                 };
             }
 

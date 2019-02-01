@@ -388,6 +388,7 @@ target_link_libraries(
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
+    ${NMOS_CPP_DIR}/third_party/nlohmann/json-schema-draft7.json.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-validator.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-uri.cpp
     )
