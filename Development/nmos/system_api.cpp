@@ -109,9 +109,71 @@ namespace nmos
 
                 const auto& data = body;
 
-                model.system_global_resource = { { 1, 0 }, types::global, data, true };
+                model.system_global_resource = { version, types::global, data, true };
+
+                // notify anyone who cares...
+                model.notify();
 
                 set_reply(res, status_codes::Created, data);
+
+                return true;
+            });
+        });
+
+        // experimental extension, to allow the global configuration resource to be modified
+        system_api.support(U("/global/?"), methods::PATCH, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
+            {
+                auto lock = model.write_lock();
+
+                const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
+
+                if (model.system_global_resource.has_data()) // and version is the same?
+                {
+                    // Merge the updates
+
+                    auto patched = model.system_global_resource.data;
+                    web::json::merge_patch(patched, body, true);
+
+                    // Validate JSON syntax according to the schema
+
+                    const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
+                    if (!allow_invalid_resources)
+                    {
+                        validator.validate(patched, experimental::make_systemapi_global_schema_uri(version));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            validator.validate(patched, experimental::make_systemapi_global_schema_uri(version));
+                        }
+                        catch (const web::json::json_exception& e)
+                        {
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
+                        }
+                    }
+
+                    if (model.system_global_resource.id == nmos::fields::id(patched))
+                    {
+                        model.system_global_resource.data = patched;
+
+                        // notify anyone who cares...
+                        model.notify();
+
+                        set_reply(res, status_codes::OK, patched);
+                    }
+                    else
+                    {
+                        set_error_reply(res, status_codes::BadRequest, U("Bad Request; cannot modify resource id with a PATCH request"));
+                    }
+                }
+                else
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "System global resource not configured!";
+                    set_reply(res, status_codes::InternalError); // rather than Not Found, since the System API doesn't allow a 404 response
+                }
 
                 return true;
             });
