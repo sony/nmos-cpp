@@ -111,14 +111,26 @@ namespace web
                             throw web::json::json_exception((_XPLATSTR("schema not found for ") + id.to_string()).c_str());
                         }
 
+                        struct error_handler : nlohmann::json_schema::basic_error_handler
+                        {
+                            virtual void error(const nlohmann::json::json_pointer& ptr, const nlohmann::json& instance, const std::string& message)
+                            {
+                                throw web::json::json_exception("schema validation failed at " + (nlohmann::json::json_pointer() == ptr ? "root" : ptr.to_string()) + " - " + message);
+                            }
+                        } error_handler;
+
                         try
                         {
                             auto instance = nlohmann::json::parse(utility::us2s(value.serialize()));
-                            const_cast<nlohmann::json_schema::json_validator&>(validator->second).validate(instance);
+                            const_cast<nlohmann::json_schema::json_validator&>(validator->second).validate(instance, error_handler);
+                        }
+                        catch (const web::json::json_exception&)
+                        {
+                            throw;
                         }
                         catch (const std::exception& e)
                         {
-                            throw web::json::json_exception(utility::s2us(e.what()).c_str());
+                            throw web::json::json_exception(e.what());
                         }
                     }
 
