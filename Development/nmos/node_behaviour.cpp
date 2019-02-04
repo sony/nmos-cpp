@@ -20,15 +20,16 @@ namespace nmos
     namespace details
     {
         // registered operation
-        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::list<web::uri>& registration_services, slog::base_gate& gate);
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::list<web::uri>& registration_services, slog::base_gate& gate);
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate);
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate);
 
         // peer to peer operation
-        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, std::list<web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
+        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
 
         // service advertisement/discovery
         void advertise_node_service(const nmos::base_model& model, mdns::service_advertiser& advertiser);
-        void discover_registration_services(const nmos::base_model& model, std::list<web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate);
+        bool discover_registration_services(nmos::base_model& model, mdns::service_discovery& discovery, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none());
+        bool has_discovered_registration_services(const nmos::model& model);
 
         // a (fake) subscription to keep track of all resource events
         nmos::resource make_node_behaviour_subscription(const nmos::id& id);
@@ -61,7 +62,9 @@ namespace nmos
         // "If the chosen Registration API does not respond correctly at any time, another Registration API should be selected from the discovered list."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
         mdns::service_discovery discovery(gate);
-        std::list<web::uri> registration_services;
+        // hmm, it seems inefficient to store the discovered list in settings, when it's currently only used by this thread, but TR-1001-1:2018 insists
+        // "Media Nodes should, through product-specific means, provide a status parameter indicating which registration service is currently in use."
+        with_write_lock(model.mutex, [&model] { model.settings[nmos::fields::registration_services] = web::json::value::array(); });
 
         nmos::details::seed_generator discovery_backoff_seeder;
         std::default_random_engine discovery_backoff_engine(discovery_backoff_seeder);
@@ -69,13 +72,13 @@ namespace nmos
 
         // a (fake) subscription to keep track of all resource events
         auto grain_id = nmos::make_id();
+        with_write_lock(model.mutex, [&model, &grain_id]
         {
-            auto lock = model.write_lock();
             auto subscription_id = nmos::make_id();
 
             insert_resource(model.node_resources, details::make_node_behaviour_subscription(subscription_id));
             insert_resource(model.node_resources, details::make_node_behaviour_grain(grain_id, subscription_id));
-        }
+        });
 
         // there should be exactly one node resource, but it may not have been added yet
         // and during a controlled shutdown it may be removed; it is therefore identified
@@ -101,9 +104,7 @@ namespace nmos
                 }
 
                 // "4. The Node performs a DNS-SD browse for services of type '_nmos-registration._tcp' as specified."
-                details::discover_registration_services(model, registration_services, discovery, gate);
-
-                if (!registration_services.empty())
+                if (details::discover_registration_services(model, discovery, gate))
                 {
                     mode = initial_discovery == mode ? initial_registration : registered_operation;
 
@@ -122,9 +123,9 @@ namespace nmos
 
             case initial_registration:
                 // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
-                details::initial_registration(self_id, model, grain_id, registration_services, gate);
+                details::initial_registration(self_id, model, grain_id, gate);
 
-                if (!registration_services.empty())
+                if (details::has_discovered_registration_services(model))
                 {
                     mode = registered_operation;
 
@@ -139,9 +140,9 @@ namespace nmos
             case registered_operation:
                 // "6. The Node persists itself in the registry by issuing heartbeats."
                 // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
-                details::registered_operation(self_id, model, grain_id, registration_services, gate);
+                details::registered_operation(self_id, model, grain_id, gate);
 
-                if (!registration_services.empty())
+                if (details::has_discovered_registration_services(model))
                 {
                     // "A 404 error on heartbeat indicates that the Node performing the heartbeat is not known to the Registration API. [The] Node must re-register each of its resources with the Registration API in order."
                     mode = initial_registration;
@@ -156,9 +157,9 @@ namespace nmos
                 break;
 
             case peer_to_peer_operation:
-                details::peer_to_peer_operation(model, grain_id, registration_services, discovery, advertiser, gate);
+                details::peer_to_peer_operation(model, grain_id, discovery, advertiser, gate);
 
-                if (!registration_services.empty())
+                if (details::has_discovered_registration_services(model))
                 {
                     mode = initial_registration;
                 }
@@ -188,7 +189,7 @@ namespace nmos
 
         // query DNS Service Discovery for any Registration API in the specified browse domain, having priority in the specified range
         // otherwise, after timeout or cancellation, returning the fallback registration service
-        std::list<web::uri> discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        web::json::value discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             std::list<web::uri> registration_services;
 
@@ -216,7 +217,7 @@ namespace nmos
                 }
             }
 
-            return registration_services;
+            return web::json::value_from_elements(registration_services | boost::adaptors::transformed([](const web::uri& u) { return u.to_string(); }));
         }
 
         // get the fallback registration service from settings (if present)
@@ -232,38 +233,56 @@ namespace nmos
                 : web::uri();
         }
 
-        // poll DNS Service Discovery for any Registration API
-        void discover_registration_services(const nmos::base_model& model, std::list<web::uri>& registration_services, mdns::service_discovery& discovery, slog::base_gate& gate)
+        // query DNS Service Discovery for any Registration API based on settings
+        bool discover_registration_services(nmos::base_model& model, mdns::service_discovery& discovery, slog::base_gate& gate, const pplx::cancellation_token& token)
         {
             std::string browse_domain;
             std::set<nmos::api_version> versions;
             std::pair<nmos::service_priority, nmos::service_priority> priorities;
             web::uri fallback_registration_service;
+            int timeout;
+            with_read_lock(model.mutex, [&]
             {
-                auto lock = model.read_lock();
                 auto& settings = model.settings;
                 browse_domain = utility::us2s(nmos::fields::domain(settings));
                 versions = nmos::is04_versions::from_settings(settings);
                 priorities = { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
                 fallback_registration_service = get_registration_service(settings);
-            }
 
-            // use a short timeout that's long enough to ensure the daemon's cache is exhausted
-            // and thus avoid bothering with cancellation
-            registration_services = details::discover_registration_services(discovery, browse_domain, versions, priorities, fallback_registration_service, gate, std::chrono::seconds(1));
+                // use a short timeout that's long enough to ensure the daemon's cache is exhausted
+                // when no cancellation token is specified
+                timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
+            });
+
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Trying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)timeout << " seconds";
+            auto registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, fallback_registration_service, gate, std::chrono::seconds(timeout), token);
+            with_write_lock(model.mutex, [&] { model.settings[nmos::fields::registration_services] = registration_services; });
+            model.notify();
+
+            return !web::json::empty(registration_services);
+        }
+
+        bool empty_registration_services(const nmos::settings& settings)
+        {
+            return web::json::empty(nmos::fields::registration_services(settings));
+        }
+
+        bool has_discovered_registration_services(const nmos::model& model)
+        {
+            return with_read_lock(model.mutex, [&] { return !empty_registration_services(model.settings); });
         }
 
         // "The Node selects a Registration API to use based on the priority"
-        const web::uri& top_registration_service(const std::list<web::uri>& registration_services)
+        web::uri top_registration_service(const nmos::settings& settings)
         {
-            return registration_services.front();
+            return web::uri(web::json::front(nmos::fields::registration_services(settings)).as_string());
         }
 
         // "If the chosen Registration API does not respond correctly at any time,
         // another Registration API should be selected from the discovered list."
-        void pop_registration_service(std::list<web::uri>& registration_services)
+        void pop_registration_service(nmos::settings& settings)
         {
-            registration_services.pop_front();
+            web::json::pop_front(nmos::fields::registration_services(settings));
             // "TTLs on advertised services" may have expired too, so should cache time-to-live values
             // using DNSServiceQueryRecord instead of DNSServiceResolve?
         }
@@ -590,7 +609,7 @@ namespace nmos
         }
 
         // there is significant similarity between initial_registration and registered_operation but I'm too tired to refactor again right now...
-        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::list<web::uri>& registration_services, slog::base_gate& gate)
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting initial registration";
 
@@ -638,7 +657,8 @@ namespace nmos
                 condition.wait(lock, [&]{ return shutdown || registration_service_error || node_registered || most_recent_update < grain->updated; });
                 if (registration_service_error)
                 {
-                    pop_registration_service(registration_services);
+                    pop_registration_service(model.settings);
+                    model.notify();
                     registration_service_error = false;
 
                     cancellation_source.cancel();
@@ -649,12 +669,12 @@ namespace nmos
                     registration_client.reset();
                     cancellation_source = pplx::cancellation_token_source();
                 }
-                if (shutdown || registration_services.empty() || node_registered) break;
+                if (shutdown || empty_registration_services(model.settings) || node_registered) break;
 
                 // "The Node selects a Registration API to use based on the priority"
                 if (!registration_client)
                 {
-                    const auto base_uri = top_registration_service(registration_services);
+                    const auto base_uri = top_registration_service(model.settings);
 
                     auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
                     registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
@@ -728,7 +748,7 @@ namespace nmos
             request.wait();
         }
 
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, std::list<web::uri>& registration_services, slog::base_gate& gate)
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting registered operation";
 
@@ -769,7 +789,8 @@ namespace nmos
                 condition.wait(lock, [&]{ return shutdown || registration_service_error || node_unregistered || most_recent_update < grain->updated; });
                 if (registration_service_error)
                 {
-                    pop_registration_service(registration_services);
+                    pop_registration_service(model.settings);
+                    model.notify();
                     registration_service_error = false;
 
                     cancellation_source.cancel();
@@ -782,12 +803,12 @@ namespace nmos
                     heartbeat_client.reset();
                     cancellation_source = pplx::cancellation_token_source();
                 }
-                if (shutdown || registration_services.empty() || node_unregistered) break;
+                if (shutdown || empty_registration_services(model.settings) || node_unregistered) break;
 
                 // "The Node selects a Registration API to use based on the priority"
                 if (!registration_client)
                 {
-                    const auto base_uri = top_registration_service(registration_services);
+                    const auto base_uri = top_registration_service(model.settings);
 
                     auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
                     registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
@@ -950,7 +971,7 @@ namespace nmos
             }
         }
 
-        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, std::list<web::uri>& registration_services, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate)
+        void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting peer-to-peer operation";
 
@@ -978,26 +999,13 @@ namespace nmos
                 // though that would be better indicated by an exception from discover_registration_services)
                 return pplx::complete_after(std::chrono::seconds(1), token).then([&]
                 {
-                    auto lock = model.read_lock();
-
-                    const std::string browse_domain = utility::us2s(nmos::fields::domain(model.settings));
-                    const std::set<nmos::api_version> versions = nmos::is04_versions::from_settings(model.settings);
-                    const std::pair<nmos::service_priority, nmos::service_priority> priorities(nmos::fields::highest_pri(model.settings), nmos::fields::lowest_pri(model.settings));
-                    const web::uri fallback_registration_service(get_registration_service(model.settings));
-
-                    const auto discovery_interval(nmos::fields::discovery_backoff_max(model.settings));
-
-                    lock.unlock();
-
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)discovery_interval << " seconds";
-                    registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, fallback_registration_service, gate, std::chrono::seconds(discovery_interval), token);
-                    return registration_services.empty();
+                    return !discover_registration_services(model, discovery, gate, token);
                 });
             }, token).then([&]
             {
                 auto lock = model.write_lock(); // in order to update local state
 
-                registration_services_discovered = !registration_services.empty();
+                registration_services_discovered = true; // since discovery must have succeeded
 
                 model.notify();
             });

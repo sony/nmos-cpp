@@ -73,6 +73,10 @@ namespace nmos
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
         const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };
 
+        // registration_services [node]: the discovered list of Registration APIs, in the order they should be used
+        // this list is created and maintained by nmos::node_behaviour_thread; each entry is a uri like http://example.api.com/x-nmos/registration/{version}
+        const web::json::field_as_value registration_services{ U("registration_services") };
+
         // registration_heartbeat_interval [node]:
         // "Nodes are expected to peform a heartbeat every 5 seconds by default."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
