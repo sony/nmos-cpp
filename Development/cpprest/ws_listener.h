@@ -53,6 +53,8 @@ namespace web
                 typedef std::function<void(const utility::string_t&, const connection_id&)> open_handler;
                 // a close handler gets the resource path and the connection id
                 typedef std::function<void(const utility::string_t&, const connection_id&)> close_handler;
+                // a message handler gets the resource path, connection id and message payload
+                typedef std::function<void(const utility::string_t&, const connection_id&, const utility::string_t&)> message_handler;
 
                 class websocket_listener
                 {
@@ -63,9 +65,13 @@ namespace web
                     void set_validate_handler(validate_handler handler);
                     void set_open_handler(open_handler handler);
                     void set_close_handler(close_handler handler);
+                    void set_message_handler(message_handler handler);
 
                     pplx::task<void> open();
                     pplx::task<void> close();
+
+                    //Closing individual connection when no health command is received(IS-07)
+                    pplx::task<void> close(const connection_id& connection);
 
                     pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message);
                     //pplx::task<websocket_incoming_message> receive(const connection_id& connection);

@@ -37,8 +37,11 @@ namespace nmos
         // categories that identify threads of execution
         const category node_behaviour{ "node_behaviour" };
         const category registration_expiry{ "registration_expiry" };
+        const category eventntally_ws_expiry{ "eventntally_ws_expiry" };
         const category send_query_ws_events{ "send_query_ws_events" };
         const category receive_query_ws_events{ "receive_query_ws_events" };
+        const category send_eventntally_ws_events{ "send_eventntally_ws_events" };
+        const category receive_eventntally_ws_events{ "receive_eventntally_ws_events" };
 
         // other categories may be defined ad-hoc
     }

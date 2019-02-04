@@ -27,6 +27,7 @@ namespace nmos
         const media_type audio_L24 = audio_L(24);
 
         // Data media types
+		const media_type application_json{ U("application/json") };
 
         const media_type video_smpte291{ U("video/smpte291") };
     }

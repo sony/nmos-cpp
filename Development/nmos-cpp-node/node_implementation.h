@@ -15,5 +15,6 @@ namespace nmos
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
 // and then waits for sender/receiver activations or shutdown.
 void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate);
+void node_update_temperature_thread(nmos::node_model& model, slog::base_gate& gate);
 
 #endif

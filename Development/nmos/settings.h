@@ -39,6 +39,9 @@ namespace nmos
         // is05_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is05_versions{ U("is05_versions") }; // when omitted, nmos::is05_versions::all is used
 
+        // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is07_versions{ U("is07_versions") }; // when omitted, nmos::is07_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
@@ -64,10 +67,12 @@ namespace nmos
 
         const web::json::field_as_integer_or query_port{ U("query_port"), 3211 };
         const web::json::field_as_integer_or query_ws_port{ U("query_ws_port"), 3213 };
+        const web::json::field_as_integer_or eventntally_ws_port{ U("eventntally_ws_port"), 3217 };
         // registration_port [node]: used to construct request URLs for the registry's Registration API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or registration_port{ U("registration_port"), 3210 };
         const web::json::field_as_integer_or node_port{ U("node_port"), 3212 };
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
+        const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
@@ -86,6 +91,10 @@ namespace nmos
         // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
+
+        // "The server is expected to check health commands and after a 12 seconds timeout (2 consecutive missed health commands plus 2 seconds to allow for latencies) it should clear the subscriptions for that particular client and close the websocket connection. The server is also required to respond to a heartbeat within 5 seconds of receiving the health command."
+        // See https://amwa-tv.github.io/nmos-event-tally/tags/v1.0/docs/5.2._Transport_-_Websocket.html
+        const web::json::field_as_integer_or eventntally_expiry_interval{ U("eventntally_expiry_interval"), 12 };
 
         // registration_request_max [node]: timeout for interactions with the Registration API /resource endpoint
         const web::json::field_as_integer_or registration_request_max{ U("registration_request_max"), 30 };

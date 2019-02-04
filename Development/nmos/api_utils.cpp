@@ -149,7 +149,8 @@ namespace nmos
             { U("flows"), nmos::types::flow },
             { U("senders"), nmos::types::sender },
             { U("receivers"), nmos::types::receiver },
-            { U("subscriptions"), nmos::types::subscription }
+            { U("subscriptions"), nmos::types::subscription },
+            { U("events"), nmos::types::event_restapi }
         };
         return types_from_resourceType.at(resourceType);
     }
@@ -166,6 +167,7 @@ namespace nmos
             { nmos::types::sender, U("senders") },
             { nmos::types::receiver, U("receivers") },
             { nmos::types::subscription, U("subscriptions") },
+            { nmos::types::event_restapi, U("events") },
             { nmos::types::grain, {} } // subscription websocket grains aren't exposed via the Query API
         };
         return resourceTypes_from_type.at(type);

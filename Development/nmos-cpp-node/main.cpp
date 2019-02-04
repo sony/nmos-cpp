@@ -4,6 +4,8 @@
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
+#include "nmos/events_api.h"
+#include "nmos/events_ws_api.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/node_api.h"
@@ -148,6 +150,21 @@ int main(int argc, char* argv[])
 
         port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
 
+        // Configure the IS-07 Events API
+        port_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
+
+        nmos::websockets node_websockets;
+
+        web::websockets::experimental::listener::validate_handler eventntally_ws_validate_handler = nmos::make_eventntally_ws_validate_handler(node_model, gate);
+        web::websockets::experimental::listener::open_handler eventntally_ws_open_handler = nmos::make_eventntally_ws_open_handler(node_model, node_websockets, gate);
+        web::websockets::experimental::listener::close_handler eventntally_ws_close_handler = nmos::make_eventntally_ws_close_handler(node_model, node_websockets, gate);
+        web::websockets::experimental::listener::message_handler eventntally_ws_message_handler = nmos::make_eventntally_ws_message_handler(node_model, node_websockets, gate);
+        web::websockets::experimental::listener::websocket_listener eventntally_ws_listener(nmos::fields::eventntally_ws_port(node_model.settings), nmos::make_slog_logging_callback(gate));
+        eventntally_ws_listener.set_validate_handler(std::ref(eventntally_ws_validate_handler));
+        eventntally_ws_listener.set_open_handler(std::ref(eventntally_ws_open_handler));
+        eventntally_ws_listener.set_close_handler(std::ref(eventntally_ws_close_handler));
+        eventntally_ws_listener.set_message_handler(std::ref(eventntally_ws_message_handler));
+
         // Set up the listeners for each API port
 
         // try to use the configured TCP listen backlog
@@ -169,10 +186,18 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
         std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
+
         for (auto& port_listener : port_listeners)
         {
             if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
         }
+
+        web::websockets::experimental::listener::websocket_listener_guard eventntally_ws_guard;
+        if (0 <= eventntally_ws_listener.port()) eventntally_ws_guard = { eventntally_ws_listener };
+        auto send_eventntally_ws_events = nmos::details::make_thread_guard([&] { nmos::send_eventntally_ws_events_thread(eventntally_ws_listener, node_model, node_websockets, gate); }, [&] { node_model.controlled_shutdown(); });
+        auto update_temperature_state = nmos::details::make_thread_guard([&] { node_update_temperature_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+        
 
         // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 

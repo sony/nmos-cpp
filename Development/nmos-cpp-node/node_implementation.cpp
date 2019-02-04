@@ -9,6 +9,7 @@
 #include "nmos/node_resources.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/tai.h"
 #include "nmos/thread_utils.h"
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
@@ -31,6 +32,14 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
     auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
     auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+
+	// IS-07 source, flow, and couple of senders/receivers.
+	auto temperature_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/1"));
+	auto temperature_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/1"));
+	auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1/0"));
+	auto temperature_mqtt_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1/1"));
+	auto temperature_ws_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1/0"));
+	auto temperature_mqtt_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1/1"));
 
     auto lock = model.write_lock(); // in order to update the resources
 
@@ -125,6 +134,61 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
     }
+
+	//example IS-07 senders
+	{
+        using web::json::value_of;
+
+        auto source = nmos::make_event_source(temperature_source_id, device_id, U("number/Temperature/C"), model.settings);
+        auto flow = nmos::make_event_flow(temperature_flow_id, temperature_source_id, device_id, model.settings);
+        auto mqtt_sender = nmos::make_sender(temperature_mqtt_sender_id, temperature_flow_id, nmos::transports::mqtt, device_id, {}, { U("example"), U("example") }, model.settings);
+        auto ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example"), U("example") }, model.settings);
+        auto connection_ws_sender = nmos::make_connection_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
+        auto connection_mqtt_sender = nmos::make_connection_mqtt_sender(temperature_mqtt_sender_id, U("broker.host"), U("broker.port"), temperature_source_id, model.settings);
+
+        auto event_type = value_of({
+          { U("type"), U("number") },
+          { U("min"), value_of( {
+            { U("value"), -200.0 },
+            { U("scale"), 10 }
+          })},
+          { U("max"), value_of( {
+            { U("value"), 1000 },
+            { U("scale"), 10 }
+          })},
+          { U("step"), value_of( {
+            { U("value"), 1 },
+            { U("scale"), 10 },
+          })},
+          { U("unit"), U("C") }
+        });
+        
+        nmos::tai tai = nmos::tai_now();
+        auto state = value_of ({
+            { U("identity"), value_of({
+                { U("source_id"), temperature_source_id }
+            })},
+            { U("event_type"), U("number") },
+            { U("timing"), value_of ({
+                { U("creation_timestamp"), std::to_string(tai.seconds) + U(":") + std::to_string(tai.nanoseconds) }
+            })},
+            { U("payload"), value_of ({
+                { U("value"), 201 },
+                { U("scale"), 10 } 
+            })},
+            { U("message_type"), U("state") }
+        });
+
+        auto restapi_event = nmos::make_restapi_event(temperature_source_id, event_type, state);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(mqtt_sender), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(ws_sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_ws_sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_mqtt_sender), gate);
+        insert_resource_after(delay_millis, model.event_resources, std::move(restapi_event), gate);
+	}
 
     auto most_recent_update = nmos::tai_min();
     auto earliest_scheduled_activation = (nmos::tai_clock::time_point::max)();
@@ -245,6 +309,48 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         }
 
         most_recent_update = nmos::most_recent_update(model.connection_resources);
+    }
+}
+
+void node_update_temperature_thread(nmos::node_model& model, slog::base_gate& gate) {
+    using web::json::value_of;
+    
+    for (;;) {
+        auto lock = model.write_lock();
+        if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::seconds(1), [&] { return model.shutdown; }))
+        {
+            auto resources = model.node_resources;
+            auto& by_type = resources.get<nmos::tags::type>();
+            const auto sources = by_type.equal_range(nmos::details::has_data(nmos::types::source));
+            auto resource = std::find_if(sources.first, sources.second, [](const nmos::resources::value_type& resource)
+            {
+                return nmos::fields::event_type(resource.data) == U("number/Temperature/C");
+            });
+
+            auto sourceId = resource->id;
+            nmos::tai tai = nmos::tai_now();
+            auto state = value_of ({
+                    { U("identity"), value_of({
+                                { U("source_id"), sourceId }
+                            })},
+                        { U("event_type"), U("number") },
+                            { U("timing"), value_of ({
+                                        { U("creation_timestamp"), std::to_string(tai.seconds) + U(":") + std::to_string(tai.nanoseconds) }
+                                    })},
+                                { U("payload"), value_of ({
+                                            { U("value"), tai.seconds % 100 },
+                                                { U("scale"), 10 }
+                                        })},
+                                    { U("message_type"), U("state") }
+                });
+
+            modify_resource(model.event_resources, sourceId, [&state](nmos::resource& resource)
+                            {
+                                resource.data[nmos::fields::event_restapi_state] = state;
+                            });
+            
+            model.notify();
+        }
     }
 }
 

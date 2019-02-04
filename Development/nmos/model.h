@@ -106,6 +106,9 @@ namespace nmos
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
         nmos::resources connection_resources;
+
+        //IS-07 events_api resources. Contains "state" and "type" fields for each source. Also websocket subscription(url path) and grains(individual connections)
+        nmos::resources event_resources;
     };
 
     struct registry_model : model

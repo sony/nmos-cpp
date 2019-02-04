@@ -32,6 +32,9 @@ namespace nmos
 
         // the System API global configuration resource
         const type global{ U("global") };
+
+        // IS-07 events_api resource
+        const type event_restapi{ U("event_restapi") };
     }
 }
 

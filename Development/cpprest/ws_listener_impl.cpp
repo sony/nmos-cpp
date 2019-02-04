@@ -199,6 +199,11 @@ namespace web
                             user_close = handler;
                         }
 
+                        void set_message_handler(message_handler handler)
+                        {
+                            user_message = handler;
+                        }
+
                         pplx::task<void> open(int port)
                         {
                             if ((uint16_t)port != port) return pplx::task_from_exception<void>(websocket_exception("Invalid port"));
@@ -214,10 +219,12 @@ namespace web
 
                                 using websocketpp::lib::bind;
                                 using websocketpp::lib::placeholders::_1;
+                                using websocketpp::lib::placeholders::_2;
 
                                 server.set_validate_handler(bind(&websocket_listener_impl::handle_validate, this, _1));
                                 server.set_open_handler(bind(&websocket_listener_impl::handle_open, this, _1));
                                 server.set_close_handler(bind(&websocket_listener_impl::handle_close, this, _1));
+                                server.set_message_handler(bind(&websocket_listener_impl::handle_message, this, _1, _2));
 
                                 websocketpp::lib::error_code ec;
                                 server.listen((uint16_t)port, ec);
@@ -300,6 +307,25 @@ namespace web
                             return pplx::task_from_result();
                         }
 
+                        pplx::task<void> close(const connection_id& connection)
+                        {
+                            try
+                            {
+                                server.close(connection.hdl, websocketpp::close::status::policy_violation, "no health message received");
+                            }
+                            catch (const websocketpp::exception& e)
+                            {
+                                server.stop_perpetual();
+                                if (thread.joinable())
+                                {
+                                    thread.join();
+                                }
+                                return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "close")));
+                            }
+
+                            return pplx::task_from_result();
+                        }
+
                         pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message)
                         {
                             // right now, this implementation is only tested to work with simple UTF-8 text messages
@@ -379,6 +405,12 @@ namespace web
                             }
                         }
 
+                        void handle_message(websocketpp::connection_hdl hdl, server_t::message_ptr msg_ptr) {
+                            if (user_message) {
+                                user_message(resource_from_hdl(hdl), id_from_hdl(hdl), msg_ptr->get_payload());
+                            }
+                        }
+
                         std::thread thread;
                         server_t server;
                         connections_t connections;
@@ -387,6 +419,7 @@ namespace web
                         validate_handler user_validate;
                         open_handler user_open;
                         close_handler user_close;
+                        message_handler user_message;
                     };
                 }
 
@@ -431,6 +464,11 @@ namespace web
                     impl->set_close_handler(handler);
                 }
 
+                void websocket_listener::set_message_handler(message_handler handler)
+                {
+                    impl->set_message_handler(handler);
+                }
+
                 pplx::task<void> websocket_listener::open()
                 {
                     return impl->open(listen_port);
@@ -439,6 +477,11 @@ namespace web
                 pplx::task<void> websocket_listener::close()
                 {
                     return impl->close();
+                }
+
+                pplx::task<void> websocket_listener::close(const connection_id& connection)
+                {
+                    return impl->close(connection);
                 }
 
                 pplx::task<void> websocket_listener::send(const connection_id& connection, websocket_outgoing_message message)

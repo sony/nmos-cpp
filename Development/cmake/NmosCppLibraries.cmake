@@ -509,6 +509,8 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/client_utils.cpp
     ${NMOS_CPP_DIR}/nmos/components.cpp
     ${NMOS_CPP_DIR}/nmos/connection_api.cpp
+    ${NMOS_CPP_DIR}/nmos/events_api.cpp
+    ${NMOS_CPP_DIR}/nmos/events_ws_api.cpp
     ${NMOS_CPP_DIR}/nmos/filesystem_route.cpp
     ${NMOS_CPP_DIR}/nmos/group_hint.cpp
     ${NMOS_CPP_DIR}/nmos/id.cpp
@@ -548,6 +550,8 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/copyable_atomic.h
     ${NMOS_CPP_DIR}/nmos/connection_api.h
     ${NMOS_CPP_DIR}/nmos/device_type.h
+    ${NMOS_CPP_DIR}/nmos/events_api.h
+    ${NMOS_CPP_DIR}/nmos/events_ws_api.h
     ${NMOS_CPP_DIR}/nmos/filesystem_route.h
     ${NMOS_CPP_DIR}/nmos/format.h
     ${NMOS_CPP_DIR}/nmos/group_hint.h
@@ -556,6 +560,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/interlace_mode.h
     ${NMOS_CPP_DIR}/nmos/is04_versions.h
     ${NMOS_CPP_DIR}/nmos/is05_versions.h
+    ${NMOS_CPP_DIR}/nmos/is07_versions.h
     ${NMOS_CPP_DIR}/nmos/json_fields.h
     ${NMOS_CPP_DIR}/nmos/json_schema.h
     ${NMOS_CPP_DIR}/nmos/log_manip.h

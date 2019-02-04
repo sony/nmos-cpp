@@ -2,6 +2,7 @@
 
 #include <map>
 #include "nmos/is04_versions.h"
+#include "nmos/is07_versions.h"
 #include "nmos/resource.h"
 
 namespace nmos
@@ -116,6 +117,12 @@ namespace nmos
                 {
                     { nmos::is04_versions::v1_0, { U("id"), U("ws_href"), U("max_update_rate_ms"), U("persist"), U("resource_path"), U("params") } },
                     { nmos::is04_versions::v1_1, { U("secure") } }
+                }
+            },
+            {
+                nmos::types::event_restapi,
+                {
+                    { nmos::is07_versions::v1_0, { U("id"), U("state"), U("type") } },
                 }
             }
         };

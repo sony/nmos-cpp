@@ -39,7 +39,8 @@ namespace nmos
                 << by_type.count(details::has_data(types::sender)) << " senders, "
                 << by_type.count(details::has_data(types::receiver)) << " receivers, "
                 << by_type.count(details::has_data(types::subscription)) << " subscriptions, "
-                << by_type.count(details::has_data(types::grain)) << " grains), "
+                << by_type.count(details::has_data(types::grain)) << " grains, "
+                << by_type.count(details::has_data(types::event_restapi)) << " events), "
                 << "most recent update: " << make_version(most_recent_update(resources)) << ", least health: " << least_health(resources).first << ", "
                 << by_type.count(false) << " non-extant resources";
         });

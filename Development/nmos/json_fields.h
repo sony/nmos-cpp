@@ -69,6 +69,8 @@ namespace nmos
         // source_audio
         const web::json::field_as_array channels{ U("channels") };
         const web::json::field_as_string_or symbol{ U("symbol"), U("") }; // or nmos::channel_symbol?
+        // source IS-07 event
+        const web::json::field_as_string_or event_type{ U("event_type"), U("") };
 
         // lots more to be sorted!
         const web::json::field_as_string node_id{ U("node_id") };
@@ -99,6 +101,14 @@ namespace nmos
         const web::json::field<tai> origin_timestamp{ U("origin_timestamp") };
         const web::json::field<tai> sync_timestamp{ U("sync_timestamp") };
         const web::json::field_as_string topic{ U("topic") };
+
+        // for IS-07
+        const web::json::field_as_array sources{ U("sources") };
+        const web::json::field_as_string command{ U("command") };
+        const web::json::field_as_string health{ U("health") };
+        const web::json::field_as_string timestamp{ U("timestamp") };
+        const web::json::field_as_value event_restapi_state{ U("state") };
+        const web::json::field_as_value event_restapi_type{ U("type") };
 
         // IS-05 Connection Management
 
@@ -133,6 +143,13 @@ namespace nmos
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+        const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string
+        const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string
+        const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string
+        const web::json::field_as_value_or source_host{ U("source_host"), {} }; // string
+        const web::json::field_as_value_or broker_topic{ U("broker_topic"), {} }; // string
+        const web::json::field_as_value_or destination_host{ U("destination_host"), {} }; // string
+
     }
 
     // Fields for experimental extensions

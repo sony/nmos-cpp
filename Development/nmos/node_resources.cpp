@@ -11,6 +11,7 @@
 #include "nmos/interlace_mode.h"
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
+#include "nmos/is07_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
@@ -51,6 +52,23 @@ namespace nmos
             {
                 web::json::push_back(data[U("controls")], value_of({
                     { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                    { U("type"), type }
+                }));
+            }
+        }
+
+        for (const auto& version : nmos::is07_versions::from_settings(settings))
+        {
+            auto events_uri = web::uri_builder()
+                .set_scheme(U("http"))
+                .set_port(nmos::fields::events_port(settings))
+                .set_path(U("/x-nmos/events/") + make_api_version(version));
+            auto type = U("urn:x-nmos:control:events/") + make_api_version(version);
+
+            for (const auto& host_address : host_addresses)
+            {
+                web::json::push_back(data[U("controls")], value_of({
+                    { U("href"), events_uri.set_host(host_address.as_string()).to_uri().to_string() },
                     { U("type"), type }
                 }));
             }
@@ -98,6 +116,28 @@ namespace nmos
         return make_generic_source(id, device_id, grain_rate, nmos::formats::data, settings);
     }
 
+	nmos::resource make_event_source(const nmos::id& id, const nmos::id& device_id, const utility::string_t& event_type, const nmos::settings& settings)
+	{
+		using web::json::value;
+
+		auto resource = make_data_source(id, device_id, {}, settings);
+		auto& data = resource.data;
+		data[nmos::fields::event_type] = value::string(event_type);
+
+		return resource;
+	}
+
+    nmos::resource make_restapi_event(const nmos::id& source_id, const web::json::value& type, const web::json::value& state) {
+        using web::json::value;
+
+        value data;
+
+        data[nmos::fields::id] = value::string(source_id);
+        data[nmos::fields::event_restapi_type] = type;
+        data[nmos::fields::event_restapi_state] = state;
+        return { is07_versions::v1_0, types::event_restapi, data, true };
+    }
+
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_audio.json
     nmos::resource make_audio_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const std::vector<channel>& channels, const nmos::settings& settings)
     {
@@ -133,6 +173,18 @@ namespace nmos
 
         return{ is04_versions::v1_3, types::flow, data, false };
     }
+
+	nmos::resource make_event_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings) {
+		using web::json::value;
+
+		auto resource = make_flow(id, source_id, device_id, {}, settings);
+		auto& data = resource.data;
+
+		data[U("media_type")] = value::string(nmos::media_types::application_json.name);
+		data[U("format")] = value::string(nmos::formats::data.name);
+
+		return resource;
+	}
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_video.json
     nmos::resource make_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const nmos::settings& settings)
@@ -399,6 +451,37 @@ namespace nmos
             });
         }
 
+		//See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-websocket.json
+		web::json::value make_connection_websocket_sender_core_constraints()
+		{
+			using web::json::value;
+			using web::json::value_of;
+
+			const auto unconstrained = value::object();
+			return value_of({
+				{ nmos::fields::connection_uri, unconstrained },
+				{ nmos::fields::ext_is_07_source_id, unconstrained },
+				{ nmos::fields::ext_is_07_rest_api_url, unconstrained },
+				});
+		}
+
+        //See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-mqtt.json
+        web::json::value make_connection_mqtt_sender_core_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::broker_topic, unconstrained },
+                { nmos::fields::source_host, unconstrained },
+                { nmos::fields::source_port, unconstrained },
+                { nmos::fields::destination_host, unconstrained },
+                { nmos::fields::destination_port, unconstrained },
+                { nmos::fields::ext_is_07_rest_api_url, unconstrained },
+                });
+        }
+
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
         web::json::value make_connection_sender_staged_core_parameter_set()
@@ -413,6 +496,31 @@ namespace nmos
                 { nmos::fields::destination_port, U("auto") },
                 { nmos::fields::rtp_enabled, true }
             });
+        }
+
+        web::json::value make_connection_websocket_sender_staged_core_parameter_set(const utility::string_t& connection_uri, const utility::string_t& source_id, const utility::string_t& rest_api_url)
+        {
+            using web::json::value;
+            using web::json::value_of;
+            
+            return value_of({
+                    { nmos::fields::connection_uri, connection_uri },
+                    { nmos::fields::ext_is_07_source_id, source_id },
+                    { nmos::fields::ext_is_07_rest_api_url, rest_api_url }
+                });
+        }
+        
+        web::json::value make_connection_mqtt_sender_staged_core_parameter_set(const utility::string_t& broker_topic, const utility::string_t& destination_host, const utility::string_t& destination_port, const utility::string_t& rest_api_url)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                    { nmos::fields::broker_topic, broker_topic },
+                    { nmos::fields::destination_host, destination_host },
+                    { nmos::fields::destination_port, destination_port },
+                    { nmos::fields::ext_is_07_rest_api_url, rest_api_url }
+                });
         }
 
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
@@ -468,6 +576,60 @@ namespace nmos
         nmos::resolve_auto(types::sender, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
+
+        return{ is05_versions::v1_1, types::sender, data, false };
+    }
+
+	nmos::resource make_connection_websocket_sender(const nmos::id& sender_id, const nmos::id& device_id, const nmos::id& source_id, const nmos::settings& settings)
+	{
+		using web::json::value;
+		using web::json::value_of;
+
+        const auto version = is07_versions::v1_0;
+
+        auto data = details::make_connection_resource_core(sender_id, false);
+		data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_websocket_sender_core_constraints(), false);
+		data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+
+        auto host = nmos::fields::host_address(settings);
+        auto connection_uri = web::uri_builder()
+                            .set_scheme(U("ws"))
+                            .set_host(host)
+                            .set_port(nmos::fields::eventntally_ws_port(settings))
+                            .set_path(U("/x-nmos/events/")+ make_api_version(version) + U("/device_id/") + device_id)
+                            .to_string();
+        auto rest_api_url = web::uri_builder()
+                            .set_scheme(U("http"))
+                            .set_host(host)
+                            .set_port(nmos::fields::events_port(settings))
+                            .set_path(U("/x-nmos/events/")+ make_api_version(version) + U("/sources/") + source_id)
+                            .to_string();
+		data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri, source_id, rest_api_url), false);
+
+		return{ is05_versions::v1_1, types::sender, data, false };
+	}
+
+    nmos::resource make_connection_mqtt_sender(const nmos::id& sender_id, const utility::string_t& destination_host, const utility::string_t& destination_port, const nmos::id& source_id, const nmos::settings& settings)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        const auto version = is07_versions::v1_0;
+
+        auto data = details::make_connection_resource_core(sender_id, false);
+        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mqtt_sender_core_constraints(), false);
+        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+
+        auto host = nmos::fields::host_address(settings);
+       
+        auto rest_api_url = web::uri_builder()
+                            .set_scheme(U("http"))
+                            .set_host(host)
+                            .set_port(nmos::fields::events_port(settings))
+                            .set_path(U("/x-nmos/events/")+ make_api_version(version) + U("/sources/") + source_id)
+                            .to_string();
+        auto broker_topic = U("/x-nmos/source/") + source_id;
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mqtt_sender_staged_core_parameter_set(broker_topic, destination_host, destination_port, rest_api_url), false);
 
         return{ is05_versions::v1_1, types::sender, data, false };
     }

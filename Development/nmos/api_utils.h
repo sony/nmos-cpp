@@ -5,6 +5,7 @@
 #include <set>
 #include "cpprest/api_router.h"
 #include "cpprest/regex_utils.h"
+#include "nmos/resources.h"
 
 namespace slog
 {
@@ -51,6 +52,9 @@ namespace nmos
         const route_pattern stagingType = make_route_pattern(U("stagingType"), U("active|staged"));
 
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
+
+        // IS-07 Events-api "state" or "type" part of the url
+        const route_pattern eventsApiSubResource = make_route_pattern(U("eventsApiSubResource"), U("state|type"));
     }
 
     // Note that a resourceType does not have the same value as a "proper" type, use this mapping instead!
@@ -98,6 +102,9 @@ namespace nmos
     {
         return make_api_listener(web::http::experimental::listener::host_wildcard, port, api, config, gate);
     }
+
+    // Used in websocket APIs
+    resources::iterator find_subscription(resources& resources, const utility::string_t& ws_resource_path);
 
     namespace details
     {
