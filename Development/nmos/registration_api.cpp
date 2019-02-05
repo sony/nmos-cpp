@@ -108,6 +108,12 @@ namespace nmos
         return U("/x-nmos/registration/") + nmos::make_api_version(resource.version) + U("/resource/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
     }
 
+    inline utility::string_t make_registration_api_health_location(const nmos::resource& resource)
+    {
+        // assert nmos::types::node == resource.type
+        return U("/x-nmos/registration/") + nmos::make_api_version(resource.version) + U("/health/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
+    }
+
     // registration error message details
     namespace details
     {
@@ -403,34 +409,38 @@ namespace nmos
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Notifying query websockets thread"; // and anyone else who cares...
                     model.notify();
                 }
-                else if (!valid_type)
+                else if (!valid_api_version)
                 {
-                    // experimental extension, using a more specific status code to distinguish conflicts from validation errors
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_type_error(id_type, resource->type));
+                    // experimental extension, proposed for v1.3, using a more specific status code to distinguish conflicts from validation errors
+                    // when that conflict may be resolvable automatically by the Node
+                    // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/85
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
 
                     // the Location header would enable an HTTP DELETE to be performed to explicitly clear the registry of the conflicting registration
                     // (assert !creating, i.e. resources.end() != resource in all these cases)
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
-                else if (!valid_api_version)
+                else if (!valid_type)
                 {
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
+                    // the following errors are more likely to require a human to investigate so result in a simple 400 response
+                    // but provide additional information in the error body, and as an experimental extension, via the Location header
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_type_error(id_type, resource->type));
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
                 else if (!valid_super_id_type)
                 {
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_super_id_type_error(super_id_type, nmos::get_super_resource(*resource)));
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_super_id_type_error(super_id_type, nmos::get_super_resource(*resource)));
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
                 else if (!valid_version)
                 {
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_version_error(nmos::fields::version(data), nmos::fields::version(resource->data)));
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_version_error(nmos::fields::version(data), nmos::fields::version(resource->data)));
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
                 else if (!valid_super_type)
                 {
                     // the difference here is that it's the super-resource that conflicts
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_super_type_error(super_id_type, super_resource->type));
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_super_type_error(super_id_type, super_resource->type));
 
                     // since the conflict is with the super-resource, a single HTTP DELETE cannot be enough to resolve the issue in this case...
                     // (assert !no_super_resource, i.e. resources.end() != super_resource in all these cases)
@@ -439,7 +449,7 @@ namespace nmos
                 else if (!valid_super_api_version)
                 {
                     // another super-resource conflict
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_super_api_version_error(version, super_resource->version));
+                    set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_super_api_version_error(version, super_resource->version));
                     res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*super_resource));
                 }
                 else if (!valid_super_resource)
@@ -491,7 +501,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
+                    res.headers().add(web::http::header_names::location, make_registration_api_health_location(*resource));
                 }
             }
             else if (details::is_erased_resource(resources, { resourceId, nmos::types::node }))
@@ -526,7 +538,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
             }
             else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
@@ -582,7 +596,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
+                    res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
                 }
             }
             else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
