@@ -139,6 +139,42 @@
               "name": {
                 "description": "Name of the interface (unique in scope of this node).  This attribute is used by sub-resources of this node such as senders and receivers to refer to interfaces to which they are bound.",
                 "type": "string"
+              },
+              "attached_network_device": {
+                "type": "object",
+                "required": ["chassis_id", "port_id"],
+                "properties": {
+                  "chassis_id": {
+                    "description": "Chassis ID of the attached network device, as signalled in LLDP received by this Node.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^([0-9a-f]{2}-){5}([0-9a-f]{2})$",
+                        "description": "When the Chassis ID is a MAC address, use this format"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^.+$",
+                        "description": "When the Chassis ID is anything other than a MAC address, a freeform string may be used"
+                      }
+                    ]
+                  },
+                  "port_id": {
+                    "description": "Port ID of the attached network device, as signalled in LLDP received by this Node.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^([0-9a-f]{2}-){5}([0-9a-f]{2})$",
+                        "description": "When the Port ID is a MAC address, use this format"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^.+$",
+                        "description": "When the Port ID is anything other than a MAC address, a freeform string may be used"
+                      }
+                    ]
+                  }
+                }
               }
             }
           }
