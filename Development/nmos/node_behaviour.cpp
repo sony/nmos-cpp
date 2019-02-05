@@ -983,8 +983,8 @@ namespace nmos
             const auto grain = nmos::find_resource(resources, { grain_id, nmos::types::grain });
             if (resources.end() == grain) return;
 
+            // values for the 'ver_' TXT records advertised in peer-to-peer operation
             api_resource_versions ver;
-            update_node_service(advertiser, model.settings, ver);
 
             // intermittently attempting discovery of a Registration API while in peer-to-peer mode seems like a good idea?
             bool registration_services_discovered(false);
