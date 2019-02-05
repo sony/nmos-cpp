@@ -108,7 +108,7 @@ namespace web
                         auto validator = validators.find(id);
                         if (validators.end() == validator)
                         {
-                            throw web::json::json_exception((_XPLATSTR("schema not found for ") + id.to_string()).c_str());
+                            throw web::json::json_exception("schema not found for " + utility::us2s(id.to_string()));
                         }
 
                         struct error_handler : nlohmann::json_schema::error_handler
