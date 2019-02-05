@@ -111,7 +111,7 @@ namespace web
                             throw web::json::json_exception((_XPLATSTR("schema not found for ") + id.to_string()).c_str());
                         }
 
-                        struct error_handler : nlohmann::json_schema::basic_error_handler
+                        struct error_handler : nlohmann::json_schema::error_handler
                         {
                             virtual void error(const nlohmann::json::json_pointer& ptr, const nlohmann::json& instance, const std::string& message)
                             {
@@ -122,7 +122,7 @@ namespace web
                         try
                         {
                             auto instance = nlohmann::json::parse(utility::us2s(value.serialize()));
-                            const_cast<nlohmann::json_schema::json_validator&>(validator->second).validate(instance, error_handler);
+                            validator->second.validate(instance, error_handler);
                         }
                         catch (const web::json::json_exception&)
                         {
