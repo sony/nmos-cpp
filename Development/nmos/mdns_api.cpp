@@ -61,14 +61,16 @@ namespace nmos
             return result;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
             api_router mdns_api;
 
-            mdns_api.support(U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
+
                 // get the browse domain from the query parameters or settings
 
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
@@ -96,8 +98,10 @@ namespace nmos
                 });
             });
 
-            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
+
                 // hmm, something to think about... the regex patterns are presumably being used on encoded paths?
                 const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
 
@@ -169,8 +173,10 @@ namespace nmos
                 });
             });
 
-            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            mdns_api.support(U("/") + nmos::experimental::patterns::mdnsServiceType.pattern + U("/") + nmos::experimental::patterns::mdnsServiceName.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
+
                 const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
                 const std::string serviceName = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceName.name)));
 

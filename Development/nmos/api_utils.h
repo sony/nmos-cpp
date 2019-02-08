@@ -104,7 +104,7 @@ namespace nmos
         void encode_elements(web::json::value& value);
 
         // extract JSON after checking the Content-Type header
-        pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate);
+        pplx::task<web::json::value> extract_json(const web::http::http_request& req, slog::base_gate& gate);
 
         // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res);

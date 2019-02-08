@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_settings_api(nmos::base_model& model, std::atomic<slog::severity>& logging_level, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_settings_api(nmos::base_model& model, std::atomic<slog::severity>& logging_level, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -32,9 +32,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/all/?"), methods::PATCH, [&model, &logging_level, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            settings_api.support(U("/settings/all/?"), methods::PATCH, [&model, &logging_level, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                return details::extract_json(req, parameters, gate).then([&, req, res](value body) mutable
+                nmos::api_gate gate(gate_, req, parameters);
+                return nmos::details::extract_json(req, gate).then([&model, &logging_level, req, res, gate](value body) mutable
                 {
                     auto lock = model.write_lock();
 

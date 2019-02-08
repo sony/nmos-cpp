@@ -36,8 +36,10 @@ namespace nmos
         nmos::resource make_node_behaviour_grain(const nmos::id& id, const nmos::id& subscription_id);
     }
 
-    void node_behaviour_thread(nmos::model& model, slog::base_gate& gate)
+    void node_behaviour_thread(nmos::model& model, slog::base_gate& gate_)
     {
+        nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
+
         // The possible states of node behaviour represent the two primary modes (registered operation and peer-to-peer operation)
         // and a few hopefully ephemeral states as the node works through the "Standard Registration Sequences".
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md

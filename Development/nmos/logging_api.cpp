@@ -1,5 +1,6 @@
 #include "nmos/logging_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
 #include "nmos/api_utils.h"
 #include "nmos/query_utils.h"
 #include "rql/rql.h"
@@ -303,7 +304,7 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_logging_api(nmos::experimental::log_model& model, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -315,8 +316,9 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/events/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            logging_api.support(U("/events/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.read_lock();
 
                 // Extract and decode the query string
@@ -345,7 +347,7 @@ namespace nmos
                             [&count](const event& event){ ++count; return event.data; }),
                         U("application/json"));
 
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching log events";
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Returning " << count << " matching log events";
 
                     details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req));
                 }
@@ -432,6 +434,8 @@ namespace nmos
                 if (!request_uri.is_empty()) json_message[U("request_uri")] = web::json::value::string(request_uri.to_string());
                 const auto route_parameters = nmos::get_route_parameters_stash(message.stream());
                 if (!route_parameters.empty()) json_message[U("route_parameters")] = web::json::value_from_fields(route_parameters);
+                const auto categories = nmos::get_categories_stash(message.stream());
+                if (!categories.empty()) json_message[U("tags")][U("category")] = web::json::value_from_elements(categories | boost::adaptors::transformed(utility::s2us));
 
                 return json_message;
             }

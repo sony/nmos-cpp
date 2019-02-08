@@ -44,7 +44,7 @@ namespace nmos
         return node_api;
     }
 
-    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -52,7 +52,7 @@ namespace nmos
 
         // check for supported API version
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
-        node_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+        node_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
         node_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -60,8 +60,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/self/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/self/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
@@ -72,26 +73,27 @@ namespace nmos
             {
                 if (nmos::is_permitted_downgrade(*resource, version))
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning self resource: " << resource->id;
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Returning self resource: " << resource->id;
                     set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Self resource version is incorrect!";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Self resource version is incorrect!";
                     set_error_reply(res, status_codes::InternalError, U("Internal Error; ") + details::make_permitted_downgrade_error(*resource, version));
                 }
             }
             else
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Self resource not found!";
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Self resource not found!";
                 set_reply(res, status_codes::InternalError); // rather than Not Found, since the Node API doesn't allow a 404 response
             }
 
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
@@ -108,13 +110,14 @@ namespace nmos
                     [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }),
                 U("application/json"));
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
             return pplx::task_from_result(true);
         });
 
-        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
@@ -127,7 +130,7 @@ namespace nmos
             {
                 if (nmos::is_permitted_downgrade(*resource, version))
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Returning resource: " << resourceId;
                     set_reply(res, status_codes::OK, nmos::downgrade(*resource, version));
                 }
                 else
@@ -149,8 +152,9 @@ namespace nmos
             boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_nodeapi_receiver_target_put_request_schema_uri))
         };
 
-        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&model, target_handler, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&model, target_handler, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
@@ -164,7 +168,7 @@ namespace nmos
                 {
                     if (target_handler)
                     {
-                        return details::extract_json(req, parameters, gate).then([target_handler, validator, version, resourceId, res](value sender_data) mutable
+                        return details::extract_json(req, gate).then([target_handler, validator, version, resourceId, res](value sender_data) mutable
                         {
                             validator.validate(sender_data, experimental::make_nodeapi_receiver_target_put_request_schema_uri(version));
 

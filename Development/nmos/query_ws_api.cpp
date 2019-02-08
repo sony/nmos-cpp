@@ -9,6 +9,16 @@
 
 namespace nmos
 {
+    class ws_api_gate : public details::omanip_gate
+    {
+    public:
+        // apart from the gate, arguments are copied in order that this object is safely copyable
+        ws_api_gate(slog::base_gate& gate, const utility::string_t& ws_resource_path)
+            : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << nmos::stash_request_uri(ws_resource_path); }))
+        {}
+        virtual ~ws_api_gate() {}
+    };
+
     inline resources::iterator find_subscription(resources& resources, const utility::string_t& ws_resource_path)
     {
         auto& by_type = resources.get<tags::type>();
@@ -20,10 +30,11 @@ namespace nmos
         return subscriptions.second != resource ? resources.project<0>(resource) : resources.end();
     }
 
-    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::registry_model& model, slog::base_gate& gate)
+    web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::registry_model& model, slog::base_gate& gate_)
     {
-        return [&model, &gate](const utility::string_t& ws_resource_path)
+        return [&model, &gate_](const utility::string_t& ws_resource_path)
         {
+            nmos::ws_api_gate gate(gate_, ws_resource_path);
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
@@ -36,13 +47,14 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
+    web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
         using utility::string_t;
         using web::json::value;
 
-        return [source_id, &model, &websockets, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
+        return [source_id, &model, &websockets, &gate_](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
+            nmos::ws_api_gate gate(gate_, ws_resource_path);
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
@@ -95,10 +107,11 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
+    web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
-        return [&model, &websockets, &gate](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
+        return [&model, &websockets, &gate_](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
         {
+            nmos::ws_api_gate gate(gate_, ws_resource_path);
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
@@ -131,8 +144,10 @@ namespace nmos
         };
     }
 
-    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
+    void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
+        nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::send_query_ws_events));
+
         using utility::string_t;
         using web::json::value;
 

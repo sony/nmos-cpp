@@ -31,8 +31,15 @@ namespace nmos
 
     namespace categories
     {
-        const category unknown{};
+        // log messages that may be used to generate a server access log
         const category access{ "access" };
+
+        // categories that identify threads of execution
+        const category node_behaviour{ "node_behaviour" };
+        const category registration_expiry{ "registration_expiry" };
+        const category send_query_ws_events{ "send_query_ws_events" };
+        const category receive_query_ws_events{ "receive_query_ws_events" };
+
         // other categories may be defined ad-hoc
     }
 
@@ -47,7 +54,7 @@ namespace nmos
         return slog::get_stash<details::name##_tag>(os, default_value); \
     }
 
-    DEFINE_STASH_FUNCTIONS(category, category)
+    DEFINE_STASH_FUNCTIONS(categories, std::list<category>)
     DEFINE_STASH_FUNCTIONS(remote_address, utility::string_t)
     DEFINE_STASH_FUNCTIONS(http_method, web::http::method)
     DEFINE_STASH_FUNCTIONS(request_uri, web::uri)
@@ -56,6 +63,16 @@ namespace nmos
     DEFINE_STASH_FUNCTIONS(status_code, web::http::status_code)
     DEFINE_STASH_FUNCTIONS(response_length, utility::size64_t)
 #undef DEFINE_STASH_FUNCTIONS
+
+    inline slog::omanip_function stash_category(const category& category)
+    {
+        return slog::omanip([&](std::ostream& os)
+        {
+            auto categories = get_categories_stash(os);
+            categories.push_back(category);
+            os << stash_categories(categories);
+        });
+    }
 
     inline slog::omanip_function api_stash(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters)
     {
@@ -119,6 +136,35 @@ namespace nmos
                 << stash_response_length(res.headers().content_length());
         });
     }
+
+    namespace details
+    {
+        class omanip_gate : public slog::base_gate
+        {
+        public:
+            // apart from the gate, arguments are copied in order that this object is safely copyable
+            omanip_gate(slog::base_gate& gate, slog::omanip_function omanip)
+                : gate(&gate), omanip(std::move(omanip)) {}
+            virtual ~omanip_gate() {}
+
+            virtual bool pertinent(slog::severity level) const { return gate->pertinent(level); }
+            virtual void log(const slog::log_message& message) const { const_cast<slog::log_message&>(message).stream() << omanip; gate->log(message); }
+
+        private:
+            slog::base_gate* gate;
+            slog::omanip_function omanip;
+        };
+    }
+
+    class api_gate : public details::omanip_gate
+    {
+    public:
+        // apart from the gate, arguments are copied in order that this object is safely copyable
+        api_gate(slog::base_gate& gate, web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters)
+            : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << api_stash(req, parameters); }))
+        {}
+        virtual ~api_gate() {}
+    };
 
     namespace details
     {

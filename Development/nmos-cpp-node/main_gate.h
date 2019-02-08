@@ -22,12 +22,10 @@ namespace
     {
         return slog::omanip([&](std::ostream& os)
         {
-            auto category = nmos::get_category_stash(message.stream());
             os
                 << slog::put_timestamp(message.timestamp()) << ": "
                 << slog::put_severity_name(message.level()) << ": "
                 << message.thread_id() << ": "
-                << (category.empty() ? "" : category + ": ")
                 << indent_new_lines(message.str())
                 << std::endl;
         });
@@ -68,7 +66,8 @@ namespace
             {
                 error_log << error_log_format(message);
             }
-            if (nmos::categories::access == nmos::get_category_stash(message.stream()))
+            auto categories = nmos::get_categories_stash(message.stream());
+            if (categories.end() != std::find(categories.begin(), categories.end(), nmos::categories::access))
             {
                 access_log << nmos::common_log_format(message);
             }
