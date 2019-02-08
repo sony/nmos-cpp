@@ -45,6 +45,11 @@ namespace nmos
         return query_api;
     }
 
+    inline utility::string_t make_query_api_resource_location(const nmos::resource& resource)
+    {
+        return U("/x-nmos/query/") + nmos::make_api_version(resource.version) + U("/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
+    }
+
     namespace details
     {
         utility::string_t make_query_parameters(web::json::value flat_query_params)
@@ -272,7 +277,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, match.version, match.downgrade_version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, match.version, match.downgrade_version));
+                    res.headers().add(web::http::header_names::location, make_query_api_resource_location(*resource));
                 }
             }
             else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
@@ -395,7 +402,7 @@ namespace nmos
                         // never expire persistent subscriptions, they are only deleted when explicitly requested
                         nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
 
-                        insert_resource(resources, std::move(subscription));
+                        resource = resources.project<tags::type>(insert_resource(resources, std::move(subscription)).first);
                     }
                     else
                     {
@@ -405,8 +412,7 @@ namespace nmos
                     }
 
                     set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
-                    const string_t location(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + nmos::fields::id(data));
-                    res.headers().add(web::http::header_names::location, location);
+                    res.headers().add(web::http::header_names::location, make_query_api_resource_location(*resource));
                 }
                 else
                 {
@@ -451,7 +457,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*subscription, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*subscription, version));
+                    res.headers().add(web::http::header_names::location, make_query_api_resource_location(*subscription));
                 }
             }
             else if (details::is_erased_resource(resources, { subscriptionId, nmos::types::subscription }))
