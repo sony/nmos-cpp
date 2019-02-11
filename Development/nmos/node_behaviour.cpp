@@ -6,6 +6,7 @@
 #include "mdns/service_discovery.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::type_from_resourceType
+#include "nmos/client_utils.h"
 #include "nmos/mdns.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
@@ -441,10 +442,17 @@ namespace nmos
             handle_registration_error_conditions(response, false, gate, operation);
         }
 
-        web::http::client::http_client_config config_with_timeout(const std::chrono::seconds& timeout)
+        web::http::client::http_client_config make_registration_client_config(const nmos::settings& settings)
         {
-            web::http::client::http_client_config config;
-            config.set_timeout(timeout);
+            auto config = nmos::make_http_client_config(settings);
+            config.set_timeout(std::chrono::seconds(nmos::fields::registration_request_max(settings)));
+            return config;
+        }
+
+        web::http::client::http_client_config make_heartbeat_client_config(const nmos::settings& settings)
+        {
+            auto config = nmos::make_http_client_config(settings);
+            config.set_timeout(std::chrono::seconds(nmos::fields::registration_heartbeat_max(settings)));
             return config;
         }
 
@@ -677,9 +685,7 @@ namespace nmos
                 if (!registration_client)
                 {
                     const auto base_uri = top_registration_service(model.settings);
-
-                    auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
-                    registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
+                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings)));
                 }
 
                 events = web::json::value::array();
@@ -811,12 +817,8 @@ namespace nmos
                 if (!registration_client)
                 {
                     const auto base_uri = top_registration_service(model.settings);
-
-                    auto registration_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_request_max(model.settings)));
-                    registration_client.reset(new web::http::client::http_client(base_uri, registration_config));
-
-                    auto heartbeat_config = config_with_timeout(std::chrono::seconds(nmos::fields::registration_heartbeat_max(model.settings)));
-                    heartbeat_client.reset(new web::http::client::http_client(base_uri, heartbeat_config));
+                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings)));
+                    heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings)));
 
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"

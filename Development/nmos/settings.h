@@ -136,6 +136,12 @@ namespace nmos
             // port_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
             // each element of the array is an object like { "client": 80, "server": 8080 }
             const web::json::field_as_value_or port_map{ U("port_map"), web::json::value::array() };
+
+            // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
+            const web::json::field_as_string_or proxy_address{ U("proxy_address"), U("") };
+
+            // proxy_port [registry, node]: forward proxy port
+            const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
         }
     }
 }

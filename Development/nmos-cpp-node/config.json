@@ -92,5 +92,11 @@
     // each element of the array is an object like { "client": 80, "server": 8080 }
     //"port_map": array-of-mappings,
 
+    // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
+    //"proxy_address": "127.0.0.1",
+
+    // proxy_port [registry, node]: forward proxy port
+    //"proxy_port": 8080,
+
     "don't worry": "about trailing commas"
 }

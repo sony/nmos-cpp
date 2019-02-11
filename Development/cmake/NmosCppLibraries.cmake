@@ -506,6 +506,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/admin_ui.cpp
     ${NMOS_CPP_DIR}/nmos/api_downgrade.cpp
     ${NMOS_CPP_DIR}/nmos/api_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/client_utils.cpp
     ${NMOS_CPP_DIR}/nmos/components.cpp
     ${NMOS_CPP_DIR}/nmos/connection_api.cpp
     ${NMOS_CPP_DIR}/nmos/filesystem_route.cpp
@@ -541,6 +542,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/api_utils.h
     ${NMOS_CPP_DIR}/nmos/api_version.h
     ${NMOS_CPP_DIR}/nmos/channels.h
+    ${NMOS_CPP_DIR}/nmos/client_utils.h
     ${NMOS_CPP_DIR}/nmos/colorspace.h
     ${NMOS_CPP_DIR}/nmos/components.h
     ${NMOS_CPP_DIR}/nmos/copyable_atomic.h

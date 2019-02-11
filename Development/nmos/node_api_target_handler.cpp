@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/trim.hpp>
 #include "cpprest/http_client.h"
 #include "nmos/activation_mode.h"
+#include "nmos/client_utils.h"
 #include "nmos/connection_api.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_fields.h"
@@ -26,7 +27,7 @@ namespace nmos
                 const auto sender_id = nmos::fields::id(sender_data);
                 const auto manifest_href = nmos::fields::manifest_href(sender_data);
 
-                web::http::client::http_client client(manifest_href);
+                web::http::client::http_client client(manifest_href, nmos::make_http_client_config(model.settings));
                 return client.request(web::http::methods::GET).then([&gate](web::http::http_response res)
                 {
                     if (res.status_code() != web::http::status_codes::OK)
