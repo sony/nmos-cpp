@@ -183,7 +183,7 @@ namespace nmos
         }
     }
 
-    // Adapting web::logging::experimental::callback_function to slog isn't able to provide compile-time filtering or capture source location unfortunately
+    // Adapting web::logging::experimental::log_handler to slog isn't able to provide compile-time filtering or capture source location unfortunately
 
     SLOG_DETAIL_BEGIN_ANONYMOUS_NAMESPACE_IF_CONFIG_PER_TRANSLATION_UNIT
 

@@ -125,7 +125,7 @@ namespace nmos
         // experimental extension, to allow the global configuration resource to be modified
         system_api.support(U("/global/?"), methods::PATCH, [&model, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::api_gate gate(gate_, req, parameters); //
+            nmos::api_gate gate(gate_, req, parameters);
             return details::extract_json(req, gate).then([&model, &validator, req, res, parameters, gate](value body) mutable
             {
                 auto lock = model.write_lock();
