@@ -30,7 +30,7 @@
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
-    // port numbers [registry, node]: ports on which to listen for each API
+    // port numbers [registry, node]: ports to which clients should connect for each API
 
     // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
     //"http_port": 0,
@@ -64,17 +64,21 @@
     // registration_available [registry]: used to flag the Registration API as temporarily unavailable
     //"registration_available": true,
 
-    // port numbers [registry, node]: ports on which to listen for each API
+    // port numbers [registry, node]: ports to which clients should connect for each API
     // see http_port
 
     //"settings_port": 3209,
     //"logging_port": 5106,
 
-    // port numbers [registry]: ports on which to listen for each API
+    // port numbers [registry]: ports to which clients should connect for each API
     // see http_port
 
     //"admin_port": 3208,
     //"mdns_port": 3214,
+
+    // port_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
+    // each element of the array is an object like { "client": 80, "server": 8080 }
+    //"port_map": array-of-mappings,
 
     "don't worry": "about trailing commas"
 }

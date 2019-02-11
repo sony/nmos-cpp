@@ -10,6 +10,7 @@
 #include "nmos/node_behaviour.h"
 #include "nmos/node_resources.h"
 #include "nmos/process_utils.h"
+#include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
@@ -151,7 +152,10 @@ int main(int argc, char* argv[])
         listener_config.set_backlog(nmos::fields::listen_backlog(node_model.settings));
 
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
-        for (auto& port_router : port_routers) port_listeners.push_back(nmos::make_api_listener(port_router.first, port_router.second, listener_config, gate));
+        for (auto& port_router : port_routers)
+        {
+            port_listeners.push_back(nmos::make_api_listener(nmos::experimental::server_port(port_router.first, node_model.settings), port_router.second, listener_config, gate));
+        }
 
         // Open the API ports
 

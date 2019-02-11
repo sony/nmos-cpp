@@ -57,7 +57,7 @@ namespace nmos
         // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string_or registry_version{ U("registry_version"), U("v1.2") };
 
-        // port numbers [registry, node]: ports on which to listen for each API
+        // port numbers [registry, node]: ports to which clients should connect for each API
 
         // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
         const web::json::field_as_integer_or http_port{ U("http_port"), 0 };
@@ -121,17 +121,21 @@ namespace nmos
             // registration_available [registry]: used to flag the Registration API as temporarily unavailable
             const web::json::field_as_bool_or registration_available{ U("registration_available"), true };
 
-            // port numbers [registry, node]: ports on which to listen for each API
+            // port numbers [registry, node]: ports to which clients should connect for each API
             // see http_port
 
             const web::json::field_as_integer_or settings_port{ U("settings_port"), 3209 };
             const web::json::field_as_integer_or logging_port{ U("logging_port"), 5106 };
 
-            // port numbers [registry]: ports on which to listen for each API
+            // port numbers [registry]: ports to which clients should connect for each API
             // see http_port
 
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3214 };
+
+            // port_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
+            // each element of the array is an object like { "client": 80, "server": 8080 }
+            const web::json::field_as_value_or port_map{ U("port_map"), web::json::value::array() };
         }
     }
 }

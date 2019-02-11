@@ -45,7 +45,7 @@
     // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
     //"registry_version": "v1.2",
 
-    // port numbers [registry, node]: ports on which to listen for each API
+    // port numbers [registry, node]: ports to which clients should connect for each API
 
     // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
     //"http_port": 0,
@@ -82,11 +82,15 @@
     // label [registry, node]: used in resource description/label fields
     //"label": "",
 
-    // port numbers [registry, node]: ports on which to listen for each API
+    // port numbers [registry, node]: ports to which clients should connect for each API
     // see http_port
 
     //"settings_port": 3209,
     //"logging_port": 5106,
+
+    // port_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
+    // each element of the array is an object like { "client": 80, "server": 8080 }
+    //"port_map": array-of-mappings,
 
     "don't worry": "about trailing commas"
 }

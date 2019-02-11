@@ -15,6 +15,7 @@
 #include "nmos/query_ws_api.h"
 #include "nmos/registration_api.h"
 #include "nmos/registry_resources.h"
+#include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/system_api.h"
 #include "nmos/system_resources.h"
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
         web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, gate);
         web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(query_id, registry_model, registry_websockets, gate);
         web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, gate);
-        web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::fields::query_ws_port(registry_model.settings), nmos::make_slog_logging_callback(gate));
+        web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::experimental::server_port(nmos::fields::query_ws_port(registry_model.settings), registry_model.settings), nmos::make_slog_logging_callback(gate));
         query_ws_listener.set_validate_handler(std::ref(query_ws_validate_handler));
         query_ws_listener.set_open_handler(std::ref(query_ws_open_handler));
         query_ws_listener.set_close_handler(std::ref(query_ws_close_handler));
@@ -200,7 +201,10 @@ int main(int argc, char* argv[])
         listener_config.set_backlog(nmos::fields::listen_backlog(registry_model.settings));
 
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
-        for (auto& port_router : port_routers) port_listeners.push_back(nmos::make_api_listener(port_router.first, port_router.second, listener_config, gate));
+        for (auto& port_router : port_routers)
+        {
+            port_listeners.push_back(nmos::make_api_listener(nmos::experimental::server_port(port_router.first, registry_model.settings), port_router.second, listener_config, gate));
+        }
 
         // Start up registry management before any NMOS APIs are open
 

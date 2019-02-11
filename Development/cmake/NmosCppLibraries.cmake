@@ -529,6 +529,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/resource.cpp
     ${NMOS_CPP_DIR}/nmos/resources.cpp
     ${NMOS_CPP_DIR}/nmos/sdp_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/server_utils.cpp
     ${NMOS_CPP_DIR}/nmos/settings_api.cpp
     ${NMOS_CPP_DIR}/nmos/system_api.cpp
     ${NMOS_CPP_DIR}/nmos/system_resources.cpp
@@ -579,6 +580,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/resource.h
     ${NMOS_CPP_DIR}/nmos/resources.h
     ${NMOS_CPP_DIR}/nmos/sdp_utils.h
+    ${NMOS_CPP_DIR}/nmos/server_utils.h
     ${NMOS_CPP_DIR}/nmos/settings.h
     ${NMOS_CPP_DIR}/nmos/settings_api.h
     ${NMOS_CPP_DIR}/nmos/slog.h
