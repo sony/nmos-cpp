@@ -5,8 +5,8 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include "cpprest/api_router.h"
-#include "nmos/json_fields.h" // only for nmos::fields::id
 #include "nmos/id.h"
+#include "nmos/json_fields.h" // only for nmos::fields::id
 #include "nmos/mutex.h"
 #include "nmos/slog.h" // for slog::base_gate and slog::async_log_message
 
@@ -15,11 +15,16 @@ namespace nmos
 {
     namespace experimental
     {
-        // Log events just consist of their json data for now
-
+        // Log events just consist of their json data, plus some API metadata
         struct event
         {
+            event(web::json::value data, const nmos::tai& cursor) : data(std::move(data)), cursor(cursor) {}
+
+            // event data
             web::json::value data;
+
+            // unique cursor, just to allow the API to provide paginated access to events
+            nmos::tai cursor;
         };
 
         namespace tags
@@ -30,7 +35,7 @@ namespace nmos
 
         namespace details
         {
-            struct event_id
+            struct event_id_extractor
             {
                 typedef id result_type;
 
@@ -39,13 +44,15 @@ namespace nmos
                     return nmos::fields::id(event.data);
                 }
             };
+
+            // could use an ordered_unique index on cursor, rather than the sequenced index?
         }
 
         typedef boost::multi_index_container<
             event,
             boost::multi_index::indexed_by<
                 boost::multi_index::sequenced<boost::multi_index::tag<tags::sequenced>>,
-                boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, details::event_id>
+                boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, details::event_id_extractor>
             >
         > events;
 

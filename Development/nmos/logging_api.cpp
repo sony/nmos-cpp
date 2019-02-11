@@ -34,11 +34,6 @@ namespace nmos
             return logging_api;
         }
 
-        namespace fields
-        {
-            const web::json::field<tai> cursor{ U("cursor") };
-        }
-
         bool match_logging_rql(const web::json::value& value, const web::json::value& query)
         {
             return query.is_null() || rql::evaluator
@@ -181,14 +176,14 @@ namespace nmos
 
         inline nmos::tai extract_cursor(const nmos::experimental::events&, nmos::experimental::events::const_iterator it)
         {
-            return fields::cursor(it->data);
+            return it->cursor;
         }
 
         inline nmos::experimental::events::const_iterator lower_bound(const nmos::experimental::events& index, const nmos::tai& cursor)
         {
             return std::lower_bound(index.begin(), index.end(), cursor, [](const nmos::experimental::event& event, const nmos::tai& cursor)
             {
-                return fields::cursor(event.data) > cursor;
+                return event.cursor > cursor;
             });
         }
 
@@ -409,12 +404,13 @@ namespace nmos
                 std::ostringstream os; os << value; return utility::s2us(os.str());
             }
 
-            inline web::json::value json_from_message(const slog::async_log_message& message, const id& id, const tai& cursor)
+            inline web::json::value json_from_message(const slog::async_log_message& message, const id& id)
             {
                 auto json_message = web::json::value_of({
                     { U("timestamp"), ostringstreamed(slog::put_timestamp(message.timestamp(), "%Y-%m-%dT%H:%M:%06.3SZ")) },
                     { U("level"), message.level() },
                     { U("level_name"), ostringstreamed(slog::put_severity_name(message.level())) },
+                    // hmm, could be good to provide a log/settings option to redact thread_id and/or source_location?
                     { U("thread_id"), ostringstreamed(message.thread_id()) },
                     { U("source_location"), web::json::value_of({
                         { U("file"), utility::s2us(message.file()) },
@@ -422,9 +418,7 @@ namespace nmos
                         { U("function"), utility::s2us(message.function()) }
                     }, true) },
                     { U("message"), utility::s2us(message.str()) },
-                    // adding a unique id, and unique cursor, just to allow the API to provide access to events in the standard REST manner
-                    { U("id"), id },
-                    { U("cursor"), nmos::make_version(cursor) }
+                    { U("id"), id }
                 }, true);
 
                 // a few useful optional properties are only stashed in some log messages
@@ -444,7 +438,7 @@ namespace nmos
         // logically necessary, practically not!
         inline tai strictly_increasing_cursor(const events& events, tai cursor = tai_now())
         {
-            const auto most_recent = events.empty() ? tai{} : fields::cursor(events.front().data);
+            const auto most_recent = events.empty() ? tai{} : events.front().cursor;
             return cursor > most_recent ? cursor : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
         }
 
@@ -456,7 +450,7 @@ namespace nmos
             {
                 events.pop_back();
             }
-            events.push_front({ details::json_from_message(message, id, strictly_increasing_cursor(events)) });
+            events.push_front({ details::json_from_message(message, id), strictly_increasing_cursor(events) });
         }
     }
 }
