@@ -154,7 +154,9 @@ namespace nmos
 
         node_api.support(U("/receivers/") + nmos::patterns::resourceId.pattern + U("/target"), methods::PUT, [&model, target_handler, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            nmos::api_gate gate(gate_, req, parameters);
+            // hmmm, fragile; make shared, and capture into continuation below, in order to extend lifetime until after target handler
+            std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
+
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
@@ -168,11 +170,11 @@ namespace nmos
                 {
                     if (target_handler)
                     {
-                        return details::extract_json(req, gate).then([target_handler, validator, version, resourceId, res](value sender_data) mutable
+                        return details::extract_json(req, *gate).then([target_handler, validator, version, resourceId, res, gate](value sender_data) mutable
                         {
                             validator.validate(sender_data, experimental::make_nodeapi_receiver_target_put_request_schema_uri(version));
 
-                            return target_handler(resourceId, sender_data).then([res, sender_data]() mutable
+                            return target_handler(resourceId, sender_data, *gate).then([res, sender_data, gate]() mutable
                             {
                                 set_reply(res, status_codes::Accepted, sender_data);
                                 return true;

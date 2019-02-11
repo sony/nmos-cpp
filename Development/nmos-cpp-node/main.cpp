@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 
         // Configure the Node API
 
-        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, gate);
+        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model);
         port_routers[nmos::fields::node_port(node_model.settings)].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
         // start the underlying implementation and set up the node resources

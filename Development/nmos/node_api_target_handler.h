@@ -23,10 +23,10 @@ namespace nmos
     struct node_model;
 
     // handler for the Node API /receivers/{receiverId}/target endpoint
-    typedef std::function<pplx::task<void>(const nmos::id&, const web::json::value&)> node_api_target_handler;
+    typedef std::function<pplx::task<void>(const nmos::id&, const web::json::value&, slog::base_gate& gate)> node_api_target_handler;
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, slog::base_gate& gate);
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model);
 }
 
 #endif
