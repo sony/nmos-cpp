@@ -23,17 +23,27 @@ namespace web
                 // RAII helper for http_listener sessions (could be extracted to another header)
                 typedef pplx::open_close_guard<http_listener> http_listener_guard;
 
-                // using namespace api_router_using_declarations; // to make defining routers less verbose
+                // a using-directive with the following namespace makes defining routers less verbose
+                // using namespace api_router_using_declarations;
                 namespace api_router_using_declarations {}
 
+                // platform-specific wildcard address to accept connections for any address
+#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
+#else
+                const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
+#endif
+
+                // make an http address to be used to accept connections for the specified address and port
+                inline web::uri make_listener_uri(const utility::string_t& host_address, int port)
+                {
+                    return web::uri_builder().set_scheme(_XPLATSTR("http")).set_host(host_address).set_port(port).to_uri();
+                }
+
+                // make an http address to be used to accept connections for the specified port for any address
                 inline web::uri make_listener_uri(int port)
                 {
-#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-                    auto host_wildcard = _XPLATSTR("*"); // "weak wildcard"
-#else
-                    auto host_wildcard = _XPLATSTR("0.0.0.0");
-#endif
-                    return web::uri_builder().set_scheme(_XPLATSTR("http")).set_host(host_wildcard).set_port(port).to_uri();
+                    return make_listener_uri(host_wildcard, port);
                 }
 
                 typedef std::unordered_map<utility::string_t, utility::string_t> route_parameters;
