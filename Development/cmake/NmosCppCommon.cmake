@@ -64,6 +64,12 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
     set (BONJOUR_LIB libdns_sd.so)
 
+    # define __STDC_LIMIT_MACROS to work around C99 vs. C++11 bug in glibc 2.17
+    # should be harmless with newer glibc or in other scenarios
+    # see https://sourceware.org/bugzilla/show_bug.cgi?id=15366
+    # and https://sourceware.org/ml/libc-alpha/2013-04/msg00598.html
+    add_definitions(/D__STDC_LIMIT_MACROS)
+
     # add dependency required by nmos/filesystem_route.cpp
     if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
         set (PLATFORM_LIBS -lstdc++fs)
