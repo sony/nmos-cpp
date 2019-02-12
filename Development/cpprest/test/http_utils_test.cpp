@@ -36,6 +36,21 @@ BST_TEST_CASE(testGetHostPort)
         BST_REQUIRE_EQUAL(std::make_pair(utility::string_t{ U("29.31.37.41") }, 42), web::http::get_host_port(req));
     }
 
+    // 'X-Forwarded-Host'
+
+    {
+        web::http::http_request req;
+        req.headers().add(U("Host"), U("foobar:42"));
+        req.headers().add(U("X-Forwarded-Host"), U("baz, qux:57"));
+        BST_REQUIRE_EQUAL(std::make_pair(utility::string_t{ U("baz") }, 0), web::http::get_host_port(req));
+    }
+
+    {
+        web::http::http_request req;
+        req.headers().add(U("X-Forwarded-Host"), U("baz:69, qux:57"));
+        BST_REQUIRE_EQUAL(std::make_pair(utility::string_t{ U("baz") }, 69), web::http::get_host_port(req));
+    }
+
     // suspect edge cases...
 
     {

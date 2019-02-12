@@ -15,11 +15,18 @@ namespace web
             // That naive approach doesn't work at least on Windows.
             // See https://github.com/Microsoft/cpprestsdk/issues/401
             // Instead, try to use the 'Host' header.
-            auto header = req.headers().find(web::http::header_names::host);
+            // In order to support deployment behind a reverse proxy, also look at the 'X-Forwarded-Host' header.
+            // The RFC 7239 equivalent is the 'host=' directive in the 'Forwarded' header, but Apache and Lighttpd
+            // seem to add 'X-Forwarded-Host' out of the box.
+            // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
+            auto header = req.headers().find(U("X-Forwarded-Host"));
+            if (req.headers().end() == header) header = req.headers().find(web::http::header_names::host);
             if (req.headers().end() != header)
             {
-                auto colon = header->second.find(':');
-                return{ header->second.substr(0, colon), utility::string_t::npos != colon ? utility::conversions::details::scan_string(header->second.substr(colon + 1), 0) : 0 };
+                auto first = header->second.substr(0, header->second.find(','));
+                auto colon = first.find(':');
+                if (utility::string_t::npos == colon) return{ std::move(first), 0 };
+                return{ first.substr(0, colon), utility::conversions::details::scan_string(first.substr(colon + 1), 0) };
             }
             else
             {
