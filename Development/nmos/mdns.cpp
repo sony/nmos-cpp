@@ -202,6 +202,14 @@ namespace nmos
             {
                 return "nmos-cpp_" + service_api(service);
             }
+
+            inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
+            {
+                // the System API is defined by TR-1001-1:2018
+                if (nmos::service_types::system == service) return{ { 1, 0 } };
+                // all the other APIs are defined by IS-04, and should advertise consistent versions
+                return nmos::is04_versions::from_settings(settings);
+            }
         }
 
         std::string service_name(const nmos::service_type& service, const nmos::settings& settings)
@@ -231,7 +239,7 @@ namespace nmos
             const auto instance_port_or_disabled = details::service_port(service, settings);
             if (0 > instance_port_or_disabled) return;
             const auto instance_port = (uint16_t)instance_port_or_disabled;
-            const auto api_ver = nmos::is04_versions::from_settings(settings);
+            const auto api_ver = details::service_versions(service, settings);
             const auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver);
             const auto txt_records = mdns::make_txt_records(records);
 
