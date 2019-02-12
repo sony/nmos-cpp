@@ -123,27 +123,30 @@ int main(int argc, char* argv[])
 
         // Set up the APIs, assigning them to the configured ports
 
-        std::map<int, web::http::experimental::listener::api_router> port_routers;
+        typedef std::pair<utility::string_t, int> address_port;
+        std::map<address_port, web::http::experimental::listener::api_router> port_routers;
 
         // Configure the Settings API
 
-        port_routers[nmos::experimental::fields::settings_port(node_model.settings)].mount({}, nmos::experimental::make_settings_api(node_model, level, gate));
+        const address_port settings_address(nmos::experimental::fields::settings_address(node_model.settings), nmos::experimental::fields::settings_port(node_model.settings));
+        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(node_model, level, gate));
 
         // Configure the Logging API
 
-        port_routers[nmos::experimental::fields::logging_port(node_model.settings)].mount({}, nmos::experimental::make_logging_api(log_model, gate));
+        const address_port logging_address(nmos::experimental::fields::logging_address(node_model.settings), nmos::experimental::fields::logging_port(node_model.settings));
+        port_routers[logging_address].mount({}, nmos::experimental::make_logging_api(log_model, gate));
 
         // Configure the Node API
 
         nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model);
-        port_routers[nmos::fields::node_port(node_model.settings)].mount({}, nmos::make_node_api(node_model, target_handler, gate));
+        port_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
         // start the underlying implementation and set up the node resources
         auto node_resources = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         // Configure the Connection API
 
-        port_routers[nmos::fields::connection_port(node_model.settings)].mount({}, nmos::make_connection_api(node_model, gate));
+        port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
 
         // Set up the listeners for each API port
 
@@ -154,7 +157,11 @@ int main(int argc, char* argv[])
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
         for (auto& port_router : port_routers)
         {
-            port_listeners.push_back(nmos::make_api_listener(nmos::experimental::server_port(port_router.first, node_model.settings), port_router.second, listener_config, gate));
+            // default empty string means the wildcard address
+            const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
+            // map the configured client port to the server port on which to listen
+            // hmm, this should probably also take account of the address
+            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, listener_config, gate));
         }
 
         // Open the API ports

@@ -133,6 +133,16 @@ namespace nmos
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3214 };
 
+            // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+
+            const web::json::field_as_string_or settings_address{ U("settings_address"), U("") };
+            const web::json::field_as_string_or logging_address{ U("logging_address"), U("") };
+
+            // addresses [registry]: addresses on which to listen for each API, or empty string for the wildcard address
+
+            const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
+            const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
+
             // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
             // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
             const web::json::field_as_value_or proxy_map{ U("proxy_map"), web::json::value::array() };

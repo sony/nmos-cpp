@@ -88,6 +88,11 @@
     //"settings_port": 3209,
     //"logging_port": 5106,
 
+    // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+
+    //"settings_address": "127.0.0.1",
+    //"logging_address": "",
+
     // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
     // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
     //"proxy_map": array-of-mappings,

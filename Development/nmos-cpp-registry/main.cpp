@@ -134,23 +134,27 @@ int main(int argc, char* argv[])
 
         // Set up the APIs, assigning them to the configured ports
 
-        std::map<int, web::http::experimental::listener::api_router> port_routers;
+        typedef std::pair<utility::string_t, int> address_port;
+        std::map<address_port, web::http::experimental::listener::api_router> port_routers;
 
         // Configure the DNS-SD Browsing API
 
-        port_routers[nmos::experimental::fields::mdns_port(registry_model.settings)].mount({}, nmos::experimental::make_mdns_api(registry_model, gate));
+        const address_port mdns_address(nmos::experimental::fields::mdns_address(registry_model.settings), nmos::experimental::fields::mdns_port(registry_model.settings));
+        port_routers[mdns_address].mount({}, nmos::experimental::make_mdns_api(registry_model, gate));
 
         // Configure the Settings API
 
-        port_routers[nmos::experimental::fields::settings_port(registry_model.settings)].mount({}, nmos::experimental::make_settings_api(registry_model, level, gate));
+        const address_port settings_address(nmos::experimental::fields::settings_address(registry_model.settings), nmos::experimental::fields::settings_port(registry_model.settings));
+        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(registry_model, level, gate));
 
         // Configure the Logging API
 
-        port_routers[nmos::experimental::fields::logging_port(registry_model.settings)].mount({}, nmos::experimental::make_logging_api(log_model, gate));
+        const address_port logging_address(nmos::experimental::fields::logging_address(registry_model.settings), nmos::experimental::fields::logging_port(registry_model.settings));
+        port_routers[logging_address].mount({}, nmos::experimental::make_logging_api(log_model, gate));
 
         // Configure the Query API
 
-        port_routers[nmos::fields::query_port(registry_model.settings)].mount({}, nmos::make_query_api(registry_model, gate));
+        port_routers[{ {}, nmos::fields::query_port(registry_model.settings) }].mount({}, nmos::make_query_api(registry_model, gate));
 
         // "Source ID of the Query API instance issuing the data Grain"
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/queryapi-subscriptions-websocket.json
@@ -161,6 +165,7 @@ int main(int argc, char* argv[])
         web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, gate);
         web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(query_id, registry_model, registry_websockets, gate);
         web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, gate);
+        // hmm, websocket_listener currently always binds to the wildcard address
         web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::experimental::server_port(nmos::fields::query_ws_port(registry_model.settings), registry_model.settings), nmos::make_slog_logging_callback(gate));
         query_ws_listener.set_validate_handler(std::ref(query_ws_validate_handler));
         query_ws_listener.set_open_handler(std::ref(query_ws_open_handler));
@@ -168,11 +173,11 @@ int main(int argc, char* argv[])
 
         // Configure the Registration API
 
-        port_routers[nmos::fields::registration_port(registry_model.settings)].mount({}, nmos::make_registration_api(registry_model, gate));
+        port_routers[{ {}, nmos::fields::registration_port(registry_model.settings) }].mount({}, nmos::make_registration_api(registry_model, gate));
 
         // Configure the Node API
 
-        port_routers[nmos::fields::node_port(registry_model.settings)].mount({}, nmos::make_node_api(registry_model, {}, gate));
+        port_routers[{ {}, nmos::fields::node_port(registry_model.settings) }].mount({}, nmos::make_node_api(registry_model, {}, gate));
 
         // set up the node resources
         auto& self_resources = registry_model.node_resources;
@@ -187,12 +192,13 @@ int main(int argc, char* argv[])
         // set up the system global configuration resource
         nmos::experimental::assign_system_global_resource(registry_model.system_global_resource, registry_model.settings);
 
-        port_routers[nmos::fields::system_port(registry_model.settings)].mount({}, nmos::make_system_api(registry_model, gate));
+        port_routers[{ {}, nmos::fields::system_port(registry_model.settings) }].mount({}, nmos::make_system_api(registry_model, gate));
 
         // Configure the Admin UI
 
         const utility::string_t admin_filesystem_root = U("./admin");
-        port_routers[nmos::experimental::fields::admin_port(registry_model.settings)].mount({}, nmos::experimental::make_admin_ui(admin_filesystem_root, gate));
+        const address_port admin_address(nmos::experimental::fields::admin_address(registry_model.settings), nmos::experimental::fields::admin_port(registry_model.settings));
+        port_routers[admin_address].mount({}, nmos::experimental::make_admin_ui(admin_filesystem_root, gate));
 
         // Set up the listeners for each API port
 
@@ -203,7 +209,11 @@ int main(int argc, char* argv[])
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
         for (auto& port_router : port_routers)
         {
-            port_listeners.push_back(nmos::make_api_listener(nmos::experimental::server_port(port_router.first, registry_model.settings), port_router.second, listener_config, gate));
+            // default empty string means the wildcard address
+            const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
+            // map the configured client port to the server port on which to listen
+            // hmm, this should probably also take account of the address
+            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, registry_model.settings), port_router.second, listener_config, gate));
         }
 
         // Start up registry management before any NMOS APIs are open
