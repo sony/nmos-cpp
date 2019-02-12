@@ -133,9 +133,9 @@ namespace nmos
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3214 };
 
-            // port_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
-            // each element of the array is an object like { "client": 80, "server": 8080 }
-            const web::json::field_as_value_or port_map{ U("port_map"), web::json::value::array() };
+            // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
+            // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
+            const web::json::field_as_value_or proxy_map{ U("proxy_map"), web::json::value::array() };
 
             // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
             const web::json::field_as_string_or proxy_address{ U("proxy_address"), U("") };
