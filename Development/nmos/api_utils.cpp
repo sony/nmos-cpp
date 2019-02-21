@@ -37,9 +37,10 @@ namespace nmos
         }
 
         // extract JSON after checking the Content-Type header
-        pplx::task<web::json::value> extract_json(const web::http::http_request& req, slog::base_gate& gate)
+        template <typename HttpMessage>
+        inline pplx::task<web::json::value> extract_json(const HttpMessage& msg, slog::base_gate& gate)
         {
-            auto content_type = req.headers().content_type();
+            auto content_type = msg.headers().content_type();
             auto semicolon = content_type.find(U(';'));
             if (utility::string_t::npos != semicolon) content_type.erase(semicolon);
             boost::algorithm::trim(content_type);
@@ -50,7 +51,7 @@ namespace nmos
                 // but it's quite common so don't even bother to log a warning...
                 // See https://www.iana.org/assignments/media-types/application/json
 
-                return req.extract_json(false);
+                return msg.extract_json(false);
             }
             else if (content_type.empty())
             {
@@ -60,13 +61,23 @@ namespace nmos
 
                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing Content-Type: should be application/json";
 
-                return req.extract_json(true);
+                return msg.extract_json(true);
             }
             else
             {
                 // more helpful message than from web::http::details::http_msg_base::parse_and_check_content_type for unacceptable content-type
-                return pplx::task_from_exception<web::json::value>(web::http::http_exception(U("Incorrect Content-Type: ") + req.headers().content_type() + U(", should be application/json")));
+                return pplx::task_from_exception<web::json::value>(web::http::http_exception(U("Incorrect Content-Type: ") + msg.headers().content_type() + U(", should be application/json")));
             }
+        }
+
+        pplx::task<web::json::value> extract_json(const web::http::http_request& req, slog::base_gate& gate)
+        {
+            return extract_json<>(req, gate);
+        }
+
+        pplx::task<web::json::value> extract_json(const web::http::http_response& res, slog::base_gate& gate)
+        {
+            return extract_json<>(res, gate);
         }
 
         // add the NMOS-specified CORS response headers
