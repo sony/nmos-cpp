@@ -6,6 +6,12 @@
 #include "nmos/slog.h"
 #include "nmos/type.h"
 
+namespace web
+{
+    // because web::uri::encode_uri(de, web::uri::components::query) doesn't encode '&' (or ';', or '=')
+    utility::string_t uri_encode_query_value(const utility::string_t& value);
+}
+
 namespace nmos
 {
     namespace details
@@ -30,7 +36,7 @@ namespace nmos
                 if (element.second.is_string())
                 {
                     auto de = element.second.as_string();
-                    auto en = web::uri::encode_uri(de, web::uri::components::query);
+                    auto en = web::uri_encode_query_value(de);
                     element.second = web::json::value::string(en);
                 }
             }
@@ -408,3 +414,86 @@ namespace nmos
         return api_listener;
     }
 }
+
+#if 0
+#include "detail/private_access.h"
+
+namespace web
+{
+    namespace details
+    {
+        struct uri_encode_query_impl { typedef utility::string_t(*type)(const utf8string&); };
+    }
+
+    // because web::uri::encode_uri(de, web::uri::components::query) doesn't encode '&' (or ';', or '=')
+    utility::string_t uri_encode_query_value(const utility::string_t& value)
+    {
+        return detail::stowed<details::uri_encode_query_impl>::value(utility::conversions::details::print_utf8string(value));
+    }
+}
+
+template struct detail::stow_private<web::details::uri_encode_query_impl, &web::uri::encode_query_impl>;
+#else
+// unfortunately the private access trick doesn't work on Visual Studio 2015
+namespace web
+{
+    namespace details
+    {
+        // return true if c should be encoded in a query parameter value
+        inline bool is_query_value_unsafe(int c)
+        {
+            static const utf8string safe
+            {
+                // unreserved characters
+                "-._~"
+                // sub-delimiters - except '&' most importantly, the alternative separator ';'
+                // and '=' and '+' for clarity
+                "!$'()*,"
+                // path - except '%'
+                "/:@"
+                // query
+                "?"
+            };
+            return !utility::details::is_alnum(c) && utf8string::npos == safe.find((char)c);
+        }
+
+// Following function lifted from cpprestsdk/Release/src/uri/uri.cpp
+// Encodes all characters not in given set determined by given function.
+template<class F>
+utility::string_t encode_impl(const utf8string& raw, F should_encode)
+{
+    const utility::char_t* const hex = _XPLATSTR("0123456789ABCDEF");
+    utility::string_t encoded;
+    for (auto iter = raw.begin(); iter != raw.end(); ++iter)
+    {
+        // for utf8 encoded string, char ASCII can be greater than 127.
+        int ch = static_cast<unsigned char>(*iter);
+        // ch should be same under both utf8 and utf16.
+        if (should_encode(ch))
+        {
+            encoded.push_back(_XPLATSTR('%'));
+            encoded.push_back(hex[(ch >> 4) & 0xF]);
+            encoded.push_back(hex[ch & 0xF]);
+        }
+        else
+        {
+            // ASCII don't need to be encoded, which should be same on both utf8 and utf16.
+            encoded.push_back((utility::char_t)ch);
+        }
+    }
+    return encoded;
+}
+
+        utility::string_t uri_encode_query_impl(const utf8string& raw)
+        {
+            return details::encode_impl(raw, details::is_query_value_unsafe);
+        }
+    }
+
+    // because web::uri::encode_uri(de, web::uri::components::query) doesn't encode '&' (or ';', or '=')
+    utility::string_t uri_encode_query_value(const utility::string_t& value)
+    {
+        return details::uri_encode_query_impl(utility::conversions::details::print_utf8string(value));
+    }
+}
+#endif
