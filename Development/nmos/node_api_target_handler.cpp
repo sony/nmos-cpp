@@ -28,11 +28,12 @@ namespace nmos
                 const auto manifest_href = nmos::fields::manifest_href(sender_data);
 
                 web::http::client::http_client client(manifest_href, nmos::make_http_client_config(model.settings));
-                return client.request(web::http::methods::GET).then([&gate](web::http::http_response res)
+                return client.request(web::http::methods::GET).then([manifest_href, &gate](web::http::http_response res)
                 {
                     if (res.status_code() != web::http::status_codes::OK)
                     {
-                        throw web::http::http_exception(U("no sender sdp retrieved"));
+                        throw web::http::http_exception(U("Request for manifest: ") + manifest_href
+                            + U("failed, with response: ") + utility::ostringstreamed(res.status_code()) + U(" ") + res.reason_phrase());
                     }
 
                     // extract_string doesn't know about "application/sdp"
