@@ -370,9 +370,9 @@ namespace nmos
 
                     // when either task is completed, cancel and wait for the other to be completed
                     // and then merge the two sets of results
-                    resolve_task = pplx::when_any(both_tasks.begin(), both_tasks.end()).then([linked_source, both_tasks](std::pair<bool, size_t> first_result)
+                    resolve_task = pplx::when_any(both_tasks.begin(), both_tasks.end()).then([both_results, linked_source, both_tasks](std::pair<bool, size_t> first_result)
                     {
-                        linked_source.cancel();
+                        if (!both_results[first_result.second]->empty()) linked_source.cancel();
 
                         return both_tasks[0 == first_result.second ? 1 : 0];
                     }).then([results, both_results](pplx::task<bool> finally)
