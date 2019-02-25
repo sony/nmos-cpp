@@ -890,7 +890,7 @@ namespace nmos
 
                 auto& patches = body.as_array();
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Bulk operation requested for " << patches.size() << " " << resourceType;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(nmos::categories::change) << "Bulk operation requested for " << patches.size() << " " << resourceType;
 
                 std::vector<details::connection_resource_patch_response> results;
                 results.reserve(patches.size());
@@ -1121,7 +1121,7 @@ namespace nmos
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Operation requested for single " << id_type;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(nmos::categories::change) << "Operation requested for single " << id_type;
 
                 details::handle_connection_resource_patch(res, model, version, id_type, body, gate);
 

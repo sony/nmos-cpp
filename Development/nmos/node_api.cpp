@@ -163,6 +163,8 @@ namespace nmos
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
+            slog::log<slog::severities::info>(*gate, SLOG_FLF) << nmos::stash_category(nmos::categories::change) << "IS-04 subscription change requested for " << resourceId;
+
             auto resource = find_resource(resources, { resourceId, nmos::types::receiver });
             if (resources.end() != resource)
             {

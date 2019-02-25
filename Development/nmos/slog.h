@@ -33,6 +33,9 @@ namespace nmos
     {
         // log messages that may be used to generate a server access log
         const category access{ "access" };
+        
+        // log messages for requests that can change the system's configuration
+        const category change{ "change" };
 
         // categories that identify threads of execution
         const category node_behaviour{ "node_behaviour" };
