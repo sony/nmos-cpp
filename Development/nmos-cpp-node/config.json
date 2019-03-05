@@ -11,13 +11,13 @@
     // logging_level [registry, node]: integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
     //"logging_level": 0,
 
-    // host_name [registry, node]: the host name for which to advertise services or an empty string to use the default
+    // host_name [registry, node]: the host name for which to advertise services, also used to construct response headers and fields in the data model
     //"host_name": "",
 
     // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS)
     //"domain": "",
 
-    // host_address/host_addresses [registry, node]: used to construct response headers (e.g. 'Link' or 'Location') and URL fields in the data model
+    // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model
     //"host_address": "127.0.0.1",
     //"host_addresses": array-of-ip-address-strings,
 
@@ -39,7 +39,7 @@
     //"discovery_backoff_max": 30,
     //"discovery_backoff_factor": 1.5,
 
-    // registry_address [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
+    // registry_address [node]: IP address or host name used to construct request URLs for registry APIs (if not discovered via DNS-SD)
     //"registry_address": ip-address-string,
 
     // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
@@ -94,7 +94,7 @@
     //"logging_address": "",
 
     // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
-    // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
+    // for use with a reverse proxy; each element of the array is an object like { "client_port": 80, "server_port": 8080 }
     //"proxy_map": array-of-mappings,
 
     // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
@@ -102,6 +102,12 @@
 
     // proxy_port [registry, node]: forward proxy port
     //"proxy_port": 8080,
+
+    // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
+    //"client_secure": false,
+
+    // ca_certificate_file [registry, node]: full path of certification authority file
+    //"ca_certificate_file": "ca.pem",
 
     "don't worry": "about trailing commas"
 }

@@ -2,6 +2,7 @@
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
+#include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/channels.h"
 #include "nmos/colorspace.h"
 #include "nmos/connection_api.h" // for nmos::resolve_auto
@@ -42,12 +43,21 @@ namespace nmos
         for (const auto& version : nmos::is05_versions::from_settings(settings))
         {
             auto connection_uri = web::uri_builder()
-                .set_scheme(U("http"))
+                .set_scheme(nmos::http_scheme(settings))
                 .set_port(nmos::fields::connection_port(settings))
                 .set_path(U("/x-nmos/connection/") + make_api_version(version));
             auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
 
-            for (const auto& host_address : host_addresses)
+            if (nmos::experimental::fields::client_secure(settings))
+            {
+                const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
+
+                web::json::push_back(data[U("controls")], value_of({
+                    { U("href"), connection_uri.set_host(hostname).to_uri().to_string() },
+                    { U("type"), type }
+                }));
+            }
+            else for (const auto& host_address : host_addresses)
             {
                 web::json::push_back(data[U("controls")], value_of({
                     { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
@@ -222,10 +232,11 @@ namespace nmos
     web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings)
     {
         const auto version = *nmos::is05_versions::from_settings(settings).begin();
+        const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
 
         return web::uri_builder()
-            .set_scheme(U("http"))
-            .set_host(nmos::fields::host_address(settings))
+            .set_scheme(nmos::http_scheme(settings))
+            .set_host(nmos::experimental::fields::client_secure(settings) ? hostname : nmos::fields::host_address(settings))
             .set_port(nmos::fields::connection_port(settings))
             .set_path(U("/x-nmos/connection/") + make_api_version(version) + U("/single/senders/") + sender_id + U("/transportfile"))
             .to_uri();

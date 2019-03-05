@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include "cpprest/uri_schemes.h"
 #include "nmos/api_version.h"
 #include "nmos/slog.h"
 #include "nmos/type.h"
@@ -412,6 +413,18 @@ namespace nmos
         web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(host_address, port), std::move(config));
         nmos::support_api(api_listener, api, gate);
         return api_listener;
+    }
+
+    // returns "http" or "https" depending on settings
+    utility::string_t http_scheme(const nmos::settings& settings)
+    {
+        return web::http_scheme(nmos::experimental::fields::client_secure(settings));
+    }
+
+    // returns "ws" or "wss" depending on settings
+    utility::string_t ws_scheme(const nmos::settings& settings)
+    {
+        return web::ws_scheme(nmos::experimental::fields::client_secure(settings));
     }
 }
 

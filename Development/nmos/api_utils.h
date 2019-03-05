@@ -5,6 +5,7 @@
 #include <set>
 #include "cpprest/api_router.h"
 #include "cpprest/regex_utils.h"
+#include "nmos/settings.h" // just a forward declaration of nmos::settings
 
 namespace slog
 {
@@ -98,6 +99,12 @@ namespace nmos
     {
         return make_api_listener(web::http::experimental::listener::host_wildcard, port, api, config, gate);
     }
+
+    // returns "http" or "https" depending on settings
+    utility::string_t http_scheme(const nmos::settings& settings);
+
+    // returns "ws" or "wss" depending on settings
+    utility::string_t ws_scheme(const nmos::settings& settings);
 
     namespace details
     {

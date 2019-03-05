@@ -192,7 +192,7 @@ namespace nmos
 
         // query DNS Service Discovery for any Registration API in the specified browse domain, having priority in the specified range
         // otherwise, after timeout or cancellation, returning the fallback registration service
-        web::json::value discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        web::json::value discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& protocols, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             std::list<web::uri> registration_services;
 
@@ -200,7 +200,7 @@ namespace nmos
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
 
-                registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, versions, priorities, true, timeout, token).get();
+                registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, versions, priorities, protocols, true, timeout, token).get();
 
                 if (!registration_services.empty())
                 {
@@ -228,7 +228,7 @@ namespace nmos
         {
             return settings.has_field(nmos::fields::registry_address)
                 ? web::uri_builder()
-                .set_scheme(U("http"))
+                .set_scheme(nmos::http_scheme(settings))
                 .set_host(nmos::fields::registry_address(settings))
                 .set_port(nmos::fields::registration_port(settings))
                 .set_path(U("/x-nmos/registration/") + nmos::fields::registry_version(settings))
@@ -242,6 +242,7 @@ namespace nmos
             std::string browse_domain;
             std::set<nmos::api_version> versions;
             std::pair<nmos::service_priority, nmos::service_priority> priorities;
+            std::set<nmos::service_protocol> protocols;
             web::uri fallback_registration_service;
             int timeout;
             with_read_lock(model.mutex, [&]
@@ -250,6 +251,7 @@ namespace nmos
                 browse_domain = utility::us2s(nmos::fields::domain(settings));
                 versions = nmos::is04_versions::from_settings(settings);
                 priorities = { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
+                protocols = { nmos::get_service_protocol(settings) };
                 fallback_registration_service = get_registration_service(settings);
 
                 // use a short timeout that's long enough to ensure the daemon's cache is exhausted
@@ -258,7 +260,7 @@ namespace nmos
             });
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Trying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)timeout << " seconds";
-            auto registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, fallback_registration_service, gate, std::chrono::seconds(timeout), token);
+            auto registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, protocols, fallback_registration_service, gate, std::chrono::seconds(timeout), token);
             with_write_lock(model.mutex, [&] { model.settings[nmos::fields::registration_services] = registration_services; });
             model.notify();
 
