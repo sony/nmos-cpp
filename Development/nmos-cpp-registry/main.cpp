@@ -4,6 +4,7 @@
 #include "mdns/service_advertiser.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
+#include "nmos/log_gate.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/mdns.h"
@@ -19,7 +20,6 @@
 #include "nmos/system_api.h"
 #include "nmos/system_resources.h"
 #include "nmos/thread_utils.h"
-#include "main_gate.h"
 
 int main(int argc, char* argv[])
 {
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     std::ostream access_log(&access_log_buf);
 
     // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model);
+    nmos::experimental::log_gate gate(error_log, access_log, log_model);
 
     try
     {

@@ -560,6 +560,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is05_versions.h
     ${NMOS_CPP_DIR}/nmos/json_fields.h
     ${NMOS_CPP_DIR}/nmos/json_schema.h
+    ${NMOS_CPP_DIR}/nmos/log_gate.h
     ${NMOS_CPP_DIR}/nmos/log_manip.h
     ${NMOS_CPP_DIR}/nmos/log_model.h
     ${NMOS_CPP_DIR}/nmos/logging_api.h
