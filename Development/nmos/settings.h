@@ -143,6 +143,9 @@ namespace nmos
             const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
             const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
 
+            // logging_limit [registry, node]: maximum number of log events cached for the Logging API
+            const web::json::field_as_integer_or logging_limit{ U("logging_limit"), 1234 };
+
             // logging_paging_default/logging_paging_limit [registry, node]: default/maximum number of results per "page" when using the Logging API (a client may request a lower limit)
             const web::json::field_as_integer_or logging_paging_default{ U("logging_paging_default"), 100 };
             const web::json::field_as_integer_or logging_paging_limit{ U("logging_paging_limit"), 100 };

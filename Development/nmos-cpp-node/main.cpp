@@ -24,7 +24,6 @@ int main(int argc, char* argv[])
     nmos::node_model node_model;
 
     nmos::experimental::log_model log_model;
-    std::atomic<slog::severity> level{ slog::severities::more_info };
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -33,7 +32,7 @@ int main(int argc, char* argv[])
     std::ostream access_log(&access_log_buf);
 
     // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model, level);
+    main_gate gate(error_log, access_log, log_model);
 
     try
     {
@@ -71,8 +70,7 @@ int main(int argc, char* argv[])
 
         web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
 
-        web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
-        level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
+        web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(log_model.level)));
 
         // if the "host_addresses" setting was omitted, add all the interface addresses
         const auto interface_addresses = web::http::experimental::interface_addresses();
@@ -97,6 +95,14 @@ int main(int argc, char* argv[])
             web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
             web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
         }
+
+        // copy to the logging settings
+        // hmm, this is a bit icky, but simplest for now
+        log_model.settings = node_model.settings;
+
+        // the logging level is a special case because we want to turn it into an atomic value
+        // that can be read by logging statements without locking the mutex protecting the settings
+        log_model.level = nmos::fields::logging_level(log_model.settings);
 
         // Reconfigure the logging streams according to settings
         // (obviously, until this point, the logging gateway has its default behaviour...)
@@ -129,7 +135,7 @@ int main(int argc, char* argv[])
         // Configure the Settings API
 
         const address_port settings_address(nmos::experimental::fields::settings_address(node_model.settings), nmos::experimental::fields::settings_port(node_model.settings));
-        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(node_model, level, gate));
+        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(node_model, log_model, gate));
 
         // Configure the Logging API
 

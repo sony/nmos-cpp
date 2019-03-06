@@ -56,11 +56,15 @@ namespace nmos
             return cursor > most_recent ? cursor : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
         }
 
-        void insert_log_event(log_events& events, const slog::async_log_message& message, const id& id)
+        void insert_log_event(log_events& events, const slog::async_log_message& message, const id& id, std::size_t max_size)
         {
-            // capacity ought to be part of log/settings
-            const std::size_t capacity = 1234;
-            while (events.size() > capacity)
+            if (0 == max_size)
+            {
+                events.clear();
+                return;
+            }
+
+            while (events.size() >= max_size)
             {
                 events.pop_back();
             }

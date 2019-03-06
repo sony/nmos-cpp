@@ -1,6 +1,7 @@
 #ifndef NMOS_LOG_MODEL_H
 #define NMOS_LOG_MODEL_H
 
+#include <atomic>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
@@ -9,11 +10,7 @@
 #include "nmos/json_fields.h" // only for nmos::fields::id
 #include "nmos/mutex.h"
 #include "nmos/settings.h"
-
-namespace slog
-{
-    class async_log_message;
-}
+#include "slog/all_in_one.h" // for slog::async_log_message and slog::severity, etc.
 
 // This is an experimental extension to expose logging via a REST API
 namespace nmos
@@ -63,6 +60,10 @@ namespace nmos
             // application-wide configuration
             nmos::settings settings;
 
+            // the logging level is a special case because we want to turn it into an atomic value
+            // that can be read by logging statements without locking the mutex protecting the settings
+            std::atomic<slog::severity> level{ nmos::fields::logging_level.default_value };
+
             // log events themselves
             nmos::experimental::log_events events;
 
@@ -73,7 +74,7 @@ namespace nmos
         };
 
         // push a log event into the model keeping a maximum size (lock the mutex before calling this)
-        void insert_log_event(log_events& events, const slog::async_log_message& message, const id& id);
+        void insert_log_event(log_events& events, const slog::async_log_message& message, const id& id, std::size_t max_size = 1234);
     }
 }
 

@@ -34,11 +34,11 @@ namespace
     class main_gate : public slog::base_gate
     {
     public:
-        main_gate(std::ostream& error_log, std::ostream& access_log, nmos::experimental::log_model& model, std::atomic<slog::severity>& level)
-            : error_log(error_log), access_log(access_log), model(model), level(level), async_service({ *this }) {}
+        main_gate(std::ostream& error_log, std::ostream& access_log, nmos::experimental::log_model& model)
+            : error_log(error_log), access_log(access_log), model(model), async_service({ *this }) {}
         virtual ~main_gate() {}
 
-        virtual bool pertinent(slog::severity level) const { return this->level <= level; }
+        virtual bool pertinent(slog::severity level) const { return model.level <= level; }
         virtual void log(const slog::log_message& message) const { async_service(message); }
 
     private:
@@ -46,7 +46,6 @@ namespace
         std::ostream& access_log;
         nmos::experimental::log_model& model;
         nmos::id_generator generate_id;
-        std::atomic<slog::severity>& level;
 
         struct service_function
         {
@@ -71,7 +70,7 @@ namespace
             {
                 access_log << nmos::common_log_format(message);
             }
-            nmos::experimental::insert_log_event(model.events, message, generate_id());
+            nmos::experimental::insert_log_event(model.events, message, generate_id(), nmos::experimental::fields::logging_limit(model.settings));
         }
 
         mutable slog::async_log_service<service_function> async_service;
