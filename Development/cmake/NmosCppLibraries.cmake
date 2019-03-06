@@ -532,6 +532,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/resources.cpp
     ${NMOS_CPP_DIR}/nmos/sdp_utils.cpp
     ${NMOS_CPP_DIR}/nmos/server_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/settings.cpp
     ${NMOS_CPP_DIR}/nmos/settings_api.cpp
     ${NMOS_CPP_DIR}/nmos/system_api.cpp
     ${NMOS_CPP_DIR}/nmos/system_resources.cpp

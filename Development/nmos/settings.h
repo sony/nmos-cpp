@@ -8,7 +8,12 @@ namespace nmos
 {
     typedef web::json::value settings;
 
-    // Field accessors simplify access to fields in the settings
+    // Inserts run-time default settings for those which are impossible to determine at compile-time
+    // if not already present in the specified settings
+    void insert_node_default_settings(settings& settings);
+    void insert_registry_default_settings(settings& settings);
+
+    // Field accessors simplify access to fields in the settings and provide the compile-time defaults
     namespace fields
     {
         // error_log [registry, node]: filename for the error log or an empty string to write to stderr
@@ -109,7 +114,7 @@ namespace nmos
 {
     namespace experimental
     {
-        // Field accessors simplify access to fields in the settings
+        // Field accessors simplify access to fields in the settings and provide the compile-time defaults
         namespace fields
         {
             // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration

@@ -1,6 +1,5 @@
 #include <fstream>
 #include <iostream>
-#include "cpprest/host_utils.h"
 #include "cpprest/ws_listener.h"
 #include "mdns/service_advertiser.h"
 #include "nmos/admin_ui.h"
@@ -72,38 +71,7 @@ int main(int argc, char* argv[])
 
         // Prepare run-time default settings (different than header defaults)
 
-        web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
-
-        web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(log_model.level)));
-
-        // if the "host_addresses" setting was omitted, add all the interface addresses
-        const auto interface_addresses = web::http::experimental::interface_addresses();
-        if (!interface_addresses.empty())
-        {
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
-        }
-
-        // if the "host_address" setting was omitted, use the first of the "host_addresses"
-        if (registry_model.settings.has_field(nmos::fields::host_addresses))
-        {
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(registry_model.settings)[0]));
-        }
-
-        // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
-        if (registry_model.settings.has_field(nmos::fields::http_port))
-        {
-            const auto http_port = nmos::fields::http_port(registry_model.settings);
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_port, http_port));
-            // can't share a port between an http_listener and a websocket_listener, so don't apply this one...
-            //web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_ws_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::node_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::system_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::mdns_port, http_port));
-        }
+        nmos::insert_registry_default_settings(registry_model.settings);
 
         // copy to the logging settings
         // hmm, this is a bit icky, but simplest for now
