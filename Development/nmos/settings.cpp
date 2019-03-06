@@ -54,4 +54,20 @@ namespace nmos
     {
         details::insert_default_settings(settings, true);
     }
+
+    // Get host name from settings or return the default (system) host name
+    utility::string_t get_host_name(const settings& settings)
+    {
+        return !nmos::fields::host_name(settings).empty()
+            ? nmos::fields::host_name(settings)
+            : web::http::experimental::host_name();
+    }
+
+    // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')
+    // when a request URL is not available
+    utility::string_t get_host(const settings& settings)
+    {
+        // just return the preferred host address
+        return nmos::fields::host_address(settings);
+    }
 }

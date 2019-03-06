@@ -216,7 +216,7 @@ namespace nmos
         {
             // this just serves as an example of a possible service naming strategy
             // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
-            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::fields::host_address(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
         // helper function for registering the specified service (API)

@@ -258,7 +258,7 @@ namespace nmos
                 auto req_host_port = web::http::get_host_port(req);
                 if (req_host_port.first.empty())
                 {
-                    req_host_port.first = nmos::fields::host_address(settings);
+                    req_host_port.first = nmos::get_host(settings);
                 }
                 if (0 == req_host_port.second)
                 {

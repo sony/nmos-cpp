@@ -14,18 +14,16 @@ namespace nmos
         using web::json::value_from_elements;
         using web::json::value_of;
 
-        const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
-
         auto data = details::make_resource_core(id, settings);
 
         auto uri = web::uri_builder()
             .set_scheme(U("http"))
-            .set_host(nmos::fields::host_address(settings))
+            .set_host(nmos::get_host(settings))
             .set_port(nmos::fields::node_port(settings))
             .to_uri();
 
         data[U("href")] = value::string(uri.to_string());
-        data[U("hostname")] = value::string(hostname);
+        data[U("hostname")] = value::string(nmos::get_host_name(settings));
         data[U("api")][U("versions")] = value_from_elements(nmos::is04_versions::from_settings(settings) | boost::adaptors::transformed(make_api_version));
 
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });

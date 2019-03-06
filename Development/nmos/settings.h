@@ -13,6 +13,13 @@ namespace nmos
     void insert_node_default_settings(settings& settings);
     void insert_registry_default_settings(settings& settings);
 
+    // Get host name from settings or return the default (system) host name
+    utility::string_t get_host_name(const settings& settings);
+
+    // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')
+    // when a request URL is not available
+    utility::string_t get_host(const settings& settings);
+
     // Field accessors simplify access to fields in the settings and provide the compile-time defaults
     namespace fields
     {

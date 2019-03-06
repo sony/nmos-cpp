@@ -102,9 +102,9 @@ int main(int argc, char* argv[])
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << registry_model.settings.serialize();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
 
         // Set up the APIs, assigning them to the configured ports
 
