@@ -568,7 +568,7 @@ namespace nmos
                 {
                     const auto transport_type_data = details::get_transport_type_data(transport_file);
 
-                    if (!transport_type_data.second.empty())
+                    if (!transport_type_data.first.empty())
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Processing transport file";
 

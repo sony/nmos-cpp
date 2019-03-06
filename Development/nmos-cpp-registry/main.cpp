@@ -1,10 +1,10 @@
 #include <fstream>
 #include <iostream>
-#include "cpprest/host_utils.h"
 #include "cpprest/ws_listener.h"
 #include "mdns/service_advertiser.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
+#include "nmos/log_gate.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/mdns.h"
@@ -20,7 +20,6 @@
 #include "nmos/system_api.h"
 #include "nmos/system_resources.h"
 #include "nmos/thread_utils.h"
-#include "main_gate.h"
 
 int main(int argc, char* argv[])
 {
@@ -29,7 +28,6 @@ int main(int argc, char* argv[])
     nmos::registry_model registry_model;
 
     nmos::experimental::log_model log_model;
-    std::atomic<slog::severity> level{ slog::severities::more_info };
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -38,7 +36,7 @@ int main(int argc, char* argv[])
     std::ostream access_log(&access_log_buf);
 
     // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model, level);
+    nmos::experimental::log_gate gate(error_log, access_log, log_model);
 
     try
     {
@@ -73,39 +71,15 @@ int main(int argc, char* argv[])
 
         // Prepare run-time default settings (different than header defaults)
 
-        web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
+        nmos::insert_registry_default_settings(registry_model.settings);
 
-        web::json::insert(registry_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
-        level = nmos::fields::logging_level(registry_model.settings); // synchronize atomic value with settings
+        // copy to the logging settings
+        // hmm, this is a bit icky, but simplest for now
+        log_model.settings = registry_model.settings;
 
-        // if the "host_addresses" setting was omitted, add all the interface addresses
-        const auto interface_addresses = web::http::experimental::interface_addresses();
-        if (!interface_addresses.empty())
-        {
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
-        }
-
-        // if the "host_address" setting was omitted, use the first of the "host_addresses"
-        if (registry_model.settings.has_field(nmos::fields::host_addresses))
-        {
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(registry_model.settings)[0]));
-        }
-
-        // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
-        if (registry_model.settings.has_field(nmos::fields::http_port))
-        {
-            const auto http_port = nmos::fields::http_port(registry_model.settings);
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_port, http_port));
-            // can't share a port between an http_listener and a websocket_listener, so don't apply this one...
-            //web::json::insert(registry_model.settings, std::make_pair(nmos::fields::query_ws_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::node_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::fields::system_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));
-            web::json::insert(registry_model.settings, std::make_pair(nmos::experimental::fields::mdns_port, http_port));
-        }
+        // the logging level is a special case because we want to turn it into an atomic value
+        // that can be read by logging statements without locking the mutex protecting the settings
+        log_model.level = nmos::fields::logging_level(log_model.settings);
 
         // Reconfigure the logging streams according to settings
         // (obviously, until this point, the logging gateway has its default behaviour...)
@@ -128,9 +102,9 @@ int main(int argc, char* argv[])
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << registry_model.settings.serialize();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: " << nmos::fields::host_address(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
 
         // Set up the APIs, assigning them to the configured ports
 
@@ -145,7 +119,7 @@ int main(int argc, char* argv[])
         // Configure the Settings API
 
         const address_port settings_address(nmos::experimental::fields::settings_address(registry_model.settings), nmos::experimental::fields::settings_port(registry_model.settings));
-        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(registry_model, level, gate));
+        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(registry_model, log_model, gate));
 
         // Configure the Logging API
 

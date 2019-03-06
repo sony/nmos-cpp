@@ -20,7 +20,6 @@ set(NMOS_CPP_NODE_SOURCES
     ${NMOS_CPP_DIR}/nmos-cpp-node/node_implementation.cpp
     )
 set(NMOS_CPP_NODE_HEADERS
-    ${NMOS_CPP_DIR}/nmos-cpp-node/main_gate.h
     ${NMOS_CPP_DIR}/nmos-cpp-node/node_implementation.h
     )
 
@@ -49,7 +48,6 @@ set(NMOS_CPP_REGISTRY_SOURCES
     ${NMOS_CPP_DIR}/nmos-cpp-registry/main.cpp
     )
 set(NMOS_CPP_REGISTRY_HEADERS
-    ${NMOS_CPP_DIR}/nmos-cpp-registry/main_gate.h
     )
 
 add_executable(

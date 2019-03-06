@@ -50,10 +50,8 @@ namespace nmos
 
             if (nmos::experimental::fields::client_secure(settings))
             {
-                const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
-
                 web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), connection_uri.set_host(hostname).to_uri().to_string() },
+                    { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
                     { U("type"), type }
                 }));
             }
@@ -232,11 +230,10 @@ namespace nmos
     web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings)
     {
         const auto version = *nmos::is05_versions::from_settings(settings).begin();
-        const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
 
         return web::uri_builder()
             .set_scheme(nmos::http_scheme(settings))
-            .set_host(nmos::experimental::fields::client_secure(settings) ? hostname : nmos::fields::host_address(settings))
+            .set_host(nmos::get_host(settings))
             .set_port(nmos::fields::connection_port(settings))
             .set_path(U("/x-nmos/connection/") + make_api_version(version) + U("/single/senders/") + sender_id + U("/transportfile"))
             .to_uri();

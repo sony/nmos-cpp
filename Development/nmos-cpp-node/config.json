@@ -93,6 +93,13 @@
     //"settings_address": "127.0.0.1",
     //"logging_address": "",
 
+    // logging_limit [registry, node]: maximum number of log events cached for the Logging API
+    //"logging_limit": 1234,
+
+    // logging_paging_default/logging_paging_limit [registry, node]: default/maximum number of results per "page" when using the Logging API (a client may request a lower limit)
+    //"logging_paging_default": 100,
+    //"logging_paging_limit": 100,
+
     // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
     // for use with a reverse proxy; each element of the array is an object like { "client_port": 80, "server_port": 8080 }
     //"proxy_map": array-of-mappings,

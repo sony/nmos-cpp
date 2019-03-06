@@ -3,6 +3,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include "nmos/api_utils.h"
 #include "nmos/query_utils.h"
+#include "nmos/slog.h"
 #include "rql/rql.h"
 
 namespace nmos
@@ -47,12 +48,12 @@ namespace nmos
         }
 
         // Predicate to match events against a query
-        struct event_query
+        struct log_event_query
         {
-            typedef const nmos::experimental::event& argument_type;
+            typedef const nmos::experimental::log_event& argument_type;
             typedef bool result_type;
 
-            event_query(const web::json::value& flat_query_params);
+            log_event_query(const web::json::value& flat_query_params);
 
             result_type operator()(argument_type event) const;
 
@@ -63,7 +64,7 @@ namespace nmos
             web::json::value rql_query;
         };
 
-        event_query::event_query(const web::json::value& flat_query_params)
+        log_event_query::log_event_query(const web::json::value& flat_query_params)
             : basic_query(web::json::unflatten(flat_query_params))
         {
             if (basic_query.has_field(U("paging")))
@@ -81,16 +82,16 @@ namespace nmos
             }
         }
 
-        event_query::result_type event_query::operator()(argument_type event) const
+        log_event_query::result_type log_event_query::operator()(argument_type event) const
         {
             return web::json::match_query(event.data, basic_query, web::json::match_icase | web::json::match_substr)
                 && match_logging_rql(event.data, rql_query);
         }
 
         // Cursor-based paging parameters
-        struct event_paging
+        struct log_event_paging
         {
-            explicit event_paging(const web::json::value& flat_query_params, const nmos::tai& max_until = nmos::tai_max(), size_t default_limit = (std::numeric_limits<size_t>::max)(), size_t max_limit = (std::numeric_limits<size_t>::max)());
+            explicit log_event_paging(const web::json::value& flat_query_params, const nmos::tai& max_until = nmos::tai_max(), size_t default_limit = (std::numeric_limits<size_t>::max)(), size_t max_limit = (std::numeric_limits<size_t>::max)());
 
             // determine if the range [until, since) and limit are valid
             bool valid() const;
@@ -109,13 +110,13 @@ namespace nmos
             bool since_specified;
 
             template <typename Predicate>
-            boost::any_range<const nmos::experimental::event, boost::bidirectional_traversal_tag, const nmos::experimental::event&, std::ptrdiff_t> page(const nmos::experimental::events& events, Predicate match)
+            boost::any_range<const nmos::experimental::log_event, boost::bidirectional_traversal_tag, const nmos::experimental::log_event&, std::ptrdiff_t> page(const nmos::experimental::log_events& events, Predicate match)
             {
                 return paging::cursor_based_page(events, match, until, since, limit, !since_specified);
             }
         };
 
-        event_paging::event_paging(const web::json::value& flat_query_params, const nmos::tai& max_until, size_t default_limit, size_t max_limit)
+        log_event_paging::log_event_paging(const web::json::value& flat_query_params, const nmos::tai& max_until, size_t default_limit, size_t max_limit)
             : until(max_until)
             , since(nmos::tai_min())
             , limit(default_limit)
@@ -158,7 +159,7 @@ namespace nmos
             }
         }
 
-        bool event_paging::valid() const
+        bool log_event_paging::valid() const
         {
             return since <= until;
         }
@@ -166,7 +167,7 @@ namespace nmos
         namespace details
         {
             // make user error information (to be used with status_codes::BadRequest)
-            utility::string_t make_valid_paging_error(const nmos::experimental::event_paging& paging)
+            utility::string_t make_valid_paging_error(const nmos::experimental::log_event_paging& paging)
             {
                 return U("the value of the 'paging.since' parameter must be less than or equal to the value of the 'paging.until' parameter");
             }
@@ -174,14 +175,14 @@ namespace nmos
 
         // Cursor-based paging customisation points
 
-        inline nmos::tai extract_cursor(const nmos::experimental::events&, nmos::experimental::events::const_iterator it)
+        inline nmos::tai extract_cursor(const nmos::experimental::log_events&, nmos::experimental::log_events::const_iterator it)
         {
             return it->cursor;
         }
 
-        inline nmos::experimental::events::const_iterator lower_bound(const nmos::experimental::events& index, const nmos::tai& cursor)
+        inline nmos::experimental::log_events::const_iterator lower_bound(const nmos::experimental::log_events& index, const nmos::tai& cursor)
         {
-            return std::lower_bound(index.begin(), index.end(), cursor, [](const nmos::experimental::event& event, const nmos::tai& cursor)
+            return std::lower_bound(index.begin(), index.end(), cursor, [](const nmos::experimental::log_event& event, const nmos::tai& cursor)
             {
                 return event.cursor > cursor;
             });
@@ -232,7 +233,7 @@ namespace nmos
                 return flat_query_params;
             }
 
-            web::uri make_query_uri_with_no_paging(const web::http::http_request& req)
+            web::uri make_query_uri_with_no_paging(const web::http::http_request& req, const nmos::settings& settings)
             {
                 // could rebuild the query parameters from the decoded and parsed query string, rather than individually deleting the paging parameters from the request?
                 auto query_params = parse_query_parameters(req.request_uri().query());
@@ -253,8 +254,16 @@ namespace nmos
                 // See https://tools.ietf.org/html/rfc5988#section-5
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md
 
-                // get the request host and port
+                // get the request host and port (or use the primary host address, and port, from settings)
                 auto req_host_port = web::http::get_host_port(req);
+                if (req_host_port.first.empty())
+                {
+                    req_host_port.first = nmos::get_host(settings);
+                }
+                if (0 == req_host_port.second)
+                {
+                    req_host_port.second = nmos::experimental::fields::logging_port(settings);
+                }
 
                 return web::uri_builder()
                     .set_scheme(U("http"))
@@ -265,7 +274,7 @@ namespace nmos
                     .to_uri();
             }
 
-            void add_paging_headers(web::http::http_headers& headers, const nmos::experimental::event_paging& paging, const web::uri& base_link)
+            void add_paging_headers(web::http::http_headers& headers, const nmos::experimental::log_event_paging& paging, const web::uri& base_link)
             {
                 // X-Paging-Limit "identifies the current limit being used for paging. This may not match the requested value if the requested value was too high for the implementation"
                 headers.add(U("X-Paging-Limit"), paging.limit);
@@ -322,29 +331,29 @@ namespace nmos
 
                 // Configure the query predicate
 
-                event_query match(flat_query_params);
+                log_event_query match(flat_query_params);
 
                 // Configure the paging parameters
 
-                // default limit ought to be part of log/settings
-                event_paging paging(flat_query_params, tai_now(), 100);
+                // Use the paging limit (default and max) from the setings
+                log_event_paging paging(flat_query_params, tai_now(), (size_t)nmos::experimental::fields::logging_paging_default(model.settings), (size_t)nmos::experimental::fields::logging_paging_limit(model.settings));
 
                 if (paging.valid())
                 {
                     // Get the payload and update the paging parameters
-                    struct default_constructible_event_query_wrapper { const event_query* impl; bool operator()(const event& e) const { return (*impl)(e); } };
+                    struct default_constructible_event_query_wrapper { const log_event_query* impl; bool operator()(const log_event& e) const { return (*impl)(e); } };
                     auto page = paging.page(model.events, default_constructible_event_query_wrapper{ &match });
 
                     size_t count = 0;
 
                     set_reply(res, status_codes::OK,
                         web::json::serialize(page,
-                            [&count](const event& event){ ++count; return event.data; }),
+                            [&count](const log_event& event){ ++count; return event.data; }),
                         U("application/json"));
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Returning " << count << " matching log events";
 
-                    details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req));
+                    details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req, model.settings));
                 }
                 else
                 {
@@ -377,11 +386,9 @@ namespace nmos
 
                 const string_t eventId = parameters.at(nmos::patterns::resourceId.name);
 
-                typedef events::index<tags::id>::type by_id;
-                by_id& ids = model.events.get<tags::id>();
-
-                auto event = ids.find(eventId);
-                if (ids.end() != event)
+                auto& by_id = model.events.get<tags::id>();
+                auto event = by_id.find(eventId);
+                if (by_id.end() != event)
                 {
                     set_reply(res, status_codes::OK, event->data);
                 }
@@ -394,63 +401,6 @@ namespace nmos
             });
 
             return logging_api;
-        }
-
-        namespace details
-        {
-            template <typename T>
-            inline utility::string_t ostringstreamed(const T& value)
-            {
-                std::ostringstream os; os << value; return utility::s2us(os.str());
-            }
-
-            inline web::json::value json_from_message(const slog::async_log_message& message, const id& id)
-            {
-                auto json_message = web::json::value_of({
-                    { U("timestamp"), ostringstreamed(slog::put_timestamp(message.timestamp(), "%Y-%m-%dT%H:%M:%06.3SZ")) },
-                    { U("level"), message.level() },
-                    { U("level_name"), ostringstreamed(slog::put_severity_name(message.level())) },
-                    // hmm, could be good to provide a log/settings option to redact thread_id and/or source_location?
-                    { U("thread_id"), ostringstreamed(message.thread_id()) },
-                    { U("source_location"), web::json::value_of({
-                        { U("file"), utility::s2us(message.file()) },
-                        { U("line"), message.line() },
-                        { U("function"), utility::s2us(message.function()) }
-                    }, true) },
-                    { U("message"), utility::s2us(message.str()) },
-                    { U("id"), id }
-                }, true);
-
-                // a few useful optional properties are only stashed in some log messages
-                const auto http_method = nmos::get_http_method_stash(message.stream());
-                if (!http_method.empty()) json_message[U("http_method")] = web::json::value::string(http_method);
-                const auto request_uri = nmos::get_request_uri_stash(message.stream());
-                if (!request_uri.is_empty()) json_message[U("request_uri")] = web::json::value::string(request_uri.to_string());
-                const auto route_parameters = nmos::get_route_parameters_stash(message.stream());
-                if (!route_parameters.empty()) json_message[U("route_parameters")] = web::json::value_from_fields(route_parameters);
-                const auto categories = nmos::get_categories_stash(message.stream());
-                if (!categories.empty()) json_message[U("tags")][U("category")] = web::json::value_from_elements(categories | boost::adaptors::transformed(utility::s2us));
-
-                return json_message;
-            }
-        }
-
-        // logically necessary, practically not!
-        inline tai strictly_increasing_cursor(const events& events, tai cursor = tai_now())
-        {
-            const auto most_recent = events.empty() ? tai{} : events.front().cursor;
-            return cursor > most_recent ? cursor : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
-        }
-
-        void insert_log_event(events& events, const slog::async_log_message& message, const id& id)
-        {
-            // capacity ought to be part of log/settings
-            const std::size_t capacity = 1234;
-            while (events.size() > capacity)
-            {
-                events.pop_back();
-            }
-            events.push_front({ details::json_from_message(message, id), strictly_increasing_cursor(events) });
         }
     }
 }

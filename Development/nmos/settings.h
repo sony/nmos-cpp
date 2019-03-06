@@ -8,7 +8,19 @@ namespace nmos
 {
     typedef web::json::value settings;
 
-    // Field accessors simplify access to fields in the settings
+    // Inserts run-time default settings for those which are impossible to determine at compile-time
+    // if not already present in the specified settings
+    void insert_node_default_settings(settings& settings);
+    void insert_registry_default_settings(settings& settings);
+
+    // Get host name from settings or return the default (system) host name
+    utility::string_t get_host_name(const settings& settings);
+
+    // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')
+    // when a request URL is not available
+    utility::string_t get_host(const settings& settings);
+
+    // Field accessors simplify access to fields in the settings and provide the compile-time defaults
     namespace fields
     {
         // error_log [registry, node]: filename for the error log or an empty string to write to stderr
@@ -109,7 +121,7 @@ namespace nmos
 {
     namespace experimental
     {
-        // Field accessors simplify access to fields in the settings
+        // Field accessors simplify access to fields in the settings and provide the compile-time defaults
         namespace fields
         {
             // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
@@ -142,6 +154,13 @@ namespace nmos
 
             const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
             const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
+
+            // logging_limit [registry, node]: maximum number of log events cached for the Logging API
+            const web::json::field_as_integer_or logging_limit{ U("logging_limit"), 1234 };
+
+            // logging_paging_default/logging_paging_limit [registry, node]: default/maximum number of results per "page" when using the Logging API (a client may request a lower limit)
+            const web::json::field_as_integer_or logging_paging_default{ U("logging_paging_default"), 100 };
+            const web::json::field_as_integer_or logging_paging_limit{ U("logging_paging_limit"), 100 };
 
             // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
             // for use with a reverse proxy; each element of the array is an object like { "client_port": 80, "server_port": 8080 }

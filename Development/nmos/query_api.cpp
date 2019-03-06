@@ -129,7 +129,7 @@ namespace nmos
             auto req_host_port = web::http::get_host_port(req);
             if (req_host_port.first.empty())
             {
-                req_host_port.first = nmos::fields::host_address(settings);
+                req_host_port.first = nmos::get_host(settings);
             }
             if (0 == req_host_port.second)
             {
@@ -372,7 +372,7 @@ namespace nmos
                     auto req_host = web::http::get_host_port(req).first;
                     if (req_host.empty())
                     {
-                        req_host = nmos::fields::host_address(model.settings);
+                        req_host = nmos::get_host(model.settings);
                     }
 
                     // search for a matching existing subscription

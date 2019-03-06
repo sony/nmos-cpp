@@ -30,10 +30,8 @@ namespace nmos
 
             if (nmos::experimental::fields::client_secure(settings))
             {
-                const auto hostname = !nmos::fields::host_name(settings).empty() ? nmos::fields::host_name(settings) : web::http::experimental::host_name();
-
                 web::json::push_back(data[U("services")], value_of({
-                    { U("href"), mdns_uri.set_host(hostname).to_uri().to_string() },
+                    { U("href"), mdns_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
                     { U("type"), type }
                 }));
             }
