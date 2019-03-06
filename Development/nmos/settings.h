@@ -143,6 +143,10 @@ namespace nmos
             const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
             const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
 
+            // logging_paging_default/logging_paging_limit [registry, node]: default/maximum number of results per "page" when using the Logging API (a client may request a lower limit)
+            const web::json::field_as_integer_or logging_paging_default{ U("logging_paging_default"), 100 };
+            const web::json::field_as_integer_or logging_paging_limit{ U("logging_paging_limit"), 100 };
+
             // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
             // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
             const web::json::field_as_value_or proxy_map{ U("proxy_map"), web::json::value::array() };

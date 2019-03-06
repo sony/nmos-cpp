@@ -233,7 +233,7 @@ namespace nmos
                 return flat_query_params;
             }
 
-            web::uri make_query_uri_with_no_paging(const web::http::http_request& req)
+            web::uri make_query_uri_with_no_paging(const web::http::http_request& req, const nmos::settings& settings)
             {
                 // could rebuild the query parameters from the decoded and parsed query string, rather than individually deleting the paging parameters from the request?
                 auto query_params = parse_query_parameters(req.request_uri().query());
@@ -254,8 +254,16 @@ namespace nmos
                 // See https://tools.ietf.org/html/rfc5988#section-5
                 // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md
 
-                // get the request host and port
+                // get the request host and port (or use the primary host address, and port, from settings)
                 auto req_host_port = web::http::get_host_port(req);
+                if (req_host_port.first.empty())
+                {
+                    req_host_port.first = nmos::fields::host_address(settings);
+                }
+                if (0 == req_host_port.second)
+                {
+                    req_host_port.second = nmos::experimental::fields::logging_port(settings);
+                }
 
                 return web::uri_builder()
                     .set_scheme(U("http"))
@@ -327,8 +335,8 @@ namespace nmos
 
                 // Configure the paging parameters
 
-                // default limit ought to be part of log/settings
-                log_event_paging paging(flat_query_params, tai_now(), 100);
+                // Use the paging limit (default and max) from the setings
+                log_event_paging paging(flat_query_params, tai_now(), (size_t)nmos::experimental::fields::logging_paging_default(model.settings), (size_t)nmos::experimental::fields::logging_paging_limit(model.settings));
 
                 if (paging.valid())
                 {
@@ -345,7 +353,7 @@ namespace nmos
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Returning " << count << " matching log events";
 
-                    details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req));
+                    details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req, model.settings));
                 }
                 else
                 {

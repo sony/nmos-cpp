@@ -8,6 +8,7 @@
 #include "nmos/id.h"
 #include "nmos/json_fields.h" // only for nmos::fields::id
 #include "nmos/mutex.h"
+#include "nmos/settings.h"
 
 namespace slog
 {
@@ -56,7 +57,13 @@ namespace nmos
 
         struct log_model
         {
+            // mutex to be used to protect the members of the model from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
+
+            // application-wide configuration
+            nmos::settings settings;
+
+            // log events themselves
             nmos::experimental::log_events events;
 
             // convenience functions
