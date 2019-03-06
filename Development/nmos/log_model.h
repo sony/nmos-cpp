@@ -20,9 +20,9 @@ namespace nmos
     namespace experimental
     {
         // Log events just consist of their json data, plus some API metadata
-        struct event
+        struct log_event
         {
-            event(web::json::value data, const nmos::tai& cursor) : data(std::move(data)), id(nmos::fields::id(this->data)), cursor(cursor) {}
+            log_event(web::json::value data, const nmos::tai& cursor) : data(std::move(data)), id(nmos::fields::id(this->data)), cursor(cursor) {}
 
             // event data
             web::json::value data;
@@ -42,22 +42,22 @@ namespace nmos
 
         namespace details
         {
-            typedef boost::multi_index::member<event, id, &event::id> event_id_extractor;
+            typedef boost::multi_index::member<log_event, id, &log_event::id> log_event_id_extractor;
             // could use an ordered_unique index on cursor, rather than the sequenced index?
         }
 
         typedef boost::multi_index_container<
-            event,
+            log_event,
             boost::multi_index::indexed_by<
                 boost::multi_index::sequenced<boost::multi_index::tag<tags::sequenced>>,
-                boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, details::event_id_extractor>
+                boost::multi_index::hashed_unique<boost::multi_index::tag<tags::id>, details::log_event_id_extractor>
             >
-        > events;
+        > log_events;
 
         struct log_model
         {
             mutable nmos::mutex mutex;
-            nmos::experimental::events events;
+            nmos::experimental::log_events events;
 
             // convenience functions
 
@@ -66,7 +66,7 @@ namespace nmos
         };
 
         // push a log event into the model keeping a maximum size (lock the mutex before calling this)
-        void insert_log_event(events& events, const slog::async_log_message& message, const id& id);
+        void insert_log_event(log_events& events, const slog::async_log_message& message, const id& id);
     }
 }
 

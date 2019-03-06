@@ -50,13 +50,13 @@ namespace nmos
         }
 
         // logically necessary, practically not!
-        inline tai strictly_increasing_cursor(const events& events, tai cursor = tai_now())
+        inline tai strictly_increasing_cursor(const log_events& events, tai cursor = tai_now())
         {
             const auto most_recent = events.empty() ? tai{} : events.front().cursor;
             return cursor > most_recent ? cursor : tai_from_time_point(time_point_from_tai(most_recent) + tai_clock::duration(1));
         }
 
-        void insert_log_event(events& events, const slog::async_log_message& message, const id& id)
+        void insert_log_event(log_events& events, const slog::async_log_message& message, const id& id)
         {
             // capacity ought to be part of log/settings
             const std::size_t capacity = 1234;
