@@ -73,10 +73,18 @@ namespace nmos
             }
             if (basic_query.has_field(U("query")))
             {
-                auto& advanced = basic_query.at(U("query"));
-                if (advanced.has_field(U("rql")))
+                auto& advanced = basic_query.at(U("query")).as_object();
+                for (auto& field : advanced)
                 {
-                    rql_query = rql::parse_query(web::json::field_as_string{ U("rql") }(advanced));
+                    if (field.first == U("rql"))
+                    {
+                        rql_query = rql::parse_query(field.second.as_string());
+                    }
+                    // an error is reported for unimplemented parameters
+                    else
+                    {
+                        throw std::runtime_error("unimplemented parameter - query." + utility::us2s(field.first));
+                    }
                 }
                 basic_query.erase(U("query"));
             }
@@ -147,10 +155,10 @@ namespace nmos
                     else if (field.first == U("limit"))
                     {
                         // "If the client had requested a page size which the server is unable to honour, the actual page size would be returned"
-                        limit = utility::istringstreamed<size_t>(field.second.as_string());
+                        limit = (size_t)field.second.as_integer();
                         if (limit > max_limit) limit = max_limit;
                     }
-                    // as for resource_query, an error is reported for unimplemented parameters
+                    // an error is reported for unimplemented parameters
                     else
                     {
                         throw std::runtime_error("unimplemented parameter - paging." + utility::us2s(field.first));
