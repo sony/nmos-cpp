@@ -330,7 +330,7 @@ namespace nmos
                 if (!transport_file.has_field(nmos::fields::type)) throw transport_file_error("type is required");
 
                 auto& transport_type = transport_file.at(nmos::fields::type);
-                if (transport_type.is_null()) throw transport_file_error("type is required");
+                if (transport_type.is_null() || transport_type.as_string().empty()) throw transport_file_error("type is required");
 
                 return{ transport_type.as_string(), transport_data.as_string() };
             }
