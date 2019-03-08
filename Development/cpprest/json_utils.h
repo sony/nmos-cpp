@@ -216,6 +216,11 @@ namespace web
             value.erase(value.size() - 1);
         }
 
+        inline void pop_front(web::json::value& value)
+        {
+            value.erase(0);
+        }
+
         template <typename Values>
         inline web::json::value value_from_elements(const Values& elements)
         {
@@ -289,6 +294,11 @@ namespace web
         inline const web::json::value& back(const web::json::value& value)
         {
             return value.at(value.size() - 1);
+        }
+
+        inline bool empty(const web::json::value& value)
+        {
+            return 0 == value.size();
         }
 
         namespace details

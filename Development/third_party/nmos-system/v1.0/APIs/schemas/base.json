@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the System API base resource",
+  "title": "System API base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "global/"
+    ],
+    "minItems": 1,
+    "maxItems": 1,
+    "uniqueItems": true
+  }
+}

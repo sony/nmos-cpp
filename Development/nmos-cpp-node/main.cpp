@@ -1,19 +1,19 @@
 #include <fstream>
 #include <iostream>
-#include "cpprest/host_utils.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
+#include "nmos/log_gate.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_resources.h"
 #include "nmos/process_utils.h"
+#include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
-#include "main_gate.h"
 #include "node_implementation.h"
 #include "nmos/event_tally_api.h"
 //#include "nmos/event_tally_ws.h"
@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
     nmos::node_model node_model;
 
     nmos::experimental::log_model log_model;
-    std::atomic<slog::severity> level{ slog::severities::more_info };
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -34,7 +33,7 @@ int main(int argc, char* argv[])
     std::ostream access_log(&access_log_buf);
 
     // Logging should all go through this logging gateway
-    main_gate gate(error_log, access_log, log_model, level);
+    nmos::experimental::log_gate gate(error_log, access_log, log_model);
 
     try
     {
@@ -70,34 +69,15 @@ int main(int argc, char* argv[])
 
         // Prepare run-time default settings (different than header defaults)
 
-        web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
+        nmos::insert_node_default_settings(node_model.settings);
 
-        web::json::insert(node_model.settings, std::make_pair(nmos::fields::logging_level, web::json::value::number(level)));
-        level = nmos::fields::logging_level(node_model.settings); // synchronize atomic value with settings
+        // copy to the logging settings
+        // hmm, this is a bit icky, but simplest for now
+        log_model.settings = node_model.settings;
 
-        // if the "host_addresses" setting was omitted, add all the interface addresses
-        const auto interface_addresses = web::http::experimental::interface_addresses();
-        if (!interface_addresses.empty())
-        {
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
-        }
-
-        // if the "host_address" setting was omitted, use the first of the "host_addresses"
-        if (node_model.settings.has_field(nmos::fields::host_addresses))
-        {
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(node_model.settings)[0]));
-        }
-
-        // if any of the specific "<api>_port" settings were omitted, use "http_port" if present
-        if (node_model.settings.has_field(nmos::fields::http_port))
-        {
-            const auto http_port = nmos::fields::http_port(node_model.settings);
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::registration_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::node_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::fields::connection_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
-            web::json::insert(node_model.settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
-        }
+        // the logging level is a special case because we want to turn it into an atomic value
+        // that can be read by logging statements without locking the mutex protecting the settings
+        log_model.level = nmos::fields::logging_level(log_model.settings);
 
         // Reconfigure the logging streams according to settings
         // (obviously, until this point, the logging gateway has its default behaviour...)
@@ -120,31 +100,34 @@ int main(int argc, char* argv[])
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::fields::host_address(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::get_host(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
 
         // Set up the APIs, assigning them to the configured ports
 
-        std::map<int, web::http::experimental::listener::api_router> port_routers;
+        typedef std::pair<utility::string_t, int> address_port;
+        std::map<address_port, web::http::experimental::listener::api_router> port_routers;
 
         // Configure the Settings API
 
-        port_routers[nmos::experimental::fields::settings_port(node_model.settings)].mount({}, nmos::experimental::make_settings_api(node_model, level, gate));
+        const address_port settings_address(nmos::experimental::fields::settings_address(node_model.settings), nmos::experimental::fields::settings_port(node_model.settings));
+        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(node_model, log_model, gate));
 
         // Configure the Logging API
 
-        port_routers[nmos::experimental::fields::logging_port(node_model.settings)].mount({}, nmos::experimental::make_logging_api(log_model, gate));
+        const address_port logging_address(nmos::experimental::fields::logging_address(node_model.settings), nmos::experimental::fields::logging_port(node_model.settings));
+        port_routers[logging_address].mount({}, nmos::experimental::make_logging_api(log_model, gate));
 
         // Configure the Node API
 
-        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, gate);
-        port_routers[nmos::fields::node_port(node_model.settings)].mount({}, nmos::make_node_api(node_model, target_handler, gate));
+        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model);
+        port_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
         // start the underlying implementation and set up the node resources
         auto node_resources = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         // Configure the Connection API
 
-        port_routers[nmos::fields::connection_port(node_model.settings)].mount({}, nmos::make_connection_api(node_model, gate));
+        port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
 
         // Configure the Event and Tally API
 
@@ -157,7 +140,14 @@ int main(int argc, char* argv[])
         listener_config.set_backlog(nmos::fields::listen_backlog(node_model.settings));
 
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
-        for (auto& port_router : port_routers) port_listeners.push_back(nmos::make_api_listener(port_router.first, port_router.second, listener_config, gate));
+        for (auto& port_router : port_routers)
+        {
+            // default empty string means the wildcard address
+            const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
+            // map the configured client port to the server port on which to listen
+            // hmm, this should probably also take account of the address
+            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, listener_config, gate));
+        }
 
         // Open the API ports
 

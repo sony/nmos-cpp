@@ -616,6 +616,17 @@ namespace nmos
                 const sdp::media_type media_type{ sdp::fields::media_type(media) };
                 if (!(sdp::media_types::video == media_type || sdp::media_types::audio == media_type)) continue;
 
+                // media connection data overrides session connection data
+
+                auto& media_connection_data = sdp::fields::connection_data(media_description);
+                if (!media_connection_data.is_null() && 0 != media_connection_data.size())
+                {
+                    // hmm, how to handle multiple connection addresses?
+                    const auto address_type = sdp::address_type{ sdp::fields::address_type(media_connection_data.at(0)) };
+                    const auto connection_address = details::parse_connection_address(address_type, sdp::fields::connection_address(media_connection_data.at(0)));
+                    details::set_multicast_ip_interface_ip(params, connection_address.base_address);
+                }
+
                 // take account of the number of source addresses (cf. Operation with SMPTE 2022-7 - Separate Source Addresses)
 
                 auto& media_attributes = sdp::fields::attributes(media_description);
@@ -648,19 +659,6 @@ namespace nmos
                 }
 
                 params[nmos::fields::destination_port] = value::number(sdp::fields::port(media));
-
-                // media connection data overrides session connection data (if no source filter)
-                if (params[nmos::fields::source_ip].is_null())
-                {
-                    auto& media_connection_data = sdp::fields::connection_data(media_description);
-                    if (!media_connection_data.is_null() && 0 != media_connection_data.size())
-                    {
-                        // hmm, how to handle multiple connection addresses?
-                        const auto address_type = sdp::address_type{ sdp::fields::address_type(media_connection_data.at(0)) };
-                        const auto connection_address = details::parse_connection_address(address_type, sdp::fields::connection_address(media_connection_data.at(0)));
-                        details::set_multicast_ip_interface_ip(params, connection_address.base_address);
-                    }
-                }
 
                 params[nmos::fields::rtp_enabled] = value::boolean(true);
 

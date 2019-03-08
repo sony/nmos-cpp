@@ -30,7 +30,7 @@
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
-    // port numbers [registry, node]: ports on which to listen for each API
+    // port numbers [registry, node]: ports to which clients should connect for each API
 
     // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
     //"http_port": 0,
@@ -39,6 +39,7 @@
     //"query_ws_port": 3213,
     //"registration_port": 3210,
     //"node_port": 3212,
+    //"system_port": 10641,
 
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
     //"listen_backlog": 0,
@@ -63,17 +64,44 @@
     // registration_available [registry]: used to flag the Registration API as temporarily unavailable
     //"registration_available": true,
 
-    // port numbers [registry, node]: ports on which to listen for each API
+    // port numbers [registry, node]: ports to which clients should connect for each API
     // see http_port
 
     //"settings_port": 3209,
     //"logging_port": 5106,
 
-    // port numbers [registry]: ports on which to listen for each API
+    // port numbers [registry]: ports to which clients should connect for each API
     // see http_port
 
     //"admin_port": 3208,
     //"mdns_port": 3214,
+
+    // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+
+    //"settings_address": "127.0.0.1",
+    //"logging_address": "",
+
+    // addresses [registry]: addresses on which to listen for each API, or empty string for the wildcard address
+
+    //"admin_address": "",
+    //"mdns_address": "",
+
+    // logging_limit [registry, node]: maximum number of log events cached for the Logging API
+    //"logging_limit": 1234,
+
+    // logging_paging_default/logging_paging_limit [registry, node]: default/maximum number of results per "page" when using the Logging API (a client may request a lower limit)
+    //"logging_paging_default": 100,
+    //"logging_paging_limit": 100,
+
+    // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
+    // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
+    //"proxy_map": array-of-mappings,
+
+    // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
+    //"proxy_address": "127.0.0.1",
+
+    // proxy_port [registry, node]: forward proxy port
+    //"proxy_port": 8080,
 
     "don't worry": "about trailing commas"
 }

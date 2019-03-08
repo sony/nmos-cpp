@@ -330,7 +330,7 @@ namespace nmos
                 if (!transport_file.has_field(nmos::fields::type)) throw transport_file_error("type is required");
 
                 auto& transport_type = transport_file.at(nmos::fields::type);
-                if (transport_type.is_null()) throw transport_file_error("type is required");
+                if (transport_type.is_null() || transport_type.as_string().empty()) throw transport_file_error("type is required");
 
                 return{ transport_type.as_string(), transport_data.as_string() };
             }
@@ -568,7 +568,7 @@ namespace nmos
                 {
                     const auto transport_type_data = details::get_transport_type_data(transport_file);
 
-                    if (!transport_type_data.second.empty())
+                    if (!transport_type_data.first.empty())
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Processing transport file";
 
@@ -850,7 +850,7 @@ namespace nmos
         }
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -858,7 +858,7 @@ namespace nmos
 
         // check for supported API version
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is05_versions::from_settings(model.settings); });
-        connection_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+        connection_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
         connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -877,9 +877,10 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L39-L44
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L73-L78
 
-        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
+            nmos::api_gate gate(gate_, req, parameters);
+            return details::extract_json(req, gate).then([&model, req, res, parameters, gate](value body) mutable
             {
                 auto lock = model.write_lock();
                 const auto request_time = tai_now(); // during write lock to ensure uniqueness
@@ -889,7 +890,7 @@ namespace nmos
 
                 auto& patches = body.as_array();
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Bulk operation requested for " << patches.size() << " " << resourceType;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Bulk operation requested for " << patches.size() << " " << resourceType;
 
                 std::vector<details::connection_resource_patch_response> results;
                 results.reserve(patches.size());
@@ -911,32 +912,32 @@ namespace nmos
                     }
                     catch (const web::json::json_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error for " << id << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error for " << id << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error for " << id << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const std::runtime_error& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::NotImplemented, e);
                     }
                     catch (const std::logic_error& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (const std::exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected exception for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception for " << id << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (...)
                     {
-                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected unknown exception for " << id << " in bulk request";
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception for " << id << " in bulk request";
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError);
                     }
                 };
@@ -1023,8 +1024,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.connection_resources;
 
@@ -1040,13 +1042,14 @@ namespace nmos
                     [&count](const nmos::resources::value_type& resource) { ++count; return value(resource.id + U("/")); }),
                 U("application/json"));
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.connection_resources;
 
@@ -1073,8 +1076,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.connection_resources;
 
@@ -1085,7 +1089,7 @@ namespace nmos
             auto resource = find_resource(resources, id_type);
             if (resources.end() != resource)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning constraints for " << id_type;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning constraints for " << id_type;
 
                 const auto accept = req.headers().find(web::http::header_names::accept);
                 if (req.headers().end() != accept && U("application/schema+json") == accept->second)
@@ -1106,9 +1110,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value body) mutable
+            nmos::api_gate gate(gate_, req, parameters);
+            return details::extract_json(req, gate).then([&model, req, res, parameters, gate](value body) mutable
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
@@ -1116,7 +1121,7 @@ namespace nmos
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Operation requested for single " << id_type;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Operation requested for single " << id_type;
 
                 details::handle_connection_resource_patch(res, model, version, id_type, body, gate);
 
@@ -1124,8 +1129,9 @@ namespace nmos
             });
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::stagingType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.connection_resources;
 
@@ -1159,7 +1165,7 @@ namespace nmos
 
             if (resources.end() != resource)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << stagingType << " data for " << id_type;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << stagingType << " data for " << id_type;
 
                 const web::json::field_as_value endpoint_staging{ stagingType };
                 set_reply(res, status_codes::OK, endpoint_staging(resource->data));
@@ -1172,8 +1178,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.connection_resources;
 
@@ -1192,7 +1199,7 @@ namespace nmos
 
                     if (!data.is_null())
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning transport file for " << id_type;
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
 
                         const auto accept = req.headers().find(web::http::header_names::accept);
                         if (req.headers().end() != accept && U("application/json") == accept->second && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
@@ -1213,7 +1220,7 @@ namespace nmos
                     }
                     else
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Redirecting to transport file for " << id_type;
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to transport file for " << id_type;
 
                         set_reply(res, status_codes::TemporaryRedirect);
                         res.headers().add(web::http::header_names::location, nmos::fields::transportfile_href(transportfile));
@@ -1221,7 +1228,7 @@ namespace nmos
                 }
                 else
                 {
-                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Transport file requested for disabled " << id_type;
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for disabled " << id_type;
 
                     // "When the `master_enable` parameter is false [...] the `/transportfile` endpoint should return an HTTP 404 response."
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L163-L165
@@ -1237,7 +1244,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transporttype/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transporttype/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             // The transporttype endpoint is introduced in v1.1
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));

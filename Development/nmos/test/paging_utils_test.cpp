@@ -459,7 +459,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         paging.until = 2;
 
         // Response
-        auto page = paging.page(resources, [](resource r){ return 0 != r.cursor % 3; });
+        auto page = paging.page(resources, filt3);
 
         // Headers
         BST_REQUIRE_EQUAL(0, paging.since);
@@ -471,7 +471,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE_EQUAL(1, std::prev(page.end())->cursor);
     }
 
-    // Query 2: "next" of Query 1
+    // Query 3: "next" of Query 1
     //          filter         1, 2, -, -, 5, 6, 7, -, -, 10, 11, 12, --, --, 15, 16, 17, --, --, 20
     //          request                                                                             (]
     //          response                                                                            (]
@@ -482,7 +482,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         paging.since_specified = true;
 
         // Response
-        auto page = paging.page(resources, [](resource r){ return 0 != r.cursor % 3; });
+        auto page = paging.page(resources, filt3);
 
         // Headers
         BST_REQUIRE_EQUAL(20, paging.since);
@@ -492,7 +492,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE(page.empty());
     }
 
-    // Query 3: filtered, default paging parameters
+    // Query 4: filtered, default paging parameters
     //          filter         -, -, 3, 4, -, -, -, 8, 9, --, --, --, 13, 14, --, --, --, 18, 19, --
     //          request      (                                                                       ]
     //          response     (       ^  ^           ^  ^               ^   ^               ^   ^     ]
@@ -514,7 +514,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE_EQUAL(3, std::prev(page.end())->cursor);
     }
 
-    // Query 4: filtered, limited to 3
+    // Query 5: filtered, limited to 3
     //          filter         -, -, 3, 4, -, -, -, 8, 9, --, --, --, 13, 14, --, --, --, 18, 19, --
     //          request      (                                                                       ]
     //          response                                                (  ^               ^   ^     ]
@@ -537,7 +537,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE_EQUAL(14, std::prev(page.end())->cursor);
     }
 
-    // Query 5: "prev" of Query 4
+    // Query 6: "prev" of Query 5
     //          filter         -, -, 3, 4, -, -, -, 8, 9, --, --, --, 13, 14, --, --, --, 18, 19, --
     //          request      (                                           ]
     //          response                 (          ^  ^               ^ ]
@@ -561,7 +561,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE_EQUAL(8, std::prev(page.end())->cursor);
     }
 
-    // Query 6: like Query 5, with paging.since specified, but still enough matches
+    // Query 7: like Query 5, with paging.since specified, but still enough matches
     //          filter         -, -, 3, 4, -, -, -, 8, 9, --, --, --, 13, 14, --, --, --, 18, 19, --
     //          request                     (                            ]
     //          response                    (       ^  ^               ^ ]
@@ -587,7 +587,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE_EQUAL(8, std::prev(page.end())->cursor);
     }
 
-    // Query 7: like Query 5, with paging.since specified, and not enough matches
+    // Query 8: like Query 5, with paging.since specified, and not enough matches
     //          filter         -, -, 3, 4, -, -, -, 8, 9, --, --, --, 13, 14, --, --, --, 18, 19, --
     //          request                                     (            ]
     //          response                                    (          ^ ]
@@ -611,7 +611,7 @@ BST_TEST_CASE(testCursorBasedPagingWithFilter)
         BST_REQUIRE_EQUAL(13, page.begin()->cursor);
     }
 
-    // Query 8: like Query 5, but no matches
+    // Query 9: like Query 5, but no matches
     //          filter         -, -, 3, 4, -, -, -, 8, 9, --, --, --, 13, 14, --, --, --, 18, 19, --
     //          request                                     (        ]
     //          response                                    (        ]

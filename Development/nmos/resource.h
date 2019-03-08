@@ -18,6 +18,8 @@ namespace nmos
     // and health which is usually propagated from a node, because only nodes get heartbeats and keep all their sub-resources alive
     struct resource
     {
+        resource() {}
+
         // the API version, type, id and creation timestamp are logically const after construction*, other data may be modified
         // when any data is modified, the update timestamp must be set, and resource events should be generated
         // *or more accurately, after insertion into the registry

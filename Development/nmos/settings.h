@@ -8,7 +8,19 @@ namespace nmos
 {
     typedef web::json::value settings;
 
-    // Field accessors simplify access to fields in the settings
+    // Inserts run-time default settings for those which are impossible to determine at compile-time
+    // if not already present in the specified settings
+    void insert_node_default_settings(settings& settings);
+    void insert_registry_default_settings(settings& settings);
+
+    // Get host name from settings or return the default (system) host name
+    utility::string_t get_host_name(const settings& settings);
+
+    // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')
+    // when a request URL is not available
+    utility::string_t get_host(const settings& settings);
+
+    // Field accessors simplify access to fields in the settings and provide the compile-time defaults
     namespace fields
     {
         // error_log [registry, node]: filename for the error log or an empty string to write to stderr
@@ -57,7 +69,7 @@ namespace nmos
         // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string_or registry_version{ U("registry_version"), U("v1.2") };
 
-        // port numbers [registry, node]: ports on which to listen for each API
+        // port numbers [registry, node]: ports to which clients should connect for each API
 
         // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
         const web::json::field_as_integer_or http_port{ U("http_port"), 0 };
@@ -68,9 +80,14 @@ namespace nmos
         const web::json::field_as_integer_or registration_port{ U("registration_port"), 3210 };
         const web::json::field_as_integer_or node_port{ U("node_port"), 3212 };
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
+        const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
         const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };
+
+        // registration_services [node]: the discovered list of Registration APIs, in the order they should be used
+        // this list is created and maintained by nmos::node_behaviour_thread; each entry is a uri like http://example.api.com/x-nmos/registration/{version}
+        const web::json::field_as_value registration_services{ U("registration_services") };
 
         // registration_heartbeat_interval [node]:
         // "Nodes are expected to peform a heartbeat every 5 seconds by default."
@@ -104,7 +121,7 @@ namespace nmos
 {
     namespace experimental
     {
-        // Field accessors simplify access to fields in the settings
+        // Field accessors simplify access to fields in the settings and provide the compile-time defaults
         namespace fields
         {
             // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
@@ -116,13 +133,13 @@ namespace nmos
             // registration_available [registry]: used to flag the Registration API as temporarily unavailable
             const web::json::field_as_bool_or registration_available{ U("registration_available"), true };
 
-            // port numbers [registry, node]: ports on which to listen for each API
+            // port numbers [registry, node]: ports to which clients should connect for each API
             // see http_port
 
             const web::json::field_as_integer_or settings_port{ U("settings_port"), 3209 };
             const web::json::field_as_integer_or logging_port{ U("logging_port"), 5106 };
 
-            // port numbers [registry]: ports on which to listen for each API
+            // port numbers [registry]: ports to which clients should connect for each API
             // see http_port
 
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
@@ -130,6 +147,33 @@ namespace nmos
 
             // port number for event-tally api
             const web::json::field_as_integer_or event_tally_port{ U("event_tally_port"), 3220 };
+
+            // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+
+            const web::json::field_as_string_or settings_address{ U("settings_address"), U("") };
+            const web::json::field_as_string_or logging_address{ U("logging_address"), U("") };
+
+            // addresses [registry]: addresses on which to listen for each API, or empty string for the wildcard address
+
+            const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
+            const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
+
+            // logging_limit [registry, node]: maximum number of log events cached for the Logging API
+            const web::json::field_as_integer_or logging_limit{ U("logging_limit"), 1234 };
+
+            // logging_paging_default/logging_paging_limit [registry, node]: default/maximum number of results per "page" when using the Logging API (a client may request a lower limit)
+            const web::json::field_as_integer_or logging_paging_default{ U("logging_paging_default"), 100 };
+            const web::json::field_as_integer_or logging_paging_limit{ U("logging_paging_limit"), 100 };
+
+            // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
+            // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
+            const web::json::field_as_value_or proxy_map{ U("proxy_map"), web::json::value::array() };
+
+            // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
+            const web::json::field_as_string_or proxy_address{ U("proxy_address"), U("") };
+
+            // proxy_port [registry, node]: forward proxy port
+            const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
         }
     }
 }

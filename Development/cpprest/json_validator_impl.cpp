@@ -83,11 +83,11 @@ namespace web
                     {
                         for (const auto& id : ids)
                         {
-                            nlohmann::json_schema_draft4::json_validator validator
+                            nlohmann::json_schema::json_validator validator
                             {
                                 [load_schema](const nlohmann::json_uri& id_impl, nlohmann::json& value_impl)
                                 {
-                                    const auto id = web::uri(utility::s2us(id_impl.to_string()));
+                                    const auto id = web::uri(utility::s2us(id_impl.url()));
                                     const auto value = load_schema(id);
                                     value_impl = nlohmann::json::parse(utility::us2s(value.serialize()));
                                 },
@@ -108,22 +108,34 @@ namespace web
                         auto validator = validators.find(id);
                         if (validators.end() == validator)
                         {
-                            throw web::json::json_exception((_XPLATSTR("schema not found for ") + id.to_string()).c_str());
+                            throw web::json::json_exception("schema not found for " + utility::us2s(id.to_string()));
                         }
+
+                        struct error_handler : nlohmann::json_schema::error_handler
+                        {
+                            virtual void error(const nlohmann::json::json_pointer& ptr, const nlohmann::json& instance, const std::string& message)
+                            {
+                                throw web::json::json_exception("schema validation failed at " + (nlohmann::json::json_pointer() == ptr ? "root" : ptr.to_string()) + " - " + message);
+                            }
+                        } error_handler;
 
                         try
                         {
                             auto instance = nlohmann::json::parse(utility::us2s(value.serialize()));
-                            const_cast<nlohmann::json_schema_draft4::json_validator&>(validator->second).validate(instance);
+                            validator->second.validate(instance, error_handler);
+                        }
+                        catch (const web::json::json_exception&)
+                        {
+                            throw;
                         }
                         catch (const std::exception& e)
                         {
-                            throw web::json::json_exception(utility::s2us(e.what()).c_str());
+                            throw web::json::json_exception(e.what());
                         }
                     }
 
                 private:
-                    std::map<web::uri, nlohmann::json_schema_draft4::json_validator> validators;
+                    std::map<web::uri, nlohmann::json_schema::json_validator> validators;
                 };
             }
 

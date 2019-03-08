@@ -34,6 +34,7 @@ namespace nmos
         const route_pattern registration_api = make_route_pattern(U("api"), U("registration"));
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
         const route_pattern eventTally_api = make_route_pattern(U("api"), U("events"));
+        const route_pattern system_api = make_route_pattern(U("api"), U("system"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));
@@ -92,9 +93,16 @@ namespace nmos
     // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener - captures api by reference!
     void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api, slog::base_gate& gate);
 
+    // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
+    // (including CORS preflight requests via "OPTIONS") - captures api by reference!
+    web::http::experimental::listener::http_listener make_api_listener(const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
+
     // construct an http_listener on the specified port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS") - captures api by reference!
-    web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
+    inline web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
+    {
+        return make_api_listener(web::http::experimental::listener::host_wildcard, port, api, config, gate);
+    }
 
     namespace details
     {
@@ -108,7 +116,10 @@ namespace nmos
         void encode_elements(web::json::value& value);
 
         // extract JSON after checking the Content-Type header
-        pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate);
+        pplx::task<web::json::value> extract_json(const web::http::http_request& req, slog::base_gate& gate);
+
+        // extract JSON after checking the Content-Type header
+        pplx::task<web::json::value> extract_json(const web::http::http_response& res, slog::base_gate& gate);
 
         // add the NMOS-specified CORS response headers
         web::http::http_response& add_cors_preflight_headers(const web::http::http_request& req, web::http::http_response& res);

@@ -184,6 +184,7 @@ namespace nmos
                 if (nmos::service_types::query == service) return nmos::fields::query_port(settings);
                 if (nmos::service_types::registration == service) return nmos::fields::registration_port(settings);
                 if (nmos::service_types::register_ == service) return nmos::fields::registration_port(settings);
+                if (nmos::service_types::system == service) return nmos::fields::system_port(settings);
                 return 0;
             }
 
@@ -193,6 +194,7 @@ namespace nmos
                 if (nmos::service_types::query == service) return "query";
                 if (nmos::service_types::registration == service) return "registration";
                 if (nmos::service_types::register_ == service) return "registration";
+                if (nmos::service_types::system == service) return "system";
                 return{};
             }
 
@@ -200,13 +202,21 @@ namespace nmos
             {
                 return "nmos-cpp_" + service_api(service);
             }
+
+            inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
+            {
+                // the System API is defined by TR-1001-1:2018
+                if (nmos::service_types::system == service) return{ { 1, 0 } };
+                // all the other APIs are defined by IS-04, and should advertise consistent versions
+                return nmos::is04_versions::from_settings(settings);
+            }
         }
 
         std::string service_name(const nmos::service_type& service, const nmos::settings& settings)
         {
             // this just serves as an example of a possible service naming strategy
             // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
-            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::fields::host_address(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
         // helper function for registering the specified service (API)
@@ -229,7 +239,7 @@ namespace nmos
             const auto instance_port_or_disabled = details::service_port(service, settings);
             if (0 > instance_port_or_disabled) return;
             const auto instance_port = (uint16_t)instance_port_or_disabled;
-            const auto api_ver = nmos::is04_versions::from_settings(settings);
+            const auto api_ver = details::service_versions(service, settings);
             const auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver);
             const auto txt_records = mdns::make_txt_records(records);
 
@@ -360,9 +370,9 @@ namespace nmos
 
                     // when either task is completed, cancel and wait for the other to be completed
                     // and then merge the two sets of results
-                    resolve_task = pplx::when_any(both_tasks.begin(), both_tasks.end()).then([linked_source, both_tasks](std::pair<bool, size_t> first_result)
+                    resolve_task = pplx::when_any(both_tasks.begin(), both_tasks.end()).then([both_results, linked_source, both_tasks](std::pair<bool, size_t> first_result)
                     {
-                        linked_source.cancel();
+                        if (!both_results[first_result.second]->empty()) linked_source.cancel();
 
                         return both_tasks[0 == first_result.second ? 1 : 0];
                     }).then([results, both_results](pplx::task<bool> finally)

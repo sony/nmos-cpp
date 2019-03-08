@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "pplx/pplx_utils.h"
-#include "cpprest/logging_utils.h" // for web::logging::experimental::callback_function
+#include "cpprest/logging_utils.h" // for web::logging::experimental::log_handler
 #include "cpprest/ws_client.h" // for web::websockets::client::websocket_outgoing_message and web::websockets::client::websocket_exception
 
 // websocket_listener is an experimental server-side implementation of WebSockets

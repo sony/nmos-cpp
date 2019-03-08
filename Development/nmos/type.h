@@ -31,6 +31,9 @@ namespace nmos
         // according to the guidelines on referential integrity
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
         const std::vector<type> all{ nmos::types::node, nmos::types::device, nmos::types::source, nmos::types::flow, nmos::types::sender, nmos::types::receiver, nmos::types::subscription, nmos::types::grain };
+
+        // the System API global configuration resource
+        const type global{ U("global") };
     }
 }
 

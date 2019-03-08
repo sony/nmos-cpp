@@ -231,6 +231,8 @@ namespace mdns_details
                 if (errorCode == kDNSServiceErr_NoError)
                 {
                     result = true;
+
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Updated advertisement for: " << name << "." << type << (domain.empty() ? "" : "." + domain);
                 }
 
                 break;

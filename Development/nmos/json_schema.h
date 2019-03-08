@@ -11,6 +11,8 @@ namespace nmos
 
     namespace experimental
     {
+        web::uri make_systemapi_global_schema_uri(const nmos::api_version& version);
+
         web::uri make_registrationapi_resource_post_request_schema_uri(const nmos::api_version& version);
         web::uri make_queryapi_subscriptions_post_request_schema_uri(const nmos::api_version& version);
 

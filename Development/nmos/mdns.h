@@ -22,14 +22,22 @@ namespace nmos
 
     namespace service_types
     {
+        // IS-04 Node API
         const service_type node{ "_nmos-node._tcp" };
+
+        // IS-04 Query API
         const service_type query{ "_nmos-query._tcp" };
+
+        // IS-04 Registration API
         // "RFC6763 Section 7.2 specifies that the maximum service name length for an mDNS advertisement
         // is 16 characters when including the leading underscore, but "_nmos-registration" is 18 characters."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/APIs/RegistrationAPI.raml#L19
         // This is to be addressed in v1.3, by specifying a shorter service type, "_nmos-register._tcp".
         // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/71
         const service_type registration{ "_nmos-registration._tcp" };
+
+        // TR-1001-1:2018 System API
+        const service_type system{ "_nmos-system._tcp" };
     }
 
     // "The DNS-SD advertisement MUST be accompanied by a TXT record of name 'api_proto' with a value

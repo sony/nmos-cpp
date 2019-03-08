@@ -74,6 +74,19 @@ namespace pplx
     pplx::task<void> do_while(const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
     /// <summary>
+    ///     Returns true if the task is default constructed.
+    /// </summary>
+    /// <remarks>
+    ///     A default constructed task cannot be used until you assign a valid task to it. Methods such as <c>get</c>, <c>wait</c> or <c>then</c>
+    ///     will throw an <see cref="invalid_argument Class">invalid_argument</see> exception when called on a default constructed task.
+    /// </remarks>
+    template <typename ReturnType>
+    bool empty(const pplx::task<ReturnType>& task)
+    {
+        return pplx::task<ReturnType>() == task;
+    }
+
+    /// <summary>
     ///     RAII helper for classes that have asynchronous open/close member functions.
     /// </summary>
     template <typename T>

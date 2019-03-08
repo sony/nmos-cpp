@@ -6,6 +6,12 @@
 #include "nmos/slog.h"
 #include "nmos/type.h"
 
+namespace web
+{
+    // because web::uri::encode_uri(de, web::uri::components::query) doesn't encode '&' (or ';', or '=')
+    utility::string_t uri_encode_query_value(const utility::string_t& value);
+}
+
 namespace nmos
 {
     namespace details
@@ -30,16 +36,17 @@ namespace nmos
                 if (element.second.is_string())
                 {
                     auto de = element.second.as_string();
-                    auto en = web::uri::encode_uri(de, web::uri::components::query);
+                    auto en = web::uri_encode_query_value(de);
                     element.second = web::json::value::string(en);
                 }
             }
         }
 
         // extract JSON after checking the Content-Type header
-        pplx::task<web::json::value> extract_json(const web::http::http_request& req, const web::http::experimental::listener::route_parameters& parameters, slog::base_gate& gate)
+        template <typename HttpMessage>
+        inline pplx::task<web::json::value> extract_json(const HttpMessage& msg, slog::base_gate& gate)
         {
-            auto content_type = req.headers().content_type();
+            auto content_type = msg.headers().content_type();
             auto semicolon = content_type.find(U(';'));
             if (utility::string_t::npos != semicolon) content_type.erase(semicolon);
             boost::algorithm::trim(content_type);
@@ -50,7 +57,7 @@ namespace nmos
                 // but it's quite common so don't even bother to log a warning...
                 // See https://www.iana.org/assignments/media-types/application/json
 
-                return req.extract_json(false);
+                return msg.extract_json(false);
             }
             else if (content_type.empty())
             {
@@ -58,15 +65,25 @@ namespace nmos
                 // [...] examine the data to determine its type."
                 // See https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Missing Content-Type: should be application/json";
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing Content-Type: should be application/json";
 
-                return req.extract_json(true);
+                return msg.extract_json(true);
             }
             else
             {
                 // more helpful message than from web::http::details::http_msg_base::parse_and_check_content_type for unacceptable content-type
-                return pplx::task_from_exception<web::json::value>(web::http::http_exception(U("Incorrect Content-Type: ") + req.headers().content_type() + U(", should be application/json")));
+                return pplx::task_from_exception<web::json::value>(web::http::http_exception(U("Incorrect Content-Type: ") + msg.headers().content_type() + U(", should be application/json")));
             }
+        }
+
+        pplx::task<web::json::value> extract_json(const web::http::http_request& req, slog::base_gate& gate)
+        {
+            return extract_json<>(req, gate);
+        }
+
+        pplx::task<web::json::value> extract_json(const web::http::http_response& res, slog::base_gate& gate)
+        {
+            return extract_json<>(res, gate);
         }
 
         // add the NMOS-specified CORS response headers
@@ -199,16 +216,17 @@ namespace nmos
         }
 
         // make handler to check supported API version, and set error response otherwise
-        web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate)
+        web::http::experimental::listener::route_handler make_api_version_handler(const std::set<api_version>& versions, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
-            return [versions, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            return [versions, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
                 const auto version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 if (versions.end() == versions.find(version))
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unsupported API version";
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Unsupported API version";
                     set_error_reply(res, status_codes::NotFound, U("Not Found; unsupported API version"));
                     throw details::to_api_finally_handler{}; // in order to skip other route handlers and then send the response
                 }
@@ -219,12 +237,14 @@ namespace nmos
         static const utility::string_t actual_method{ U("X-Actual-Method") };
 
         // make handler to set appropriate response headers, and error response body if indicated
-        web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate)
+        web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
-            return [&gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            return [&gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
+
                 // if it was a HEAD request, restore that and discard any response body
                 // since RFC 7231 says "the server MUST NOT send a message body in the response"
                 // see https://tools.ietf.org/html/rfc7231#section-4.3.2
@@ -258,22 +278,22 @@ namespace nmos
                         // distinguish a vanilla OPTIONS request from a CORS preflight request
                         if (req.headers().has(web::http::cors::header_names::request_method))
                         {
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "CORS preflight request";
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "CORS preflight request";
                             nmos::details::add_cors_preflight_headers(req, res);
                         }
                         else
                         {
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "OPTIONS request";
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "OPTIONS request";
                         }
                     }
                     else
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Method not allowed for this route";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Method not allowed for this route";
                     }
                 }
                 else if (status_codes::NotFound == res.status_code())
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Route not found";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Route not found";
                 }
 
                 if (web::http::is_error_status_code(res.status_code()))
@@ -287,7 +307,7 @@ namespace nmos
 
                 nmos::details::add_cors_headers(res);
 
-                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_category(nmos::categories::access) << nmos::common_log_stash(req, res) << "Sending response";
+                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response";
 
                 req.reply(res);
                 return pplx::task_from_result(false); // don't continue matching routes
@@ -310,14 +330,15 @@ namespace nmos
     }
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
-    void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate)
+    void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
-        api.support(U(".*"), details::make_api_finally_handler(gate));
+        api.support(U(".*"), details::make_api_finally_handler(gate_));
 
-        api.set_exception_handler([&gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        api.set_exception_handler([&gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             try
             {
                 std::rethrow_exception(std::current_exception());
@@ -325,25 +346,25 @@ namespace nmos
             // assume a JSON error indicates a bad request
             catch (const web::json::json_exception& e)
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error: " << e.what();
                 set_error_reply(res, status_codes::BadRequest, e);
             }
             // likewise an HTTP error, e.g. from http_request::extract_json
             catch (const web::http::http_exception& e)
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
                 set_error_reply(res, status_codes::BadRequest, e);
             }
             // while a runtime_error (often) indicates an unimplemented feature
             catch (const std::runtime_error& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
                 set_error_reply(res, status_codes::NotImplemented, e);
             }
             // and a logic_error (probably) indicates some other implementation error
             catch (const std::logic_error& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Implementation error: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
                 set_error_reply(res, status_codes::InternalError, e);
             }
             // and this one asks to skip other route handlers and then send the response 
@@ -351,18 +372,18 @@ namespace nmos
             {
                 if (web::http::empty_status_code == res.status_code())
                 {
-                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected to_api_finally_handler exception";
+                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected to_api_finally_handler exception";
                 }
             }
             // and other exception types are unexpected errors
             catch (const std::exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected exception: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
                 set_error_reply(res, status_codes::InternalError, e);
             }
             catch (...)
             {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected unknown exception";
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
                 set_error_reply(res, status_codes::InternalError);
             }
 
@@ -386,10 +407,93 @@ namespace nmos
     }
 
     // construct an http_listener on the specified port, using the specified API to handle all requests
-    web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
+    web::http::experimental::listener::http_listener make_api_listener(const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
     {
-        web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(port), std::move(config));
+        web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(host_address, port), std::move(config));
         nmos::support_api(api_listener, api, gate);
         return api_listener;
     }
 }
+
+#if 0
+#include "detail/private_access.h"
+
+namespace web
+{
+    namespace details
+    {
+        struct uri_encode_query_impl { typedef utility::string_t(*type)(const utf8string&); };
+    }
+
+    // because web::uri::encode_uri(de, web::uri::components::query) doesn't encode '&' (or ';', or '=')
+    utility::string_t uri_encode_query_value(const utility::string_t& value)
+    {
+        return detail::stowed<details::uri_encode_query_impl>::value(utility::conversions::details::print_utf8string(value));
+    }
+}
+
+template struct detail::stow_private<web::details::uri_encode_query_impl, &web::uri::encode_query_impl>;
+#else
+// unfortunately the private access trick doesn't work on Visual Studio 2015
+namespace web
+{
+    namespace details
+    {
+        // return true if c should be encoded in a query parameter value
+        inline bool is_query_value_unsafe(int c)
+        {
+            static const utf8string safe
+            {
+                // unreserved characters
+                "-._~"
+                // sub-delimiters - except '&' most importantly, the alternative separator ';'
+                // and '=' and '+' for clarity
+                "!$'()*,"
+                // path - except '%'
+                "/:@"
+                // query
+                "?"
+            };
+            return !utility::details::is_alnum(c) && utf8string::npos == safe.find((char)c);
+        }
+
+// Following function lifted from cpprestsdk/Release/src/uri/uri.cpp
+// Encodes all characters not in given set determined by given function.
+template<class F>
+utility::string_t encode_impl(const utf8string& raw, F should_encode)
+{
+    const utility::char_t* const hex = _XPLATSTR("0123456789ABCDEF");
+    utility::string_t encoded;
+    for (auto iter = raw.begin(); iter != raw.end(); ++iter)
+    {
+        // for utf8 encoded string, char ASCII can be greater than 127.
+        int ch = static_cast<unsigned char>(*iter);
+        // ch should be same under both utf8 and utf16.
+        if (should_encode(ch))
+        {
+            encoded.push_back(_XPLATSTR('%'));
+            encoded.push_back(hex[(ch >> 4) & 0xF]);
+            encoded.push_back(hex[ch & 0xF]);
+        }
+        else
+        {
+            // ASCII don't need to be encoded, which should be same on both utf8 and utf16.
+            encoded.push_back((utility::char_t)ch);
+        }
+    }
+    return encoded;
+}
+
+        utility::string_t uri_encode_query_impl(const utf8string& raw)
+        {
+            return details::encode_impl(raw, details::is_query_value_unsafe);
+        }
+    }
+
+    // because web::uri::encode_uri(de, web::uri::components::query) doesn't encode '&' (or ';', or '=')
+    utility::string_t uri_encode_query_value(const utility::string_t& value)
+    {
+        return details::uri_encode_query_impl(utility::conversions::details::print_utf8string(value));
+    }
+}
+#endif

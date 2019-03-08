@@ -88,6 +88,12 @@ namespace nmos
         }
     };
 
+    namespace details
+    {
+        // make user error information (to be used with status_codes::BadRequest)
+        utility::string_t make_valid_paging_error(const nmos::resource_paging& paging);
+    }
+
     // Cursor-based paging customisation points
 
     inline nmos::tai extract_cursor(const nmos::resources::index<tags::created>::type&, nmos::resources::index_iterator<tags::created>::type it) { return it->created; }

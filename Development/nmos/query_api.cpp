@@ -45,6 +45,11 @@ namespace nmos
         return query_api;
     }
 
+    inline utility::string_t make_query_api_resource_location(const nmos::resource& resource)
+    {
+        return U("/x-nmos/query/") + nmos::make_api_version(resource.version) + U("/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
+    }
+
     namespace details
     {
         utility::string_t make_query_parameters(web::json::value flat_query_params)
@@ -123,7 +128,7 @@ namespace nmos
             auto req_host_port = web::http::get_host_port(req);
             if (req_host_port.first.empty())
             {
-                req_host_port.first = nmos::fields::host_address(settings);
+                req_host_port.first = nmos::get_host(settings);
             }
             if (0 == req_host_port.second)
             {
@@ -174,7 +179,7 @@ namespace nmos
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::registry_model& model, slog::base_gate& gate)
+    inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::registry_model& model, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -182,7 +187,7 @@ namespace nmos
 
         // check for supported API version
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
-        query_api.support(U(".*"), details::make_api_version_handler(versions, gate));
+        query_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
         query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
         {
@@ -190,8 +195,9 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
@@ -206,7 +212,7 @@ namespace nmos
 
             const resource_query match(version, U('/') + resourceType, flat_query_params);
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Querying " << resourceType;
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Querying " << resourceType;
 
             // Configure the paging parameters
 
@@ -226,20 +232,21 @@ namespace nmos
                         [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }),
                     U("application/json"));
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning " << count << " matching " << resourceType;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
                 details::add_paging_headers(res.headers(), paging, details::make_query_uri_with_no_paging(req, model.settings));
             }
             else
             {
-                set_reply(res, status_codes::BadRequest);
+                set_error_reply(res, status_codes::BadRequest, U("Bad Request; ") + details::make_valid_paging_error(paging));
             }
 
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/") + nmos::patterns::queryType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
             auto& resources = model.registry_resources;
 
@@ -259,7 +266,7 @@ namespace nmos
             {
                 if (nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Returning resource: " << resourceId;
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Returning resource: " << resourceId;
                     set_reply(res, status_codes::OK, match.downgrade(*resource));
 
                     // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
@@ -270,7 +277,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, match.version, match.downgrade_version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, match.version, match.downgrade_version));
+                    res.headers().add(web::http::header_names::location, make_query_api_resource_location(*resource));
                 }
             }
             else if (details::is_erased_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) }))
@@ -291,9 +300,10 @@ namespace nmos
             boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_queryapi_subscriptions_post_request_schema_uri))
         };
 
-        query_api.support(U("/subscriptions/?"), methods::POST, [&model, validator, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/subscriptions/?"), methods::POST, [&model, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            return details::extract_json(req, parameters, gate).then([&, req, res, parameters](value data) mutable
+            nmos::api_gate gate(gate_, req, parameters);
+            return details::extract_json(req, gate).then([&model, &validator, req, res, parameters, gate](value data) mutable
             {
                 // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually inserted into resources
                 auto lock = model.write_lock();
@@ -316,7 +326,7 @@ namespace nmos
                     }
                     catch (const web::json::json_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "JSON error: " << e.what();
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error: " << e.what();
                     }
                 }
 
@@ -348,13 +358,13 @@ namespace nmos
 
                 if (valid)
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested on " << nmos::fields::resource_path(data) << ", to be " << (nmos::fields::persist(data) ? "persistent" : "non-persistent");
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Subscription requested on " << nmos::fields::resource_path(data) << ", to be " << (nmos::fields::persist(data) ? "persistent" : "non-persistent");
 
                     // get the request host
                     auto req_host = web::http::get_host_port(req).first;
                     if (req_host.empty())
                     {
-                        req_host = nmos::fields::host_address(model.settings);
+                        req_host = nmos::get_host(model.settings);
                     }
 
                     // search for a matching existing subscription
@@ -392,7 +402,7 @@ namespace nmos
                         // never expire persistent subscriptions, they are only deleted when explicitly requested
                         nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
 
-                        insert_resource(resources, std::move(subscription));
+                        resource = resources.project<tags::type>(insert_resource(resources, std::move(subscription)).first);
                     }
                     else
                     {
@@ -402,12 +412,11 @@ namespace nmos
                     }
 
                     set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
-                    const string_t location(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + nmos::fields::id(data));
-                    res.headers().add(web::http::header_names::location, location);
+                    res.headers().add(web::http::header_names::location, make_query_api_resource_location(*resource));
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Subscription requested is invalid";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Subscription requested is invalid";
 
                     set_reply(res, status_codes::BadRequest);
                 }
@@ -416,8 +425,10 @@ namespace nmos
             });
         });
 
-        query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        query_api.support(U("/subscriptions/") + nmos::patterns::resourceId.pattern + U("/?"), methods::DEL, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
+            nmos::api_gate gate(gate_, req, parameters);
+
             // could start out as a shared/read lock, only upgraded to an exclusive/write lock when the subscription is actually deleted from resources
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
@@ -433,20 +444,22 @@ namespace nmos
                 {
                     if (nmos::fields::persist(subscription->data))
                     {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Deleting subscription: " << subscriptionId;
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Deleting subscription: " << subscriptionId;
                         erase_resource(resources, subscription->id, false);
 
                         set_reply(res, status_codes::NoContent);
                     }
                     else
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Not deleting non-persistent subscription: " << subscriptionId;
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Not deleting non-persistent subscription: " << subscriptionId;
                         set_error_reply(res, status_codes::Forbidden, U("Forbidden; a non-persistent subscription is managed by the Query API and cannot be deleted"));
                     }
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*subscription, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*subscription, version));
+                    res.headers().add(web::http::header_names::location, make_query_api_resource_location(*subscription));
                 }
             }
             else if (details::is_erased_resource(resources, { subscriptionId, nmos::types::subscription }))

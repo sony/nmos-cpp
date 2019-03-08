@@ -385,9 +385,71 @@ target_link_libraries(
     nmos_is05_schemas_static
     )
 
+# nmos_system_schemas library
+
+set(NMOS_SYSTEM_SCHEMAS_HEADERS
+    ${NMOS_CPP_DIR}/nmos/system_schemas/system_schemas.h
+    )
+
+set(NMOS_SYSTEM_V1_0_TAG v1.0)
+
+set(NMOS_SYSTEM_V1_0_SCHEMAS_JSON
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/error.json
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/global.json
+    ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_SYSTEM_V1_0_TAG}/APIs/schemas/resource_core.json
+    )
+
+set(NMOS_SYSTEM_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-system/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_SYSTEM_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/system_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_SYSTEM_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_SYSTEM_V1_0_SCHEMAS_SOURCES "${NMOS_SYSTEM_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_SYSTEM_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}" "${NMOS_SYSTEM_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_SYSTEM_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace system_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_system_schemas_static STATIC
+    ${NMOS_SYSTEM_SCHEMAS_HEADERS}
+    ${NMOS_SYSTEM_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\system_schemas\\Header Files" FILES ${NMOS_SYSTEM_SCHEMAS_HEADERS})
+source_group("nmos\\system_schemas\\${NMOS_SYSTEM_V1_0_TAG}\\Source Files" FILES ${NMOS_SYSTEM_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_system_schemas_static
+    )
+
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
+    ${NMOS_CPP_DIR}/third_party/nlohmann/json-schema-draft7.json.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-validator.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-uri.cpp
     )
@@ -444,12 +506,14 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/admin_ui.cpp
     ${NMOS_CPP_DIR}/nmos/api_downgrade.cpp
     ${NMOS_CPP_DIR}/nmos/api_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/client_utils.cpp
     ${NMOS_CPP_DIR}/nmos/components.cpp
     ${NMOS_CPP_DIR}/nmos/connection_api.cpp
     ${NMOS_CPP_DIR}/nmos/filesystem_route.cpp
     ${NMOS_CPP_DIR}/nmos/group_hint.cpp
     ${NMOS_CPP_DIR}/nmos/id.cpp
     ${NMOS_CPP_DIR}/nmos/json_schema.cpp
+    ${NMOS_CPP_DIR}/nmos/log_model.cpp
     ${NMOS_CPP_DIR}/nmos/logging_api.cpp
     ${NMOS_CPP_DIR}/nmos/mdns.cpp
     ${NMOS_CPP_DIR}/nmos/mdns_api.cpp
@@ -467,8 +531,12 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/resource.cpp
     ${NMOS_CPP_DIR}/nmos/resources.cpp
     ${NMOS_CPP_DIR}/nmos/sdp_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/server_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/settings.cpp
     ${NMOS_CPP_DIR}/nmos/settings_api.cpp
     ${NMOS_CPP_DIR}/nmos/event_tally_api.cpp
+    ${NMOS_CPP_DIR}/nmos/system_api.cpp
+    ${NMOS_CPP_DIR}/nmos/system_resources.cpp
     )
 set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/activation_mode.h
@@ -477,6 +545,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/api_utils.h
     ${NMOS_CPP_DIR}/nmos/api_version.h
     ${NMOS_CPP_DIR}/nmos/channels.h
+    ${NMOS_CPP_DIR}/nmos/client_utils.h
     ${NMOS_CPP_DIR}/nmos/colorspace.h
     ${NMOS_CPP_DIR}/nmos/components.h
     ${NMOS_CPP_DIR}/nmos/copyable_atomic.h
@@ -492,7 +561,9 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is05_versions.h
     ${NMOS_CPP_DIR}/nmos/json_fields.h
     ${NMOS_CPP_DIR}/nmos/json_schema.h
+    ${NMOS_CPP_DIR}/nmos/log_gate.h
     ${NMOS_CPP_DIR}/nmos/log_manip.h
+    ${NMOS_CPP_DIR}/nmos/log_model.h
     ${NMOS_CPP_DIR}/nmos/logging_api.h
     ${NMOS_CPP_DIR}/nmos/mdns.h
     ${NMOS_CPP_DIR}/nmos/mdns_api.h
@@ -516,10 +587,13 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/resource.h
     ${NMOS_CPP_DIR}/nmos/resources.h
     ${NMOS_CPP_DIR}/nmos/sdp_utils.h
+    ${NMOS_CPP_DIR}/nmos/server_utils.h
     ${NMOS_CPP_DIR}/nmos/settings.h
     ${NMOS_CPP_DIR}/nmos/settings_api.h
     ${NMOS_CPP_DIR}/nmos/slog.h
     ${NMOS_CPP_DIR}/nmos/string_enum.h
+    ${NMOS_CPP_DIR}/nmos/system_api.h
+    ${NMOS_CPP_DIR}/nmos/system_resources.h
     ${NMOS_CPP_DIR}/nmos/tai.h
     ${NMOS_CPP_DIR}/nmos/thread_utils.h
     ${NMOS_CPP_DIR}/nmos/transfer_characteristic.h
@@ -596,6 +670,7 @@ target_link_libraries(
     json_schema_validator_static
     nmos_is04_schemas_static
     nmos_is05_schemas_static
+    nmos_system_schemas_static
     ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}

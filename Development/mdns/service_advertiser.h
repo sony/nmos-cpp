@@ -23,7 +23,7 @@ namespace mdns
     class service_advertiser
     {
     public:
-        explicit service_advertiser(slog::base_gate& gate); // or web::logging::experimental::callback_function to avoid the dependency on slog?
+        explicit service_advertiser(slog::base_gate& gate); // or web::logging::experimental::log_handler to avoid the dependency on slog?
         ~service_advertiser(); // do not destroy this object with outstanding tasks!
 
         pplx::task<void> open();

@@ -56,7 +56,7 @@ namespace mdns
     class service_discovery
     {
     public:
-        explicit service_discovery(slog::base_gate& gate); // or web::logging::experimental::callback_function to avoid the dependency on slog?
+        explicit service_discovery(slog::base_gate& gate); // or web::logging::experimental::log_handler to avoid the dependency on slog?
         ~service_discovery(); // do not destroy this object with outstanding tasks!
 
         pplx::task<bool> browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());

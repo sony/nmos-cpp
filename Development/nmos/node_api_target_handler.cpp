@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/trim.hpp>
 #include "cpprest/http_client.h"
 #include "nmos/activation_mode.h"
+#include "nmos/client_utils.h"
 #include "nmos/connection_api.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_fields.h"
@@ -12,9 +13,9 @@
 namespace nmos
 {
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, slog::base_gate& gate)
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model)
     {
-        return [&](const nmos::id& receiver_id, const web::json::value& sender_data)
+        return [&model](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
         {
             using web::json::value;
             using web::json::value_of;
@@ -26,12 +27,13 @@ namespace nmos
                 const auto sender_id = nmos::fields::id(sender_data);
                 const auto manifest_href = nmos::fields::manifest_href(sender_data);
 
-                web::http::client::http_client client(manifest_href);
-                return client.request(web::http::methods::GET).then([&gate](web::http::http_response res)
+                web::http::client::http_client client(manifest_href, nmos::make_http_client_config(model.settings));
+                return client.request(web::http::methods::GET).then([manifest_href, &gate](web::http::http_response res)
                 {
                     if (res.status_code() != web::http::status_codes::OK)
                     {
-                        throw web::http::http_exception(U("no sender sdp retrieved"));
+                        throw web::http::http_exception(U("Request for manifest: ") + manifest_href
+                            + U("failed, with response: ") + utility::ostringstreamed(res.status_code()) + U(" ") + res.reason_phrase());
                     }
 
                     // extract_string doesn't know about "application/sdp"

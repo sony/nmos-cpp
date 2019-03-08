@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Defines the Global System Constants",
+  "title": "System resource - globals",
+  "allOf": [
+    { "$ref": "resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "is04",
+        "ptp"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "is04": {
+          "description": "Constants relating to AMWA NMOS IS-04",
+          "type": "object",
+          "required": [
+            "heartbeat_interval"
+          ],
+          "properties": {
+            "heartbeat_interval": {
+              "description": "How often a Node should re-assert its registration (in seconds)",
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        },
+        "ptp": {
+          "description": "Constants relating to IEEE1588 PTP",
+          "type": "object",
+          "required": [
+            "announce_receipt_timeout",
+            "domain_number"
+          ],
+          "properties": {
+            "announce_receipt_timeout": {
+              "description": "Number of announce intervals that must pass before declaring timeout",
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 10
+            },
+            "domain_number": {
+              "description": "The PTP domain number",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            }
+          }
+        },
+        "syslogv2": {
+          "description": "Constants relating to syslog v2 servers",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "hostname": {
+              "description": "Hostname or IP of a syslog v2 server (optional)",
+              "type": "string",
+              "format": "hostname"
+            },
+            "port": {
+              "description": "destination port number for syslog v2 messages",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        },
+        "syslog": {
+          "description": "Constants relating to syslog v1 servers",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "hostname": {
+              "description": "Hostname or IP of a syslog v1 server (optional)",
+              "type": "string",
+              "format": "hostname"
+            },
+            "port": {
+              "description": "destination port number for syslog v1 messages",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -239,7 +239,7 @@ namespace nmos
 
         return web::uri_builder()
             .set_scheme(U("http"))
-            .set_host(nmos::fields::host_address(settings))
+            .set_host(nmos::get_host(settings))
             .set_port(nmos::fields::connection_port(settings))
             .set_path(U("/x-nmos/connection/") + make_api_version(version) + U("/single/senders/") + sender_id + U("/transportfile"))
             .to_uri();

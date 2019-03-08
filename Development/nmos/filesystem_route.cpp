@@ -18,21 +18,22 @@ namespace nmos
 #endif
         }
 
-        web::http::experimental::listener::api_router make_filesystem_route(const utility::string_t& filesystem_root, const relative_path_content_type_validator& validate, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_filesystem_route(const utility::string_t& filesystem_root, const relative_path_content_type_validator& validate, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
             api_router filesystem_route;
 
-            filesystem_route.support(U("(?<filesystem-relative-path>/.+)"), web::http::methods::GET, [filesystem_root, validate, &gate](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            filesystem_route.support(U("(?<filesystem-relative-path>/.+)"), web::http::methods::GET, [filesystem_root, validate, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Filesystem request received";
+                nmos::api_gate gate(gate_, req, parameters);
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Filesystem request received";
                 const auto relative_path = web::uri::decode(parameters.at(U("filesystem-relative-path")));
                 const bool naughty = string_t::npos != relative_path.find(U("/.."));
                 const auto content_type = validate(relative_path);
                 if (naughty || content_type.empty())
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected request forbidden";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected request forbidden";
                     set_reply(res, status_codes::Forbidden);
                 }
                 else
@@ -51,7 +52,7 @@ namespace nmos
                     else
                     {
                         // unless requests are for files of a supported file type that are actually found in the filesystem, let's just report Forbidden
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << nmos::api_stash(req, parameters) << "Unexpected request forbidden";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected request forbidden";
                         set_reply(res, status_codes::Forbidden);
                     }
                 }
