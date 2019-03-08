@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
 
         // Configure the Event and Tally API
 
-        port_routers[nmos::experimental::fields::event_tally_port(node_model.settings)].mount({}, nmos::experimental::make_event_tally_api(node_model, gate));
+        port_routers[{ {}, nmos::experimental::fields::event_tally_port(node_model.settings) }].mount({}, nmos::experimental::make_event_tally_api(node_model, gate));
 
         // Set up the listeners for each API port
 
