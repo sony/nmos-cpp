@@ -19,6 +19,25 @@ namespace web
         {
             namespace listener
             {
+                // platform-specific wildcard address to accept connections for any address
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
+#else
+                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
+#endif
+
+                // make an address to be used to accept WebSocket connections for the specified address and port
+                inline web::uri make_listener_uri(const utility::string_t& host_address, int port)
+                {
+                    return web::uri_builder().set_scheme(_XPLATSTR("ws")).set_host(host_address).set_port(port).to_uri();
+                }
+
+                // make an address to be used to accept WebSocket connections for the specified port for any address
+                inline web::uri make_listener_uri(int port)
+                {
+                    return make_listener_uri(host_wildcard, port);
+                }
+
                 // websocket server implementation
                 namespace details
                 {
@@ -78,7 +97,8 @@ namespace web
                 class websocket_listener
                 {
                 public:
-                    explicit websocket_listener(int listen_port = 80, websocket_listener_config = {});
+                    explicit websocket_listener(web::uri address, websocket_listener_config = {});
+                    websocket_listener();
                     ~websocket_listener();
 
                     void set_validate_handler(validate_handler handler);
@@ -95,14 +115,15 @@ namespace web
                     websocket_listener(websocket_listener&& other);
                     websocket_listener& operator=(websocket_listener&& other);
 
-                    int port() const;
+                    const web::uri& uri() const;
+
+                    const websocket_listener_config& configuration() const;
 
                 private:
                     websocket_listener(const websocket_listener& other);
                     websocket_listener& operator=(const websocket_listener& other);
 
                     std::unique_ptr<details::websocket_listener_impl> impl;
-                    int listen_port;
                 };
 
                 // RAII helper for websocket_listener sessions (could be extracted to another header)
