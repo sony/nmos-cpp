@@ -1,6 +1,8 @@
 #ifndef CPPREST_WS_LISTENER_H
 #define CPPREST_WS_LISTENER_H
 
+#if !defined(CPPREST_EXCLUDE_WEBSOCKETS)
+
 #include <functional>
 #include <memory>
 
@@ -54,10 +56,29 @@ namespace web
                 // a close handler gets the resource path and the connection id
                 typedef std::function<void(const utility::string_t&, const connection_id&)> close_handler;
 
+                class websocket_listener_config
+                {
+                public:
+                    websocket_listener_config() {}
+
+                    const web::logging::experimental::log_handler& get_log_callback() const
+                    {
+                        return m_log_callback;
+                    }
+
+                    void set_log_callback(const web::logging::experimental::log_handler& log_callback)
+                    {
+                        m_log_callback = log_callback;
+                    }
+
+                private:
+                    web::logging::experimental::log_handler m_log_callback;
+                };
+
                 class websocket_listener
                 {
                 public:
-                    explicit websocket_listener(int listen_port = 80, web::logging::experimental::log_handler log = {});
+                    explicit websocket_listener(int listen_port = 80, websocket_listener_config = {});
                     ~websocket_listener();
 
                     void set_validate_handler(validate_handler handler);
@@ -90,5 +111,7 @@ namespace web
         }
     }
 }
+
+#endif
 
 #endif
