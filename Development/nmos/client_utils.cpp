@@ -3,6 +3,7 @@
 #include "cpprest/basic_utils.h"
 #include "cpprest/http_client.h"
 #include "cpprest/ws_client.h"
+#include "nmos/ssl_context_options.h"
 
 // Utility types, constants and functions for implementing NMOS REST API clients
 namespace nmos
@@ -18,27 +19,6 @@ namespace nmos
             .to_uri();
     }
 
-#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-    namespace details
-    {
-        // AMWA BCP-003-01 states that "implementations SHOULD support TLS 1.3 and SHALL support TLS 1.2."
-        // "Implementations SHALL NOT use TLS 1.0 or 1.1. These are deprecated."
-        // "Implementations SHALL NOT use SSL. Although the SSL protocol has previously,
-        // been used to secure HTTP traffic no version of SSL is now considered secure."
-        // See https://github.com/AMWA-TV/nmos-api-security/blob/master/best-practice-secure-comms.md#tls
-        const auto ssl_context_options =
-            ( boost::asio::ssl::context::no_sslv2
-            | boost::asio::ssl::context::no_sslv3
-            | boost::asio::ssl::context::no_tlsv1
-// TLS v1.2 support was added in Boost 1.54.0
-// but the option to disable TLS v1.1 didn't arrive until Boost 1.58.0
-#if BOOST_VERSION >= 105800
-            | boost::asio::ssl::context::no_tlsv1_1
-#endif
-            );
-    }
-#endif
-
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted, e.g. request timeout
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings)
@@ -48,7 +28,7 @@ namespace nmos
         if (!proxy.is_empty()) config.set_proxy(proxy);
 #if !defined(_WIN32) && !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         const auto ca_certificate_filename = utility::us2s(nmos::experimental::fields::ca_certificate_file(settings));
-        config.set_ssl_context_callback([ca_certificate_filename](boost::asio::ssl::context &ctx)
+        config.set_ssl_context_callback([ca_certificate_filename](boost::asio::ssl::context& ctx)
         {
             try
             {
@@ -74,7 +54,7 @@ namespace nmos
         if (!proxy.is_empty()) config.set_proxy(proxy);
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
         const auto ca_certificate_filename = utility::us2s(nmos::experimental::fields::ca_certificate_file(settings));
-        config.set_ssl_context_callback([ca_certificate_filename](boost::asio::ssl::context &ctx)
+        config.set_ssl_context_callback([ca_certificate_filename](boost::asio::ssl::context& ctx)
         {
             try
             {

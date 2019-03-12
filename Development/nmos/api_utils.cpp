@@ -408,9 +408,9 @@ namespace nmos
     }
 
     // construct an http_listener on the specified port, using the specified API to handle all requests
-    web::http::experimental::listener::http_listener make_api_listener(const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
+    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
     {
-        web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(host_address, port), std::move(config));
+        web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(secure, host_address, port), std::move(config));
         nmos::support_api(api_listener, api, gate);
         return api_listener;
     }

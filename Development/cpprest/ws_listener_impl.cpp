@@ -15,7 +15,7 @@ __pragma(warning(disable:4701)) // e.g. potentially uninitialized local variable
 // it seems impossible to get rid of the dependencies of Boost.Asio on Boost.System and Boost.Date_Time
 #define BOOST_ASIO_DISABLE_BOOST_REGEX
 #include "websocketpp/config/boost_config.hpp"
-#include "websocketpp/config/asio_no_tls.hpp"
+#include "websocketpp/config/asio.hpp"
 #include "websocketpp/logger/levels.hpp"
 #include "websocketpp/server.hpp"
 PRAGMA_WARNING_POP
@@ -147,6 +147,10 @@ namespace web
                     };
 
                     typedef websocketpp_config<websocketpp::config::asio> ws_config;
+                    typedef websocketpp_config<websocketpp::config::asio_tls> wss_config;
+
+                    void set_tls_init_handler(websocketpp::server<ws_config>& server, websocketpp::transport::asio::tls_socket::tls_init_handler handler) {}
+                    void set_tls_init_handler(websocketpp::server<wss_config>& server, websocketpp::transport::asio::tls_socket::tls_init_handler handler) { server.set_tls_init_handler(handler); }
 
                     struct websocket_outgoing_message_body { typedef concurrency::streams::streambuf<uint8_t>(websocket_outgoing_message::*type); };
 
@@ -244,6 +248,8 @@ namespace web
 
                                 using websocketpp::lib::bind;
                                 using websocketpp::lib::placeholders::_1;
+
+                                set_tls_init_handler(server, bind(&websocket_listener_wspp::handle_tls_init, this, _1));
 
                                 server.set_validate_handler(bind(&websocket_listener_wspp::handle_validate, this, _1));
                                 server.set_open_handler(bind(&websocket_listener_wspp::handle_open, this, _1));
@@ -368,6 +374,20 @@ namespace web
                             return utility::conversions::to_string_t(server.get_con_from_hdl(hdl)->get_resource());
                         }
 
+                        websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> handle_tls_init(websocketpp::connection_hdl hdl)
+                        {
+                            auto ctx = websocketpp::lib::make_shared<websocketpp::lib::asio::ssl::context>(websocketpp::lib::asio::ssl::context::sslv23);
+
+                            ctx->set_options(websocketpp::lib::asio::ssl::context::default_workarounds);
+
+                            if (config.get_ssl_context_callback())
+                            {
+                                config.get_ssl_context_callback()(*ctx);
+                            }
+
+                            return ctx;
+                        }
+
                         bool handle_validate(websocketpp::connection_hdl hdl)
                         {
                             return user_validate ? user_validate(resource_from_hdl(hdl)) : true;
@@ -410,10 +430,17 @@ namespace web
                         open_handler user_open;
                         close_handler user_close;
                     };
+
+                    std::unique_ptr<websocket_listener_impl> make_websocket_listener_impl(bool secure, websocket_listener_config config)
+                    {
+                        return !secure
+                            ? std::unique_ptr<websocket_listener_impl>{ new details::websocket_listener_wspp<details::ws_config>(config) }
+                            : std::unique_ptr<websocket_listener_impl>{ new details::websocket_listener_wspp<details::wss_config>(config) };
+                    }
                 }
 
-                websocket_listener::websocket_listener(int listen_port, websocket_listener_config config)
-                    : impl(new details::websocket_listener_wspp<details::ws_config>(config))
+                websocket_listener::websocket_listener(bool secure, int listen_port, websocket_listener_config config)
+                    : impl(details::make_websocket_listener_impl(secure, config))
                     , listen_port(listen_port)
                 {
                 }

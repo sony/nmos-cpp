@@ -490,6 +490,12 @@ set(NMOS_CPP_CPPREST_SOURCES
     ${NMOS_CPP_DIR}/cpprest/json_validator_impl.cpp
     ${NMOS_CPP_DIR}/cpprest/ws_listener_impl.cpp
     )
+
+if(MSVC)
+    # workaround for "fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj"
+    set_source_files_properties(${NMOS_CPP_DIR}/cpprest/ws_listener_impl.cpp PROPERTIES COMPILE_FLAGS /bigobj)
+endif()
+
 set(NMOS_CPP_CPPREST_HEADERS
     ${NMOS_CPP_DIR}/cpprest/api_router.h
     ${NMOS_CPP_DIR}/cpprest/basic_utils.h
@@ -591,6 +597,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/settings.h
     ${NMOS_CPP_DIR}/nmos/settings_api.h
     ${NMOS_CPP_DIR}/nmos/slog.h
+	${NMOS_CPP_DIR}/nmos/ssl_context_options.h
     ${NMOS_CPP_DIR}/nmos/string_enum.h
     ${NMOS_CPP_DIR}/nmos/system_api.h
     ${NMOS_CPP_DIR}/nmos/system_resources.h

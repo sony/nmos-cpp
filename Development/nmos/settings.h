@@ -175,8 +175,19 @@ namespace nmos
             // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
             const web::json::field_as_bool_or client_secure{ U("client_secure"), false };
 
-            // ca_certificate_file [registry, node]: full path of certification authority file
+            // ca_certificate_file [registry, node]: full path of certification authority file in PEM format
             const web::json::field_as_string_or ca_certificate_file{ U("ca_certificate_file"), U("") };
+
+            // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
+            // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
+            const web::json::field_as_bool_or server_secure{ U("server_secure"), false };
+
+            // private_key_file [registry, node]: full path of private key file in PEM format
+            const web::json::field_as_string_or private_key_file{ U("private_key_file"), U("") };
+
+            // certificate_chain_file [registry, node]: full path of server certificate chain file which must be in PEM format and must be sorted
+            // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+            const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
         }
     }
 }

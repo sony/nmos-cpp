@@ -14,6 +14,8 @@ BST_TEST_CASE(testMakeListenerUri)
 #endif
 
     BST_REQUIRE_STRING_EQUAL("http://203.0.113.42:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(U("203.0.113.42"), 42).to_string()));
+
+    BST_REQUIRE_STRING_EQUAL("https://203.0.113.42:42/", utility::us2s(web::http::experimental::listener::make_listener_uri(true, U("203.0.113.42"), 42).to_string()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
