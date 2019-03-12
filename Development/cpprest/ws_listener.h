@@ -8,6 +8,7 @@
 
 #include "pplx/pplx_utils.h"
 #include "cpprest/logging_utils.h" // for web::logging::experimental::log_handler
+#include "cpprest/uri_schemes.h"
 #include "cpprest/ws_client.h" // for web::websockets::client::websocket_outgoing_message and web::websockets::client::websocket_exception
 
 // websocket_listener is an experimental server-side implementation of WebSockets
@@ -19,6 +20,31 @@ namespace web
         {
             namespace listener
             {
+                // platform-specific wildcard address to accept connections for any address
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
+#else
+                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
+#endif
+
+                // make an address to be used to accept WebSocket or Secure WebSocket connections for the specified address and port
+                inline web::uri make_listener_uri(bool secure, const utility::string_t& host_address, int port)
+                {
+                    return web::uri_builder().set_scheme(web::ws_scheme(secure)).set_host(host_address).set_port(port).to_uri();
+                }
+
+                // make an address to be used to accept WebSocket connections for the specified address and port
+                inline web::uri make_listener_uri(const utility::string_t& host_address, int port)
+                {
+                    return make_listener_uri(false, host_address, port);
+                }
+
+                // make an address to be used to accept WebSocket connections for the specified port for any address
+                inline web::uri make_listener_uri(int port)
+                {
+                    return make_listener_uri(host_wildcard, port);
+                }
+
                 // websocket server implementation
                 namespace details
                 {
@@ -64,7 +90,7 @@ namespace web
                 class websocket_listener_config
                 {
                 public:
-                    websocket_listener_config() {}
+                    websocket_listener_config() : m_backlog(0) {}
 
                     const web::logging::experimental::log_handler& get_log_callback() const
                     {
@@ -74,6 +100,16 @@ namespace web
                     void set_log_callback(const web::logging::experimental::log_handler& log_callback)
                     {
                         m_log_callback = log_callback;
+                    }
+
+                    int backlog() const
+                    {
+                        return m_backlog;
+                    }
+
+                    void set_backlog(int backlog)
+                    {
+                        m_backlog = backlog;
                     }
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
@@ -90,6 +126,7 @@ namespace web
 
                 private:
                     web::logging::experimental::log_handler m_log_callback;
+                    int m_backlog;
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
                     ssl_context_callback m_ssl_context_callback;
 #endif
@@ -98,7 +135,8 @@ namespace web
                 class websocket_listener
                 {
                 public:
-                    explicit websocket_listener(bool secure = false, int listen_port = 80, websocket_listener_config = {});
+                    explicit websocket_listener(web::uri address, websocket_listener_config = {});
+                    websocket_listener();
                     ~websocket_listener();
 
                     void set_validate_handler(validate_handler handler);
@@ -115,14 +153,15 @@ namespace web
                     websocket_listener(websocket_listener&& other);
                     websocket_listener& operator=(websocket_listener&& other);
 
-                    int port() const;
+                    const web::uri& uri() const;
+
+                    const websocket_listener_config& configuration() const;
 
                 private:
                     websocket_listener(const websocket_listener& other);
                     websocket_listener& operator=(const websocket_listener& other);
 
                     std::unique_ptr<details::websocket_listener_impl> impl;
-                    int listen_port;
                 };
 
                 // RAII helper for websocket_listener sessions (could be extracted to another header)

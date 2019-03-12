@@ -39,6 +39,7 @@ namespace nmos
     web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings)
     {
         web::websockets::experimental::listener::websocket_listener_config config;
+        config.set_backlog(nmos::fields::listen_backlog(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
         const auto private_key_file = utility::us2s(nmos::experimental::fields::private_key_file(settings));
         const auto certificate_chain_file = utility::us2s(nmos::experimental::fields::certificate_chain_file(settings));
