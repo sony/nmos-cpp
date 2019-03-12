@@ -136,11 +136,13 @@ int main(int argc, char* argv[])
 
         nmos::websockets registry_websockets;
 
+        auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings);
+        websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
         web::websockets::experimental::listener::validate_handler query_ws_validate_handler = nmos::make_query_ws_validate_handler(registry_model, gate);
         web::websockets::experimental::listener::open_handler query_ws_open_handler = nmos::make_query_ws_open_handler(query_id, registry_model, registry_websockets, gate);
         web::websockets::experimental::listener::close_handler query_ws_close_handler = nmos::make_query_ws_close_handler(registry_model, registry_websockets, gate);
         // hmm, websocket_listener currently always binds to the wildcard address
-        web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::experimental::server_port(nmos::fields::query_ws_port(registry_model.settings), registry_model.settings), nmos::make_slog_logging_callback(gate));
+        web::websockets::experimental::listener::websocket_listener query_ws_listener(nmos::experimental::server_port(nmos::fields::query_ws_port(registry_model.settings), registry_model.settings), websocket_config);
         query_ws_listener.set_validate_handler(std::ref(query_ws_validate_handler));
         query_ws_listener.set_open_handler(std::ref(query_ws_open_handler));
         query_ws_listener.set_close_handler(std::ref(query_ws_close_handler));
@@ -176,9 +178,7 @@ int main(int argc, char* argv[])
 
         // Set up the listeners for each API port
 
-        // try to use the configured TCP listen backlog
-        web::http::experimental::listener::http_listener_config listener_config;
-        listener_config.set_backlog(nmos::fields::listen_backlog(registry_model.settings));
+        auto http_config = nmos::make_http_listener_config(registry_model.settings);
 
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
         for (auto& port_router : port_routers)
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
             const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
             // map the configured client port to the server port on which to listen
             // hmm, this should probably also take account of the address
-            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, registry_model.settings), port_router.second, listener_config, gate));
+            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, registry_model.settings), port_router.second, http_config, gate));
         }
 
         // Start up registry management before any NMOS APIs are open

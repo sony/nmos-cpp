@@ -368,7 +368,7 @@ namespace nmos
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
                 set_error_reply(res, status_codes::InternalError, e);
             }
-            // and this one asks to skip other route handlers and then send the response 
+            // and this one asks to skip other route handlers and then send the response
             catch (const details::to_api_finally_handler&)
             {
                 if (web::http::empty_status_code == res.status_code())
