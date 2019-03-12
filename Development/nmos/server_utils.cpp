@@ -20,6 +20,7 @@ namespace nmos
     web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings)
     {
         web::websockets::experimental::listener::websocket_listener_config config;
+        config.set_backlog(nmos::fields::listen_backlog(settings));
 
         return config;
     }

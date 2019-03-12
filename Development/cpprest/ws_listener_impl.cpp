@@ -297,6 +297,7 @@ namespace web
                                 server.set_open_handler(bind(&websocket_listener_wspp::handle_open, this, _1));
                                 server.set_close_handler(bind(&websocket_listener_wspp::handle_close, this, _1));
 
+                                server.set_listen_backlog(configuration().backlog());
                                 websocketpp::lib::asio::ip::tcp::resolver resolver(server.get_io_service());
                                 websocketpp::lib::asio::ip::tcp::resolver::query query(host, service);
                                 websocketpp::lib::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);

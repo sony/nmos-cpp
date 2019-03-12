@@ -78,7 +78,7 @@ namespace web
                 class websocket_listener_config
                 {
                 public:
-                    websocket_listener_config() {}
+                    websocket_listener_config() : m_backlog(0) {}
 
                     const web::logging::experimental::log_handler& get_log_callback() const
                     {
@@ -90,8 +90,19 @@ namespace web
                         m_log_callback = log_callback;
                     }
 
+                    int backlog() const
+                    {
+                        return m_backlog;
+                    }
+
+                    void set_backlog(int backlog)
+                    {
+                        m_backlog = backlog;
+                    }
+
                 private:
                     web::logging::experimental::log_handler m_log_callback;
+                    int m_backlog;
                 };
 
                 class websocket_listener
