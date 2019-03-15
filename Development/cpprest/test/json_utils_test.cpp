@@ -190,7 +190,7 @@ qux */ 42,
 /** /* **/ }
 )");
 
-    const auto stripped = utility::conversions::to_string_t(R"({  
+    const auto stripped = utility::conversions::to_string_t(R"({
    "bar":   42,
    "quux":  "/*//\r\n\"quuux\\"
   }

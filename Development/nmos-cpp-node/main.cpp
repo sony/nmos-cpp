@@ -135,9 +135,7 @@ int main(int argc, char* argv[])
 
         // Set up the listeners for each API port
 
-        // try to use the configured TCP listen backlog
-        web::http::experimental::listener::http_listener_config listener_config;
-        listener_config.set_backlog(nmos::fields::listen_backlog(node_model.settings));
+       auto http_config = nmos::make_http_listener_config(node_model.settings);
 
         std::vector<web::http::experimental::listener::http_listener> port_listeners;
         for (auto& port_router : port_routers)
@@ -146,7 +144,7 @@ int main(int argc, char* argv[])
             const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
             // map the configured client port to the server port on which to listen
             // hmm, this should probably also take account of the address
-            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, listener_config, gate));
+            port_listeners.push_back(nmos::make_api_listener(router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, http_config, gate));
         }
 
         // Open the API ports

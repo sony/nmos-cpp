@@ -167,7 +167,7 @@ namespace nmos
                     { U("properties"), properties }
                 }, keep_order));
             }
-                
+
             return value_of({
                 { U("$schema"), U("http://json-schema.org/draft-04/schema#") },
                 { U("type"), U("object") },
@@ -182,7 +182,7 @@ namespace nmos
 
         // Validate staged endpoint against constraints
         void validate_staged_constraints(const nmos::type& type, const web::json::value& constraints, const web::json::value& staged)
-        {            
+        {
             const auto schema = make_constraints_schema(type, constraints);
             const auto uri = web::uri{U("/constraints")};
 

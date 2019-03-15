@@ -109,33 +109,34 @@ namespace web
                     }
 
                     // websocketpp config that just overrides the two log types
-                    struct websocketpp_config : websocketpp::config::asio
+                    template <typename Base>
+                    struct websocketpp_config : Base
                     {
                         typedef websocketpp_config type;
-                        typedef websocketpp::config::asio base;
+                        typedef Base base;
 
-                        typedef base::concurrency_type concurrency_type;
+                        typedef typename base::concurrency_type concurrency_type;
 
-                        typedef base::request_type request_type;
-                        typedef base::response_type response_type;
+                        typedef typename base::request_type request_type;
+                        typedef typename base::response_type response_type;
 
-                        typedef base::message_type message_type;
-                        typedef base::con_msg_manager_type con_msg_manager_type;
-                        typedef base::endpoint_msg_manager_type endpoint_msg_manager_type;
+                        typedef typename base::message_type message_type;
+                        typedef typename base::con_msg_manager_type con_msg_manager_type;
+                        typedef typename base::endpoint_msg_manager_type endpoint_msg_manager_type;
 
                         typedef websocketpp_log alog_type;
                         typedef websocketpp_log elog_type;
 
-                        typedef base::rng_type rng_type;
+                        typedef typename base::rng_type rng_type;
 
                         struct transport_config : base::transport_config
                         {
-                            typedef base::transport_config::concurrency_type concurrency_type;
-                            typedef type::alog_type alog_type;
-                            typedef type::elog_type elog_type;
-                            typedef base::transport_config::request_type request_type;
-                            typedef base::transport_config::response_type response_type;
-                            typedef base::transport_config::socket_type socket_type;
+                            typedef typename base::transport_config::concurrency_type concurrency_type;
+                            typedef typename type::alog_type alog_type;
+                            typedef typename type::elog_type elog_type;
+                            typedef typename base::transport_config::request_type request_type;
+                            typedef typename base::transport_config::response_type response_type;
+                            typedef typename base::transport_config::socket_type socket_type;
                         };
 
                         typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
@@ -144,6 +145,8 @@ namespace web
                         static const websocketpp::log::level elog_level = base::elog_level;
                         static const websocketpp::log::level alog_level = base::alog_level;
                     };
+
+                    typedef websocketpp_config<websocketpp::config::asio> ws_config;
 
                     struct websocket_outgoing_message_body { typedef concurrency::streams::streambuf<uint8_t>(websocket_outgoing_message::*type); };
 
@@ -162,26 +165,27 @@ namespace web
                         return ss.str();
                     }
 
-                    // websocket server implementation that uses websocketpp
+                    // websocket server implementation base class for type erasure
                     class websocket_listener_impl
                     {
                     public:
-                        explicit websocket_listener_impl(web::logging::experimental::log_handler log)
+                        websocket_listener_impl(web::uri address, websocket_listener_config config)
+                            : address(std::move(address))
+                            , config(std::move(config))
                         {
-                            // since we cannot set the callback function before the server constructor we can't get log message from that
-                            server.get_alog().set_log_handler(log);
-                            server.get_elog().set_log_handler(log);
+                            check_uri(uri());
                         }
 
-                        ~websocket_listener_impl()
+                        virtual ~websocket_listener_impl() {}
+
+                        const web::uri& uri() const
                         {
-                            try
-                            {
-                                close().wait();
-                            }
-                            catch (...)
-                            {
-                            }
+                            return address;
+                        }
+
+                        const websocket_listener_config& configuration() const
+                        {
+                            return config;
                         }
 
                         void set_validate_handler(validate_handler handler)
@@ -199,11 +203,85 @@ namespace web
                             user_close = handler;
                         }
 
-                        pplx::task<void> open(int port)
+                        virtual pplx::task<void> open() = 0;
+                        virtual pplx::task<void> close() = 0;
+                        virtual pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message) = 0;
+
+                    protected:
+                        // extend friendship with connection_id to derived classes
+                        static connection_id id_from_hdl(std::weak_ptr<void> hdl)
                         {
+                            return{ hdl };
+                        }
+                        static std::weak_ptr<void> hdl_from_id(connection_id connection)
+                        {
+                            return connection.hdl;
+                        }
+
+                        static void check_uri(const web::uri& address)
+                        {
+                            if (address.scheme() != _XPLATSTR("ws"))
+                            {
+                                throw std::invalid_argument("URI scheme must be 'ws'");
+                            }
+                            if (!address.user_info().empty())
+                            {
+                                throw std::invalid_argument("URI can't contain user information");
+                            }
+                            if (address.host().empty())
+                            {
+                                throw std::invalid_argument("URI must contain a host");
+                            }
+                            if (!address.is_path_empty())
+                            {
+                                throw std::invalid_argument("URI can't contain a path");
+                            }
+                            if (!address.query().empty())
+                            {
+                                throw std::invalid_argument("URI can't contain a query");
+                            }
+                            if (!address.fragment().empty())
+                            {
+                                throw std::invalid_argument("URI can't contain a fragment");
+                            }
+                        }
+
+                        static int get_port(const web::uri& address)
+                        {
+                            return address.port() > 0 ? address.port() : 80;
+                        }
+
+                        web::uri address;
+                        websocket_listener_config config;
+
+                        validate_handler user_validate;
+                        open_handler user_open;
+                        close_handler user_close;
+                    };
+
+                    // websocket server implementation that uses websocketpp
+                    template <typename WsppConfig>
+                    class websocket_listener_wspp : public websocket_listener_impl
+                    {
+                    public:
+                        explicit websocket_listener_wspp(web::uri address, websocket_listener_config config)
+                            : websocket_listener_impl(std::move(address), std::move(config))
+                        {
+                            // since we cannot set the callback function before the server constructor we can't get log message from that
+                            server.get_alog().set_log_handler(configuration().get_log_callback());
+                            server.get_elog().set_log_handler(configuration().get_log_callback());
+                        }
+
+                        pplx::task<void> open()
+                        {
+                            const std::string host = utility::conversions::to_utf8string(address.host());
+
+                            const int port = get_port(address);
+                            // this check could be done earlier, in check_uri
                             if ((uint16_t)port != port) return pplx::task_from_exception<void>(websocket_exception("Invalid port"));
-                            // hmm, opening port 0 indicates a free port should be assigned; one might want to know which one...
+                            // hmm, port 0 could be used to indicate a free port should be assigned rather than meaning default; one might want to know which one...
                             // since WebSocket++ 0.7.0, server.get_local_endpoint().port() can be used when the server is listening
+                            const std::string service = std::to_string(port);
 
                             try
                             {
@@ -215,12 +293,16 @@ namespace web
                                 using websocketpp::lib::bind;
                                 using websocketpp::lib::placeholders::_1;
 
-                                server.set_validate_handler(bind(&websocket_listener_impl::handle_validate, this, _1));
-                                server.set_open_handler(bind(&websocket_listener_impl::handle_open, this, _1));
-                                server.set_close_handler(bind(&websocket_listener_impl::handle_close, this, _1));
+                                server.set_validate_handler(bind(&websocket_listener_wspp::handle_validate, this, _1));
+                                server.set_open_handler(bind(&websocket_listener_wspp::handle_open, this, _1));
+                                server.set_close_handler(bind(&websocket_listener_wspp::handle_close, this, _1));
 
+                                server.set_listen_backlog(configuration().backlog());
+                                websocketpp::lib::asio::ip::tcp::resolver resolver(server.get_io_service());
+                                websocketpp::lib::asio::ip::tcp::resolver::query query(host, service);
+                                websocketpp::lib::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
                                 websocketpp::lib::error_code ec;
-                                server.listen((uint16_t)port, ec);
+                                server.listen(endpoint, ec);
                                 // if the error is "Underlying Transport Error" (pass_through), this might be a platform that doesn't support IPv6
                                 // (and depending on configuration, one can't detect boost::asio::error::address_family_not_supported directly)
                                 // since WebSocket++ 0.8.0, the error category and code used in this case seem to have changed
@@ -230,7 +312,9 @@ namespace web
                                 {
                                     // retry, limiting ourselves to IPv4
                                     server.get_alog().write(websocketpp::log::alevel::app, "listening with IPv6 failed; retrying with IPv4 only");
-                                    server.listen(boost::asio::ip::tcp::v4(), (uint16_t)port);
+                                    websocketpp::lib::asio::ip::tcp::resolver::query query(boost::asio::ip::tcp::v4(), host, service);
+                                    websocketpp::lib::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+                                    server.listen(endpoint);
                                 }
                                 // otherwise treat any error as usual
                                 else if (ec)
@@ -330,22 +414,12 @@ namespace web
                         }
 
                     private:
-                        typedef websocketpp::server<websocketpp_config> server_t;
+                        typedef websocketpp::server<WsppConfig> server_t;
                         typedef std::set<websocketpp::connection_hdl, std::owner_less<websocketpp::connection_hdl>> connections_t;
 
                         utility::string_t resource_from_hdl(websocketpp::connection_hdl hdl)
                         {
                             return utility::conversions::to_string_t(server.get_con_from_hdl(hdl)->get_resource());
-                        }
-
-                        static connection_id id_from_hdl(websocketpp::connection_hdl hdl)
-                        {
-                            return{ hdl };
-                        }
-
-                        static websocketpp::connection_hdl hdl_from_id(connection_id connection)
-                        {
-                            return connection.hdl;
                         }
 
                         bool handle_validate(websocketpp::connection_hdl hdl)
@@ -383,22 +457,20 @@ namespace web
                         server_t server;
                         connections_t connections;
                         std::mutex mutex;
-
-                        validate_handler user_validate;
-                        open_handler user_open;
-                        close_handler user_close;
                     };
                 }
 
-                websocket_listener::websocket_listener(int listen_port, web::logging::experimental::log_handler log)
-                    : impl(new details::websocket_listener_impl(log))
-                    , listen_port(listen_port)
+                websocket_listener::websocket_listener()
+                {
+                }
+
+                websocket_listener::websocket_listener(web::uri address, websocket_listener_config config)
+                    : impl(new details::websocket_listener_wspp<details::ws_config>(std::move(address), std::move(config)))
                 {
                 }
 
                 websocket_listener::websocket_listener(websocket_listener&& other)
                     : impl(std::move(other.impl))
-                    , listen_port(other.listen_port)
                 {
                 }
 
@@ -407,13 +479,22 @@ namespace web
                     if (this != &other)
                     {
                         impl = std::move(other.impl);
-                        listen_port = other.listen_port;
                     }
                     return *this;
                 }
 
                 websocket_listener::~websocket_listener()
                 {
+                    if (impl)
+                    {
+                        try
+                        {
+                            close().wait();
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
                 }
 
                 void websocket_listener::set_validate_handler(validate_handler handler)
@@ -433,7 +514,7 @@ namespace web
 
                 pplx::task<void> websocket_listener::open()
                 {
-                    return impl->open(listen_port);
+                    return impl->open();
                 }
 
                 pplx::task<void> websocket_listener::close()
@@ -446,9 +527,14 @@ namespace web
                     return impl->send(connection, message);
                 }
 
-                int websocket_listener::port() const
+                const web::uri& websocket_listener::uri() const
                 {
-                    return listen_port;
+                    return impl->uri();
+                }
+
+                const websocket_listener_config& websocket_listener::configuration() const
+                {
+                    return impl->configuration();
                 }
             }
         }

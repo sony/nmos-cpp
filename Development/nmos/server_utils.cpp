@@ -1,10 +1,30 @@
 #include "nmos/server_utils.h"
 
 #include <algorithm>
+#include "cpprest/http_listener.h"
+#include "cpprest/ws_listener.h"
 
 // Utility types, constants and functions for implementing NMOS REST API servers
 namespace nmos
 {
+    // construct listener config based on settings
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings)
+    {
+        web::http::experimental::listener::http_listener_config config;
+        config.set_backlog(nmos::fields::listen_backlog(settings));
+
+        return config;
+    }
+
+    // construct listener config based on settings
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings)
+    {
+        web::websockets::experimental::listener::websocket_listener_config config;
+        config.set_backlog(nmos::fields::listen_backlog(settings));
+
+        return config;
+    }
+
     namespace experimental
     {
         // map the configured client port to the server port on which to listen
