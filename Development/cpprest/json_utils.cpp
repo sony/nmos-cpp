@@ -294,8 +294,10 @@ namespace web
                 {
                     if (!permissive) throw web::json::json_exception(_XPLATSTR("patch error - inconsistent array size"));
                 }
-                auto& va = value.as_array(), pa = patch.as_array();
-                auto vi = va.begin(), pi = pa.begin();
+                auto& va = value.as_array();
+                auto& pa = patch.as_array();
+                auto vi = va.begin();
+                auto pi = pa.begin();
                 while (vi != va.end() && pi != pa.end())
                 {
                     if (permissive && pi->is_null())
