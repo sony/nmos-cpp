@@ -409,6 +409,16 @@ namespace nmos
                         // just return the existing subscription
                         // downgrade doesn't apply to subscriptions; at this point, version must be equal to resource->version
                         data = resource->data;
+
+                        // a non-persistent subscription with no current websocket connections may be about to expire
+                        // so give this client the same grace period as they'd get with a newly created subscription
+
+                        // health is mutable atomic and potentially could be updated elsewhere without a lock
+                        // however, it won't be set to health_forever without a lock, so no need for compare-and-exchange here
+                        if (resource->health != health_forever)
+                        {
+                            resource->health = health_now();
+                        }
                     }
 
                     set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
