@@ -313,7 +313,7 @@ namespace nmos
                     }
                     catch (const web::websockets::websocket_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSockets error: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
                     }
                 });
                 // current websocket_listener implementation is synchronous in any case, but just to make clear...

@@ -274,7 +274,7 @@ namespace nmos
                 }
 
                 return web::uri_builder()
-                    .set_scheme(U("http"))
+                    .set_scheme(nmos::http_scheme(settings)) // no means to detect the API protocol from the request unless reverse proxy added X-Forwarded-Proto?
                     .set_host(req_host_port.first)
                     .set_port(req_host_port.second)
                     .set_path(req.request_uri().path())

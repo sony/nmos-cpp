@@ -35,13 +35,13 @@ namespace nmos
         // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
         const web::json::field_as_bool_or allow_invalid_resources{ U("allow_invalid_resources"), false };
 
-        // host_name [registry, node]: the host name for which to advertise services or an empty string to use the default
-        const web::json::field_as_string_or host_name{ U("host_name"), U("") };
+        // host_name [registry, node]: the host name for which to advertise services, also used to construct response headers and fields in the data model
+        const web::json::field_as_string_or host_name{ U("host_name"), U("") }; // when omitted or an empty string, the default is used
 
         // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS)
         const web::json::field_as_string_or domain{ U("domain"), U("") };
 
-        // host_address/host_addresses [registry, node]: used to construct response headers (e.g. 'Link' or 'Location') and URL fields in the data model
+        // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model
         const web::json::field_as_string_or host_address{ U("host_address"), U("127.0.0.1") };
         const web::json::field_as_array host_addresses{ U("host_addresses") };
 
@@ -63,7 +63,7 @@ namespace nmos
         const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_backoff_max"), 30 };
         const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_backoff_factor"), 1.5 };
 
-        // registry_address [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
+        // registry_address [node]: IP address or host name used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string registry_address{ U("registry_address") };
 
         // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
@@ -163,7 +163,7 @@ namespace nmos
             const web::json::field_as_integer_or logging_paging_limit{ U("logging_paging_limit"), 100 };
 
             // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
-            // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
+            // for use with a reverse proxy; each element of the array is an object like { "client_port": 80, "server_port": 8080 }
             const web::json::field_as_value_or proxy_map{ U("proxy_map"), web::json::value::array() };
 
             // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
@@ -171,6 +171,23 @@ namespace nmos
 
             // proxy_port [registry, node]: forward proxy port
             const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
+
+            // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
+            const web::json::field_as_bool_or client_secure{ U("client_secure"), false };
+
+            // ca_certificate_file [registry, node]: full path of certification authority file in PEM format
+            const web::json::field_as_string_or ca_certificate_file{ U("ca_certificate_file"), U("") };
+
+            // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
+            // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
+            const web::json::field_as_bool_or server_secure{ U("server_secure"), false };
+
+            // private_key_file [registry, node]: full path of private key file in PEM format
+            const web::json::field_as_string_or private_key_file{ U("private_key_file"), U("") };
+
+            // certificate_chain_file [registry, node]: full path of server certificate chain file which must be in PEM format and must be sorted
+            // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+            const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
         }
     }
 }

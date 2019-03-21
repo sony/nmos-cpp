@@ -14,13 +14,13 @@
     // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
     //"allow_invalid_resources": false,
 
-    // host_name [registry, node]: the host name for which to advertise services or an empty string to use the default
+    // host_name [registry, node]: the host name for which to advertise services, also used to construct response headers and fields in the data model
     //"host_name": "",
 
     // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (local/mDNS)
     //"domain": "",
 
-    // host_address/host_addresses [registry, node]: used to construct response headers (e.g. 'Link' or 'Location') and URL fields in the data model
+    // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model
     //"host_address": "127.0.0.1",
     //"host_addresses": array-of-ip-address-strings,
 
@@ -94,7 +94,7 @@
     //"logging_paging_limit": 100,
 
     // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
-    // each element of the array is an object like { "client_port": 80, "server_port": 8080 }
+    // for use with a reverse proxy; each element of the array is an object like { "client_port": 80, "server_port": 8080 }
     //"proxy_map": array-of-mappings,
 
     // proxy_address [registry, node]: address of the forward proxy to use when making HTTP requests or WebSocket connections, or an empty string for no proxy
@@ -102,6 +102,23 @@
 
     // proxy_port [registry, node]: forward proxy port
     //"proxy_port": 8080,
+
+    // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
+    //"client_secure": false,
+
+    // ca_certificate_file [registry, node]: full path of certification authority file in PEM format
+    //"ca_certificate_file": "ca.pem",
+
+    // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
+    // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
+    //"server_secure": false,
+
+    // private_key_file [registry, node]: full path of private key file in PEM format
+    //"private_key_file": "server-key.pem",
+
+    // certificate_chain_file [registry, node]: full path of server certificate chain file which must be in PEM format and must be sorted
+    // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+    //"certificate_chain_file": "server-chain.pem",
 
     "don't worry": "about trailing commas"
 }

@@ -68,6 +68,11 @@ namespace web
                 // a close handler gets the resource path and the connection id
                 typedef std::function<void(const utility::string_t&, const connection_id&)> close_handler;
 
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                // ultimately, this would seem to belong in web, in order to also be adopted by web::http, but until that time...
+                typedef std::function<void(boost::asio::ssl::context&)> ssl_context_callback;
+#endif
+
                 class websocket_listener_config
                 {
                 public:
@@ -93,9 +98,24 @@ namespace web
                         m_backlog = backlog;
                     }
 
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                    const ssl_context_callback& get_ssl_context_callback() const
+                    {
+                        return m_ssl_context_callback;
+                    }
+
+                    void set_ssl_context_callback(const ssl_context_callback& ssl_context_callback)
+                    {
+                        m_ssl_context_callback = ssl_context_callback;
+                    }
+#endif
+
                 private:
                     web::logging::experimental::log_handler m_log_callback;
                     int m_backlog;
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                    ssl_context_callback m_ssl_context_callback;
+#endif
                 };
 
                 class websocket_listener

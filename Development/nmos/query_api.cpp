@@ -2,6 +2,7 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
+#include "cpprest/uri_schemes.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
 #include "nmos/is04_versions.h"
@@ -136,7 +137,7 @@ namespace nmos
             }
 
             return web::uri_builder()
-                .set_scheme(U("http")) // for now, no means to detect the API protocol?
+                .set_scheme(nmos::http_scheme(settings)) // no means to detect the API protocol from the request unless reverse proxy added X-Forwarded-Proto?
                 .set_host(req_host_port.first)
                 .set_port(req_host_port.second)
                 .set_path(req.request_uri().path()) // could also build from the route parameters, version and resourceType?
@@ -346,13 +347,20 @@ namespace nmos
                 if (nmos::is04_versions::v1_0 != version)
                 {
                     // "NB: Default should be 'false' if the API is being presented via HTTP, and 'true' for HTTPS"
+                    // no means to detect the API protocol from the request unless reverse proxy added X-Forwarded-Proto?
+                    const bool api_secure = nmos::experimental::fields::client_secure(model.settings);
                     if (!data.has_field(nmos::fields::secure))
                     {
-                        data[nmos::fields::secure] = value::boolean(false); // for now, no means to detect the API protocol?
+                        data[nmos::fields::secure] = value::boolean(api_secure);
                     }
 
-                    // for now, only support HTTP
-                    const bool valid_secure_field = false == nmos::fields::secure(data);
+                    // for now, only support matching settings
+                    // this is to be clarified in IS-04 v1.3
+                    // "Query API clients MAY choose to include [the 'secure'] attribute in requests for subscriptions,
+                    // however they will receive a 400 response code unless the Query API explicitly supports a mismatch
+                    // between encrypted HTTP and WebSocket connections."
+                    // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/84/commits/2d842770c1fc6c38b46fe6735c0b87bc42c48666
+                    const bool valid_secure_field = api_secure == nmos::fields::secure(data);
                     valid = valid && valid_secure_field;
                 }
 
@@ -392,8 +400,13 @@ namespace nmos
                         data[nmos::fields::id] = value::string(id);
 
                         // generate the websocket url
+
+                       const bool secure = nmos::is04_versions::v1_0 != version
+                            ? nmos::fields::secure(data)
+                            : nmos::experimental::fields::client_secure(model.settings);
+
                         data[nmos::fields::ws_href] = value::string(web::uri_builder()
-                            .set_scheme(U("ws"))
+                            .set_scheme(web::ws_scheme(secure))
                             .set_host(req_host)
                             .set_port(nmos::fields::query_ws_port(model.settings))
                             .set_path(U("/x-nmos/query/") + parameters.at(U("version")) + U("/subscriptions/") + id)

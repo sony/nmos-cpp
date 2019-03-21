@@ -2,6 +2,7 @@
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
+#include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/is04_versions.h"
 #include "nmos/resource.h"
 
@@ -17,7 +18,7 @@ namespace nmos
         auto data = details::make_resource_core(id, settings);
 
         auto uri = web::uri_builder()
-            .set_scheme(U("http"))
+            .set_scheme(nmos::http_scheme(settings))
             .set_host(nmos::get_host(settings))
             .set_port(nmos::fields::node_port(settings))
             .to_uri();

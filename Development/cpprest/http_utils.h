@@ -3,6 +3,7 @@
 
 #include "pplx/pplx_utils.h"
 #include "cpprest/http_msg.h"
+#include "cpprest/uri_schemes.h"
 
 // Utility types, constants and functions for HTTP
 namespace web
@@ -122,10 +123,16 @@ namespace web
                 const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
 #endif
 
+                // make an address to be used to accept HTTP or HTTPS connections for the specified address and port
+                inline web::uri make_listener_uri(bool secure, const utility::string_t& host_address, int port)
+                {
+                    return web::uri_builder().set_scheme(web::http_scheme(secure)).set_host(host_address).set_port(port).to_uri();
+                }
+
                 // make an address to be used to accept HTTP connections for the specified address and port
                 inline web::uri make_listener_uri(const utility::string_t& host_address, int port)
                 {
-                    return web::uri_builder().set_scheme(_XPLATSTR("http")).set_host(host_address).set_port(port).to_uri();
+                    return make_listener_uri(false, host_address, port);
                 }
 
                 // make an address to be used to accept HTTP connections for the specified port for any address
