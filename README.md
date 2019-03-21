@@ -39,6 +39,7 @@ Other open-source NMOS implementations:
 
 Recent activity on the project (newest first):
 
+- Experimental support for secure communications (HTTPS, WSS)
 - Bug fixes (with test cases added to the [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing))
 - Support for running nmos-cpp applications with forward/reverse proxies
 - Experimental support for JT-NM TR-1001-1 System API
