@@ -542,4 +542,4 @@ namespace web
 }
 
 // Sigh. "An explicit instantiation shall appear in an enclosing namespace of its template."
-template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_outgoing_message_body, &web::websockets::experimental::listener::websocket_outgoing_message::m_body>;
+template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_outgoing_message_body, &web::websockets::websocket_outgoing_message::m_body>;

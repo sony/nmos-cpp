@@ -174,7 +174,7 @@ namespace nmos
 
             earliest_necessary_update = (tai_clock::time_point::max)();
 
-            std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::experimental::listener::websocket_outgoing_message>> outgoing_messages;
+            std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
 
             for (const auto& websocket : websockets.left)
             {
@@ -273,7 +273,7 @@ namespace nmos
                 //- additional logging, cf. nmos::details::request_registration
 
                 auto serialized = utility::us2s(nmos::fields::message(grain->data).serialize());
-                web::websockets::experimental::listener::websocket_outgoing_message message;
+                web::websockets::websocket_outgoing_message message;
                 message.set_utf8_message(serialized);
 
                 outgoing_messages.push_back({ websocket.second, message });
@@ -311,7 +311,7 @@ namespace nmos
                     {
                         finally.get();
                     }
-                    catch (const web::websockets::experimental::listener::websocket_exception& e)
+                    catch (const web::websockets::websocket_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSockets error: " << e.what() << " [" << e.error_code() << "]";
                     }

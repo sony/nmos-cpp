@@ -500,6 +500,7 @@ set(NMOS_CPP_CPPREST_HEADERS
     ${NMOS_CPP_DIR}/cpprest/logging_utils.h
     ${NMOS_CPP_DIR}/cpprest/regex_utils.h
     ${NMOS_CPP_DIR}/cpprest/ws_listener.h
+    ${NMOS_CPP_DIR}/cpprest/ws_utils.h
     )
 
 set(NMOS_CPP_NMOS_SOURCES
