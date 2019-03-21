@@ -113,11 +113,11 @@ It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) 
 ### C++ REST SDK
 
 1. Get the source code
-   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.9 tag  
+   - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.11 tag  
      The ``git clone`` command option ``--recurse-submodules`` (formerly ``--recursive``) simplifies [cloning a project with submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules).  
      For example:
      ```
-     git clone --recurse-submodules --branch v2.10.9 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
+     git clone --recurse-submodules --branch v2.10.11 https://github.com/Microsoft/cpprestsdk <home-dir>/cpprestsdk
      ```
      Note: The downloadable archives created by GitHub cannot be used on their own since they don't include submodules.
 2. Use CMake to configure for your platform

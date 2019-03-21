@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include "cpprest/api_router.h"
+#include "cpprest/http_listener.h" // for web::http::experimental::listener::http_listener_config
 #include "cpprest/regex_utils.h"
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
 

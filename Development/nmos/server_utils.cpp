@@ -53,7 +53,7 @@ namespace nmos
             }
             catch (const boost::system::system_error& e)
             {
-                throw web::websockets::experimental::listener::websocket_exception(e.code(), e.what());
+                throw web::websockets::websocket_exception(e.code(), e.what());
             }
         });
 #endif

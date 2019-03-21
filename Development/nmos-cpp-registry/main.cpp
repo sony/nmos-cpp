@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include "cpprest/ws_listener.h"
+#include "cpprest/ws_utils.h"
 #include "mdns/service_advertiser.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
@@ -238,7 +239,7 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
     }
-    catch (const web::websockets::experimental::listener::websocket_exception& e)
+    catch (const web::websockets::websocket_exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
     }

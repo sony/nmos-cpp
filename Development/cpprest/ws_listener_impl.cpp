@@ -21,6 +21,7 @@ __pragma(warning(disable:4701)) // e.g. potentially uninitialized local variable
 PRAGMA_WARNING_POP
 
 #include "cpprest/asyncrt_utils.h" // for utility::conversions
+#include "cpprest/uri_schemes.h"
 
 // websocket_listener is an experimental server-side implementation of WebSockets
 namespace web
@@ -569,4 +570,4 @@ namespace web
 }
 
 // Sigh. "An explicit instantiation shall appear in an enclosing namespace of its template."
-template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_outgoing_message_body, &web::websockets::experimental::listener::websocket_outgoing_message::m_body>;
+template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_outgoing_message_body, &web::websockets::websocket_outgoing_message::m_body>;

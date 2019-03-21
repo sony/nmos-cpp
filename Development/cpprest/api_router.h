@@ -4,12 +4,9 @@
 #include <functional>
 #include <list>
 #include <unordered_map>
-#include "pplx/pplx_utils.h"
-#include "cpprest/http_listener.h"
-#include "cpprest/http_utils.h" // hmm, only for names used in using declarations
+#include "cpprest/http_utils.h"
 #include "cpprest/json_utils.h" // hmm, only for names used in using declarations
 #include "cpprest/regex_utils.h" // hmm, only for types used in private static functions
-#include "cpprest/uri_schemes.h"
 #include "detail/private_access.h"
 
 // api_router is an extension to http_listener that uses regexes to define route patterns
@@ -21,37 +18,9 @@ namespace web
         {
             namespace listener
             {
-                // RAII helper for http_listener sessions (could be extracted to another header)
-                typedef pplx::open_close_guard<http_listener> http_listener_guard;
-
                 // a using-directive with the following namespace makes defining routers less verbose
                 // using namespace api_router_using_declarations;
                 namespace api_router_using_declarations {}
-
-                // platform-specific wildcard address to accept connections for any address
-#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
-#else
-                const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
-#endif
-
-                // make an http address to be used to accept connections for the specified address and port
-                inline web::uri make_listener_uri(bool secure, const utility::string_t& host_address, int port)
-                {
-                    return web::uri_builder().set_scheme(web::http_scheme(secure)).set_host(host_address).set_port(port).to_uri();
-                }
-
-                // make an http address to be used to accept connections for the specified address and port
-                inline web::uri make_listener_uri(const utility::string_t& host_address, int port)
-                {
-                    return make_listener_uri(false, host_address, port);
-                }
-
-                // make an http address to be used to accept connections for the specified port for any address
-                inline web::uri make_listener_uri(int port)
-                {
-                    return make_listener_uri(host_wildcard, port);
-                }
 
                 typedef std::unordered_map<utility::string_t, utility::string_t> route_parameters;
 
