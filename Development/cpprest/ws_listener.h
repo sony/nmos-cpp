@@ -6,47 +6,40 @@
 #include <functional>
 #include <memory>
 
-#include "pplx/pplx_utils.h"
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconversion"
+#endif
+#include "boost/asio/ssl.hpp"
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+#endif
+
 #include "cpprest/logging_utils.h" // for web::logging::experimental::log_handler
-#include "cpprest/ws_client.h" // for web::websockets::client::websocket_outgoing_message and web::websockets::client::websocket_exception
+#include "cpprest/ws_msg.h"
+#include "cpprest/ws_client.h" // only for websocket_exception which ought to be in cpprest/ws_msg.h
 
 // websocket_listener is an experimental server-side implementation of WebSockets
 namespace web
 {
     namespace websockets
     {
+        // ultimately, it would be nice to switch the namespaces of the definitions and the using-declarations... 
+        using web::websockets::client::websocket_exception;
+        using web::websockets::client::websocket_incoming_message;
+        using web::websockets::client::websocket_outgoing_message;
+
         namespace experimental
         {
             namespace listener
             {
-                // platform-specific wildcard address to accept connections for any address
-#if !defined(_WIN32) || !defined(__cplusplus_winrt)
-                const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
-#else
-                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
-#endif
-
-                // make an address to be used to accept WebSocket connections for the specified address and port
-                inline web::uri make_listener_uri(const utility::string_t& host_address, int port)
-                {
-                    return web::uri_builder().set_scheme(_XPLATSTR("ws")).set_host(host_address).set_port(port).to_uri();
-                }
-
-                // make an address to be used to accept WebSocket connections for the specified port for any address
-                inline web::uri make_listener_uri(int port)
-                {
-                    return make_listener_uri(host_wildcard, port);
-                }
-
                 // websocket server implementation
                 namespace details
                 {
                     class websocket_listener_impl;
                 }
-
-                // ultimately, these classes would seem to belong in web::websockets, but until that time...
-                using web::websockets::client::websocket_exception;
-                using web::websockets::client::websocket_outgoing_message;
 
                 // opaque websocket connection id
                 // usable as a key in ordered associated containers (but not in unordered ones since although owner-based equivalence
@@ -75,6 +68,11 @@ namespace web
                 // a close handler gets the resource path and the connection id
                 typedef std::function<void(const utility::string_t&, const connection_id&)> close_handler;
 
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                // ultimately, this would seem to belong in web, in order to also be adopted by web::http, but until that time...
+                typedef std::function<void(boost::asio::ssl::context&)> ssl_context_callback;
+#endif
+
                 class websocket_listener_config
                 {
                 public:
@@ -100,9 +98,24 @@ namespace web
                         m_backlog = backlog;
                     }
 
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                    const ssl_context_callback& get_ssl_context_callback() const
+                    {
+                        return m_ssl_context_callback;
+                    }
+
+                    void set_ssl_context_callback(const ssl_context_callback& ssl_context_callback)
+                    {
+                        m_ssl_context_callback = ssl_context_callback;
+                    }
+#endif
+
                 private:
                     web::logging::experimental::log_handler m_log_callback;
                     int m_backlog;
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+                    ssl_context_callback m_ssl_context_callback;
+#endif
                 };
 
                 class websocket_listener
@@ -136,9 +149,6 @@ namespace web
 
                     std::unique_ptr<details::websocket_listener_impl> impl;
                 };
-
-                // RAII helper for websocket_listener sessions (could be extracted to another header)
-                typedef pplx::open_close_guard<websocket_listener> websocket_listener_guard;
             }
         }
     }

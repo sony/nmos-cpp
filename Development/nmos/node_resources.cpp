@@ -2,6 +2,7 @@
 
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
+#include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/channels.h"
 #include "nmos/colorspace.h"
 #include "nmos/connection_api.h" // for nmos::resolve_auto
@@ -42,12 +43,19 @@ namespace nmos
         for (const auto& version : nmos::is05_versions::from_settings(settings))
         {
             auto connection_uri = web::uri_builder()
-                .set_scheme(U("http"))
+                .set_scheme(nmos::http_scheme(settings))
                 .set_port(nmos::fields::connection_port(settings))
                 .set_path(U("/x-nmos/connection/") + make_api_version(version));
             auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
 
-            for (const auto& host_address : host_addresses)
+            if (nmos::experimental::fields::client_secure(settings))
+            {
+                web::json::push_back(data[U("controls")], value_of({
+                    { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                    { U("type"), type }
+                }));
+            }
+            else for (const auto& host_address : host_addresses)
             {
                 web::json::push_back(data[U("controls")], value_of({
                     { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
@@ -238,7 +246,7 @@ namespace nmos
         const auto version = *nmos::is05_versions::from_settings(settings).begin();
 
         return web::uri_builder()
-            .set_scheme(U("http"))
+            .set_scheme(nmos::http_scheme(settings))
             .set_host(nmos::get_host(settings))
             .set_port(nmos::fields::connection_port(settings))
             .set_path(U("/x-nmos/connection/") + make_api_version(version) + U("/single/senders/") + sender_id + U("/transportfile"))

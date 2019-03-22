@@ -67,7 +67,10 @@ namespace nmos
     // when a request URL is not available
     utility::string_t get_host(const settings& settings)
     {
-        // just return the preferred host address
-        return nmos::fields::host_address(settings);
+        // if secure communications are in use, return a host name
+        // otherwise, the preferred host address
+        return nmos::experimental::fields::client_secure(settings)
+            ? get_host_name(settings)
+            : nmos::fields::host_address(settings);
     }
 }

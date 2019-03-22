@@ -37,8 +37,12 @@ Other open-source NMOS implementations:
 
 ### Active Development
 
-Recent activity on the project:
+Recent activity on the project (newest first):
 
+- Experimental support for secure communications (HTTPS, WSS)
+- Bug fixes (with test cases added to the [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing))
+- Support for running nmos-cpp applications with forward/reverse proxies
+- Experimental support for JT-NM TR-1001-1 System API
 - Instructions for cross-compiling for the Raspberry Pi
 - Instructions for running the official AMWA NMOS API Testing Tool
 - Updates to build instructions and required dependencies
@@ -52,10 +56,6 @@ Recent activity on the project:
 - Cross-platform build support using CMake
 - An initial release of the **nmos-cpp-node** example application
 - Back-end enhancements as part of the NMOS Scalability Activity
-
-In the next few weeks, we intend to bring to this repository:
-
-- Additional documentation
 
 And of course, the software will continue to be updated to track the ongoing development of the NMOS specifications, and the work of the Networked Media Incubator.
 

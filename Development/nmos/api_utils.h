@@ -4,7 +4,9 @@
 #include <map>
 #include <set>
 #include "cpprest/api_router.h"
+#include "cpprest/http_listener.h" // for web::http::experimental::listener::http_listener_config
 #include "cpprest/regex_utils.h"
+#include "nmos/settings.h" // just a forward declaration of nmos::settings
 
 namespace slog
 {
@@ -95,14 +97,20 @@ namespace nmos
 
     // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS") - captures api by reference!
-    web::http::experimental::listener::http_listener make_api_listener(const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
+    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
 
     // construct an http_listener on the specified port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS") - captures api by reference!
     inline web::http::experimental::listener::http_listener make_api_listener(int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
     {
-        return make_api_listener(web::http::experimental::listener::host_wildcard, port, api, config, gate);
+        return make_api_listener(false, web::http::experimental::listener::host_wildcard, port, api, config, gate);
     }
+
+    // returns "http" or "https" depending on settings
+    utility::string_t http_scheme(const nmos::settings& settings);
+
+    // returns "ws" or "wss" depending on settings
+    utility::string_t ws_scheme(const nmos::settings& settings);
 
     namespace details
     {

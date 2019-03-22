@@ -161,6 +161,15 @@ namespace nmos
         }
     }
 
+    namespace details
+    {
+        // for logging string-or-null property values
+        utility::string_t as_string_or_null(const web::json::value& value)
+        {
+            return value.is_null() ? value.serialize() : value.as_string();
+        }
+    }
+
     inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::registry_model& model, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -350,12 +359,13 @@ namespace nmos
                 }
                 else if (nmos::types::sender == type)
                 {
+                    // v1.1 introduced null for flow_id to "permit Senders without attached Flows to model a Device before internal routing has been performed"
                     const auto& flow_id = nmos::fields::flow_id(data);
-                    const bool valid_flow = nmos::has_resource(resources, { flow_id, nmos::types::flow });
+                    const bool valid_flow = flow_id.is_null() || nmos::has_resource(resources, { flow_id.as_string(), nmos::types::flow });
                     if (!valid_flow)
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration requested for " << id_type << " of unknown flow: " << flow_id;
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration requested for " << id_type << " of unknown flow: " << flow_id.as_string();
                     else
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration requested for " << id_type << " of flow: " << flow_id;
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration requested for " << id_type << " of flow: " << details::as_string_or_null(flow_id);
 
                     // v1.2 introduced subscription for sender
                     if (nmos::is04_versions::v1_2 <= version)
@@ -366,7 +376,7 @@ namespace nmos
                         if (!valid_receiver)
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration requested for " << id_type << " subscribed to unknown receiver: " << receiver_id.as_string();
                         else
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration requested for " << id_type << " subscribed to receiver: " << receiver_id.serialize();
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration requested for " << id_type << " subscribed to receiver: " << details::as_string_or_null(receiver_id);
                     }
                 }
                 else if (nmos::types::receiver == type)
@@ -377,7 +387,7 @@ namespace nmos
                     if (!valid_sender)
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration requested for " << id_type << " subscribed to unknown sender: " << sender_id.as_string();
                     else
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration requested for " << id_type << " subscribed to sender: " << sender_id.serialize();
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Registration requested for " << id_type << " subscribed to sender: " << details::as_string_or_null(sender_id);
                 }
                 else // bad type
                 {

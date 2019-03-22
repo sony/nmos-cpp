@@ -39,7 +39,7 @@ public:
 	schema(root_schema *root)
 	    : root_(root) {}
 
-	virtual void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const = 0;
+	virtual void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const = 0;
 
 	static std::shared_ptr<schema> make(json &schema,
 	                                    root_schema *root,
@@ -52,7 +52,7 @@ class schema_ref : public schema
 	const std::string id_;
 	std::shared_ptr<schema> target_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const final
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const final
 	{
 		if (target_)
 			target_->validate(ptr, instance, e);
@@ -83,8 +83,8 @@ class root_schema : public schema
 	std::shared_ptr<schema> root_;
 
 	struct schema_file {
-		std::map<nlohmann::json::json_pointer, std::shared_ptr<schema>> schemas;
-		std::map<nlohmann::json::json_pointer, std::shared_ptr<schema_ref>> unresolved; // contains all unresolved references from any other file seen during parsing
+		std::map<json::json_pointer, std::shared_ptr<schema>> schemas;
+		std::map<json::json_pointer, std::shared_ptr<schema_ref>> unresolved; // contains all unresolved references from any other file seen during parsing
 		json unknown_keywords;
 	};
 
@@ -202,7 +202,7 @@ public:
 		} while (1);
 	}
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const final
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const final
 	{
 		if (root_)
 			root_->validate(ptr, instance, e);
@@ -221,11 +221,11 @@ class first_error_handler : public error_handler
 {
 public:
 	bool error_{false};
-	nlohmann::json::json_pointer ptr_;
+	json::json_pointer ptr_;
 	json instance_;
 	std::string message_;
 
-	void error(const nlohmann::json::json_pointer & ptr, const json & instance, const std::string & message) override
+	void error(const json::json_pointer & ptr, const json & instance, const std::string & message) override
 	{
 		if (*this)
 			return;
@@ -242,7 +242,7 @@ class logical_not : public schema
 {
 	std::shared_ptr<schema> subschema_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const final
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const final
 	{
 		first_error_handler esub;
 		subschema_->validate(ptr, instance, esub);
@@ -272,7 +272,7 @@ class logical_combination : public schema
 {
 	std::vector<std::shared_ptr<schema>> subschemata_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const final
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const final
 	{
 		size_t count = 0;
 
@@ -282,7 +282,7 @@ class logical_combination : public schema
 			if (!esub)
 				count++;
 
-			if (is_validate_complete(ptr, instance, e, esub, count))
+			if (is_validate_complete(instance, ptr, e, esub, count))
 				return;
 		}
 
@@ -294,7 +294,7 @@ class logical_combination : public schema
 
 	// specialized for each of the logical_combination_types
 	static const std::string key;
-	static bool is_validate_complete(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e, const first_error_handler &esub, size_t count);
+	static bool is_validate_complete(const json &, const json::json_pointer &, error_handler &, const first_error_handler &, size_t);
 
 public:
 	logical_combination(json &sch,
@@ -319,7 +319,7 @@ template <>
 const std::string logical_combination<oneOf>::key = "oneOf";
 
 template <>
-bool logical_combination<allOf>::is_validate_complete(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e, const first_error_handler &esub, size_t)
+bool logical_combination<allOf>::is_validate_complete(const json &instance, const json::json_pointer &ptr, error_handler &e, const first_error_handler &esub, size_t)
 {
 	if (esub)
 		e.error(esub.ptr_, esub.instance_, "at least one subschema has failed, but all of them are required to validate - " + esub.message_);
@@ -327,13 +327,13 @@ bool logical_combination<allOf>::is_validate_complete(const nlohmann::json::json
 }
 
 template <>
-bool logical_combination<anyOf>::is_validate_complete(const nlohmann::json::json_pointer &, const json &, error_handler &, const first_error_handler &, size_t count)
+bool logical_combination<anyOf>::is_validate_complete(const json &, const json::json_pointer &, error_handler &, const first_error_handler &, size_t count)
 {
 	return count == 1;
 }
 
 template <>
-bool logical_combination<oneOf>::is_validate_complete(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e, const first_error_handler &, size_t count)
+bool logical_combination<oneOf>::is_validate_complete(const json &instance, const json::json_pointer &ptr, error_handler &e, const first_error_handler &, size_t count)
 {
 	if (count > 1)
 		e.error(ptr, instance, "more than one subschema has succeeded, but exactly one of them is required to validate");
@@ -354,7 +354,7 @@ class type_schema : public schema
 
 	std::shared_ptr<schema> if_, then_, else_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override final
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override final
 	{
 		// depending on the type of instance run the type specific validator - if present
 		auto type = type_[(uint8_t) instance.type()];
@@ -535,7 +535,7 @@ class string : public schema
 		return len;
 	}
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override
 	{
 		if (minLength_.first) {
 			if (utf8_length(instance) < minLength_.second) {
@@ -625,7 +625,7 @@ class numeric : public schema
 		return std::fabs(res) > std::fabs(eps);
 	}
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override
 	{
 		T value = instance; // conversion of json to value_type
 
@@ -684,7 +684,7 @@ public:
 
 class null : public schema
 {
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override
 	{
 		if (!instance.is_null())
 			e.error(ptr, instance, "expected to be null");
@@ -697,7 +697,7 @@ public:
 
 class boolean_type : public schema
 {
-	void validate(const nlohmann::json::json_pointer &, const json &, error_handler &) const override {}
+	void validate(const json::json_pointer &, const json &, error_handler &) const override {}
 
 public:
 	boolean_type(json &, root_schema *root)
@@ -707,7 +707,7 @@ public:
 class boolean : public schema
 {
 	bool true_;
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override
 	{
 		if (!true_) { // false schema
 			// empty array
@@ -731,7 +731,7 @@ class required : public schema
 {
 	const std::vector<std::string> required_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override final
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override final
 	{
 		for (auto &r : required_)
 			if (instance.find(r) == instance.end())
@@ -759,7 +759,7 @@ class object : public schema
 
 	std::shared_ptr<schema> propertyNames_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override
 	{
 		if (maxProperties_.first && instance.size() > maxProperties_.second)
 			e.error(ptr, instance, "too many properties");
@@ -797,7 +797,7 @@ class object : public schema
 
 		for (auto &dep : dependencies_) {
 			auto prop = instance.find(dep.first);
-			if (prop != instance.end())            // if dependency-property is present in instance
+			if (prop != instance.end())                             // if dependency-property is present in instance
 				dep.second->validate(ptr / dep.first, instance, e); // validate
 		}
 	}
@@ -893,7 +893,7 @@ class array : public schema
 
 	std::shared_ptr<schema> contains_;
 
-	void validate(const nlohmann::json::json_pointer &ptr, const json &instance, error_handler &e) const override
+	void validate(const json::json_pointer &ptr, const json &instance, error_handler &e) const override
 	{
 		if (maxItems_.first && instance.size() > maxItems_.second)
 			e.error(ptr, instance, "array has too many items");
@@ -1135,7 +1135,7 @@ void json_validator::validate(const json &instance) const
 
 void json_validator::validate(const json &instance, error_handler &err) const
 {
-	nlohmann::json::json_pointer ptr;
+	json::json_pointer ptr;
 	root_->validate(ptr, instance, err);
 }
 

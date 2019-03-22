@@ -74,7 +74,7 @@ namespace nmos
         const web::json::field_as_string node_id{ U("node_id") };
         const web::json::field_as_string device_id{ U("device_id") };
         const web::json::field_as_string source_id{ U("source_id") };
-        const web::json::field_as_string flow_id{ U("flow_id") };
+        const web::json::field_as_value flow_id{ U("flow_id") };
         const web::json::field_as_string manifest_href{ U("manifest_href") };
         const web::json::field_as_value subscription{ U("subscription") };
         const web::json::field_as_bool active{ U("active") };
