@@ -825,6 +825,10 @@ namespace nmos
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
 
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+
+                    node_registered = false;
+
                     const std::chrono::seconds heartbeat_interval(nmos::fields::registration_heartbeat_interval(model.settings));
                     auto token = cancellation_source.get_token();
                     heartbeat_time = std::chrono::steady_clock::now();
