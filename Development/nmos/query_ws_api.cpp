@@ -109,13 +109,13 @@ namespace nmos
 
     web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
-        return [&model, &websockets, &gate_](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
+        return [&model, &websockets, &gate_](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id, web::websockets::websocket_close_status close_status, const utility::string_t& close_reason)
         {
             nmos::ws_api_gate gate(gate_, ws_resource_path);
             auto lock = model.write_lock();
             auto& resources = model.registry_resources;
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing websocket connection to: " << ws_resource_path;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing websocket connection to: " << ws_resource_path << " [" << (int)close_status << ": " << close_reason << "]";
 
             auto websocket = websockets.right.find(connection_id);
             if (websockets.right.end() != websocket)

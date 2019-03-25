@@ -154,6 +154,8 @@ namespace web
                     void set_tls_init_handler(websocketpp::server<wss_config>& server, websocketpp::transport::asio::tls_socket::tls_init_handler handler) { server.set_tls_init_handler(handler); }
 
                     struct websocket_outgoing_message_body { typedef concurrency::streams::streambuf<uint8_t>(websocket_outgoing_message::*type); };
+                    struct websocket_incoming_message_body { typedef concurrency::streams::container_buffer<std::string>(websocket_incoming_message::*type); };
+                    struct websocket_incoming_message_msg_type { typedef websocket_message_type(websocket_incoming_message::*type); };
 
                     concurrency::streams::streambuf<uint8_t>& get_message_body(websocket_outgoing_message& message)
                     {
@@ -208,8 +210,19 @@ namespace web
                             user_close = handler;
                         }
 
+                        void set_message_handler(message_handler handler)
+                        {
+                            user_message = handler;
+                        }
+
                         virtual pplx::task<void> open() = 0;
+
+                        virtual pplx::task<void> close(const connection_id& connection) = 0;
+                        virtual pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason) = 0;
+
                         virtual pplx::task<void> close() = 0;
+                        virtual pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason) = 0;
+
                         virtual pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message) = 0;
 
                     protected:
@@ -262,6 +275,7 @@ namespace web
                         validate_handler user_validate;
                         open_handler user_open;
                         close_handler user_close;
+                        message_handler user_message;
                     };
 
                     // websocket server implementation that uses websocketpp
@@ -297,12 +311,14 @@ namespace web
 
                                 using websocketpp::lib::bind;
                                 using websocketpp::lib::placeholders::_1;
+                                using websocketpp::lib::placeholders::_2;
 
                                 set_tls_init_handler(server, bind(&websocket_listener_wspp::handle_tls_init, this, _1));
 
                                 server.set_validate_handler(bind(&websocket_listener_wspp::handle_validate, this, _1));
                                 server.set_open_handler(bind(&websocket_listener_wspp::handle_open, this, _1));
                                 server.set_close_handler(bind(&websocket_listener_wspp::handle_close, this, _1));
+                                server.set_message_handler(bind(&websocket_listener_wspp::handle_message, this, _1, _2));
 
                                 server.set_listen_backlog(configuration().backlog());
                                 websocketpp::lib::asio::ip::tcp::resolver resolver(server.get_io_service());
@@ -343,7 +359,36 @@ namespace web
                             return pplx::task_from_result();
                         }
 
+                        pplx::task<void> close(const connection_id& connection)
+                        {
+                            return close(connection, websocket_close_status::normal, _XPLATSTR("Normal"));
+                        }
+
+                        pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason)
+                        {
+                            {
+                                std::lock_guard<std::mutex> lock(mutex);
+                                connections.erase(hdl_from_id(connection));
+                            }
+
+                            try
+                            {
+                                server.close(hdl_from_id(connection), static_cast<websocketpp::close::status::value>(close_status), utility::conversions::to_utf8string(close_reason));
+                            }
+                            catch (const websocketpp::exception& e)
+                            {
+                                return pplx::task_from_exception<void>(websocket_exception(e.code(), build_error_msg(e.code(), "close")));
+                            }
+
+                            return pplx::task_from_result();
+                        }
+
                         pplx::task<void> close()
+                        {
+                            return close(websocket_close_status::normal, _XPLATSTR("Normal"));
+                        }
+
+                        pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason)
                         {
                             try
                             {
@@ -364,14 +409,23 @@ namespace web
                                     server.stop_listening();
                                 }
 
+                                connections_t cons;
                                 {
                                     std::lock_guard<std::mutex> lock(mutex);
-                                    for (auto& hdl : connections)
-                                    {
-                                        server.close(hdl, websocketpp::close::status::going_away, "server going down");
-                                    }
-                                    connections.clear();
+                                    using std::swap;
+                                    swap(cons, connections);
                                 }
+
+                                const auto reason = utility::conversions::to_utf8string(close_reason);
+
+                                websocketpp::lib::error_code ec;
+                                for (auto& hdl : cons)
+                                {
+                                    websocketpp::lib::error_code con_ec;
+                                    server.close(hdl, static_cast<websocketpp::close::status::value>(close_status), reason, con_ec);
+                                    if (!ec && con_ec) ec = con_ec;
+                                }
+                                if (ec) throw websocketpp::exception(ec);
                             }
                             catch (const websocketpp::exception& e)
                             {
@@ -429,6 +483,12 @@ namespace web
                             return utility::conversions::to_string_t(server.get_con_from_hdl(hdl)->get_resource());
                         }
 
+                        std::pair<websocket_close_status, utility::string_t> remote_close_from_hdl(websocketpp::connection_hdl hdl)
+                        {
+                            const auto con = server.get_con_from_hdl(hdl);
+                            return{ static_cast<websocket_close_status>(con->get_remote_close_code()), utility::conversions::to_string_t(con->get_remote_close_reason()) };
+                        }
+
                         websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> handle_tls_init(websocketpp::connection_hdl hdl)
                         {
                             auto ctx = websocketpp::lib::make_shared<websocketpp::lib::asio::ssl::context>(websocketpp::lib::asio::ssl::context::sslv23);
@@ -463,14 +523,45 @@ namespace web
 
                         void handle_close(websocketpp::connection_hdl hdl)
                         {
-                            if (user_close)
-                            {
-                                user_close(resource_from_hdl(hdl), id_from_hdl(hdl));
-                            }
-
                             {
                                 std::lock_guard<std::mutex> lock(mutex);
                                 connections.erase(hdl);
+                            }
+
+                            if (user_close)
+                            {
+                                const auto remote_close = remote_close_from_hdl(hdl);
+                                user_close(resource_from_hdl(hdl), id_from_hdl(hdl), remote_close.first, remote_close.second);
+                            }
+                        }
+
+                        void handle_message(websocketpp::connection_hdl hdl, typename server_t::message_ptr msg)
+                        {
+                            if (user_message)
+                            {
+                                websocket_incoming_message incoming_msg;
+                                auto& incoming_msg_type = incoming_msg.*detail::stowed<websocket_incoming_message_msg_type>::value;
+
+                                switch (msg->get_opcode())
+                                {
+                                case websocketpp::frame::opcode::binary:
+                                    incoming_msg_type = websocket_message_type::binary_message;
+                                    break;
+                                case websocketpp::frame::opcode::text:
+                                    incoming_msg_type = websocket_message_type::text_message;
+                                    break;
+                                default:
+                                    // Unknown message type. Since both websocketpp and our code use the RFC codes, we'll just pass it on to the user.
+                                    incoming_msg_type = static_cast<websocket_message_type>(msg->get_opcode());
+                                    break;
+                                }
+
+                                // 'move' the payload into a container buffer to avoid any copies.
+                                auto& incoming_msg_body = incoming_msg.*detail::stowed<websocket_incoming_message_body>::value;
+                                auto& payload = msg->get_raw_payload();
+                                incoming_msg_body = std::move(payload);
+
+                                user_message(resource_from_hdl(hdl), id_from_hdl(hdl), incoming_msg);
                             }
                         }
 
@@ -517,7 +608,7 @@ namespace web
                     {
                         try
                         {
-                            close().wait();
+                            close(websocket_close_status::going_away, _XPLATSTR("Server shutting down")).wait();
                         }
                         catch (...)
                         {
@@ -540,14 +631,34 @@ namespace web
                     impl->set_close_handler(handler);
                 }
 
+                void websocket_listener::set_message_handler(message_handler handler)
+                {
+                    impl->set_message_handler(handler);
+                }
+
                 pplx::task<void> websocket_listener::open()
                 {
                     return impl->open();
                 }
 
+                pplx::task<void> websocket_listener::close(const connection_id& connection)
+                {
+                    return impl->close(connection);
+                }
+
+                pplx::task<void> websocket_listener::close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason)
+                {
+                    return impl->close(connection, close_status, close_reason);
+                }
+
                 pplx::task<void> websocket_listener::close()
                 {
                     return impl->close();
+                }
+
+                pplx::task<void> websocket_listener::close(websocket_close_status close_status, const utility::string_t& close_reason)
+                {
+                    return impl->close(close_status, close_reason);
                 }
 
                 pplx::task<void> websocket_listener::send(const connection_id& connection, websocket_outgoing_message message)
@@ -571,3 +682,5 @@ namespace web
 
 // Sigh. "An explicit instantiation shall appear in an enclosing namespace of its template."
 template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_outgoing_message_body, &web::websockets::websocket_outgoing_message::m_body>;
+template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_incoming_message_body, &web::websockets::websocket_incoming_message::m_body>;
+template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_incoming_message_msg_type, &web::websockets::websocket_incoming_message::m_msg_type>;

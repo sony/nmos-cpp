@@ -19,7 +19,7 @@
 
 #include "cpprest/logging_utils.h" // for web::logging::experimental::log_handler
 #include "cpprest/ws_msg.h"
-#include "cpprest/ws_client.h" // only for websocket_exception which ought to be in cpprest/ws_msg.h
+#include "cpprest/ws_client.h" // only for websocket_close_status and websocket_exception which ought to be in cpprest/ws_msg.h
 
 // websocket_listener is an experimental server-side implementation of WebSockets
 namespace web
@@ -27,8 +27,10 @@ namespace web
     namespace websockets
     {
         // ultimately, it would be nice to switch the namespaces of the definitions and the using-declarations... 
+        using web::websockets::client::websocket_close_status;
         using web::websockets::client::websocket_exception;
         using web::websockets::client::websocket_incoming_message;
+        using web::websockets::client::websocket_message_type;
         using web::websockets::client::websocket_outgoing_message;
 
         namespace experimental
@@ -65,8 +67,10 @@ namespace web
                 typedef std::function<bool(const utility::string_t&)> validate_handler;
                 // an open handler gets the resource path and the connection id
                 typedef std::function<void(const utility::string_t&, const connection_id&)> open_handler;
-                // a close handler gets the resource path and the connection id
-                typedef std::function<void(const utility::string_t&, const connection_id&)> close_handler;
+                // a close handler gets the resource path, the connection id, the close code and the close reason
+                typedef std::function<void(const utility::string_t&, const connection_id&, websocket_close_status, const utility::string_t& close_reason)> close_handler;
+                // a message handler gets the resource path, the connection id and the incoming message
+                typedef std::function<void(const utility::string_t&, const connection_id&, const websocket_incoming_message&)> message_handler;
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
                 // ultimately, this would seem to belong in web, in order to also be adopted by web::http, but until that time...
@@ -128,13 +132,18 @@ namespace web
                     void set_validate_handler(validate_handler handler);
                     void set_open_handler(open_handler handler);
                     void set_close_handler(close_handler handler);
+                    void set_message_handler(message_handler handler);
 
                     pplx::task<void> open();
+
+                    // close an individual connection
+                    pplx::task<void> close(const connection_id& connection);
+                    pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason = _XPLATSTR(""));
+
                     pplx::task<void> close();
+                    pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason = _XPLATSTR(""));
 
                     pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message);
-                    //pplx::task<websocket_incoming_message> receive(const connection_id& connection);
-                    //or void set_message_handler(const connection_id& connection, message_handler handler);
 
                     websocket_listener(websocket_listener&& other);
                     websocket_listener& operator=(websocket_listener&& other);
