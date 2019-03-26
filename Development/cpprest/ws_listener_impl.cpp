@@ -216,13 +216,8 @@ namespace web
                         }
 
                         virtual pplx::task<void> open() = 0;
-
-                        virtual pplx::task<void> close(const connection_id& connection) = 0;
                         virtual pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason) = 0;
-
-                        virtual pplx::task<void> close() = 0;
                         virtual pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason) = 0;
-
                         virtual pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message) = 0;
 
                     protected:
@@ -359,11 +354,6 @@ namespace web
                             return pplx::task_from_result();
                         }
 
-                        pplx::task<void> close(const connection_id& connection)
-                        {
-                            return close(connection, websocket_close_status::normal, _XPLATSTR("Normal"));
-                        }
-
                         pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason)
                         {
                             {
@@ -381,11 +371,6 @@ namespace web
                             }
 
                             return pplx::task_from_result();
-                        }
-
-                        pplx::task<void> close()
-                        {
-                            return close(websocket_close_status::normal, _XPLATSTR("Normal"));
                         }
 
                         pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason)
@@ -643,7 +628,7 @@ namespace web
 
                 pplx::task<void> websocket_listener::close(const connection_id& connection)
                 {
-                    return impl->close(connection);
+                    return impl->close(connection, websocket_close_status::normal, _XPLATSTR("Normal"));
                 }
 
                 pplx::task<void> websocket_listener::close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason)
@@ -653,7 +638,7 @@ namespace web
 
                 pplx::task<void> websocket_listener::close()
                 {
-                    return impl->close();
+                    return impl->close(websocket_close_status::normal, _XPLATSTR("Normal"));
                 }
 
                 pplx::task<void> websocket_listener::close(websocket_close_status close_status, const utility::string_t& close_reason)
