@@ -101,6 +101,20 @@ On the other side, this operation should be reflected in the nmos-cpp-registry o
 2018-06-25 16:25:24.089: info: 11836: Registration requested for receiver: 45a18912-db55-5953-a9f8-b87f4d70d386 on device: b89caa85-556f-52e4-aec3-2c625a314bb5
 ```
 
+## Logging to file
+
+Logging can be redirected to text file:
+
+```json
+{
+    "error_log": "log.txt"
+}
+```
+
+The nmos-cpp applications open these files in a manner that allows cooperation with an external log rotation tool to prevent log files growing too large.
+For example, [logrotate](https://linux.die.net/man/8/logrotate) on Linux can be used with its "copytruncate" directive.
+There is a port of logrotate for Windows called [logrotatewin](https://github.com/plecos/logrotatewin).
+
 ## Adjust settings of a running nmos-cpp application
 
 A few settings may be changed dynamically by PATCH to /settings/all on the experimental Settings API.
