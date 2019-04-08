@@ -23,6 +23,8 @@ namespace nmos
             | boost::asio::ssl::context::no_tlsv1_1
 #endif
             );
+
+        const auto ssl_cipher_list = "HIGH:!kRSA";
     }
 }
 

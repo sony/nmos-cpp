@@ -19,6 +19,30 @@ namespace nmos
             .to_uri();
     }
 
+    namespace details
+    {
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+        template <typename ExceptionType>
+        inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings)
+        {
+            const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(settings));
+            return [ca_certificate_file](boost::asio::ssl::context& ctx)
+            {
+                try
+                {
+                    ctx.set_options(details::ssl_context_options);
+                    ctx.load_verify_file(ca_certificate_file);
+                    SSL_CTX_set_cipher_list(ctx.native_handle(), nmos::details::ssl_cipher_list);
+                }
+                catch (const boost::system::system_error& e)
+                {
+                    throw ExceptionType(e.code(), e.what());
+                }
+            };
+        }
+#endif
+    }
+
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted, e.g. request timeout
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings)
@@ -26,20 +50,9 @@ namespace nmos
         web::http::client::http_client_config config;
         const auto proxy = proxy_uri(settings);
         if (!proxy.is_empty()) config.set_proxy(proxy);
+        config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) && !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        const auto ca_certificate_filename = utility::us2s(nmos::experimental::fields::ca_certificate_file(settings));
-        config.set_ssl_context_callback([ca_certificate_filename](boost::asio::ssl::context& ctx)
-        {
-            try
-            {
-                ctx.set_options(details::ssl_context_options);
-                ctx.load_verify_file(ca_certificate_filename);
-            }
-            catch (const boost::system::system_error& e)
-            {
-                throw web::http::http_exception(e.code(), e.what());
-            }
-        });
+        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings));
 #endif
 
         return config;
@@ -52,20 +65,9 @@ namespace nmos
         web::websockets::client::websocket_client_config config;
         const auto proxy = proxy_uri(settings);
         if (!proxy.is_empty()) config.set_proxy(proxy);
+        config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        const auto ca_certificate_filename = utility::us2s(nmos::experimental::fields::ca_certificate_file(settings));
-        config.set_ssl_context_callback([ca_certificate_filename](boost::asio::ssl::context& ctx)
-        {
-            try
-            {
-                ctx.set_options(details::ssl_context_options);
-                ctx.load_verify_file(ca_certificate_filename);
-            }
-            catch (const boost::system::system_error& e)
-            {
-                throw web::websockets::client::websocket_exception(e.code(), e.what());
-            }
-        });
+        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings));
 #endif
 
         return config;

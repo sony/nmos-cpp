@@ -175,19 +175,25 @@ namespace nmos
             // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
             const web::json::field_as_bool_or client_secure{ U("client_secure"), false };
 
-            // ca_certificate_file [registry, node]: full path of certification authority file in PEM format
+            // ca_certificate_file [registry, node]: full path of certification authorities file in PEM format
             const web::json::field_as_string_or ca_certificate_file{ U("ca_certificate_file"), U("") };
 
             // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
             // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
             const web::json::field_as_bool_or server_secure{ U("server_secure"), false };
 
-            // private_key_file [registry, node]: full path of private key file in PEM format
-            const web::json::field_as_string_or private_key_file{ U("private_key_file"), U("") };
+            // private_key_files [registry, node]: full paths of private key files in PEM format
+            const web::json::field_as_value_or private_key_files{ U("private_key_files"), web::json::value::array() };
 
-            // certificate_chain_file [registry, node]: full path of server certificate chain file which must be in PEM format and must be sorted
+            // certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
             // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
-            const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
+            const web::json::field_as_value_or certificate_chain_files{ U("certificate_chain_files"), web::json::value::array() };
+
+            // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)
+            const web::json::field_as_bool_or validate_certificates{ U("validate_certificates"), true };
+
+            // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
+            const web::json::field_as_string_or dh_param_file{ U("dh_param_file"), U("") };
         }
     }
 }
