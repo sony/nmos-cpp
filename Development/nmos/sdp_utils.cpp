@@ -842,6 +842,9 @@ namespace nmos
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
 
+            // See SMPTE ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+            // and Section 7.3 Media Type Parameters with default values
+
             const auto width = sdp::find_name(format_specific_parameters, sdp::fields::width);
             if (format_specific_parameters.end() == width) throw details::sdp_processing_error("missing format parameter: width");
             sdp_params.video.width = utility::istringstreamed<uint32_t>(sdp::fields::value(*width).as_string());
@@ -878,18 +881,25 @@ namespace nmos
             {
                 sdp_params.video.tcs = sdp::transfer_characteristic_system{ sdp::fields::value(*tcs).as_string() };
             }
+            // else sdp_params.video.tcs = sdp::transfer_characteristic_systems::SDR;
+            // but better to let the caller distinguish that it's been defaulted?
 
             const auto colorimetry = sdp::find_name(format_specific_parameters, sdp::fields::colorimetry);
             if (format_specific_parameters.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
             sdp_params.video.colorimetry = sdp::colorimetry{ sdp::fields::value(*colorimetry).as_string() };
 
-            // don't check "PM" (packing mode)
+            // don't examine required parameters "PM" (packing mode), "SSN" (SMPTE standard number)
+            // don't examine optional parameters "segmented", "RANGE", "MAXUDP", "PAR"
 
-            // don't check "SSN" (SMPTE standard number)
+            // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
+            // and Section 8.2 Optional Parameters
 
+            // hmm, since "TP" (type parameter) is required by ST 2110-21, but not by ST 2110-20, is it effectively optional?
             const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
             if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
             sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+
+            // don't examine optional parameters "TROFF", "CMAX"
         }
         else if (is_audio_sdp && attributes.end() != fmtp)
         {
