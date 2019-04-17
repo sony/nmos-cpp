@@ -324,8 +324,13 @@ namespace nmos
 
                         if (nmos::service_protocols::https == resolved_proto)
                         {
+                            auto host_name = utility::s2us(resolved.host_name);
+                            // remove a trailing '.' to turn an FQDN into a DNS name, for SSL certificate matching
+                            // hmm, this might be more appropriately done by tweaking the Host header in the client request?
+                            if (!host_name.empty() && U('.') == host_name.back()) host_name.pop_back();
+
                             results->push_back({ { *resolved_ver, resolved_pri }, resolved_uri
-                                .set_host(utility::s2us(resolved.host_name))
+                                .set_host(host_name)
                                 .to_uri()
                             });
                         }

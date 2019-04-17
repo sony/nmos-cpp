@@ -1,5 +1,8 @@
 #include "nmos/client_utils.h"
 
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#include "boost/asio/ssl/set_cipher_list.hpp"
+#endif
 #include "cpprest/basic_utils.h"
 #include "cpprest/http_client.h"
 #include "cpprest/ws_client.h"
@@ -30,9 +33,9 @@ namespace nmos
             {
                 try
                 {
-                    ctx.set_options(details::ssl_context_options);
+                    ctx.set_options(nmos::details::ssl_context_options);
                     ctx.load_verify_file(ca_certificate_file);
-                    SSL_CTX_set_cipher_list(ctx.native_handle(), nmos::details::ssl_cipher_list);
+                    set_cipher_list(ctx, nmos::details::ssl_cipher_list);
                 }
                 catch (const boost::system::system_error& e)
                 {

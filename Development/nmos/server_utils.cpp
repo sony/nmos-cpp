@@ -1,6 +1,10 @@
 #include "nmos/server_utils.h"
 
 #include <algorithm>
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#include "boost/asio/ssl/set_cipher_list.hpp"
+#include "boost/asio/ssl/use_tmp_ecdh.hpp"
+#endif
 #include "cpprest/basic_utils.h"
 #include "cpprest/http_listener.h"
 #include "cpprest/ws_listener.h"
@@ -40,9 +44,12 @@ namespace nmos
                     for (const auto& certificate_chain_file : certificate_chain_files.as_array())
                     {
                         ctx.use_certificate_chain_file(utility::us2s(certificate_chain_file.as_string()));
+                        // any one of the certificates may have ECDH parameters, so ignore errors...
+                        boost::system::error_code ec;
+                        use_tmp_ecdh_file(ctx, utility::us2s(certificate_chain_file.as_string()), ec);
                     }
 
-                    SSL_CTX_set_cipher_list(ctx.native_handle(), nmos::details::ssl_cipher_list);
+                    set_cipher_list(ctx, nmos::details::ssl_cipher_list);
 
                     if (!dh_param_file.empty()) ctx.use_tmp_dh_file(dh_param_file);
                 }
