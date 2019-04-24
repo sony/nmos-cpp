@@ -27,6 +27,9 @@
     // is05_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is05_versions": ["v1.0"],
 
+    // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is07_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
