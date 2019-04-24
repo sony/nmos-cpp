@@ -57,6 +57,7 @@
     //"registration_port": 3210,
     //"node_port": 3212,
     //"connection_port": 3215,
+    //"events_port": 3216,
 
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
     //"listen_backlog": 0,

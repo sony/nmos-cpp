@@ -12,6 +12,7 @@
 #include "nmos/interlace_mode.h"
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
+#include "nmos/is07_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
@@ -40,27 +41,57 @@ namespace nmos
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
 
-        for (const auto& version : nmos::is05_versions::from_settings(settings))
+        if (0 <= nmos::fields::connection_port(settings))
         {
-            auto connection_uri = web::uri_builder()
-                .set_scheme(nmos::http_scheme(settings))
-                .set_port(nmos::fields::connection_port(settings))
-                .set_path(U("/x-nmos/connection/") + make_api_version(version));
-            auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
+            for (const auto& version : nmos::is05_versions::from_settings(settings))
+            {
+                auto connection_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::connection_port(settings))
+                    .set_path(U("/x-nmos/connection/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
 
-            if (nmos::experimental::fields::client_secure(settings))
-            {
-                web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                    { U("type"), type }
-                }));
+                if (nmos::experimental::fields::client_secure(settings))
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+                else for (const auto& host_address : host_addresses)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
             }
-            else for (const auto& host_address : host_addresses)
+        }
+
+        if (0 <= nmos::fields::events_port(settings))
+        {
+            for (const auto& version : nmos::is07_versions::from_settings(settings))
             {
-                web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
-                    { U("type"), type }
-                }));
+                auto events_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::events_port(settings))
+                    .set_path(U("/x-nmos/events/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:events/") + make_api_version(version);
+
+                if (nmos::experimental::fields::client_secure(settings))
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), events_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+                else for (const auto& host_address : host_addresses)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), events_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
             }
         }
 

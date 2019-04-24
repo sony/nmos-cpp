@@ -3,6 +3,7 @@
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
+#include "nmos/events_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
@@ -128,6 +129,9 @@ int main(int argc, char* argv[])
         // Configure the Connection API
 
         port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
+
+        // Configure the IS-07 Events API
+        port_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
 
         // Set up the listeners for each API port
 
