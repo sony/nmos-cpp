@@ -572,6 +572,22 @@ namespace nmos
         return{ is05_versions::v1_1, types::receiver, data, false };
     }
 
+    nmos::resource make_events_source(const nmos::id& id)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        // hm, work in progress; the two endpoint placeholder objects need filling out...
+        auto data = value_of({
+            { nmos::fields::id, id },
+            { nmos::fields::device_id, U("nobody expects the spanish inquisition") },
+            { nmos::fields::endpoint_type, value::object() },
+            { nmos::fields::endpoint_state, value::object() }
+        });
+
+        return{ is07_versions::v1_0, types::source, data, false };
+    }
+
     namespace experimental
     {
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,

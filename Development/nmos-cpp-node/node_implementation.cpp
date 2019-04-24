@@ -31,6 +31,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
     auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
     auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+    auto temperature_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/1"));
 
     auto lock = model.write_lock(); // in order to update the resources
 
@@ -124,6 +125,20 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
+    }
+
+    // example temperature source
+    {
+        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, model.settings);
+        // hmm, IS-07 suggests an additional "event_type" attribute in the IS-04 source,
+        // but that's not yet even incorporated in IS-04 v1.3-dev
+        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#2-is-04-highlights
+        // and https://github.com/AMWA-TV/nmos-discovery-registration/issues/88
+
+        auto events_temperature_source = nmos::make_events_source(temperature_source_id);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
+        insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
     }
 
     auto most_recent_update = nmos::tai_min();

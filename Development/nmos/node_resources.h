@@ -12,6 +12,8 @@ namespace web
 
 namespace nmos
 {
+    // IS-04 Node API resources
+
     struct channel;
     struct colorspace;
     enum chroma_subsampling : int;
@@ -73,6 +75,8 @@ namespace nmos
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_data.json
     nmos::resource make_sdianc_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
 
+    // IS-05 Connection API resources
+
     nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7);
     web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile);
     web::json::value make_connection_sender_transportfile(const web::uri& transportfile);
@@ -80,6 +84,10 @@ namespace nmos
     nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
 
     nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7);
+
+    // IS-07 Events API resources
+
+    nmos::resource make_events_source(const nmos::id& id);
 }
 
 #include "nmos/resources.h"
