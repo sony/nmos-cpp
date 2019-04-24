@@ -106,6 +106,16 @@ namespace nmos
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
         nmos::resources connection_resources;
+
+        // IS-07 sources for this node
+        // As for connection_resources, each IS-07 resource's data is a json object with an "id" field
+        // and a field for the Events API endpoints of that logical single resource
+        // i.e.
+        // a "type" field, which must have a value conforming to the type schema,
+        // and a "state" field, which must have a value conforming to the event schema
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type.json
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event.json
+        nmos::resources events_resources;
     };
 
     struct registry_model : model

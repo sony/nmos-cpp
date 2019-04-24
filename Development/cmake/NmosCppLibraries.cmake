@@ -517,6 +517,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/client_utils.cpp
     ${NMOS_CPP_DIR}/nmos/components.cpp
     ${NMOS_CPP_DIR}/nmos/connection_api.cpp
+    ${NMOS_CPP_DIR}/nmos/events_api.cpp
     ${NMOS_CPP_DIR}/nmos/filesystem_route.cpp
     ${NMOS_CPP_DIR}/nmos/group_hint.cpp
     ${NMOS_CPP_DIR}/nmos/id.cpp
@@ -558,6 +559,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/copyable_atomic.h
     ${NMOS_CPP_DIR}/nmos/connection_api.h
     ${NMOS_CPP_DIR}/nmos/device_type.h
+    ${NMOS_CPP_DIR}/nmos/events_api.h
     ${NMOS_CPP_DIR}/nmos/filesystem_route.h
     ${NMOS_CPP_DIR}/nmos/format.h
     ${NMOS_CPP_DIR}/nmos/group_hint.h
