@@ -29,12 +29,22 @@ namespace nmos
         return{ name, utility::make_named_sub_match(name, base_pattern) };
     }
 
+    // Patterns allow access to variable parts of the route path, both to allow common implementation
+    // for similar endpoints, and to simplify consistent logging of values from URLs such as
+    // http://example.com/x-nmos/{api}/{version}/{resourceType}/{resourceId}/exampleendpoint
     namespace patterns
     {
+        // IS-04 Node API
         const route_pattern node_api = make_route_pattern(U("api"), U("node"));
+        // IS-04 Query API
         const route_pattern query_api = make_route_pattern(U("api"), U("query"));
+        // IS-04 Registration API
         const route_pattern registration_api = make_route_pattern(U("api"), U("registration"));
+        // IS-05 Connection API
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
+        // IS-07 Events API
+        const route_pattern events_api = make_route_pattern(U("api"), U("events"));
+        // TR-1001-1:2018 System API
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
 
         // API version pattern
@@ -51,6 +61,11 @@ namespace nmos
         const route_pattern connectorType = make_route_pattern(U("resourceType"), U("senders|receivers"));
         const route_pattern senderType = make_route_pattern(U("resourceType"), U("senders"));
         const route_pattern stagingType = make_route_pattern(U("stagingType"), U("active|staged"));
+
+        // Events API only allows access to the type and state of Event & Tally-compatible sources
+        const route_pattern sourceType = make_route_pattern(U("resourceType"), U("sources"));
+        // Each Events API source has a /type and /state endpoint
+        const route_pattern eventTypeState = make_route_pattern(U("eventTypeState"), U("type|state"));
 
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
     }
