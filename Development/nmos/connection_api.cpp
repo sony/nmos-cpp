@@ -553,6 +553,7 @@ namespace nmos
                 // On successful staging/activation, this copy will also be used for the response.
 
                 auto merged = nmos::fields::endpoint_staged(resource->data);
+                auto constraints = nmos::fields::endpoint_constraints(resource->data);
 
                 // "In the case where the transport file and transport parameters are updated in the same PATCH request
                 // transport parameters specified in the request object take precedence over those in the transport file."
@@ -564,7 +565,7 @@ namespace nmos
                 // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L344-L363
 
                 auto& transport_file = nmos::fields::transport_file(patch);
-                if (!transport_file.is_null() && !transport_file.as_object().empty())
+                if (!transport_file.is_null() && !transport_file.as_object().empty() && constraints.has_field(nmos::fields::rtp_enabled))
                 {
                     const auto transport_type_data = details::get_transport_type_data(transport_file);
 

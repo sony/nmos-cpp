@@ -47,7 +47,7 @@ namespace nmos
             const auto connection_senders = by_type.equal_range(nmos::details::has_data(nmos::types::sender));
             auto connection_sender = std::find_if(connection_senders.first, connection_senders.second, [&ws_resource_path](const nmos::resources::value_type& resource)
             {
-                auto first_transport_param = resource.data.at(nmos::fields::endpoint_staged).at(nmos::fields::transport_params).at(0);
+                auto first_transport_param = resource.data.at(nmos::fields::endpoint_active).at(nmos::fields::transport_params).at(0);
 
                 // Checking if connection resource have ws_resource:_path in its connection_uri
                 return first_transport_param.has_field(nmos::fields::connection_uri) && first_transport_param.at(nmos::fields::connection_uri).as_string().find(ws_resource_path) != std::string::npos;

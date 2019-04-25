@@ -34,7 +34,7 @@ namespace nmos
             set_reply(res, status_codes::OK,
                 web::json::serialize_if(resources,
                     match,
-                    [](const nmos::resources::value_type& resource) { return resource.data.at(U("id")); }),
+                    [](const nmos::resources::value_type& resource) { return value::string(resource.data.at(U("id")).as_string() + "/"); }),
                 U("application/json"));
             return pplx::task_from_result(true);
         });

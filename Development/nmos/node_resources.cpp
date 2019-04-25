@@ -474,8 +474,6 @@ namespace nmos
             const auto unconstrained = value::object();
             return value_of({
                 { nmos::fields::broker_topic, unconstrained },
-                { nmos::fields::source_host, unconstrained },
-                { nmos::fields::source_port, unconstrained },
                 { nmos::fields::destination_host, unconstrained },
                 { nmos::fields::destination_port, unconstrained },
                 { nmos::fields::ext_is_07_rest_api_url, unconstrained },
@@ -590,6 +588,7 @@ namespace nmos
         auto data = details::make_connection_resource_core(sender_id, false);
 		data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_websocket_sender_core_constraints(), false);
 		data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
         auto host = nmos::fields::host_address(settings);
         auto connection_uri = web::uri_builder()
@@ -604,7 +603,9 @@ namespace nmos
                             .set_port(nmos::fields::events_port(settings))
                             .set_path(U("/x-nmos/events/")+ make_api_version(version) + U("/sources/") + source_id)
                             .to_string();
-		data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri, source_id, rest_api_url), false);
+        auto transport_params = details::legs_of(details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri, source_id, rest_api_url), false);
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = transport_params;
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
 		return{ is05_versions::v1_1, types::sender, data, false };
 	}
@@ -619,6 +620,7 @@ namespace nmos
         auto data = details::make_connection_resource_core(sender_id, false);
         data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_mqtt_sender_core_constraints(), false);
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
         auto host = nmos::fields::host_address(settings);
        
@@ -629,7 +631,9 @@ namespace nmos
                             .set_path(U("/x-nmos/events/")+ make_api_version(version) + U("/sources/") + source_id)
                             .to_string();
         auto broker_topic = U("/x-nmos/source/") + source_id;
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_mqtt_sender_staged_core_parameter_set(broker_topic, destination_host, destination_port, rest_api_url), false);
+        auto transport_params = details::legs_of(details::make_connection_mqtt_sender_staged_core_parameter_set(broker_topic, destination_host, destination_port, rest_api_url), false);
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = transport_params;
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
         return{ is05_versions::v1_1, types::sender, data, false };
     }

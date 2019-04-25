@@ -144,7 +144,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto mqtt_sender = nmos::make_sender(temperature_mqtt_sender_id, temperature_flow_id, nmos::transports::mqtt, device_id, {}, { U("example"), U("example") }, model.settings);
         auto ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example"), U("example") }, model.settings);
         auto connection_ws_sender = nmos::make_connection_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
-        auto connection_mqtt_sender = nmos::make_connection_mqtt_sender(temperature_mqtt_sender_id, U("broker.host"), U("broker.port"), temperature_source_id, model.settings);
+        auto connection_mqtt_sender = nmos::make_connection_mqtt_sender(temperature_mqtt_sender_id, U("broker.host"), U("auto"), temperature_source_id, model.settings);
 
         auto event_type = value_of({
           { U("type"), U("number") },
@@ -276,14 +276,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
                 const auto& type = connection_resource.type;
                 nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
                 {
-                    resolve_auto(type, endpoint_active);
+                    if (nmos::fields::endpoint_constraints(connection_resource.data).has_field(nmos::fields::rtp_enabled)) {
+                        resolve_auto(type, endpoint_active);
+                    }
                     active = nmos::fields::master_enable(endpoint_active);
                     // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
                     auto& connected_id_or_null = nmos::types::sender == type ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
                     if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                 }, activation_time);
 
-                if (nmos::types::sender == type) set_connection_sender_transportfile(connection_resource, sdp_params);
+                if (nmos::types::sender == type && nmos::fields::endpoint_constraints(connection_resource.data).has_field(nmos::fields::rtp_enabled)) set_connection_sender_transportfile(connection_resource, sdp_params);
             });
 
             // Update the IS-04 resource
