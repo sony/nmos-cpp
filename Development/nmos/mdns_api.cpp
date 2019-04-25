@@ -93,7 +93,7 @@ namespace nmos
                     }));
                     set_reply(res, status_codes::OK,
                         web::json::serialize(results, [](const utility::string_t& s) { return value::string(s); }),
-                        U("application/json"));
+                        web::http::details::mime_types::application_json);
                     res.headers().add(U("X-Total-Count"), results.size());
                     return true;
                 });
@@ -154,7 +154,7 @@ namespace nmos
                             {
                                 set_reply(res, status_codes::OK,
                                     web::json::serialize(*results, [](const std::map<std::string, value>::value_type& kv) { return kv.second; }),
-                                    U("application/json"));
+                                    web::http::details::mime_types::application_json);
                                 res.headers().add(U("X-Total-Count"), results->size());
                             }
                             else

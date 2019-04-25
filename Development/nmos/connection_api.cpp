@@ -1013,7 +1013,7 @@ namespace nmos
                 set_reply(res, status_codes::OK,
                     web::json::serialize(results,
                         [](const details::connection_resource_patch_response& result) { return result.second; }),
-                    U("application/json"));
+                    web::http::details::mime_types::application_json);
                 return true;
             });
         });
@@ -1040,7 +1040,7 @@ namespace nmos
                 web::json::serialize_if(resources,
                     match,
                     [&count](const nmos::resources::value_type& resource) { ++count; return value(resource.id + U("/")); }),
-                U("application/json"));
+                web::http::details::mime_types::application_json);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
@@ -1202,7 +1202,7 @@ namespace nmos
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
 
                         const auto accept = req.headers().find(web::http::header_names::accept);
-                        if (req.headers().end() != accept && U("application/json") == accept->second && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
+                        if (req.headers().end() != accept && web::http::details::mime_types::application_json == accept->second && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
                         {
                             // Experimental extension - SDP as JSON
                             set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));

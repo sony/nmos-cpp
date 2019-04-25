@@ -108,7 +108,7 @@ namespace nmos
                 web::json::serialize_if(resources,
                     match,
                     [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }),
-                U("application/json"));
+                web::http::details::mime_types::application_json);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 

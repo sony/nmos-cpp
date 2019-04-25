@@ -231,7 +231,7 @@ namespace nmos
                 set_reply(res, status_codes::OK,
                     web::json::serialize(page,
                         [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }),
-                    U("application/json"));
+                    web::http::details::mime_types::application_json);
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 

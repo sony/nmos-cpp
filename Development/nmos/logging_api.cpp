@@ -357,7 +357,7 @@ namespace nmos
                     set_reply(res, status_codes::OK,
                         web::json::serialize(page,
                             [&count](const log_event& event){ ++count; return event.data; }),
-                        U("application/json"));
+                        web::http::details::mime_types::application_json);
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Returning " << count << " matching log events";
 

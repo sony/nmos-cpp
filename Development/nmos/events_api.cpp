@@ -66,7 +66,7 @@ namespace nmos
             set_reply(res, status_codes::OK,
                 web::json::serialize(resources,
                     [](const nmos::resources::value_type& resource) { return value(resource.id + U("/")); }),
-                U("application/json"));
+                web::http::details::mime_types::application_json);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << resources.size() << " matching " << resourceType;
 
