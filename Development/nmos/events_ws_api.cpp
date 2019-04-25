@@ -188,7 +188,8 @@ namespace nmos
                                 });
 
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Received new IS-07 health command command";
-                                
+
+                                model.notify();
                             }
                         } catch (const web::json::json_exception& e) {
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Got malformed IS-07 command json: " << e.what();
@@ -284,9 +285,8 @@ namespace nmos
                 }
 
                 auto events = nmos::fields::message_grain_data(grain->data);
-                if (0 != events.size()) {
-                    // Sending just last state event to the websocket
-                    auto serialized = utility::us2s(events.at(events.size()-1).at("post").at(nmos::fields::event_restapi_state).serialize());
+                for (auto i = 0; i < events.size(); i++) {
+                    auto serialized = utility::us2s(events.at(i).at("post").at(nmos::fields::event_restapi_state).serialize());
                     web::websockets::experimental::listener::websocket_outgoing_message message;
                     message.set_utf8_message(serialized);
 
