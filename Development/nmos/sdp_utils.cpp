@@ -389,7 +389,7 @@ namespace nmos
         if (!sdp_params.video.tcs.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::transfer_characteristic_system, sdp_params.video.tcs.name));
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::packing_mode, sdp::packing_modes::general.name)); // or block...
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name));
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.video.tp.name));
+        if (!sdp_params.video.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.video.tp.name));
 
         const auto fmtp = web::json::value_of({
             { sdp::fields::name, sdp::attributes::fmtp },
@@ -894,10 +894,13 @@ namespace nmos
             // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
             // and Section 8.2 Optional Parameters
 
-            // hmm, since "TP" (type parameter) is required by ST 2110-21, but not by ST 2110-20, is it effectively optional?
+            // since "TP" (type parameter) is required by ST 2110-21, but not by ST 2110-20, it's effectively optional
             const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
-            if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
-            sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+            if (format_specific_parameters.end() != tp)
+            {
+                sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+            }
+            // else sdp_params.video.tp = {};
 
             // don't examine optional parameters "TROFF", "CMAX"
         }
