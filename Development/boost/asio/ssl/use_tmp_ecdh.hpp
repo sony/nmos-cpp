@@ -55,10 +55,10 @@ BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh_file(boost::asio::ssl::context& ctx,
         evp_pkey_cleanup pkey = { ::X509_get_pubkey(x509.p) };
         if (pkey.p)
         {
-            int type = EVP_PKEY_type(pkey.p->type);
-            if (type == EVP_PKEY_EC)
+            ec_key_cleanup key = { ::EVP_PKEY_get1_EC_KEY(pkey.p) };
+            if (key.p)
             {
-                const EC_GROUP *group = EC_KEY_get0_group(pkey.p->pkey.ec);
+                const EC_GROUP *group = EC_KEY_get0_group(key.p);
                 nid = EC_GROUP_get_curve_name(group);
             }
         }
