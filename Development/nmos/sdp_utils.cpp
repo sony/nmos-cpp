@@ -375,6 +375,7 @@ namespace nmos
         // for simplicity, following the order of parameters given in VSF TR-05:2017
         // See https://tools.ietf.org/html/rfc4566#section-6
         // and http://www.videoservicesforum.org/download/technical_recommendations/VSF_TR-05_2018-06-23.pdf
+        // and comments regarding the fmtp attribute parameters in get_session_description_sdp_parameters
         auto format_specific_parameters = value_of({
             sdp::named_value(sdp::fields::width, utility::ostringstreamed(sdp_params.video.width)),
             sdp::named_value(sdp::fields::height, utility::ostringstreamed(sdp_params.video.height)),
@@ -891,10 +892,13 @@ namespace nmos
             // don't examine required parameters "PM" (packing mode), "SSN" (SMPTE standard number)
             // don't examine optional parameters "segmented", "RANGE", "MAXUDP", "PAR"
 
+            // "Senders and Receivers compliant to [ST 2110-20] shall comply with the provisions of SMPTE ST 2110-21."
+            // See SMPTE ST 2110-20:2017 Section 6.1.1
+
             // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
             // and Section 8.2 Optional Parameters
 
-            // since "TP" (type parameter) is required by ST 2110-21, but not by ST 2110-20, it's effectively optional
+            // hmm, "TP" (type parameter) is required, but currently omitted by several vendors, so allow that for now...
             const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
             if (format_specific_parameters.end() != tp)
             {
