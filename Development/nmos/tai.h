@@ -2,6 +2,8 @@
 #define NMOS_TAI_H
 
 #include <chrono>
+#include <cstdint>
+#include <tuple>
 
 namespace nmos
 {
