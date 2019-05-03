@@ -3,6 +3,8 @@
 #include "detail/for_each_reversed.h"
 #include "nmos/activation_mode.h"
 #include "nmos/connection_api.h"
+#include "nmos/connection_resources.h"
+#include "nmos/events_resources.h"
 #include "nmos/group_hint.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
@@ -135,7 +137,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#2-is-04-highlights
         // and https://github.com/AMWA-TV/nmos-discovery-registration/issues/88
 
-        auto events_temperature_source = nmos::make_events_source(temperature_source_id);
+        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/3.0.%20Event%20types.md#231-measurements
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
+        auto events_temperature_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
+        auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
+        auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
         insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);

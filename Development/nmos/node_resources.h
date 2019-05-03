@@ -57,8 +57,6 @@ namespace nmos
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_sdianc_data.json
     nmos::resource make_sdianc_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings);
 
-    web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings);
-
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/sender.json
     nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::transport& transport, const nmos::id& device_id, const utility::string_t& manifest_href, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
     nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::id& device_id, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
@@ -74,20 +72,6 @@ namespace nmos
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_data.json
     nmos::resource make_sdianc_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
-
-    // IS-05 Connection API resources
-
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7);
-    web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile);
-    web::json::value make_connection_sender_transportfile(const web::uri& transportfile);
-    // transportfile may be URL or the contents of the SDP file (yeah, yuck)
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
-
-    nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7);
-
-    // IS-07 Events API resources
-
-    nmos::resource make_events_source(const nmos::id& id);
 }
 
 #include "nmos/resources.h"
@@ -95,8 +79,6 @@ namespace nmos
 // This currently serves as an example of the resources that an NMOS node would construct
 namespace nmos
 {
-    struct node_model;
-
     namespace experimental
     {
         // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
