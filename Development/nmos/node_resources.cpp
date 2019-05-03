@@ -155,7 +155,7 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_core.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_core.json
     nmos::resource make_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
         using web::json::value;
@@ -171,7 +171,7 @@ namespace nmos
         return{ is04_versions::v1_3, types::flow, data, false };
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_video.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
     nmos::resource make_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const nmos::settings& settings)
     {
         using web::json::value;
@@ -189,7 +189,7 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_video_raw.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_raw.json
     nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, chroma_subsampling chroma_subsampling, unsigned int bit_depth, const nmos::settings& settings)
     {
         using web::json::value;
@@ -209,7 +209,7 @@ namespace nmos
         return make_raw_video_flow(id, source_id, device_id, {}, 1920, 1080, nmos::interlace_modes::interlaced_bff, nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, YCbCr422, 10, settings);
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_audio.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio.json
     nmos::resource make_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, const nmos::settings& settings)
     {
         using web::json::value;
@@ -223,7 +223,7 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_audio_raw.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio_raw.json
     nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, unsigned int bit_depth, const nmos::settings& settings)
     {
         using web::json::value;
@@ -252,6 +252,22 @@ namespace nmos
 
         data[U("format")] = value::string(nmos::formats::data.name);
         data[U("media_type")] = value::string(nmos::media_types::video_smpte291.name);
+        //data[U("DID_SDID")] = value::array(); // optional
+
+        return resource;
+    }
+
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_data.json
+    // (media_type must *not* be nmos::media_types::video_smpte291; cf. nmos::make_sdianc_data_flow)
+    nmos::resource make_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::media_type& media_type, const nmos::settings& settings)
+    {
+        using web::json::value;
+
+        auto resource = make_flow(id, source_id, device_id, {}, settings);
+        auto& data = resource.data;
+
+        data[U("format")] = value::string(nmos::formats::data.name);
+        data[U("media_type")] = value::string(media_type.name);
 
         return resource;
     }
