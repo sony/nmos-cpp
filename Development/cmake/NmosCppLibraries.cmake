@@ -655,6 +655,11 @@ add_library(
     ${NMOS_CPP_SLOG_HEADERS}
     )
 
+set(DETAIL_HEADERS
+    ${NMOS_CPP_DIR}/detail/for_each_reversed.h
+    ${NMOS_CPP_DIR}/detail/private_access.h
+    )
+
 source_group("bst\\Source Files" FILES ${NMOS_CPP_BST_SOURCES})
 source_group("cpprest\\Source Files" FILES ${NMOS_CPP_CPPREST_SOURCES})
 source_group("nmos\\Source Files" FILES ${NMOS_CPP_NMOS_SOURCES})
@@ -682,3 +687,23 @@ target_link_libraries(
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )
+
+#install libraries
+install(TARGETS
+    mdns_static
+    nmos-cpp_static
+    nmos_is04_schemas_static
+    nmos_is05_schemas_static
+    nmos_system_schemas_static
+    json_schema_validator_static
+    DESTINATION lib)
+
+
+install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include/nmos)
+install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include/pplx)
+install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include/rql)
+install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include/sdp)
+install(FILES ${NMOS_CPP_SLOG_HEADERS} DESTINATION include/slog)
+install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION include/cpprest)
+install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION include/bst)
+install(FILES ${DETAIL_HEADERS} DESTINATION include/detail)
