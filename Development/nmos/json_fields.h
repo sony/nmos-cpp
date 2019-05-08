@@ -133,12 +133,17 @@ namespace nmos
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+        const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string or null
 
         // IS-07 Event & Tally
 
         // for events_api
         const web::json::field_as_value endpoint_type{ U("type") }; // object
         const web::json::field_as_value endpoint_state{ U("state") }; // object
+
+        // for connection_api
+        const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string (or null?)
+        const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string (or null?)
     }
 
     // Fields for experimental extensions

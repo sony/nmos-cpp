@@ -84,6 +84,7 @@ namespace nmos
         const web::json::field_as_integer_or node_port{ U("node_port"), 3212 };
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
         const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
+        const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)

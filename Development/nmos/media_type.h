@@ -30,6 +30,8 @@ namespace nmos
         // Data media types
 
         const media_type video_smpte291{ U("video/smpte291") };
+
+        const media_type application_json{ U("application/json") };
     }
 }
 

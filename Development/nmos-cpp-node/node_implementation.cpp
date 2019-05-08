@@ -6,6 +6,7 @@
 #include "nmos/connection_resources.h"
 #include "nmos/events_resources.h"
 #include "nmos/group_hint.h"
+#include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
@@ -34,6 +35,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
     auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
     auto temperature_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/1"));
+    auto temperature_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/1"));
+    auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
 
     auto lock = model.write_lock(); // in order to update the resources
 
@@ -129,7 +132,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
     }
 
-    // example temperature source
+    // example temperature source, sender, flow
     {
         auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, model.settings);
         // hmm, IS-07 suggests an additional "event_type" attribute in the IS-04 source,
@@ -137,14 +140,21 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#2-is-04-highlights
         // and https://github.com/AMWA-TV/nmos-discovery-registration/issues/88
 
-        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/3.0.%20Event%20types.md#231-measurements
+        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
         auto events_temperature_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
         auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
         auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
 
+        auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
+        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example"), U("example") }, model.settings);
+        auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
+
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate);
         insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
     }
 
