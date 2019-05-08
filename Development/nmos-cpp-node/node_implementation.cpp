@@ -150,7 +150,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
 
         auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
-        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example"), U("example") }, model.settings);
+        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example") }, model.settings);
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
         // there may currently be no "auto" values to resolve for the WebSocket sender, but even so
         resolve_auto({ connection_temperature_ws_sender.id, connection_temperature_ws_sender.type }, connection_temperature_ws_sender.data[nmos::fields::endpoint_active]);
