@@ -83,28 +83,28 @@ namespace nmos
         }
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_boolean.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_boolean.json
     web::json::value make_events_boolean_state(const nmos::details::events_state_identity& identity, bool payload_value, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
         // should check type is nmos::event_types::boolean or a derived type
         return details::make_events_state(identity, details::make_payload(payload_value), type, timing);
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_number.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_number.json
     web::json::value make_events_number_state(const nmos::details::events_state_identity& identity, const events_number& payload, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
         // should check type is nmos::event_types::number or a derived type
         return details::make_events_state(identity, details::make_payload(payload), type, timing);
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_string.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_string.json
     web::json::value make_events_string_state(const nmos::details::events_state_identity& identity, const utility::string_t& payload_value, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
         // should check type is nmos::event_types::string or a derived type
         return details::make_events_state(identity, details::make_payload(payload_value), type, timing);
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_object.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_object.json
     // (out of scope for version 1.0 of this specification)
     web::json::value make_events_object_state(const nmos::details::events_state_identity& identity, const web::json::value& payload, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
@@ -112,7 +112,7 @@ namespace nmos
         return details::make_events_state(identity, payload, type, timing);
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_boolean.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_boolean.json
     web::json::value make_events_boolean_type()
     {
         using web::json::value_of;
@@ -120,14 +120,16 @@ namespace nmos
         return value_of({ { U("type"), nmos::event_types::boolean.name } });
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number.json
-    web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step, const utility::string_t& unit, int64_t default_scale)
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number.json
+    web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step, const utility::string_t& unit)
     {
         using web::json::value_of;
 
+        // type_number.json "scale" seems unnecessary?
+        // see https://github.com/AMWA-TV/nmos-event-tally/issues/31
+
         return value_of({
             { U("type"), nmos::event_types::number.name },
-            { 0 != default_scale ? U("scale") : U(""), default_scale },
             { U("min"), details::make_payload(min) },
             { U("max"), details::make_payload(max) },
             { 0 != step.value ? U("step") : U(""), details::make_payload(step) },
@@ -135,7 +137,7 @@ namespace nmos
         });
     }
 
-    // See  https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string.json
     web::json::value make_events_string_type(int64_t min_length, int64_t max_length, const utility::string_t& pattern)
     {
         using web::json::value_of;

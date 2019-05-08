@@ -116,6 +116,7 @@ namespace nmos
             }
             else
             {
+                // see https://github.com/AMWA-TV/nmos-event-tally/issues/23
                 set_reply(res, status_codes::NotFound);
             }
 
