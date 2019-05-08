@@ -61,26 +61,28 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         }
     };
 
-    const auto resolve_auto = [](const nmos::type& type, value& endpoint_active)
+    // although which properties may need to be defaulted depends on the resource type,
+    // the default value will almost always be different for each resource
+    const auto resolve_auto = [sender_id, receiver_id](const std::pair<nmos::id, nmos::type>& id_type, value& endpoint_active)
     {
         auto& transport_params = endpoint_active[nmos::fields::transport_params];
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-        if (nmos::types::sender == type)
+        if (sender_id == id_type.first)
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [] { return value::string(U("192.168.255.0")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [] { return value::string(U("192.168.255.1")); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
         }
-        else // if (nmos::types::receiver == type)
+        else if (receiver_id == id_type.first)
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.2")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.3")); });
         }
 
-        nmos::resolve_auto(type, transport_params);
+        nmos::resolve_auto(id_type.second, transport_params);
     };
 
     // example node
@@ -109,7 +111,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         sdp_params = nmos::make_sdp_parameters(source.data, flow.data, sender.data, { U("PRIMARY"), U("SECONDARY") });
 
         auto connection_sender = nmos::make_connection_sender(sender_id, true);
-        resolve_auto(connection_sender.type, connection_sender.data[nmos::fields::endpoint_active]);
+        resolve_auto({ connection_sender.id, connection_sender.type }, connection_sender.data[nmos::fields::endpoint_active]);
         set_connection_sender_transportfile(connection_sender, sdp_params);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
@@ -126,7 +128,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
 
         auto connection_receiver = nmos::make_connection_receiver(receiver_id, true);
-        resolve_auto(connection_receiver.type, connection_receiver.data[nmos::fields::endpoint_active]);
+        resolve_auto({ connection_receiver.id, connection_receiver.type }, connection_receiver.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
@@ -150,6 +152,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
         auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example"), U("example") }, model.settings);
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
+        // there may currently be no "auto" values to resolve for the WebSocket sender, but even so
+        resolve_auto({ connection_temperature_ws_sender.id, connection_temperature_ws_sender.type }, connection_temperature_ws_sender.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);
@@ -241,17 +245,24 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
             nmos::modify_resource(model.connection_resources, resource.id, [&resolve_auto, &sdp_params, &activation_time, &active, &connected_id](nmos::resource& connection_resource)
             {
-                const auto& type = connection_resource.type;
+                const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
                 nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
                 {
-                    resolve_auto(type, endpoint_active);
+                    resolve_auto(id_type, endpoint_active);
                     active = nmos::fields::master_enable(endpoint_active);
                     // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
-                    auto& connected_id_or_null = nmos::types::sender == type ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
+                    auto& connected_id_or_null = nmos::types::sender == id_type.second ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
                     if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                 }, activation_time);
 
-                if (nmos::types::sender == type) set_connection_sender_transportfile(connection_resource, sdp_params);
+                // hmm, not all transport types use a transport file, e.g. urn:x-nmos:transport:websocket probably
+                // should probably check the matching node resource's "transport", as in the implementation of the
+                // Connection API /transporttype endpoint, but for now use a simpler check to identify RTP senders
+                // see https://github.com/AMWA-TV/nmos-event-tally/issues/36
+                if (nmos::types::sender == id_type.second && nmos::fields::endpoint_constraints(connection_resource.data).has_field(nmos::fields::rtp_enabled))
+                {
+                    set_connection_sender_transportfile(connection_resource, sdp_params);
+                }
             });
 
             // Update the IS-04 resource
