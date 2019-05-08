@@ -1,6 +1,7 @@
 #ifndef NMOS_MEDIA_TYPE_H
 #define NMOS_MEDIA_TYPE_H
 
+#include "cpprest/basic_utils.h"
 #include "nmos/string_enum.h"
 
 namespace nmos
