@@ -296,8 +296,10 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
         const auto version = *nmos::is07_versions::from_settings(settings).rbegin();
-        const auto host = nmos::fields::host_address(settings);
+        const auto host = nmos::get_host(settings);
 
+        // hmm, since only one WebSocket server is used for all devices, there's no real reason
+        // that the connection_uri shouldn't just finish with the API version?
         // see https://github.com/AMWA-TV/nmos-event-tally/issues/33
         auto connection_uri = web::uri_builder()
             .set_scheme(nmos::ws_scheme(settings))
@@ -306,6 +308,9 @@ namespace nmos
             .set_path(U("/x-nmos/events/") + make_api_version(version) + U("/devices/") + device_id)
             .to_string();
 
+        // "For consistency the ext_is_07_rest_api_url url offered will always end with a trailing slash."
+        // I'd rather be consistent with the general guidance...
+        // See https://github.com/AMWA-TV/nmos-event-tally/issues/22
         auto rest_api_url = web::uri_builder()
             .set_scheme(nmos::http_scheme(settings))
             .set_host(host)

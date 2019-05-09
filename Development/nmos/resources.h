@@ -113,6 +113,16 @@ namespace nmos
     resources::const_iterator find_resource(const resources& resources, const std::pair<id, type>& id_type);
     resources::iterator find_resource(resources& resources, const std::pair<id, type>& id_type);
 
+    // find resource by type and predicate
+    template <typename Predicate>
+    inline resources::const_iterator find_resource_if(const resources& resources, type type, Predicate pred)
+    {
+        auto& by_type = resources.get<tags::type>();
+        const auto type_resources = by_type.equal_range(details::has_data(type));
+        auto resource = std::find_if(type_resources.first, type_resources.second, pred);
+        return type_resources.second != resource ? resources.project<0>(resource) : resources.end();
+    }
+
     // strictly, this just returns a node (or the end iterator)
     resources::const_iterator find_self_resource(const resources& resources);
     resources::iterator find_self_resource(resources& resources);

@@ -64,8 +64,9 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::sourceType.name);
 
             set_reply(res, status_codes::OK,
-                web::json::serialize(resources,
-                    [](const nmos::resources::value_type& resource) { return value(resource.id + U("/")); }),
+                web::json::serialize_if(resources,
+                    [&](const nmos::resource& resource) { return resource.type == nmos::type_from_resourceType(resourceType); },
+                    [](const nmos::resource& resource) { return value(resource.id + U("/")); }),
                 web::http::details::mime_types::application_json);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << resources.size() << " matching " << resourceType;

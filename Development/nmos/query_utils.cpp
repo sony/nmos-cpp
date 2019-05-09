@@ -370,7 +370,7 @@ namespace nmos
             // check whether the resource_path matches the resource type and the query parameters match either the "pre" or "post" resource
 
             const auto resource_path = nmos::fields::resource_path(subscription.data);
-            const resource_query match(subscription.version, resource_path, subscription.data.at(U("params")));
+            const resource_query match(subscription.version, resource_path, nmos::fields::params(subscription.data));
 
             const bool pre_match = match(version, type, pre);
             const bool post_match = match(version, type, post);

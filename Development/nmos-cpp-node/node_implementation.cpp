@@ -1,5 +1,6 @@
 #include "node_implementation.h"
 
+#include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "detail/for_each_reversed.h"
 #include "nmos/activation_mode.h"
 #include "nmos/connection_api.h"
@@ -165,6 +166,28 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
     }
 
+    auto cancellation_source = pplx::cancellation_token_source();
+    auto token = cancellation_source.get_token();
+    auto temperature_events = pplx::do_while([&]
+    {
+        return pplx::complete_after(std::chrono::seconds(1), token).then([&]
+        {
+            auto lock = model.write_lock();
+
+            modify_resource(model.events_resources, temperature_source_id, [&](nmos::resource& resource)
+            {
+                // make example temperature data ... \/\/\/\/ ... around 200
+                auto value = 175.0 + std::abs(nmos::tai_now().seconds % 100 - 50);
+                // i.e. 17.5-22.5 C
+                nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(temperature_source_id, { value, 10 });
+            });
+
+            model.notify();
+
+            return true;
+        });
+    }, token);
+
     auto most_recent_update = nmos::tai_min();
     auto earliest_scheduled_activation = (nmos::tai_clock::time_point::max)();
 
@@ -292,6 +315,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
         most_recent_update = nmos::most_recent_update(model.connection_resources);
     }
+
+    cancellation_source.cancel();
+    // wait without the lock since it is also used by the background tasks
+    nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+    temperature_events.wait();
 }
 
 // as part of activation, the sender /transportfile should be updated based on the active transport parameters

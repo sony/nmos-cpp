@@ -489,7 +489,7 @@ namespace nmos
         // also be set back to null to unblock concurrent patch operations (nmos::set_connection_resource_not_pending does both).
         //
         // This obviously requires co-operation from other threads that are manipulating these connection resources.
-        // nmos::experimental::node_resources_thread currently serves as an example of how to handle sender/receiver activations.
+        // nmos-cpp-node/node_implementation.cpp currently serves as an example of how to handle sender/receiver activations.
         //
         // By the time we reacquire the model lock anything may have happened, but we can identify with the above whether to send
         // a success response or an error, and in the success case, release the 'per-resource lock' by updating the staged

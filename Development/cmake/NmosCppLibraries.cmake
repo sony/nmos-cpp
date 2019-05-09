@@ -520,6 +520,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/connection_resources.cpp
     ${NMOS_CPP_DIR}/nmos/events_api.cpp
     ${NMOS_CPP_DIR}/nmos/events_resources.cpp
+    ${NMOS_CPP_DIR}/nmos/events_ws_api.cpp
     ${NMOS_CPP_DIR}/nmos/filesystem_route.cpp
     ${NMOS_CPP_DIR}/nmos/group_hint.cpp
     ${NMOS_CPP_DIR}/nmos/id.cpp
@@ -565,6 +566,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/event_type.h
     ${NMOS_CPP_DIR}/nmos/events_api.h
     ${NMOS_CPP_DIR}/nmos/events_resources.h
+    ${NMOS_CPP_DIR}/nmos/events_ws_api.h
     ${NMOS_CPP_DIR}/nmos/filesystem_route.h
     ${NMOS_CPP_DIR}/nmos/format.h
     ${NMOS_CPP_DIR}/nmos/group_hint.h
@@ -616,6 +618,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/transport.h
     ${NMOS_CPP_DIR}/nmos/type.h
     ${NMOS_CPP_DIR}/nmos/version.h
+    ${NMOS_CPP_DIR}/nmos/websockets.h
     )
 
 set(NMOS_CPP_PPLX_SOURCES
