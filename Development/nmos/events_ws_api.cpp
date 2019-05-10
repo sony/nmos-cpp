@@ -342,15 +342,38 @@ namespace nmos
 
             std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
 
-            for (const auto& websocket : websockets.left)
+            for (auto wit = websockets.left.begin(); websockets.left.end() != wit;)
             {
+                const auto& websocket = *wit;
+
                 // for each websocket connection that has valid grain and subscription resources
                 const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
-                if (resources.end() == grain) continue; // hmm, should close and erase the websocket, if connection resources not found!
+                if (resources.end() == grain)
+                {
+                    // theoretically blocking, but in fact not
+                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired")).wait();
+
+                    wit = websockets.left.erase(wit);
+                    continue;
+                }
                 const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
-                if (resources.end() == subscription) continue;
+                if (resources.end() == subscription)
+                {
+                    // a grain without a subscription shouldn't be possible, but let's be tidy
+                    erase_resource(resources, grain->id);
+
+                    // theoretically blocking, but in fact not
+                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired")).wait();
+
+                    wit = websockets.left.erase(wit);
+                    continue;
+                }
                 // and has events to send
-                if (0 == nmos::fields::message_grain_data(grain->data).size()) continue;
+                if (0 == nmos::fields::message_grain_data(grain->data).size())
+                {
+                    ++wit;
+                    continue;
+                }
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " events on websocket connection: " << grain->id;
 
@@ -384,6 +407,8 @@ namespace nmos
                     nmos::fields::message_grain_data(grain.data) = value::array();
                     grain.updated = strictly_increasing_update(resources);
                 });
+
+                ++wit;
             }
 
             // send the messages without the lock on resources
