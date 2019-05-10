@@ -64,7 +64,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    const auto resolve_auto = [sender_id, receiver_id](const std::pair<nmos::id, nmos::type>& id_type, value& endpoint_active)
+    const auto resolve_auto = [&](const std::pair<nmos::id, nmos::type>& id_type, value& endpoint_active)
     {
         auto& transport_params = endpoint_active[nmos::fields::transport_params];
 
@@ -81,6 +81,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.2")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.3")); });
+        }
+        else if (temperature_ws_sender_id == id_type.first)
+        {
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(nmos::make_events_ws_api_connection_uri(device_id, model.settings).to_string()); });
         }
 
         nmos::resolve_auto(id_type.second, transport_params);
