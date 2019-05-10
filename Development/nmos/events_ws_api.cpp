@@ -336,8 +336,6 @@ namespace nmos
 
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Got notification on events websockets thread";
 
-            const auto now = tai_clock::now();
-
             earliest_necessary_update = (tai_clock::time_point::max)();
 
             std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
