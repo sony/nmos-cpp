@@ -181,6 +181,7 @@ int main(int argc, char* argv[])
 
         auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
         auto send_events_ws_messages = nmos::details::make_thread_guard([&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, node_websockets, gate); }, [&] { node_model.controlled_shutdown(); });
+        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_events_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

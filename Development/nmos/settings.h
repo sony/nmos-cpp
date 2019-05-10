@@ -118,6 +118,17 @@ namespace nmos
 
         // immediate_activation_max [node]: timeout for immediate activations within the Connection API /staged endpoint
         const web::json::field_as_integer_or immediate_activation_max{ U("immediate_activation_max"), 30 };
+
+        // events_heartbeat_interval [node, client]:
+        // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        const web::json::field_as_integer_or events_heartbeat_interval{ U("events_heartbeat_interval"), 5 };
+
+        // events_expiry_interval [node]:
+        // "The server is expected to check health commands and after a 12 seconds timeout (2 consecutive missed health commands plus 2 seconds to allow for latencies)
+        // it should clear the subscriptions for that particular client and close the websocket connection."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        const web::json::field_as_integer_or events_expiry_interval{ U("events_expiry_interval"), 12 };
     }
 }
 

@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include "nmos/api_utils.h"
 #include "nmos/is07_versions.h"
+#include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/rational.h"
@@ -17,7 +18,9 @@ namespace nmos
     // although the structure of the WebSocket messages is different, and the latter has a two-step process
     // for creating and connecting to a subscription whereas endpoints on this API are advertised via the
     // "connection_uri" in the IS-05 Connection API sender's active transport parameters.
-    // See nmos/query_ws_api.cpp
+    // Expiry of connections in the Events WebSocket API is more or less identical to expiry as performed
+    // by the IS-04 Registration API, so this implementation also shares much commonality.
+    // See nmos/query_ws_api.cpp and nmos/registration_api.cpp
 
     web::websockets::experimental::listener::validate_handler make_events_ws_validate_handler(nmos::node_model& model, slog::base_gate& gate_)
     {
@@ -406,6 +409,59 @@ namespace nmos
                 // for now, wait for the message to be sent
                 send.wait();
             }
+        }
+    }
+
+    void erase_expired_events_resources_thread(nmos::node_model& model, slog::base_gate& gate_)
+    {
+        nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::events_expiry));
+
+        // start out as a shared/read lock, only upgraded to an exclusive/write lock when an expired resource actually needs to be deleted from the resources
+        auto lock = model.read_lock();
+        auto& shutdown_condition = model.shutdown_condition;
+        auto& shutdown = model.shutdown;
+        auto& resources = model.events_resources;
+
+        auto least_health = nmos::least_health(resources);
+
+        // wait until the next connection could potentially expire, or the server is being shut down
+        // (since health is truncated to seconds, and we want to be certain the expiry interval has passed, there's an extra second to wait here)
+        while (!shutdown_condition.wait_until(lock, time_point_from_health(least_health.first + nmos::fields::events_expiry_interval(model.settings) + 1), [&] { return shutdown; }))
+        {
+            // hmmm, it needs to be possible to enable/disable periodic logging like this independently of the severity...
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the node events' resources contains " << nmos::put_resources_statistics(resources);
+
+            // most connections will have had a heartbeat during the wait, so the least health will have been increased
+            // so this thread will be able to go straight back to waiting
+            auto expire_health = health_now() - nmos::fields::events_expiry_interval(model.settings);
+            auto forget_health = expire_health - nmos::fields::events_expiry_interval(model.settings);
+            least_health = nmos::least_health(resources);
+            if (least_health.first >= expire_health && least_health.second >= forget_health) continue;
+
+            // otherwise, there's actually work to do...
+
+            details::reverse_lock_guard<nmos::read_lock> unlock(lock);
+            // note, without atomic upgrade, another thread may preempt hence the need to recalculate expire_health/forget_health and least_health
+            auto upgrade = model.write_lock();
+
+            expire_health = health_now() - nmos::fields::events_expiry_interval(model.settings);
+            forget_health = expire_health - nmos::fields::events_expiry_interval(model.settings);
+
+            // forget all resources expired in the previous interval
+            forget_erased_resources(resources, forget_health);
+
+            // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
+            const auto expired = erase_expired_resources(resources, expire_health, false);
+
+            if (0 != expired)
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << expired << " resources have expired";
+
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying events websockets thread"; // and anyone else who cares...
+                model.notify();
+            }
+
+            least_health = nmos::least_health(resources);
         }
     }
 }

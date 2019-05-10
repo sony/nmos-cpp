@@ -33,6 +33,7 @@ namespace nmos
     web::json::value make_events_health_message(const nmos::details::events_state_timing& timing);
 
     void send_events_ws_messages_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate);
+    void erase_expired_events_resources_thread(nmos::node_model& model, slog::base_gate& gate);
 }
 
 #endif
