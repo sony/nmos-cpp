@@ -9,6 +9,11 @@
 
 #include <boost/asio/detail/push_options.hpp>
 
+#ifndef BOOST_ASIO_SYNC_OP_VOID
+# define BOOST_ASIO_SYNC_OP_VOID void
+# define BOOST_ASIO_SYNC_OP_VOID_RETURN(e) return
+#endif
+
 namespace boost {
 namespace asio {
 namespace ssl {
