@@ -140,6 +140,8 @@ namespace nmos
         // for events_api
         const web::json::field_as_value endpoint_type{ U("type") }; // object
         const web::json::field_as_value endpoint_state{ U("state") }; // object
+        const web::json::field_as_value identity{ U("identity") }; // object
+        const web::json::field_as_value timing{ U("timing") }; // object
 
         // for events_ws_api
         const web::json::field_as_string command{ U("command") };

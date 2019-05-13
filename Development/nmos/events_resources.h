@@ -53,6 +53,13 @@ namespace nmos
         };
 
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_core.json
+        // "The flow_id will NOT be included in the response to a [REST API query for the] state because the state is held by
+        // the source which has no dependency on a flow. It will, however, appear when being sent through one of the two
+        // specified transports because it will pass from the source through a flow and out on the network through the sender."
+        // Therefore, since the stored data in the event resources is also used to generate the messages on the transport, it
+        // *should* include the flow id. It will be removed to generate the Events API /state response.
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/2.0.%20Message%20types.md#11-the-state-message-type
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#1-introduction
         web::json::value make_events_state_identity(const nmos::details::events_state_identity& identity);
 
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_core.json

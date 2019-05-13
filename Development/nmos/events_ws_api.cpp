@@ -392,7 +392,6 @@ namespace nmos
                         // and nmos::make_events_boolean_state, nmos::make_events_number_state, etc.
                         // and nmos::details::make_resource_event
                         const web::json::value& state = nmos::fields::endpoint_state(event.at(U("post")));
-                        // hmm, may need to address issues around inclusion of "flow_id" or not...
                         message.set_utf8_message(utility::us2s(state.serialize()));
                         outgoing_messages.push_back({ websocket.second, message });
                     }
