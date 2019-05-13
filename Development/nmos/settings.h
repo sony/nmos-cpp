@@ -51,6 +51,9 @@ namespace nmos
         // is05_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is05_versions{ U("is05_versions") }; // when omitted, nmos::is05_versions::all is used
 
+        // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is07_versions{ U("is07_versions") }; // when omitted, nmos::is07_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
@@ -80,6 +83,8 @@ namespace nmos
         const web::json::field_as_integer_or registration_port{ U("registration_port"), 3210 };
         const web::json::field_as_integer_or node_port{ U("node_port"), 3212 };
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
+        const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
+        const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
@@ -113,6 +118,17 @@ namespace nmos
 
         // immediate_activation_max [node]: timeout for immediate activations within the Connection API /staged endpoint
         const web::json::field_as_integer_or immediate_activation_max{ U("immediate_activation_max"), 30 };
+
+        // events_heartbeat_interval [node, client]:
+        // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        const web::json::field_as_integer_or events_heartbeat_interval{ U("events_heartbeat_interval"), 5 };
+
+        // events_expiry_interval [node]:
+        // "The server is expected to check health commands and after a 12 seconds timeout (2 consecutive missed health commands plus 2 seconds to allow for latencies)
+        // it should clear the subscriptions for that particular client and close the websocket connection."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        const web::json::field_as_integer_or events_expiry_interval{ U("events_expiry_interval"), 12 };
     }
 }
 

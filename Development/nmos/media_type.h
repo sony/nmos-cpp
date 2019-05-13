@@ -1,6 +1,7 @@
 #ifndef NMOS_MEDIA_TYPE_H
 #define NMOS_MEDIA_TYPE_H
 
+#include "cpprest/basic_utils.h"
 #include "nmos/string_enum.h"
 
 namespace nmos
@@ -29,6 +30,8 @@ namespace nmos
         // Data media types
 
         const media_type video_smpte291{ U("video/smpte291") };
+
+        const media_type application_json{ U("application/json") };
     }
 }
 

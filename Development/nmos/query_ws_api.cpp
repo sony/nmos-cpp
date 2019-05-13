@@ -9,27 +9,6 @@
 
 namespace nmos
 {
-    class ws_api_gate : public details::omanip_gate
-    {
-    public:
-        // apart from the gate, arguments are copied in order that this object is safely copyable
-        ws_api_gate(slog::base_gate& gate, const utility::string_t& ws_resource_path)
-            : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << nmos::stash_request_uri(ws_resource_path); }))
-        {}
-        virtual ~ws_api_gate() {}
-    };
-
-    inline resources::iterator find_subscription(resources& resources, const utility::string_t& ws_resource_path)
-    {
-        auto& by_type = resources.get<tags::type>();
-        const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
-        auto resource = std::find_if(subscriptions.first, subscriptions.second, [&ws_resource_path](const nmos::resources::value_type& resource)
-        {
-            return ws_resource_path == web::uri(nmos::fields::ws_href(resource.data)).path();
-        });
-        return subscriptions.second != resource ? resources.project<0>(resource) : resources.end();
-    }
-
     web::websockets::experimental::listener::validate_handler make_query_ws_validate_handler(nmos::registry_model& model, slog::base_gate& gate_)
     {
         return [&model, &gate_](const utility::string_t& ws_resource_path)
@@ -40,16 +19,18 @@ namespace nmos
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating websocket connection to: " << ws_resource_path;
 
-            const bool has_subscription = resources.end() != find_subscription(resources, ws_resource_path);
+            const bool has_ws_resource_path = resources.end() != find_resource_if(resources, nmos::types::subscription, [&ws_resource_path](const nmos::resource& resource)
+            {
+                return ws_resource_path == web::uri(nmos::fields::ws_href(resource.data)).path();
+            });
 
-            if (!has_subscription) slog::log<slog::severities::error>(gate, SLOG_FLF) << "Invalid websocket connection to: " << ws_resource_path;
-            return has_subscription;
+            if (!has_ws_resource_path) slog::log<slog::severities::error>(gate, SLOG_FLF) << "Invalid websocket connection to: " << ws_resource_path;
+            return has_ws_resource_path;
         };
     }
 
     web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
-        using utility::string_t;
         using web::json::value;
 
         return [source_id, &model, &websockets, &gate_](const utility::string_t& ws_resource_path, const web::websockets::experimental::listener::connection_id& connection_id)
@@ -60,7 +41,10 @@ namespace nmos
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Opening websocket connection to: " << ws_resource_path;
 
-            auto subscription = find_subscription(resources, ws_resource_path);
+            auto subscription = find_resource_if(resources, nmos::types::subscription, [&ws_resource_path](const nmos::resource& resource)
+            {
+                return ws_resource_path == web::uri(nmos::fields::ws_href(resource.data)).path();
+            });
 
             if (resources.end() != subscription)
             {
@@ -73,13 +57,13 @@ namespace nmos
 
                 // create an initial websocket message with no data
 
-                const string_t resource_path = nmos::fields::resource_path(subscription->data);
-                const string_t topic = resource_path + U('/');
+                const auto resource_path = nmos::fields::resource_path(subscription->data);
+                const auto topic = resource_path + U('/');
                 data[U("message")] = details::make_grain(source_id, subscription->id, topic);
 
                 // populate it with the initial (unchanged, a.k.a. sync) data
 
-                nmos::fields::message_grain_data(data) = make_resource_events(resources, subscription->version, resource_path, subscription->data.at(U("params")));
+                nmos::fields::message_grain_data(data) = make_resource_events(resources, subscription->version, resource_path, nmos::fields::params(subscription->data));
 
                 // track the grain for the websocket connection as a sub-resource of the subscription
 
@@ -140,6 +124,8 @@ namespace nmos
                 }
 
                 websockets.right.erase(websocket);
+
+                model.notify();
             }
         };
     }
@@ -148,7 +134,6 @@ namespace nmos
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::send_query_ws_events));
 
-        using utility::string_t;
         using web::json::value;
 
         // could start out as a shared/read lock, only upgraded to an exclusive/write lock when a grain in the resources is actually modified
@@ -176,15 +161,38 @@ namespace nmos
 
             std::vector<std::pair<web::websockets::experimental::listener::connection_id, web::websockets::websocket_outgoing_message>> outgoing_messages;
 
-            for (const auto& websocket : websockets.left)
+            for (auto wit = websockets.left.begin(); websockets.left.end() != wit;)
             {
+                const auto& websocket = *wit;
+
                 // for each websocket connection that has valid grain and subscription resources
                 const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
-                if (resources.end() == grain) continue;
+                if (resources.end() == grain)
+                {
+                    // theoretically blocking, but in fact not
+                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Deleted")).wait();
+
+                    wit = websockets.left.erase(wit);
+                    continue;
+                }
                 const auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
-                if (resources.end() == subscription) continue;
+                if (resources.end() == subscription)
+                {
+                    // a grain without a subscription shouldn't be possible, but let's be tidy
+                    erase_resource(resources, grain->id);
+
+                    // theoretically blocking, but in fact not
+                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Deleted")).wait();
+
+                    wit = websockets.left.erase(wit);
+                    continue;
+                }
                 // and has events to send
-                if (0 == nmos::fields::message_grain_data(grain->data).size()) continue;
+                if (0 == nmos::fields::message_grain_data(grain->data).size())
+                {
+                    ++wit;
+                    continue;
+                }
 
                 // throttle messages according to the subscription's max_update_rate_ms
                 // see discussion about sync_timestamp below...
@@ -198,12 +206,13 @@ namespace nmos
                         earliest_necessary_update = earliest_allowed_update;
                     }
                     // just don't do it now!
+                    ++wit;
                     continue;
                 }
 
                 // experimental extension, to limit maximum number of events per message
 
-                resource_paging paging(subscription->data.at(U("params")), most_recent_message, (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
+                resource_paging paging(nmos::fields::params(subscription->data), most_recent_message, (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
                 auto next_events = value::array();
 
                 // determine the grain timestamps
@@ -295,6 +304,8 @@ namespace nmos
                     next_events = value::array(); // unnecessary
                     grain.updated = strictly_increasing_update(resources);
                 });
+
+                ++wit;
             }
 
             // send the messages without the lock on resources

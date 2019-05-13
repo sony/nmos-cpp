@@ -231,7 +231,7 @@ namespace nmos
                 set_reply(res, status_codes::OK,
                     web::json::serialize(page,
                         [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }),
-                    U("application/json"));
+                    web::http::details::mime_types::application_json);
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
@@ -376,9 +376,7 @@ namespace nmos
                     }
 
                     // search for a matching existing subscription
-                    auto& by_type = resources.get<tags::type>();
-                    const auto subscriptions = by_type.equal_range(details::has_data(nmos::types::subscription));
-                    auto resource = std::find_if(subscriptions.first, subscriptions.second, [&req_host, &version, &data](const resources::value_type& resource)
+                    auto resource = find_resource_if(resources, nmos::types::subscription, [&req_host, &version, &data](const nmos::resource& resource)
                     {
                         return version == resource.version
                             && nmos::fields::max_update_rate_ms(data) == nmos::fields::max_update_rate_ms(resource.data)
@@ -390,7 +388,7 @@ namespace nmos
                             // (which, let's approximate by checking the host matches)
                             && req_host == web::uri(nmos::fields::ws_href(resource.data)).host();
                     });
-                    const bool creating = subscriptions.second == resource;
+                    const bool creating = resources.end() == resource;
 
                     if (creating)
                     {
@@ -415,7 +413,7 @@ namespace nmos
                         // never expire persistent subscriptions, they are only deleted when explicitly requested
                         nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
 
-                        resource = resources.project<tags::type>(insert_resource(resources, std::move(subscription)).first);
+                        resource = insert_resource(resources, std::move(subscription)).first;
                     }
                     else
                     {

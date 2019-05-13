@@ -39,6 +39,8 @@ namespace nmos
         const category registration_expiry{ "registration_expiry" };
         const category send_query_ws_events{ "send_query_ws_events" };
         const category receive_query_ws_events{ "receive_query_ws_events" };
+        const category send_events_ws_messages{ "send_events_ws_messages" };
+        const category events_expiry{ "events_expiry" };
 
         // other categories may be defined ad-hoc
     }
@@ -164,6 +166,16 @@ namespace nmos
             : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << api_stash(req, parameters); }))
         {}
         virtual ~api_gate() {}
+    };
+
+    class ws_api_gate : public details::omanip_gate
+    {
+    public:
+        // apart from the gate, arguments are copied in order that this object is safely copyable
+        ws_api_gate(slog::base_gate& gate, const utility::string_t& ws_resource_path)
+            : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << nmos::stash_request_uri(ws_resource_path); }))
+        {}
+        virtual ~ws_api_gate() {}
     };
 
     namespace details

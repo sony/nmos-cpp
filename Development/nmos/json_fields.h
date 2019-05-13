@@ -89,7 +89,7 @@ namespace nmos
         const web::json::field_as_bool persist{ U("persist") };
         const web::json::field_as_bool secure{ U("secure") };
         const web::json::field_as_string resource_path{ U("resource_path") };
-        const web::json::field_as_object params{ U("params") };
+        const web::json::field_as_value params{ U("params") }; // object
         const web::json::field_as_integer max_update_rate_ms{ U("max_update_rate_ms") };
         const web::json::field_as_string ws_href{ U("ws_href") };
         const web::json::field_as_string subscription_id{ U("subscription_id") };
@@ -133,6 +133,24 @@ namespace nmos
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+        const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string or null
+
+        // IS-07 Event & Tally
+
+        // for events_api
+        const web::json::field_as_value endpoint_type{ U("type") }; // object
+        const web::json::field_as_value endpoint_state{ U("state") }; // object
+        const web::json::field_as_value identity{ U("identity") }; // object
+        const web::json::field_as_value timing{ U("timing") }; // object
+
+        // for events_ws_api
+        const web::json::field_as_string command{ U("command") };
+        const web::json::field_as_array sources{ U("sources") };
+        const web::json::field<tai> timestamp{ U("timestamp") };
+
+        // for connection_api
+        const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string (or null?)
+        const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string (or null?)
     }
 
     // Fields for experimental extensions

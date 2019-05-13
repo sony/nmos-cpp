@@ -252,12 +252,12 @@ namespace web
 
         // this function allows terse construction of object values using a braced-init-list
         // e.g. value_of({ { U("foo"), 42 }, { U("bar"), U("baz") }, { U("qux"), true } })
-        inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, web::json::details::value_init>> fields, bool keep_order = false)
+        inline web::json::value value_of(std::initializer_list<std::pair<utility::string_t, web::json::details::value_init>> fields, bool keep_order = false, bool omit_empty_keys = true)
         {
             web::json::value result = web::json::value::object(keep_order);
             for (auto& field : fields)
             {
-                insert(result, field);
+                if (!field.first.empty() || !omit_empty_keys) insert(result, field);
             }
             return result;
         }

@@ -1,8 +1,12 @@
 #include <fstream>
 #include <iostream>
+#include "cpprest/ws_listener.h"
+#include "cpprest/ws_utils.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
+#include "nmos/events_api.h"
+#include "nmos/events_ws_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
@@ -129,6 +133,24 @@ int main(int argc, char* argv[])
 
         port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
 
+        // Configure the Events API
+        port_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
+
+        nmos::websockets node_websockets;
+
+        auto websocket_config = nmos::make_websocket_listener_config(node_model.settings);
+        websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
+        web::websockets::experimental::listener::validate_handler events_ws_validate_handler = nmos::make_events_ws_validate_handler(node_model, gate);
+        web::websockets::experimental::listener::open_handler events_ws_open_handler = nmos::make_events_ws_open_handler(node_model, node_websockets, gate);
+        web::websockets::experimental::listener::close_handler events_ws_close_handler = nmos::make_events_ws_close_handler(node_model, node_websockets, gate);
+        web::websockets::experimental::listener::message_handler events_ws_message_handler = nmos::make_events_ws_message_handler(node_model, node_websockets, gate);
+        auto events_ws_uri = web::websockets::experimental::listener::make_listener_uri(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::events_ws_port(node_model.settings), node_model.settings));
+        web::websockets::experimental::listener::websocket_listener events_ws_listener(events_ws_uri, websocket_config);
+        events_ws_listener.set_validate_handler(std::ref(events_ws_validate_handler));
+        events_ws_listener.set_open_handler(std::ref(events_ws_open_handler));
+        events_ws_listener.set_close_handler(std::ref(events_ws_close_handler));
+        events_ws_listener.set_message_handler(std::ref(events_ws_message_handler));
+
         // Set up the listeners for each API port
 
        auto http_config = nmos::make_http_listener_config(node_model.settings);
@@ -152,10 +174,14 @@ int main(int argc, char* argv[])
         {
             if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
         }
+        web::websockets::experimental::listener::websocket_listener_guard events_ws_guard;
+        if (0 <= events_ws_listener.uri().port()) events_ws_guard = { events_ws_listener };
 
         // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
 
         auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+        auto send_events_ws_messages = nmos::details::make_thread_guard([&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, node_websockets, gate); }, [&] { node_model.controlled_shutdown(); });
+        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_events_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 

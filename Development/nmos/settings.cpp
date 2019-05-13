@@ -37,6 +37,9 @@ namespace nmos
                 web::json::insert(settings, std::make_pair(nmos::fields::node_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::system_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::connection_port, http_port));
+                if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_port, http_port));
+                // can't share a port between an http_listener and a websocket_listener, so don't apply this one...
+                //if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_ws_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));

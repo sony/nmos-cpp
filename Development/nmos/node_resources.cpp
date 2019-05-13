@@ -5,18 +5,17 @@
 #include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/channels.h"
 #include "nmos/colorspace.h"
-#include "nmos/connection_api.h" // for nmos::resolve_auto
+#include "nmos/connection_resources.h" // for nmos::make_connection_api_transportfile
 #include "nmos/components.h"
 #include "nmos/device_type.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
+#include "nmos/is07_versions.h"
 #include "nmos/media_type.h"
-#include "nmos/model.h"
-#include "nmos/node_resource.h"
+#include "nmos/node_resource.h" // just for nmos::make_node for nmos::experimental::insert_node_resources
 #include "nmos/resource.h"
-#include "nmos/slog.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
 #include "nmos/version.h"
@@ -40,27 +39,57 @@ namespace nmos
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
 
-        for (const auto& version : nmos::is05_versions::from_settings(settings))
+        if (0 <= nmos::fields::connection_port(settings))
         {
-            auto connection_uri = web::uri_builder()
-                .set_scheme(nmos::http_scheme(settings))
-                .set_port(nmos::fields::connection_port(settings))
-                .set_path(U("/x-nmos/connection/") + make_api_version(version));
-            auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
+            for (const auto& version : nmos::is05_versions::from_settings(settings))
+            {
+                auto connection_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::connection_port(settings))
+                    .set_path(U("/x-nmos/connection/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
 
-            if (nmos::experimental::fields::client_secure(settings))
-            {
-                web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                    { U("type"), type }
-                }));
+                if (nmos::experimental::fields::client_secure(settings))
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+                else for (const auto& host_address : host_addresses)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
             }
-            else for (const auto& host_address : host_addresses)
+        }
+
+        if (0 <= nmos::fields::events_port(settings))
+        {
+            for (const auto& version : nmos::is07_versions::from_settings(settings))
             {
-                web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
-                    { U("type"), type }
-                }));
+                auto events_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::events_port(settings))
+                    .set_path(U("/x-nmos/events/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:events/") + make_api_version(version);
+
+                if (nmos::experimental::fields::client_secure(settings))
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), events_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+                else for (const auto& host_address : host_addresses)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), events_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
             }
         }
 
@@ -126,7 +155,7 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_core.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_core.json
     nmos::resource make_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
         using web::json::value;
@@ -142,7 +171,7 @@ namespace nmos
         return{ is04_versions::v1_3, types::flow, data, false };
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_video.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
     nmos::resource make_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const nmos::settings& settings)
     {
         using web::json::value;
@@ -160,7 +189,7 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_video_raw.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_raw.json
     nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, chroma_subsampling chroma_subsampling, unsigned int bit_depth, const nmos::settings& settings)
     {
         using web::json::value;
@@ -180,7 +209,7 @@ namespace nmos
         return make_raw_video_flow(id, source_id, device_id, {}, 1920, 1080, nmos::interlace_modes::interlaced_bff, nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, YCbCr422, 10, settings);
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_audio.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio.json
     nmos::resource make_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, const nmos::settings& settings)
     {
         using web::json::value;
@@ -194,7 +223,7 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/APIs/schemas/flow_audio_raw.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio_raw.json
     nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, unsigned int bit_depth, const nmos::settings& settings)
     {
         using web::json::value;
@@ -223,20 +252,24 @@ namespace nmos
 
         data[U("format")] = value::string(nmos::formats::data.name);
         data[U("media_type")] = value::string(nmos::media_types::video_smpte291.name);
+        //data[U("DID_SDID")] = value::array(); // optional
 
         return resource;
     }
 
-    web::uri make_connection_api_transportfile(const nmos::id& sender_id, const nmos::settings& settings)
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_data.json
+    // (media_type must *not* be nmos::media_types::video_smpte291; cf. nmos::make_sdianc_data_flow)
+    nmos::resource make_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::media_type& media_type, const nmos::settings& settings)
     {
-        const auto version = *nmos::is05_versions::from_settings(settings).begin();
+        using web::json::value;
 
-        return web::uri_builder()
-            .set_scheme(nmos::http_scheme(settings))
-            .set_host(nmos::get_host(settings))
-            .set_port(nmos::fields::connection_port(settings))
-            .set_path(U("/x-nmos/connection/") + make_api_version(version) + U("/single/senders/") + sender_id + U("/transportfile"))
-            .to_uri();
+        auto resource = make_flow(id, source_id, device_id, {}, settings);
+        auto& data = resource.data;
+
+        data[U("format")] = value::string(nmos::formats::data.name);
+        data[U("media_type")] = value::string(media_type.name);
+
+        return resource;
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/sender.json
@@ -336,209 +369,6 @@ namespace nmos
         data[U("caps")][U("media_types")][0] = value::string(nmos::media_types::video_smpte291.name);
 
         return resource;
-    }
-
-    namespace details
-    {
-        web::json::value legs_of(const web::json::value& value, bool smpte2022_7)
-        {
-            using web::json::value_of;
-            return smpte2022_7 ? value_of({ value, value }) : value_of({ value });
-        }
-
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
-        web::json::value make_connection_resource_staging_core(bool smpte2022_7)
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::master_enable, false },
-                { nmos::fields::activation, value_of({
-                    { nmos::fields::mode, value::null() },
-                    { nmos::fields::requested_time, value::null() },
-                    { nmos::fields::activation_time, value::null() }
-                }) },
-                { nmos::fields::transport_params, legs_of(value::object(), smpte2022_7) }
-            });
-        }
-
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
-        web::json::value make_connection_receiver_staging_transport_file()
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::data, value::null() },
-                { nmos::fields::type, U("application/sdp") }
-            });
-        }
-
-        web::json::value make_connection_resource_core(const nmos::id& id, bool smpte2022_7)
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::id, id },
-                { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::endpoint_constraints, legs_of(value::object(), smpte2022_7) },
-                { nmos::fields::endpoint_staged, make_connection_resource_staging_core(smpte2022_7) },
-                { nmos::fields::endpoint_active, make_connection_resource_staging_core(smpte2022_7) }
-            });
-        }
-
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
-        web::json::value make_connection_sender_core_constraints()
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            const auto unconstrained = value::object();
-            return value_of({
-                { nmos::fields::source_ip, unconstrained },
-                { nmos::fields::destination_ip, unconstrained },
-                { nmos::fields::source_port, unconstrained },
-                { nmos::fields::destination_port, unconstrained },
-                { nmos::fields::rtp_enabled, unconstrained }
-            });
-        }
-
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
-        web::json::value make_connection_sender_staged_core_parameter_set()
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::source_ip, U("auto") },
-                { nmos::fields::destination_ip, U("auto") },
-                { nmos::fields::source_port, U("auto") },
-                { nmos::fields::destination_port, U("auto") },
-                { nmos::fields::rtp_enabled, true }
-            });
-        }
-
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
-        web::json::value make_connection_receiver_core_constraints()
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            const auto unconstrained = value::object();
-            return value_of({
-                { nmos::fields::source_ip, unconstrained },
-                { nmos::fields::interface_ip, unconstrained },
-                { nmos::fields::destination_port, unconstrained },
-                { nmos::fields::rtp_enabled, unconstrained },
-                { nmos::fields::multicast_ip, unconstrained }
-            });
-        }
-
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
-        web::json::value make_connection_receiver_staged_core_parameter_set()
-        {
-            using web::json::value;
-            using web::json::value_of;
-
-            return value_of({
-                { nmos::fields::source_ip, value::null() },
-                { nmos::fields::interface_ip, U("auto") },
-                { nmos::fields::destination_port, U("auto") },
-                { nmos::fields::rtp_enabled, true },
-                { nmos::fields::multicast_ip, value::null() }
-            });
-        }
-    }
-
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7)
-    {
-        using web::json::value;
-        using web::json::value_of;
-
-        auto data = details::make_connection_resource_core(id, smpte2022_7);
-
-        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_sender_core_constraints(), smpte2022_7);
-
-        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_sender_staged_core_parameter_set(), smpte2022_7);
-
-        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
-        // All instances of "auto" should be resolved into the actual values that will be used
-        // but in some cases the behaviour is more complex, and may be determined by the vendor.
-        // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-        nmos::resolve_auto(types::sender, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-
-        // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
-
-        return{ is05_versions::v1_1, types::sender, data, false };
-    }
-
-    web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile)
-    {
-        using web::json::value;
-        using web::json::value_of;
-
-        return value_of({
-            { nmos::fields::transportfile_data, transportfile },
-            { nmos::fields::transportfile_type, U("application/sdp") }
-        });
-    }
-
-    web::json::value make_connection_sender_transportfile(const web::uri& transportfile)
-    {
-        using web::json::value;
-        using web::json::value_of;
-
-        return value_of({
-            { nmos::fields::transportfile_href, transportfile.to_string() }
-        });
-    }
-
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile)
-    {
-        auto resource = make_connection_sender(id, smpte2022_7);
-
-        const utility::string_t sdp_magic(U("v=0"));
-
-        if (sdp_magic == transportfile.substr(0, sdp_magic.size()))
-        {
-            resource.data[nmos::fields::endpoint_transportfile] = make_connection_sender_transportfile(transportfile);
-        }
-        else
-        {
-            resource.data[nmos::fields::endpoint_transportfile] = make_connection_sender_transportfile(web::uri(transportfile));
-        }
-        return resource;
-    }
-
-    nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7)
-    {
-        using web::json::value;
-
-        auto data = details::make_connection_resource_core(id, smpte2022_7);
-
-        data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_receiver_core_constraints(), smpte2022_7);
-
-        data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_receiver_staged_core_parameter_set(), smpte2022_7);
-
-        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
-        // All instances of "auto" should be resolved into the actual values that will be used
-        // but in some cases the behaviour is more complex, and may be determined by the vendor.
-        // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-        nmos::resolve_auto(types::receiver, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-
-        // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
-
-        return{ is05_versions::v1_1, types::receiver, data, false };
     }
 
     namespace experimental
