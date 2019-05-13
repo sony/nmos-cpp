@@ -27,6 +27,9 @@
     // is04_versions [registry, node]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
     //"is04_versions": ["v1.1", "v1.2"],
 
+    // is09_versions [registry]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
+    //"is09_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 

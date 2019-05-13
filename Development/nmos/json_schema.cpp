@@ -5,7 +5,7 @@
 #include "nmos/is04_schemas/is04_schemas.h"
 #include "nmos/is05_versions.h"
 #include "nmos/is05_schemas/is05_schemas.h"
-#include "nmos/system_schemas/system_schemas.h"
+#include "nmos/is09_schemas/is09_schemas.h"
 #include "nmos/type.h"
 
 namespace nmos
@@ -90,7 +90,7 @@ namespace nmos
         }
     }
 
-    namespace system_schemas
+    namespace is09_schemas
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
@@ -99,7 +99,8 @@ namespace nmos
 
         namespace v1_0
         {
-            const utility::string_t tag(_XPLATSTR("v1.0"));
+            using namespace nmos::is09_schemas::v1_0_dev;
+            const utility::string_t tag(_XPLATSTR("v1.0-dev"));
 
             const web::uri systemapi_global_schema_uri = make_schema_uri(tag, _XPLATSTR("global.json"));
         }
@@ -258,9 +259,9 @@ namespace nmos
             };
         }
 
-        static std::map<web::uri, web::json::value> make_system_schemas()
+        static std::map<web::uri, web::json::value> make_is09_schemas()
         {
-            using namespace nmos::system_schemas;
+            using namespace nmos::is09_schemas;
 
             return
             {
@@ -279,7 +280,7 @@ namespace nmos
         {
             auto result = make_is04_schemas();
             merge(result, make_is05_schemas());
-            merge(result, make_system_schemas());
+            merge(result, make_is09_schemas());
             return result;
         }
 
@@ -290,7 +291,7 @@ namespace nmos
     {
         web::uri make_systemapi_global_schema_uri(const nmos::api_version& version)
         {
-            return system_schemas::v1_0::systemapi_global_schema_uri;
+            return is09_schemas::v1_0::systemapi_global_schema_uri;
         }
 
         web::uri make_registrationapi_resource_post_request_schema_uri(const nmos::api_version& version)

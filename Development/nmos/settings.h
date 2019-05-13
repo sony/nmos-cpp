@@ -54,6 +54,9 @@ namespace nmos
         // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is07_versions{ U("is07_versions") }; // when omitted, nmos::is07_versions::all is used
 
+        // is09_versions [registry]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is09_versions{ U("is09_versions") }; // when omitted, nmos::is09_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 

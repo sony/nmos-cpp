@@ -4,12 +4,12 @@
 #include "nmos/id.h"
 #include "nmos/settings.h"
 
-// System API implementation
-// See JT-NM TR-1001-1:2018 Annex A
 namespace nmos
 {
     struct resource;
 
+    // System API global configuration resource
+    // See https://github.com/AMWA-TV/nmos-system/blob/v1.0-dev/APIs/schemas/global.json
     nmos::resource make_system_global(const nmos::id& id, const nmos::settings& settings);
 
     namespace experimental

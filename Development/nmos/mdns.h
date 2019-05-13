@@ -36,7 +36,7 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/71
         const service_type registration{ "_nmos-registration._tcp" };
 
-        // TR-1001-1:2018 System API
+        // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const service_type system{ "_nmos-system._tcp" };
     }
 

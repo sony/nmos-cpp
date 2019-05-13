@@ -44,7 +44,7 @@ namespace nmos
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
         // IS-07 Events API
         const route_pattern events_api = make_route_pattern(U("api"), U("events"));
-        // TR-1001-1:2018 System API
+        // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
 
         // API version pattern

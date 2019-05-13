@@ -9,6 +9,7 @@
 #include "cpprest/uri_builder.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
+#include "nmos/is09_versions.h"
 #include "nmos/random.h"
 
 namespace nmos
@@ -213,8 +214,8 @@ namespace nmos
 
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
             {
-                // the System API is defined by TR-1001-1:2018
-                if (nmos::service_types::system == service) return{ { 1, 0 } };
+                // the System API is defined by IS-09 (having been originally specified in JT-NM TR-1001-1:2018 Annex A)
+                if (nmos::service_types::system == service) return nmos::is09_versions::from_settings(settings);
                 // all the other APIs are defined by IS-04, and should advertise consistent versions
                 return nmos::is04_versions::from_settings(settings);
             }
