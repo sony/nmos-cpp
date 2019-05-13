@@ -6,6 +6,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 
 - [AMWA IS-04 NMOS Discovery and Registration Specification](https://github.com/AMWA-TV/nmos-discovery-registration)
 - [AMWA IS-05 NMOS Connection Management Specification](https://github.com/AMWA-TV/nmos-device-connection-management)
+- [AMWA IS-07 NMOS Event & Tally Specification](https://github.com/AMWA-TV/nmos-event-tally)
 
 This software is a **work in progress**, tracking the ongoing development of the NMOS specifications in the AMWA Networked Media Incubator. For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
 
@@ -39,6 +40,7 @@ Other open-source NMOS implementations:
 
 Recent activity on the project (newest first):
 
+- IS-07 Events API and Events WebSocket API implementation and updated nmos-cpp-node example
 - Experimental support for secure communications (HTTPS, WSS)
 - Bug fixes (with test cases added to the [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing))
 - Support for running nmos-cpp applications with forward/reverse proxies
