@@ -106,7 +106,7 @@ namespace nmos
         const web::json::field_as_value endpoint_constraints{ U("constraints") }; // array
         const web::json::field_as_value endpoint_staged{ U("staged") }; // object
         const web::json::field_as_value endpoint_active{ U("active") }; // object
-        const web::json::field_as_value endpoint_transportfile{ U("transportfile") }; // object
+        const web::json::field_as_value_or endpoint_transportfile{ U("transportfile"), {} }; // object
         const web::json::field_as_value_or transportfile_data{ U("data"), {} }; // string
         const web::json::field_as_string transportfile_type{ U("type") };
         const web::json::field_as_string transportfile_href{ U("href") };
