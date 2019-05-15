@@ -41,10 +41,11 @@ namespace nmos
 
     nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7);
 
-    // Although this function makes a "connection" (IS-05) resource, its details are defined by IS-07 Event & Tally
-    // so maybe this belongs in nmos/events_resources.h or its own file, e.g. nmos/connection_events_resources.h?
+    // Although these functions make "connection" (IS-05) resources, the details are defined by IS-07 Event & Tally
+    // so maybe these belong in nmos/events_resources.h or their own file, e.g. nmos/connection_events_resources.h?
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
     nmos::resource make_connection_events_websocket_sender(const nmos::id& id, const nmos::id& device_id, const nmos::id& source_id, const nmos::settings& settings);
+    nmos::resource make_connection_events_websocket_receiver(const nmos::id& id, const nmos::settings& settings);
 
     web::uri make_events_ws_api_connection_uri(const nmos::id& device_id, const nmos::settings& settings);
     web::uri make_events_api_ext_is_07_rest_api_url(const nmos::id& source_id, const nmos::settings& settings);

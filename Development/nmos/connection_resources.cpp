@@ -228,14 +228,21 @@ namespace nmos
     namespace details
     {
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-websocket.json
-        web::json::value make_connection_websocket_sender_core_constraints()
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_websocket.json
+        web::json::value make_connection_websocket_sender_core_constraints(const web::uri& connection_uri)
         {
             using web::json::value;
             using web::json::value_of;
 
-            const auto unconstrained = value::object();
+            // connection_uri for a sender is currently fixed, basically read-only
+            // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/70
             return value_of({
-                { nmos::fields::connection_uri, unconstrained }
+                { nmos::fields::connection_uri, value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        U("auto"),
+                        connection_uri.to_string()
+                    }) }
+                }) }
             });
         }
 
@@ -251,20 +258,57 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
-        web::json::value make_connection_events_websocket_sender_ext_constraints()
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-websocket.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_websocket.json
+        web::json::value make_connection_websocket_receiver_core_constraints()
         {
             using web::json::value;
             using web::json::value_of;
 
             const auto unconstrained = value::object();
             return value_of({
-                { nmos::fields::ext_is_07_source_id, unconstrained },
-                { nmos::fields::ext_is_07_rest_api_url, unconstrained }
+                { nmos::fields::connection_uri, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.3.%20Behaviour%20-%20WebSocket%20Transport%20Type.md#receiver-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_websocket.json
+        web::json::value make_connection_websocket_receiver_staged_core_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::connection_uri, value::null() }
             });
         }
 
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        web::json::value make_connection_events_websocket_sender_ext_constraints(const nmos::id& source_id, const web::uri& rest_api_url)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            // ext_is_07_source_id and ext_is_07_rest_api_url for a sender are currently fixed, basically read-only
+            // but it's unclear whether "auto" need be permitted
+            // see https://github.com/AMWA-TV/nmos-event-tally/issues/42
+            return value_of({
+                { nmos::fields::ext_is_07_source_id, value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        source_id
+                    }) }
+                }) },
+                { nmos::fields::ext_is_07_rest_api_url, value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        rest_api_url.to_string()
+                    }) }
+                }) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
         web::json::value make_connection_events_websocket_sender_staged_ext_parameter_set(const nmos::id& source_id, const web::uri& rest_api_url)
         {
             using web::json::value;
@@ -275,10 +319,40 @@ namespace nmos
                 { nmos::fields::ext_is_07_rest_api_url, rest_api_url.to_string() }
             });
         }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        web::json::value make_connection_events_websocket_receiver_ext_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            // ext_is_07_source_id and ext_is_07_rest_api_url for a receiver are reasonably unconstrained
+            // but it's unclear whether "auto" need be permitted
+            // see https://github.com/AMWA-TV/nmos-event-tally/issues/42
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::ext_is_07_source_id, unconstrained },
+                { nmos::fields::ext_is_07_rest_api_url, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        web::json::value make_connection_events_websocket_receiver_staged_ext_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::ext_is_07_source_id, value::null() },
+                { nmos::fields::ext_is_07_rest_api_url, value::null() }
+            });
+        }
     }
 
-    // Although this function makes a "connection" (IS-05) resource, its details are defined by IS-07 Event & Tally
-    // so maybe this belongs in nmos/events_resources.cpp or its own file, e.g. nmos/connection_events_resources.cpp?
+    // Although these functions make "connection" (IS-05) resources, the details are defined by IS-07 Event & Tally
+    // so maybe these belong in nmos/events_resources.h or their own file, e.g. nmos/connection_events_resources.h?
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
     nmos::resource make_connection_events_websocket_sender(const nmos::id& id, const nmos::id& device_id, const nmos::id& source_id, const nmos::settings& settings)
     {
@@ -287,16 +361,16 @@ namespace nmos
 
         auto data = details::make_connection_resource_core(id, false);
 
-        auto constraints = details::make_connection_websocket_sender_core_constraints();
-        auto ext_constraints = details::make_connection_events_websocket_sender_ext_constraints();
+        const auto connection_uri = make_events_ws_api_connection_uri(device_id, settings);
+        const auto rest_api_url = make_events_api_ext_is_07_rest_api_url(source_id, settings);
+
+        auto constraints = details::make_connection_websocket_sender_core_constraints(connection_uri);
+        auto ext_constraints = details::make_connection_events_websocket_sender_ext_constraints(source_id, rest_api_url);
         web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
 
         data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, false);
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
-
-        const auto connection_uri = make_events_ws_api_connection_uri(device_id, settings);
-        const auto rest_api_url = make_events_api_ext_is_07_rest_api_url(source_id, settings);
 
         auto transport_params = details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri);
         auto ext_transport_params = details::make_connection_events_websocket_sender_staged_ext_parameter_set(source_id, rest_api_url);
@@ -306,6 +380,31 @@ namespace nmos
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
         return{ is05_versions::v1_1, types::sender, data, false };
+    }
+
+    nmos::resource make_connection_events_websocket_receiver(const nmos::id& id, const nmos::settings& settings)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        auto data = details::make_connection_resource_core(id, false);
+
+        auto constraints = details::make_connection_websocket_receiver_core_constraints();
+        auto ext_constraints = details::make_connection_events_websocket_receiver_ext_constraints();
+        web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
+
+        data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, false);
+        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
+
+        auto transport_params = details::make_connection_websocket_receiver_staged_core_parameter_set();
+        auto ext_transport_params = details::make_connection_events_websocket_receiver_staged_ext_parameter_set();
+        web::json::insert(transport_params, ext_transport_params.as_object().begin(), ext_transport_params.as_object().end());
+
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, false);
+        data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
+
+        return{ is05_versions::v1_1, types::receiver, data, false };
     }
 
     web::uri make_events_ws_api_connection_uri(const nmos::id& device_id, const nmos::settings& settings)
