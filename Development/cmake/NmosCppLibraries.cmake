@@ -5,6 +5,23 @@ if (NOT DEFINED NMOS_CPP_DIR)
     set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
+# detail headers
+
+set(DETAIL_HEADERS
+    ${NMOS_CPP_DIR}/detail/for_each_reversed.h
+    ${NMOS_CPP_DIR}/detail/pragma_warnings.h
+    ${NMOS_CPP_DIR}/detail/private_access.h
+    )
+
+if(MSVC)
+    list(APPEND DETAIL_HEADERS
+        ${NMOS_CPP_DIR}/detail/vc_disable_dll_warnings.h
+        ${NMOS_CPP_DIR}/detail/vc_disable_warnings.h
+        )
+endif()
+
+install(FILES ${DETAIL_HEADERS} DESTINATION include/detail)
+
 # mdns library
 
 set(MDNS_SOURCES
@@ -36,6 +53,9 @@ target_link_libraries(
     mdns_static
     cpprestsdk::cpprest
     )
+
+install(TARGETS mdns_static DESTINATION lib)
+install(FILES ${MDNS_HEADERS} DESTINATION include/mdns)
 
 # nmos_is04_schemas library
 
@@ -275,6 +295,8 @@ target_link_libraries(
     nmos_is04_schemas_static
     )
 
+install(TARGETS nmos_is04_schemas_static DESTINATION lib)
+
 # nmos_is05_schemas library
 
 set(NMOS_IS05_SCHEMAS_HEADERS
@@ -385,6 +407,8 @@ target_link_libraries(
     nmos_is05_schemas_static
     )
 
+install(TARGETS nmos_is05_schemas_static DESTINATION lib)
+
 # nmos_is09_schemas library
 
 set(NMOS_IS09_SCHEMAS_HEADERS
@@ -446,6 +470,8 @@ target_link_libraries(
     nmos_is09_schemas_static
     )
 
+install(TARGETS nmos_is09_schemas_static DESTINATION lib)
+
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
@@ -471,6 +497,8 @@ source_group("Header Files" FILES ${JSON_SCHEMA_VALIDATOR_HEADERS})
 target_link_libraries(
     json_schema_validator_static
     )
+
+install(TARGETS json_schema_validator_static DESTINATION lib)
 
 # nmos-cpp library
 
@@ -508,6 +536,12 @@ set(NMOS_CPP_CPPREST_HEADERS
     ${NMOS_CPP_DIR}/cpprest/uri_schemes.h
     ${NMOS_CPP_DIR}/cpprest/ws_listener.h
     ${NMOS_CPP_DIR}/cpprest/ws_utils.h
+    )
+
+set(NMOS_CPP_CPPREST_DETAILS_HEADERS
+    ${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h
+    ${NMOS_CPP_DIR}/cpprest/details/pop_u.h
+    ${NMOS_CPP_DIR}/cpprest/details/push_undef_u.h
     )
 
 set(NMOS_CPP_NMOS_SOURCES
@@ -609,7 +643,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/settings.h
     ${NMOS_CPP_DIR}/nmos/settings_api.h
     ${NMOS_CPP_DIR}/nmos/slog.h
-	${NMOS_CPP_DIR}/nmos/ssl_context_options.h
+    ${NMOS_CPP_DIR}/nmos/ssl_context_options.h
     ${NMOS_CPP_DIR}/nmos/string_enum.h
     ${NMOS_CPP_DIR}/nmos/system_api.h
     ${NMOS_CPP_DIR}/nmos/system_resources.h
@@ -694,3 +728,14 @@ target_link_libraries(
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )
+
+install(TARGETS nmos-cpp_static DESTINATION lib)
+
+install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION include/bst)
+install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION include/cpprest)
+install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION include/cpprest/details)
+install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include/nmos)
+install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include/pplx)
+install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include/rql)
+install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include/sdp)
+install(FILES ${NMOS_CPP_SLOG_HEADERS} DESTINATION include/slog)
