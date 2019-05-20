@@ -99,7 +99,13 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example device
-    insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, { sender_id, temperature_ws_sender_id }, { receiver_id }, model.settings), gate);
+    {
+        const auto senders = 0 <= nmos::fields::events_port(model.settings)
+            ? std::vector<nmos::id>{ sender_id, temperature_ws_sender_id }
+            : std::vector<nmos::id>{ sender_id };
+        const auto receivers = std::vector<nmos::id>{ receiver_id };
+        insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate);
+    }
 
     // example source, flow and sender
     nmos::sdp_parameters sdp_params;
@@ -140,6 +146,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example temperature source, sender, flow
+    if (0 <= nmos::fields::events_port(model.settings))
     {
         auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, model.settings);
         // hmm, IS-07 suggests an additional "event_type" attribute in the IS-04 source,
