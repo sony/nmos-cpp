@@ -99,7 +99,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example device
-    insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, { sender_id }, { receiver_id }, model.settings), gate);
+    insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, { sender_id, temperature_ws_sender_id }, { receiver_id }, model.settings), gate);
 
     // example source, flow and sender
     nmos::sdp_parameters sdp_params;
