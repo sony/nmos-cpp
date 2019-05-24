@@ -215,19 +215,24 @@ On Windows:
 
 The [Avahi](https://www.avahi.org/) project provides a DNS-SD daemon for Linux, and the *avahi-compat-libdns_sd* library which enables applications to use the original Bonjour *dns_sd.h* API to communicate with the Avahi daemon.
 
-Alternatively, [Apple's mDNSResponder (also known as ``mdnsd``)](https://opensource.apple.com/tarballs/mDNSResponder/) can itself be built from source for Linux, and this is the currently tested approach. Version 878.30.4 (latest release at the time) has been tested.
+Alternatively, [Apple's mDNSResponder (also known as ``mdnsd``)](https://opensource.apple.com/tarballs/mDNSResponder/) can itself be built from source for Linux. Version 878.200.35 (latest release at the time) has been tested.
 
 The ``mDNSResponder`` build instructions are quite straightforward. For example, to build and install:
 ```
-cd mDNSResponder-878.30.4/mDNSPosix
+cd mDNSResponder-878.200.35/mDNSPosix
 make os=linux
 sudo make os=linux install
 ```
 
 Notes:
-- The [poll-rather-than-select.patch](../Development/third_party/mDNSResponder/poll-rather-than-select.patch) found in this repository is recommended to build the ``libdns_sd.lib`` client-side library to communicate successfully with the ``mdnsd`` daemon on Linux hosts where (even moderately) huge numbers of file descriptors may be in use.
+- The [unicast](../Development/third_party/mDNSResponder/unicast.patch) and [permit-over-long-service-types](../Development/third_party/mDNSResponder/permit-over-long-service-types.patch) patches found in this repository is recommended to build the ``mdnsd`` daemon on Linux in order to support unicast DNS-SD.
   ```
-  patch -d mDNSResponder-878.30.4/ -p1 <poll-rather-than-select.patch
+  patch -d mDNSResponder-878.200.35/ -p1 <unicast.patch
+  patch -d mDNSResponder-878.200.35/ -p1 <permit-over-long-service-types.patch
+  ```
+- The [poll-rather-than-select](../Development/third_party/mDNSResponder/poll-rather-than-select.patch) patch found in this repository is recommended to build the ``libdns_sd.lib`` client-side library to communicate successfully with the ``mdnsd`` daemon on Linux hosts where (even moderately) huge numbers of file descriptors may be in use.
+  ```
+  patch -d mDNSResponder-878.200.35/ -p1 <poll-rather-than-select.patch
   ```
 - On systems with IPv6 disabled, the default build of ``mdnsd`` may immediately stop (when run with ``-debug``, the error ``socket AF_INET6: Address family not supported by protocol`` is reported). Prefixing the ``make`` command above with ``HAVE_IPV6=0`` solves this issue at the cost of repeated warnings from the preprocessor during compilation.
 
