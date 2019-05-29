@@ -136,7 +136,10 @@ namespace pplx
                 }
                 catch (...)
                 {
-                    event.set_exception(std::current_exception());
+                    if (!event._IsTriggered())
+                    {
+                        event.set_exception(std::current_exception());
+                    }
                 }
             });
         }
