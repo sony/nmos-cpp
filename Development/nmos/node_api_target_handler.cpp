@@ -33,7 +33,7 @@ namespace nmos
                     if (res.status_code() != web::http::status_codes::OK)
                     {
                         throw web::http::http_exception(U("Request for manifest: ") + manifest_href
-                            + U("failed, with response: ") + utility::ostringstreamed(res.status_code()) + U(" ") + res.reason_phrase());
+                            + U(" failed, with response: ") + utility::ostringstreamed(res.status_code()) + U(" ") + res.reason_phrase());
                     }
 
                     // extract_string doesn't know about "application/sdp"
