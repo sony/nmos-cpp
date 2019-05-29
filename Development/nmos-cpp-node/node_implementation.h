@@ -50,7 +50,7 @@ namespace nmos
             // Function to resolve the use of "auto" in various transport params to real values in
             // both senders and receivers.
             // The function could call get_defaults_for_autos which can either retrieve static or dynamic values
-            std::function<void(resource& connection_resource, const resource& node_resource, web::json::value& endpoint_active, const app_hooks& app_hooks)>  resolve_auto;
+            std::function<void(resource& connection_resource, const resource& node_resource, web::json::value& endpoint_active)>  resolve_auto;
         };
     }
 }

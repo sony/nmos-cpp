@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
         // stored in a map and a call to "get_defaults_for_autos" retrieves those saved values
         // A real app may get these values in a different way that allows resources to change
         // This function can be called before or after the connection_resource is added to the model
-        [&map_resource_id_default_autos](nmos::resource& connection_resource, const nmos::resource& node_resource, web::json::value& endpoint_active, const nmos::experimental::app_hooks& app_hooks) -> void
+        [&map_resource_id_default_autos](nmos::resource& connection_resource, const nmos::resource& node_resource, web::json::value& endpoint_active) -> void
         {
             auto type = connection_resource.type;
 
@@ -349,7 +349,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         set_defaults_for_autos (sender_id, sender_auto_defaults);
 
         auto connection_sender = nmos::make_connection_sender(sender_id, true);
-        app_hooks.resolve_auto(connection_sender, sender, connection_sender.data[nmos::fields::endpoint_active], app_hooks);
+        app_hooks.resolve_auto(connection_sender, sender, connection_sender.data[nmos::fields::endpoint_active]);
         node_set_connection_sender_transportfile(connection_sender, sdp_params);
 
         set_base_sdp_params (connection_sender, sdp_params);
@@ -379,7 +379,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         set_defaults_for_autos (receiver_id, receiver_auto_defaults);
         
         auto connection_receiver = nmos::make_connection_receiver(receiver_id, true);
-        app_hooks.resolve_auto(connection_receiver, receiver, connection_receiver.data[nmos::fields::endpoint_active], app_hooks);
+        app_hooks.resolve_auto(connection_receiver, receiver, connection_receiver.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
@@ -416,7 +416,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         set_defaults_for_autos (audio_sender_id, sender_auto_defaults);
 
         auto connection_sender = nmos::make_connection_sender(audio_sender_id, false);
-        app_hooks.resolve_auto(connection_sender, sender, connection_sender.data[nmos::fields::endpoint_active], app_hooks);
+        app_hooks.resolve_auto(connection_sender, sender, connection_sender.data[nmos::fields::endpoint_active]);
         node_set_connection_sender_transportfile(connection_sender, sdp_params);
 
         set_base_sdp_params (connection_sender, sdp_params);
@@ -443,7 +443,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         set_defaults_for_autos (audio_receiver_id, receiver_auto_defaults);
         
         auto connection_receiver = nmos::make_connection_receiver(audio_receiver_id, false);
-        app_hooks.resolve_auto(connection_receiver, receiver, connection_receiver.data[nmos::fields::endpoint_active], app_hooks);
+        app_hooks.resolve_auto(connection_receiver, receiver, connection_receiver.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
         insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
@@ -482,7 +482,7 @@ void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
         
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
         // there may currently be no "auto" values to resolve for the WebSocket sender, but even so
-        app_hooks.resolve_auto(connection_temperature_ws_sender, temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active], app_hooks);
+        app_hooks.resolve_auto(connection_temperature_ws_sender, temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);

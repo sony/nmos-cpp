@@ -131,7 +131,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate, 
                     nmos::resource node_resource;
                     if (found != model.node_resources.end())
                         node_resource = (*found);
-                    app_hooks.resolve_auto(connection_resource, node_resource, endpoint_active, app_hooks);
+                    app_hooks.resolve_auto(connection_resource, node_resource, endpoint_active);
                     active = nmos::fields::master_enable(endpoint_active);
                     // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
                     auto& connected_id_or_null = nmos::types::sender == id_type.second ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
