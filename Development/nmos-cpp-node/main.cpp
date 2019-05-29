@@ -1,222 +1,493 @@
 #include <fstream>
 #include <iostream>
-#include "cpprest/ws_listener.h"
-#include "cpprest/ws_utils.h"
+#include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
+#include "cpprest/host_utils.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
 #include "nmos/connection_api.h"
-#include "nmos/events_api.h"
-#include "nmos/events_ws_api.h"
-#include "nmos/log_gate.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_resources.h"
+#include "nmos/connection_resources.h"
+#include "nmos/events_resources.h"
+#include "nmos/media_type.h"
 #include "nmos/process_utils.h"
-#include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h"
 #include "node_implementation.h"
+#include "nmos/transport.h"
+#include "nmos/channels.h"
+#include "nmos/node_resource.h"
+#include "nmos/group_hint.h"
+
+// Sample implementation function to create initial resources
+// Can be called with an already made node_id if the app is generating its own
+void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
+    const nmos::experimental::app_hooks& app_hooks,
+    std::function<void(const nmos::id& resource_id, const web::json::value& defaults_for_autos)> set_defaults_for_autos,
+    std::function<void(const nmos::resource& resource, const nmos::sdp_parameters& sdp_params)>  set_base_sdp_params,
+    std::function<void(const nmos::id& resource_id)> add_event_source_id,
+    nmos::id node_id = nmos::id());
+
+
 
 int main(int argc, char* argv[])
 {
-    // Construct our data models including mutexes to protect them
+    // list of event sources, this is used to simulate changes in the events
+    std::list<nmos::id> list_event_sources;
 
-    nmos::node_model node_model;
+    // map from sender resource.id to sdp parameters. 
+    std::map<nmos::id, nmos::sdp_parameters> map_sender_sdp_params;
 
-    nmos::experimental::log_model log_model;
+    // map from resource.id to default "auto" parameters for the transport
+    std::map<nmos::id, web::json::value> map_resource_id_default_autos;
 
-    // Streams for logging, initially configured to write errors to stderr and to discard the access log
-    std::filebuf error_log_buf;
-    std::ostream error_log(std::cerr.rdbuf());
-    std::filebuf access_log_buf;
-    std::ostream access_log(&access_log_buf);
+    // flag to indicate that events need to be updated. Just for simulation purposes
+    volatile bool update_events = false;
 
-    // Logging should all go through this logging gateway
-    nmos::experimental::log_gate gate(error_log, access_log, log_model);
-
-    try
+    // pointer to the model for event updates
+    nmos::node_model* p_model = NULL;
+    
+    // The various application hooks
+    nmos::experimental::app_hooks app_hooks = 
     {
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting nmos-cpp node";
-
-        // Settings can be passed on the command-line, directly or in a configuration file, and a few may be changed dynamically by PATCH to /settings/all on the Settings API
-        //
-        // * "logging_level": integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
-        // * "registry_address": used to construct request URLs for registry APIs (if not discovered via DNS-SD)
-        //
-        // E.g.
-        //
-        // # ./nmos-cpp-node "{\"logging_level\":-40}"
-        // # ./nmos-cpp-node config.json
-        // # curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
-        // # curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -T config.json
-
-        if (argc > 1)
+        // app_hooks.initialize()
+        // save model and gate if needed
+        // create initial resources or wait to add resources dynamically
+        [&](nmos::node_model& model, slog::base_gate& gate) -> void
         {
-            std::error_code error;
-            node_model.settings = web::json::value::parse(utility::s2us(argv[1]), error);
-            if (error)
+            p_model = &model;
+            ::node_initial_resources (model, gate, app_hooks,
+                // set_defaults_for_autos
+                // Function to save the default "auto" values for a resource
+                // This function is called from node_initial_resources for the sample app but may not be called
+                // for a real app
+                [&map_resource_id_default_autos](const nmos::id& resource_id, const web::json::value& defaults_for_autos) -> void
+                {
+                    map_resource_id_default_autos[resource_id] = defaults_for_autos;
+                },
+                // set_base_sdp_params
+                // Function to save base_sdp_params for senders
+                // Called when resources are being created
+                // In this sample app, save the params in a map for later retrieval
+                [&map_sender_sdp_params](const nmos::resource& resource, const nmos::sdp_parameters& sdp_params) -> void
+                {
+                    // For senders, use the returned map of sdp_params to retrieve the base sdp
+                    if (resource.type == nmos::types::sender)
+                    {
+                        map_sender_sdp_params[resource.id] = sdp_params;
+                    }
+                    return;
+                },
+                // add_event_source_id
+                // Function to save the id of an event source
+                [&list_event_sources](const nmos::id& resource_id) -> void
+                {
+                    list_event_sources.push_back(resource_id);
+                });
+
+        },
+        // app_hooks.check_for_work()
+        // if there is work to do, return true
+        [&]() -> bool
+        {
+            // In this sample app, there is work when the events need to be updated
+            return update_events;
+        },
+        // app_hooks.process_work()
+        // Process any work that needs to be done
+        // Return true if model.notify() needs to be called
+        // This function could be called even when check_for_work has returned false
+        // so don't assume there is work to do
+        [&]() -> bool
+        {
+            // In this sample app, there is work when the events need to be updated
+            if (update_events && p_model)
             {
-                std::ifstream file(argv[1]);
-                node_model.settings = web::json::value::parse(file, error);
+                update_events = false;
+                bool need_notify = false;
+                
+                // look for the event senders
+                std::list<nmos::id>::const_iterator it;
+                for (it = list_event_sources.begin(); it != list_event_sources.end(); ++it)
+                {
+                    modify_resource(p_model->events_resources, (*it), [&](nmos::resource& resource)
+                    {
+                        // make example temperature data ... \/\/\/\/ ... around 200
+                        auto value = 175.0 + std::abs(nmos::tai_now().seconds % 100 - 50);
+                        // i.e. 17.5-22.5 C
+                        nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, { value, 10 });
+                        need_notify = true;
+                    }); 
+                }
+                return need_notify;
             }
-            if (error || !node_model.settings.is_object())
+            return false;
+        },
+        // app_hooks.resource_activation()
+        // Deal with a resource which has been activated
+        // This could involve making or breaking connections or modifying app resources.
+        // Return true if model.notify() needs to be called (i.e. the app makes resource changes)
+        [](const nmos::resource& resource) -> bool
+        {
+            // In this sample app, notify does not need to be set
+            return false;
+        },
+        // app_hooks.get_base_sdp_params()
+        // Function to get the base_sdp_params for senders
+        // Called when the base_sdp_params for senders are needed (during activation)
+        // In this sample app, just retrieve the params saved in a map
+        // In a real app, getting the params may be dynamic
+        [&](const nmos::resource& resource) -> nmos::sdp_parameters
+        {
+            // For senders, use the returned map of sdp_params to retrieve the base sdp
+            if (resource.type == nmos::types::sender)
             {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Bad command-line settings [" << error << "]";
-                return -1;
+                if (map_sender_sdp_params.count(resource.id))
+                {
+                    return map_sender_sdp_params[resource.id];
+                }
             }
-        }
-
-        // Prepare run-time default settings (different than header defaults)
-
-        nmos::insert_node_default_settings(node_model.settings);
-
-        // copy to the logging settings
-        // hmm, this is a bit icky, but simplest for now
-        log_model.settings = node_model.settings;
-
-        // the logging level is a special case because we want to turn it into an atomic value
-        // that can be read by logging statements without locking the mutex protecting the settings
-        log_model.level = nmos::fields::logging_level(log_model.settings);
-
-        // Reconfigure the logging streams according to settings
-        // (obviously, until this point, the logging gateway has its default behaviour...)
-
-        if (!nmos::fields::error_log(node_model.settings).empty())
+            return nmos::sdp_parameters();
+        },
+        // app_hooks.resolve_auto()
+        // Function to resolve the "auto" values in the transport params.
+        // The "auto" values need to be turned into real values
+        // In the sample app, when senders/resources are created, the "real" values are
+        // stored in a map and a call to "get_defaults_for_autos" retrieves those saved values
+        // A real app may get these values in a different way that allows resources to change
+        // This function can be called before or after the connection_resource is added to the model
+        [&map_resource_id_default_autos](nmos::resource& connection_resource, const nmos::resource& node_resource, web::json::value& endpoint_active, const nmos::experimental::app_hooks& app_hooks) -> void
         {
-            error_log_buf.open(nmos::fields::error_log(node_model.settings), std::ios_base::out | std::ios_base::app);
-            auto lock = log_model.write_lock();
-            error_log.rdbuf(&error_log_buf);
-        }
+            auto type = connection_resource.type;
 
-        if (!nmos::fields::access_log(node_model.settings).empty())
+            auto& transport_params = endpoint_active[nmos::fields::transport_params];
+            
+            web::json::value default_autos;
+            if (map_resource_id_default_autos.count(connection_resource.id))
+            {
+                default_autos = map_resource_id_default_autos[connection_resource.id];
+            }
+
+            if (default_autos.is_null() == false)
+            {
+                if (nmos::types::sender == type)
+                {
+                    // "In some cases the behaviour is more complex, and may be determined by the vendor."
+                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+
+                    // hmm, not all transport types use a transport file, e.g. urn:x-nmos:transport:websocket probably
+                    // should probably check the matching node resource's "transport", as in the implementation of the
+                    // Connection API /transporttype endpoint, but for now use a simpler check to identify RTP senders
+                    // see https://github.com/AMWA-TV/nmos-event-tally/issues/36
+                    auto res_data = connection_resource.data;
+                    auto node_data = node_resource.data;
+                    auto node_transport = node_data[U("transport")];
+                    bool is_node_transport_rtp = node_transport.is_string() && node_transport.as_string().find (nmos::transports::rtp.name, 0) == 0;
+
+                    if (is_node_transport_rtp == true )
+                    {
+                        nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&default_autos] { return default_autos[0][nmos::fields::source_ip]; });
+                        nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&default_autos] { return default_autos[0][nmos::fields::destination_ip]; });
+                        if (transport_params.size() > 1)
+                        {
+                            nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&default_autos] { return default_autos[1][nmos::fields::source_ip]; });
+                            nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&default_autos] { return default_autos[1][nmos::fields::destination_ip]; });
+                        }
+                    }
+                    else
+                    {
+                        // if not media, then we assume it is an event resource
+                        nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&default_autos] { return default_autos[0][nmos::fields::connection_uri]; });
+                    }
+                }
+                else if (nmos::types::receiver == type)
+                {
+                    nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&default_autos] { return default_autos[0][nmos::fields::interface_ip]; });
+                    if (transport_params.size() > 1)
+                    {
+                        nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&default_autos] { return default_autos[1][nmos::fields::interface_ip]; });
+                    }
+                }
+                
+            }
+
+            nmos::resolve_auto(type, transport_params);
+        }
+    };
+    
+    // start a thread to request updates to the events
+    auto cancellation_source = pplx::cancellation_token_source();
+    auto token = cancellation_source.get_token();
+    auto temperature_events = pplx::do_while([&]
+    {
+        return pplx::complete_after(std::chrono::seconds(1), token).then([&]
         {
-            access_log_buf.open(nmos::fields::access_log(node_model.settings), std::ios_base::out | std::ios_base::app);
-            auto lock = log_model.write_lock();
-            access_log.rdbuf(&access_log_buf);
-        }
+            if (p_model && update_events == false)
+            {
+                update_events = true;
+                p_model->notify();
+            }
+            return true;
+        });
+    }, token);
 
-        // Log the process ID and the API addresses we'll be using
+    // Call the main thread with default functions for all the application hooks
+    int retv =  node_main_thread(argc, argv, app_hooks);
+        
 
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::get_host(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
+    cancellation_source.cancel();
+    // wait without the lock since it is also used by the background tasks
+    //nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+    temperature_events.wait();
 
-        // Set up the APIs, assigning them to the configured ports
+    return retv;
+}
 
-        const auto server_secure = nmos::experimental::fields::server_secure(node_model.settings);
 
-        typedef std::pair<utility::string_t, int> address_port;
-        std::map<address_port, web::http::experimental::listener::api_router> port_routers;
+// sample function which creates initial video and audio senders and receivers
+void node_initial_resources(nmos::node_model& model, slog::base_gate& gate,
+    const nmos::experimental::app_hooks& app_hooks,
+    std::function<void(const nmos::id& resource_id, const web::json::value& defaults_for_autos)> set_defaults_for_autos,
+    std::function<void(const nmos::resource& resource, const nmos::sdp_parameters& sdp_params)>  set_base_sdp_params,
+    std::function<void(const nmos::id& resource_id)> add_event_source_id,
+    nmos::id existing_node_id)
+{
+    using web::json::value;
+    using web::json::value_of;
 
-        // Configure the Settings API
+    const auto seed_id = nmos::with_read_lock(model.mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
 
-        const address_port settings_address(nmos::experimental::fields::settings_address(node_model.settings), nmos::experimental::fields::settings_port(node_model.settings));
-        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(node_model, log_model, gate));
+    auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
+    auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
+    auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
+    auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
+    auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+    auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+    auto temperature_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/1"));
+    auto temperature_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/1"));
+    auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
 
-        // Configure the Logging API
+    auto audio_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/audio_0"));
+    auto audio_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/audio_0"));
+    auto audio_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/audio_0"));
+    auto audio_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/audio_0"));
 
-        const address_port logging_address(nmos::experimental::fields::logging_address(node_model.settings), nmos::experimental::fields::logging_port(node_model.settings));
-        port_routers[logging_address].mount({}, nmos::experimental::make_logging_api(log_model, gate));
+    auto lock = model.write_lock(); // in order to update the resources
 
-        // Configure the Node API
-
-        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model);
-        port_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
-
-        // start the underlying implementation and set up the node resources
-        auto node_resources = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-
-        // Configure the Connection API
-
-        port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
-
-        // Configure the Events API
-        port_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
-
-        nmos::websockets node_websockets;
-
-        auto websocket_config = nmos::make_websocket_listener_config(node_model.settings);
-        websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
-        web::websockets::experimental::listener::validate_handler events_ws_validate_handler = nmos::make_events_ws_validate_handler(node_model, gate);
-        web::websockets::experimental::listener::open_handler events_ws_open_handler = nmos::make_events_ws_open_handler(node_model, node_websockets, gate);
-        web::websockets::experimental::listener::close_handler events_ws_close_handler = nmos::make_events_ws_close_handler(node_model, node_websockets, gate);
-        web::websockets::experimental::listener::message_handler events_ws_message_handler = nmos::make_events_ws_message_handler(node_model, node_websockets, gate);
-        auto events_ws_uri = web::websockets::experimental::listener::make_listener_uri(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::events_ws_port(node_model.settings), node_model.settings));
-        web::websockets::experimental::listener::websocket_listener events_ws_listener(events_ws_uri, websocket_config);
-        events_ws_listener.set_validate_handler(std::ref(events_ws_validate_handler));
-        events_ws_listener.set_open_handler(std::ref(events_ws_open_handler));
-        events_ws_listener.set_close_handler(std::ref(events_ws_close_handler));
-        events_ws_listener.set_message_handler(std::ref(events_ws_message_handler));
-
-        // Set up the listeners for each API port
-
-       auto http_config = nmos::make_http_listener_config(node_model.settings);
-
-        std::vector<web::http::experimental::listener::http_listener> port_listeners;
-        for (auto& port_router : port_routers)
+    const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
+    {
+        if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
         {
-            // default empty string means the wildcard address
-            const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
-            // map the configured client port to the server port on which to listen
-            // hmm, this should probably also take account of the address
-            port_listeners.push_back(nmos::make_api_listener(server_secure, router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, http_config, gate));
+            const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+            const bool success = insert_resource(resources, std::move(resource)).second;
+
+            if (success)
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
+            else
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
+
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
+            model.notify();
         }
+    };
 
-        // Open the API ports
+    // any delay between updates to the model resources is unnecessary
+    // this just serves as a slightly more realistic example!
+    const unsigned int delay_millis{ 10 };
 
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
-
-        std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
-        for (auto& port_listener : port_listeners)
-        {
-            if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
-        }
-        web::websockets::experimental::listener::websocket_listener_guard events_ws_guard;
-        if (0 <= events_ws_listener.uri().port()) events_ws_guard = { events_ws_listener };
-
-        // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
-
-        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-        auto send_events_ws_messages = nmos::details::make_thread_guard([&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, node_websockets, gate); }, [&] { node_model.controlled_shutdown(); });
-        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_events_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
-
-        // Wait for a process termination signal
-        nmos::details::wait_term_signal();
-
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing connections";
-    }
-    catch (const web::json::json_exception& e)
+    // make example node or use node_id as provided by caller
+    if (existing_node_id.size() == 0)
     {
-        // most likely from incorrect types in the command line settings
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what();
+        auto node = nmos::make_node(node_id, model.settings);
+        // add one example network interface
+        node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() }, { U("port_id"), U("ff-ff-ff-ff-ff-ff") }, { U("name"), U("example") } }) });
+        insert_resource_after(delay_millis, model.node_resources, std::move(node), gate);
     }
-    catch (const web::http::http_exception& e)
+    else
     {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
-    }
-    catch (const std::system_error& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "System error: " << e.what() << " [" << e.code() << "]";
-    }
-    catch (const std::runtime_error& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
-    }
-    catch (const std::exception& e)
-    {
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
-    }
-    catch (...)
-    {
-        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
+        node_id = existing_node_id;
     }
 
-    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
+    // example device
+    {
+        const auto senders = 0 <= nmos::fields::events_port(model.settings)
+            ? std::vector<nmos::id>{ sender_id, audio_sender_id, temperature_ws_sender_id }
+            : std::vector<nmos::id>{ sender_id, audio_sender_id };
+        const auto receivers = std::vector<nmos::id>{ receiver_id, audio_receiver_id };
+        insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate); 
+    }
 
-    return 0;
+    // example video source, flow and sender
+    {
+        auto source = nmos::make_video_source(source_id, device_id, { 25, 1 }, model.settings);
+
+        auto flow = nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings);
+        // add example network interface binding for both primary and secondary
+
+        auto sender = nmos::make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
+
+        nmos::sdp_parameters sdp_params = nmos::make_sdp_parameters(source.data, flow.data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+
+        std::vector<value> vec_auto_defaults;
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::source_ip, value::string(U("192.168.240.1")) },
+            { nmos::fields::destination_ip, value::string(U("239.255.240.1")) }
+            }));
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::source_ip, value::string(U("192.168.240.2")) },
+            { nmos::fields::destination_ip, value::string(U("239.255.240.2")) }
+            }));
+
+        auto sender_auto_defaults = value::array(vec_auto_defaults);
+
+        set_defaults_for_autos (sender_id, sender_auto_defaults);
+
+        auto connection_sender = nmos::make_connection_sender(sender_id, true);
+        app_hooks.resolve_auto(connection_sender, sender, connection_sender.data[nmos::fields::endpoint_active], app_hooks);
+        node_set_connection_sender_transportfile(connection_sender, sdp_params);
+
+        set_base_sdp_params (connection_sender, sdp_params);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate);
+    }
+
+    // example video receiver
+    {
+        // add example network interface binding for both primary and secondary
+        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
+
+        std::vector<value> vec_auto_defaults;
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::interface_ip, value::string(U("192.168.242.1")) }
+            }));
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::interface_ip, value::string(U("192.168.240.2")) }
+            }));
+
+        auto receiver_auto_defaults = value::array(vec_auto_defaults);
+        set_defaults_for_autos (receiver_id, receiver_auto_defaults);
+        
+        auto connection_receiver = nmos::make_connection_receiver(receiver_id, true);
+        app_hooks.resolve_auto(connection_receiver, receiver, connection_receiver.data[nmos::fields::endpoint_active], app_hooks);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
+    }
+
+
+    // example audio source, flow and sender
+    {
+        nmos::rational sample_rate = { 48000, 1 };
+        std::vector<nmos::channel> channels;
+        nmos::channel left = { utility::s2us("Left"), nmos::channel_symbols::L };
+        nmos::channel right = { utility::s2us("Right"), nmos::channel_symbols::R };
+        channels.push_back(left);
+        channels.push_back(right);
+
+        auto source = nmos::make_audio_source(audio_source_id, device_id, sample_rate, channels, model.settings);
+        auto flow = nmos::make_raw_audio_flow(audio_flow_id, audio_source_id, device_id, sample_rate, 24, model.settings);
+
+        // add example network interface binding for both primary and secondary
+
+        auto sender = nmos::make_sender(audio_sender_id, audio_flow_id, device_id, { U("example"), U("example") }, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
+
+        nmos::sdp_parameters sdp_params = nmos::make_sdp_parameters(source.data, flow.data, sender.data, { U("PRIMARY") });
+
+        std::vector<value> vec_auto_defaults;
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::source_ip, value::string(U("192.168.240.3")) },
+            { nmos::fields::destination_ip, value::string(U("239.255.240.3")) }
+            }));
+
+        auto sender_auto_defaults = value::array(vec_auto_defaults);
+        set_defaults_for_autos (audio_sender_id, sender_auto_defaults);
+
+        auto connection_sender = nmos::make_connection_sender(audio_sender_id, false);
+        app_hooks.resolve_auto(connection_sender, sender, connection_sender.data[nmos::fields::endpoint_active], app_hooks);
+        node_set_connection_sender_transportfile(connection_sender, sdp_params);
+
+        set_base_sdp_params (connection_sender, sdp_params);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate);
+    }
+
+    // example audio receiver
+    {
+        // add example network interface binding for both primary and secondary
+        auto receiver = nmos::make_audio_receiver(audio_receiver_id, device_id, nmos::transports::rtp_mcast, {}, 24, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
+
+        std::vector<value> vec_auto_defaults;
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::interface_ip, value::string(U("192.168.242.3")) }
+            }));
+
+        auto receiver_auto_defaults = value::array(vec_auto_defaults);
+        set_defaults_for_autos (audio_receiver_id, receiver_auto_defaults);
+        
+        auto connection_receiver = nmos::make_connection_receiver(audio_receiver_id, false);
+        app_hooks.resolve_auto(connection_receiver, receiver, connection_receiver.data[nmos::fields::endpoint_active], app_hooks);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
+    }
+
+    // example temperature source, sender, flow
+    if (0 <= nmos::fields::events_port(model.settings))
+    {
+        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, model.settings);
+        // hmm, IS-07 suggests an additional "event_type" attribute in the IS-04 source,
+        // but that's not yet even incorporated in IS-04 v1.3-dev
+        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#2-is-04-highlights
+        // and https://github.com/AMWA-TV/nmos-discovery-registration/issues/88
+
+        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
+        auto events_temperature_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
+        auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
+        auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
+
+        auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
+        // hmm, empty string isn't a valid uri
+        // see https://github.com/AMWA-TV/nmos-event-tally/issues/38
+        auto manifest_href = U("");
+        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, manifest_href, { U("example") }, model.settings);
+        
+        std::vector<value> vec_auto_defaults;
+        vec_auto_defaults.push_back(value_of({
+            { nmos::fields::connection_uri, value::string(nmos::make_events_ws_api_connection_uri(device_id, model.settings).to_string()) }
+            }));
+
+        auto event_auto_defaults = value::array(vec_auto_defaults);
+        set_defaults_for_autos (temperature_ws_sender_id, event_auto_defaults);
+        add_event_source_id (temperature_source_id);
+        
+        auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
+        // there may currently be no "auto" values to resolve for the WebSocket sender, but even so
+        app_hooks.resolve_auto(connection_temperature_ws_sender, temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active], app_hooks);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate);
+        insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
+    }
 }
