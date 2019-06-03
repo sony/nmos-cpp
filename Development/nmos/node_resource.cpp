@@ -30,13 +30,21 @@ namespace nmos
         const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
 
-        for (const auto& host_address : host_addresses)
+        if (nmos::experimental::fields::client_secure(settings))
         {
-            value endpoint;
-            endpoint[U("host")] = host_address;
-            endpoint[U("port")] = uri.port();
-            endpoint[U("protocol")] = value::string(uri.scheme());
-            web::json::push_back(data[U("api")][U("endpoints")], endpoint);
+            web::json::push_back(data[U("api")][U("endpoints")], value_of({
+                { U("host"), uri.host() },
+                { U("port"), uri.port() },
+                { U("protocol"), uri.scheme() }
+            }));
+        }
+        else for (const auto& host_address : host_addresses)
+        {
+            web::json::push_back(data[U("api")][U("endpoints")], value_of({
+                { U("host"), host_address },
+                { U("port"), uri.port() },
+                { U("protocol"), uri.scheme() }
+            }));
         }
 
         data[U("caps")] = value::object();
