@@ -89,6 +89,10 @@
     //"admin_address": "",
     //"mdns_address": "",
 
+    // query_ws_paging_default/query_ws_paging_limit [registry]: default/maximum number of events per message when using the Query WebSocket API (a client may request a lower limit)
+    //"query_ws_paging_default": 10,
+    //"query_ws_paging_limit": 100,
+
     // logging_limit [registry, node]: maximum number of log events cached for the Logging API
     //"logging_limit": 1234,
 

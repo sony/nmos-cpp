@@ -174,6 +174,10 @@ namespace nmos
             const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
             const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
 
+            // query_ws_paging_default/query_ws_paging_limit [registry]: default/maximum number of events per message when using the Query WebSocket API (a client may request a lower limit)
+            const web::json::field_as_integer_or query_ws_paging_default{ U("query_ws_paging_default"), 10 };
+            const web::json::field_as_integer_or query_ws_paging_limit{ U("query_ws_paging_limit"), 100 };
+
             // logging_limit [registry, node]: maximum number of log events cached for the Logging API
             const web::json::field_as_integer_or logging_limit{ U("logging_limit"), 1234 };
 

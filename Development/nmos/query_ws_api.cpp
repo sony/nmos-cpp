@@ -212,7 +212,7 @@ namespace nmos
 
                 // experimental extension, to limit maximum number of events per message
 
-                resource_paging paging(nmos::fields::params(subscription->data), most_recent_message, (size_t)nmos::fields::query_paging_default(model.settings), (size_t)nmos::fields::query_paging_limit(model.settings));
+                resource_paging paging(nmos::fields::params(subscription->data), most_recent_message, (size_t)nmos::experimental::fields::query_ws_paging_default(model.settings), (size_t)nmos::experimental::fields::query_ws_paging_limit(model.settings));
                 auto next_events = value::array();
 
                 // determine the grain timestamps
