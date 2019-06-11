@@ -20,6 +20,16 @@ namespace nmos
     web::websockets::experimental::listener::close_handler make_events_ws_close_handler(nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate);
     web::websockets::experimental::listener::message_handler make_events_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate);
 
+    inline web::websockets::experimental::listener::websocket_listener_handlers make_events_ws_api(nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate)
+    {
+        return{
+            nmos::make_events_ws_validate_handler(model, gate),
+            nmos::make_events_ws_open_handler(model, websockets, gate),
+            nmos::make_events_ws_close_handler(model, websockets, gate),
+            nmos::make_events_ws_message_handler(model, websockets, gate)
+        };
+    }
+
     // reboot message
     // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/2.0.%20Message%20types.md#12-the-reboot-message-type
     web::json::value make_events_reboot_message(const nmos::details::events_state_identity& identity, const nmos::details::events_state_timing& timing = {});

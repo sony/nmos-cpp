@@ -72,6 +72,15 @@ namespace web
                 // a message handler gets the resource path, the connection id and the incoming message
                 typedef std::function<void(const utility::string_t&, const connection_id&, const websocket_incoming_message&)> message_handler;
 
+                // a convenience type to simplify passing around all the necessary handlers for a websocket_listener
+                struct websocket_listener_handlers
+                {
+                    validate_handler validate_handler;
+                    open_handler open_handler;
+                    close_handler close_handler;
+                    message_handler message_handler;
+                };
+
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
                 // ultimately, this would seem to belong in web, in order to also be adopted by web::http, but until that time...
                 typedef std::function<void(boost::asio::ssl::context&)> ssl_context_callback;
@@ -133,6 +142,15 @@ namespace web
                     void set_open_handler(open_handler handler);
                     void set_close_handler(close_handler handler);
                     void set_message_handler(message_handler handler);
+
+                    // convenience function - could be non-member
+                    void set_handlers(websocket_listener_handlers handlers)
+                    {
+                        set_validate_handler(std::move(handlers.validate_handler));
+                        set_open_handler(std::move(handlers.open_handler));
+                        set_close_handler(std::move(handlers.close_handler));
+                        set_message_handler(std::move(handlers.message_handler));
+                    }
 
                     pplx::task<void> open();
 

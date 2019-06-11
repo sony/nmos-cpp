@@ -18,6 +18,16 @@ namespace nmos
     web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate);
     web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate);
 
+    inline web::websockets::experimental::listener::websocket_listener_handlers make_query_ws_api(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate)
+    {
+        return{
+            nmos::make_query_ws_validate_handler(model, gate),
+            nmos::make_query_ws_open_handler(source_id, model, websockets, gate),
+            nmos::make_query_ws_close_handler(model, websockets, gate),
+            {}
+        };
+    }
+
     void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate);
 }
 

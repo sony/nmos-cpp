@@ -6,6 +6,7 @@
 #include "cpprest/api_router.h"
 #include "cpprest/http_listener.h" // for web::http::experimental::listener::http_listener_config
 #include "cpprest/regex_utils.h"
+#include "cpprest/ws_listener.h" // for web::websockets::experimental::listener::websocket_listener_config
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
 
 namespace slog
@@ -115,6 +116,9 @@ namespace nmos
     {
         return make_api_listener(false, web::http::experimental::listener::host_wildcard, port, api, config, gate);
     }
+
+    // construct a websocket_listener on the specified address and port - captures handlers by reference!
+    web::websockets::experimental::listener::websocket_listener make_ws_listener(bool secure, const utility::string_t& host_address, int port, const web::websockets::experimental::listener::websocket_listener_handlers& handlers, web::websockets::experimental::listener::websocket_listener_config config, slog::base_gate& gate);
 
     // returns "http" or "https" depending on settings
     utility::string_t http_scheme(const nmos::settings& settings);
