@@ -32,6 +32,11 @@ namespace nmos
         const media_type video_smpte291{ U("video/smpte291") };
 
         const media_type application_json{ U("application/json") };
+
+        // Mux media types
+
+        // See http://www.videoservicesforum.org/download/technical_recommendations/VSF_TR-04_2015-11-12.pdf
+        const media_type video_SMPTE2022_6{ U("video/SMPTE2022-6") };
     }
 }
 
