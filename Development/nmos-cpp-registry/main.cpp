@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
         auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings);
         websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
         auto query_ws_api = nmos::make_query_ws_api(query_id, registry_model, registry_websockets, gate);
-        auto query_ws_listener = nmos::make_ws_listener(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::query_ws_port(registry_model.settings), registry_model.settings), query_ws_api, websocket_config, gate);
+        auto query_ws_listener = nmos::make_ws_api_listener(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::query_ws_port(registry_model.settings), registry_model.settings), query_ws_api, websocket_config, gate);
 
         // Configure the Registration API
 

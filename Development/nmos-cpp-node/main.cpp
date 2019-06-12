@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
         auto websocket_config = nmos::make_websocket_listener_config(node_model.settings);
         websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
         auto events_ws_api = nmos::make_events_ws_api(node_model, node_websockets, gate);
-        auto events_ws_listener = nmos::make_ws_listener(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::events_ws_port(node_model.settings), node_model.settings), events_ws_api, websocket_config, gate);
+        auto events_ws_listener = nmos::make_ws_api_listener(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::events_ws_port(node_model.settings), node_model.settings), events_ws_api, websocket_config, gate);
 
         // Set up the listeners for each API port
 
