@@ -378,6 +378,305 @@ namespace web
     }
 }
 
+// json visiting
+namespace web
+{
+    namespace json
+    {
+        struct number_tag {};
+        struct boolean_tag {};
+        struct string_tag {};
+        struct object_tag {};
+        struct array_tag {};
+        struct null_tag {};
+
+        template <typename Visitor>
+        inline void visit(const value& value, Visitor&& visitor)
+        {
+            switch (value.type())
+            {
+            case value::Number:
+                visitor(value, number_tag{});
+                break;
+            case value::Boolean:
+                visitor(value, boolean_tag{});
+                break;
+            case value::String:
+                visitor(value, string_tag{});
+                break;
+            case value::Object:
+                visitor(value, object_tag{});
+                break;
+            case value::Array:
+                visitor(value, array_tag{});
+                break;
+            case value::Null:
+                visitor(value, null_tag{});
+                break;
+            }
+        }
+
+        struct enter_object_tag {};
+        struct enter_field_tag {};
+        struct field_separator_tag {};
+        struct leave_field_tag {};
+        struct object_separator_tag {};
+        struct leave_object_tag {};
+
+        template <typename Visitor>
+        inline void visit_object(const value& value, Visitor&& visitor)
+        {
+            visitor(enter_object_tag{});
+            if (0 != value.size())
+            {
+                auto& o = value.as_object();
+                auto first = o.begin(), last = o.end() - 1;
+                for (; last != first; ++first)
+                {
+                    visit_field(*first, visitor);
+                    visitor(object_separator_tag{});
+                }
+                visit_field(*first, visitor);
+            }
+            visitor(leave_object_tag{});
+        }
+
+        template <typename Visitor>
+        inline void visit_field(const std::pair<utility::string_t, value>& field, Visitor&& visitor)
+        {
+            visitor(enter_field_tag{});
+            visit(value::string(field.first), visitor);
+            visitor(field_separator_tag{});
+            visit(field.second, visitor);
+            visitor(leave_field_tag{});
+        }
+
+        struct enter_array_tag {};
+        struct enter_element_tag {};
+        struct leave_element_tag {};
+        struct array_separator_tag {};
+        struct leave_array_tag {};
+
+        template <typename Visitor>
+        inline void visit_array(const value& value, Visitor&& visitor)
+        {
+            visitor(enter_array_tag{});
+            if (0 != value.size())
+            {
+                auto& a = value.as_array();
+                auto first = a.begin(), last = a.end() - 1;
+                for (; last != first; ++first)
+                {
+                    visit_element(*first, visitor);
+                    visitor(array_separator_tag{});
+                }
+                visit_element(*first, visitor);
+            }
+            visitor(leave_array_tag{});
+        }
+
+        template <typename Visitor>
+        inline void visit_element(const value& element, Visitor&& visitor)
+        {
+            visitor(enter_element_tag{});
+            visit(element, visitor);
+            visitor(leave_element_tag{});
+        }
+    }
+}
+
+// json formatting helpers, for use with json::web::visit
+namespace web
+{
+    namespace json
+    {
+        // ostream_visitor can be used to serialize a value with no extraneous whitespace
+        struct ostream_visitor
+        {
+            ostream_visitor(std::ostream& os) : os(os) {}
+
+            // visit callbacks
+            void operator()(const web::json::value& value, web::json::number_tag)
+            {
+                os << value.as_double();
+            }
+            void operator()(const web::json::value& value, web::json::boolean_tag)
+            {
+                os << (value.as_bool() ? "true" : "false");
+            }
+            void operator()(const web::json::value& value, web::json::string_tag)
+            {
+                os << utility::conversions::to_utf8string(value.serialize());
+            }
+            virtual void operator()(const web::json::value& value, web::json::object_tag)
+            {
+                web::json::visit_object(value, *this);
+            }
+            virtual void operator()(const web::json::value& value, web::json::array_tag)
+            {
+                web::json::visit_array(value, *this);
+            }
+            void operator()(const web::json::value& value, web::json::null_tag)
+            {
+                os << "null";
+            }
+
+            // visit_object callbacks
+            void operator()(web::json::enter_object_tag) { os << '{'; }
+            void operator()(web::json::enter_field_tag) {}
+            void operator()(web::json::field_separator_tag) { os << ':'; }
+            void operator()(web::json::leave_field_tag) {}
+            void operator()(web::json::object_separator_tag) { os << ','; }
+            void operator()(web::json::leave_object_tag) { os << '}'; }
+
+            // visit_array callbacks
+            void operator()(web::json::enter_array_tag) { os << '['; }
+            void operator()(web::json::enter_element_tag) {}
+            void operator()(web::json::leave_element_tag) {}
+            void operator()(web::json::array_separator_tag) { os << ','; }
+            void operator()(web::json::leave_array_tag) { os << ']'; }
+
+        protected:
+            std::ostream& os;
+        };
+
+        // pretty_visitor can be used to serialize a value for human readability
+        struct pretty_visitor : ostream_visitor
+        {
+            pretty_visitor(std::ostream& os, size_t indent = 4)
+                : ostream_visitor(os)
+                , indent(indent)
+                , depth(0)
+                , empty()
+            {}
+
+            // visit call backs
+            using ostream_visitor::operator();
+            virtual void operator()(const web::json::value& value, web::json::object_tag) override
+            {
+                web::json::visit_object(value, *this);
+            }
+            virtual void operator()(const web::json::value& value, web::json::array_tag) override
+            {
+                web::json::visit_array(value, *this);
+            }
+
+            // visit_object callbacks
+            void operator()(web::json::enter_object_tag tag) { ostream_visitor::operator()(tag); ++depth; empty = true; }
+            void operator()(web::json::enter_field_tag tag) { if (empty) end_line(); start_line(); ostream_visitor::operator()(tag); }
+            void operator()(web::json::field_separator_tag tag) { ostream_visitor::operator()(tag); os << ' '; }
+            void operator()(web::json::leave_field_tag tag) { ostream_visitor::operator()(tag); empty = false; }
+            void operator()(web::json::object_separator_tag tag) { ostream_visitor::operator()(tag); end_line(); }
+            void operator()(web::json::leave_object_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); ostream_visitor::operator()(tag); }
+
+            // visit_array callbacks
+            void operator()(web::json::enter_array_tag tag) { ostream_visitor::operator()(tag); ++depth; empty = true; }
+            void operator()(web::json::enter_element_tag tag) { if (empty) end_line(); start_line(); ostream_visitor::operator()(tag); }
+            void operator()(web::json::leave_element_tag tag) { ostream_visitor::operator()(tag); empty = false; }
+            void operator()(web::json::array_separator_tag tag) { ostream_visitor::operator()(tag); end_line(); }
+            void operator()(web::json::leave_array_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); ostream_visitor::operator()(tag); }
+
+        protected:
+            size_t indent;
+
+            size_t depth;
+            bool empty;
+
+            void start_line() { os << std::string(depth * indent, ' '); }
+            void end_line() { os << '\n'; }
+        };
+
+        namespace experimental
+        {
+            // sample stylesheet for the HTML generated by html_visitor
+            extern const char* html_stylesheet;
+
+            // html_visitor can be used to serialize a value to HTML, to allow formatting
+            // and syntax highlighting using a stylesheet
+            struct html_visitor : ostream_visitor
+            {
+                html_visitor(std::ostream& os)
+                    : ostream_visitor(os)
+                    , empty()
+                    , name()
+                {}
+
+                // visit callbacks
+                void operator()(const web::json::value& value, web::json::number_tag tag)
+                {
+                    start_span("number"); ostream_visitor::operator()(value, tag); end_span();
+                }
+                void operator()(const web::json::value& value, web::json::boolean_tag tag)
+                {
+                    start_span("boolean"); ostream_visitor::operator()(value, tag); end_span();
+                }
+                void operator()(const web::json::value& value, web::json::string_tag tag)
+                {
+                    start_span(name ? "name" : "string");
+                    os << escape(utility::conversions::to_utf8string(value.serialize()));
+                    end_span();
+                }
+                virtual void operator()(const web::json::value& value, web::json::object_tag) override
+                {
+                    web::json::visit_object(value, *this);
+                }
+                virtual void operator()(const web::json::value& value, web::json::array_tag) override
+                {
+                    web::json::visit_array(value, *this);
+                }
+                void operator()(const web::json::value& value, web::json::null_tag tag)
+                {
+                    start_span("null"); ostream_visitor::operator()(value, tag); end_span();
+                }
+
+                // visit_object callbacks
+                void operator()(web::json::enter_object_tag tag) { start_span("object"); os << "{<ul>"; empty = true; }
+                void operator()(web::json::enter_field_tag tag) { if (!empty) os << ",</li>"; os << "<li>"; name = true; }
+                void operator()(web::json::field_separator_tag tag) { name = false; os << ": "; }
+                void operator()(web::json::leave_field_tag tag) { empty = false; }
+                void operator()(web::json::object_separator_tag tag) {}
+                void operator()(web::json::leave_object_tag tag) { if (!empty) os << "</li>"; os << "</ul>}"; end_span(); }
+
+                // visit_array callbacks
+                void operator()(web::json::enter_array_tag tag) { start_span("array"); os << "[<ol>"; empty = true; }
+                void operator()(web::json::enter_element_tag tag) { if (!empty) os << ",</li>"; os << "<li>"; }
+                void operator()(web::json::leave_element_tag tag) { empty = false; }
+                void operator()(web::json::array_separator_tag tag) {}
+                void operator()(web::json::leave_array_tag tag) { if (!empty) os << "</li>"; os << "</ol>]"; end_span(); }
+
+                static std::string escape(const std::string& unescaped)
+                {
+                    std::string escaped;
+                    escaped.reserve(unescaped.size());
+                    for (auto c : unescaped)
+                    {
+                        switch (c)
+                        {
+                            // escape everywhere
+                        case '&': escaped.append("&amp;"); break;
+                        case '<': escaped.append("&lt;"); break;
+                        case '>': escaped.append("&gt;"); break;
+                            // escape in attributes
+                        case '"': escaped.append("&quot;"); break;
+                        case '\'': escaped.append("&apos;"); break;
+                            // unescaped
+                        default: escaped.push_back(c); break;
+                        }
+                    }
+                    return escaped;
+                }
+
+            protected:
+                bool empty;
+                bool name;
+
+                void start_span(const std::string& clazz) { os << "<span class=\"" << clazz << "\">"; }
+                void end_span() { os << "</span>"; }
+            };
+        }
+    }
+}
+
 // json parsing helpers
 namespace web
 {
