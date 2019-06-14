@@ -48,10 +48,7 @@ namespace nmos
         template <typename HttpMessage>
         inline pplx::task<web::json::value> extract_json(const HttpMessage& msg, slog::base_gate& gate)
         {
-            auto content_type = msg.headers().content_type();
-            auto semicolon = content_type.find(U(';'));
-            if (utility::string_t::npos != semicolon) content_type.erase(semicolon);
-            boost::algorithm::trim(content_type);
+            auto content_type = web::http::details::get_mime_type(msg.headers().content_type());
 
             if (web::http::details::mime_types::application_json == content_type)
             {

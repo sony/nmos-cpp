@@ -12,6 +12,12 @@ namespace web
     {
         std::pair<utility::string_t, int> get_host_port(const web::http::http_request& req);
 
+        namespace details
+        {
+            // Extract the basic 'type/subtype' from a Content-Type value
+            utility::string_t get_mime_type(const utility::string_t& content_type);
+        }
+
         // Determine if a value is found in a header that represents a set of values, like "Allow", "Accept" or "Link"
         bool has_header_value(const http_headers& headers, const utility::string_t& name, const utility::string_t& value);
         template <typename T>

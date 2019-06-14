@@ -98,6 +98,7 @@ namespace nmos
             // These are the constraints that support "auto" in /staged; cf. resolve_auto
             // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
             // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+            // Hmm, this needs revising to handle the new transport types in v1.1, with different "auto" parameters.
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -814,6 +815,7 @@ namespace nmos
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
+    // Hmm, this needs revising to handle the new transport types in v1.1, with different "auto" parameters.
     void resolve_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port)
     {
         if (nmos::types::sender == type)
@@ -1091,10 +1093,12 @@ namespace nmos
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning constraints for " << id_type;
 
+                // hmm, parsing of the Accept header could be much better and should take account of quality values
                 const auto accept = req.headers().find(web::http::header_names::accept);
-                if (req.headers().end() != accept && U("application/schema+json") == accept->second)
+                if (req.headers().end() != accept && U("application/schema+json") == web::http::details::get_mime_type(accept->second))
                 {
                     // Experimental extension - constraints as JSON Schema
+                    res.headers().set_content_type(U("application/schema+json"));
                     set_reply(res, status_codes::OK, nmos::details::make_constraints_schema(resource->type, nmos::fields::endpoint_constraints(resource->data)));
                 }
                 else
@@ -1203,8 +1207,9 @@ namespace nmos
                         {
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
 
+                            // hmm, parsing of the Accept header could be much better and should take account of quality values
                             const auto accept = req.headers().find(web::http::header_names::accept);
-                            if (req.headers().end() != accept && web::http::details::mime_types::application_json == accept->second && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
+                            if (req.headers().end() != accept && web::http::details::mime_types::application_json == web::http::details::get_mime_type(accept->second) && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
                             {
                                 // Experimental extension - SDP as JSON
                                 set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));

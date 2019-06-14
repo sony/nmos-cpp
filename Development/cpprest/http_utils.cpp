@@ -1,5 +1,6 @@
 #include "cpprest/http_utils.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include "cpprest/basic_utils.h" // for utility::conversions
@@ -31,6 +32,19 @@ namespace web
             else
             {
                 return{};
+            }
+        }
+
+        namespace details
+        {
+            // Extract the basic 'type/subtype' from a Content-Type value
+            utility::string_t get_mime_type(const utility::string_t& content_type)
+            {
+                auto first = std::find_if_not(content_type.begin(), content_type.end(), [](utility::char_t c) { return U(' ') == c || U('\t') == c; });
+                // media-type = type "/" subtype *( OWS ";" OWS parameter )
+                // OWS        = *( SP / HTAB )
+                auto last = std::find_if(first, content_type.end(), [](utility::char_t c) { return U(';') == c || U(' ') == c || U('\t') == c; });
+                return{ first, last };
             }
         }
 
