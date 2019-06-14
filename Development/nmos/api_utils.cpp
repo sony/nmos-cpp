@@ -1,7 +1,10 @@
 #include "nmos/api_utils.h"
 
+#include <boost/algorithm/cxx11/any_of.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include "cpprest/json_utils.h"
 #include "cpprest/uri_schemes.h"
 #include "cpprest/ws_utils.h"
 #include "nmos/api_version.h"
@@ -206,6 +209,100 @@ namespace nmos
         }, true);
     }
 
+    namespace experimental
+    {
+        // it'd be nice to add support for turning NMOS "child resources" responses into links to relative URLs
+        // and turning id values into links to the appropriate resource
+        struct html_visitor : web::json::experimental::html_visitor
+        {
+            html_visitor(std::ostream& os)
+                : web::json::experimental::html_visitor(os)
+            {}
+
+            // visit callbacks
+            using web::json::experimental::html_visitor::operator();
+            void operator()(const web::json::value& value, web::json::string_tag tag)
+            {
+                const auto str = utility::conversions::to_utf8string(value.serialize());
+                if (name)
+                {
+                    start_span("name");
+                    os << escape(str);
+                    end_span();
+                }
+                else
+                {
+                    start_span("string");
+
+                    if (is_href(value.as_string()))
+                    {
+                        const auto escaped_unquoted = escape(str.substr(1, str.size() - 2));
+                        os << "\"<a href=\"" << escaped_unquoted << "\">" << escaped_unquoted << "</a>\"";
+                    }
+                    else
+                    {
+                        os << escape(str);
+                    }
+
+                    end_span();
+                }
+            }
+            virtual void operator()(const web::json::value& value, web::json::object_tag) override
+            {
+                web::json::visit_object(value, *this);
+            }
+            virtual void operator()(const web::json::value& value, web::json::array_tag) override
+            {
+                web::json::visit_array(value, *this);
+            }
+
+        protected:
+            bool is_href(const utility::string_t& str)
+            {
+                static const auto schemes = { U("http://"), U("https://"), U("ws://"), U("wss://") };
+                return boost::algorithm::any_of(schemes, [&str](const utility::string_t& scheme)
+                {
+                    return boost::algorithm::istarts_with(str, scheme);
+                });
+            }
+        };
+
+        const char* headers_stylesheet = R"-stylesheet-(
+.headers
+{
+  font-family: monospace;
+  color: grey;
+  border-bottom: 1px solid lightgrey
+}
+.headers ol
+{
+  list-style: none;
+  padding: 0
+}
+)-stylesheet-";
+
+        // construct an HTML rendering of an NMOS response
+        std::string make_html_response_body(const web::http::http_response& res)
+        {
+            std::ostringstream html;
+            html << "<html><head><style>" << headers_stylesheet << web::json::experimental::html_stylesheet << "</style></head><body>";
+            html << "<div class=\"headers\"><ol>";
+            // it'd be nice to also turn URLs in Location and Link headers into links
+            for (const auto& header : res.headers())
+            {
+                html << "<li>";
+                html << html_visitor::escape(utility::us2s(header.first)) << ": " << html_visitor::escape(utility::us2s(header.second));
+                html << "</li>";
+            }
+            html << "</ol></div><br/>";
+            html << "<div class=\"json\">";
+            web::json::visit(res.extract_json().get(), html_visitor(html));
+            html << "</div>";
+            html << "</body></html>";
+            return html.str();
+        }
+    }
+
     namespace details
     {
         // make user error information (to be used with status_codes::NotFound)
@@ -305,6 +402,22 @@ namespace nmos
                 }
 
                 nmos::details::add_cors_headers(res);
+
+                // experimental extension, to support human-readable HTML rendering of NMOS responses
+
+                const auto mime_type = web::http::details::get_mime_type(res.headers().content_type());
+                if (web::http::details::mime_types::application_json == mime_type)
+                {
+                    // hmm, parsing of the Accept header could be much better and should take account of quality values
+                    const auto accept = req.headers().find(web::http::header_names::accept);
+                    if (req.headers().end() != accept
+                        && !boost::algorithm::contains(accept->second, mime_type)
+                        && boost::algorithm::contains(accept->second, U("text/html")))
+                    {
+                        res.set_body(nmos::experimental::make_html_response_body(res));
+                        res.headers().set_content_type(U("text/html"));
+                    }
+                }
 
                 slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response";
 
