@@ -247,11 +247,11 @@ namespace nmos
                     end_span();
                 }
             }
-            virtual void operator()(const web::json::value& value, web::json::object_tag) override
+            void operator()(const web::json::value& value, web::json::object_tag)
             {
                 web::json::visit_object(value, *this);
             }
-            virtual void operator()(const web::json::value& value, web::json::array_tag) override
+            void operator()(const web::json::value& value, web::json::array_tag)
             {
                 web::json::visit_array(value, *this);
             }
