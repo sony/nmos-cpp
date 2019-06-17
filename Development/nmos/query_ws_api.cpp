@@ -195,9 +195,9 @@ namespace nmos
                 }
 
                 // throttle messages according to the subscription's max_update_rate_ms
-                // see discussion about sync_timestamp below...
+                // see discussion about creation_timestamp below...
                 const auto max_update_rate = std::chrono::milliseconds(nmos::fields::max_update_rate_ms(subscription->data));
-                const auto earliest_allowed_update = time_point_from_tai(nmos::fields::sync_timestamp(nmos::fields::message(grain->data))) + max_update_rate;
+                const auto earliest_allowed_update = time_point_from_tai(nmos::fields::creation_timestamp(nmos::fields::message(grain->data))) + max_update_rate;
                 if (earliest_allowed_update > now)
                 {
                     // make sure to send a message as soon as allowed
@@ -217,9 +217,8 @@ namespace nmos
 
                 // determine the grain timestamps
 
-                // these are underspecified in the specification
-                // see https://github.com/AMWA-TV/nmos-discovery-registration/issues/54
-                // for now, the usage is as follows...
+                // the meanings of each of these are being clarified in IS-04 v1.3
+                // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/102
 
                 // origin_timestamp is like paging.until, the timestamp of the most recent update potentially included in this message
                 // it has therefore been subject to the usual adjustments to make it unique and strictly increasing
@@ -227,14 +226,14 @@ namespace nmos
                 // or it could be the timestamp of (or the timestamp before, like paging.since) the least recent update included
                 const auto origin_timestamp = value::string(nmos::make_version(most_recent_message));
 
-                // sync_timestamp currently reflects the time that the message is actually being prepared
+                // creation_timestamp reflects the time that the message is actually being prepared
                 // this may be more recent if messages have been throttled
                 // or less recent since it hasn't been adjusted in the same way as the update timestamps
-                const auto sync_timestamp = value::string(nmos::make_version(tai_from_time_point(now)));
+                const auto creation_timestamp = value::string(nmos::make_version(tai_from_time_point(now)));
 
                 // prepare the message
 
-                resources.modify(grain, [&paging, &next_events, &origin_timestamp, &sync_timestamp](nmos::resource& grain)
+                resources.modify(grain, [&paging, &next_events, &origin_timestamp, &creation_timestamp](nmos::resource& grain)
                 {
                     auto& message = nmos::fields::message(grain.data);
 
@@ -251,8 +250,8 @@ namespace nmos
 
                     // set the timestamps
                     message[nmos::fields::origin_timestamp] = origin_timestamp;
-                    message[nmos::fields::sync_timestamp] = sync_timestamp;
-                    message[nmos::fields::creation_timestamp] = sync_timestamp;
+                    message[nmos::fields::sync_timestamp] = origin_timestamp;
+                    message[nmos::fields::creation_timestamp] = creation_timestamp;
                 });
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing to send " << nmos::fields::message_grain_data(grain->data).size() << " changes on websocket connection: " << grain->id;
