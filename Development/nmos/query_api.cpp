@@ -368,6 +368,11 @@ namespace nmos
                 {
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Subscription requested on " << nmos::fields::resource_path(data) << ", to be " << (nmos::fields::persist(data) ? "persistent" : "non-persistent");
 
+                    // if the query parameters are not supported, an exception from either of these constructors will result in an appropriate response, e.g. a 501 HTTP status code
+                    // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/99
+                    const resource_query match(version, nmos::fields::resource_path(data), nmos::fields::params(data));
+                    const resource_paging paging(nmos::fields::params(data));
+
                     // get the request host
                     auto req_host = web::http::get_host_port(req).first;
                     if (req_host.empty())
