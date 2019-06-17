@@ -75,10 +75,10 @@ namespace web
                 // a convenience type to simplify passing around all the necessary handlers for a websocket_listener
                 struct websocket_listener_handlers
                 {
-                    validate_handler validate_handler;
-                    open_handler open_handler;
-                    close_handler close_handler;
-                    message_handler message_handler;
+                    web::websockets::experimental::listener::validate_handler validate_handler;
+                    web::websockets::experimental::listener::open_handler open_handler;
+                    web::websockets::experimental::listener::close_handler close_handler;
+                    web::websockets::experimental::listener::message_handler message_handler;
                 };
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
