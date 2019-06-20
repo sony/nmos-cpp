@@ -23,6 +23,7 @@ set(NMOS_CPP_TEST_CPPREST_TEST_SOURCES
     ${NMOS_CPP_DIR}/cpprest/test/api_router_test.cpp
     ${NMOS_CPP_DIR}/cpprest/test/http_utils_test.cpp
     ${NMOS_CPP_DIR}/cpprest/test/json_utils_test.cpp
+    ${NMOS_CPP_DIR}/cpprest/test/json_visit_test.cpp
     ${NMOS_CPP_DIR}/cpprest/test/regex_utils_test.cpp
     )
 set(NMOS_CPP_TEST_CPPREST_TEST_HEADERS

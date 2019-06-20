@@ -4,7 +4,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include "cpprest/json_utils.h"
+#include "cpprest/json_visit.h"
 #include "cpprest/uri_schemes.h"
 #include "cpprest/ws_utils.h"
 #include "nmos/api_version.h"
@@ -211,62 +211,6 @@ namespace nmos
 
     namespace experimental
     {
-        // it'd be nice to add support for turning NMOS "child resources" responses into links to relative URLs
-        // and turning id values into links to the appropriate resource
-        struct html_visitor : web::json::experimental::html_visitor
-        {
-            html_visitor(std::ostream& os)
-                : web::json::experimental::html_visitor(os)
-            {}
-
-            // visit callbacks
-            using web::json::experimental::html_visitor::operator();
-            void operator()(const web::json::value& value, web::json::string_tag tag)
-            {
-                const auto str = utility::conversions::to_utf8string(value.serialize());
-                if (name)
-                {
-                    start_span("name");
-                    os << escape(str);
-                    end_span();
-                }
-                else
-                {
-                    start_span("string");
-
-                    if (is_href(value.as_string()))
-                    {
-                        const auto escaped_unquoted = escape(str.substr(1, str.size() - 2));
-                        os << "\"<a href=\"" << escaped_unquoted << "\">" << escaped_unquoted << "</a>\"";
-                    }
-                    else
-                    {
-                        os << escape(str);
-                    }
-
-                    end_span();
-                }
-            }
-            void operator()(const web::json::value& value, web::json::object_tag)
-            {
-                web::json::visit_object(value, *this);
-            }
-            void operator()(const web::json::value& value, web::json::array_tag)
-            {
-                web::json::visit_array(value, *this);
-            }
-
-        protected:
-            bool is_href(const utility::string_t& str)
-            {
-                static const auto schemes = { U("http://"), U("https://"), U("ws://"), U("wss://") };
-                return boost::algorithm::any_of(schemes, [&str](const utility::string_t& scheme)
-                {
-                    return boost::algorithm::istarts_with(str, scheme);
-                });
-            }
-        };
-
         const char* headers_stylesheet = R"-stylesheet-(
 .headers
 {
@@ -281,9 +225,57 @@ namespace nmos
 }
 )-stylesheet-";
 
+        // it'd be nice to add support for turning NMOS "child resources" responses into links to relative URLs
+        // and turning id values into links to the appropriate resource
+        template <typename CharType>
+        struct basic_html_visitor : web::json::experimental::basic_html_visitor<CharType>
+        {
+            basic_html_visitor(std::basic_ostream<CharType>& os)
+                : web::json::experimental::basic_html_visitor<CharType>(os)
+            {}
+
+            // visit callbacks
+            using web::json::experimental::basic_html_visitor<CharType>::operator();
+            void operator()(const web::json::value& value, web::json::string_tag tag)
+            {
+                const bool href = !name && is_href(value.as_string());
+                const auto str = escape(escape_characters(value.as_string()));
+                start_span(name ? "name" : "string");
+                os << html_entities::quot;
+                if (href) start_a(str);
+                os << str;
+                if (href) end_a();
+                os << html_entities::quot;
+                end_span();
+            }
+            void operator()(const web::json::value& value, web::json::object_tag)
+            {
+                web::json::visit_object(*this, value);
+            }
+            void operator()(const web::json::value& value, web::json::array_tag)
+            {
+                web::json::visit_array(*this, value);
+            }
+
+            static bool is_href(const utility::string_t& str)
+            {
+                static const auto schemes = { U("http://"), U("https://"), U("ws://"), U("wss://") };
+                return boost::algorithm::any_of(schemes, [&str](const utility::string_t& scheme)
+                {
+                    return boost::algorithm::istarts_with(str, scheme);
+                });
+            }
+
+        protected:
+            void start_a(const std::basic_string<CharType>& href) { os << "<a href=\"" << href << "\">"; }
+            void end_a() { os << "</a>"; }
+        };
+
         // construct an HTML rendering of an NMOS response
         std::string make_html_response_body(const web::http::http_response& res)
         {
+            typedef basic_html_visitor<char> html_visitor;
+
             std::ostringstream html;
             html << "<html><head><style>" << headers_stylesheet << web::json::experimental::html_stylesheet << "</style></head><body>";
             html << "<div class=\"headers\"><ol>";
@@ -296,7 +288,7 @@ namespace nmos
             }
             html << "</ol></div><br/>";
             html << "<div class=\"json\">";
-            web::json::visit(res.extract_json().get(), html_visitor(html));
+            web::json::visit(html_visitor(html), res.extract_json().get());
             html << "</div>";
             html << "</body></html>";
             return html.str();
@@ -415,7 +407,7 @@ namespace nmos
                         && boost::algorithm::contains(accept->second, U("text/html")))
                     {
                         res.set_body(nmos::experimental::make_html_response_body(res));
-                        res.headers().set_content_type(U("text/html"));
+                        res.headers().set_content_type(U("text/html; charset=utf-8"));
                     }
                 }
 

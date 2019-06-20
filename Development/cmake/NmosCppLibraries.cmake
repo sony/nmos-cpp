@@ -516,6 +516,7 @@ set(NMOS_CPP_CPPREST_SOURCES
     ${NMOS_CPP_DIR}/cpprest/http_utils.cpp
     ${NMOS_CPP_DIR}/cpprest/json_utils.cpp
     ${NMOS_CPP_DIR}/cpprest/json_validator_impl.cpp
+    ${NMOS_CPP_DIR}/cpprest/json_visit.cpp
     ${NMOS_CPP_DIR}/cpprest/ws_listener_impl.cpp
     )
 
@@ -531,6 +532,7 @@ set(NMOS_CPP_CPPREST_HEADERS
     ${NMOS_CPP_DIR}/cpprest/http_utils.h
     ${NMOS_CPP_DIR}/cpprest/json_utils.h
     ${NMOS_CPP_DIR}/cpprest/json_validator.h
+    ${NMOS_CPP_DIR}/cpprest/json_visit.h
     ${NMOS_CPP_DIR}/cpprest/logging_utils.h
     ${NMOS_CPP_DIR}/cpprest/regex_utils.h
     ${NMOS_CPP_DIR}/cpprest/uri_schemes.h
