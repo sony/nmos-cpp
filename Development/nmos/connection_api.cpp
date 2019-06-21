@@ -26,22 +26,22 @@ namespace nmos
 
         api_router connection_api;
 
-        connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        connection_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        connection_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("connection/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("connection/") }, req, res));
             return pplx::task_from_result(true);
         });
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is05_versions::from_settings(model.settings); });
-        connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
+        connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
             return pplx::task_from_result(true);
         });
 
@@ -862,15 +862,15 @@ namespace nmos
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is05_versions::from_settings(model.settings); });
         connection_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
-        connection_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        connection_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulk/"), U("single/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulk/"), U("single/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/bulk/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        connection_api.support(U("/bulk/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/") }, req, res));
             return pplx::task_from_result(true);
         });
 
@@ -1020,9 +1020,9 @@ namespace nmos
             });
         });
 
-        connection_api.support(U("/single/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        connection_api.support(U("/single/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/") }, req, res));
             return pplx::task_from_result(true);
         });
 
@@ -1034,15 +1034,27 @@ namespace nmos
 
             const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
 
-            const auto match = [&](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
+            const auto match = [&](const nmos::resource& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
 
             size_t count = 0;
 
-            set_reply(res, status_codes::OK,
-                web::json::serialize_if(resources,
-                    match,
-                    [&count](const nmos::resources::value_type& resource) { ++count; return value(resource.id + U("/")); }),
-                web::http::details::mime_types::application_json);
+            // experimental extension, to support human-readable HTML rendering of NMOS responses
+            if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+            {
+                set_reply(res, status_codes::OK,
+                    web::json::serialize_if(resources,
+                        match,
+                        [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }),
+                    web::http::details::mime_types::application_json);
+            }
+            else
+            {
+                set_reply(res, status_codes::OK,
+                    web::json::serialize_if(resources,
+                        match,
+                        [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }),
+                    web::http::details::mime_types::application_json);
+            }
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
@@ -1068,7 +1080,7 @@ namespace nmos
                 // The transporttype endpoint is introduced in v1.1
                 if (nmos::is05_versions::v1_1 <= version) sub_routes.insert(U("transporttype/"));
 
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(sub_routes, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
             }
             else
             {

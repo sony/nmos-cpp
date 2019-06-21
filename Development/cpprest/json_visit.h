@@ -4,7 +4,7 @@
 #include <functional>
 #include <stack>
 #include <type_traits>
-#include "cpprest/json_utils.h"
+#include "cpprest/json_utils.h" // for web::json::details::escape_characters, otherwise cpprest/json.h
 
 // json visiting
 namespace web
@@ -165,7 +165,7 @@ namespace web
             web::json::value& top() { return cursor.top(); }
             void assign(web::json::value&& value) { top() = std::move(value); }
             void push_field(const utility::string_t& name) { cursor.push(top()[name] = value::null()); }
-            void push_element() { push_back(top(), value::null()); cursor.push(back(top())); }
+            void push_element() { cursor.push(top()[top().size()] = value::null()); }
             void pop() { cursor.pop(); }
         };
     }

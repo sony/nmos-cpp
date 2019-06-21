@@ -173,24 +173,72 @@ namespace nmos
         return resourceTypes_from_type.at(type);
     }
 
+    // experimental extension, to support human-readable HTML rendering of NMOS responses
+    namespace experimental
+    {
+        namespace details
+        {
+            bool is_html_response_preferred(const web::http::http_request& req, const utility::string_t& mime_type)
+            {
+                // hmm, parsing of the Accept header could be much better and should take account of quality values
+                const auto accept = req.headers().find(web::http::header_names::accept);
+                return req.headers().end() != accept
+                    && !boost::algorithm::contains(accept->second, mime_type)
+                    && boost::algorithm::contains(accept->second, U("text/html"));
+            }
+
+            web::json::value make_html_response_a_tag(const web::uri& href, const web::json::value& value)
+            {
+                using web::json::value_of;
+
+                return value_of({
+                    { U("$href"), href.to_string() },
+                    { U("$_"), value }
+                });
+            }
+
+            web::json::value make_html_response_a_tag(const utility::string_t& sub_route, const web::http::http_request& req)
+            {
+                using web::json::value;
+                return make_html_response_a_tag(web::uri_builder(req.request_uri()).append_path(sub_route).to_uri(), value::string(sub_route));
+            }
+        }
+    }
+
     // construct a standard NMOS "child resources" response, from the specified sub-routes
     // merging with ones from an existing response
     // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
-    web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, web::http::http_response res)
+    web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, const web::http::http_request& req, web::http::http_response res)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
+
+        std::set<value> results;
 
         if (res.body())
         {
             auto body = res.extract_json().get();
+            results.insert(body.as_array().begin(), body.as_array().end());
+        }
 
-            for (auto& element : body.as_array())
+        // experimental extension, to support human-readable HTML rendering of NMOS responses
+        if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+        {
+            for (auto& sub_route : sub_routes)
             {
-                sub_routes.insert(element.as_string());
+                // build a full path, using use request_uri, rather than just the simple relative href
+                // in order to make working links when the current request didn't have a trailing slash
+                results.insert(experimental::details::make_html_response_a_tag(sub_route, req));
+            }
+        }
+        else
+        {
+            for (auto& sub_route : sub_routes)
+            {
+                results.insert(value::string(sub_route));
             }
         }
 
-        return web::json::value_from_elements(sub_routes);
+        return web::json::value_from_elements(results);
     }
 
     // construct sub-routes for the specified API versions
@@ -209,6 +257,7 @@ namespace nmos
         }, true);
     }
 
+    // experimental extension, to support human-readable HTML rendering of NMOS responses
     namespace experimental
     {
         const char* headers_stylesheet = R"-stylesheet-(
@@ -225,8 +274,9 @@ namespace nmos
 }
 )-stylesheet-";
 
-        // it'd be nice to add support for turning NMOS "child resources" responses into links to relative URLs
-        // and turning id values into links to the appropriate resource
+        // objects with the keywords $href and $_ are rendered as HTML anchor (a) tags
+        // in order that the elements in NMOS "child resources" responses can be made into links
+        // and id values in resources can also be made into links to the appropriate resource
         template <typename CharType>
         struct basic_html_visitor : web::json::experimental::basic_html_visitor<CharType>
         {
@@ -250,7 +300,35 @@ namespace nmos
             }
             void operator()(const web::json::value& value, web::json::object_tag)
             {
-                web::json::visit_object(*this, value);
+                if (value.has_field(U("$href")) && value.has_field(U("$_")))
+                {
+                    const auto href = escape(escape_characters(value.at(U("$href")).as_string()));
+
+                    const auto& v = value.at(U("$_"));
+                    if (v.is_string())
+                    {
+                        // cute rendering of simple string links with the surrounding quotes outside the link
+                        start_span("string");
+                        os << html_entities::quot;
+                        start_a(href);
+                        // hmm, special handling for empty strings?
+                        os << escape(escape_characters(v.as_string()));
+                        end_a();
+                        os << html_entities::quot;
+                        end_span();
+                    }
+                    else
+                    {
+                        // for other value types, the whole value is rendered inside the link
+                        start_a(href);
+                        web::json::visit(*this, v);
+                        end_a();
+                    }
+                }
+                else
+                {
+                    web::json::visit_object(*this, value);
+                }
             }
             void operator()(const web::json::value& value, web::json::array_tag)
             {
@@ -279,11 +357,55 @@ namespace nmos
             std::ostringstream html;
             html << "<html><head><style>" << headers_stylesheet << web::json::experimental::html_stylesheet << "</style></head><body>";
             html << "<div class=\"headers\"><ol>";
-            // it'd be nice to also turn URLs in Location and Link headers into links
             for (const auto& header : res.headers())
             {
                 html << "<li>";
-                html << html_visitor::escape(utility::us2s(header.first)) << ": " << html_visitor::escape(utility::us2s(header.second));
+                html << "<span class=\"name\">";
+                html << html_visitor::escape(utility::us2s(header.first));
+                html << "</span>";
+                html << ": ";
+                html << "<span class=\"value\">";
+                if (header.first == web::http::header_names::location)
+                {
+                    const auto html_value = html_visitor::escape(utility::us2s(header.second));
+                    html << "<a href=\"" << html_value << "\">" << html_value << "</a>";
+                }
+                else if (header.first == U("Link"))
+                {
+                    // this regex pattern matches the usual whitespace precisely, but that's good enough
+                    static const utility::regex_t link(U(R"-regex-(<([^>]*)>; rel="([^"]*)"(, )?)-regex-"));
+                    auto first = header.second.begin();
+                    utility::smatch_t match;
+                    while (first != header.second.end())
+                    {
+                        if (bst::regex_search(first, header.second.end(), match, link, bst::regex_constants::match_continuous))
+                        {
+                            const auto html_link = html_visitor::escape(utility::us2s(match[1].str()));
+                            const auto html_rel = html_visitor::escape(utility::us2s(match[2].str()));
+                            const auto html_comma = html_visitor::escape(utility::us2s(match[3].str()));
+
+                            html << html_visitor::html_entities::lt;
+                            html << "<a href=\"" << html_link << "\">" << html_link << "</a>";
+                            html << html_visitor::html_entities::gt;
+                            html << "; ";
+                            html << "rel=" << html_visitor::html_entities::quot << html_rel << html_visitor::html_entities::quot;
+                            html << html_comma;
+
+                            first = match[0].second;
+                        }
+                        else
+                        {
+                            // match failed, so just output the remainder of the value
+                            html << html_visitor::escape(utility::us2s({ first, header.second.end() }));
+                            first = header.second.end();
+                        }
+                    }
+                }
+                else
+                {
+                    html << html_visitor::escape(utility::us2s(header.second));
+                }
+                html << "</span>";
                 html << "</li>";
             }
             html << "</ol></div><br/>";
@@ -398,17 +520,10 @@ namespace nmos
                 // experimental extension, to support human-readable HTML rendering of NMOS responses
 
                 const auto mime_type = web::http::details::get_mime_type(res.headers().content_type());
-                if (web::http::details::mime_types::application_json == mime_type)
+                if (web::http::details::mime_types::application_json == mime_type && experimental::details::is_html_response_preferred(req, mime_type))
                 {
-                    // hmm, parsing of the Accept header could be much better and should take account of quality values
-                    const auto accept = req.headers().find(web::http::header_names::accept);
-                    if (req.headers().end() != accept
-                        && !boost::algorithm::contains(accept->second, mime_type)
-                        && boost::algorithm::contains(accept->second, U("text/html")))
-                    {
-                        res.set_body(nmos::experimental::make_html_response_body(res));
-                        res.headers().set_content_type(U("text/html; charset=utf-8"));
-                    }
+                    res.set_body(nmos::experimental::make_html_response_body(res));
+                    res.headers().set_content_type(U("text/html; charset=utf-8"));
                 }
 
                 slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response";

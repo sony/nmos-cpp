@@ -19,9 +19,9 @@ namespace nmos
 
             api_router admin_ui;
 
-            admin_ui.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            admin_ui.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("admin/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("admin/") }, req, res));
                 return pplx::task_from_result(true);
             });
 

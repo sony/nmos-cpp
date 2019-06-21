@@ -15,22 +15,22 @@ namespace nmos
 
         api_router events_api;
 
-        events_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        events_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        events_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        events_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("events/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("events/") }, req, res));
             return pplx::task_from_result(true);
         });
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is07_versions::from_settings(model.settings); });
-        events_api.support(U("/x-nmos/") + nmos::patterns::events_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
+        events_api.support(U("/x-nmos/") + nmos::patterns::events_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
             return pplx::task_from_result(true);
         });
 
@@ -49,9 +49,9 @@ namespace nmos
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is07_versions::from_settings(model.settings); });
         events_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
-        events_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        events_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("sources/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("sources/") }, req, res));
             return pplx::task_from_result(true);
         });
 
@@ -63,13 +63,29 @@ namespace nmos
 
             const string_t resourceType = parameters.at(nmos::patterns::sourceType.name);
 
-            set_reply(res, status_codes::OK,
-                web::json::serialize_if(resources,
-                    [&](const nmos::resource& resource) { return resource.type == nmos::type_from_resourceType(resourceType); },
-                    [](const nmos::resource& resource) { return value(resource.id + U("/")); }),
-                web::http::details::mime_types::application_json);
+            const auto match = [&](const nmos::resource& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << resources.size() << " matching " << resourceType;
+            size_t count = 0;
+
+            // experimental extension, to support human-readable HTML rendering of NMOS responses
+            if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+            {
+                set_reply(res, status_codes::OK,
+                    web::json::serialize_if(resources,
+                        match,
+                        [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }),
+                    web::http::details::mime_types::application_json);
+            }
+            else
+            {
+                set_reply(res, status_codes::OK,
+                    web::json::serialize_if(resources,
+                        match,
+                        [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }),
+                    web::http::details::mime_types::application_json);
+            }
+
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
             return pplx::task_from_result(true);
         });
@@ -86,7 +102,7 @@ namespace nmos
             auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
             if (resources.end() != resource)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("state/"), U("type/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("state/"), U("type/") }, req, res));
             }
             else
             {

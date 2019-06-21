@@ -15,15 +15,15 @@ namespace nmos
 
             api_router settings_api;
 
-            settings_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            settings_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("settings/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("settings/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
-            settings_api.support(U("/settings/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            settings_api.support(U("/settings/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("all/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("all/") }, req, res));
                 return pplx::task_from_result(true);
             });
 

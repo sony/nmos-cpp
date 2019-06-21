@@ -2,6 +2,7 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
+#include "cpprest/json_visit.h"
 #include "cpprest/uri_schemes.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
@@ -22,22 +23,22 @@ namespace nmos
 
         api_router query_api;
 
-        query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        query_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        query_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        query_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("query/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("query/") }, req, res));
             return pplx::task_from_result(true);
         });
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
-        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
+        query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
             return pplx::task_from_result(true);
         });
 
@@ -180,6 +181,136 @@ namespace nmos
         }
     }
 
+    // experimental extension, to support human-readable HTML rendering of NMOS responses
+    namespace experimental
+    {
+        namespace details
+        {
+            // strictly speaking, the list of fields which *are* references (and what they refer to)
+            // ought to depend on the API version as well, but this is good enough for now...
+            static const std::map<nmos::type, std::map<utility::string_t, nmos::type>>& reference_fields()
+            {
+                static const std::map<nmos::type, std::map<utility::string_t, nmos::type>> reference_fields
+                {
+                    {
+                        nmos::types::node,
+                        {
+                            { U("id"), nmos::types::node }
+                        }
+                    },
+                    {
+                        nmos::types::device,
+                        {
+                            { U("id"), nmos::types::device },
+                            { U("node_id"), nmos::types::node },
+                            { U("senders"), nmos::types::sender }, // array
+                            { U("receivers"), nmos::types::receiver } // array
+                        }
+                    },
+                    {
+                        nmos::types::source,
+                        {
+                            { U("id"), nmos::types::source },
+                            { U("device_id"), nmos::types::device },
+                            { U("parents"), nmos::types::source } // array
+                        }
+                    },
+                    {
+                        nmos::types::flow,
+                        {
+                            { U("id"), nmos::types::flow },
+                            { U("source_id"), nmos::types::source },
+                            { U("parents"), nmos::types::flow }, // array
+                            { U("device_id"), nmos::types::device }
+                        }
+                    },
+                    {
+                        nmos::types::sender,
+                        {
+                            { U("id"), nmos::types::sender },
+                            { U("flow_id"), nmos::types::flow },
+                            { U("device_id"), nmos::types::device },
+                            { U("receiver_id"), nmos::types::receiver } // in subscription
+                        }
+                    },
+                    {
+                        nmos::types::receiver,
+                        {
+                            { U("id"), nmos::types::receiver },
+                            { U("device_id"), nmos::types::device },
+                            { U("sender_id"), nmos::types::sender } // in subscription
+                        }
+                    },
+                    {
+                        nmos::types::subscription,
+                        {
+                            { U("id"), nmos::types::subscription }
+                        }
+                    }
+                };
+
+                return reference_fields;
+            }
+
+            struct query_api_html_response_body_visitor : web::json::value_assigning_visitor
+            {
+                // query uri should be like http://example.api.com/x-nmos/query/{version}
+                query_api_html_response_body_visitor(web::json::value& value, const web::uri& query_uri, const nmos::type& type)
+                    : web::json::value_assigning_visitor(value)
+                    , query_uri(query_uri)
+                    , type(type)
+                    , href_type()
+                {}
+
+                using web::json::value_assigning_visitor::operator();
+                void operator()(web::json::value value, web::json::string_tag)
+                {
+                    if (name)
+                    {
+                        push_field(value.as_string());
+
+                        const auto& fields = reference_fields().at(type);
+                        const auto field = fields.find(value.as_string());
+
+                        href_type = fields.end() != field ? field->second : nmos::type{};
+                    }
+                    else if (href_type.name.empty())
+                    {
+                        assign(std::move(value));
+                    }
+                    else
+                    {
+                        const auto href = web::uri_builder(query_uri).append_path(nmos::resourceType_from_type(href_type)).append_path(value.as_string()).to_uri();
+                        assign(nmos::experimental::details::make_html_response_a_tag(href, value));
+                    }
+                }
+
+                void operator()(web::json::value value, web::json::object_tag)
+                {
+                    web::json::visit_object(*this, std::move(value));
+                }
+                void operator()(web::json::value value, web::json::array_tag)
+                {
+                    web::json::visit_array(*this, std::move(value));
+                }
+
+            protected:
+                web::uri query_uri;
+                nmos::type type;
+
+                nmos::type href_type;
+            };
+
+            web::json::value make_query_api_html_response_body(const nmos::api_version& version, const nmos::type& type, const web::json::value& data)
+            {
+                web::json::value result;
+                query_api_html_response_body_visitor visitor(result, web::uri_builder().set_path(U("/x-nmos/query/") + make_api_version(version)).to_uri(), type);
+                web::json::visit(visitor, data);
+                return result;
+            }
+        }
+    }
+
     inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::registry_model& model, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -190,9 +321,9 @@ namespace nmos
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
         query_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
-        query_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        query_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("nodes/"), U("devices/"), U("sources/"), U("flows/"), U("senders/"), U("receivers/"), U("subscriptions/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("nodes/"), U("devices/"), U("sources/"), U("flows/"), U("senders/"), U("receivers/"), U("subscriptions/") }, req, res));
             return pplx::task_from_result(true);
         });
 
@@ -228,10 +359,21 @@ namespace nmos
 
                 size_t count = 0;
 
-                set_reply(res, status_codes::OK,
-                    web::json::serialize(page,
-                        [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }),
-                    web::http::details::mime_types::application_json);
+                // experimental extension, to support human-readable HTML rendering of NMOS responses
+                if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+                {
+                    set_reply(res, status_codes::OK,
+                        web::json::serialize(page,
+                            [&count, &match, &version, &resourceType](const nmos::resource& resource) { ++count; return experimental::details::make_query_api_html_response_body(version, nmos::type_from_resourceType(resourceType), match.downgrade(resource)); }),
+                        web::http::details::mime_types::application_json);
+                }
+                else
+                {
+                    set_reply(res, status_codes::OK,
+                        web::json::serialize(page,
+                            [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }),
+                        web::http::details::mime_types::application_json);
+                }
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 
@@ -268,7 +410,16 @@ namespace nmos
                 if (nmos::is_permitted_downgrade(*resource, match.version, match.downgrade_version))
                 {
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Returning resource: " << resourceId;
-                    set_reply(res, status_codes::OK, match.downgrade(*resource));
+
+                    // experimental extension, to support human-readable HTML rendering of NMOS responses
+                    if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+                    {
+                        set_reply(res, status_codes::OK, experimental::details::make_query_api_html_response_body(version, nmos::type_from_resourceType(resourceType), match.downgrade(*resource)));
+                    }
+                    else
+                    {
+                        set_reply(res, status_codes::OK, match.downgrade(*resource));
+                    }
 
                     // experimental extension, see also nmos::make_resource_events for equivalent WebSockets extension
                     if (!match.strip || resource->version < match.version)

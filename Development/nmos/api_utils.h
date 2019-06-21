@@ -83,10 +83,21 @@ namespace nmos
 
     // Other utility functions for generating NMOS response headers and body
 
+    // experimental extension, to support human-readable HTML rendering of NMOS responses
+    namespace experimental
+    {
+        namespace details
+        {
+            bool is_html_response_preferred(const web::http::http_request& req, const utility::string_t& mime_type);
+            web::json::value make_html_response_a_tag(const web::uri& href, const web::json::value& value);
+            web::json::value make_html_response_a_tag(const utility::string_t& sub_route, const web::http::http_request& req);
+        }
+    }
+
     // construct a standard NMOS "child resources" response, from the specified sub-routes
     // merging with ones from an existing response
     // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
-    web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, web::http::http_response res);
+    web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, const web::http::http_request& req, web::http::http_response res);
 
     // construct sub-routes for the specified API versions
     std::set<utility::string_t> make_api_version_sub_routes(const std::set<nmos::api_version>& versions);

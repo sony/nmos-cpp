@@ -18,15 +18,15 @@ namespace nmos
 
             api_router mdns_api;
 
-            mdns_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-dns-sd/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-dns-sd/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
-            mdns_api.support(U("/x-dns-sd/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            mdns_api.support(U("/x-dns-sd/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
@@ -84,17 +84,15 @@ namespace nmos
 
                 // note, only the list of available service types that are explicitly being advertised is returned by "_services._dns-sd._udp"
                 // see https://tools.ietf.org/html/rfc6763#section-9
-                return discovery->browse("_services._dns-sd._udp", browse_domain).then([res, gate](std::vector<::mdns::browse_result> browsed) mutable
+                return discovery->browse("_services._dns-sd._udp", browse_domain).then([req, res, gate](std::vector<::mdns::browse_result> browsed) mutable
                 {
-                    const auto results = boost::copy_range<std::set<utility::string_t>>(browsed | boost::adaptors::transformed([](const ::mdns::browse_result& br)
+                    auto results = boost::copy_range<std::set<utility::string_t>>(browsed | boost::adaptors::transformed([](const ::mdns::browse_result& br)
                     {
                         // results for this query seem to be e.g. name = "_nmos-query", type = "_tcp.local."
                         return utility::s2us(br.name + '.' + br.type.substr(0, br.type.find('.')) + '/');
                     }));
-                    set_reply(res, status_codes::OK,
-                        web::json::serialize(results, [](const utility::string_t& s) { return value::string(s); }),
-                        web::http::details::mime_types::application_json);
                     res.headers().add(U("X-Total-Count"), results.size());
+                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(results), req, res));
                     return true;
                 });
             });

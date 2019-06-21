@@ -16,22 +16,22 @@ namespace nmos
 
         api_router system_api;
 
-        system_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        system_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        system_api.support(U("/x-nmos/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        system_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("system/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("system/") }, req, res));
             return pplx::task_from_result(true);
         });
 
         const std::set<api_version> versions{ { 1, 0 } };
-        system_api.support(U("/x-nmos/") + nmos::patterns::system_api.pattern + U("/?"), methods::GET, [versions](http_request, http_response res, const string_t&, const route_parameters&)
+        system_api.support(U("/x-nmos/") + nmos::patterns::system_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
             return pplx::task_from_result(true);
         });
 
@@ -50,9 +50,9 @@ namespace nmos
         const std::set<api_version> versions{ { 1, 0 } };
         system_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
-        system_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+        system_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("global/") }, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("global/") }, req, res));
             return pplx::task_from_result(true);
         });
 

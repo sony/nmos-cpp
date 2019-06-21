@@ -18,15 +18,15 @@ namespace nmos
 
             api_router logging_api;
 
-            logging_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            logging_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("log/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("log/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
-            logging_api.support(U("/log/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            logging_api.support(U("/log/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("v1.0/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
@@ -322,9 +322,9 @@ namespace nmos
 
             api_router logging_api;
 
-            logging_api.support(U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            logging_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("events/") }, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("events/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
