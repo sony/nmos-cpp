@@ -65,6 +65,7 @@ namespace bst
         using bst_filesystem::directory_iterator;
         using bst_filesystem::recursive_directory_iterator;
         using bst_filesystem::exists;
+        using bst_filesystem::is_regular_file;
         using bst_filesystem::is_directory;
         using bst_filesystem::file_size;
         using bst_filesystem::create_directory;

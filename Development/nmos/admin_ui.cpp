@@ -25,11 +25,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            admin_ui.support(U("/") + nmos::experimental::patterns::admin_ui.pattern + U("/?"), methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
+            admin_ui.support(U("/") + nmos::experimental::patterns::admin_ui.pattern, methods::GET, [](http_request, http_response res, const string_t&, const route_parameters&)
             {
-                // temporarily hard-coded hack to redirect admin root to the index.html
-                set_reply(res, status_codes::TemporaryRedirect);
-                res.headers().add(web::http::header_names::location, U("/admin/index.html"));
+                set_reply(res, status_codes::TemporaryRedirect); // or status_codes::MovedPermanently?
+                res.headers().add(web::http::header_names::location, U("/admin/"));
                 return pplx::task_from_result(true);
             });
 
@@ -43,7 +42,7 @@ namespace nmos
                 { U("png"), U("image/png") }
             };
 
-            admin_ui.mount(U("/") + nmos::experimental::patterns::admin_ui.pattern, web::http::methods::GET, nmos::experimental::make_filesystem_route(filesystem_root, nmos::experimental::make_relative_path_content_type_validator(valid_extensions), gate));
+            admin_ui.mount(U("/") + nmos::experimental::patterns::admin_ui.pattern, web::http::methods::GET, nmos::experimental::make_filesystem_route(filesystem_root, nmos::experimental::make_relative_path_content_type_handler(valid_extensions), gate));
 
             return admin_ui;
         }
