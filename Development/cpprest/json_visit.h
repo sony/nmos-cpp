@@ -211,9 +211,9 @@ namespace web
         struct basic_ostream_visitor
         {
             typedef CharType char_type;
-            typedef details::literals<CharType> literals;
+            typedef details::literals<char_type> literals;
 
-            basic_ostream_visitor(std::basic_ostream<CharType>& os) : os(os)
+            basic_ostream_visitor(std::basic_ostream<char_type>& os) : os(os)
             {
                 // this is *almost* always what the user wants
                 os.precision(std::numeric_limits<double>::digits10 + 2);
@@ -276,10 +276,10 @@ namespace web
             void operator()(web::json::array_separator_tag) { os << literals::array_separator; }
             void operator()(web::json::leave_array_tag) { os << literals::leave_array; }
 
-            static std::basic_string<CharType> escape_characters(const utility::string_t& str);
+            static std::basic_string<char_type> escape_characters(const utility::string_t& str);
 
         protected:
-            std::basic_ostream<CharType>& os;
+            std::basic_ostream<char_type>& os;
         };
 
         template <>
@@ -304,15 +304,18 @@ namespace web
         template <typename CharType>
         struct basic_pretty_visitor : basic_ostream_visitor<CharType>
         {
-            basic_pretty_visitor(std::basic_ostream<CharType>& os, size_t indent = 4)
-                : basic_ostream_visitor<CharType>(os)
+            typedef basic_ostream_visitor<CharType> base;
+            typedef typename base::char_type char_type;
+
+            basic_pretty_visitor(std::basic_ostream<char_type>& os, size_t indent = 4)
+                : base(os)
                 , indent(indent)
                 , depth(0)
                 , empty()
             {}
 
             // visit call backs
-            using basic_ostream_visitor<CharType>::operator();
+            using base::operator();
             void operator()(const web::json::value& value, web::json::object_tag)
             {
                 web::json::visit_object(*this, value);
@@ -323,27 +326,29 @@ namespace web
             }
 
             // visit_object callbacks
-            void operator()(web::json::enter_object_tag tag) { basic_ostream_visitor::operator()(tag); ++depth; empty = true; }
-            void operator()(web::json::enter_field_tag tag) { if (empty) end_line(); start_line(); basic_ostream_visitor::operator()(tag); }
-            void operator()(web::json::field_separator_tag tag) { basic_ostream_visitor::operator()(tag); os << ' '; }
-            void operator()(web::json::leave_field_tag tag) { basic_ostream_visitor::operator()(tag); empty = false; }
-            void operator()(web::json::object_separator_tag tag) { basic_ostream_visitor::operator()(tag); end_line(); }
-            void operator()(web::json::leave_object_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); basic_ostream_visitor::operator()(tag); }
+            void operator()(web::json::enter_object_tag tag) { base::operator()(tag); ++depth; empty = true; }
+            void operator()(web::json::enter_field_tag tag) { if (empty) end_line(); start_line(); base::operator()(tag); }
+            void operator()(web::json::field_separator_tag tag) { base::operator()(tag); os << ' '; }
+            void operator()(web::json::leave_field_tag tag) { base::operator()(tag); empty = false; }
+            void operator()(web::json::object_separator_tag tag) { base::operator()(tag); end_line(); }
+            void operator()(web::json::leave_object_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); base::operator()(tag); }
 
             // visit_array callbacks
-            void operator()(web::json::enter_array_tag tag) { basic_ostream_visitor::operator()(tag); ++depth; empty = true; }
-            void operator()(web::json::enter_element_tag tag) { if (empty) end_line(); start_line(); basic_ostream_visitor::operator()(tag); }
-            void operator()(web::json::leave_element_tag tag) { basic_ostream_visitor::operator()(tag); empty = false; }
-            void operator()(web::json::array_separator_tag tag) { basic_ostream_visitor::operator()(tag); end_line(); }
-            void operator()(web::json::leave_array_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); basic_ostream_visitor::operator()(tag); }
+            void operator()(web::json::enter_array_tag tag) { base::operator()(tag); ++depth; empty = true; }
+            void operator()(web::json::enter_element_tag tag) { if (empty) end_line(); start_line(); base::operator()(tag); }
+            void operator()(web::json::leave_element_tag tag) { base::operator()(tag); empty = false; }
+            void operator()(web::json::array_separator_tag tag) { base::operator()(tag); end_line(); }
+            void operator()(web::json::leave_array_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); base::operator()(tag); }
 
         protected:
+            using base::os;
+
             size_t indent;
 
             size_t depth;
             bool empty;
 
-            void start_line() { os << std::basic_string<CharType>(depth * indent, ' '); }
+            void start_line() { os << std::basic_string<char_type>(depth * indent, ' '); }
             void end_line() { os << '\n'; }
         };
 
@@ -406,10 +411,13 @@ namespace web
             template <typename CharType>
             struct basic_html_visitor : basic_ostream_visitor<CharType>
             {
-                typedef details::html_entities<CharType> html_entities;
+                typedef basic_ostream_visitor<CharType> base;
+                typedef typename base::char_type char_type;
+                typedef typename base::literals literals;
+                typedef details::html_entities<char_type> html_entities;
 
-                basic_html_visitor(std::basic_ostream<CharType>& os)
-                    : basic_ostream_visitor<CharType>(os)
+                basic_html_visitor(std::basic_ostream<char_type>& os)
+                    : base(os)
                     , empty()
                     , name()
                 {}
@@ -417,11 +425,11 @@ namespace web
                 // visit callbacks
                 void operator()(const web::json::value& value, web::json::number_tag tag)
                 {
-                    start_span("number"); basic_ostream_visitor::operator()(value, tag); end_span();
+                    start_span("number"); base::operator()(value, tag); end_span();
                 }
                 void operator()(const web::json::value& value, web::json::boolean_tag tag)
                 {
-                    start_span("boolean"); basic_ostream_visitor::operator()(value, tag); end_span();
+                    start_span("boolean"); base::operator()(value, tag); end_span();
                 }
                 void operator()(const web::json::value& value, web::json::string_tag tag)
                 {
@@ -441,7 +449,7 @@ namespace web
                 }
                 void operator()(const web::json::value& value, web::json::null_tag tag)
                 {
-                    start_span("null"); basic_ostream_visitor::operator()(value, tag); end_span();
+                    start_span("null"); base::operator()(value, tag); end_span();
                 }
 
                 // visit_object callbacks
@@ -459,9 +467,12 @@ namespace web
                 void operator()(web::json::array_separator_tag tag) {}
                 void operator()(web::json::leave_array_tag tag) { if (!empty) os << "</li>"; os << "</ol>" << literals::leave_array; end_span(); }
 
-                static std::basic_string<CharType> escape(const std::basic_string<CharType>& unescaped) { return details::html_escape(unescaped); }
+                using base::escape_characters;
+                static std::basic_string<char_type> escape(const std::basic_string<char_type>& unescaped) { return details::html_escape(unescaped); }
 
             protected:
+                using base::os;
+
                 bool empty;
                 bool name;
 

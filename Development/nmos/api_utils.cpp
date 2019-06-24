@@ -280,12 +280,17 @@ namespace nmos
         template <typename CharType>
         struct basic_html_visitor : web::json::experimental::basic_html_visitor<CharType>
         {
-            basic_html_visitor(std::basic_ostream<CharType>& os)
-                : web::json::experimental::basic_html_visitor<CharType>(os)
+            typedef web::json::experimental::basic_html_visitor<CharType> base;
+            typedef typename base::char_type char_type;
+            typedef typename base::literals literals;
+            typedef typename base::html_entities html_entities;
+
+            basic_html_visitor(std::basic_ostream<char_type>& os)
+                : base(os)
             {}
 
             // visit callbacks
-            using web::json::experimental::basic_html_visitor<CharType>::operator();
+            using base::operator();
             void operator()(const web::json::value& value, web::json::string_tag tag)
             {
                 const bool href = !name && is_href(value.as_string());
@@ -344,9 +349,17 @@ namespace nmos
                 });
             }
 
+            using base::escape_characters;
+            using base::escape;
+
         protected:
-            void start_a(const std::basic_string<CharType>& href) { os << "<a href=\"" << href << "\">"; }
-            void end_a() { os << "</a>"; }
+            using base::os;
+            using base::name;
+
+            using base::start_span;
+            using base::end_span;
+            void start_a(const std::basic_string<char_type>& href) { this->os << "<a href=\"" << href << "\">"; }
+            void end_a() { this->os << "</a>"; }
         };
 
         // construct an HTML rendering of an NMOS response
