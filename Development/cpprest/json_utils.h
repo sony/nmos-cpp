@@ -9,24 +9,74 @@
 #define JU(x) J(U(x))
 #endif
 
-// no idea why these operators aren't provided?
+// more comparison operators for json::number, json::object, json::array and json::value
 namespace web
 {
     namespace json
     {
+        inline bool operator!=(const web::json::number& lhs, const web::json::number& rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        inline bool operator<(const web::json::number& lhs, const web::json::number& rhs)
+        {
+            if (!lhs.is_integral() && !rhs.is_integral()) return lhs.to_double() < rhs.to_double();
+            if (lhs.is_int64() && rhs.is_int64()) return lhs.to_int64() < rhs.to_int64();
+            if (lhs.is_uint64() && rhs.is_uint64()) return lhs.to_uint64() < rhs.to_uint64();
+            return false;
+        }
+
+        inline bool operator>(const web::json::number& lhs, const web::json::number& rhs)
+        {
+            return rhs < lhs;
+        }
+
+        inline bool operator<=(const web::json::number& lhs, const web::json::number& rhs)
+        {
+            return !(rhs > lhs);
+        }
+
+        inline bool operator>=(const web::json::number& lhs, const web::json::number& rhs)
+        {
+            return !(lhs < rhs);
+        }
+
+        // json::object comparison respects keep_order
         inline bool operator==(const web::json::object& lhs, const web::json::object& rhs)
         {
             if (lhs.size() != rhs.size())
                 return false;
             using std::begin;
             using std::end;
-            // equality respects keep_order
             return std::equal(begin(lhs), end(lhs), begin(rhs));
         }
 
         inline bool operator!=(const web::json::object& lhs, const web::json::object& rhs)
         {
             return !(lhs == rhs);
+        }
+
+        inline bool operator<(const web::json::object& lhs, const web::json::object& rhs)
+        {
+            using std::begin;
+            using std::end;
+            return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
+        }
+
+        inline bool operator>(const web::json::object& lhs, const web::json::object& rhs)
+        {
+            return rhs < lhs;
+        }
+
+        inline bool operator<=(const web::json::object& lhs, const web::json::object& rhs)
+        {
+            return !(rhs > lhs);
+        }
+
+        inline bool operator>=(const web::json::object& lhs, const web::json::object& rhs)
+        {
+            return !(lhs < rhs);
         }
 
         inline bool operator==(const web::json::array& lhs, const web::json::array& rhs)
@@ -41,6 +91,61 @@ namespace web
         inline bool operator!=(const web::json::array& lhs, const web::json::array& rhs)
         {
             return !(lhs == rhs);
+        }
+
+        inline bool operator<(const web::json::array& lhs, const web::json::array& rhs)
+        {
+            using std::begin;
+            using std::end;
+            return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
+        }
+
+        inline bool operator>(const web::json::array& lhs, const web::json::array& rhs)
+        {
+            return rhs < lhs;
+        }
+
+        inline bool operator<=(const web::json::array& lhs, const web::json::array& rhs)
+        {
+            return !(rhs > lhs);
+        }
+
+        inline bool operator>=(const web::json::array& lhs, const web::json::array& rhs)
+        {
+            return !(lhs < rhs);
+        }
+
+        inline bool operator<(const web::json::value& lhs, const web::json::value& rhs)
+        {
+            if (lhs.type() < rhs.type()) return true;
+            if (rhs.type() == lhs.type())
+            {
+                switch (lhs.type())
+                {
+                case web::json::value::Number: return lhs.as_number() < rhs.as_number();
+                case web::json::value::Boolean: return lhs.as_bool() < rhs.as_bool();
+                case web::json::value::String: return lhs.as_string() < rhs.as_string();
+                case web::json::value::Object: return lhs.as_object() < rhs.as_object();
+                case web::json::value::Array: return lhs.as_array() < rhs.as_array();
+                case web::json::value::Null: return false;
+                }
+            }
+            return false;
+        }
+
+        inline bool operator>(const web::json::value& lhs, const web::json::value& rhs)
+        {
+            return rhs < lhs;
+        }
+
+        inline bool operator<=(const web::json::value& lhs, const web::json::value& rhs)
+        {
+            return !(rhs > lhs);
+        }
+
+        inline bool operator>=(const web::json::value& lhs, const web::json::value& rhs)
+        {
+            return !(lhs < rhs);
         }
     }
 }
