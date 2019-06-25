@@ -524,6 +524,8 @@ set(NMOS_CPP_CPPREST_SOURCES
     ${NMOS_CPP_DIR}/cpprest/api_router.cpp
     ${NMOS_CPP_DIR}/cpprest/host_utils.cpp
     ${NMOS_CPP_DIR}/cpprest/http_utils.cpp
+    ${NMOS_CPP_DIR}/cpprest/json_escape.cpp
+    ${NMOS_CPP_DIR}/cpprest/json_storage.cpp
     ${NMOS_CPP_DIR}/cpprest/json_utils.cpp
     ${NMOS_CPP_DIR}/cpprest/json_validator_impl.cpp
     ${NMOS_CPP_DIR}/cpprest/json_visit.cpp
@@ -540,6 +542,9 @@ set(NMOS_CPP_CPPREST_HEADERS
     ${NMOS_CPP_DIR}/cpprest/basic_utils.h
     ${NMOS_CPP_DIR}/cpprest/host_utils.h
     ${NMOS_CPP_DIR}/cpprest/http_utils.h
+    ${NMOS_CPP_DIR}/cpprest/json_escape.h
+    ${NMOS_CPP_DIR}/cpprest/json_ops.h
+    ${NMOS_CPP_DIR}/cpprest/json_storage.h
     ${NMOS_CPP_DIR}/cpprest/json_utils.h
     ${NMOS_CPP_DIR}/cpprest/json_validator.h
     ${NMOS_CPP_DIR}/cpprest/json_visit.h

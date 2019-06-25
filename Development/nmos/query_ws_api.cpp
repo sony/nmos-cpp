@@ -1,5 +1,6 @@
 #include "nmos/query_ws_api.h"
 
+#include "cpprest/json_storage.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/rational.h"

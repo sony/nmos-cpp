@@ -4,7 +4,8 @@
 #include <functional>
 #include <stack>
 #include <type_traits>
-#include "cpprest/json_utils.h" // for web::json::details::escape_characters, otherwise cpprest/json.h
+#include "cpprest/json.h"
+#include "cpprest/json_escape.h"
 
 // json visiting
 namespace web

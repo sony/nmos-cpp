@@ -2,7 +2,7 @@
 #define NMOS_RATIONAL_H
 
 #include <boost/rational.hpp>
-#include "cpprest/json_utils.h"
+#include "cpprest/json_ops.h"
 
 namespace nmos
 {

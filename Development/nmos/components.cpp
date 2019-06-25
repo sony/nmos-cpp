@@ -1,6 +1,6 @@
 #include "nmos/components.h"
 
-#include "cpprest/json_utils.h"
+#include "cpprest/json_ops.h"
 
 namespace nmos
 {

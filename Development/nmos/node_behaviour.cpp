@@ -2,6 +2,7 @@
 
 #include "pplx/pplx_utils.h" // for pplx::complete_at
 #include "cpprest/http_client.h"
+#include "cpprest/json_storage.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
 #include "nmos/api_downgrade.h"

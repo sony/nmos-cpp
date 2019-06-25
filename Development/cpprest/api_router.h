@@ -5,7 +5,7 @@
 #include <list>
 #include <unordered_map>
 #include "cpprest/http_utils.h"
-#include "cpprest/json_utils.h" // hmm, only for names used in using declarations
+#include "cpprest/json_ops.h" // hmm, only for names used in using declarations
 #include "cpprest/regex_utils.h" // hmm, only for types used in private static functions
 #include "detail/private_access.h"
 

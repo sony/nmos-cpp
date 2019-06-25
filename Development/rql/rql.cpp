@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include "cpprest/base_uri.h" // for uri::decode
 #include "cpprest/basic_utils.h"
-#include "cpprest/json_utils.h"
+#include "cpprest/json_ops.h"
 #include "cpprest/regex_utils.h"
 
 namespace rql

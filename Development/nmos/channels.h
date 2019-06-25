@@ -1,7 +1,7 @@
 #ifndef NMOS_CHANNELS_H
 #define NMOS_CHANNELS_H
 
-#include "cpprest/json_utils.h"
+#include "cpprest/json_ops.h"
 #include "cpprest/basic_utils.h"
 #include "nmos/string_enum.h"
 

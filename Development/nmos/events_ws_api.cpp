@@ -1,6 +1,7 @@
 #include "nmos/events_ws_api.h"
 
 #include <boost/algorithm/string/join.hpp>
+#include "cpprest/json_storage.h"
 #include "nmos/api_utils.h"
 #include "nmos/is07_versions.h"
 #include "nmos/log_manip.h"
