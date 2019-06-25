@@ -43,6 +43,8 @@ Other open-source NMOS implementations:
 
 Recent activity on the project (newest first):
 
+- Updates for resolutions of specification issues in IS-04 v1.3 and IS-05 v1.1 final drafts
+- Experimental support for human-readable HTML rendering of NMOS responses
 - Experimental support for the rehomed (work in progress) IS-09 System API (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - IS-07 Events API and Events WebSocket API implementation and updated nmos-cpp-node example
 - Experimental support for secure communications (HTTPS, WSS)
