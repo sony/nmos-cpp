@@ -128,15 +128,13 @@ namespace nmos
     }
 
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number.json
-    web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step, const utility::string_t& unit)
+    web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step, const utility::string_t& unit, int64_t scale)
     {
         using web::json::value_of;
 
-        // type_number.json "scale" seems unnecessary?
-        // see https://github.com/AMWA-TV/nmos-event-tally/issues/31
-
         return value_of({
             { U("type"), nmos::event_types::number.name },
+            { 0 != scale ? U("scale") : U(""), scale },
             { U("min"), details::make_payload(min) },
             { U("max"), details::make_payload(max) },
             { 0 != step.value ? U("step") : U(""), details::make_payload(step) },

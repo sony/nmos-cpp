@@ -271,8 +271,9 @@ namespace nmos
 
                 activation[nmos::fields::mode] = value::null();
 
-                // It doesn't make sense for either of the TAI timestamps to be set when the mode is null
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/30
+                // Each of these fields "returns to null [...] when the resource is unlocked by setting the activation mode to null."
+                // See https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/v1.0-activation-response-schema.json
+                // and https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/activation-response-schema.json
                 activation[nmos::fields::requested_time] = value::null();
                 activation[nmos::fields::activation_time] = value::null();
 
@@ -320,9 +321,10 @@ namespace nmos
 
         std::pair<utility::string_t, utility::string_t> get_transport_type_data(const web::json::value& transport_file)
         {
-            // "Why would you want to set the transport file without also setting it's type? I mean, IS-05 doesn't
-            // strictly prohibit it but I don't imagine you can expect the receiver to do anything useful if you do."
-            // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/47
+            // "'data' and 'type' must both be strings or both be null"
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/v1.0-receiver-response-schema.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-transport-file.json
+
             if (!transport_file.has_field(nmos::fields::data)) throw transport_file_error("data is required");
 
             auto& transport_data = transport_file.at(nmos::fields::data);
@@ -528,13 +530,17 @@ namespace nmos
                 {
                     const auto& requested_time_or_null = nmos::fields::requested_time(staged_activation);
 
+                    // "If a 'bulk' request includes multiple sets of parameters for the same Sender or Receiver ID the behaviour is defined by the implementation.
+                    // In order to maximise interoperability clients are encouraged not to include the same Sender or Receiver ID multiple times in the same 'bulk' request."
+                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/docs/4.0.%20Behaviour.md#salvo-operation
                     if (!requested_time_or_null.is_null() && request_time == web::json::as<nmos::tai>(requested_time_or_null))
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation from the same bulk request";
 
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest);
                     }
-                    // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/49
+                    // "If an API implementation receives a new PATCH request to the /staged resource while an activation is in progress it SHOULD block the request until the previous activation is complete."
+                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.0.%20Behaviour.md#in-progress-activations
                     else if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation";
@@ -778,12 +784,10 @@ namespace nmos
 
         auto& resource = node_resource;
         const auto at = value::string(nmos::make_version(activation_time));
-        // "It isn't completely clear how a Sender/Receiver's subscribed ID should be set when the Sender or Receiver is in a
-        // 'parked' or unsubscribed state. Whilst the 'active' flag is the authoritative reference for this in v1.2+, in order
-        // to maintain backwards compatibility for v1.1/v1.0 the Receiver's subscription sender_id needs to be set to 'null'
-        // when it is not subscribed to anything."
-        // Therefore consider active as well as connected_id
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/issues/76
+
+        // "The 'receiver_id' key MUST be set to `null` in all cases except where a unicast push-based Sender is configured to transmit to an NMOS Receiver, and the 'active' key is set to 'true'."
+        // "The 'sender_id' key MUST be set to `null` in all cases except where the Receiver is currently configured to receive from an NMOS Sender, and the 'active' key is set to 'true'.
+        // See https://github.com/amwa-tv/nmos-discovery-registration/blob/v1.2.x/docs/4.3.%20Behaviour%20-%20Nodes.md#api-resources
         const auto ci = active && !connected_id.empty() ? value::string(connected_id) : value::null();
 
         // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters
@@ -1165,7 +1169,8 @@ namespace nmos
 
                     if (details::immediate_activation_pending == staged_state)
                     {
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/49
+                        // "Any GET requests to `/staged` during this time [while an activation is in progress] MAY also be blocked until the activation is complete."
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.0.%20Behaviour.md#in-progress-activations
                         if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting GET request for " << id_type << " due to a pending immediate activation";
@@ -1250,7 +1255,7 @@ namespace nmos
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for " << id_type << " which does not have one";
 
                         // An HTTP 404 response may be returned if "the transport type does not require a transport file".
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/pull/72
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L314-L315
                         set_error_reply(res, status_codes::NotFound, U("Sender does not have a transport file"));
                     }
                 }
@@ -1299,14 +1304,14 @@ namespace nmos
                 }
                 else
                 {
-                    // hmm, currently unclear whether subclassifications such as e.g. "urn:x-nmos:transport:rtp.mcast"
-                    // should be presented as the top-level category, e.g. "urn:x-nmos:transport:rtp"
-                    // proposed solution is to trim to the first '.' after the last ':'
-                    // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/57
+                    // "Returns the URN base for the transport type employed by this sender with any subclassifications or versions removed."
+                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L519
+                    // "Subclassifications are defined as the portion of the URN which follows the first occurrence of a '.', but prior to any '/' character."
+                    // "Versions are defined as the portion of the URN which follows the first occurrence of a '/'."
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/2.1.%20APIs%20-%20Common%20Keys.md#use-of-urns
                     const auto& transport_subclassification = nmos::fields::transport(matching_resource->data);
-                    const auto last_colon = transport_subclassification.find_last_of(U(':'));
-                    const auto next_dot = transport_subclassification.find(U('.'), last_colon + 1);
-                    set_reply(res, status_codes::OK, web::json::value::string(transport_subclassification.substr(0, next_dot)));
+                    const auto sub_version = transport_subclassification.find_first_of(U("./"));
+                    set_reply(res, status_codes::OK, web::json::value::string(transport_subclassification.substr(0, sub_version)));
                 }
             }
             else

@@ -116,7 +116,7 @@ namespace nmos
     web::json::value make_events_boolean_type();
 
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number.json
-    web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step = {}, const utility::string_t& unit = {});
+    web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step = {}, const utility::string_t& unit = {}, int64_t scale = {});
 
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string.json
     web::json::value make_events_string_type(int64_t min_length = {}, int64_t max_length = {}, const utility::string_t& pattern = {});

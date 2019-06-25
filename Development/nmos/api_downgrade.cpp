@@ -87,14 +87,16 @@ namespace nmos
                 nmos::types::source,
                 {
                     { nmos::is04_versions::v1_0, { U("id"), U("version"), U("label"), U("description"), U("format"), U("caps"), U("tags"), U("device_id"), U("parents") } },
-                    { nmos::is04_versions::v1_1, { U("grain_rate"), U("clock_name"), U("channels") } }
+                    { nmos::is04_versions::v1_1, { U("grain_rate"), U("clock_name"), U("channels") } },
+                    { nmos::is04_versions::v1_3, { U("event_type") } }
                 }
             },
             {
                 nmos::types::flow,
                 {
                     { nmos::is04_versions::v1_0, { U("id"), U("version"), U("label"), U("description"), U("format"), U("tags"), U("source_id"), U("parents") } },
-                    { nmos::is04_versions::v1_1, { U("grain_rate"), U("device_id"), U("media_type"), U("sample_rate"), U("bit_depth"), U("DID_SDID"), U("frame_width"), U("frame_height"), U("interlace_mode"), U("colorspace"), U("transfer_characteristic"), U("components") } }
+                    { nmos::is04_versions::v1_1, { U("grain_rate"), U("device_id"), U("media_type"), U("sample_rate"), U("bit_depth"), U("DID_SDID"), U("frame_width"), U("frame_height"), U("interlace_mode"), U("colorspace"), U("transfer_characteristic"), U("components") } },
+                    { nmos::is04_versions::v1_3, { U("event_type") } }
                 }
             },
             {
@@ -115,7 +117,8 @@ namespace nmos
                 nmos::types::subscription,
                 {
                     { nmos::is04_versions::v1_0, { U("id"), U("ws_href"), U("max_update_rate_ms"), U("persist"), U("resource_path"), U("params") } },
-                    { nmos::is04_versions::v1_1, { U("secure") } }
+                    { nmos::is04_versions::v1_1, { U("secure") } },
+                    { nmos::is04_versions::v1_3, { U("authorization") } }
                 }
             }
         };
@@ -142,6 +145,9 @@ namespace nmos
         // so downgrading from v1.2 to v1.1 and keeping the "active" property doesn't cause a schema violation, though this
         // could be an oversight...
         // See nmos-discovery-registration/APIs/schemas/receiver_core.json
+        // Further examples of this are the proposed addition in v1.3 of "attached_network_device" in the "interfaces"
+        // sub-objects of a node and of "authorization" in node "api.endpoints" and "services" and device "controls".
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/109/files#diff-251d9acc57a6ffaeed673153c6409f5f
 
         auto& resource_versions = resources_versions().at(resource_type);
         auto version_first = resource_versions.cbegin();

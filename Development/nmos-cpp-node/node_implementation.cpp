@@ -148,11 +148,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     // example temperature source, sender, flow
     if (0 <= nmos::fields::events_port(model.settings))
     {
-        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, model.settings);
-        // hmm, IS-07 suggests an additional "event_type" attribute in the IS-04 source,
-        // but that's not yet even incorporated in IS-04 v1.3-dev
-        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#2-is-04-highlights
-        // and https://github.com/AMWA-TV/nmos-discovery-registration/issues/88
+        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C")), model.settings);
 
         // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
@@ -162,12 +158,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
 
         auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
-        // hmm, empty string isn't a valid uri
-        // see https://github.com/AMWA-TV/nmos-event-tally/issues/38
-        auto manifest_href = U("");
-        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, manifest_href, { U("example") }, model.settings);
+        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example") }, model.settings);
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
-        // there may currently be no "auto" values to resolve for the WebSocket sender, but even so
+        // hmm, resolve_auto doesn't currently work for "auto" values defined for a WebSocket sender
         resolve_auto({ connection_temperature_ws_sender.id, connection_temperature_ws_sender.type }, connection_temperature_ws_sender.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);

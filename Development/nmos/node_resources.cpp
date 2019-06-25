@@ -8,6 +8,7 @@
 #include "nmos/connection_resources.h" // for nmos::make_connection_api_transportfile
 #include "nmos/components.h"
 #include "nmos/device_type.h"
+#include "nmos/event_type.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
 #include "nmos/is04_versions.h"
@@ -125,14 +126,29 @@ namespace nmos
         return resource;
     }
 
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
     nmos::resource make_video_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
         return make_generic_source(id, device_id, grain_rate, nmos::formats::video, settings);
     }
 
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
     nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
         return make_generic_source(id, device_id, grain_rate, nmos::formats::data, settings);
+    }
+
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/APIs/schemas/source_data.json
+    nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::event_type& event_type, const nmos::settings& settings)
+    {
+        using web::json::value;
+
+        auto resource = make_data_source(id, device_id, grain_rate, settings);
+        auto& data = resource.data;
+
+        data[U("event_type")] = value::string(event_type.name);
+
+        return resource;
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_audio.json
@@ -331,7 +347,9 @@ namespace nmos
         data[U("flow_id")] = !flow_id.empty() ? value::string(flow_id) : value::null();
         data[U("transport")] = value::string(transport.name);
         data[U("device_id")] = value::string(device_id);
-        data[U("manifest_href")] = value::string(manifest_href);
+        // "Permit a Sender's 'manifest_href' to be null when the transport type does not require a transport file" from IS-04 v1.3
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/97
+        data[U("manifest_href")] = !manifest_href.empty() ? value::string(manifest_href) : value::null();
 
         auto& interface_bindings = data[U("interface_bindings")] = value::array();
         for (const auto& interface : interfaces)

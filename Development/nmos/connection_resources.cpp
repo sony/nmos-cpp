@@ -239,7 +239,6 @@ namespace nmos
             return value_of({
                 { nmos::fields::connection_uri, value_of({
                     { nmos::fields::constraint_enum, value_of({
-                        U("auto"),
                         connection_uri.to_string()
                     }) }
                 }) }
@@ -290,9 +289,6 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            // ext_is_07_source_id and ext_is_07_rest_api_url for a sender are currently fixed, basically read-only
-            // but it's unclear whether "auto" need be permitted
-            // see https://github.com/AMWA-TV/nmos-event-tally/issues/42
             return value_of({
                 { nmos::fields::ext_is_07_source_id, value_of({
                     { nmos::fields::constraint_enum, value_of({
@@ -327,9 +323,6 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            // ext_is_07_source_id and ext_is_07_rest_api_url for a receiver are reasonably unconstrained
-            // but it's unclear whether "auto" need be permitted
-            // see https://github.com/AMWA-TV/nmos-event-tally/issues/42
             const auto unconstrained = value::object();
             return value_of({
                 { nmos::fields::ext_is_07_source_id, unconstrained },
@@ -426,9 +419,9 @@ namespace nmos
     {
         const auto version = *nmos::is07_versions::from_settings(settings).rbegin();
 
-        // "For consistency the ext_is_07_rest_api_url url offered will always end with a trailing slash."
-        // I'd rather be consistent with the general guidance...
-        // See https://github.com/AMWA-TV/nmos-event-tally/issues/22
+        // "The sender should append the relative path sources/{source_id}/"
+        // I'd rather be consistent with the general guidance regarding trailing slashes
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/4.0.%20Core%20models.md#ext_is_07_rest_api_url
         return web::uri_builder()
             .set_scheme(nmos::http_scheme(settings))
             .set_host(nmos::get_host(settings))

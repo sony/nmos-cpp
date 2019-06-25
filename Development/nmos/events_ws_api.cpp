@@ -101,8 +101,7 @@ namespace nmos
 
                 const auto resource_path = nmos::fields::resource_path(subscription->data);
                 const auto topic = resource_path + U('/');
-                // source_id and flow_id are per-message
-                // see https://github.com/AMWA-TV/nmos-event-tally/issues/39
+                // source_id and flow_id are set per-message depending on the source, unlike Query WebSocket API
                 data[nmos::fields::message] = details::make_grain({}, {}, topic);
 
                 // there is no (unchanged, a.k.a. sync) data with which to populate the grain
