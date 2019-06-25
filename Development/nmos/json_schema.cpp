@@ -134,6 +134,7 @@ namespace nmos
                 { make_schema_uri(v1_3::tag, _XPLATSTR("flow_audio_raw.json")), make_schema(v1_3::flow_audio_raw) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("flow_audio_coded.json")), make_schema(v1_3::flow_audio_coded) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("flow_data.json")), make_schema(v1_3::flow_data) },
+                { make_schema_uri(v1_3::tag, _XPLATSTR("flow_json_data.json")), make_schema(v1_3::flow_json_data) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("flow_sdianc_data.json")), make_schema(v1_3::flow_sdianc_data) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("flow_mux.json")), make_schema(v1_3::flow_mux) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("flow_audio.json")), make_schema(v1_3::flow_audio) },
@@ -151,6 +152,7 @@ namespace nmos
                 { make_schema_uri(v1_3::tag, _XPLATSTR("source_generic.json")), make_schema(v1_3::source_generic) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("source_audio.json")), make_schema(v1_3::source_audio) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("source_core.json")), make_schema(v1_3::source_core) },
+                { make_schema_uri(v1_3::tag, _XPLATSTR("source_data.json")), make_schema(v1_3::source_data) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("queryapi-subscriptions-post-request.json")), make_schema(v1_3::queryapi_subscriptions_post_request) },
                 { make_schema_uri(v1_3::tag, _XPLATSTR("nodeapi-receiver-target.json")), make_schema(v1_3::nodeapi_receiver_target) },
                 // v1.2

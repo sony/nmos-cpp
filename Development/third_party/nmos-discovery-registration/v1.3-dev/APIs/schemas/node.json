@@ -65,6 +65,11 @@
                     "type": "string",
                     "description": "Protocol supported by this instance of the Node API",
                     "enum": ["http", "https"]
+                  },
+                  "authorization": {
+                    "type": "boolean",
+                    "description": "This endpoint requires authorization",
+                    "default": false
                   }
                 }
               }
@@ -91,6 +96,11 @@
                 "type": "string",
                 "description": "URN identifying the type of service",
                 "format": "uri"
+              },
+              "authorization": {
+                "type": "boolean",
+                "description": "This endpoint requires authorization",
+                "default": false
               }
             }
           }

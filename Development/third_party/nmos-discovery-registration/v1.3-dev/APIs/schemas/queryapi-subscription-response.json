@@ -40,11 +40,16 @@
     "resource_path": {
       "description": "HTTP resource path in the query API which this subscription relates to",
       "type": "string",
-      "enum": ["", "/nodes", "/devices", "/sources", "/flows", "/senders", "/receivers"]
+      "enum": ["/nodes", "/devices", "/sources", "/flows", "/senders", "/receivers"]
     },
     "params": {
       "description": "Object containing attributes to filter the resource on as per the Query Parameters specification. Can be empty.",
       "type": "object"
+    },
+    "authorization": {
+      "type": "boolean",
+      "description": "This WebSocket requires authorization",
+      "default": false
     }
   }
 }

@@ -42,23 +42,37 @@
           ]
         },
         "colorspace" : {
-          "description" : "Colorspace used for the video",
+          "description" : "Colorspace used for the video. Any values not defined in the enum should be defined in the NMOS Parameter Registers",
           "type" : "string",
-          "enum" : [
-            "BT601",
-            "BT709",
-            "BT2020",
-            "BT2100"
+          "anyOf": [
+            {
+              "enum": [
+                "BT601",
+                "BT709",
+                "BT2020",
+                "BT2100"
+              ]
+            },
+            {
+              "pattern": "^\\S+$"
+            }
           ]
         },
         "transfer_characteristic": {
-          "description": "Transfer characteristic",
+          "description": "Transfer characteristic. Any values not defined in the enum should be defined in the NMOS Parameter Registers",
           "type": "string",
           "default": "SDR",
-          "enum": [
-            "SDR",
-            "HLG",
-            "PQ"
+          "anyOf": [
+            {
+              "enum": [
+                "SDR",
+                "HLG",
+                "PQ"
+              ]
+            },
+            {
+              "pattern": "^\\S+$"
+            }
           ]
         }
       }

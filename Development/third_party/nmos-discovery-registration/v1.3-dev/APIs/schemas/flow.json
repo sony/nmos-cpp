@@ -10,6 +10,7 @@
     { "$ref": "flow_audio_coded.json" },
     { "$ref": "flow_data.json" },
     { "$ref": "flow_sdianc_data.json" },
+    { "$ref": "flow_json_data.json" },
     { "$ref": "flow_mux.json" }
   ]
 }
