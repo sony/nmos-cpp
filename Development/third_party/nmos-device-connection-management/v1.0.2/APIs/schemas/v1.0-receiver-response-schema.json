@@ -4,6 +4,13 @@
   "description": "Describes a receiver",
   "title": "Receiver resource",
   "additionalProperties": false,
+  "required": [
+    "sender_id",
+    "master_enable",
+    "activation",
+    "transport_file",
+    "transport_params"
+  ],
   "properties": {
     "sender_id": {
       "description": "ID of the Sender subscribed to by this Receiver. This will be null if the receiver has not been configured to receive anything, or if it is receiving from a non-NMOS sender.",
@@ -18,12 +25,16 @@
       "type": "boolean"
     },
     "activation": {
-      "$ref": "v1.0-activation-schema.json"
+      "$ref": "v1.0-activation-response-schema.json"
     },
     "transport_file": {
       "type": "object",
-      "description": "Transport file parameters",
+      "description": "Transport file parameters. 'data' and 'type' must both be strings or both be null",
       "additionalProperties": false,
+      "required": [
+        "data",
+        "type"
+      ],
       "properties": {
         "data": {
           "description": "Content of the transport file",

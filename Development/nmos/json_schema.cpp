@@ -82,8 +82,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
-            using namespace nmos::is05_schemas::v1_0_1;
-            const utility::string_t tag(_XPLATSTR("v1.0.1"));
+            using namespace nmos::is05_schemas::v1_0_2;
+            const utility::string_t tag(_XPLATSTR("v1.0.2"));
 
             const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-sender-stage-schema.json"));
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-receiver-stage-schema.json"));

@@ -25,7 +25,7 @@ namespace nmos
             extern const char* receiver_transport_params_ext;
         }
 
-        namespace v1_0_1
+        namespace v1_0_2
         {
             extern const char* v1_0_activation_schema;
             extern const char* v1_0_sender_stage_schema;
