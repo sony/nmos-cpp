@@ -47,7 +47,7 @@
           },
           "interface_ip": {
             "type": "string",
-            "description": "IP address of the network interface the receiver should use. The receiver should provide an enum in the constraints endpoint, which should contain 'auto', and the available interface addresses. If set to auto in multicast mode the receiver should determine which interface to use for itself, for example by using the routing tables. The behaviour of auto is undefined in unicast mode, and controllers should supply a specific interface address.",
+            "description": "IP address of the network interface the receiver should use. The receiver should provide an enum in the constraints endpoint, which should contain the available interface addresses. If set to auto in multicast mode the receiver should determine which interface to use for itself, for example by using the routing tables. The behaviour of auto is undefined in unicast mode, and controllers should supply a specific interface address.",
             "anyOf": [{
                 "format": "ipv4"
               },
@@ -64,7 +64,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTP packets (auto = 5004)",
+            "description": "destination port for RTP packets (auto = 5004 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -75,7 +75,7 @@
           },
           "fec_destination_ip": {
             "type": "string",
-            "description": "May be used if NAT is being used at the destination (auto = multicast_ip (multicast mode) or interface_ip (unicast mode))",
+            "description": "May be used if NAT is being used at the destination (auto = multicast_ip (multicast mode) or interface_ip (unicast mode) by default)",
             "anyOf": [{
                 "format": "ipv4"
               },
@@ -89,7 +89,7 @@
           },
           "fec_mode": {
             "type": "string",
-            "description": "forward error correction mode to apply. (auto = highest possible number of dimensions available)",
+            "description": "forward error correction mode to apply. (auto = highest available number of dimensions by default)",
             "enum": [
               "auto",
               "1D",
@@ -101,7 +101,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTP Column FEC packets (auto = RTP destination_port + 2)",
+            "description": "destination port for RTP Column FEC packets (auto = RTP destination_port + 2 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -111,14 +111,14 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTP Row FEC packets (auto = RTP destination_port + 4)",
+            "description": "destination port for RTP Row FEC packets (auto = RTP destination_port + 4 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
           },
           "rtcp_destination_ip": {
             "type": "string",
-            "description": "Destination IP address of RTCP packets (auto = multicast_ip (multicast mode) or interface_ip (unicast mode))",
+            "description": "Destination IP address of RTCP packets (auto = multicast_ip (multicast mode) or interface_ip (unicast mode) by default)",
             "anyOf": [{
                 "format": "ipv4"
               },
@@ -139,7 +139,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTCP packets (auto = RTP destination_port + 1)",
+            "description": "destination port for RTCP packets (auto = RTP destination_port + 1 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"

@@ -13,7 +13,7 @@
         "properties": {
           "source_ip": {
             "type": "string",
-            "description": "IP address from which RTP packets will be sent (IP address of interface bound to this output). The sender should provide an enum in the constraints endpoint, which should contain 'auto', and the available interface addresses. If the parameter is set to auto the sender should establish for itself which interface it should use, based on routing rules or its own internal configuration.",
+            "description": "IP address from which RTP packets will be sent (IP address of interface bound to this output). The sender should provide an enum in the constraints endpoint, which should contain the available interface addresses. If the parameter is set to auto the sender should establish for itself which interface it should use, based on routing rules or its own internal configuration.",
             "anyOf": [{
                 "format": "ipv4"
               },
@@ -44,7 +44,7 @@
               "integer",
               "string"
             ],
-            "description": "source port for RTP packets (auto = 5004)",
+            "description": "source port for RTP packets (auto = 5004 by default)",
             "minimum": 0,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -54,7 +54,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTP packets (auto = 5004)",
+            "description": "destination port for RTP packets (auto = 5004 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -65,7 +65,7 @@
           },
           "fec_destination_ip": {
             "type": "string",
-            "description": "May be used if NAT is being used at the destination (auto = destination_ip)",
+            "description": "May be used if NAT is being used at the destination (auto = destination_ip by default)",
             "anyOf": [{
                 "format": "ipv4"
               },
@@ -110,7 +110,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTP Column FEC packets (auto = RTP destination_port + 2)",
+            "description": "destination port for RTP Column FEC packets (auto = RTP destination_port + 2 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -120,7 +120,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTP Row FEC packets (auto = RTP destination_port + 4)",
+            "description": "destination port for RTP Row FEC packets (auto = RTP destination_port + 4 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -130,7 +130,7 @@
               "integer",
               "string"
             ],
-            "description": "source port for RTP FEC packets (auto = RTP source_port + 2)",
+            "description": "source port for RTP FEC packets (auto = RTP source_port + 2 by default)",
             "minimum": 0,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -140,7 +140,7 @@
               "integer",
               "string"
             ],
-            "description": "source port for RTP FEC packets (auto = RTP source_port + 4)",
+            "description": "source port for RTP FEC packets (auto = RTP source_port + 4 by default)",
             "minimum": 0,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -151,7 +151,7 @@
           },
           "rtcp_destination_ip": {
             "type": "string",
-            "description": "IP address to which RTCP packets will be sent (auto = same as RTP destination_ip)",
+            "description": "IP address to which RTCP packets will be sent (auto = same as RTP destination_ip by default)",
             "anyOf": [{
                 "format": "ipv4"
               },
@@ -168,7 +168,7 @@
               "integer",
               "string"
             ],
-            "description": "destination port for RTCP packets (auto = RTP destination_port + 1)",
+            "description": "destination port for RTCP packets (auto = RTP destination_port + 1 by default)",
             "minimum": 1,
             "maximum": 65535,
             "pattern": "^auto$"
@@ -178,7 +178,7 @@
               "integer",
               "string"
             ],
-            "description": "source port for RTCP packets (auto = RTP source_port + 1)",
+            "description": "source port for RTCP packets (auto = RTP source_port + 1 by default)",
             "minimum": 0,
             "maximum": 65535,
             "pattern": "^auto$"

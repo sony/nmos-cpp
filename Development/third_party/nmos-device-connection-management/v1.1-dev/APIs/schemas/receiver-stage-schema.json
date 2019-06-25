@@ -21,28 +21,10 @@
       "$ref": "activation-schema.json"
     },
     "transport_file": {
-      "type": "object",
-      "description": "Transport file parameters",
-      "additionalProperties": false,
-      "properties": {
-        "data": {
-          "description": "Content of the transport file",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "type": {
-          "description": "IANA assigned media type for file (e.g application/sdp)",
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
+      "$ref": "receiver-transport-file.json"
     },
     "transport_params": {
-      "description": "Transport-specific parameters",
+      "description": "Transport-specific parameters. If this parameter is included in a client request it must include the same number of array elements (or 'legs') as specified in the constraints. If no changes are required to a specific leg it must be included as an empty object ({}).",
       "anyOf": [{
           "$ref": "receiver_transport_params_rtp.json"
         },

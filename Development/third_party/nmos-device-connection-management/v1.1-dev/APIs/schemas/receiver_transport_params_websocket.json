@@ -24,6 +24,18 @@
                 "type": "null"
               }
             ]
+          },
+          "connection_authorization": {
+            "type": [
+              "string",
+              "boolean"
+            ],
+            "description": "Indication of whether authorization is required to make a connection. If the parameter is set to auto the Receiver should establish for itself whether authorization should be used, based on its own internal configuration.",
+            "enum": [
+              "auto",
+              true,
+              false
+            ]
           }
         }
       }

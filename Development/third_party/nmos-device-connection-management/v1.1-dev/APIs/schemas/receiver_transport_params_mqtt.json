@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "Describes MQTT Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. MQTT receivers must support all parameters in this schema.",
+  "description": "Describes MQTT Receiver transport parameters. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint. MQTT Receivers must support all parameters in this schema.",
   "title": "MQTT Receiver Transport Parameters",
   "type": "array",
   "items": {
@@ -16,7 +16,7 @@
               "string",
               "null"
             ],
-            "description": "Hostname or IP hosting the MQTT broker. The Receiver should provide an enum in the constraints endpoint, which should contain 'auto', and the available interface addresses formatted as connection URIs. If the parameter is set to auto the Receiver should establish for itself which broker it should use, based on a discovery mechanism or its own internal configuration. A null value indicates that the receiver has not yet been configured.",
+            "description": "Hostname or IP hosting the MQTT broker. If the parameter is set to auto the Receiver should establish for itself which broker it should use, based on a discovery mechanism or its own internal configuration. A null value indicates that the Receiver has not yet been configured.",
             "anyOf": [{
                 "pattern": "^auto$"
               },
@@ -44,12 +44,40 @@
             "maximum": 65535,
             "pattern": "^auto$"
           },
+          "broker_protocol": {
+            "type": "string",
+            "description": "Indication of whether TLS is used for communication with the broker. 'mqtt' indicates operation without TLS, and 'secure-mqtt' indicates use of TLS. If the parameter is set to auto the Receiver should establish for itself which protocol it should use, based on a discovery mechanism or its own internal configuration.",
+            "enum": [
+              "auto",
+              "mqtt",
+              "secure-mqtt"
+            ]
+          },
+          "broker_authorization": {
+            "type": [
+              "string",
+              "boolean"
+            ],
+            "description": "Indication of whether authorization is used for communication with the broker. If the parameter is set to auto the Receiver should establish for itself whether authorization should be used, based on a discovery mechanism or its own internal configuration.",
+            "enum": [
+              "auto",
+              true,
+              false
+            ]
+          },
           "broker_topic": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The topic which MQTT messages will be received from via the MQTT broker. A null value indicates that the receiver has not yet been configured."
+            "description": "The topic which MQTT messages will be received from via the MQTT broker. A null value indicates that the Receiver has not yet been configured."
+          },
+          "connection_status_broker_topic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The topic used for MQTT status messages such as MQTT Last Will which are received via the MQTT broker. A null value indicates that the Receiver has not yet been configured, or is not using a connection status topic."
           }
         }
       }

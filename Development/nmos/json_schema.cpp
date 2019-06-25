@@ -239,6 +239,7 @@ namespace nmos
                 // v1.1
                 { make_schema_uri(v1_1::tag, _XPLATSTR("sender-stage-schema.json")), make_schema(v1_1::sender_stage_schema) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("receiver-stage-schema.json")), make_schema(v1_1::receiver_stage_schema) },
+                { make_schema_uri(v1_1::tag, _XPLATSTR("receiver-transport-file.json")), make_schema(v1_1::receiver_transport_file) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("activation-schema.json")), make_schema(v1_1::activation_schema) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_rtp.json")), make_schema(v1_1::sender_transport_params_rtp) },
                 { make_schema_uri(v1_1::tag, _XPLATSTR("sender_transport_params_dash.json")), make_schema(v1_1::sender_transport_params_dash) },

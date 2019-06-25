@@ -28,29 +28,7 @@
       "$ref": "activation-response-schema.json"
     },
     "transport_file": {
-      "type": "object",
-      "description": "Transport file parameters",
-      "additionalProperties": false,
-      "required": [
-        "data",
-        "type"
-      ],
-      "properties": {
-        "data": {
-          "description": "Content of the transport file",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "type": {
-          "description": "IANA assigned media type for file (e.g application/sdp)",
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
+      "$ref": "receiver-transport-file.json"
     },
     "transport_params": {
       "description": "Transport-specific parameters",

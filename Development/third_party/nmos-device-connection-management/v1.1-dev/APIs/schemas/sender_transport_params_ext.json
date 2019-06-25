@@ -4,7 +4,7 @@
   "title": "External Sender Transport Parameters",
   "type": "object",
   "patternProperties": {
-    "^ext_[a-z A-Z 0-9 _]+$":{
+    "^ext_[a-zA-Z0-9_]+$":{
       "description": "Properties defined in other AMWA IS specifications",
       "type":[
         "string",
