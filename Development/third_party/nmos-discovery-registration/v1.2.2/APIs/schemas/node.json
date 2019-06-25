@@ -36,7 +36,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "v[0-9]+.[0-9]+"
+                "pattern": "^v[0-9]+\\.[0-9]+$"
               }
             },
             "endpoints": {
@@ -117,7 +117,7 @@
                 "anyOf": [
                   {
                     "type": "string",
-                    "pattern": "^([0-9a-f]{2}[-]){5}([0-9a-f]{2})$",
+                    "pattern": "^([0-9a-f]{2}-){5}([0-9a-f]{2})$",
                     "description": "When the Chassis ID is a MAC address, use this format"
                   },
                   {
@@ -134,7 +134,7 @@
               "port_id": {
                 "description": "Port ID of the interface, as signalled in LLDP or via ARP responses from this node. Must be a MAC address",
                 "type": "string",
-                "pattern": "^([0-9a-f]{2}[-]){5}([0-9a-f]{2})$"
+                "pattern": "^([0-9a-f]{2}-){5}([0-9a-f]{2})$"
               },
               "name": {
                 "description": "Name of the interface (unique in scope of this node).  This attribute is used by sub-resources of this node such as senders and receivers to refer to interfaces to which they are bound.",

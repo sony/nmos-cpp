@@ -33,17 +33,17 @@
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
     },
     "origin_timestamp": {
-      "description": "TAI timestamp at which this data Grain was generated in the format <ts_secs>:<ts_nsecs>",
+      "description": "TAI timestamp at which this data Grain's payload was generated in the format <ts_secs>:<ts_nsecs>",
       "type": "string",
       "pattern": "^[0-9]+:[0-9]+$"
     },
     "sync_timestamp": {
-      "description": "TAI timestamp at which this data Grain was generated in the format <ts_secs>:<ts_nsecs>",
+      "description": "TAI timestamp at which this data Grain's payload was generated in the format <ts_secs>:<ts_nsecs>",
       "type": "string",
       "pattern": "^[0-9]+:[0-9]+$"
     },
     "creation_timestamp": {
-      "description": "TAI timestamp at which this data Grain was generated in the format <ts_secs>:<ts_nsecs>",
+      "description": "TAI timestamp at which this data Grain's metadata was generated in the format <ts_secs>:<ts_nsecs>",
       "type": "string",
       "pattern": "^[0-9]+:[0-9]+$"
     },
@@ -108,7 +108,6 @@
           "description": "Query API topic which has been subscribed to using this websocket",
           "type": "string",
           "enum": [
-            "/",
             "/nodes/",
             "/devices/",
             "/sources/",
@@ -130,7 +129,7 @@
               "path": {
                 "description": "ID of the resource which has undergone a change (may be a Node ID, Device ID etc.)",
                 "type": "string",
-                "pattern": "^((nodes|devices|sources|flows|senders|receivers)/)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
               },
               "pre": {
                 "description": "Representation of the resource undergoing a change prior to the change occurring. Omitted if the resource didn't previously exist.",

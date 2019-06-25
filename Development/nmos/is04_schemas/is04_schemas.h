@@ -43,7 +43,7 @@ namespace nmos
             extern const char* nodeapi_receiver_target;
         }
 
-        namespace v1_2_1
+        namespace v1_2_2
         {
             extern const char* registrationapi_resource_post_request;
             extern const char* clock_internal;
