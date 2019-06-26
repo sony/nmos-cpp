@@ -7,8 +7,12 @@ namespace web
 {
     namespace json
     {
+        class value;
+
         namespace details
         {
+            bool has_escape_chars(const web::json::value& string_value);
+
             // escape characters inside a string for serialization
             utility::string_t escape_characters(const utility::string_t& unescaped);
 #ifdef _UTF16_STRINGS

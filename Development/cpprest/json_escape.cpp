@@ -1,5 +1,30 @@
 #include "cpprest/json_escape.h"
 
+#include "cpprest/json.h"
+#include "detail/private_access.h"
+
+namespace web
+{
+    namespace json
+    {
+        namespace details
+        {
+
+            struct value_value { typedef std::unique_ptr<_Value>(value::*type); };
+            struct string_has_escape_char { typedef bool(_String::*type); };
+
+            bool has_escape_chars(const web::json::value& string_value)
+            {
+                string_value.as_string(); // may throw json_exception("not a string") 
+                return static_cast<_String*>((string_value.*detail::stowed<value_value>::value).get())->*detail::stowed<string_has_escape_char>::value;
+            }
+        }
+    }
+}
+
+template struct detail::stow_private<web::json::details::value_value, &web::json::value::m_value>;
+template struct detail::stow_private<web::json::details::string_has_escape_char, &web::json::details::_String::m_has_escape_char>;
+
 namespace web
 {
     namespace json
