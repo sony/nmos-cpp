@@ -122,6 +122,7 @@ namespace web
                 case web::json::value::Object: return lhs.as_object() < rhs.as_object();
                 case web::json::value::Array: return lhs.as_array() < rhs.as_array();
                 case web::json::value::Null: return false;
+                default: return false;
                 }
             }
             return false;
