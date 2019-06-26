@@ -1,6 +1,8 @@
 #ifndef CPPREST_JSON_VISIT_H
 #define CPPREST_JSON_VISIT_H
 
+#include <array>
+#include <cinttypes>
 #include <functional>
 #include <stack>
 #include <type_traits>
@@ -193,9 +195,10 @@ namespace web
 
                 static const CharType quotation_mark = '\"';
 
-                static const CharType value_null[];
-                static const CharType value_true[];
-                static const CharType value_false[];
+                // null-terminated strings
+                static const CharType value_null[5];
+                static const CharType value_true[5];
+                static const CharType value_false[6];
             };
 
             template <typename CharType>
@@ -204,6 +207,60 @@ namespace web
             const CharType literals<CharType>::value_true[] = { 't', 'r', 'u', 'e', 0 };
             template <typename CharType>
             const CharType literals<CharType>::value_false[] = { 'f', 'a', 'l', 's', 'e', 0 };
+
+            // write json numbers as null-terminated strings to a buffer
+            template <typename CharType>
+            struct num_put
+            {
+                // maximum required buffer capacity for double, based on a '-', no loss, '.', "e-123", null terminator
+                static const size_t capacity_double = 1 + (std::numeric_limits<double>::digits10 + 2) + 1 + 5 + 1; 
+                // maximum required buffer capacity for signed, based on a '-', no loss, null terminator
+                static const size_t capacity_signed = 1 + (std::numeric_limits<int64_t>::digits10 + 1) + 1;
+                // maximum required buffer capacity for unsigned, based on no loss, null terminator
+                static const size_t capacity_unsigned = (std::numeric_limits<uint64_t>::digits10 + 1) + 1;
+
+                static size_t put(CharType* buffer, size_t capacity, double v, std::streamsize precision = 0);
+                static size_t put(CharType* buffer, size_t capacity, int64_t v);
+                static size_t put(CharType* buffer, size_t capacity, uint64_t v);
+            };
+
+            template <>
+            inline size_t num_put<char>::put(char* buffer, size_t capacity, double v, std::streamsize precision)
+            {
+                return std::snprintf(buffer, capacity, "%.*g", (int)precision, v);
+            }
+
+            template <>
+            inline size_t num_put<char>::put(char* buffer, size_t capacity, int64_t v)
+            {
+                return std::snprintf(buffer, capacity, "%" PRId64, v);
+            }
+
+            template <>
+            inline size_t num_put<char>::put(char* buffer, size_t capacity, uint64_t v)
+            {
+                return std::snprintf(buffer, capacity, "%" PRIu64, v);
+            }
+
+#ifdef _WIN32
+            template <>
+            inline size_t num_put<wchar_t>::put(wchar_t* buffer, size_t capacity, double v, std::streamsize precision)
+            {
+                return std::swprintf(buffer, capacity, L"%.*g", (int)precision, v);
+            }
+
+            template <>
+            inline size_t num_put<wchar_t>::put(wchar_t* buffer, size_t capacity, int64_t v)
+            {
+                return std::swprintf(buffer, capacity, L"%" PRId64, v);
+            }
+
+            template <>
+            inline size_t num_put<wchar_t>::put(wchar_t* buffer, size_t capacity, uint64_t v)
+            {
+                return std::swprintf(buffer, capacity, L"%" PRIu64, v);
+            }
+#endif
         }
 
         // basic_ostream_visitor can be used to serialize a value with no extraneous whitespace
@@ -213,6 +270,7 @@ namespace web
         {
             typedef CharType char_type;
             typedef details::literals<char_type> literals;
+            typedef details::num_put<char_type> num_put;
 
             basic_ostream_visitor(std::basic_ostream<char_type>& os) : os(os)
             {
@@ -227,13 +285,17 @@ namespace web
             }
             void operator()(const web::json::value& value, web::json::boolean_tag)
             {
-                os << (value.as_bool() ? literals::value_true : literals::value_false);
+                if (value.as_bool())
+                    put(literals::value_true);
+                else
+                    put(literals::value_false);
             }
             void operator()(const web::json::value& value, web::json::string_tag)
             {
-                os << literals::quotation_mark;
-                os << escape_characters(value.as_string());
-                os << literals::quotation_mark;
+                put(literals::quotation_mark);
+                const auto cs = escape_characters(value.as_string());
+                put(cs.data(), cs.size());
+                put(literals::quotation_mark);
             }
             void operator()(const web::json::value& value, web::json::object_tag)
             {
@@ -245,42 +307,52 @@ namespace web
             }
             void operator()(const web::json::value& value, web::json::null_tag)
             {
-                os << literals::value_null;
+                put(literals::value_null);
             }
 
             // visit_number callbacks
             void operator()(const web::json::value& value, web::json::double_tag)
             {
-                os << value.as_number().to_double();
+                std::array<char_type, num_put::capacity_double> cs;
+                put(cs.data(), num_put::put(cs.data(), cs.size(), value.as_number().to_double(), os.precision()));
             }
             void operator()(const web::json::value& value, web::json::signed_tag)
             {
-                os << value.as_number().to_int64();
+                std::array<char_type, num_put::capacity_signed> cs;
+                put(cs.data(), num_put::put(cs.data(), cs.size(), value.as_number().to_int64()));
             }
             void operator()(const web::json::value& value, web::json::unsigned_tag)
             {
-                os << value.as_number().to_uint64();
+                std::array<char_type, num_put::capacity_unsigned> cs;
+                put(cs.data(), num_put::put(cs.data(), cs.size(), value.as_number().to_uint64()));
             }
 
             // visit_object callbacks
-            void operator()(web::json::enter_object_tag) { os << literals::enter_object; }
+            void operator()(web::json::enter_object_tag) { put(literals::enter_object); }
             void operator()(web::json::enter_field_tag) {}
-            void operator()(web::json::field_separator_tag) { os << literals::field_separator; }
+            void operator()(web::json::field_separator_tag) { put(literals::field_separator); }
             void operator()(web::json::leave_field_tag) {}
-            void operator()(web::json::object_separator_tag) { os << literals::object_separator; }
-            void operator()(web::json::leave_object_tag) { os << literals::leave_object; }
+            void operator()(web::json::object_separator_tag) { put(literals::object_separator); }
+            void operator()(web::json::leave_object_tag) { put(literals::leave_object); }
 
             // visit_array callbacks
-            void operator()(web::json::enter_array_tag) { os << literals::enter_array; }
+            void operator()(web::json::enter_array_tag) { put(literals::enter_array); }
             void operator()(web::json::enter_element_tag) {}
             void operator()(web::json::leave_element_tag) {}
-            void operator()(web::json::array_separator_tag) { os << literals::array_separator; }
-            void operator()(web::json::leave_array_tag) { os << literals::leave_array; }
+            void operator()(web::json::array_separator_tag) { put(literals::array_separator); }
+            void operator()(web::json::leave_array_tag) { put(literals::leave_array); }
 
             static std::basic_string<char_type> escape_characters(const utility::string_t& str);
 
         protected:
             std::basic_ostream<char_type>& os;
+
+            void put(char_type c) { os.rdbuf()->sputc(c); }
+            void put(const char_type* cs, size_t n) { os.rdbuf()->sputn(cs, n); }
+
+            void put(size_t n, char_type c) { while (n-- > 0) put(c); }
+            template <size_t N>
+            void put(const char_type(& cs)[N]) { put(cs, N - 1); }
         };
 
         template <>
@@ -329,7 +401,7 @@ namespace web
             // visit_object callbacks
             void operator()(web::json::enter_object_tag tag) { base::operator()(tag); ++depth; empty = true; }
             void operator()(web::json::enter_field_tag tag) { if (empty) end_line(); start_line(); base::operator()(tag); }
-            void operator()(web::json::field_separator_tag tag) { base::operator()(tag); os << ' '; }
+            void operator()(web::json::field_separator_tag tag) { base::operator()(tag); put(' '); }
             void operator()(web::json::leave_field_tag tag) { base::operator()(tag); empty = false; }
             void operator()(web::json::object_separator_tag tag) { base::operator()(tag); end_line(); }
             void operator()(web::json::leave_object_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); base::operator()(tag); }
@@ -342,15 +414,15 @@ namespace web
             void operator()(web::json::leave_array_tag tag) { if (!empty) end_line(); --depth; if (!empty) start_line(); base::operator()(tag); }
 
         protected:
-            using base::os;
+            using base::put;
 
             size_t indent;
 
             size_t depth;
             bool empty;
 
-            void start_line() { os << std::basic_string<char_type>(depth * indent, ' '); }
-            void end_line() { os << '\n'; }
+            void start_line() { put(depth * indent, ' '); }
+            void end_line() { put('\n'); }
         };
 
         typedef basic_pretty_visitor<utility::char_t> pretty_visitor;
@@ -365,11 +437,12 @@ namespace web
                 template <typename CharType>
                 struct html_entities
                 {
-                    static const CharType amp[];
-                    static const CharType lt[];
-                    static const CharType gt[];
-                    static const CharType quot[];
-                    static const CharType apos[];
+                    // null-terminated strings
+                    static const CharType amp[6];
+                    static const CharType lt[5];
+                    static const CharType gt[5];
+                    static const CharType quot[7];
+                    static const CharType apos[7];
                 };
                 template <typename CharType>
                 const CharType html_entities<CharType>::amp[] = { '&', 'a', 'm', 'p', ';', 0 };
@@ -408,7 +481,6 @@ namespace web
             }
 
             // html_visitor can be used to serialize a value to HTML, to allow formatting and syntax highlighting using a stylesheet
-            // hmm, could probably also be templated on CharType
             template <typename CharType>
             struct basic_html_visitor : basic_ostream_visitor<CharType>
             {
