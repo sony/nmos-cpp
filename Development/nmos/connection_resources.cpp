@@ -1,5 +1,6 @@
 #include "nmos/connection_resources.h"
 
+#include <boost/logic/tribool.hpp>
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
@@ -227,9 +228,27 @@ namespace nmos
 
     namespace details
     {
+        inline web::json::value boolean_or_unconstrained(boost::tribool v)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return indeterminate(v) ? unconstrained : value_of({
+                { nmos::fields::constraint_enum, value_of({
+                    web::json::value::boolean(v)
+                }) }
+            });
+        }
+
+        inline web::json::value boolean_or_auto(boost::tribool v)
+        {
+            return indeterminate(v) ? web::json::value::string(U("auto")) : web::json::value::boolean(v);
+        }
+
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-websocket.json
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_websocket.json
-        web::json::value make_connection_websocket_sender_core_constraints(const web::uri& connection_uri)
+        web::json::value make_connection_websocket_sender_core_constraints(const web::uri& connection_uri, boost::tribool connection_authorization)
         {
             using web::json::value;
             using web::json::value_of;
@@ -241,44 +260,48 @@ namespace nmos
                     { nmos::fields::constraint_enum, value_of({
                         connection_uri.to_string()
                     }) }
-                }) }
+                }) },
+                { nmos::fields::connection_authorization, boolean_or_unconstrained(connection_authorization) }
             });
         }
 
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.3.%20Behaviour%20-%20WebSocket%20Transport%20Type.md#sender-parameter-sets
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_websocket.json
-        web::json::value make_connection_websocket_sender_staged_core_parameter_set(const web::uri& connection_uri)
+        web::json::value make_connection_websocket_sender_staged_core_parameter_set(const web::uri& connection_uri, boost::tribool connection_authorization)
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::connection_uri, connection_uri.to_string() }
+                { nmos::fields::connection_uri, connection_uri.to_string() },
+                { nmos::fields::connection_authorization, boolean_or_auto(connection_authorization) }
             });
         }
 
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-websocket.json
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_websocket.json
-        web::json::value make_connection_websocket_receiver_core_constraints()
+        web::json::value make_connection_websocket_receiver_core_constraints(boost::tribool connection_authorization)
         {
             using web::json::value;
             using web::json::value_of;
 
             const auto unconstrained = value::object();
             return value_of({
-                { nmos::fields::connection_uri, unconstrained }
+                { nmos::fields::connection_uri, unconstrained },
+                { nmos::fields::connection_authorization, boolean_or_unconstrained(connection_authorization) }
             });
         }
 
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.3.%20Behaviour%20-%20WebSocket%20Transport%20Type.md#receiver-parameter-sets
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_websocket.json
-        web::json::value make_connection_websocket_receiver_staged_core_parameter_set()
+        web::json::value make_connection_websocket_receiver_staged_core_parameter_set(boost::tribool connection_authorization)
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::connection_uri, value::null() }
+                { nmos::fields::connection_uri, value::null() },
+                { nmos::fields::connection_authorization, boolean_or_auto(connection_authorization) }
             });
         }
 
@@ -355,9 +378,10 @@ namespace nmos
         auto data = details::make_connection_resource_core(id, false);
 
         const auto connection_uri = make_events_ws_api_connection_uri(device_id, settings);
+        const auto connection_authorization = false;
         const auto rest_api_url = make_events_api_ext_is_07_rest_api_url(source_id, settings);
 
-        auto constraints = details::make_connection_websocket_sender_core_constraints(connection_uri);
+        auto constraints = details::make_connection_websocket_sender_core_constraints(connection_uri, connection_authorization);
         auto ext_constraints = details::make_connection_events_websocket_sender_ext_constraints(source_id, rest_api_url);
         web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
 
@@ -365,7 +389,7 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
-        auto transport_params = details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri);
+        auto transport_params = details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri, connection_authorization);
         auto ext_transport_params = details::make_connection_events_websocket_sender_staged_ext_parameter_set(source_id, rest_api_url);
         web::json::insert(transport_params, ext_transport_params.as_object().begin(), ext_transport_params.as_object().end());
 
@@ -382,7 +406,9 @@ namespace nmos
 
         auto data = details::make_connection_resource_core(id, false);
 
-        auto constraints = details::make_connection_websocket_receiver_core_constraints();
+        const auto connection_authorization = false;
+
+        auto constraints = details::make_connection_websocket_receiver_core_constraints(connection_authorization);
         auto ext_constraints = details::make_connection_events_websocket_receiver_ext_constraints();
         web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
 
@@ -390,7 +416,7 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
-        auto transport_params = details::make_connection_websocket_receiver_staged_core_parameter_set();
+        auto transport_params = details::make_connection_websocket_receiver_staged_core_parameter_set(connection_authorization);
         auto ext_transport_params = details::make_connection_events_websocket_receiver_staged_ext_parameter_set();
         web::json::insert(transport_params, ext_transport_params.as_object().begin(), ext_transport_params.as_object().end());
 

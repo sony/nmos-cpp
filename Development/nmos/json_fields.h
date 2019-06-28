@@ -122,6 +122,8 @@ namespace nmos
         const web::json::field_as_value_or activation_time{ U("activation_time"), {} }; // string or null
         const web::json::field_as_value_or transport_file{ U("transport_file"), {} }; // object
         const web::json::field_as_value transport_params{ U("transport_params") }; // array
+
+        // for urn:x-nmos:transport:rtp
         const web::json::field_as_value_or multicast_ip{ U("multicast_ip"), {} }; // string or null
         const web::json::field_as_value_or interface_ip{ U("interface_ip"), {} }; // string or null
         const web::json::field_as_value_or source_ip{ U("source_ip"), {} }; // string or null
@@ -138,7 +140,9 @@ namespace nmos
         const web::json::field_as_value_or rtcp_destination_port{ U("rtcp_destination_port"), {} }; // string or integer
         const web::json::field_as_value_or rtcp_source_port{ U("rtcp_source_port"), {} }; // string or integer
         const web::json::field_as_value_or fec_mode{ U("fec_mode"), {} }; // string
+        // for urn:x-nmos:transport:websocket
         const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string or null
+        const web::json::field_as_value_or connection_authorization{ U("connection_authorization"), {} }; // string or bool
 
         // IS-07 Event & Tally
 
