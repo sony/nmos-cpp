@@ -25,21 +25,21 @@ namespace nmos
     // each IS-05 resource's data is a json object with an "id" field and a field for each Connection API
     // endpoint of that logical single resource
     // i.e.
-    // a "constraints" field, which must have an array value conforming to the v1.0-constraints-schema,
-    // "staged" and "active" fields, which must each have a value conforming to the v1.0-sender-response-schema or v1.0-receiver-response-schema,
+    // a "constraints" field, which must have an array value conforming to the constraints-schema,
+    // "staged" and "active" fields, which must each have a value conforming to the sender-response-schema or receiver-response-schema,
     // and for senders, also a "transportfile" field, the value of which must be an object, with either
     // "data" and "type" fields, or an "href" field
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-constraints-schema.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-sender-response-schema.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-receiver-response-schema.json
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender-response-schema.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-response-schema.json
 
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7);
-    web::json::value make_connection_sender_transportfile(const utility::string_t& transportfile);
-    web::json::value make_connection_sender_transportfile(const web::uri& transportfile);
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7);
+    web::json::value make_connection_rtp_sender_transportfile(const utility::string_t& transportfile);
+    web::json::value make_connection_rtp_sender_transportfile(const web::uri& transportfile);
     // transportfile may be URL or the contents of the SDP file (yeah, yuck)
-    nmos::resource make_connection_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
+    nmos::resource make_connection_rtp_sender(const nmos::id& id, bool smpte2022_7, const utility::string_t& transportfile);
 
-    nmos::resource make_connection_receiver(const nmos::id& id, bool smpte2022_7);
+    nmos::resource make_connection_rtp_receiver(const nmos::id& id, bool smpte2022_7);
 
     // Although these functions make "connection" (IS-05) resources, the details are defined by IS-07 Event & Tally
     // so maybe these belong in nmos/events_resources.h or their own file, e.g. nmos/connection_events_resources.h?

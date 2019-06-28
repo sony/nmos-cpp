@@ -18,7 +18,7 @@
 #include "sdp/sdp.h"
 
 // as part of activation, the sender /transportfile should be updated based on the active transport parameters
-void set_connection_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params);
+void set_connection_rtp_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params);
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
@@ -121,9 +121,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
         sdp_params = nmos::make_sdp_parameters(source.data, flow.data, sender.data, { U("PRIMARY"), U("SECONDARY") });
 
-        auto connection_sender = nmos::make_connection_sender(sender_id, true);
+        auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
         resolve_auto({ connection_sender.id, connection_sender.type }, connection_sender.data[nmos::fields::endpoint_active]);
-        set_connection_sender_transportfile(connection_sender, sdp_params);
+        set_connection_rtp_sender_transportfile(connection_sender, sdp_params);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
         insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
@@ -138,7 +138,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         // add example "natural grouping" hint
         web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
 
-        auto connection_receiver = nmos::make_connection_receiver(receiver_id, true);
+        auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
         resolve_auto({ connection_receiver.id, connection_receiver.type }, connection_receiver.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
@@ -291,7 +291,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
                 // see https://github.com/AMWA-TV/nmos-event-tally/issues/36
                 if (nmos::types::sender == id_type.second && nmos::fields::endpoint_constraints(connection_resource.data).has_field(nmos::fields::rtp_enabled))
                 {
-                    set_connection_sender_transportfile(connection_resource, sdp_params);
+                    set_connection_rtp_sender_transportfile(connection_resource, sdp_params);
                 }
             });
 
@@ -327,10 +327,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 }
 
 // as part of activation, the sender /transportfile should be updated based on the active transport parameters
-void set_connection_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params)
+void set_connection_rtp_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params)
 {
     auto& transport_params = connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params];
     auto session_description = nmos::make_session_description(sdp_params, transport_params);
     auto sdp = utility::s2us(sdp::make_session_description(session_description));
-    connection_sender.data[nmos::fields::endpoint_transportfile] = nmos::make_connection_sender_transportfile(sdp);
+    connection_sender.data[nmos::fields::endpoint_transportfile] = nmos::make_connection_rtp_sender_transportfile(sdp);
 }
