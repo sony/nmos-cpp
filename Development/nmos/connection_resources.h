@@ -49,6 +49,9 @@ namespace nmos
 
     web::uri make_events_ws_api_connection_uri(const nmos::id& device_id, const nmos::settings& settings);
     web::uri make_events_api_ext_is_07_rest_api_url(const nmos::id& source_id, const nmos::settings& settings);
+
+    utility::string_t make_events_mqtt_broker_topic(const nmos::id& source_id, const nmos::settings& settings);
+    utility::string_t make_events_mqtt_connection_status_broker_topic(const nmos::id& connection_id, const nmos::settings& settings);
 }
 
 #endif

@@ -137,6 +137,12 @@ namespace nmos
     // returns "ws" or "wss" depending on settings
     utility::string_t ws_scheme(const nmos::settings& settings);
 
+    // returns "mqtt" or "secure-mqtt"
+    utility::string_t mqtt_scheme(bool secure);
+
+    // returns "mqtt" or "secure-mqtt" depending on settings
+    utility::string_t mqtt_scheme(const nmos::settings& settings);
+
     namespace details
     {
         // exception to skip other route handlers and then send the response (see add_api_finally_handler)

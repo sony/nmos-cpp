@@ -143,6 +143,15 @@ namespace nmos
         // for urn:x-nmos:transport:websocket
         const web::json::field_as_value_or connection_uri{ U("connection_uri"), {} }; // string or null
         const web::json::field_as_value_or connection_authorization{ U("connection_authorization"), {} }; // string or bool
+        // for urn:x-nmos:transport:mqtt
+        const web::json::field_as_value_or source_host{ U("source_host"), {} }; // string or null
+        //const web::json::field_as_value_or source_port{ U("source_port"), {} }; // string or integer
+        const web::json::field_as_value_or destination_host{ U("destination_host"), {} }; // string or null
+        //const web::json::field_as_value_or destination_port{ U("destination_port"), {} }; // string or integer
+        const web::json::field_as_value_or broker_protocol{ U("broker_protocol"), {} }; // string
+        const web::json::field_as_value_or broker_authorization{ U("broker_authorization"), {} }; // string or bool
+        const web::json::field_as_value_or broker_topic{ U("broker_topic"), {} }; // string or null
+        const web::json::field_as_value_or connection_status_broker_topic{ U("connection_status_broker_topic"), {} }; // string or null
 
         // IS-07 Event & Tally
 

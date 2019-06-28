@@ -305,6 +305,92 @@ namespace nmos
             });
         }
 
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-mqtt.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_mqtt.json
+        web::json::value make_connection_mqtt_sender_core_constraints(boost::tribool broker_secure, boost::tribool broker_authorization, const utility::string_t& broker_topic, const utility::string_t& connection_status_broker_topic)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::destination_host, unconstrained },
+                { nmos::fields::destination_port, unconstrained },
+                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        nmos::mqtt_scheme(broker_secure)
+                    }) }
+                }) },
+                { nmos::fields::broker_authorization, boolean_or_unconstrained(broker_authorization) },
+                { nmos::fields::broker_topic, broker_topic.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        broker_topic
+                    }) }
+                }) },
+                { nmos::fields::connection_status_broker_topic, connection_status_broker_topic.empty() ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        connection_status_broker_topic
+                    }) }
+                }) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.2.%20Behaviour%20-%20MQTT%20Transport%20Type.md#sender-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_mqtt.json
+        web::json::value make_connection_mqtt_sender_staged_core_parameter_set(boost::tribool broker_secure, boost::tribool broker_authorization, const utility::string_t& broker_topic, const utility::string_t& connection_status_broker_topic)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::destination_host, U("auto") },
+                { nmos::fields::destination_port,  U("auto") },
+                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? U("auto") : nmos::mqtt_scheme(broker_secure) },
+                { nmos::fields::broker_authorization, boolean_or_auto(broker_authorization) },
+                { nmos::fields::broker_topic, broker_topic.empty() ? value::null() : value::string(broker_topic) },
+                { nmos::fields::connection_status_broker_topic, connection_status_broker_topic.empty() ? value::null() : value::string(connection_status_broker_topic) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-mqtt.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_mqtt.json
+        web::json::value make_connection_mqtt_receiver_core_constraints(boost::tribool broker_secure, boost::tribool broker_authorization)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::source_host, unconstrained },
+                { nmos::fields::source_port, unconstrained },
+                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? unconstrained : value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        nmos::mqtt_scheme(broker_secure)
+                    }) }
+                }) },
+                { nmos::fields::broker_authorization, boolean_or_unconstrained(broker_authorization) },
+                { nmos::fields::broker_topic, unconstrained },
+                { nmos::fields::connection_status_broker_topic, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.2.%20Behaviour%20-%20MQTT%20Transport%20Type.md#receiver-parameter-sets
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_mqtt.json
+        web::json::value make_connection_mqtt_receiver_staged_core_parameter_set(boost::tribool broker_secure, boost::tribool broker_authorization)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::source_host, U("auto") },
+                { nmos::fields::source_port, U("auto") },
+                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? U("auto") : nmos::mqtt_scheme(broker_secure) },
+                { nmos::fields::broker_authorization, boolean_or_auto(broker_authorization) },
+                { nmos::fields::broker_topic, value::null() },
+                { nmos::fields::connection_status_broker_topic, value::null() }
+            });
+        }
+
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
         web::json::value make_connection_events_websocket_sender_ext_constraints(const nmos::id& source_id, const web::uri& rest_api_url)
@@ -362,6 +448,59 @@ namespace nmos
 
             return value_of({
                 { nmos::fields::ext_is_07_source_id, value::null() },
+                { nmos::fields::ext_is_07_rest_api_url, value::null() }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        web::json::value make_connection_events_mqtt_sender_ext_constraints(const web::uri& rest_api_url)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::ext_is_07_rest_api_url, value_of({
+                    { nmos::fields::constraint_enum, value_of({
+                        rest_api_url.to_string()
+                    }) }
+                }) }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        web::json::value make_connection_events_mqtt_sender_staged_ext_parameter_set(const web::uri& rest_api_url)
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::ext_is_07_rest_api_url, rest_api_url.to_string() }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        web::json::value make_connection_events_mqtt_receiver_ext_constraints()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            const auto unconstrained = value::object();
+            return value_of({
+                { nmos::fields::ext_is_07_rest_api_url, unconstrained }
+            });
+        }
+
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        web::json::value make_connection_events_mqtt_receiver_staged_ext_parameter_set()
+        {
+            using web::json::value;
+            using web::json::value_of;
+
+            return value_of({
                 { nmos::fields::ext_is_07_rest_api_url, value::null() }
             });
         }
@@ -454,5 +593,25 @@ namespace nmos
             .set_port(nmos::fields::events_port(settings))
             .set_path(U("/x-nmos/events/") + make_api_version(version) + U("/sources/") + source_id)
             .to_uri();
+    }
+
+    utility::string_t make_events_mqtt_broker_topic(const nmos::id& source_id, const nmos::settings& settings)
+    {
+        const auto version = *nmos::is07_versions::from_settings(settings).rbegin();
+
+        // "To facilitate filtering, the recommended format is x-nmos/events/{version}/sources/{sourceId},
+        // where {version} is the version of this specification, e.g. v1.0, and {sourceId} is the associated source id."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/5.1.%20Transport%20-%20MQTT.md#32-broker_topic
+        return U("x-nmos/events/") + make_api_version(version) + U("/sources/") + source_id;
+    }
+
+    utility::string_t make_events_mqtt_connection_status_broker_topic(const nmos::id& connection_id, const nmos::settings& settings)
+    {
+        const auto version = *nmos::is07_versions::from_settings(settings).rbegin();
+
+        // "The connection_status_broker_topic parameter holds the sender's MQTT connection status topic.
+        // The recommended format is x-nmos/events/{version}/connections/{connectionId}."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/5.1.%20Transport%20-%20MQTT.md#33-connection_status_broker_topic
+        return U("x-nmos/events/") + make_api_version(version) + U("/connections/") + connection_id;
     }
 }

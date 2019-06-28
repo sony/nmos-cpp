@@ -671,6 +671,18 @@ namespace nmos
     {
         return web::ws_scheme(nmos::experimental::fields::client_secure(settings));
     }
+
+    // returns "mqtt" or "secure-mqtt"
+    utility::string_t mqtt_scheme(bool secure)
+    {
+        return secure ? U("secure-mqtt") : U("mqtt");
+    }
+
+    // returns "mqtt" or "secure-mqtt" depending on settings
+    utility::string_t mqtt_scheme(const nmos::settings& settings)
+    {
+        return mqtt_scheme(nmos::experimental::fields::client_secure(settings));
+    }
 }
 
 #if 0
