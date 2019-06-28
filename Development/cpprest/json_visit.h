@@ -44,6 +44,8 @@ namespace web
             case value::Null:
                 visitor(value, null_tag{});
                 break;
+            default:
+                break;
             }
         }
 
