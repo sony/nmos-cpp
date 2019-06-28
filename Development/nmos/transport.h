@@ -22,6 +22,14 @@ namespace nmos
         const transport mqtt{ U("urn:x-nmos:transport:mqtt") };
         const transport websocket{ U("urn:x-nmos:transport:websocket") };
     }
+
+    // "Subclassifications are defined as the portion of the URN which follows the first occurrence of a '.', but prior to any '/' character."
+    // "Versions are defined as the portion of the URN which follows the first occurrence of a '/'."
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/2.1.%20APIs%20-%20Common%20Keys.md#use-of-urns
+    inline nmos::transport transport_base(const nmos::transport& transport)
+    {
+        return nmos::transport{ transport.name.substr(0, transport.name.find_first_of(U("./"))) };
+    }
 }
 
 #endif

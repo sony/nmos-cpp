@@ -38,11 +38,18 @@ namespace nmos
     void set_resource_subscription(nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time);
 
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L281
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_rtp.json
+    // "In many cases this is a simple operation, and the behaviour is very clearly defined in the relevant transport parameter schemas.
+    // For example a port number may be offset from the RTP port number by a pre-determined value. The specification makes suggestions
+    // of a sensible default value for "auto" to resolve to, but the Sender or Receiver may choose any value permitted by the schema
+    // and constraints."
+    // This function implements those sensible defaults for the RTP transport type.
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-    void resolve_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port = 5004);
+    void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port = 5004);
 
     namespace details
     {

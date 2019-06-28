@@ -72,6 +72,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
         if (sender_id == id_type.first)
         {
+            nmos::resolve_rtp_auto(id_type.second, transport_params);
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [] { return value::string(U("192.168.255.0")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [] { return value::string(U("192.168.255.1")); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
@@ -79,15 +80,15 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         }
         else if (receiver_id == id_type.first)
         {
+            nmos::resolve_rtp_auto(id_type.second, transport_params);
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.2")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.3")); });
         }
         else if (temperature_ws_sender_id == id_type.first)
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(nmos::make_events_ws_api_connection_uri(device_id, model.settings).to_string()); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
         }
-
-        nmos::resolve_auto(id_type.second, transport_params);
     };
 
     // example node
@@ -160,7 +161,6 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
         auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example") }, model.settings);
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
-        // hmm, resolve_auto doesn't currently work for "auto" values defined for a WebSocket sender
         resolve_auto({ connection_temperature_ws_sender.id, connection_temperature_ws_sender.type }, connection_temperature_ws_sender.data[nmos::fields::endpoint_active]);
 
         insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);

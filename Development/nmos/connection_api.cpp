@@ -12,6 +12,7 @@
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/transport.h"
 #include "nmos/thread_utils.h"
 #include "nmos/version.h"
 #include "sdp/sdp.h"
@@ -93,12 +94,11 @@ namespace nmos
             });
         }
 
-        static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints()
+        static const std::map<nmos::type, std::set<utility::string_t>>& rtp_auto_constraints()
         {
-            // These are the constraints that support "auto" in /staged; cf. resolve_auto
-            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
-            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
-            // Hmm, this needs revising to handle the new transport types in v1.1, with different "auto" parameters.
+            // These are the constraints that support "auto" in /staged; cf. resolve_rtp_auto
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_rtp.json
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -135,8 +135,70 @@ namespace nmos
             return auto_constraints;
         }
 
-        // Make a json schema from /constraints
-        web::json::value make_constraints_schema(const nmos::type& type, const web::json::value& constraints)
+        static const std::map<nmos::type, std::set<utility::string_t>>& websocket_auto_constraints()
+        {
+            // These are the constraints that support "auto" in /staged
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_websocket.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_websocket.json
+            static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
+            {
+                {
+                    nmos::types::sender,
+                    {
+                        nmos::fields::connection_authorization
+                    }
+                },
+                {
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::connection_authorization
+                    }
+                }
+            };
+            return auto_constraints;
+        }
+
+        static const std::map<nmos::type, std::set<utility::string_t>>& mqtt_auto_constraints()
+        {
+            // These are the constraints that support "auto" in /staged
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_mqtt.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_mqtt.json
+            static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
+            {
+                {
+                    nmos::types::sender,
+                    {
+                        nmos::fields::destination_host,
+                        nmos::fields::destination_port,
+                        nmos::fields::broker_protocol,
+                        nmos::fields::broker_authorization
+                    }
+                },
+                {
+                    nmos::types::receiver,
+                    {
+                        nmos::fields::source_host,
+                        nmos::fields::source_port,
+                        nmos::fields::broker_protocol,
+                        nmos::fields::broker_authorization
+                    }
+                }
+            };
+            return auto_constraints;
+        }
+
+        static const std::map<nmos::type, std::set<utility::string_t>>& auto_constraints(const nmos::transport& transport_base)
+        {
+            if (nmos::transports::rtp == transport_base) return rtp_auto_constraints();
+            if (nmos::transports::websocket == transport_base) return websocket_auto_constraints();
+            if (nmos::transports::mqtt == transport_base) return mqtt_auto_constraints();
+
+            static const std::map<nmos::type, std::set<utility::string_t>> no_auto_constraints;
+            return no_auto_constraints;
+        }
+
+        // Make a json schema from /constraints and /transporttype
+        web::json::value make_constraints_schema(const nmos::type& type, const web::json::value& constraints, const nmos::transport& transport_base)
         {
             using web::json::value;
             using web::json::value_of;
@@ -145,7 +207,7 @@ namespace nmos
 
             auto items = value::array();
 
-            auto& type_auto_constraints = auto_constraints().at(type);
+            auto& type_auto_constraints = auto_constraints(transport_base).at(type);
 
             for (const auto& leg : constraints.as_array())
             {
@@ -182,9 +244,9 @@ namespace nmos
         }
 
         // Validate staged endpoint against constraints
-        void validate_staged_constraints(const nmos::type& type, const web::json::value& constraints, const web::json::value& staged)
+        void validate_staged_constraints(const nmos::type& type, const web::json::value& constraints, const nmos::transport& transport_base, const web::json::value& staged)
         {
-            const auto schema = make_constraints_schema(type, constraints);
+            const auto schema = make_constraints_schema(type, constraints, transport_base);
             const auto uri = web::uri{U("/constraints")};
 
             // Validate staged JSON syntax according to the schema
@@ -640,7 +702,16 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating staged transport parameters against constraints";
 
-                details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), merged);
+                auto matching_resource = find_resource(model.node_resources, id_type);
+                if (model.node_resources.end() == matching_resource)
+                {
+                    throw std::logic_error("matching IS-04 resource not found");
+                }
+                else
+                {
+                    const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
+                    details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
+                }
 
                 // Finally, update the staged endpoint
 
@@ -813,14 +884,18 @@ namespace nmos
     }
 
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_sender_transport_params_rtp.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0_receiver_transport_params_rtp.json
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L281
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_rtp.json
+    // "In many cases this is a simple operation, and the behaviour is very clearly defined in the relevant transport parameter schemas.
+    // For example a port number may be offset from the RTP port number by a pre-determined value. The specification makes suggestions
+    // of a sensible default value for "auto" to resolve to, but the Sender or Receiver may choose any value permitted by the schema
+    // and constraints."
+    // This function implements those sensible defaults for the RTP transport type.
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-    // Hmm, this needs revising to handle the new transport types in v1.1, with different "auto" parameters.
-    void resolve_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port)
+    void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port)
     {
         if (nmos::types::sender == type)
         {
@@ -1114,8 +1189,17 @@ namespace nmos
                 if (req.headers().end() != accept && U("application/schema+json") == web::http::details::get_mime_type(accept->second))
                 {
                     // Experimental extension - constraints as JSON Schema
-                    res.headers().set_content_type(U("application/schema+json"));
-                    set_reply(res, status_codes::OK, nmos::details::make_constraints_schema(resource->type, nmos::fields::endpoint_constraints(resource->data)));
+                    auto matching_resource = find_resource(model.node_resources, id_type);
+                    if (model.node_resources.end() == matching_resource)
+                    {
+                        throw std::logic_error("matching IS-04 resource not found");
+                    }
+                    else
+                    {
+                        const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
+                        res.headers().set_content_type(U("application/schema+json"));
+                        set_reply(res, status_codes::OK, nmos::details::make_constraints_schema(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification)));
+                    }
                 }
                 else
                 {
@@ -1306,12 +1390,8 @@ namespace nmos
                 {
                     // "Returns the URN base for the transport type employed by this sender with any subclassifications or versions removed."
                     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L519
-                    // "Subclassifications are defined as the portion of the URN which follows the first occurrence of a '.', but prior to any '/' character."
-                    // "Versions are defined as the portion of the URN which follows the first occurrence of a '/'."
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/2.1.%20APIs%20-%20Common%20Keys.md#use-of-urns
-                    const auto& transport_subclassification = nmos::fields::transport(matching_resource->data);
-                    const auto sub_version = transport_subclassification.find_first_of(U("./"));
-                    set_reply(res, status_codes::OK, web::json::value::string(transport_subclassification.substr(0, sub_version)));
+                    const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
+                    set_reply(res, status_codes::OK, web::json::value::string(nmos::transport_base(transport_subclassification).name));
                 }
             }
             else

@@ -4,7 +4,6 @@
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
-#include "nmos/connection_api.h" // for nmos::resolve_auto
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
 #include "nmos/resource.h"
@@ -155,10 +154,8 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_rtp_sender_staged_core_parameter_set(), smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
-        // All instances of "auto" should be resolved into the actual values that will be used
-        // but in some cases the behaviour is more complex, and may be determined by the vendor.
-        // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-        nmos::resolve_auto(types::sender, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
+        // See nmos::resolve_rtp_auto
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
 
@@ -216,10 +213,8 @@ namespace nmos
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_rtp_receiver_staged_core_parameter_set(), smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
-        // All instances of "auto" should be resolved into the actual values that will be used
-        // but in some cases the behaviour is more complex, and may be determined by the vendor.
-        // This function does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-        nmos::resolve_auto(types::receiver, data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
+        // See nmos::resolve_rtp_auto
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
 
