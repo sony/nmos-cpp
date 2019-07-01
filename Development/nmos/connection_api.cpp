@@ -145,6 +145,7 @@ namespace nmos
                 {
                     nmos::types::sender,
                     {
+                        nmos::fields::connection_uri,
                         nmos::fields::connection_authorization
                     }
                 },
