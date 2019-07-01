@@ -617,6 +617,12 @@ namespace nmos
 
             if (resources.end() != resource)
             {
+                auto matching_resource = find_resource(model.node_resources, id_type);
+                if (model.node_resources.end() == matching_resource)
+                {
+                    throw std::logic_error("matching IS-04 resource not found");
+                }
+
                 // Merge this patch request into a *copy* of the current staged endpoint
                 // so that the merged parameters can be validated against the constraints
                 // before the current values are overwritten.
@@ -642,43 +648,17 @@ namespace nmos
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Processing transport file";
 
-                        if (transport_type_data.first != U("application/sdp"))
-                        {
-                            throw transport_file_error("unexpected type: " + utility::us2s(transport_type_data.first));
-                        }
-
                         try
                         {
-                            const auto session_description = sdp::parse_session_description(utility::us2s(transport_type_data.second));
-                            auto sdp_transport_params = nmos::parse_session_description(session_description);
+                            // Validate and parse the transport file for this receiver
 
-                            // Validate transport file according to the IS-04 receiver
-
-                            auto receiver = find_resource(model.node_resources, id_type);
-                            if (model.node_resources.end() != receiver)
-                            {
-                                validate_sdp_parameters(receiver->data, sdp_transport_params.first);
-                            }
+                            const auto transport_file_params = parse_rtp_transport_file(*matching_resource, *resource, transport_type_data.first, transport_type_data.second, gate);
 
                             // Merge the transport file into the transport parameters
 
                             auto& transport_params = nmos::fields::transport_params(merged);
 
-                            if (1 == transport_params.size() && 2 == sdp_transport_params.second.size())
-                            {
-                                web::json::pop_back(sdp_transport_params.second);
-                            }
-
-                            // "Where a Receiver supports SMPTE 2022-7 but is required to Receive a non-SMPTE 2022-7 stream,
-                            // only the first set of transport parameters should be used. rtp_enabled in the second set of parameters
-                            // must be set to false"
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#operation-with-smpte-2022-7
-                            if (2 == transport_params.size() && 1 == sdp_transport_params.second.size())
-                            {
-                                web::json::push_back(sdp_transport_params.second, web::json::value_of({ { U("rtp_enabled"), false } }));
-                            }
-
-                            web::json::merge_patch(transport_params, sdp_transport_params.second);
+                            web::json::merge_patch(transport_params, transport_file_params);
                         }
                         catch (const web::json::json_exception& e)
                         {
@@ -703,16 +683,8 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating staged transport parameters against constraints";
 
-                auto matching_resource = find_resource(model.node_resources, id_type);
-                if (model.node_resources.end() == matching_resource)
-                {
-                    throw std::logic_error("matching IS-04 resource not found");
-                }
-                else
-                {
-                    const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
-                    details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
-                }
+                const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
+                details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
 
                 // Finally, update the staged endpoint
 
@@ -882,6 +854,41 @@ namespace nmos
                 { nmos::fields::sender_id, ci }
             });
         }
+    }
+
+    // Validate and parse the specified transport file for the specified receiver
+    web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
+    {
+        if (transport_file_type != U("application/sdp"))
+        {
+            throw std::runtime_error("unexpected type: " + utility::us2s(transport_file_type));
+        }
+
+        const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
+        auto sdp_transport_params = nmos::parse_session_description(session_description);
+
+        // Validate transport file according to the IS-04 receiver
+
+        validate_sdp_parameters(receiver.data, sdp_transport_params.first);
+
+        // could equally use nmos::fields::interface_bindings(receiver.data) or nmos::fields::transport_params(nmos::fields::endpoint_staged(connection_receiver.data))
+        const auto legs = nmos::fields::endpoint_constraints(connection_receiver.data).size();
+
+        if (1 == legs && 2 == sdp_transport_params.second.size())
+        {
+            web::json::pop_back(sdp_transport_params.second);
+        }
+
+        // "Where a Receiver supports SMPTE 2022-7 but is required to Receive a non-SMPTE 2022-7 stream,
+        // only the first set of transport parameters should be used. rtp_enabled in the second set of parameters
+        // must be set to false"
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#operation-with-smpte-2022-7
+        if (2 == legs && 1 == sdp_transport_params.second.size())
+        {
+            web::json::push_back(sdp_transport_params.second, web::json::value_of({ { U("rtp_enabled"), false } }));
+        }
+
+        return sdp_transport_params.second;
     }
 
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"

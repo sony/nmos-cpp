@@ -37,6 +37,9 @@ namespace nmos
     // (This function should be called after nmos::set_connection_resource_active.)
     void set_resource_subscription(nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time);
 
+    // Validate and parse the specified transport file for the specified receiver
+    web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate);
+
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L281
     // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
