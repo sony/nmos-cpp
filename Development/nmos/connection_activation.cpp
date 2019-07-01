@@ -113,7 +113,10 @@ namespace nmos
                         if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                     }, activation_time);
 
-                    set_transportfile(*matching_resource, connection_resource, connection_resource.data[nmos::fields::endpoint_transportfile]);
+                    if (nmos::types::sender == id_type.second)
+                    {
+                        set_transportfile(*matching_resource, connection_resource, connection_resource.data[nmos::fields::endpoint_transportfile]);
+                    }
                 });
 
                 // Update the IS-04 resource
