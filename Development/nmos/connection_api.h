@@ -19,11 +19,29 @@ namespace nmos
     struct tai;
     struct type;
 
+    // a transport_file_parser validates the specified transport file type/data for the specified (IS-04/IS-05) resource/connection_resource and returns a transport_params array to be merged
+    // (the default transport file parser only supports RTP transport via the default SDP parser)
+    typedef std::function<web::json::value(const nmos::resource&, const nmos::resource&, const utility::string_t&, const utility::string_t&, slog::base_gate&)> transport_file_parser;
+
+    namespace details
+    {
+        // a connection_resource_patch_validator can be used to perform any final validation of the specified merged /staged value for the specified (IS-04/IS-05) resource/connection_resource
+        // that cannot be expressed by the schemas or /constraints endpoint
+        typedef std::function<void(const nmos::resource&, const nmos::resource&, const web::json::value&, slog::base_gate&)> connection_resource_patch_validator;
+    }
+
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate);
+
+    inline web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, slog::base_gate& gate)
+    {
+        return make_connection_api(model, parse_transport_file, {}, gate);
+    }
+
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate);
 
     namespace details
     {
-        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate);
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, transport_file_parser parse_transport_file, connection_resource_patch_validator validate_merged, slog::base_gate& gate);
     }
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource

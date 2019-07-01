@@ -19,9 +19,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -46,9 +46,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_connection_api(model, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_connection_api(model, parse_transport_file, validate_merged, gate));
 
         return connection_api;
+    }
+
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate)
+    {
+        return make_connection_api(model, &parse_rtp_transport_file, {}, gate);
     }
 
     namespace details
@@ -248,13 +253,13 @@ namespace nmos
         void validate_staged_constraints(const nmos::type& type, const web::json::value& constraints, const nmos::transport& transport_base, const web::json::value& staged)
         {
             const auto schema = make_constraints_schema(type, constraints, transport_base);
-            const auto uri = web::uri{U("/constraints")};
+            const auto uri = web::uri{ U("/constraints") };
 
             // Validate staged JSON syntax according to the schema
 
             const web::json::experimental::json_validator validator
             {
-                [&](const web::uri& ) { return schema; },
+                [&](const web::uri&) { return schema; },
                 { uri }
             };
 
@@ -512,7 +517,7 @@ namespace nmos
 
         inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const std::exception& debug)
         {
-            return make_connection_resource_patch_error_response(code,{}, utility::s2us(debug.what()));
+            return make_connection_resource_patch_error_response(code, {}, utility::s2us(debug.what()));
         }
 
         // Basic theory of implementation of PATCH /staged
@@ -560,7 +565,7 @@ namespace nmos
         // By the time we reacquire the model lock anything may have happened, but we can identify with the above whether to send
         // a success response or an error, and in the success case, release the 'per-resource lock' by updating the staged
         // activation mode, requested_time and activation_time.
-        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, slog::base_gate& gate)
+        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -652,7 +657,7 @@ namespace nmos
                         {
                             // Validate and parse the transport file for this receiver
 
-                            const auto transport_file_params = parse_rtp_transport_file(*matching_resource, *resource, transport_type_data.first, transport_type_data.second, gate);
+                            const auto transport_file_params = parse_transport_file(*matching_resource, *resource, transport_type_data.first, transport_type_data.second, gate);
 
                             // Merge the transport file into the transport parameters
 
@@ -685,6 +690,13 @@ namespace nmos
 
                 const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
                 details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
+
+                // Perform any final validation
+
+                if (validate_merged)
+                {
+                    validate_merged(*matching_resource, *resource, merged, gate);
+                }
 
                 // Finally, update the staged endpoint
 
@@ -724,12 +736,12 @@ namespace nmos
             model.notify();
         }
 
-        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
         {
             auto lock = model.write_lock();
             const auto request_time = tai_now(); // during write lock to ensure uniqueness
 
-            auto result = handle_connection_resource_patch(model, lock, version, id_type, patch, request_time, gate);
+            auto result = handle_connection_resource_patch(model, lock, version, id_type, patch, request_time, parse_transport_file, validate_merged, gate);
 
             if (web::http::is_success_status_code(result.first))
             {
@@ -939,7 +951,7 @@ namespace nmos
         }
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate_)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -966,10 +978,10 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L39-L44
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L73-L78
 
-        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, parse_transport_file, validate_merged, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
-            return details::extract_json(req, gate).then([&model, req, res, parameters, gate](value body) mutable
+            return details::extract_json(req, gate).then([&model, req, res, parameters, parse_transport_file, validate_merged, gate](value body) mutable
             {
                 auto lock = model.write_lock();
                 const auto request_time = tai_now(); // during write lock to ensure uniqueness
@@ -1039,7 +1051,7 @@ namespace nmos
 
                     try
                     {
-                        result = details::handle_connection_resource_patch(model, lock, version, { id, type }, patch[nmos::fields::params], request_time, gate);
+                        result = details::handle_connection_resource_patch(model, lock, version, { id, type }, patch[nmos::fields::params], request_time, parse_transport_file, validate_merged, gate);
                     }
                     catch (...)
                     {
@@ -1222,10 +1234,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, parse_transport_file, validate_merged, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
-            return details::extract_json(req, gate).then([&model, req, res, parameters, gate](value body) mutable
+            return details::extract_json(req, gate).then([&model, req, res, parameters, parse_transport_file, validate_merged, gate](value body) mutable
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
@@ -1235,7 +1247,7 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Operation requested for single " << id_type;
 
-                details::handle_connection_resource_patch(res, model, version, id_type, body, gate);
+                details::handle_connection_resource_patch(res, model, version, id_type, body, parse_transport_file, validate_merged, gate);
 
                 return true;
             });
