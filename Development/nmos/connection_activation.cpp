@@ -100,7 +100,8 @@ namespace nmos
                     auto matching_resource = find_resource(model.node_resources, id_type);
                     if (model.node_resources.end() == matching_resource)
                     {
-                        throw std::logic_error("matching IS-04 resource not found");
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " during activation: " << "matching IS-04 resource not found";
+                        return;
                     }
 
                     nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
