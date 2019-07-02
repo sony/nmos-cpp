@@ -1,7 +1,6 @@
 #include "node_implementation.h"
 
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
-#include "nmos/connection_activation.h"
 #include "nmos/connection_api.h" // for nmos::resolve_rtp_auto, etc.
 #include "nmos/connection_resources.h"
 #include "nmos/events_resources.h"
@@ -17,7 +16,7 @@
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
-// and then waits for sender/receiver activations or shutdown.
+// starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
 void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 {
     using web::json::value;
@@ -35,7 +34,6 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto temperature_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/1"));
     auto temperature_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/1"));
     auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
-    auto temperature_ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, model.settings);
 
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
@@ -60,61 +58,14 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         }
     };
 
-    // although which properties may need to be defaulted depends on the resource type,
-    // the default value will almost always be different for each resource
-    const auto resolve_auto = [device_id, sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
-    {
-        const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-
-        // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-        if (sender_id == id_type.first)
-        {
-            nmos::resolve_rtp_auto(id_type.second, transport_params);
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [] { return value::string(U("192.168.255.0")); });
-            nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [] { return value::string(U("192.168.255.1")); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
-            nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
-        }
-        else if (receiver_id == id_type.first)
-        {
-            nmos::resolve_rtp_auto(id_type.second, transport_params);
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.2")); });
-            nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.3")); });
-        }
-        else if (temperature_ws_sender_id == id_type.first)
-        {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(temperature_ws_sender_uri.to_string()); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
-        }
-    };
-
-    // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    auto& node_resources = model.node_resources;
-    const auto set_transportfile = [&node_resources, source_id, flow_id, sender_id](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
-    {
-        if (sender_id == connection_sender.id)
-        {
-            auto source = nmos::find_resource(node_resources, { source_id, nmos::types::source });
-            auto flow = nmos::find_resource(node_resources, { flow_id, nmos::types::flow });
-            if (node_resources.end() == source || node_resources.end() == flow)
-            {
-                throw std::logic_error("matching IS-04 source or flow not found");
-            }
-
-            auto sdp_params = nmos::make_sdp_parameters(source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
-            auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
-            auto session_description = nmos::make_session_description(sdp_params, transport_params);
-            auto sdp = utility::s2us(sdp::make_session_description(session_description));
-            endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
-        }
-    };
+    const auto resolve_auto = make_node_implementation_auto_resolver(model.settings);
+    const auto set_transportfile = make_node_implementation_transportfile_setter(model.node_resources, model.settings);
 
     // example node
     {
         auto node = nmos::make_node(node_id, model.settings);
         // add one example network interface
-        node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() }, { U("port_id"), U("ff-ff-ff-ff-ff-ff") }, { U("name"), U("example") } }) });
+        node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() },{ U("port_id"), U("ff-ff-ff-ff-ff-ff") },{ U("name"), U("example") } }) });
         insert_resource_after(delay_millis, model.node_resources, std::move(node), gate);
     }
 
@@ -122,7 +73,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     {
         const auto senders = 0 <= nmos::fields::events_port(model.settings)
             ? std::vector<nmos::id>{ sender_id, temperature_ws_sender_id }
-            : std::vector<nmos::id>{ sender_id };
+        : std::vector<nmos::id>{ sender_id };
         const auto receivers = std::vector<nmos::id>{ receiver_id };
         insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate);
     }
@@ -211,14 +162,82 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         });
     }, token);
 
-    {
-        nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock }; // connection_activation_thread locks the model itself
-
-        nmos::connection_activation_thread(model, resolve_auto, set_transportfile, gate);
-    }
+    // wait for the thread to be interrupted because the server is being shut down
+    model.shutdown_condition.wait(lock, [&] { return model.shutdown; });
 
     cancellation_source.cancel();
     // wait without the lock since it is also used by the background tasks
     nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
     temperature_events.wait();
+}
+
+nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings)
+{
+    using web::json::value;
+
+    const auto seed_id = nmos::experimental::fields::seed_id(settings);
+    auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
+    auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+    auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+    auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
+    auto temperature_ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
+
+    // although which properties may need to be defaulted depends on the resource type,
+    // the default value will almost always be different for each resource
+    return [device_id, sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    {
+        const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
+
+        // "In some cases the behaviour is more complex, and may be determined by the vendor."
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        if (sender_id == id_type.first)
+        {
+            nmos::resolve_rtp_auto(id_type.second, transport_params);
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [] { return value::string(U("192.168.255.0")); });
+            nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [] { return value::string(U("192.168.255.1")); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
+            nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
+        }
+        else if (receiver_id == id_type.first)
+        {
+            nmos::resolve_rtp_auto(id_type.second, transport_params);
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.2")); });
+            nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.3")); });
+        }
+        else if (temperature_ws_sender_id == id_type.first)
+        {
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(temperature_ws_sender_uri.to_string()); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
+        }
+    };
+}
+
+nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings)
+{
+    using web::json::value;
+
+    const auto seed_id = nmos::experimental::fields::seed_id(settings);
+    auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
+    auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
+    auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+
+    // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
+    return [&node_resources, source_id, flow_id, sender_id](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    {
+        if (sender_id == connection_sender.id)
+        {
+            auto source = nmos::find_resource(node_resources, { source_id, nmos::types::source });
+            auto flow = nmos::find_resource(node_resources, { flow_id, nmos::types::flow });
+            if (node_resources.end() == source || node_resources.end() == flow)
+            {
+                throw std::logic_error("matching IS-04 source or flow not found");
+            }
+
+            auto sdp_params = nmos::make_sdp_parameters(source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+            auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
+            auto session_description = nmos::make_session_description(sdp_params, transport_params);
+            auto sdp = utility::s2us(sdp::make_session_description(session_description));
+            endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
+        }
+    };
 }

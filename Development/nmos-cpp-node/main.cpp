@@ -126,9 +126,6 @@ int main(int argc, char* argv[])
         nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model);
         port_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
-        // start the underlying implementation and set up the node resources
-        auto node_resources = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-
         // Configure the Connection API
 
         port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
@@ -157,6 +154,10 @@ int main(int argc, char* argv[])
             port_listeners.push_back(nmos::make_api_listener(server_secure, router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, http_config, gate));
         }
 
+        // Start the underlying implementation, which will set up the node resources
+
+        auto node_implementation = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+
         // Open the API ports
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
@@ -174,6 +175,7 @@ int main(int argc, char* argv[])
         auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
         auto send_events_ws_messages = nmos::details::make_thread_guard([&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, node_websockets, gate); }, [&] { node_model.controlled_shutdown(); });
         auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_events_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
+        auto connection_activation = nmos::details::make_thread_guard([&] { nmos::connection_activation_thread(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), gate); }, [&] { node_model.controlled_shutdown(); });
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
