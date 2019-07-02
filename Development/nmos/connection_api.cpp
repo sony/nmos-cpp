@@ -778,17 +778,24 @@ namespace nmos
         auto& staged_activation = staged[nmos::fields::activation];
         const nmos::activation_mode staged_mode{ nmos::fields::mode(staged_activation).as_string() };
 
+        auto& active = nmos::fields::endpoint_active(resource.data);
+
+        // "On activation all instances of "auto" must be resolved into the actual values that will be used, unless
+        // there is an error condition. If there is an error condition that means `auto` cannot be resolved, the active
+        // transport parameters must not change, and the underlying sender must continue as before."
+        // Therefore, in case it throws an exception, resolve_auto is called on a copy of the /staged resource data,
+        // before making any changes to the /active resource data.
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L289
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        auto activating = staged;
+        resolve_auto(activating);
+
         // Set the time of activation (will be included in the PATCH response for an immediate activation)
         staged_activation[nmos::fields::activation_time] = at;
 
         // "When a set of 'staged' settings is activated, these settings transition into the 'active' resource."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/1.0.%20Overview.md#active
-        resource.data[nmos::fields::endpoint_active] = resource.data[nmos::fields::endpoint_staged];
-
-        // "On activation all instances of "auto" should be resolved into the actual values that will be used"
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-        resolve_auto(resource.data[nmos::fields::endpoint_active]);
+        active = activating;
 
         // Unclear whether the activation in the active endpoint should have values for mode, requested_time
         // (and even activation_time?) or whether they should be null? The examples have them with values.
@@ -1004,7 +1011,7 @@ namespace nmos
 
                 const auto type = nmos::type_from_resourceType(resourceType);
 
-                const auto handle_connection_resource_exception = [&](const nmos::id& id)
+                const auto handle_connection_resource_exception = [&](const std::pair<nmos::id, nmos::type>& id_type)
                 {
                     // try-catch based on the exception handler in nmos::add_api_finally_handler
                     try
@@ -1013,32 +1020,32 @@ namespace nmos
                     }
                     catch (const web::json::json_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error for " << id << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error for " << id_type << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const std::runtime_error& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::NotImplemented, e);
                     }
                     catch (const std::logic_error& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (const std::exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (...)
                     {
-                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception for " << id << " in bulk request";
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception for " << id_type << " in bulk request";
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError);
                     }
                 };
@@ -1055,7 +1062,7 @@ namespace nmos
                     }
                     catch (...)
                     {
-                        result = handle_connection_resource_exception(id);
+                        result = handle_connection_resource_exception({ id, type });
                     }
 
                     results.push_back(result);
@@ -1084,7 +1091,7 @@ namespace nmos
                             }
                             catch (...)
                             {
-                                result = handle_connection_resource_exception(id);
+                                result = handle_connection_resource_exception({ id, type });
                             }
                         }
                     }

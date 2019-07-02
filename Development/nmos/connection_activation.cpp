@@ -94,37 +94,78 @@ namespace nmos
 
                 // Update the IS-05 connection resource
 
-                nmos::modify_resource(model.connection_resources, resource.id, [&](nmos::resource& connection_resource)
+                // ensure nmos::set_connection_resource_not_pending is called to 'unlock' the resource for the Connection API implementation
+                // after an exception; for immediate activations this will cause a 500 Internal Error status code to be returned
+                const auto handle_connection_activation_exception = [&](const std::pair<nmos::id, nmos::type>& id_type)
                 {
-                    const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-                    auto matching_resource = find_resource(model.node_resources, id_type);
-                    if (model.node_resources.end() == matching_resource)
+                    // try-catch based on the exception handler in nmos::add_api_finally_handler
+                    try
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " during activation: " << "matching IS-04 resource not found";
-                        return;
+                        throw;
+                    }
+                    catch (const web::json::json_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error for " << id_type << " during activation: " << e.what();
+                    }
+                    catch (const std::runtime_error& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " during activation: " << e.what();
+                    }
+                    catch (const std::logic_error& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " during activation: " << e.what();
+                    }
+                    catch (const std::exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception for " << id_type << " during activation: " << e.what();
+                    }
+                    catch (...)
+                    {
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception for " << id_type << " during activation";
                     }
 
-                    nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
+                    nmos::modify_resource(model.connection_resources, id_type.first, [&](nmos::resource& connection_resource)
                     {
-                        resolve_auto(*matching_resource, connection_resource, nmos::fields::transport_params(endpoint_active));
-                        active = nmos::fields::master_enable(endpoint_active);
-                        // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
-                        auto& connected_id_or_null = nmos::types::sender == id_type.second ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
-                        if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
-                    }, activation_time);
+                        nmos::set_connection_resource_not_pending(connection_resource);
+                    });
+                };
 
-                    if (nmos::types::sender == id_type.second)
-                    {
-                        set_transportfile(*matching_resource, connection_resource, connection_resource.data[nmos::fields::endpoint_transportfile]);
-                    }
-                });
-
-                // Update the IS-04 resource
-
-                nmos::modify_resource(model.node_resources, resource.id, [&activation_time, &active, &connected_id](nmos::resource& resource)
+                try
                 {
-                    nmos::set_resource_subscription(resource, active, connected_id, activation_time);
-                });
+                    nmos::modify_resource(model.connection_resources, id_type.first, [&](nmos::resource& connection_resource)
+                    {
+                        auto matching_resource = find_resource(model.node_resources, id_type);
+                        if (model.node_resources.end() == matching_resource)
+                        {
+                            throw std::logic_error("matching IS-04 resource not found");
+                        }
+
+                        nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
+                        {
+                            resolve_auto(*matching_resource, connection_resource, nmos::fields::transport_params(endpoint_active));
+                            active = nmos::fields::master_enable(endpoint_active);
+                            // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
+                            auto& connected_id_or_null = nmos::types::sender == id_type.second ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
+                            if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
+                        }, activation_time);
+
+                        if (nmos::types::sender == id_type.second)
+                        {
+                            set_transportfile(*matching_resource, connection_resource, connection_resource.data[nmos::fields::endpoint_transportfile]);
+                        }
+                    });
+
+                    // Update the IS-04 resource
+
+                    nmos::modify_resource(model.node_resources, id_type.first, [&activation_time, &active, &connected_id](nmos::resource& resource)
+                    {
+                        nmos::set_resource_subscription(resource, active, connected_id, activation_time);
+                    });
+                }
+                catch (...)
+                {
+                    handle_connection_activation_exception(id_type);
+                }
 
                 notify = true;
             });

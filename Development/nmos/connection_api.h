@@ -10,7 +10,7 @@ namespace slog
 }
 
 // Connection API implementation
-// See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
+// See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml
 namespace nmos
 {
     struct api_version;
@@ -19,7 +19,10 @@ namespace nmos
     struct tai;
     struct type;
 
+    // Connection API callbacks
+
     // a transport_file_parser validates the specified transport file type/data for the specified (IS-04/IS-05) resource/connection_resource and returns a transport_params array to be merged
+    // or may throw std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
     // (the default transport file parser only supports RTP transport via the default SDP parser)
     typedef std::function<web::json::value(const nmos::resource&, const nmos::resource&, const utility::string_t&, const utility::string_t&, slog::base_gate&)> transport_file_parser;
 
@@ -27,8 +30,11 @@ namespace nmos
     {
         // a connection_resource_patch_validator can be used to perform any final validation of the specified merged /staged value for the specified (IS-04/IS-05) resource/connection_resource
         // that cannot be expressed by the schemas or /constraints endpoint
+        // it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
         typedef std::function<void(const nmos::resource&, const nmos::resource&, const web::json::value&, slog::base_gate&)> connection_resource_patch_validator;
     }
+
+    // Connection API factory functions
 
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate);
 
@@ -39,10 +45,13 @@ namespace nmos
 
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate);
 
+    // Connection API implementation details shared with the Node API /receivers/{receiverId}/target endpoint
     namespace details
     {
         void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, transport_file_parser parse_transport_file, connection_resource_patch_validator validate_merged, slog::base_gate& gate);
     }
+
+    // Functions for interaction between the Connection API implementation and the connection activation thread
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource
     void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value&)> resolve_auto, const nmos::tai& activation_time);
@@ -55,7 +64,10 @@ namespace nmos
     // (This function should be called after nmos::set_connection_resource_active.)
     void set_resource_subscription(nmos::resource& node_resource, bool active, const nmos::id& connected_id, const nmos::tai& activation_time);
 
+    // Helper functions for the Connection API callbacks
+
     // Validate and parse the specified transport file for the specified receiver
+    // (this is the default transport file parser)
     web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate);
 
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
