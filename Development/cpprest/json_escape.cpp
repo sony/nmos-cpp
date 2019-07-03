@@ -15,7 +15,7 @@ namespace web
 
             bool has_escape_chars(const web::json::value& string_value)
             {
-                string_value.as_string(); // may throw json_exception("not a string") 
+                string_value.as_string(); // may throw json_exception("not a string")
                 return static_cast<_String*>((string_value.*detail::stowed<value_value>::value).get())->*detail::stowed<string_has_escape_char>::value;
             }
         }
@@ -43,7 +43,7 @@ namespace web
                     // character
                     //     '0020' . '10FFFF' - '"' - '\'
                     //     '\' escape
-                    // 
+                    //
                     // escape
                     //     '"' (0022 - quotation mark)
                     //     '\' (005C - reverse solidus)

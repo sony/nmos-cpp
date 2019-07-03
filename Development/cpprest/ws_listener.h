@@ -26,7 +26,7 @@ namespace web
 {
     namespace websockets
     {
-        // ultimately, it would be nice to switch the namespaces of the definitions and the using-declarations... 
+        // ultimately, it would be nice to switch the namespaces of the definitions and the using-declarations...
         using web::websockets::client::websocket_close_status;
         using web::websockets::client::websocket_exception;
         using web::websockets::client::websocket_incoming_message;

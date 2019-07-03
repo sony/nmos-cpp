@@ -25,7 +25,7 @@ namespace nmos
         // determines content type based only on file extension, and rejects unexpected file types
         // (another option would be to return "application/octet-stream")
         relative_path_content_type_handler make_relative_path_content_type_handler(const content_types& valid_extensions);
- 
+
         // function from directory path to pair of index path (or empty string if path is invalid for any reason) and external redirect flag
         // the path argument will begin with a slash and may end with or without a slash
         typedef std::function<std::pair<utility::string_t, bool>(const utility::string_t&)> directory_index_redirect_handler;

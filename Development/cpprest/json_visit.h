@@ -215,7 +215,7 @@ namespace web
             struct num_put
             {
                 // maximum required buffer capacity for double, based on a '-', no loss, '.', "e-123", null terminator
-                static const size_t capacity_double = 1 + (std::numeric_limits<double>::digits10 + 2) + 1 + 5 + 1; 
+                static const size_t capacity_double = 1 + (std::numeric_limits<double>::digits10 + 2) + 1 + 5 + 1;
                 // maximum required buffer capacity for signed, based on a '-', no loss, null terminator
                 static const size_t capacity_signed = 1 + (std::numeric_limits<int64_t>::digits10 + 1) + 1;
                 // maximum required buffer capacity for unsigned, based on no loss, null terminator
