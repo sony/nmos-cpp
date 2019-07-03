@@ -19,9 +19,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -46,9 +46,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_connection_api(model, gate));
+        connection_api.mount(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_connection_api(model, parse_transport_file, validate_merged, gate));
 
         return connection_api;
+    }
+
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate)
+    {
+        return make_connection_api(model, &parse_rtp_transport_file, {}, gate);
     }
 
     namespace details
@@ -248,13 +253,13 @@ namespace nmos
         void validate_staged_constraints(const nmos::type& type, const web::json::value& constraints, const nmos::transport& transport_base, const web::json::value& staged)
         {
             const auto schema = make_constraints_schema(type, constraints, transport_base);
-            const auto uri = web::uri{U("/constraints")};
+            const auto uri = web::uri{ U("/constraints") };
 
             // Validate staged JSON syntax according to the schema
 
             const web::json::experimental::json_validator validator
             {
-                [&](const web::uri& ) { return schema; },
+                [&](const web::uri&) { return schema; },
                 { uri }
             };
 
@@ -512,7 +517,7 @@ namespace nmos
 
         inline connection_resource_patch_response make_connection_resource_patch_error_response(web::http::status_code code, const std::exception& debug)
         {
-            return make_connection_resource_patch_error_response(code,{}, utility::s2us(debug.what()));
+            return make_connection_resource_patch_error_response(code, {}, utility::s2us(debug.what()));
         }
 
         // Basic theory of implementation of PATCH /staged
@@ -555,12 +560,12 @@ namespace nmos
         // also be set back to null to unblock concurrent patch operations (nmos::set_connection_resource_not_pending does both).
         //
         // This obviously requires co-operation from other threads that are manipulating these connection resources.
-        // nmos-cpp-node/node_implementation.cpp currently serves as an example of how to handle sender/receiver activations.
+        // nmos::connection_activation_thread can usually be used to schedule sender/receiver activations.
         //
         // By the time we reacquire the model lock anything may have happened, but we can identify with the above whether to send
         // a success response or an error, and in the success case, release the 'per-resource lock' by updating the staged
         // activation mode, requested_time and activation_time.
-        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, slog::base_gate& gate)
+        connection_resource_patch_response handle_connection_resource_patch(nmos::node_model& model, nmos::write_lock& lock, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, const nmos::tai& request_time, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -617,6 +622,12 @@ namespace nmos
 
             if (resources.end() != resource)
             {
+                auto matching_resource = find_resource(model.node_resources, id_type);
+                if (model.node_resources.end() == matching_resource)
+                {
+                    throw std::logic_error("matching IS-04 resource not found");
+                }
+
                 // Merge this patch request into a *copy* of the current staged endpoint
                 // so that the merged parameters can be validated against the constraints
                 // before the current values are overwritten.
@@ -642,43 +653,17 @@ namespace nmos
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Processing transport file";
 
-                        if (transport_type_data.first != U("application/sdp"))
-                        {
-                            throw transport_file_error("unexpected type: " + utility::us2s(transport_type_data.first));
-                        }
-
                         try
                         {
-                            const auto session_description = sdp::parse_session_description(utility::us2s(transport_type_data.second));
-                            auto sdp_transport_params = nmos::parse_session_description(session_description);
+                            // Validate and parse the transport file for this receiver
 
-                            // Validate transport file according to the IS-04 receiver
-
-                            auto receiver = find_resource(model.node_resources, id_type);
-                            if (model.node_resources.end() != receiver)
-                            {
-                                validate_sdp_parameters(receiver->data, sdp_transport_params.first);
-                            }
+                            const auto transport_file_params = parse_transport_file(*matching_resource, *resource, transport_type_data.first, transport_type_data.second, gate);
 
                             // Merge the transport file into the transport parameters
 
                             auto& transport_params = nmos::fields::transport_params(merged);
 
-                            if (1 == transport_params.size() && 2 == sdp_transport_params.second.size())
-                            {
-                                web::json::pop_back(sdp_transport_params.second);
-                            }
-
-                            // "Where a Receiver supports SMPTE 2022-7 but is required to Receive a non-SMPTE 2022-7 stream,
-                            // only the first set of transport parameters should be used. rtp_enabled in the second set of parameters
-                            // must be set to false"
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#operation-with-smpte-2022-7
-                            if (2 == transport_params.size() && 1 == sdp_transport_params.second.size())
-                            {
-                                web::json::push_back(sdp_transport_params.second, web::json::value_of({ { U("rtp_enabled"), false } }));
-                            }
-
-                            web::json::merge_patch(transport_params, sdp_transport_params.second);
+                            web::json::merge_patch(transport_params, transport_file_params);
                         }
                         catch (const web::json::json_exception& e)
                         {
@@ -703,15 +688,14 @@ namespace nmos
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validating staged transport parameters against constraints";
 
-                auto matching_resource = find_resource(model.node_resources, id_type);
-                if (model.node_resources.end() == matching_resource)
+                const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
+                details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
+
+                // Perform any final validation
+
+                if (validate_merged)
                 {
-                    throw std::logic_error("matching IS-04 resource not found");
-                }
-                else
-                {
-                    const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
-                    details::validate_staged_constraints(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification), merged);
+                    validate_merged(*matching_resource, *resource, merged, gate);
                 }
 
                 // Finally, update the staged endpoint
@@ -747,17 +731,17 @@ namespace nmos
 
         void notify_connection_resource_patch(const nmos::node_model& model, slog::base_gate& gate)
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection thread";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection activation thread";
 
             model.notify();
         }
 
-        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, slog::base_gate& gate)
+        void handle_connection_resource_patch(web::http::http_response res, nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& patch, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
         {
             auto lock = model.write_lock();
             const auto request_time = tai_now(); // during write lock to ensure uniqueness
 
-            auto result = handle_connection_resource_patch(model, lock, version, id_type, patch, request_time, gate);
+            auto result = handle_connection_resource_patch(model, lock, version, id_type, patch, request_time, parse_transport_file, validate_merged, gate);
 
             if (web::http::is_success_status_code(result.first))
             {
@@ -794,17 +778,24 @@ namespace nmos
         auto& staged_activation = staged[nmos::fields::activation];
         const nmos::activation_mode staged_mode{ nmos::fields::mode(staged_activation).as_string() };
 
+        auto& active = nmos::fields::endpoint_active(resource.data);
+
+        // "On activation all instances of "auto" must be resolved into the actual values that will be used, unless
+        // there is an error condition. If there is an error condition that means `auto` cannot be resolved, the active
+        // transport parameters must not change, and the underlying sender must continue as before."
+        // Therefore, in case it throws an exception, resolve_auto is called on a copy of the /staged resource data,
+        // before making any changes to the /active resource data.
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L289
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        auto activating = staged;
+        resolve_auto(activating);
+
         // Set the time of activation (will be included in the PATCH response for an immediate activation)
         staged_activation[nmos::fields::activation_time] = at;
 
         // "When a set of 'staged' settings is activated, these settings transition into the 'active' resource."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/1.0.%20Overview.md#active
-        resource.data[nmos::fields::endpoint_active] = resource.data[nmos::fields::endpoint_staged];
-
-        // "On activation all instances of "auto" should be resolved into the actual values that will be used"
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L257
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-        resolve_auto(resource.data[nmos::fields::endpoint_active]);
+        active = activating;
 
         // Unclear whether the activation in the active endpoint should have values for mode, requested_time
         // (and even activation_time?) or whether they should be null? The examples have them with values.
@@ -884,6 +875,41 @@ namespace nmos
         }
     }
 
+    // Validate and parse the specified transport file for the specified receiver
+    web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
+    {
+        if (transport_file_type != U("application/sdp"))
+        {
+            throw std::runtime_error("unexpected type: " + utility::us2s(transport_file_type));
+        }
+
+        const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
+        auto sdp_transport_params = nmos::parse_session_description(session_description);
+
+        // Validate transport file according to the IS-04 receiver
+
+        validate_sdp_parameters(receiver.data, sdp_transport_params.first);
+
+        // could equally use nmos::fields::interface_bindings(receiver.data) or nmos::fields::transport_params(nmos::fields::endpoint_staged(connection_receiver.data))
+        const auto legs = nmos::fields::endpoint_constraints(connection_receiver.data).size();
+
+        if (1 == legs && 2 == sdp_transport_params.second.size())
+        {
+            web::json::pop_back(sdp_transport_params.second);
+        }
+
+        // "Where a Receiver supports SMPTE 2022-7 but is required to Receive a non-SMPTE 2022-7 stream,
+        // only the first set of transport parameters should be used. rtp_enabled in the second set of parameters
+        // must be set to false"
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#operation-with-smpte-2022-7
+        if (2 == legs && 1 == sdp_transport_params.second.size())
+        {
+            web::json::push_back(sdp_transport_params.second, web::json::value_of({ { U("rtp_enabled"), false } }));
+        }
+
+        return sdp_transport_params.second;
+    }
+
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L281
     // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
@@ -932,7 +958,7 @@ namespace nmos
         }
     }
 
-    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, slog::base_gate& gate_)
+    web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -959,10 +985,10 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L39-L44
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L73-L78
 
-        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/bulk/") + nmos::patterns::connectorType.pattern + U("/?"), methods::POST, [&model, parse_transport_file, validate_merged, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
-            return details::extract_json(req, gate).then([&model, req, res, parameters, gate](value body) mutable
+            return details::extract_json(req, gate).then([&model, req, res, parameters, parse_transport_file, validate_merged, gate](value body) mutable
             {
                 auto lock = model.write_lock();
                 const auto request_time = tai_now(); // during write lock to ensure uniqueness
@@ -985,7 +1011,7 @@ namespace nmos
 
                 const auto type = nmos::type_from_resourceType(resourceType);
 
-                const auto handle_connection_resource_exception = [&](const nmos::id& id)
+                const auto handle_connection_resource_exception = [&](const std::pair<nmos::id, nmos::type>& id_type)
                 {
                     // try-catch based on the exception handler in nmos::add_api_finally_handler
                     try
@@ -994,32 +1020,32 @@ namespace nmos
                     }
                     catch (const web::json::json_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "JSON error for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const web::http::http_exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error for " << id << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "HTTP error for " << id_type << " in bulk request: " << e.what() << " [" << e.error_code() << "]";
                         return details::make_connection_resource_patch_error_response(status_codes::BadRequest, e);
                     }
                     catch (const std::runtime_error& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::NotImplemented, e);
                     }
                     catch (const std::logic_error& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (const std::exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception for " << id << " in bulk request: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception for " << id_type << " in bulk request: " << e.what();
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError, e);
                     }
                     catch (...)
                     {
-                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception for " << id << " in bulk request";
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception for " << id_type << " in bulk request";
                         return details::make_connection_resource_patch_error_response(status_codes::InternalError);
                     }
                 };
@@ -1032,11 +1058,11 @@ namespace nmos
 
                     try
                     {
-                        result = details::handle_connection_resource_patch(model, lock, version, { id, type }, patch[nmos::fields::params], request_time, gate);
+                        result = details::handle_connection_resource_patch(model, lock, version, { id, type }, patch[nmos::fields::params], request_time, parse_transport_file, validate_merged, gate);
                     }
                     catch (...)
                     {
-                        result = handle_connection_resource_exception(id);
+                        result = handle_connection_resource_exception({ id, type });
                     }
 
                     results.push_back(result);
@@ -1065,7 +1091,7 @@ namespace nmos
                             }
                             catch (...)
                             {
-                                result = handle_connection_resource_exception(id);
+                                result = handle_connection_resource_exception({ id, type });
                             }
                         }
                     }
@@ -1215,10 +1241,10 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        connection_api.support(U("/single/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/staged/?"), methods::PATCH, [&model, parse_transport_file, validate_merged, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
-            return details::extract_json(req, gate).then([&model, req, res, parameters, gate](value body) mutable
+            return details::extract_json(req, gate).then([&model, req, res, parameters, parse_transport_file, validate_merged, gate](value body) mutable
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
@@ -1228,7 +1254,7 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Operation requested for single " << id_type;
 
-                details::handle_connection_resource_patch(res, model, version, id_type, body, gate);
+                details::handle_connection_resource_patch(res, model, version, id_type, body, parse_transport_file, validate_merged, gate);
 
                 return true;
             });

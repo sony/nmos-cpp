@@ -1,9 +1,7 @@
 #include "node_implementation.h"
 
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
-#include "detail/for_each_reversed.h"
-#include "nmos/activation_mode.h"
-#include "nmos/connection_api.h"
+#include "nmos/connection_api.h" // for nmos::resolve_rtp_auto, etc.
 #include "nmos/connection_resources.h"
 #include "nmos/events_resources.h"
 #include "nmos/group_hint.h"
@@ -13,22 +11,20 @@
 #include "nmos/node_resources.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
-#include "nmos/thread_utils.h"
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
 
-// as part of activation, the sender /transportfile should be updated based on the active transport parameters
-void set_connection_rtp_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params);
-
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
-// and then waits for sender/receiver activations or shutdown.
+// starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
 void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 {
     using web::json::value;
     using web::json::value_of;
 
-    const auto seed_id = nmos::with_read_lock(model.mutex, [&] { return nmos::experimental::fields::seed_id(model.settings); });
+    auto lock = model.write_lock(); // in order to update the resources
+
+    const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
     auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
     auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
@@ -39,12 +35,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto temperature_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/1"));
     auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
 
-    auto lock = model.write_lock(); // in order to update the resources
-
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
     const unsigned int delay_millis{ 10 };
 
+    // it is important that the model be locked before inserting, updating or deleting a resource
+    // and that the the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
         if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
@@ -62,11 +58,135 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         }
     };
 
+    const auto resolve_auto = make_node_implementation_auto_resolver(model.settings);
+    const auto set_transportfile = make_node_implementation_transportfile_setter(model.node_resources, model.settings);
+
+    // example node
+    {
+        auto node = nmos::make_node(node_id, model.settings);
+        // add one example network interface
+        node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() },{ U("port_id"), U("ff-ff-ff-ff-ff-ff") },{ U("name"), U("example") } }) });
+        insert_resource_after(delay_millis, model.node_resources, std::move(node), gate);
+    }
+
+    // example device
+    {
+        const auto senders = 0 <= nmos::fields::events_port(model.settings)
+            ? std::vector<nmos::id>{ sender_id, temperature_ws_sender_id }
+        : std::vector<nmos::id>{ sender_id };
+        const auto receivers = std::vector<nmos::id>{ receiver_id };
+        insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate);
+    }
+
+    // example source, flow and sender
+    {
+        auto source = nmos::make_video_source(source_id, device_id, { 25, 1 }, model.settings);
+
+        auto flow = nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings);
+
+        // set_transportfile needs to find the matching source and flow for the sender, so insert these first
+        insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
+
+        // add example network interface binding for both primary and secondary
+        auto sender = nmos::make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
+
+        auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
+        resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate);
+    }
+
+    // example receiver
+    {
+        // add example network interface binding for both primary and secondary
+        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
+        // add example "natural grouping" hint
+        web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
+
+        auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
+        resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
+    }
+
+    // example temperature event source, sender, flow
+    if (0 <= nmos::fields::events_port(model.settings))
+    {
+        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C")), model.settings);
+
+        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
+        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
+        auto events_temperature_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
+        auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
+        auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
+
+        auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
+        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example") }, model.settings);
+        auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
+        resolve_auto(temperature_ws_sender, connection_temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);
+        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate);
+        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate);
+        insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
+    }
+
+    // start background tasks to emit regular events from the temperature event source
+    auto cancellation_source = pplx::cancellation_token_source();
+    auto token = cancellation_source.get_token();
+    auto temperature_events = pplx::do_while([&model, temperature_source_id, token]
+    {
+        return pplx::complete_after(std::chrono::seconds(1), token).then([&model, temperature_source_id]
+        {
+            auto lock = model.write_lock();
+
+            modify_resource(model.events_resources, temperature_source_id, [](nmos::resource& resource)
+            {
+                // make example temperature data ... \/\/\/\/ ... around 200
+                auto value = 175.0 + std::abs(nmos::tai_now().seconds % 100 - 50);
+                // i.e. 17.5-22.5 C
+                nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, { value, 10 });
+            });
+
+            model.notify();
+
+            return true;
+        });
+    }, token);
+
+    // wait for the thread to be interrupted because the server is being shut down
+    model.shutdown_condition.wait(lock, [&] { return model.shutdown; });
+
+    cancellation_source.cancel();
+    // wait without the lock since it is also used by the background tasks
+    nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+    temperature_events.wait();
+}
+
+nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings)
+{
+    using web::json::value;
+
+    const auto seed_id = nmos::experimental::fields::seed_id(settings);
+    auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
+    auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+    auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
+    auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
+    auto temperature_ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
+
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    const auto resolve_auto = [&](const std::pair<nmos::id, nmos::type>& id_type, value& endpoint_active)
+    return [device_id, sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
-        auto& transport_params = endpoint_active[nmos::fields::transport_params];
+        const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
@@ -86,251 +206,38 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         }
         else if (temperature_ws_sender_id == id_type.first)
         {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(nmos::make_events_ws_api_connection_uri(device_id, model.settings).to_string()); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(temperature_ws_sender_uri.to_string()); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
         }
     };
-
-    // example node
-    {
-        auto node = nmos::make_node(node_id, model.settings);
-        // add one example network interface
-        node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() }, { U("port_id"), U("ff-ff-ff-ff-ff-ff") }, { U("name"), U("example") } }) });
-        insert_resource_after(delay_millis, model.node_resources, std::move(node), gate);
-    }
-
-    // example device
-    {
-        const auto senders = 0 <= nmos::fields::events_port(model.settings)
-            ? std::vector<nmos::id>{ sender_id, temperature_ws_sender_id }
-            : std::vector<nmos::id>{ sender_id };
-        const auto receivers = std::vector<nmos::id>{ receiver_id };
-        insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate);
-    }
-
-    // example source, flow and sender
-    nmos::sdp_parameters sdp_params;
-    {
-        auto source = nmos::make_video_source(source_id, device_id, { 25, 1 }, model.settings);
-
-        auto flow = nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings);
-        // add example network interface binding for both primary and secondary
-
-        auto sender = nmos::make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings);
-        // add example "natural grouping" hint
-        web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
-
-        sdp_params = nmos::make_sdp_parameters(source.data, flow.data, sender.data, { U("PRIMARY"), U("SECONDARY") });
-
-        auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
-        resolve_auto({ connection_sender.id, connection_sender.type }, connection_sender.data[nmos::fields::endpoint_active]);
-        set_connection_rtp_sender_transportfile(connection_sender, sdp_params);
-
-        insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate);
-        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate);
-    }
-
-    // example receiver
-    {
-        // add example network interface binding for both primary and secondary
-        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
-        // add example "natural grouping" hint
-        web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
-
-        auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
-        resolve_auto({ connection_receiver.id, connection_receiver.type }, connection_receiver.data[nmos::fields::endpoint_active]);
-
-        insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
-        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
-    }
-
-    // example temperature source, sender, flow
-    if (0 <= nmos::fields::events_port(model.settings))
-    {
-        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C")), model.settings);
-
-        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
-        auto events_temperature_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
-        auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
-        auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
-
-        auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
-        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example") }, model.settings);
-        auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
-        resolve_auto({ connection_temperature_ws_sender.id, connection_temperature_ws_sender.type }, connection_temperature_ws_sender.data[nmos::fields::endpoint_active]);
-
-        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate);
-        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate);
-        insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
-    }
-
-    auto cancellation_source = pplx::cancellation_token_source();
-    auto token = cancellation_source.get_token();
-    auto temperature_events = pplx::do_while([&]
-    {
-        return pplx::complete_after(std::chrono::seconds(1), token).then([&]
-        {
-            auto lock = model.write_lock();
-
-            modify_resource(model.events_resources, temperature_source_id, [&](nmos::resource& resource)
-            {
-                // make example temperature data ... \/\/\/\/ ... around 200
-                auto value = 175.0 + std::abs(nmos::tai_now().seconds % 100 - 50);
-                // i.e. 17.5-22.5 C
-                nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(temperature_source_id, { value, 10 });
-            });
-
-            model.notify();
-
-            return true;
-        });
-    }, token);
-
-    auto most_recent_update = nmos::tai_min();
-    auto earliest_scheduled_activation = (nmos::tai_clock::time_point::max)();
-
-    for (;;)
-    {
-        // wait for the thread to be interrupted because there may be new scheduled activations, or immediate activations to process
-        // or because the server is being shut down
-        // or because it's time for the next scheduled activation
-        model.wait_until(lock, earliest_scheduled_activation, [&] { return model.shutdown || most_recent_update < nmos::most_recent_update(model.connection_resources); });
-        if (model.shutdown) break;
-
-        auto& by_updated = model.connection_resources.get<nmos::tags::updated>();
-
-        // go through all connection resources
-        // process any immediate activations
-        // process any scheduled activations whose requested_time has passed
-        // identify the next scheduled activation
-
-        const auto now = nmos::tai_clock::now();
-
-        earliest_scheduled_activation = (nmos::tai_clock::time_point::max)();
-
-        bool notify = false;
-
-        // since modify reorders the resource in this index, use for_each_reversed
-        detail::for_each_reversed(by_updated.begin(), by_updated.end(), [&](const nmos::resource& resource)
-        {
-            if (!resource.has_data()) return;
-
-            const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-
-            auto& staged = nmos::fields::endpoint_staged(resource.data);
-            auto& staged_activation = nmos::fields::activation(staged);
-            auto& staged_mode_or_null = nmos::fields::mode(staged_activation);
-
-            if (staged_mode_or_null.is_null()) return;
-
-            const nmos::activation_mode staged_mode{ staged_mode_or_null.as_string() };
-
-            if (nmos::activation_modes::activate_scheduled_absolute == staged_mode ||
-                nmos::activation_modes::activate_scheduled_relative == staged_mode)
-            {
-                auto& staged_activation_time = nmos::fields::activation_time(staged_activation);
-                const auto scheduled_activation = nmos::time_point_from_tai(nmos::parse_version(staged_activation_time.as_string()));
-
-                if (scheduled_activation < now)
-                {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Processing scheduled activation for " << id_type;
-                }
-                else
-                {
-                    if (scheduled_activation < earliest_scheduled_activation)
-                    {
-                        earliest_scheduled_activation = scheduled_activation;
-                    }
-
-                    return;
-                }
-            }
-            else if (nmos::activation_modes::activate_immediate == staged_mode)
-            {
-                // check for cancelled in-flight immediate activation
-                if (nmos::fields::requested_time(staged_activation).is_null()) return;
-                // check for processed in-flight immediate activation
-                if (!nmos::fields::activation_time(staged_activation).is_null()) return;
-
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Processing immediate activation for " << id_type;
-            }
-            else
-            {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected activation mode for " << id_type;
-                return;
-            }
-
-            const auto activation_time = nmos::tai_now();
-
-            bool active = false;
-            nmos::id connected_id;
-
-            // Update the IS-05 connection resource
-
-            nmos::modify_resource(model.connection_resources, resource.id, [&resolve_auto, &sdp_params, &activation_time, &active, &connected_id](nmos::resource& connection_resource)
-            {
-                const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-                nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
-                {
-                    resolve_auto(id_type, endpoint_active);
-                    active = nmos::fields::master_enable(endpoint_active);
-                    // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
-                    auto& connected_id_or_null = nmos::types::sender == id_type.second ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
-                    if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
-                }, activation_time);
-
-                // hmm, not all transport types use a transport file, e.g. urn:x-nmos:transport:websocket probably
-                // should probably check the matching node resource's "transport", as in the implementation of the
-                // Connection API /transporttype endpoint, but for now use a simpler check to identify RTP senders
-                // see https://github.com/AMWA-TV/nmos-event-tally/issues/36
-                if (nmos::types::sender == id_type.second && nmos::fields::endpoint_constraints(connection_resource.data).has_field(nmos::fields::rtp_enabled))
-                {
-                    set_connection_rtp_sender_transportfile(connection_resource, sdp_params);
-                }
-            });
-
-            // Update the IS-04 resource
-
-            nmos::modify_resource(model.node_resources, resource.id, [&activation_time, &active, &connected_id](nmos::resource& resource)
-            {
-                nmos::set_resource_subscription(resource, active, connected_id, activation_time);
-            });
-
-            notify = true;
-        });
-
-        if ((nmos::tai_clock::time_point::max)() != earliest_scheduled_activation)
-        {
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Next scheduled activation is at " << nmos::make_version(nmos::tai_from_time_point(earliest_scheduled_activation))
-                << " in about " << std::fixed << std::setprecision(3) << std::chrono::duration_cast<std::chrono::duration<double>>(earliest_scheduled_activation - now).count() << " seconds time";
-        }
-
-        if (notify)
-        {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
-            model.notify();
-        }
-
-        most_recent_update = nmos::most_recent_update(model.connection_resources);
-    }
-
-    cancellation_source.cancel();
-    // wait without the lock since it is also used by the background tasks
-    nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-    temperature_events.wait();
 }
 
-// as part of activation, the sender /transportfile should be updated based on the active transport parameters
-void set_connection_rtp_sender_transportfile(nmos::resource& connection_sender, const nmos::sdp_parameters& sdp_params)
+nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings)
 {
-    auto& transport_params = connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params];
-    auto session_description = nmos::make_session_description(sdp_params, transport_params);
-    auto sdp = utility::s2us(sdp::make_session_description(session_description));
-    connection_sender.data[nmos::fields::endpoint_transportfile] = nmos::make_connection_rtp_sender_transportfile(sdp);
+    using web::json::value;
+
+    const auto seed_id = nmos::experimental::fields::seed_id(settings);
+    auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
+    auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
+    auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
+
+    // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
+    return [&node_resources, source_id, flow_id, sender_id](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    {
+        if (sender_id == connection_sender.id)
+        {
+            auto source = nmos::find_resource(node_resources, { source_id, nmos::types::source });
+            auto flow = nmos::find_resource(node_resources, { flow_id, nmos::types::flow });
+            if (node_resources.end() == source || node_resources.end() == flow)
+            {
+                throw std::logic_error("matching IS-04 source or flow not found");
+            }
+
+            auto sdp_params = nmos::make_sdp_parameters(source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+            auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
+            auto session_description = nmos::make_session_description(sdp_params, transport_params);
+            auto sdp = utility::s2us(sdp::make_session_description(session_description));
+            endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
+        }
+    };
 }

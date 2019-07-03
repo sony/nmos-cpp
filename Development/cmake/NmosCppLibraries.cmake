@@ -567,6 +567,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/api_utils.cpp
     ${NMOS_CPP_DIR}/nmos/client_utils.cpp
     ${NMOS_CPP_DIR}/nmos/components.cpp
+    ${NMOS_CPP_DIR}/nmos/connection_activation.cpp
     ${NMOS_CPP_DIR}/nmos/connection_api.cpp
     ${NMOS_CPP_DIR}/nmos/connection_resources.cpp
     ${NMOS_CPP_DIR}/nmos/events_api.cpp
@@ -611,6 +612,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/colorspace.h
     ${NMOS_CPP_DIR}/nmos/components.h
     ${NMOS_CPP_DIR}/nmos/copyable_atomic.h
+    ${NMOS_CPP_DIR}/nmos/connection_activation.h
     ${NMOS_CPP_DIR}/nmos/connection_api.h
     ${NMOS_CPP_DIR}/nmos/connection_resources.h
     ${NMOS_CPP_DIR}/nmos/device_type.h
