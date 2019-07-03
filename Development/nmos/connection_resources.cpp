@@ -231,14 +231,14 @@ namespace nmos
             const auto unconstrained = value::object();
             return indeterminate(v) ? unconstrained : value_of({
                 { nmos::fields::constraint_enum, value_of({
-                    web::json::value::boolean(v)
+                    web::json::value::boolean(bool(v))
                 }) }
             });
         }
 
         inline web::json::value boolean_or_auto(boost::tribool v)
         {
-            return indeterminate(v) ? web::json::value::string(U("auto")) : web::json::value::boolean(v);
+            return indeterminate(v) ? web::json::value::string(U("auto")) : web::json::value::boolean(bool(v));
         }
 
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema-websocket.json
@@ -313,7 +313,7 @@ namespace nmos
                 { nmos::fields::destination_port, unconstrained },
                 { nmos::fields::broker_protocol, indeterminate(broker_secure) ? unconstrained : value_of({
                     { nmos::fields::constraint_enum, value_of({
-                        nmos::mqtt_scheme(broker_secure)
+                        nmos::mqtt_scheme(bool(broker_secure))
                     }) }
                 }) },
                 { nmos::fields::broker_authorization, boolean_or_unconstrained(broker_authorization) },
@@ -340,7 +340,7 @@ namespace nmos
             return value_of({
                 { nmos::fields::destination_host, U("auto") },
                 { nmos::fields::destination_port,  U("auto") },
-                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? U("auto") : nmos::mqtt_scheme(broker_secure) },
+                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? U("auto") : nmos::mqtt_scheme(bool(broker_secure)) },
                 { nmos::fields::broker_authorization, boolean_or_auto(broker_authorization) },
                 { nmos::fields::broker_topic, broker_topic.empty() ? value::null() : value::string(broker_topic) },
                 { nmos::fields::connection_status_broker_topic, connection_status_broker_topic.empty() ? value::null() : value::string(connection_status_broker_topic) }
@@ -360,7 +360,7 @@ namespace nmos
                 { nmos::fields::source_port, unconstrained },
                 { nmos::fields::broker_protocol, indeterminate(broker_secure) ? unconstrained : value_of({
                     { nmos::fields::constraint_enum, value_of({
-                        nmos::mqtt_scheme(broker_secure)
+                        nmos::mqtt_scheme(bool(broker_secure))
                     }) }
                 }) },
                 { nmos::fields::broker_authorization, boolean_or_unconstrained(broker_authorization) },
@@ -379,7 +379,7 @@ namespace nmos
             return value_of({
                 { nmos::fields::source_host, U("auto") },
                 { nmos::fields::source_port, U("auto") },
-                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? U("auto") : nmos::mqtt_scheme(broker_secure) },
+                { nmos::fields::broker_protocol, indeterminate(broker_secure) ? U("auto") : nmos::mqtt_scheme(bool(broker_secure)) },
                 { nmos::fields::broker_authorization, boolean_or_auto(broker_authorization) },
                 { nmos::fields::broker_topic, value::null() },
                 { nmos::fields::connection_status_broker_topic, value::null() }
