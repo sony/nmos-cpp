@@ -65,7 +65,13 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     {
         auto node = nmos::make_node(node_id, model.settings);
         // add one example network interface
-        node.data[U("interfaces")] = value_of({ value_of({ { U("chassis_id"), value::null() },{ U("port_id"), U("ff-ff-ff-ff-ff-ff") },{ U("name"), U("example") } }) });
+        node.data[U("interfaces")] = value_of({
+            value_of({
+                { U("chassis_id"), value::null() },
+                { U("port_id"), U("ff-ff-ff-ff-ff-ff") },
+                { U("name"), U("example") }
+            })
+        });
         insert_resource_after(delay_millis, model.node_resources, std::move(node), gate);
     }
 
@@ -73,7 +79,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     {
         const auto senders = 0 <= nmos::fields::events_port(model.settings)
             ? std::vector<nmos::id>{ sender_id, temperature_ws_sender_id }
-        : std::vector<nmos::id>{ sender_id };
+            : std::vector<nmos::id>{ sender_id };
         const auto receivers = std::vector<nmos::id>{ receiver_id };
         insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate);
     }
