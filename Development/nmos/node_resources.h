@@ -106,17 +106,4 @@ namespace nmos
     nmos::resource make_mux_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
 }
 
-#include "nmos/resources.h"
-
-// This currently serves as an example of the resources that an NMOS node would construct
-namespace nmos
-{
-    namespace experimental
-    {
-        // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
-        // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
-        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings);
-    }
-}
-
 #endif

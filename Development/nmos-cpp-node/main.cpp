@@ -1,23 +1,10 @@
 #include <fstream>
 #include <iostream>
-#include "cpprest/ws_listener.h"
-#include "cpprest/ws_utils.h"
-#include "nmos/admin_ui.h"
-#include "nmos/api_utils.h"
-#include "nmos/connection_api.h"
-#include "nmos/events_api.h"
-#include "nmos/events_ws_api.h"
 #include "nmos/log_gate.h"
-#include "nmos/logging_api.h"
 #include "nmos/model.h"
-#include "nmos/node_api.h"
-#include "nmos/node_behaviour.h"
-#include "nmos/node_resources.h"
+#include "nmos/node_server.h"
 #include "nmos/process_utils.h"
-#include "nmos/server_utils.h"
-#include "nmos/settings_api.h"
-#include "nmos/slog.h"
-#include "nmos/thread_utils.h"
+#include "nmos/server.h"
 #include "node_implementation.h"
 
 int main(int argc, char* argv[])
@@ -98,84 +85,24 @@ int main(int argc, char* argv[])
             access_log.rdbuf(&access_log_buf);
         }
 
-        // Log the process ID and the API addresses we'll be using
+        // Log the process ID and initial settings
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::get_host(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
 
-        // Set up the APIs, assigning them to the configured ports
+        // Set up the node server
 
-        const auto server_secure = nmos::experimental::fields::server_secure(node_model.settings);
+        auto node_server = nmos::experimental::make_node_server(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), log_model, gate);
 
-        typedef std::pair<utility::string_t, int> address_port;
-        std::map<address_port, web::http::experimental::listener::api_router> port_routers;
+        // Add the underlying implementation, which will set up the node resources, etc.
 
-        // Configure the Settings API
+        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
 
-        const address_port settings_address(nmos::experimental::fields::settings_address(node_model.settings), nmos::experimental::fields::settings_port(node_model.settings));
-        port_routers[settings_address].mount({}, nmos::experimental::make_settings_api(node_model, log_model, gate));
-
-        // Configure the Logging API
-
-        const address_port logging_address(nmos::experimental::fields::logging_address(node_model.settings), nmos::experimental::fields::logging_port(node_model.settings));
-        port_routers[logging_address].mount({}, nmos::experimental::make_logging_api(log_model, gate));
-
-        // Configure the Node API
-
-        nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model);
-        port_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
-
-        // Configure the Connection API
-
-        port_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, gate));
-
-        // Configure the Events API
-        port_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
-
-        nmos::websockets node_websockets;
-
-        auto websocket_config = nmos::make_websocket_listener_config(node_model.settings);
-        websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
-        auto events_ws_api = nmos::make_events_ws_api(node_model, node_websockets, gate);
-        auto events_ws_listener = nmos::make_ws_api_listener(server_secure, web::websockets::experimental::listener::host_wildcard, nmos::experimental::server_port(nmos::fields::events_ws_port(node_model.settings), node_model.settings), events_ws_api, websocket_config, gate);
-
-        // Set up the listeners for each API port
-
-       auto http_config = nmos::make_http_listener_config(node_model.settings);
-
-        std::vector<web::http::experimental::listener::http_listener> port_listeners;
-        for (auto& port_router : port_routers)
-        {
-            // default empty string means the wildcard address
-            const auto& router_address = !port_router.first.first.empty() ? port_router.first.first : web::http::experimental::listener::host_wildcard;
-            // map the configured client port to the server port on which to listen
-            // hmm, this should probably also take account of the address
-            port_listeners.push_back(nmos::make_api_listener(server_secure, router_address, nmos::experimental::server_port(port_router.first.second, node_model.settings), port_router.second, http_config, gate));
-        }
-
-        // Start the underlying implementation, which will set up the node resources
-
-        auto node_implementation = nmos::details::make_thread_guard([&] { node_implementation_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-
-        // Open the API ports
+        // Open the API ports and start up node operation (including the mDNS advertisements)
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 
-        std::vector<web::http::experimental::listener::http_listener_guard> port_guards;
-        for (auto& port_listener : port_listeners)
-        {
-            if (0 <= port_listener.uri().port()) port_guards.push_back({ port_listener });
-        }
-        web::websockets::experimental::listener::websocket_listener_guard events_ws_guard;
-        if (0 <= events_ws_listener.uri().port()) events_ws_guard = { events_ws_listener };
-
-        // Start up node operation (including the mDNS advertisements) once all NMOS APIs are open
-
-        auto node_behaviour = nmos::details::make_thread_guard([&] { nmos::node_behaviour_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-        auto send_events_ws_messages = nmos::details::make_thread_guard([&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, node_websockets, gate); }, [&] { node_model.controlled_shutdown(); });
-        auto erase_expired_resources = nmos::details::make_thread_guard([&] { nmos::erase_expired_events_resources_thread(node_model, gate); }, [&] { node_model.controlled_shutdown(); });
-        auto connection_activation = nmos::details::make_thread_guard([&] { nmos::connection_activation_thread(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), gate); }, [&] { node_model.controlled_shutdown(); });
+        nmos::server_guard node_server_guard(node_server);
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Ready for connections";
 
@@ -192,6 +119,10 @@ int main(int argc, char* argv[])
     catch (const web::http::http_exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+    }
+    catch (const web::websockets::websocket_exception& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
     }
     catch (const std::system_error& e)
     {

@@ -15,7 +15,6 @@
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
 #include "nmos/media_type.h"
-#include "nmos/node_resource.h" // just for nmos::make_node for nmos::experimental::insert_node_resources
 #include "nmos/resource.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
@@ -476,29 +475,5 @@ namespace nmos
     nmos::resource make_mux_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
     {
         return make_mux_receiver(id, device_id, transport, interfaces, nmos::media_types::video_SMPTE2022_6, settings);
-    }
-
-    namespace experimental
-    {
-        // insert a node resource, and sub-resources, according to the settings; return an iterator to the inserted node resource,
-        // or to a resource that prevented the insertion, and a bool denoting whether the insertion took place
-        std::pair<resources::iterator, bool> insert_node_resources(nmos::resources& node_resources, const nmos::settings& settings)
-        {
-            const auto& seed_id = nmos::experimental::fields::seed_id(settings);
-            auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
-            auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
-            auto source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/0"));
-            auto flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/0"));
-            auto sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/0"));
-            auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
-
-            auto result = insert_resource(node_resources, make_node(node_id, settings));
-            insert_resource(node_resources, make_device(device_id, node_id, { sender_id }, { receiver_id }, settings));
-            insert_resource(node_resources, make_video_source(source_id, device_id, { 25, 1 }, settings));
-            insert_resource(node_resources, make_raw_video_flow(flow_id, source_id, device_id, settings));
-            insert_resource(node_resources, make_sender(sender_id, flow_id, device_id, {}, settings));
-            insert_resource(node_resources, make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, {}, settings));
-            return result;
-        }
     }
 }
