@@ -593,6 +593,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/query_ws_api.cpp
     ${NMOS_CPP_DIR}/nmos/registration_api.cpp
     ${NMOS_CPP_DIR}/nmos/registry_resources.cpp
+    ${NMOS_CPP_DIR}/nmos/registry_server.cpp
     ${NMOS_CPP_DIR}/nmos/resource.cpp
     ${NMOS_CPP_DIR}/nmos/resources.cpp
     ${NMOS_CPP_DIR}/nmos/sdp_utils.cpp
@@ -657,6 +658,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/rational.h
     ${NMOS_CPP_DIR}/nmos/registration_api.h
     ${NMOS_CPP_DIR}/nmos/registry_resources.h
+    ${NMOS_CPP_DIR}/nmos/registry_server.h
     ${NMOS_CPP_DIR}/nmos/resource.h
     ${NMOS_CPP_DIR}/nmos/resources.h
     ${NMOS_CPP_DIR}/nmos/sdp_utils.h
