@@ -6,24 +6,33 @@ The [nmos](../Development/nmos/) module fundamentally provides three things.
 2. An implementation of each of the REST APIs defined by the AMWA IS-04 and IS-05 NMOS specifications, in terms of the data model.
 3. An implementation of the Node and Registry "active behaviours" defined by the specifications.  
 
+The module also provides the concept of a server which combines the REST APIs and behaviours into a single object for simplicity.
+
 ## Data Model
 
 > [nmos/model.h](../Development/nmos/model.h)
 
 The top-level data structures for an NMOS Node and Registry are ``nmos::node_model`` and ``nmos::registry_model`` respectively.
 
-A ``node_model`` has two member variables which are containers, of IS-04 resources and IS-05 resources respectively:
+A ``node_model`` has three member variables which are containers, of IS-04 resources, IS-05 resources and IS-07 resources, respectively:
 
 ```C++
 nmos::resources node_resources;
 nmos::resources connection_resources;
+nmos::resources events_resources;
 ```
 
-A ``registry_model`` also has two, this time for the Registry's own Node API "self" resource, and for the resources that have been registered with the Registration API:
+A ``registry_model`` has two containers, this time for the Registry's own Node API "self" resource, and for the resources that have been registered with the Registration API:
 
 ```C++
 nmos::resources node_resources;
 nmos::resources registry_resources;
+```
+
+It also has a single resource for the IS-09 System API global configuration resource for when the registry is also serving this purpose:
+
+```C++
+nmos::resource system_global_resource;
 ```
 
 In addition, both models, by inheritance from ``nmos::base_model``, include member variables to hold application-wide settings and shutdown state, and to perform synchronisation between multiple threads that need shared access to the data model.
@@ -106,10 +115,12 @@ for (;;)
 
 > [nmos/node_api.cpp](../Development/nmos/node_api.cpp),
 > [nmos/connection_api.cpp](../Development/nmos/connection_api.cpp),
+> [nmos/events_api.cpp](../Development/nmos/events_api.cpp),
 > [nmos/registration_api.cpp](../Development/nmos/registration_api.cpp),
-> [nmos/query_api.cpp](../Development/nmos/query_api.cpp)
+> [nmos/query_api.cpp](../Development/nmos/query_api.cpp),
+> [nmos/system_api.cpp](../Development/nmos/system_api.cpp)
 
-The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04 and IS-05.
+The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07 and IS-09.
 
 The C++ REST SDK provides a general purpose HTTP listener, that accepts requests at a particular base URL and passes them to a user-specified request handler for processing.
 Therefore the ``nmos`` module implements each API as a request handler which reads and/or writes the relevant parts of the NMOS data model, and provides a convenience function, ``nmos::support_api``, for associating the API request handler with the HTTP listener.
@@ -145,7 +156,8 @@ The ``nmos`` module implements these behaviours as long-running threads that int
 
 ### Node Behaviour
 
-> [nmos/node_behaviour.cpp](../Development/nmos/node_behaviour.cpp)
+> [nmos/node_behaviour.cpp](../Development/nmos/node_behaviour.cpp),
+> [nmos/connection_activation.cpp](../Development/nmos/connection_activation.cpp)
 
 The required Node behaviour includes:
 
@@ -169,17 +181,18 @@ Notes:
 
 </details>
 
+In addition, the ``nmos::connection_activation_thread`` manages scheduling of Connection API activation requests. It supports callbacks that allow vendor-specific customization of the behaviour.
+
 #### Vendor-specific Node Behaviour
 
-> [nmos/node_resources_thread.cpp](../Development/nmos/node_resources_thread.cpp)
+> [nmos-cpp-node/node_implementation.cpp](../Development/nmos-cpp-node/node_implementation.cpp)
 
 It is a principle of both AMWA IS-04 and IS-05 that the resources exposed by the APIs should reflect the current state of the underlying implementation.
 
 It is therefore expected that a Node implementation using **nmos-cpp** will contain one or more additional threads that synchronise the NMOS data model with the underlying state.
 For example, such a thread may wait to be notified of changes in the data model as a result of Connection API activation requests.
-Similarly, when an activation is actually performed, it should update the model and notify the condition variable.
 At any time, it may make changes to the model to reflect other events in the underlying implementation, provided it correctly locks the model mutex and notifies the condition variable.
-The ``nmos::experimental::node_resources_thread`` demonstrates how such a thread might behave.
+The example ``node_implementation_thread`` demonstrates how such a thread might behave.
 
 ### Registry Behaviour
 
@@ -194,10 +207,24 @@ The required Registry behaviour includes:
 These functions are implemented by ``nmos::send_query_ws_events_thread`` and ``nmos::erase_expired_resources_thread`` respectively.
 
 The diagram below shows a sequence of events within and between an **nmos-cpp** Node, the **nmos-cpp-registry** Registry and a Client.
-Resource events initiated in a vendor-specific resource-scheduling thread in the Node (such as ``nmos::experimental::node_resources_thread``) are propagated via the Registration API to the Registry model.
+Resource events initiated in a resource-scheduling thread in the Node are propagated via the Registration API to the Registry model.
 Events in the Registry model are sent in WebSocket messages to each Client with a matching Query API subscription.
 
 ![Sequence Diagram](images/node-registry-sequence.png)  
+
+## Servers
+
+> [nmos/node_server.cpp](../Development/nmos/node_server.cpp),
+> [nmos/registry_server.cpp](../Development/nmos/registry_server.cpp)
+
+The ``nmos`` module also provides factory functions to create NMOS Node servers and NMOS Registry servers, which combine the REST APIs and behaviours into a single object for simplicity.
+
+For example, a simple configuration of a Node supporting the Node API, Connection API, Events API, etc. would look like:
+
+```C++
+auto node_server = nmos::experimental::make_node_server(node_model, node_implementation_resolve_auto, node_implementation_set_transportfile, log_model, gate);
+nmos::server_guard node_server_guard(node_server);
+```
 
 ## Logging
 
