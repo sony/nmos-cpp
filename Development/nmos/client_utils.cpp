@@ -4,6 +4,7 @@
 #include "boost/asio/ssl/set_cipher_list.hpp"
 #endif
 #include "cpprest/basic_utils.h"
+#include "cpprest/details/system_error.h"
 #include "cpprest/http_client.h"
 #include "cpprest/ws_client.h"
 #include "nmos/ssl_context_options.h"
@@ -39,7 +40,7 @@ namespace nmos
                 }
                 catch (const boost::system::system_error& e)
                 {
-                    throw ExceptionType(e.code(), e.what());
+                    throw web::details::from_boost_system_system_error<ExceptionType>(e);
                 }
             };
         }
