@@ -2,6 +2,8 @@
 
 C++ source code and build files for the software
 
+- [boost](boost)  
+  Extensions to the [Boost C++ Libraries](http://www.boost.org/)
 - [bst](bst)  
   Facades and adaptors to handle different C++ Standard Library implementations and Testing Frameworks
 - [cmake](cmake)  

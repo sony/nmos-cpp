@@ -11,6 +11,8 @@ Third-party source files used by the nmos-cpp libraries
 - [nlohmann](nlohmann)  
   The [JSON for Modern C++](https://github.com/nlohmann/json) and [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) libraries
 - [nmos-device-connection-management](nmos-device-connection-management)  
-  The JSON Schema files used for validation of Connection API requests
+  The JSON Schema files used for validation of Connection API requests and responses
 - [nmos-discovery-registration](nmos-discovery-registration)  
-  The JSON Schema files used for validation of e.g. Registration API requests
+  The JSON Schema files used for validation of e.g. Registration API requests and responses
+- [nmos-system](nmos-system)  
+  The JSON Schema files used for validation of System API requests and responses
