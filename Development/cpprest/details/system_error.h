@@ -38,7 +38,8 @@ namespace web
             if (boost::system::generic_category() == category) return std::generic_category();
 
             struct cat_map_less { bool operator()(const boost::system::error_category* lhs, const boost::system::error_category* rhs) const { return *lhs < *rhs; } };
-            static std::map<const boost::system::error_category*, std::unique_ptr<boost_system_error_category>, cat_map_less> cat_map;
+            typedef std::map<const boost::system::error_category*, std::unique_ptr<boost_system_error_category>, cat_map_less> cat_map_type;
+            static cat_map_type cat_map;
             static std::mutex cat_mutex;
 
             std::lock_guard<std::mutex> guard(cat_mutex);
@@ -46,7 +47,7 @@ namespace web
             auto cat = cat_map.find(&category);
             if (cat_map.end() == cat)
             {
-                cat = cat_map.insert({ &category, std::unique_ptr<boost_system_error_category>(new boost_system_error_category(&category)) }).first;
+                cat = cat_map.insert(cat_map_type::value_type{ &category, std::unique_ptr<boost_system_error_category>(new boost_system_error_category(&category)) }).first;
             }
 
             return *cat->second;
