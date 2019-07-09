@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <system_error>
 #include <boost/system/system_error.hpp>
