@@ -559,6 +559,7 @@ set(NMOS_CPP_CPPREST_DETAILS_HEADERS
     ${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h
     ${NMOS_CPP_DIR}/cpprest/details/pop_u.h
     ${NMOS_CPP_DIR}/cpprest/details/push_undef_u.h
+    ${NMOS_CPP_DIR}/cpprest/details/system_error.h
     )
 
 set(NMOS_CPP_NMOS_SOURCES

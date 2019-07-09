@@ -21,6 +21,7 @@ __pragma(warning(disable:4701)) // e.g. potentially uninitialized local variable
 PRAGMA_WARNING_POP
 
 #include "cpprest/asyncrt_utils.h" // for utility::conversions
+#include "cpprest/details/system_error.h"
 #include "cpprest/uri_schemes.h"
 
 // websocket_listener is an experimental server-side implementation of WebSockets
@@ -324,7 +325,7 @@ namespace web
                                 // if the error is "Underlying Transport Error" (pass_through), this might be a platform that doesn't support IPv6
                                 // (and depending on configuration, one can't detect boost::asio::error::address_family_not_supported directly)
                                 // since WebSocket++ 0.8.0, the error category and code used in this case seem to have changed
-                                if (make_error_code(boost::asio::error::address_family_not_supported) == ec
+                                if (web::details::equal_to(make_error_code(boost::asio::error::address_family_not_supported), ec)
                                     || make_error_code(websocketpp::transport::asio::error::pass_through) == ec
                                     || make_error_code(websocketpp::transport::error::pass_through) == ec)
                                 {

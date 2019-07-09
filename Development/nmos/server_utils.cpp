@@ -6,6 +6,7 @@
 #include "boost/asio/ssl/use_tmp_ecdh.hpp"
 #endif
 #include "cpprest/basic_utils.h"
+#include "cpprest/details/system_error.h"
 #include "cpprest/http_listener.h"
 #include "cpprest/ws_listener.h"
 #include "nmos/ssl_context_options.h"
@@ -30,7 +31,7 @@ namespace nmos
 
                     if (private_key_files.size() == 0)
                     {
-                        throw ExceptionType({},"Missing private key file");
+                        throw ExceptionType({}, "Missing private key file");
                     }
                     for (const auto& private_key_file : private_key_files.as_array())
                     {
@@ -39,7 +40,7 @@ namespace nmos
 
                     if (certificate_chain_files.size() == 0)
                     {
-                        throw ExceptionType({},"Missing certificate chain file");
+                        throw ExceptionType({}, "Missing certificate chain file");
                     }
                     for (const auto& certificate_chain_file : certificate_chain_files.as_array())
                     {
@@ -55,7 +56,7 @@ namespace nmos
                 }
                 catch (const boost::system::system_error& e)
                 {
-                    throw ExceptionType(e.code(), e.what());
+                    throw web::details::from_boost_system_system_error<ExceptionType>(e);
                 }
             };
         }
