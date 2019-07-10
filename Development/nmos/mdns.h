@@ -38,6 +38,9 @@ namespace nmos
 
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const service_type system{ "_nmos-system._tcp" };
+
+        // IS-10 Authorization API
+        const service_type authorization{ "_nmos-auth._tcp" };
     }
 
     // "The DNS-SD advertisement MUST be accompanied by a TXT record of name 'api_proto' with a value
@@ -73,6 +76,17 @@ namespace nmos
     // find and parse the 'api_ver' TXT record (or return the default)
     std::set<api_version> parse_api_ver_record(const mdns::structured_txt_records& records);
 
+    // "The DNS-SD advertisement MUST be accompanied by a TXT record of name 'api_auth'
+    // with a value of either 'true' or 'false' dependent on whether authorization is required
+    // in order to interact with the API or not."
+    // (This record is added in v1.3, so when it is omitted, "false" should be assumed.)
+
+    // returns true or false depending on settings
+    bool get_service_authorization(const nmos::settings& settings);
+
+    // find and parse the 'api_auth' TXT record (or return the default)
+    bool parse_api_auth_record(const mdns::structured_txt_records& records);
+
     // "The DNS-SD advertisement MUST include a TXT record with key 'pri' and an integer value.
     // Values 0 to 99 correspond to an active NMOS Registration API (zero being the highest priority).
     // Values 100+ are reserved for development work to avoid colliding with a live system."
@@ -92,7 +106,7 @@ namespace nmos
     service_priority parse_pri_record(const mdns::structured_txt_records& records);
 
     // make the required TXT records from the specified values (or sensible default values)
-    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri = service_priorities::highest_development_priority, const std::set<api_version>& api_ver = is04_versions::all, const service_protocol& api_proto = service_protocols::http);
+    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri = service_priorities::highest_development_priority, const std::set<api_version>& api_ver = is04_versions::all, const service_protocol& api_proto = service_protocols::http, bool api_auth = false);
 
     // "The value of each of the ['ver_' TXT records] should be an unsigned 8-bit integer initialised
     // to '0'. This integer MUST be incremented and mDNS TXT record updated whenever a change is made
@@ -126,12 +140,12 @@ namespace nmos
 
         // helper function for resolving instances of the specified service (API)
         // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
+        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
         template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
-        inline pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain = {}, const std::set<nmos::api_version>& api_ver = nmos::is04_versions::all, const std::pair<nmos::service_priority, nmos::service_priority>& priorities = { service_priorities::highest_active_priority, service_priorities::no_priority }, const std::set<nmos::service_protocol>& api_proto = nmos::service_protocols::all, bool randomize = true, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(mdns::default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        inline pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain = {}, const std::set<nmos::api_version>& api_ver = nmos::is04_versions::all, const std::pair<nmos::service_priority, nmos::service_priority>& priorities = { service_priorities::highest_active_priority, service_priorities::no_priority }, const std::set<nmos::service_protocol>& api_proto = nmos::service_protocols::all, const std::set<bool>& api_auth = { false, true }, bool randomize = true, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(mdns::default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
-            return resolve_service(discovery, service, browse_domain, api_ver, api_proto, randomize, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
+            return resolve_service(discovery, service, browse_domain, api_ver, api_proto, api_auth, randomize, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
         }
     }
 }
