@@ -172,8 +172,8 @@ namespace nmos
     {
     public:
         // apart from the gate, arguments are copied in order that this object is safely copyable
-        ws_api_gate(slog::base_gate& gate, const utility::string_t& ws_resource_path)
-            : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << nmos::stash_request_uri(ws_resource_path); }))
+        ws_api_gate(slog::base_gate& gate, const web::uri& connection_uri)
+            : details::omanip_gate(gate, slog::omanip([=](std::ostream& os) { os << nmos::stash_request_uri(connection_uri); }))
         {}
         virtual ~ws_api_gate() {}
     };

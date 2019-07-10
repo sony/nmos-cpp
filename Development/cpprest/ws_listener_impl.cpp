@@ -163,6 +163,14 @@ namespace web
                         return message.*detail::stowed<websocket_outgoing_message_body>::value;
                     }
 
+                    struct websocketpp_http_parser_parser_headers { typedef websocketpp::http::parser::header_list(websocketpp::http::parser::parser::*type); };
+
+                    // websocketpp::http::parser::parser::get_headers only available since WebSocket++ 0.8.0
+                    const websocketpp::http::parser::header_list& get_headers(const websocketpp::http::parser::parser& parser)
+                    {
+                        return parser.*detail::stowed<websocketpp_http_parser_parser_headers>::value;
+                    }
+
                     static std::string build_error_msg(const std::error_code& ec, const std::string& location)
                     {
                         std::stringstream ss;
@@ -464,9 +472,32 @@ namespace web
                         typedef websocketpp::server<WsppConfig> server_t;
                         typedef std::set<websocketpp::connection_hdl, std::owner_less<websocketpp::connection_hdl>> connections_t;
 
-                        utility::string_t resource_from_hdl(websocketpp::connection_hdl hdl)
+                        web::uri uri_from_hdl(websocketpp::connection_hdl hdl)
                         {
-                            return utility::conversions::to_string_t(server.get_con_from_hdl(hdl)->get_resource());
+                            return web::uri(utility::conversions::to_string_t(server.get_con_from_hdl(hdl)->get_uri()->str()));
+                        }
+
+                        web::http::http_request request_from_hdl(websocketpp::connection_hdl hdl)
+                        {
+                            // could set the method from the request, but it's pretty much got to be GET
+                            web::http::http_request req(web::http::methods::GET);
+
+                            // could set the http version from the request, but it's pretty much got to be HTTP/1.1
+
+                            // set the URI from the request
+                            auto absolute_uri = uri_from_hdl(hdl);
+                            req._set_base_uri(absolute_uri.authority());
+                            req._set_listener_path(uri().path());
+                            req.set_request_uri(absolute_uri.resource());
+
+                            // set the headers from the request
+                            for (auto& header : get_headers(server.get_con_from_hdl(hdl)->get_request()))
+                            {
+                                req.headers().add(utility::conversions::to_string_t(header.first), utility::conversions::to_string_t(header.second));
+                            }
+
+                            // and there's no body
+                            return req;
                         }
 
                         std::pair<websocket_close_status, utility::string_t> remote_close_from_hdl(websocketpp::connection_hdl hdl)
@@ -491,7 +522,32 @@ namespace web
 
                         bool handle_validate(websocketpp::connection_hdl hdl)
                         {
-                            return user_validate ? user_validate(resource_from_hdl(hdl)) : true;
+                            if (!user_validate) return true;
+
+                            auto req = request_from_hdl(hdl);
+                            const auto valid = user_validate(req);
+
+                            if (!valid && req.get_response().is_done())
+                            {
+                                auto res = req.get_response().get();
+                                auto con = server.get_con_from_hdl(hdl);
+
+                                // set the status code from the user validate reply
+                                if ((std::numeric_limits<uint16_t>::max)() != res.status_code())
+                                {
+                                    con->set_status(static_cast<websocketpp::http::status_code::value>(res.status_code()), utility::conversions::to_utf8string(res.reason_phrase()));
+                                }
+
+                                // set the headers from the user validate reply
+                                for (auto& header : res.headers())
+                                {
+                                    con->replace_header(utility::conversions::to_utf8string(header.first), utility::conversions::to_utf8string(header.second));
+                                }
+
+                                // for now, no body
+                            }
+
+                            return valid;
                         }
 
                         void handle_open(websocketpp::connection_hdl hdl)
@@ -503,7 +559,7 @@ namespace web
 
                             if (user_open)
                             {
-                                user_open(resource_from_hdl(hdl), id_from_hdl(hdl));
+                                user_open(uri_from_hdl(hdl), id_from_hdl(hdl));
                             }
                         }
 
@@ -517,7 +573,7 @@ namespace web
                             if (user_close)
                             {
                                 const auto remote_close = remote_close_from_hdl(hdl);
-                                user_close(resource_from_hdl(hdl), id_from_hdl(hdl), remote_close.first, remote_close.second);
+                                user_close(uri_from_hdl(hdl), id_from_hdl(hdl), remote_close.first, remote_close.second);
                             }
                         }
 
@@ -547,7 +603,7 @@ namespace web
                                 auto& payload = msg->get_raw_payload();
                                 incoming_msg_body = std::move(payload);
 
-                                user_message(resource_from_hdl(hdl), id_from_hdl(hdl), incoming_msg);
+                                user_message(uri_from_hdl(hdl), id_from_hdl(hdl), incoming_msg);
                             }
                         }
 
@@ -670,3 +726,4 @@ namespace web
 template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_outgoing_message_body, &web::websockets::websocket_outgoing_message::m_body>;
 template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_incoming_message_body, &web::websockets::websocket_incoming_message::m_body>;
 template struct detail::stow_private<web::websockets::experimental::listener::details::websocket_incoming_message_msg_type, &web::websockets::websocket_incoming_message::m_msg_type>;
+template struct detail::stow_private<web::websockets::experimental::listener::details::websocketpp_http_parser_parser_headers, &websocketpp::http::parser::parser::m_headers>;
