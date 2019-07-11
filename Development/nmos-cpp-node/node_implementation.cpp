@@ -43,19 +43,20 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     // and that the the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
     {
-        if (!nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; }))
-        {
-            const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-            const bool success = insert_resource(resources, std::move(resource)).second;
+        if (nmos::details::wait_for(model.shutdown_condition, lock, std::chrono::milliseconds(milliseconds), [&] { return model.shutdown; })) return false;
 
-            if (success)
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
-            else
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
+        const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+        const bool success = insert_resource(resources, std::move(resource)).second;
 
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
-            model.notify();
-        }
+        if (success)
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Updated model with " << id_type;
+        else
+            slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
+
+        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying node behaviour thread"; // and anyone else who cares...
+        model.notify();
+
+        return success;
     };
 
     const auto resolve_auto = make_node_implementation_auto_resolver(model.settings);
@@ -72,7 +73,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
                 { U("name"), U("example") }
             })
         });
-        insert_resource_after(delay_millis, model.node_resources, std::move(node), gate);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) return;
     }
 
     // example device
@@ -81,7 +82,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
             ? std::vector<nmos::id>{ sender_id, temperature_ws_sender_id }
             : std::vector<nmos::id>{ sender_id };
         const auto receivers = std::vector<nmos::id>{ receiver_id };
-        insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate);
+        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate)) return;
     }
 
     // example source, flow and sender
@@ -91,8 +92,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto flow = nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings);
 
         // set_transportfile needs to find the matching source and flow for the sender, so insert these first
-        insert_resource_after(delay_millis, model.node_resources, std::move(source), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
         // add example network interface binding for both primary and secondary
         auto sender = nmos::make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings);
@@ -103,8 +104,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
         set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
 
-        insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate);
-        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
     }
 
     // example receiver
@@ -117,8 +118,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
         resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
-        insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate);
-        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
     }
 
     // example temperature event source, sender, flow
@@ -138,11 +139,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
         resolve_auto(temperature_ws_sender, connection_temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
-        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate);
-        insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate);
-        insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate);
-        insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate)) return;
     }
 
     // start background tasks to emit regular events from the temperature event source
