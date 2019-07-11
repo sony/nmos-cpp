@@ -32,8 +32,11 @@ namespace nmos
         pplx::task<void> open();
         pplx::task<void> close();
 
+    private:
         // Threads are started and stopped (created and joined) on open and close respectively
         std::vector<std::thread> threads;
+
+        static void wait_nothrow(pplx::task<void> t) { try { t.wait(); } catch (...) {} }
     };
 
     inline pplx::task<void> server::open()
@@ -62,36 +65,44 @@ namespace nmos
                 if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.open());
             }
 
-            return pplx::when_all(tasks.begin(), tasks.end());
+            return pplx::when_all(tasks.begin(), tasks.end()).then([tasks](pplx::task<void> finally)
+            {
+                for (auto& task : tasks) wait_nothrow(task);
+                finally.wait();
+            });
         });
     }
 
     inline pplx::task<void> server::close()
     {
-        return pplx::create_task([this]
+        return pplx::create_task([&]
         {
             // Close the API ports
 
             std::vector<pplx::task<void>> tasks;
 
-            for (auto& http_listener : this->http_listeners)
+            for (auto& http_listener : http_listeners)
             {
                 if (0 <= http_listener.uri().port()) tasks.push_back(http_listener.close());
             }
-            for (auto& ws_listener : this->ws_listeners)
+            for (auto& ws_listener : ws_listeners)
             {
                 if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.close());
             }
 
-            return pplx::when_all(tasks.begin(), tasks.end());
-        }).then([this]
+            return pplx::when_all(tasks.begin(), tasks.end()).then([tasks](pplx::task<void> finally)
+            {
+                for (auto& task : tasks) wait_nothrow(task);
+                finally.wait();
+            });
+        }).then([&](pplx::task<void> finally)
         {
             // Signal shutdown
             this->model.controlled_shutdown();
 
             // Join threads
 
-            for (auto& thread : this->threads)
+            for (auto& thread : threads)
             {
                 if (thread.joinable())
                 {
@@ -99,7 +110,9 @@ namespace nmos
                 }
             }
 
-            this->threads.clear();
+            threads.clear();
+
+            finally.wait();
         });
     }
 
