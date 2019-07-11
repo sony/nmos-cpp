@@ -547,7 +547,7 @@ namespace nmos
         web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
 
         data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, false);
-        data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
+        data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
         data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
         auto transport_params = details::make_connection_websocket_receiver_staged_core_parameter_set(connection_authorization);
