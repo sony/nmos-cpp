@@ -24,15 +24,17 @@ namespace nmos
 
     namespace details
     {
-        web::json::value legs_of(const web::json::value& value, bool smpte2022_7)
+        // IS-05 v1.1 doesn't limit the number of legs that a sender or receiver may have, but for all supported transport types
+        // so far, there are either one or two (redundant) legs
+        web::json::value legs_of(const web::json::value& value, bool redundant)
         {
             using web::json::value_of;
-            return smpte2022_7 ? value_of({ value, value }) : value_of({ value });
+            return redundant ? value_of({ value, value }) : value_of({ value });
         }
 
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender-response-schema.json
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-response-schema.json
-        web::json::value make_connection_resource_staging_core(bool smpte2022_7)
+        web::json::value make_connection_resource_staging_core(bool redundant)
         {
             using web::json::value;
             using web::json::value_of;
@@ -44,23 +46,23 @@ namespace nmos
                     { nmos::fields::requested_time, value::null() },
                     { nmos::fields::activation_time, value::null() }
                 }) },
-                { nmos::fields::transport_params, legs_of(value::object(), smpte2022_7) }
+                { nmos::fields::transport_params, legs_of(value::object(), redundant) }
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-response-schema.json
-        web::json::value make_connection_rtp_receiver_staging_transport_file()
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-transport-file.json
+        web::json::value make_connection_receiver_staging_transport_file()
         {
             using web::json::value;
             using web::json::value_of;
 
             return value_of({
                 { nmos::fields::data, value::null() },
-                { nmos::fields::type, U("application/sdp") }
+                { nmos::fields::type, value::null() }
             });
         }
 
-        web::json::value make_connection_resource_core(const nmos::id& id, bool smpte2022_7)
+        web::json::value make_connection_resource_core(const nmos::id& id, bool redundant)
         {
             using web::json::value;
             using web::json::value_of;
@@ -68,9 +70,9 @@ namespace nmos
             return value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::endpoint_constraints, legs_of(value::object(), smpte2022_7) },
-                { nmos::fields::endpoint_staged, make_connection_resource_staging_core(smpte2022_7) },
-                { nmos::fields::endpoint_active, make_connection_resource_staging_core(smpte2022_7) }
+                { nmos::fields::endpoint_constraints, legs_of(value::object(), redundant) },
+                { nmos::fields::endpoint_staged, make_connection_resource_staging_core(redundant) },
+                { nmos::fields::endpoint_active, make_connection_resource_staging_core(redundant) }
             });
         }
 
@@ -209,7 +211,7 @@ namespace nmos
         data[nmos::fields::endpoint_constraints] = details::legs_of(details::make_connection_rtp_receiver_core_constraints(), smpte2022_7);
 
         data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_rtp_receiver_staging_transport_file();
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(details::make_connection_rtp_receiver_staged_core_parameter_set(), smpte2022_7);
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
@@ -518,16 +520,15 @@ namespace nmos
         auto constraints = details::make_connection_websocket_sender_core_constraints(connection_uri, connection_authorization);
         auto ext_constraints = details::make_connection_events_websocket_sender_ext_constraints(source_id, rest_api_url);
         web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
-
         data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, false);
+
         data[nmos::fields::endpoint_staged][nmos::fields::receiver_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
 
         auto transport_params = details::make_connection_websocket_sender_staged_core_parameter_set(connection_uri, connection_authorization);
         auto ext_transport_params = details::make_connection_events_websocket_sender_staged_ext_parameter_set(source_id, rest_api_url);
         web::json::insert(transport_params, ext_transport_params.as_object().begin(), ext_transport_params.as_object().end());
-
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, false);
+
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
         return{ is05_versions::v1_1, types::sender, data, false };
@@ -545,16 +546,17 @@ namespace nmos
         auto constraints = details::make_connection_websocket_receiver_core_constraints(connection_authorization);
         auto ext_constraints = details::make_connection_events_websocket_receiver_ext_constraints();
         web::json::insert(constraints, ext_constraints.as_object().begin(), ext_constraints.as_object().end());
-
         data[nmos::fields::endpoint_constraints] = details::legs_of(constraints, false);
+
         data[nmos::fields::endpoint_staged][nmos::fields::sender_id] = value::null();
-        data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(false);
+
+        data[nmos::fields::endpoint_staged][nmos::fields::transport_file] = details::make_connection_receiver_staging_transport_file();
 
         auto transport_params = details::make_connection_websocket_receiver_staged_core_parameter_set(connection_authorization);
         auto ext_transport_params = details::make_connection_events_websocket_receiver_staged_ext_parameter_set();
         web::json::insert(transport_params, ext_transport_params.as_object().begin(), ext_transport_params.as_object().end());
-
         data[nmos::fields::endpoint_staged][nmos::fields::transport_params] = details::legs_of(transport_params, false);
+
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
         return{ is05_versions::v1_1, types::receiver, data, false };
