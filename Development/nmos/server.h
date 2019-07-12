@@ -51,6 +51,17 @@ namespace nmos
         {
             start_threads();
             return open_listeners();
+        }).then([&](pplx::task<void> finally)
+        {
+            try
+            {
+                return finally.get();
+            }
+            catch (...)
+            {
+                stop_threads();
+                throw;
+            }
         });
     }
 
