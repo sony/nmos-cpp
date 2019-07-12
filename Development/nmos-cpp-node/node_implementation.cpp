@@ -9,6 +9,7 @@
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
+#include "nmos/random.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
 #include "nmos/transport.h"
@@ -146,12 +147,17 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate)) return;
     }
 
-    // start background tasks to emit regular events from the temperature event source
+    // start background tasks to intermittently update the state of the temperature event source, to cause events to be emitted to connected receivers
+
+    nmos::details::seed_generator temperature_interval_seeder;
+    std::shared_ptr<std::default_random_engine> temperature_interval_engine(new std::default_random_engine(temperature_interval_seeder));
+
     auto cancellation_source = pplx::cancellation_token_source();
     auto token = cancellation_source.get_token();
-    auto temperature_events = pplx::do_while([&model, temperature_source_id, token]
+    auto temperature_events = pplx::do_while([&model, temperature_source_id, temperature_interval_engine, token]
     {
-        return pplx::complete_after(std::chrono::seconds(1), token).then([&model, temperature_source_id]
+        const auto temp_interval = std::uniform_real_distribution<>(0.5, 5.0)(*temperature_interval_engine);
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * temp_interval)), token).then([&model, temperature_source_id]
         {
             auto lock = model.write_lock();
 
