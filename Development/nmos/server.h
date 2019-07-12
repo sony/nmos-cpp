@@ -37,19 +37,46 @@ namespace nmos
         std::vector<std::thread> threads;
 
         static void wait_nothrow(pplx::task<void> t) { try { t.wait(); } catch (...) {} }
+
+        void start_threads();
+        void stop_threads();
+
+        pplx::task<void> open_listeners();
+        pplx::task<void> close_listeners();
     };
 
     inline pplx::task<void> server::open()
     {
         return pplx::create_task([&]
         {
-            // Start up threads
+            start_threads();
+            return open_listeners();
+        });
+    }
 
-            for (auto& thread_function : thread_functions)
-            {
-                threads.push_back(std::thread(thread_function));
-            }
-        }).then([&]
+    inline pplx::task<void> server::close()
+    {
+        return close_listeners().then([&](pplx::task<void> finally)
+        {
+            stop_threads();
+            return finally;
+        });
+    }
+
+    inline void server::start_threads()
+    {
+        // Start up threads
+
+        for (auto& thread_function : thread_functions)
+        {
+            // hm, or std::move(thread_function), making this clearly one-shot?
+            threads.push_back(std::thread(thread_function));
+        }
+    }
+
+    inline pplx::task<void> server::open_listeners()
+    {
+        return pplx::create_task([&]
         {
             // Open the API ports
 
@@ -73,7 +100,7 @@ namespace nmos
         });
     }
 
-    inline pplx::task<void> server::close()
+    inline pplx::task<void> server::close_listeners()
     {
         return pplx::create_task([&]
         {
@@ -95,25 +122,26 @@ namespace nmos
                 for (auto& task : tasks) wait_nothrow(task);
                 finally.wait();
             });
-        }).then([&](pplx::task<void> finally)
-        {
-            // Signal shutdown
-            this->model.controlled_shutdown();
-
-            // Join threads
-
-            for (auto& thread : threads)
-            {
-                if (thread.joinable())
-                {
-                    thread.join();
-                }
-            }
-
-            threads.clear();
-
-            finally.wait();
         });
+    }
+
+    inline void server::stop_threads()
+    {
+        // Signal shutdown
+        model.controlled_shutdown();
+
+        // Join all threads
+
+        for (auto& thread : threads)
+        {
+            if (thread.joinable())
+            {
+                // hm, ignoring possibility of exceptions?
+                thread.join();
+            }
+        }
+
+        threads.clear();
     }
 
     // RAII helper for server sessions
