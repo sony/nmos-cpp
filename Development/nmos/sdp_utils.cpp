@@ -547,6 +547,9 @@ namespace nmos
 
             if (details::get_address_type_multicast(address).second)
             {
+                // any-source multicast, unless there's a source-filter
+                params[nmos::fields::source_ip] = value::null();
+
                 params[nmos::fields::multicast_ip] = value::string(address);
                 params[nmos::fields::interface_ip] = value::string(U("auto"));
             }
@@ -573,6 +576,7 @@ namespace nmos
         // For now, this function should handle the following cases identified in the documentation:
         // * Unicast
         // * Source Specific Multicast
+        // * Any Source Multicast
         // * Operation with SMPTE 2022-7 - Separate Source Addresses
         // * Operation with SMPTE 2022-7 - Separate Destination Addresses
 
