@@ -9,7 +9,7 @@
 
 namespace nmos
 {
-    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, slog::base_gate& gate)
+    void connection_activation_thread(nmos::node_model& model, connection_resource_auto_resolver resolve_auto, connection_sender_transportfile_setter set_transportfile, connection_activation_handler connection_activated, slog::base_gate& gate)
     {
         auto lock = model.write_lock(); // in order to update the resources
 
@@ -161,6 +161,17 @@ namespace nmos
                     {
                         nmos::set_resource_subscription(resource, active, connected_id, activation_time);
                     });
+
+                    // Synchronous notification that the active parameters for the specified (IS-04/IS-05) sender/connection_sender or receiver/connection_receiver have changed
+                    // and the underlying implementation should make or break this connection according to the values in the /active endpoint
+
+                    if (connection_activated)
+                    {
+                        auto matching_resource = find_resource(model.node_resources, id_type);
+
+                        // for now, this callback must not throw exceptions
+                        connection_activated(*matching_resource, resource);
+                    }
                 }
                 catch (...)
                 {

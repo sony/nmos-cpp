@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 
         // Set up the node server
 
-        auto node_server = nmos::experimental::make_node_server(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), log_model, gate);
+        auto node_server = nmos::experimental::make_node_server(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), {}, log_model, gate);
 
         // Add the underlying implementation, which will set up the node resources, etc.
 
