@@ -87,6 +87,26 @@ namespace pplx
     }
 
     /// <summary>
+    ///     Silently 'observe' any exception thrown from a task.
+    /// </summary>
+    /// <remarks>
+    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
+    ///     Add this as a continuation to silently swallow all exceptions.
+    /// </remarks>
+    template <typename ReturnType>
+    struct observe_exception
+    {
+        void operator()(pplx::task<ReturnType> finally) const
+        {
+            try
+            {
+                finally.wait();
+            }
+            catch (...) {}
+        }
+    };
+
+    /// <summary>
     ///     RAII helper for classes that have asynchronous open/close member functions.
     /// </summary>
     template <typename T>
