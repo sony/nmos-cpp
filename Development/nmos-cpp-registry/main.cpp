@@ -92,6 +92,16 @@ int main(int argc, char* argv[])
 
         auto registry_server = nmos::experimental::make_registry_server(registry_model, log_model, gate);
 
+        if (!nmos::experimental::fields::http_trace(registry_model.settings))
+        {
+            // Disable TRACE method
+
+            for (auto& http_listener : registry_server.http_listeners)
+            {
+                http_listener.support(web::http::methods::TRCE, [](web::http::http_request req) { req.reply(web::http::status_codes::MethodNotAllowed); });
+            }
+        }
+
         // Open the API ports and start up registry management
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";

@@ -185,6 +185,9 @@ namespace nmos
             const web::json::field_as_integer_or logging_paging_default{ U("logging_paging_default"), 100 };
             const web::json::field_as_integer_or logging_paging_limit{ U("logging_paging_limit"), 100 };
 
+            // http_trace [registry, node]: whether server should enable (default) or disable support for HTTP TRACE
+            const web::json::field_as_bool_or http_trace{ U("http_trace"), true };
+
             // proxy_map [registry, node]: mapping between the port numbers to which the client connects, and the port numbers on which the server should listen, if different
             // for use with a reverse proxy; each element of the array is an object like { "client_port": 80, "server_port": 8080 }
             const web::json::field_as_value_or proxy_map{ U("proxy_map"), web::json::value::array() };

@@ -94,6 +94,16 @@ int main(int argc, char* argv[])
 
         auto node_server = nmos::experimental::make_node_server(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), {}, log_model, gate);
 
+        if (!nmos::experimental::fields::http_trace(node_model.settings))
+        {
+            // Disable TRACE method
+
+            for (auto& http_listener : node_server.http_listeners)
+            {
+                http_listener.support(web::http::methods::TRCE, [](web::http::http_request req) { req.reply(web::http::status_codes::MethodNotAllowed); });
+            }
+        }
+
         // Add the underlying implementation, which will set up the node resources, etc.
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
