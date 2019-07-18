@@ -42,6 +42,7 @@ namespace nmos
         const web::json::field_as_string label{ U("label") };
         const web::json::field_as_string description{ U("description") };
         // node
+        const web::json::field_as_value_or caps{ U("caps"), web::json::value::object() }; // required in node, receiver, source, optional in sender (and up to v1.3 only used in receiver)
         const web::json::field_as_array interfaces{ U("interfaces") };
         const web::json::field_as_string name{ U("name") };
         const web::json::field_as_string chassis_id{ U("chassis_id") };
@@ -85,6 +86,8 @@ namespace nmos
         const web::json::field_as_bool active{ U("active") }; // used in sender subscription; also used in receiver subscription from v1.2
         // receiver_core
         const web::json::field_as_value sender_id{ U("sender_id") }; // used in receiver subscription
+        // receiver_data
+        const web::json::field_as_value_or event_types{ U("event_types"), web::json::value::array() }; // used in receiver caps
 
         // (mostly) for query_api
         const web::json::field_as_bool persist{ U("persist") };
@@ -172,6 +175,7 @@ namespace nmos
         // for events_ws_api messages
         const web::json::field_as_string message_type{ U("message_type") };
         // for "state" messages
+        const web::json::field_as_string state_event_type{ U("event_type") };
         const web::json::field_as_value state_payload{ U("payload") };
         const web::json::field_as_number payload_number_value{ U("value") };
         const web::json::field_with_default<int64_t> payload_number_scale{ U("scale"), 1 };
