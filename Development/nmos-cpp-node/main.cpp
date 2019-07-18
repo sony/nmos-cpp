@@ -92,7 +92,10 @@ int main(int argc, char* argv[])
 
         // Set up the node server
 
-        auto node_server = nmos::experimental::make_node_server(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), {}, log_model, gate);
+        auto resolve_auto = make_node_implementation_auto_resolver(node_model.settings);
+        auto set_transportfile = make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings);
+
+        auto node_server = nmos::experimental::make_node_server(node_model, resolve_auto, set_transportfile, {}, log_model, gate);
 
         if (!nmos::experimental::fields::http_trace(node_model.settings))
         {

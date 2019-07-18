@@ -15,6 +15,9 @@
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
 
+const auto temperature_Celsius = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C"));
+const auto temperature_wildcard = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), nmos::event_types::wildcard);
+
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
 // starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
@@ -35,6 +38,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     auto temperature_source_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/source/1"));
     auto temperature_flow_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/flow/1"));
     auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
+    auto temperature_ws_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1"));
 
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
@@ -126,7 +130,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     // example temperature event source, sender, flow
     if (0 <= nmos::fields::events_port(model.settings))
     {
-        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C")), model.settings);
+        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, temperature_Celsius, model.settings);
 
         // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
@@ -147,6 +151,18 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
         if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate)) return;
     }
 
+    // example temperature event receiver
+    {
+        auto temperature_receiver = nmos::make_data_receiver(temperature_ws_receiver_id, device_id, nmos::transports::websocket, { U("example") }, nmos::media_types::application_json, { temperature_wildcard }, model.settings);
+        web::json::push_back(temperature_receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 1") }));
+
+        auto connection_temperature_receiver = nmos::make_connection_events_websocket_receiver(temperature_ws_receiver_id, model.settings);
+        resolve_auto(temperature_receiver, connection_temperature_receiver, connection_temperature_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_receiver), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_receiver), gate)) return;
+    }
+
     // start background tasks to intermittently update the state of the temperature event source, to cause events to be emitted to connected receivers
 
     nmos::details::seed_generator temperature_interval_seeder;
@@ -154,20 +170,23 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
 
     auto cancellation_source = pplx::cancellation_token_source();
     auto token = cancellation_source.get_token();
-    auto temperature_events = pplx::do_while([&model, temperature_source_id, temperature_interval_engine, token]
+    auto temperature_events = pplx::do_while([&model, temperature_source_id, temperature_interval_engine, &gate, token]
     {
         const auto temp_interval = std::uniform_real_distribution<>(0.5, 5.0)(*temperature_interval_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * temp_interval)), token).then([&model, temperature_source_id]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * temp_interval)), token).then([&model, temperature_source_id, &gate]
         {
             auto lock = model.write_lock();
 
-            modify_resource(model.events_resources, temperature_source_id, [](nmos::resource& resource)
+            // make example temperature data ... \/\/\/\/ ... around 200
+            const nmos::events_number value(175.0 + std::abs(nmos::tai_now().seconds % 100 - 50), 10);
+            // i.e. 17.5-22.5 C
+
+            modify_resource(model.events_resources, temperature_source_id, [&value](nmos::resource& resource)
             {
-                // make example temperature data ... \/\/\/\/ ... around 200
-                auto value = 175.0 + std::abs(nmos::tai_now().seconds % 100 - 50);
-                // i.e. 17.5-22.5 C
-                nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, { value, 10 });
+                nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, value, temperature_Celsius);
             });
+
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << value.scaled_value() << " (" << temperature_Celsius.name << ")";
 
             model.notify();
 
@@ -194,10 +213,11 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     auto receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/0"));
     auto temperature_ws_sender_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/sender/1"));
     auto temperature_ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
+    auto temperature_ws_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1"));
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [device_id, sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [device_id, sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri, temperature_ws_receiver_id](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
 
@@ -222,6 +242,10 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(temperature_ws_sender_uri.to_string()); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
         }
+        else if (temperature_ws_receiver_id == id_type.first)
+        {
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
+        }
     };
 }
 
@@ -239,6 +263,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     {
         if (sender_id == connection_sender.id)
         {
+            // note, model mutex is already locked by the calling thread, so access to node_resources is OK...
             auto source = nmos::find_resource(node_resources, { source_id, nmos::types::source });
             auto flow = nmos::find_resource(node_resources, { flow_id, nmos::types::flow });
             if (node_resources.end() == source || node_resources.end() == flow)

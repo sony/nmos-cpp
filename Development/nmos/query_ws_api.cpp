@@ -37,6 +37,7 @@ namespace nmos
         };
     }
 
+    // note, model mutex is assumed to also protect websockets
     web::websockets::experimental::listener::open_handler make_query_ws_open_handler(const nmos::id& source_id, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
         using web::json::value;
@@ -100,6 +101,7 @@ namespace nmos
         };
     }
 
+    // note, model mutex is assumed to also protect websockets
     web::websockets::experimental::listener::close_handler make_query_ws_close_handler(nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
         return [&model, &websockets, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, web::websockets::websocket_close_status close_status, const utility::string_t& close_reason)
@@ -140,6 +142,7 @@ namespace nmos
         };
     }
 
+    // note, model mutex is assumed to also protect websockets
     void send_query_ws_events_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::registry_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::send_query_ws_events));
