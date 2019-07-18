@@ -25,7 +25,8 @@ namespace nmos
                 // get sdp from sender, and then use this to connect
 
                 const auto sender_id = nmos::fields::id(sender_data);
-                const auto manifest_href = nmos::fields::manifest_href(sender_data);
+                // if manifest_href is null, this will throw json_exception which will be reported appropriately as 400 Bad Request
+                const auto manifest_href = nmos::fields::manifest_href(sender_data).as_string();
 
                 web::http::client::http_client client(manifest_href, nmos::with_read_lock(model.mutex, [&model] { return nmos::make_http_client_config(model.settings); }));
                 return client.request(web::http::methods::GET).then([manifest_href, &gate](web::http::http_response res)
