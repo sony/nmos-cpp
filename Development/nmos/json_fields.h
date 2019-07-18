@@ -46,10 +46,19 @@ namespace nmos
         const web::json::field_as_string name{ U("name") };
         const web::json::field_as_string chassis_id{ U("chassis_id") };
         const web::json::field_as_string port_id{ U("port_id") };
-        // sender
-        const web::json::field_as_array interface_bindings{ U("interface_bindings") };
-        const web::json::field_as_string transport{ U("transport") };
+        // device
+        const web::json::field_as_string node_id{ U("node_id") };
+        const web::json::field_as_array senders{ U("senders") }; // deprecated
+        const web::json::field_as_array receivers{ U("receivers") }; // deprecated
+        // source_core
+        const web::json::field_as_string device_id{ U("device_id") }; // also used in also used in sender, receiver, and flow from v1.1
+        const web::json::field_as_array parents{ U("parents") }; // also used in flow
+        const web::json::field_as_string format{ U("format") }; // also used in flow
+        // source_audio
+        const web::json::field_as_array channels{ U("channels") };
+        const web::json::field_as_string_or symbol{ U("symbol"), U("") }; // or nmos::channel_symbol?
         // flow_core
+        const web::json::field_as_string source_id{ U("source_id") };
         const web::json::field_as_value grain_rate{ U("grain_rate") }; // or field<nmos::rational> with a bit of work!
         const web::json::field_as_integer numerator{ U("numerator") };
         const web::json::field_as_integer denominator{ U("denominator") };
@@ -66,24 +75,16 @@ namespace nmos
         const web::json::field_as_integer bit_depth{ U("bit_depth") }; // also used in flow_audio_raw
         // flow_audio
         const web::json::field_as_value sample_rate{ U("sample_rate") };
-        // source_audio
-        const web::json::field_as_array channels{ U("channels") };
-        const web::json::field_as_string_or symbol{ U("symbol"), U("") }; // or nmos::channel_symbol?
-
-        // lots more to be sorted!
-        const web::json::field_as_string node_id{ U("node_id") };
-        const web::json::field_as_string device_id{ U("device_id") };
-        const web::json::field_as_string source_id{ U("source_id") };
+        // sender
+        const web::json::field_as_array interface_bindings{ U("interface_bindings") }; // also used in receiver
+        const web::json::field_as_string transport{ U("transport") }; // also used in receiver
         const web::json::field_as_value flow_id{ U("flow_id") };
         const web::json::field_as_value_or manifest_href{ U("manifest_href"), {} }; // string, or null from v1.3
-        const web::json::field_as_value subscription{ U("subscription") };
-        const web::json::field_as_bool active{ U("active") };
-        const web::json::field_as_value sender_id{ U("sender_id") };
-        const web::json::field_as_value receiver_id{ U("receiver_id") };
-        const web::json::field_as_string format{ U("format") };
-        const web::json::field_as_array senders{ U("senders") };
-        const web::json::field_as_array receivers{ U("receivers") };
-        const web::json::field_as_array parents{ U("parents") };
+        const web::json::field_as_value subscription{ U("subscription") }; // from v1.2; also used in receiver from v1.0
+        const web::json::field_as_value receiver_id{ U("receiver_id") }; // used in sender subscription
+        const web::json::field_as_bool active{ U("active") }; // used in sender subscription; also used in receiver subscription from v1.2
+        // receiver_core
+        const web::json::field_as_value sender_id{ U("sender_id") }; // used in receiver subscription
 
         // (mostly) for query_api
         const web::json::field_as_bool persist{ U("persist") };
@@ -161,18 +162,23 @@ namespace nmos
         const web::json::field_as_value identity{ U("identity") }; // object
         const web::json::field_as_value timing{ U("timing") }; // object
 
-        // for events_ws_api
+        // for events_ws_api commands
         const web::json::field_as_string command{ U("command") };
+        // for the "subscription" command
         const web::json::field_as_array sources{ U("sources") };
+        // for the "health" command
         const web::json::field<tai> timestamp{ U("timestamp") };
+
+        // for events_ws_api messages
         const web::json::field_as_string message_type{ U("message_type") };
+        // for "state" messages
         const web::json::field_as_value state_payload{ U("payload") };
         const web::json::field_as_number payload_number_value{ U("value") };
         const web::json::field_with_default<int64_t> payload_number_scale{ U("scale"), 1 };
 
         // for connection_api
-        const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string (or null?)
-        const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string (or null?)
+        const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string or null
+        const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string or null
     }
 
     // Fields for experimental extensions
