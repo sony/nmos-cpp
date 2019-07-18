@@ -102,13 +102,15 @@ Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
 ### OpenSSL
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
-It is compatible with the OpenSSL 1.0 API, so the 1.0.2 Long Term Support (LTS) release is recommended. OpenSSL 1.1 is quite different, and not currently supported.
+It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
+It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [users of that release are strongly advised to upgrade to OpenSSL 1.1.1](https://www.openssl.org/blog/blog/2018/09/11/release111/).
 
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.0.2q installer (latest release at the time) has been tested
-   - On Linux distributions, an OpenSSL package may already be installed, e.g. Ubuntu 14.04 LTS has version 1.01f
+     The Win64 OpenSSL v1.1.1c installer (latest release at the time) has been tested
+   - On Linux distributions, an OpenSSL package may already be available  
+     The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
 
 ### C++ REST SDK
 
