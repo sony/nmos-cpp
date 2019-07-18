@@ -48,7 +48,7 @@ namespace nmos
         auto& c = capability.name;
         auto& t = type.name;
         if (!c.empty() && U('*') == c.back())
-            return c.size() <= t.size() && std::equal(c.begin(), c.end() - 1, t.begin() + c.size() - 1);
+            return c.size() <= t.size() && std::equal(c.begin(), c.end() - 1, t.begin());
         else
             return c == t;
     }
