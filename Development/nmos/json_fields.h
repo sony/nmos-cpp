@@ -165,6 +165,10 @@ namespace nmos
         const web::json::field_as_string command{ U("command") };
         const web::json::field_as_array sources{ U("sources") };
         const web::json::field<tai> timestamp{ U("timestamp") };
+        const web::json::field_as_string message_type{ U("message_type") };
+        const web::json::field_as_value state_payload{ U("payload") };
+        const web::json::field_as_number payload_number_value{ U("value") };
+        const web::json::field_with_default<int64_t> payload_number_scale{ U("scale"), 1 };
 
         // for connection_api
         const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string (or null?)

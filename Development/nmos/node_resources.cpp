@@ -445,7 +445,7 @@ namespace nmos
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_data.json
     // (media_type must *not* be nmos::media_types::video_smpte291; cf. nmos::make_sdianc_data_receiver)
-    nmos::resource make_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::media_type& media_type, const nmos::settings& settings)
+    nmos::resource make_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::media_type& media_type, const std::vector<nmos::event_type>& event_types, const nmos::settings& settings)
     {
         using web::json::value;
 
@@ -454,8 +454,17 @@ namespace nmos
 
         data[U("format")] = value::string(nmos::formats::data.name);
         data[U("caps")][U("media_types")][0] = value::string(media_type.name);
+        for (const auto& event_type : event_types)
+        {
+            web::json::push_back(data[U("caps")][U("event_types")], value::string(event_type.name));
+        }
 
         return resource;
+    }
+
+    nmos::resource make_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::media_type& media_type, const nmos::settings& settings)
+    {
+        return make_data_receiver(id, device_id, transport, interfaces, media_type, {}, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_mux.json

@@ -163,4 +163,27 @@ namespace nmos
 
         return value_of({ { U("type"), nmos::event_types::object.name } });
     }
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/APIs/schemas/command_subscription.json
+    web::json::value make_events_subscription_command(const std::vector<nmos::id>& sources)
+    {
+        using web::json::value_of;
+        using web::json::value_from_elements;
+
+        return value_of({
+            { nmos::fields::command, U("subscription") },
+            { nmos::fields::sources, value_from_elements(sources) }
+        });
+    }
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/command_health.json
+    web::json::value make_events_health_command(const nmos::tai& timestamp)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::command, U("health") },
+            { nmos::fields::timestamp, nmos::make_version(timestamp) }
+        });
+    }
 }

@@ -41,6 +41,7 @@ namespace web
         typedef field<web::json::value> field_as_value;
         typedef field<web::json::object> field_as_object;
         typedef field<web::json::array> field_as_array;
+        typedef field<web::json::number> field_as_number;
         typedef field<utility::string_t> field_as_string;
         typedef field<bool> field_as_bool;
         typedef field<int> field_as_integer;
