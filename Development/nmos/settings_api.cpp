@@ -39,8 +39,8 @@ namespace nmos
                 nmos::api_gate gate(gate_, req, parameters);
                 return nmos::details::extract_json(req, gate).then([&model, &log_model, req, res, gate](value body) mutable
                 {
-                    nmos::write_lock lock(model.mutex, std::defer_lock);
-                    nmos::write_lock log_lock(log_model.mutex, std::defer_lock);
+                    nmos::write_lock lock(model.mutex, nmos::defer_lock);
+                    nmos::write_lock log_lock(log_model.mutex, nmos::defer_lock);
                     std::lock(lock, log_lock);
 
                     // Validate request?
