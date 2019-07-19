@@ -7,7 +7,11 @@
 #include "nmos/server.h"
 #include "node_implementation.h"
 
+#if (NMOS_IS_MAIN == 1)
 int main(int argc, char* argv[])
+#else
+int nmos_main(int argc, char* argv[])
+#endif
 {
     // Construct our data models including mutexes to protect them
 
@@ -92,7 +96,13 @@ int main(int argc, char* argv[])
 
         // Set up the node server
 
-        auto node_server = nmos::experimental::make_node_server(node_model, make_node_implementation_auto_resolver(node_model.settings), make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings), {}, log_model, gate);
+        auto node_server = nmos::experimental::make_node_server(node_model,
+            make_node_implementation_transport_file_parser (),
+            make_node_implementation_patch_validator(),
+            make_node_implementation_auto_resolver(node_model.settings),
+            make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings),
+            make_node_implementation_connection_activated(),
+            log_model, gate);
 
         // Add the underlying implementation, which will set up the node resources, etc.
 
