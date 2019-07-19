@@ -184,6 +184,17 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     temperature_events.wait();
 }
 
+nmos::transport_file_parser make_node_implementation_transport_file_parser()
+{
+    // This example does not override this callback
+    return &nmos::parse_rtp_transport_file;
+}
+
+nmos::details::connection_resource_patch_validator make_node_implementation_patch_validator()
+{
+    // This example does not make use of this callback
+    return {};
+}
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings)
 {
     using web::json::value;
@@ -253,4 +264,10 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
             endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
         }
     };
+}
+
+nmos::connection_activation_handler make_node_implementation_connection_activated()
+{
+    // This example does not make use of this callback
+    return {};
 }
