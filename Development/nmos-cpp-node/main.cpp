@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include "nmos/log_gate.h"
+#include "nmos/connection_events_activation.h"
 #include "nmos/model.h"
 #include "nmos/node_server.h"
 #include "nmos/process_utils.h"
@@ -94,8 +95,10 @@ int main(int argc, char* argv[])
 
         auto resolve_auto = make_node_implementation_auto_resolver(node_model.settings);
         auto set_transportfile = make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings);
+        auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(node_model, gate);
+        auto connection_activated = nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, node_model.settings, gate);
 
-        auto node_server = nmos::experimental::make_node_server(node_model, resolve_auto, set_transportfile, {}, log_model, gate);
+        auto node_server = nmos::experimental::make_node_server(node_model, resolve_auto, set_transportfile, connection_activated, log_model, gate);
 
         if (!nmos::experimental::fields::http_trace(node_model.settings))
         {

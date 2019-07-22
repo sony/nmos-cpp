@@ -3,6 +3,7 @@
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "nmos/connection_api.h" // for nmos::resolve_rtp_auto, etc.
 #include "nmos/connection_resources.h"
+#include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
 #include "nmos/group_hint.h"
 #include "nmos/media_type.h"
@@ -278,4 +279,22 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
             endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
         }
     };
+}
+
+nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
+{
+    const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
+    auto temperature_ws_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1"));
+
+    return nmos::experimental::make_events_ws_message_handler(model, [temperature_ws_receiver_id, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, const web::json::value& message)
+    {
+        if (temperature_ws_receiver_id == connection_resource.id)
+        {
+            const auto event_type = nmos::event_type(nmos::fields::state_event_type(message));
+            const auto& payload = nmos::fields::state_payload(message);
+            const nmos::events_number value(nmos::fields::payload_number_value(payload).to_double(), nmos::fields::payload_number_scale(payload));
+
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature received: " << value.scaled_value() << " (" << event_type.name << ")";
+        }
+    }, gate);
 }

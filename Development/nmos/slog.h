@@ -41,6 +41,7 @@ namespace nmos
         const category receive_query_ws_events{ "receive_query_ws_events" };
         const category send_events_ws_messages{ "send_events_ws_messages" };
         const category events_expiry{ "events_expiry" };
+        const category send_events_ws_commands{ "send_events_ws_commands" };
 
         // other categories may be defined ad-hoc
     }

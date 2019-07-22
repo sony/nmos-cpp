@@ -2,6 +2,7 @@
 #define NMOS_CPP_NODE_NODE_IMPLEMENTATION_H
 
 #include "nmos/connection_activation.h"
+#include "nmos/events_ws_client.h" // just a forward declaration of nmos::events_ws_message_handler
 #include "nmos/resources.h" // just a forward declaration of nmos::resources
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
 
@@ -25,5 +26,8 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
 
 // Example connection activation callback - captures node_resources by reference!
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
+
+// Example Events WebSocket message handler
+nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate);
 
 #endif
