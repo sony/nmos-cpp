@@ -158,10 +158,10 @@ namespace web
 
                     // close an individual connection
                     pplx::task<void> close(const connection_id& connection);
-                    pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason = _XPLATSTR(""));
+                    pplx::task<void> close(const connection_id& connection, websocket_close_status close_status, const utility::string_t& close_reason = {});
 
                     pplx::task<void> close();
-                    pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason = _XPLATSTR(""));
+                    pplx::task<void> close(websocket_close_status close_status, const utility::string_t& close_reason = {});
 
                     pplx::task<void> send(const connection_id& connection, websocket_outgoing_message message);
 
