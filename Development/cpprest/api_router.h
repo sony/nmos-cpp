@@ -26,7 +26,7 @@ namespace web
 
                 // route handlers have access to the request, and a mutable response object, the route path and parameters extracted from it by the matched route pattern;
                 // a handler may e.g. reply to the request or initiate asynchronous processing, and returns a flag indicating whether to continue matching routes or not
-                typedef std::function<pplx::task<bool>(web::http::http_request, web::http::http_response, const utility::string_t&, const route_parameters&)> route_handler;
+                typedef std::function<pplx::task<bool>(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters)> route_handler;
 
                 class api_router
                 {

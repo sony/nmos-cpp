@@ -66,13 +66,13 @@ namespace web
                 // a validate handler gets the client's opening handshake request, and returns a flag indicating whether to accept the connection or not
                 // the handler may call web::http::http_request::reply to specify details of the response if validation failed
                 // the default validate handler accepts all connections
-                typedef std::function<bool(web::http::http_request)> validate_handler;
+                typedef std::function<bool(web::http::http_request req)> validate_handler;
                 // an open handler gets the WebSocket URI and the connection id
-                typedef std::function<void(const web::uri&, const connection_id&)> open_handler;
+                typedef std::function<void(const web::uri& uri, const connection_id& id)> open_handler;
                 // a close handler gets the WebSocket URI, the connection id, the close code and the close reason
-                typedef std::function<void(const web::uri&, const connection_id&, websocket_close_status, const utility::string_t& close_reason)> close_handler;
+                typedef std::function<void(const web::uri& uri, const connection_id& id, websocket_close_status close_status, const utility::string_t& close_reason)> close_handler;
                 // a message handler gets the WebSocket URI, the connection id and the incoming message
-                typedef std::function<void(const web::uri&, const connection_id&, const websocket_incoming_message&)> message_handler;
+                typedef std::function<void(const web::uri& uri, const connection_id& id, const websocket_incoming_message& message)> message_handler;
 
                 // a convenience type to simplify passing around all the necessary handlers for a websocket_listener
                 struct websocket_listener_handlers

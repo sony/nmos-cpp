@@ -24,14 +24,14 @@ namespace nmos
     // a transport_file_parser validates the specified transport file type/data for the specified (IS-04/IS-05) resource/connection_resource and returns a transport_params array to be merged
     // or may throw std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
     // (the default transport file parser only supports RTP transport via the default SDP parser)
-    typedef std::function<web::json::value(const nmos::resource&, const nmos::resource&, const utility::string_t&, const utility::string_t&, slog::base_gate&)> transport_file_parser;
+    typedef std::function<web::json::value(const nmos::resource& resource, const nmos::resource& connection_resource, const utility::string_t& transportfile_type, const utility::string_t& transportfile_data, slog::base_gate& gate)> transport_file_parser;
 
     namespace details
     {
         // a connection_resource_patch_validator can be used to perform any final validation of the specified merged /staged value for the specified (IS-04/IS-05) resource/connection_resource
         // that cannot be expressed by the schemas or /constraints endpoint
         // it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
-        typedef std::function<void(const nmos::resource&, const nmos::resource&, const web::json::value&, slog::base_gate&)> connection_resource_patch_validator;
+        typedef std::function<void(const nmos::resource& resource, const nmos::resource& connection_resource, const web::json::value& endpoint_staged, slog::base_gate& gate)> connection_resource_patch_validator;
     }
 
     // Connection API factory functions
@@ -55,7 +55,7 @@ namespace nmos
     // Functions for interaction between the Connection API implementation and the connection activation thread
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource
-    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value&)> resolve_auto, const nmos::tai& activation_time);
+    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value& endpoint_active)> resolve_auto, const nmos::tai& activation_time);
 
     // Clear any pending activation of an IS-05 sender or receiver
     // (This function should not be called after nmos::set_connection_resource_active.)

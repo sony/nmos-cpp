@@ -30,7 +30,7 @@ namespace nmos
     typedef std::function<void(const web::uri& connection_uri, const web::json::value& message)> events_ws_message_handler;
 
     // an events_ws_close_handler callback indicates the connection to the specified WebSocket URI has been closed with the specified status and reason
-    typedef std::function<void(const web::uri& connection_uri, web::websockets::client::websocket_close_status close_status, const utility::string_t& reason)> events_ws_close_handler;
+    typedef std::function<void(const web::uri& connection_uri, web::websockets::client::websocket_close_status close_status, const utility::string_t& close_reason)> events_ws_close_handler;
 
     class events_ws_client
     {

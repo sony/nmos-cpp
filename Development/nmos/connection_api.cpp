@@ -812,7 +812,7 @@ namespace nmos
     }
 
     // Activate an IS-05 sender or receiver by transitioning the 'staged' settings into the 'active' resource
-    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value&)> resolve_auto, const nmos::tai& activation_time)
+    void set_connection_resource_active(nmos::resource& connection_resource, std::function<void(web::json::value& endpoint_active)> resolve_auto, const nmos::tai& activation_time)
     {
         using web::json::value;
         using web::json::value_of;

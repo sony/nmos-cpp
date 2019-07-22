@@ -21,7 +21,7 @@ namespace nmos
     struct node_model;
 
     // handler for the Node API /receivers/{receiverId}/target endpoint
-    typedef std::function<pplx::task<void>(const nmos::id&, const web::json::value&, slog::base_gate& gate)> node_api_target_handler;
+    typedef std::function<pplx::task<void>(const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)> node_api_target_handler;
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser and the specified validator
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)

@@ -29,8 +29,8 @@ namespace rql
 
     struct evaluator;
 
-    typedef std::function<bool(web::json::value&, const web::json::value&)> extractor;
-    typedef std::unordered_map<utility::string_t, std::function<web::json::value(const evaluator&, const web::json::value&)>> operators;
+    typedef std::function<bool(web::json::value& results, const web::json::value& key)> extractor;
+    typedef std::unordered_map<utility::string_t, std::function<web::json::value(const evaluator& eval, const web::json::value& args)>> operators;
 
     struct evaluator
     {
@@ -52,7 +52,7 @@ namespace rql
     // This allows typed values to be processed as appropriate by implementations.
 
     // result should be value_true, value_false or value_indeterminate
-    typedef std::function<web::json::value(const web::json::value&, const web::json::value&)> comparator;
+    typedef std::function<web::json::value(const web::json::value& lhs, const web::json::value& rhs)> comparator;
 
     operators default_operators(comparator equal_to, comparator less);
     operators default_any_operators(comparator equal_to, comparator less); // array-friendly variant
