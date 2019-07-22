@@ -23,7 +23,7 @@ namespace nmos
 
     // a transport_file_parser validates the specified transport file type/data for the specified (IS-04/IS-05) resource/connection_resource and returns a transport_params array to be merged
     // or may throw std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
-    // (the default transport file parser only supports RTP transport via the default SDP parser)
+    // (the default transport file parser, nmos::parse_rtp_transport_file, only supports RTP transport via the default SDP parser)
     typedef std::function<web::json::value(const nmos::resource& resource, const nmos::resource& connection_resource, const utility::string_t& transportfile_type, const utility::string_t& transportfile_data, slog::base_gate& gate)> transport_file_parser;
 
     namespace details

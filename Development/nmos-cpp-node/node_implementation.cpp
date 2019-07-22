@@ -1,7 +1,6 @@
 #include "node_implementation.h"
 
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
-#include "nmos/connection_api.h" // for nmos::resolve_rtp_auto, etc.
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
@@ -204,6 +203,23 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     temperature_events.wait();
 }
 
+// Example Connection API callback to parse "transport_file" during a PATCH /staged request
+nmos::transport_file_parser make_node_implementation_transport_file_parser()
+{
+    // this example uses the default transport file parser explicitly
+    // (if this callback is specified, an 'empty' std::function is not allowed)
+    return &nmos::parse_rtp_transport_file;
+}
+
+// Example Connection API callback to to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
+nmos::details::connection_resource_patch_validator make_node_implementation_patch_validator()
+{
+    // this example uses an 'empty' std::function because it does not need to do any validation
+    // beyond what is expressed by the schemas and /constraints endpoint
+    return{};
+}
+
+// Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings)
 {
     using web::json::value;
@@ -250,6 +266,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     };
 }
 
+// Example Connection API activation callback to update senders' /transportfile endpoint - captures node_resources by reference!
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings)
 {
     using web::json::value;
@@ -281,6 +298,15 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     };
 }
 
+// Example Connection API activation callback to perform application-specific operations to complete activation
+nmos::connection_activation_handler make_node_implementation_activation_handler(const nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
+    auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
+    return nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, model.settings, gate);
+}
+
+// Example Events WebSocket API client message handler
 nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
