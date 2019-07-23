@@ -130,7 +130,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
     // example temperature event source, sender, flow
     if (0 <= nmos::fields::events_port(model.settings))
     {
-        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, { 1, 1 }, temperature_Celsius, model.settings);
+        // grain_rate is not set because temperature events are aperiodic
+        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, {}, temperature_Celsius, model.settings);
 
         // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
