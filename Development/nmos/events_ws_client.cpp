@@ -169,9 +169,9 @@ namespace nmos
                         }
                         else
                         {
-                            auto after_erase = connection->second;
+                            auto client_after_erase = connection->second;
                             connections.erase(connection);
-                            result = after_erase.close();
+                            result = client_after_erase.close();
                         }
                     }
                 }
@@ -226,11 +226,22 @@ namespace nmos
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Closing websocket connection to: " << connection_uri.to_string() << " [" << (int)close_status << ": " << close_reason << "]";
 
-                        auto lock = read_lock();
+                        auto lock = write_lock();
 
                         // cancel heartbeats
 
                         cancellation_source.cancel();
+
+                        // erase this connection (but not the associated subscriptions)
+
+                        auto connection = connections.find(connection_uri);
+                        if (connections.end() != connection)
+                        {
+                            // extend this client's lifetime beyond the close operation to avoid deadlock
+                            auto client_after_erase = connection->second;
+                            connections.erase(connection);
+                            client_after_erase.close().then([client_after_erase] {});
+                        }
 
                         // hmm, should probably try to re-make connection, possibly with exponential back-off, for ephemeral error conditions but it's not clear
                         // whether, at some point, an error condition should be reflected into IS-04/IS-05 resources
@@ -248,8 +259,10 @@ namespace nmos
                         }
                     });
 
-                    result = result.then([client, connection_uri]() mutable
+                    result = result.then([this, client, connection_uri]() mutable
                     {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Opening websocket connection to: " << connection_uri.to_string();
+
                         return client.connect(connection_uri);
                     });
                     
