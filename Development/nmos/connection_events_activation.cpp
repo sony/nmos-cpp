@@ -11,7 +11,7 @@ namespace nmos
 {
     nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::events_ws_message_handler message_handler, const nmos::settings& settings, slog::base_gate& gate)
     {
-        std::shared_ptr<nmos::events_ws_client> events_ws_client(new nmos::events_ws_client(nmos::make_websocket_client_config(settings), gate));
+        std::shared_ptr<nmos::events_ws_client> events_ws_client(new nmos::events_ws_client(nmos::make_websocket_client_config(settings), nmos::fields::events_heartbeat_interval(settings), gate));
 
         events_ws_client->set_message_handler(message_handler);
 

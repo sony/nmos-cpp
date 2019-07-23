@@ -68,14 +68,13 @@ namespace nmos
     {
         struct events_ws_client_impl
         {
-            events_ws_client_impl(slog::base_gate& gate) : gate(make_gate(gate)) {}
-            events_ws_client_impl(web::websockets::client::websocket_client_config config, slog::base_gate& gate) : config(std::move(config)), gate(make_gate(gate)) {}
+            events_ws_client_impl(web::websockets::client::websocket_client_config config, int events_heartbeat_interval, slog::base_gate& gate);
 
             pplx::task<void> subscribe(const nmos::id& id, const web::uri& connection_uri, const nmos::id& source_id);
             pplx::task<void> close(web::websockets::client::websocket_close_status close_status, const utility::string_t& close_reason);
 
             web::websockets::client::websocket_client_config config;
-
+            int events_heartbeat_interval;
             nmos::details::omanip_gate gate;
 
             mutable nmos::mutex mutex;
@@ -96,6 +95,13 @@ namespace nmos
 
             static nmos::details::omanip_gate make_gate(slog::base_gate& gate) { return{ gate, nmos::stash_category(nmos::categories::send_events_ws_commands) }; }
         };
+
+        events_ws_client_impl::events_ws_client_impl(web::websockets::client::websocket_client_config config, int events_heartbeat_interval, slog::base_gate& gate)
+            : config(std::move(config))
+            , events_heartbeat_interval(events_heartbeat_interval)
+            , gate(make_gate(gate))
+        {
+        }
 
         pplx::task<void> events_ws_client_impl::subscribe(const nmos::id& id, const web::uri& connection_uri, const nmos::id& source_id)
         {
@@ -141,6 +147,12 @@ namespace nmos
                     auto connection = connections.find(subscription_uri);
                     if (connections.end() != connection)
                     {
+                        // "A disconnection IS-05 PATCH request should always trigger the client to remove the associated source id
+                        // from the current WebSocket subscriptions list. If the source is the last item in the subscriptions list,
+                        // then it is recommended for the client to close the underlying WebSocket connection."
+                        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/5.2.%20Transport%20-%20Websocket.md#35-disconnectingparking
+                        // Doesn't seem much point in sending an empty subscription command, so just close the connection in that case...
+
                         auto& by_connection_uri = subscriptions.get<nmos::tags::events_ws_subscription>();
                         auto equal_connection_uris = by_connection_uri.equal_range(subscription_uri);
                         if (equal_connection_uris.second != equal_connection_uris.first)
@@ -244,13 +256,11 @@ namespace nmos
                     auto heartbeats = result.then([this, client, token]() mutable
                     {
                         // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
-                        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
-
-                        static const std::chrono::seconds events_ws_heartbeat_interval(5);
+                        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
 
                         return pplx::do_while([this, client, token]() mutable
                         {
-                            return pplx::complete_after(events_ws_heartbeat_interval, token).then([this, client, token]() mutable
+                            return pplx::complete_after(std::chrono::seconds(events_heartbeat_interval), token).then([this, client, token]() mutable
                             {
                                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Sending health command";
 
@@ -322,12 +332,17 @@ namespace nmos
     }
 
     events_ws_client::events_ws_client(slog::base_gate& gate)
-        : impl(new details::events_ws_client_impl(gate))
+        : impl(new details::events_ws_client_impl({}, nmos::fields::events_heartbeat_interval.default_value, gate))
     {
     }
 
     events_ws_client::events_ws_client(web::websockets::client::websocket_client_config config, slog::base_gate& gate)
-        : impl(new details::events_ws_client_impl(std::move(config), gate))
+        : impl(new details::events_ws_client_impl(std::move(config), nmos::fields::events_heartbeat_interval.default_value, gate))
+    {
+    }
+
+    events_ws_client::events_ws_client(web::websockets::client::websocket_client_config config, int events_heartbeat_interval, slog::base_gate& gate)
+        : impl(new details::events_ws_client_impl(std::move(config), events_heartbeat_interval, gate))
     {
     }
 

@@ -36,7 +36,8 @@ namespace nmos
     {
     public:
         events_ws_client(slog::base_gate& gate);
-        explicit events_ws_client(web::websockets::client::websocket_client_config config, slog::base_gate& gate);
+        events_ws_client(web::websockets::client::websocket_client_config config, slog::base_gate& gate);
+        events_ws_client(web::websockets::client::websocket_client_config config, int events_heartbeat_interval, slog::base_gate& gate);
         ~events_ws_client();
 
         // update or create a subscription for the specified id, to the specified WebSocket URI and source id
