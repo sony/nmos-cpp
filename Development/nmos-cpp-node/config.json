@@ -1,7 +1,9 @@
 // Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files
 
-// Configuration settings and defaults for the NMOS Node and Registration APIs, and the Connection API
+// Configuration settings and defaults
 {
+    // Configuration settings and defaults for logging
+
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr
     //"error_log": "",
 
@@ -10,6 +12,11 @@
 
     // logging_level [registry, node]: integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
     //"logging_level": 0,
+
+    // logging_categories [registry, node]: array of logging categories to be included in the error log
+    //"logging_categories": ["node_behaviour"],
+
+    // Configuration settings and defaults for the NMOS APIs
 
     // host_name [registry, node]: the host name for which to advertise services, also used to construct response headers and fields in the data model
     //"host_name": "",

@@ -15,14 +15,17 @@
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
 
+const nmos::category node_implementation_category{ "node_implementation" };
 const auto temperature_Celsius = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C"));
 const auto temperature_wildcard = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), nmos::event_types::wildcard);
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
 // starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
-void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate)
+void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 {
+    nmos::details::omanip_gate gate{ gate_, nmos::stash_category(node_implementation_category) };
+
     using web::json::value;
     using web::json::value_of;
 

@@ -7,6 +7,8 @@
 #include <boost/algorithm/string/find_format.hpp>
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/algorithm/string/formatter.hpp>
+#include <boost/range/algorithm/find.hpp>
+#include <boost/range/algorithm/find_if.hpp>
 #include "nmos/log_model.h"
 #include "nmos/slog.h"
 
@@ -51,6 +53,29 @@ namespace nmos
             virtual bool pertinent(slog::severity level) const { return model.level <= level; }
             virtual void log(const slog::log_message& message) const { async_service(message); }
 
+        protected:
+            virtual bool pertinent(const std::list<nmos::category>& categories) const
+            {
+                if (!model.settings.has_field(nmos::fields::logging_categories))
+                {
+                    return true;
+                }
+
+                const auto& pertinent_categories = nmos::fields::logging_categories(model.settings);
+
+                if (categories.empty())
+                {
+                    static const auto no_category = web::json::value::string(utility::string_t());
+                    return pertinent_categories.end() != boost::range::find(pertinent_categories, no_category);
+                }
+
+                // this could be made more efficient if there may be many pertinent categories
+                return categories.end() != boost::range::find_if(categories, [&](const nmos::category& c)
+                {
+                    return pertinent_categories.end() != boost::range::find(pertinent_categories, web::json::value::string(utility::s2us(c)));
+                });
+            }
+
         private:
             std::ostream& error_log;
             std::ostream& access_log;
@@ -71,15 +96,19 @@ namespace nmos
             void service(const slog::async_log_message& message)
             {
                 auto lock = model.write_lock();
-                if (pertinent(message.level()))
+
+                auto categories = nmos::get_categories_stash(message.stream());
+
+                if (pertinent(message.level()) && pertinent(categories))
                 {
                     error_log << details::error_log_format(message);
                 }
-                auto categories = nmos::get_categories_stash(message.stream());
-                if (categories.end() != std::find(categories.begin(), categories.end(), nmos::categories::access))
+
+                if (categories.end() != boost::range::find(categories, nmos::categories::access))
                 {
                     access_log << nmos::common_log_format(message);
                 }
+
                 nmos::experimental::insert_log_event(model.events, message, generate_id(), nmos::experimental::fields::logging_limit(model.settings));
             }
 

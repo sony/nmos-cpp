@@ -3,7 +3,7 @@
 
 #include "cpprest/json_utils.h"
 
-// Configuration settings and defaults for the NMOS Node, Query and Registration APIs, and the Connection API
+// Configuration settings and defaults
 namespace nmos
 {
     typedef web::json::value settings;
@@ -23,6 +23,8 @@ namespace nmos
     // Field accessors simplify access to fields in the settings and provide the compile-time defaults
     namespace fields
     {
+        // Configuration settings and defaults for logging
+
         // error_log [registry, node]: filename for the error log or an empty string to write to stderr
         const web::json::field_as_string_or error_log{ U("error_log"), U("") };
 
@@ -31,6 +33,11 @@ namespace nmos
 
         // logging_level [registry, node]: integer value, between 40 (least verbose, only fatal messages) and -40 (most verbose)
         const web::json::field_as_integer_or logging_level{ U("logging_level"), 0 }; // 0, rather than slog::severities::info or slog::nil_severity, just to avoid a #include
+
+        // logging_categories [registry, node]: array of logging categories to be included in the error log
+        const web::json::field_as_array logging_categories{ U("logging_categories") }; // when omitted, all log messages are included
+
+        // Configuration settings and defaults for the NMOS APIs
 
         // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
         const web::json::field_as_bool_or allow_invalid_resources{ U("allow_invalid_resources"), false };
@@ -133,11 +140,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
         const web::json::field_as_integer_or events_expiry_interval{ U("events_expiry_interval"), 12 };
     }
-}
 
-// Configuration settings and defaults for experimental extensions
-namespace nmos
-{
+    // Configuration settings and defaults for experimental extensions
     namespace experimental
     {
         // Field accessors simplify access to fields in the settings and provide the compile-time defaults
