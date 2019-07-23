@@ -11,6 +11,7 @@ namespace nmos
         {
             extern const char* activation_schema;
             extern const char* sender_stage_schema;
+            extern const char* sender_transport_params;
             extern const char* sender_transport_params_rtp;
             extern const char* sender_transport_params_dash;
             extern const char* sender_transport_params_websocket;
@@ -18,6 +19,7 @@ namespace nmos
             extern const char* sender_transport_params_ext;
             extern const char* receiver_stage_schema;
             extern const char* receiver_transport_file;
+            extern const char* receiver_transport_params;
             extern const char* receiver_transport_params_rtp;
             extern const char* receiver_transport_params_dash;
             extern const char* receiver_transport_params_websocket;

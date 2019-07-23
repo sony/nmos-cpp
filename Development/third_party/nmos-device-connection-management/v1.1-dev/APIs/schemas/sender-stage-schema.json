@@ -21,20 +21,7 @@
       "$ref": "activation-schema.json"
     },
     "transport_params": {
-      "description": "Transport-specific parameters. If this parameter is included in a client request it must include the same number of array elements (or 'legs') as specified in the constraints. If no changes are required to a specific leg it must be included as an empty object ({}).",
-      "anyOf": [{
-          "$ref": "sender_transport_params_rtp.json"
-        },
-        {
-          "$ref": "sender_transport_params_dash.json"
-        },
-        {
-          "$ref": "sender_transport_params_websocket.json"
-        },
-        {
-          "$ref": "sender_transport_params_mqtt.json"
-        }
-      ]
+      "$ref": "sender_transport_params.json"
     }
   }
 }
