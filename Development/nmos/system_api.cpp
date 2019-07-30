@@ -92,7 +92,7 @@ namespace nmos
 
                 // Validate JSON syntax according to the schema
 
-                const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
+                const bool allow_invalid_resources = nmos::experimental::fields::allow_invalid_resources(model.settings);
                 if (!allow_invalid_resources)
                 {
                     validator.validate(body, experimental::make_systemapi_global_schema_uri(version));
@@ -141,7 +141,7 @@ namespace nmos
 
                     // Validate JSON syntax according to the schema
 
-                    const bool allow_invalid_resources = nmos::fields::allow_invalid_resources(model.settings);
+                    const bool allow_invalid_resources = nmos::experimental::fields::allow_invalid_resources(model.settings);
                     if (!allow_invalid_resources)
                     {
                         validator.validate(patched, experimental::make_systemapi_global_schema_uri(version));

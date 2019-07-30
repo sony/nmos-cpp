@@ -39,9 +39,6 @@ namespace nmos
 
         // Configuration settings and defaults for the NMOS APIs
 
-        // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
-        const web::json::field_as_bool_or allow_invalid_resources{ U("allow_invalid_resources"), false };
-
         // host_name [registry, node]: the host name for which to advertise services, also used to construct response headers and fields in the data model
         const web::json::field_as_string_or host_name{ U("host_name"), U("") }; // when omitted or an empty string, the default is used
 
@@ -155,6 +152,9 @@ namespace nmos
 
             // registration_available [registry]: used to flag the Registration API as temporarily unavailable
             const web::json::field_as_bool_or registration_available{ U("registration_available"), true };
+
+            // allow_invalid_resources [registry]: boolean value, true (attempt to ignore schema validation errors and cope with out-of-order registrations) or false (default)
+            const web::json::field_as_bool_or allow_invalid_resources{ U("allow_invalid_resources"), false };
 
             // port numbers [registry, node]: ports to which clients should connect for each API
             // see http_port

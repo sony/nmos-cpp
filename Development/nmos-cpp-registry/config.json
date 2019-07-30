@@ -18,9 +18,6 @@
 
     // Configuration settings and defaults for the NMOS APIs
 
-    // allow_invalid_resources [registry]: boolean value, true (cope with out-of-order Ledger and LAWO registrations) or false (a little less lax)
-    //"allow_invalid_resources": false,
-
     // host_name [registry, node]: the host name for which to advertise services, also used to construct response headers and fields in the data model
     //"host_name": "",
 
@@ -73,6 +70,9 @@
 
     // registration_available [registry]: used to flag the Registration API as temporarily unavailable
     //"registration_available": true,
+
+    // allow_invalid_resources [registry]: boolean value, true (attempt to ignore schema validation errors and cope with out-of-order registrations) or false (default)
+    //"allow_invalid_resources": false,
 
     // port numbers [registry, node]: ports to which clients should connect for each API
     // see http_port
