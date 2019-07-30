@@ -826,6 +826,9 @@ namespace nmos
         auto& staged_activation = staged[nmos::fields::activation];
         const nmos::activation_mode staged_mode{ nmos::fields::mode(staged_activation).as_string() };
 
+        // Set the time of activation (will be included in the PATCH response for an immediate activation)
+        staged_activation[nmos::fields::activation_time] = at;
+
         auto& active = nmos::fields::endpoint_active(resource.data);
 
         // "On activation all instances of "auto" must be resolved into the actual values that will be used, unless
@@ -837,9 +840,6 @@ namespace nmos
         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
         auto activating = staged;
         resolve_auto(activating);
-
-        // Set the time of activation (will be included in the PATCH response for an immediate activation)
-        staged_activation[nmos::fields::activation_time] = at;
 
         // "When a set of 'staged' settings is activated, these settings transition into the 'active' resource."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/1.0.%20Overview.md#active
