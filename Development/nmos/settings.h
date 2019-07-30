@@ -118,9 +118,9 @@ namespace nmos
         const web::json::field_as_integer_or registration_request_max{ U("registration_request_max"), 30 };
 
         // registration_heartbeat_max [node]: timeout for interactions with the Registration API /health/nodes endpoint
-        // Note that the node needs to be able to get a response to heartbeats (if not other requests) within the garbage collection interval of the Registration API on average,
-        // but the worst case which could avoid triggering garbage collection is (almost) twice this value... see registration_expiry_interval
-        const web::json::field_as_integer_or registration_heartbeat_max{ U("registration_heartbeat_max"), 2 * 12 };
+        // Note that the default timeout is the same as the default heartbeat interval, in order that there is then a reasonable opportunity to try the next available Registration API
+        // though in some circumstances registration expiry could potentially still be avoided with a timeout that is (almost) twice the garbage collection interval...
+        const web::json::field_as_integer_or registration_heartbeat_max{ U("registration_heartbeat_max"), 5 };
 
         // query_paging_default/query_paging_limit [registry]: default/maximum number of results per "page" when using the Query API (a client may request a lower limit)
         const web::json::field_as_integer_or query_paging_default{ U("query_paging_default"), 10 };

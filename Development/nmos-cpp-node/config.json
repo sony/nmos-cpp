@@ -79,9 +79,9 @@
     //"registration_request_max": 30,
 
     // registration_heartbeat_max [node]: timeout for interactions with the Registration API /health/nodes endpoint
-    // Note that the node needs to be able to get a response to heartbeats (if not other requests) within the garbage collection interval of the Registration API on average,
-    // but the worst case which could avoid triggering garbage collection is (almost) twice this value... see registration_expiry_interval
-    //"registration_heartbeat_max": 24,
+    // Note that the default timeout is the same as the default heartbeat interval, in order that there is then a reasonable opportunity to try the next available Registration API
+	// though in some circumstances registration expiry could potentially still be avoided with a timeout that is (almost) twice the garbage collection interval...
+    //"registration_heartbeat_max": 5,
 
     // immediate_activation_max [node]: timeout for immediate activations within the Connection API /staged endpoint
     //"immediate_activation_max": 30,
