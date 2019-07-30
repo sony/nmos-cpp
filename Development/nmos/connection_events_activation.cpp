@@ -1,6 +1,7 @@
 #include "nmos/connection_events_activation.h"
 
 #include "pplx/pplx_utils.h"
+#include "nmos/connection_api.h"
 #include "nmos/client_utils.h"
 #include "nmos/event_type.h"
 #include "nmos/model.h"
@@ -9,11 +10,13 @@
 
 namespace nmos
 {
-    nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::events_ws_message_handler message_handler, const nmos::settings& settings, slog::base_gate& gate)
+    // this handler can be used to (un)subscribe IS-07 Events WebSocket receivers with the specified handlers, when they are activated
+    nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::events_ws_message_handler message_handler, nmos::events_ws_close_handler close_handler, const nmos::settings& settings, slog::base_gate& gate)
     {
         std::shared_ptr<nmos::events_ws_client> events_ws_client(new nmos::events_ws_client(nmos::make_websocket_client_config(settings), nmos::fields::events_heartbeat_interval(settings), gate));
 
         events_ws_client->set_message_handler(message_handler);
+        events_ws_client->set_close_handler(close_handler);
 
         return [events_ws_client](const nmos::resource& resource, const nmos::resource& connection_resource)
         {
@@ -43,6 +46,8 @@ namespace nmos
 
     namespace experimental
     {
+        // since each Events WebSocket connection may potentially have subscriptions to a number of sources, for multiple receivers
+        // this handler adaptor enables simple processing of "state" messages (events) per receiver
         nmos::events_ws_message_handler make_events_ws_message_handler(const nmos::node_model& model, events_ws_receiver_event_handler event_handler, slog::base_gate& gate)
         {
             return [&model, event_handler, &gate](const web::uri& connection_uri, const web::json::value& message)
@@ -109,13 +114,77 @@ namespace nmos
                 }
                 else // "health", "shutdown" or "reboot"
                 {
-                    // hmm, for "reboot", should probably try to re-make connection, possibly with exponential back-off, but it's not clear
-                    // whether, at some point, an error condition should be reflected into IS-04/IS-05 resources
+                    // hmm, for "reboot", should probably try to re-make the connection, possibly with exponential back-off
                     // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/96
 
                     // for now, just log all of these message types
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Received " << message_type << " message";
+                }
+            };
+        }
+
+        // this handler reflects Events WebSocket connection errors into the /active endpoint of all associated receivers by setting master_enable to false
+        nmos::events_ws_close_handler make_events_ws_close_handler(nmos::node_model& model, slog::base_gate& gate)
+        {
+            return [&model, &gate](const web::uri& connection_uri, web::websockets::client::websocket_close_status close_status, const utility::string_t& close_reason)
+            {
+                auto lock = model.write_lock();
+
+                // hmm, should probably try to re-make the connection, possibly with exponential back-off, for ephemeral error conditions
+                // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/96
+
+                // for now, just reflect this into the /active endpoint of all associated receivers by setting master_enable to false
+                // see https://github.com/AMWA-TV/nmos-device-connection-management/pull/97
+
+                const auto activation_time = nmos::tai_now();
+
+                auto& by_type = model.node_resources.get<nmos::tags::type>();
+                const auto receivers = by_type.equal_range(nmos::details::has_data(nmos::types::receiver));
+
+                for (auto receiver = receivers.first; receivers.second != receiver; ++receiver)
+                {
+                    if (nmos::transports::websocket.name != nmos::fields::transport(receiver->data)) continue;
+
+                    const std::pair<nmos::id, nmos::type> id_type{ receiver->id, receiver->type };
+
+                    auto connection_receiver = nmos::find_resource(model.connection_resources, id_type);
+                    if (model.connection_resources.end() == connection_receiver) continue;
+
+                    const auto& endpoint_active = nmos::fields::endpoint_active(connection_receiver->data);
+                    const bool active = nmos::fields::master_enable(endpoint_active);
+                    const auto& transport_params = nmos::fields::transport_params(endpoint_active).at(0);
+                    const auto& connection_uri_or_null = nmos::fields::connection_uri(transport_params);
+
+                    if (!active) continue;
+                    if (connection_uri_or_null.is_null() || connection_uri.to_string() != connection_uri_or_null.as_string()) continue;
+
+                    // Update the IS-05 resource's /active endpoint
+
+                    nmos::modify_resource(model.connection_resources, id_type.first, [&](nmos::resource& connection_resource)
+                    {
+                        using web::json::value;
+
+                        const auto at = web::json::value::string(nmos::make_version(activation_time));
+
+                        connection_resource.data[nmos::fields::version] = at;
+
+                        auto& endpoint_active = nmos::fields::endpoint_active(connection_resource.data);
+                        auto& active_activation = endpoint_active[nmos::fields::activation];
+
+                        active_activation[nmos::fields::mode] = value::null();
+                        active_activation[nmos::fields::requested_time] = value::null();
+                        active_activation[nmos::fields::activation_time] = at;
+
+                        endpoint_active[nmos::fields::master_enable] = value::boolean(false);
+                    });
+
+                    // Update the IS-04 resource's subscription
+
+                    nmos::modify_resource(model.node_resources, id_type.first, [&activation_time](nmos::resource& resource)
+                    {
+                        nmos::set_resource_subscription(resource, false, {}, activation_time);
+                    });
                 }
             };
         }

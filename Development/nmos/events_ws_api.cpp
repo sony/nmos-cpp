@@ -218,6 +218,8 @@ namespace nmos
 
                                 modify_resource(resources, subscription->id, [&message](nmos::resource& resource)
                                 {
+                                    // there is no way to send an error message back if the requested source id doesn't exist
+                                    // hmm, this also won't take account of whether the associated sender is subsequently disabled by setting master_enable to false
                                     auto rql_query = U("in(id,(") + boost::algorithm::join(nmos::fields::sources(message) | boost::adaptors::transformed([](const value& v) { return v.as_string(); }), U(",")) + U("))");
 
                                     resource.data[nmos::fields::params] = value_of({ { U("query.rql"), rql_query } });

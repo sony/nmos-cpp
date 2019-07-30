@@ -41,7 +41,7 @@ namespace nmos
 
     inline web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, slog::base_gate& gate)
     {
-        return make_connection_api(model, parse_transport_file, {}, gate);
+        return make_connection_api(model, std::move(parse_transport_file), {}, gate);
     }
 
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate);

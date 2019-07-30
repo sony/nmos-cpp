@@ -303,11 +303,14 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
 }
 
 // Example Connection API activation callback to perform application-specific operations to complete activation
-nmos::connection_activation_handler make_node_implementation_activation_handler(const nmos::node_model& model, slog::base_gate& gate)
+nmos::connection_activation_handler make_node_implementation_activation_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
+    // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
+    // connection errors are reflected into the /active endpoint by setting master_enable to false
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
-    return nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, model.settings, gate);
+    auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
+    return nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, handle_close, model.settings, gate);
 }
 
 // Example Events WebSocket API client message handler
@@ -316,9 +319,12 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     auto temperature_ws_receiver_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/receiver/1"));
 
-    return nmos::experimental::make_events_ws_message_handler(model, [temperature_ws_receiver_id, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, const web::json::value& message)
+    // the message handler will be used for all Events WebSocket connections, and each connection may potentially
+    // have subscriptions to a number of sources, for multiple receivers, so this example uses a handler adaptor
+    // that enables simple processing of "state" messages (events) per receiver
+    return nmos::experimental::make_events_ws_message_handler(model, [temperature_ws_receiver_id, &gate](const nmos::resource& receiver, const nmos::resource& connection_receiver, const web::json::value& message)
     {
-        if (temperature_ws_receiver_id == connection_resource.id)
+        if (temperature_ws_receiver_id == connection_receiver.id)
         {
             const auto event_type = nmos::event_type(nmos::fields::state_event_type(message));
             const auto& payload = nmos::fields::state_payload(message);

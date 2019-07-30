@@ -92,7 +92,7 @@ namespace nmos
                 bool active = false;
                 nmos::id connected_id;
 
-                // Update the IS-05 connection resource
+                // Update the IS-05 and IS-04 resources
 
                 // ensure nmos::set_connection_resource_not_pending is called to 'unlock' the resource for the Connection API implementation
                 // after an exception; for immediate activations this will cause a 500 Internal Error status code to be returned
@@ -132,30 +132,42 @@ namespace nmos
 
                 try
                 {
+                    auto matching_resource = find_resource(model.node_resources, id_type);
+                    if (model.node_resources.end() == matching_resource)
+                    {
+                        throw std::logic_error("matching IS-04 resource not found");
+                    }
+
                     nmos::modify_resource(model.connection_resources, id_type.first, [&](nmos::resource& connection_resource)
                     {
-                        auto matching_resource = find_resource(model.node_resources, id_type);
-                        if (model.node_resources.end() == matching_resource)
-                        {
-                            throw std::logic_error("matching IS-04 resource not found");
-                        }
+                        // Update the IS-05 resource's /active endpoint
 
                         nmos::set_connection_resource_active(connection_resource, [&](web::json::value& endpoint_active)
                         {
+                            // the resolve_auto callback may throw exceptions, which will prevent activation in order that
+                            // "if there is an error condition that means `auto` cannot be resolved, the active transport parameters
+                            // must not change, and the underlying sender [or receiver] must continue as before."
+                            // see https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L308-L309
                             resolve_auto(*matching_resource, connection_resource, nmos::fields::transport_params(endpoint_active));
+
                             active = nmos::fields::master_enable(endpoint_active);
                             // Senders indicate the connected receiver_id, receivers indicate the connected sender_id
                             auto& connected_id_or_null = nmos::types::sender == id_type.second ? nmos::fields::receiver_id(endpoint_active) : nmos::fields::sender_id(endpoint_active);
                             if (!connected_id_or_null.is_null()) connected_id = connected_id_or_null.as_string();
                         }, activation_time);
 
+                        // Update an IS-05 sender's /transportfile endpoint
+
                         if (nmos::types::sender == id_type.second)
                         {
+                            // hm, the matching IS-04 resource's subscription will not have been updated yet, but that probably doesn't matter to this callback?
+
+                            // this callback should not throw exceptions, as the active transport parameters will already have been changed and those changes will not be rolled back
                             set_transportfile(*matching_resource, connection_resource, connection_resource.data[nmos::fields::endpoint_transportfile]);
                         }
                     });
 
-                    // Update the IS-04 resource
+                    // Update the IS-04 resource's subscription
 
                     nmos::modify_resource(model.node_resources, id_type.first, [&activation_time, &active, &connected_id](nmos::resource& resource)
                     {
@@ -167,9 +179,7 @@ namespace nmos
 
                     if (connection_activated)
                     {
-                        auto matching_resource = find_resource(model.node_resources, id_type);
-
-                        // for now, this callback must not throw exceptions
+                        // this callback should not throw exceptions, as the active transport parameters will already have been changed and those changes will not be rolled back
                         connection_activated(*matching_resource, resource);
                     }
                 }

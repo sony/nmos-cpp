@@ -35,7 +35,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
 
 // Example Connection API activation callback to perform application-specific operations to complete activation
-nmos::connection_activation_handler make_node_implementation_activation_handler(const nmos::node_model& model, slog::base_gate& gate);
+nmos::connection_activation_handler make_node_implementation_activation_handler(nmos::node_model& model, slog::base_gate& gate);
 
 // Example Events WebSocket API client message handler
 nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate);
