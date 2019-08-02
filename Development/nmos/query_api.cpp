@@ -589,6 +589,7 @@ namespace nmos
                     }
 
                     set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
+                    // experimental extension, proposed for v1.3, for consistency with Registration API
                     res.headers().add(web::http::header_names::location, make_query_api_resource_location(*resource));
                 }
                 else

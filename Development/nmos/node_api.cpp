@@ -44,6 +44,18 @@ namespace nmos
         return node_api;
     }
 
+    inline utility::string_t make_node_api_resource_path(const nmos::resource& resource)
+    {
+        return nmos::types::node == resource.type
+            ? U("/self")
+            : U("/") + nmos::resourceType_from_type(resource.type) + U("/") + resource.id;
+    }
+
+    inline utility::string_t make_node_api_resource_location(const nmos::resource& resource, const utility::string_t& sub_path = {})
+    {
+        return U("/x-nmos/node/") + nmos::make_api_version(resource.version) + make_node_api_resource_path(resource) + sub_path;
+    }
+
     web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -80,6 +92,8 @@ namespace nmos
                 {
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Self resource version is incorrect!";
                     set_error_reply(res, status_codes::InternalError, U("Internal Error; ") + details::make_permitted_downgrade_error(*resource, version));
+                    // experimental extension, for debugging purposes
+                    res.headers().add(web::http::header_names::location, make_node_api_resource_location(*resource));
                 }
             }
             else
@@ -135,7 +149,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, version));
+                    res.headers().add(web::http::header_names::location, make_node_api_resource_location(*resource));
                 }
             }
             else
@@ -188,7 +204,9 @@ namespace nmos
                 }
                 else
                 {
-                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_permitted_downgrade_error(*resource, version));
+                    // experimental extension, proposed for v1.3, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, version));
+                    res.headers().add(web::http::header_names::location, make_node_api_resource_location(*resource, U("/target")));
                 }
             }
             else
