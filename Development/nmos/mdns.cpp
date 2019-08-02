@@ -1,6 +1,8 @@
 #include "nmos/mdns.h"
 
+#include <boost/algorithm/string/erase.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/filtered.hpp>
@@ -257,11 +259,9 @@ namespace nmos
         }
 
         // helper function for registering the specified service (API)
-        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings)
+        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const std::string& host_name, const std::string& domain, const nmos::settings& settings)
         {
             // if a host_name has been explicitly specified, attempt to register it in the specified domain
-            const auto host_name = utility::us2s(nmos::fields::host_name(settings));
-            const auto domain = utility::us2s(nmos::fields::domain(settings));
             if (!host_name.empty())
             {
                 const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
@@ -306,10 +306,32 @@ namespace nmos
             }
         }
 
-        // helper function for updating the specified service (API) TXT records
-        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, mdns::structured_txt_records add_records)
+        inline std::string ierase_tail_copy(const std::string& input, const std::string& tail)
+        {
+            return boost::algorithm::iends_with(input, tail)
+                ? boost::algorithm::erase_tail_copy(input, (int)tail.size())
+                : input;
+        }
+
+        // helper function for registering the specified service (API)
+        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings)
         {
             const auto domain = utility::us2s(nmos::fields::domain(settings));
+            // nmos::settings has the fully-qualified host name, but mdns::service_advertiser needs the host name and domain separately
+            const auto full_name = utility::us2s(nmos::fields::host_name(settings));
+            const auto host_name = ierase_tail_copy(full_name, "." + domain);
+
+            if (!domain.empty())
+            {
+                // also advertise via mDNS
+                register_service(advertiser, service, host_name, {}, settings);
+            }
+            register_service(advertiser, service, host_name, domain, settings);
+        }
+
+        // helper function for updating the specified service (API) TXT records
+        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const std::string& domain, const nmos::settings& settings, mdns::structured_txt_records add_records)
+        {
             const auto instance_name = service_name(service, settings);
             const auto api_ver = details::service_versions(service, settings);
             auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver, nmos::get_service_protocol(settings), nmos::get_service_authorization(settings));
@@ -335,6 +357,18 @@ namespace nmos
             {
                 advertiser.update_record(instance_name, service, domain, txt_records).wait();
             }
+        }
+
+        // helper function for updating the specified service (API) TXT records
+        void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, mdns::structured_txt_records add_records)
+        {
+            const auto domain = utility::us2s(nmos::fields::domain(settings));
+            if (!domain.empty())
+            {
+                // also advertise via mDNS
+                update_service(advertiser, service, {}, settings, add_records);
+            }
+            update_service(advertiser, service, domain, settings, std::move(add_records));
         }
 
         namespace details
