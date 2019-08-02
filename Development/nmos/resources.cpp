@@ -72,7 +72,7 @@ namespace nmos
         if (result.second)
         {
             auto& inserted = *result.first;
-            insert_resource_events(resources, inserted.version, inserted.type, web::json::value::null(), inserted.data);
+            insert_resource_events(resources, inserted.version, inserted.downgrade_version, inserted.type, web::json::value::null(), inserted.data);
 
             // set the initial health of this resource from the super-resource (if applicable)
             // and update the health of any sub-resources to which the resource has been joined
@@ -120,7 +120,7 @@ namespace nmos
         if (result)
         {
             auto& modified = *found;
-            insert_resource_events(resources, modified.version, modified.type, pre, modified.data);
+            insert_resource_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data);
         }
 
         if (modifier_exception)
@@ -162,7 +162,7 @@ namespace nmos
             });
 
             auto& erased = *found;
-            insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
+            insert_resource_events(resources, erased.version, erased.downgrade_version, erased.type, pre, erased.data);
 
             if (forget_now)
             {
@@ -228,7 +228,7 @@ namespace nmos
                 });
 
                 auto& erased = *found;
-                insert_resource_events(resources, erased.version, erased.type, pre, erased.data);
+                insert_resource_events(resources, erased.version, erased.downgrade_version, erased.type, pre, erased.data);
 
                 if (forget_now)
                 {

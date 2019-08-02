@@ -15,11 +15,15 @@ namespace nmos
 
     bool is_permitted_downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version)
     {
-        return is_permitted_downgrade(resource.version, resource.type, version, downgrade_version);
+        return is_permitted_downgrade(resource.version, resource.downgrade_version, resource.type, version, downgrade_version);
     }
 
-    bool is_permitted_downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+    bool is_permitted_downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version)
     {
+        // If the resource has a hard-coded minimum API version, simply don't permit downgrade
+        // This avoids e.g. validating the resource against the relevant schema every time!
+        if (resource_downgrade_version > downgrade_version) return false;
+
         // Enforce that "downgrade queries may not be performed between major API versions."
         if (version.major != downgrade_version.major) return false;
         if (resource_version.major != version.major) return false;
@@ -61,7 +65,7 @@ namespace nmos
 
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version)
     {
-        return downgrade(resource.version, resource.type, resource.data, version, downgrade_version);
+        return downgrade(resource.version, resource.downgrade_version, resource.type, resource.data, version, downgrade_version);
     }
 
     static const std::map<nmos::type, std::map<nmos::api_version, std::vector<utility::string_t>>>& resources_versions()
@@ -125,9 +129,9 @@ namespace nmos
         return resources_versions;
     }
 
-    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
+    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version)
     {
-        if (!is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)) return web::json::value::null();
+        if (!is_permitted_downgrade(resource_version, resource_downgrade_version, resource_type, version, downgrade_version)) return web::json::value::null();
 
         // optimisation for no resource data (special case)
         if (resource_data.is_null()) return resource_data;

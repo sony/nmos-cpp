@@ -14,7 +14,7 @@ namespace nmos
 
     bool is_permitted_downgrade(const nmos::resource& resource, const nmos::api_version& version);
     bool is_permitted_downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version);
-    bool is_permitted_downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version);
+    bool is_permitted_downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const nmos::api_version& version, const nmos::api_version& downgrade_version);
 
     namespace details
     {
@@ -26,7 +26,7 @@ namespace nmos
 
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version);
     web::json::value downgrade(const nmos::resource& resource, const nmos::api_version& version, const nmos::api_version& downgrade_version);
-    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version);
+    web::json::value downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::api_version& version, const nmos::api_version& downgrade_version);
 }
 
 #endif

@@ -361,7 +361,15 @@ namespace nmos
         subscription[U("active")] = value::boolean(false);
         data[U("subscription")] = std::move(subscription);
 
-        return{ is04_versions::v1_3, types::sender, data, false };
+        nmos::resource result{ is04_versions::v1_3, types::sender, data, false };
+
+        // only RTP Senders are permitted prior to v1.3, so specify an appropriate minimum API version
+        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
+        result.downgrade_version = nmos::transports::rtp == nmos::transport_base(transport)
+            ? is04_versions::v1_0
+            : is04_versions::v1_3;
+
+        return result;
     }
 
     nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::id& device_id, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
@@ -390,7 +398,15 @@ namespace nmos
         subscription[U("active")] = value::boolean(false);
         data[U("subscription")] = std::move(subscription);
 
-        return{ is04_versions::v1_3, types::receiver, data, false };
+        nmos::resource result{ is04_versions::v1_3, types::receiver, data, false };
+
+        // only RTP Receivers are permitted prior to v1.3, so specify an appropriate minimum API version
+        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
+        result.downgrade_version = nmos::transports::rtp == nmos::transport_base(transport)
+            ? is04_versions::v1_0
+            : is04_versions::v1_3;
+
+        return result;
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_video.json

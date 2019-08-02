@@ -26,6 +26,7 @@ namespace nmos
 
         resource(api_version version, type type, web::json::value data, bool never_expire)
             : version(version)
+            , downgrade_version()
             , type(type)
             , data(std::move(data))
             , id(fields::id(this->data))
@@ -36,6 +37,9 @@ namespace nmos
 
         // the API version of the Node API, Registration API or Query API exposing this resource
         api_version version;
+
+        // the minimum API version to which this resource should be permitted to be downgraded
+        nmos::api_version downgrade_version;
 
         // the type of the resource, e.g. node, device, source, flow, sender, receiver
         // see nmos/type.h

@@ -312,6 +312,8 @@ namespace nmos
             data[nmos::fields::resource_path] = value::string(node_behaviour_resource_path);
             data[nmos::fields::params] = value::object();
             // no ws_href since subscriptions are inaccessible on the Node API anyway
+
+            // the subscription version must be updated for the Registration API version (see initial_registration)
             return{ nmos::is04_versions::v1_3, nmos::types::subscription, data, true };
         }
 
@@ -323,6 +325,7 @@ namespace nmos
             data[nmos::fields::subscription_id] = value::string(subscription_id);
             data[nmos::fields::message] = details::make_grain(nmos::make_id(), subscription_id, node_behaviour_topic);
             nmos::fields::message_grain_data(data) = value::array();
+
             return{ nmos::is04_versions::v1_3, nmos::types::grain, data, true };
         }
 
@@ -373,14 +376,12 @@ namespace nmos
     // registered operation
     namespace details
     {
-        web::json::value make_registration_request_body(const nmos::type& type, const web::json::value& data, const nmos::api_version& registry_version)
+        web::json::value make_registration_request_body(const nmos::type& type, const web::json::value& data)
         {
-            // the node behaviour subscription version is currently fixed (see make_node_behaviour_subscription)
-            // rather than being set to the registry version, so a downgrade is required if the registry version is lower
             return web::json::value_of(
             {
                 { U("type"), web::json::value::string(type.name) },
-                { U("data"), nmos::downgrade(nmos::is04_versions::v1_3, type, data, registry_version, registry_version) }
+                { U("data"), data }
             });
         }
 
@@ -464,9 +465,6 @@ namespace nmos
         // make an asynchronous POST or DELETE request on the Registration API specified by the client for the specified resource event
         pplx::task<void> request_registration(web::http::client::http_client client, const web::json::value& event, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
-            // base uri should be like http://example.api.com/x-nmos/registration/{version}
-            const auto registry_version = parse_api_version(web::uri::split_path(client.base_uri().path()).back());
-
             const auto& path = event.at(U("path")).as_string();
             const auto id_type = get_resource_event_resource(node_behaviour_topic, event);
             const auto event_type = get_resource_event_type(event);
@@ -485,7 +483,7 @@ namespace nmos
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration creation for " << id_type;
 
-                auto body = make_registration_request_body(id_type.second, event.at(U("post")), registry_version);
+                auto body = make_registration_request_body(id_type.second, event.at(U("post")));
 
                 return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response) mutable
                 {
@@ -502,7 +500,7 @@ namespace nmos
 
                         return pplx::task_from_result(response);
                     }
-                    else if (web::http::status_codes::OK == response.status_code())
+                    else if (web::http::status_codes::OK == response.status_code() || web::http::status_codes::Conflict == response.status_code())
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Registration out of sync for " << id_type;
 
@@ -512,7 +510,20 @@ namespace nmos
                         // with the Node's view, an HTTP DELETE should be performed in this situation to explicitly clear the
                         // registry of the Node and any sub-resources."
 
-                        return client.request(web::http::methods::DEL, U("/resource/") + path, token).then([=, &gate](web::http::http_response response) mutable
+                        pplx::task<web::http::http_response> deletion;
+                        if (response.headers().has(web::http::header_names::location))
+                        {
+                            // Location may be a relative (to the request URL) or absolute URL
+                            auto request_uri = web::uri_builder(client.base_uri()).append_path(U("/resource")).to_uri();
+                            auto location_uri = request_uri.resolve_uri(response.headers()[web::http::header_names::location]);
+                            deletion = web::http::client::http_client(location_uri, client.client_config()).request(web::http::methods::DEL, token);
+                        }
+                        else
+                        {
+                            deletion = client.request(web::http::methods::DEL, U("/resource/") + path, token);
+                        }
+
+                        return deletion.then([=, &gate](web::http::http_response response) mutable
                         {
                             if (web::http::status_codes::NoContent == response.status_code())
                             {
@@ -554,7 +565,7 @@ namespace nmos
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration update for " << id_type;
 
-                auto body = make_registration_request_body(id_type.second, event.at(U("post")), registry_version);
+                auto body = make_registration_request_body(id_type.second, event.at(U("post")));
 
                 return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response)
                 {
@@ -636,21 +647,10 @@ namespace nmos
             const auto grain = nmos::find_resource(resources, { grain_id, nmos::types::grain });
             if (resources.end() == grain) return;
 
+            const auto subscription = nmos::find_resource(resources, nmos::get_super_resource(*grain));
+            if (resources.end() == subscription) return;
+
             std::unique_ptr<web::http::client::http_client> registration_client;
-
-            // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
-
-            // reset the node behaviour subscription grain; if the node resource has already been added to the model then
-            // the first event will be a 'sync' event for the node (and if not, there really should be no events at all!)
-            resources.modify(grain, [&resources](nmos::resource& grain)
-            {
-                auto& events = nmos::fields::message_grain_data(grain.data);
-
-                // the node behaviour subscription version, resource_path and params are currently fixed (see make_node_behaviour_subscription)
-                events = make_resource_events(resources, nmos::is04_versions::v1_3, U(""), web::json::value::object());
-
-                grain.updated = strictly_increasing_update(resources);
-            });
 
             bool registration_service_error(false);
             bool node_registered(false);
@@ -690,6 +690,38 @@ namespace nmos
                 if (!registration_client)
                 {
                     const auto base_uri = top_registration_service(model.settings);
+
+                    // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
+
+                    // "Nodes which support multiple versions simultaneously MUST ensure that all of their resources meet the schemas for each corresponding version of the specification[...]
+                    // It may be necessary to expose only a limited subset of a Node's resources from lower versioned endpoints."
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/6.0.%20Upgrade%20Path.md#version-translations
+
+                    // base uri should be like http://example.api.com/x-nmos/registration/{version}
+                    const auto registry_version = parse_api_version(web::uri::split_path(base_uri.path()).back());
+
+                    // reset the node behaviour subscription for the Registration API version
+                    resources.modify(subscription, [&resources, &registry_version](nmos::resource& subscription)
+                    {
+                        subscription.version = registry_version;
+
+                        subscription.updated = strictly_increasing_update(resources);
+                    });
+
+                    // reset the node behaviour subscription grain; if the node resource has already been added to the model then
+                    // the first event will be a 'sync' event for the node (and if not, there really should be no events at all!)
+                    resources.modify(grain, [&resources, &registry_version](nmos::resource& grain)
+                    {
+                        grain.version = registry_version;
+
+                        auto& events = nmos::fields::message_grain_data(grain.data);
+
+                        // the node behaviour subscription resource_path and params are currently fixed (see make_node_behaviour_subscription)
+                        events = make_resource_events(resources, registry_version, U(""), web::json::value::object());
+
+                        grain.updated = strictly_increasing_update(resources);
+                    });
+
                     registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings)));
                 }
 
@@ -822,6 +854,11 @@ namespace nmos
                 if (!registration_client)
                 {
                     const auto base_uri = top_registration_service(model.settings);
+
+                    // if Registration API version is different, force re-registration
+                    const auto registry_version = parse_api_version(web::uri::split_path(base_uri.path()).back());
+                    if (registry_version != grain->version) break;
+
                     registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings)));
                     heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings)));
 

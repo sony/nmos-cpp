@@ -22,11 +22,11 @@ namespace nmos
 
         resource_query(const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& flat_query_params);
 
-        result_type operator()(argument_type resource) const { return (*this)(resource.version, resource.type, resource.data); }
-        web::json::value downgrade(const nmos::resource& resource) const { return downgrade(resource.version, resource.type, resource.data); }
+        result_type operator()(argument_type resource) const { return (*this)(resource.version, resource.downgrade_version, resource.type, resource.data); }
+        web::json::value downgrade(const nmos::resource& resource) const { return downgrade(resource.version, resource.downgrade_version, resource.type, resource.data); }
 
-        result_type operator()(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
-        web::json::value downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
+        result_type operator()(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
+        web::json::value downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data) const;
 
         // the Query API version (since a registry being queried may contain resources of more than one version of IS-04 Discovery and Registration)
         nmos::api_version version;
@@ -109,7 +109,7 @@ namespace nmos
     web::json::value make_resource_events(const nmos::resources& resources, const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& params);
 
     // insert 'added', 'removed' or 'modified' resource events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
-    void insert_resource_events(nmos::resources& resources, const nmos::api_version& version, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
+    void insert_resource_events(nmos::resources& resources, const nmos::api_version& version, const nmos::api_version& downgrade_version, const nmos::type& type, const web::json::value& pre, const web::json::value& post);
 
     namespace fields
     {

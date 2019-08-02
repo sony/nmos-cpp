@@ -206,23 +206,23 @@ namespace nmos
         }(query) == rql::value_true;
     }
 
-    resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const
+    resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data) const
     {
         // in theory, should be performing match_query against the downgraded resource_data but
         // in practice, I don't think that can make a difference?
         return !resource_data.is_null()
             && (resource_path.empty() || resource_path == U('/') + nmos::resourceType_from_type(resource_type))
-            && nmos::is_permitted_downgrade(resource_version, resource_type, version, downgrade_version)
+            && nmos::is_permitted_downgrade(resource_version, resource_downgrade_version, resource_type, version, downgrade_version)
             && web::json::match_query(resource_data, basic_query, match_flags)
             && match_rql(resource_data, rql_query);
     }
 
-    web::json::value resource_query::downgrade(const nmos::api_version& resource_version, const nmos::type& resource_type, const web::json::value& resource_data) const
+    web::json::value resource_query::downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data) const
     {
         // when requested, return the resource not stripped
         if (!strip && resource_version.major == version.major && resource_version.minor > version.minor) return resource_data;
 
-        return nmos::downgrade(resource_version, resource_type, resource_data, version, downgrade_version);
+        return nmos::downgrade(resource_version, resource_downgrade_version, resource_type, resource_data, version, downgrade_version);
     }
 
     // Helpers for constructing /subscriptions websocket grains
@@ -353,7 +353,7 @@ namespace nmos
     }
 
     // insert 'added', 'removed' or 'modified' resource events into all grains whose subscriptions match the specified version, type and "pre" or "post" values
-    void insert_resource_events(nmos::resources& resources, const nmos::api_version& version, const nmos::type& type, const web::json::value& pre, const web::json::value& post)
+    void insert_resource_events(nmos::resources& resources, const nmos::api_version& version, const nmos::api_version& downgrade_version, const nmos::type& type, const web::json::value& pre, const web::json::value& post)
     {
         using utility::string_t;
         using web::json::value;
@@ -372,8 +372,8 @@ namespace nmos
             const auto resource_path = nmos::fields::resource_path(subscription.data);
             const resource_query match(subscription.version, resource_path, nmos::fields::params(subscription.data));
 
-            const bool pre_match = match(version, type, pre);
-            const bool post_match = match(version, type, post);
+            const bool pre_match = match(version, downgrade_version, type, pre);
+            const bool post_match = match(version, downgrade_version, type, post);
 
             if (!pre_match && !post_match) continue;
 
@@ -381,8 +381,8 @@ namespace nmos
 
             // note: downgrade just returns a copy in the case that version <= match.version
             auto event = details::make_resource_event(resource_path, type,
-                pre_match ? match.downgrade(version, type, pre) : value::null(),
-                post_match ? match.downgrade(version, type, post) : value::null()
+                pre_match ? match.downgrade(version, downgrade_version, type, pre) : value::null(),
+                post_match ? match.downgrade(version, downgrade_version, type, post) : value::null()
                 );
 
             // see explanation in nmos::make_resource_events
