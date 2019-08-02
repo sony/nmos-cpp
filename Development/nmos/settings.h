@@ -123,6 +123,12 @@ namespace nmos
         const web::json::field_as_integer_or query_paging_default{ U("query_paging_default"), 10 };
         const web::json::field_as_integer_or query_paging_limit{ U("query_paging_limit"), 100 };
 
+        // ptp_announce_receipt_timeout [registry]: number of PTP announce intervals that must pass before declaring timeout, between 2 and 10 inclusive (default is 3, as per SMPTE ST 2059-2)
+        const web::json::field_as_integer_or ptp_announce_receipt_timeout{ U("ptp_announce_receipt_timeout"), 3 };
+
+        // ptp_domain_number [registry]: the PTP domain number, between 0 and 127 (default is 127, as per SMPTE ST 2059-2)
+        const web::json::field_as_integer_or ptp_domain_number{ U("ptp_domain_number"), 127 };
+
         // immediate_activation_max [node]: timeout for immediate activations within the Connection API /staged endpoint
         const web::json::field_as_integer_or immediate_activation_max{ U("immediate_activation_max"), 30 };
 

@@ -60,6 +60,12 @@
     //"query_paging_default": 10,
     //"query_paging_limit": 100,
 
+    // ptp_announce_receipt_timeout [registry]: number of PTP announce intervals that must pass before declaring timeout, between 2 and 10 inclusive (default is 3, as per SMPTE ST 2059-2)
+    //"ptp_announce_receipt_timeout": 3,
+
+    // ptp_domain_number [registry]: the PTP domain number, between 0 and 127 (default is 127, as per SMPTE ST 2059-2)
+    //"ptp_domain_number": 127,
+
     // Configuration settings and defaults for experimental extensions
 
     // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration

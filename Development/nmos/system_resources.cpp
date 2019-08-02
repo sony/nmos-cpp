@@ -12,11 +12,11 @@ namespace nmos
         auto data = details::make_resource_core(id, settings);
 
         data[U("is04")] = value_of({
-                { U("heartbeat_interval"), nmos::fields::registration_heartbeat_interval(settings) }
+            { U("heartbeat_interval"), nmos::fields::registration_heartbeat_interval(settings) }
         });
         data[U("ptp")] = value_of({
-            { U("announce_receipt_timeout"), 2 },
-            { U("domain_number"), 57 }
+            { U("announce_receipt_timeout"), nmos::fields::ptp_announce_receipt_timeout(settings) },
+            { U("domain_number"), nmos::fields::ptp_domain_number(settings) }
         });
 
         return{ { 1, 0 }, types::global, data, true };
