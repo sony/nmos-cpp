@@ -98,7 +98,14 @@ namespace web
         void set_reply(web::http::http_response& res, web::http::status_code code, const utility::string_t& body_text, const utility::string_t& content_type)
         {
             res.set_status_code(code);
+            // this http_response::set_body overload blindly adds "; charset=utf-8" (because it converts body_test to UTF-8)
+            // which for "application/json" isn't necessary, or strictly valid
+            // see https://www.iana.org/assignments/media-types/application/json
             res.set_body(body_text, content_type);
+            if (web::http::details::mime_types::application_json == content_type)
+            {
+                res.headers().set_content_type(content_type);
+            }
         }
 
         void set_reply(web::http::http_response& res, web::http::status_code code, const web::json::value& body_data)
