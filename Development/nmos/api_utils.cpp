@@ -528,6 +528,10 @@ namespace nmos
                     }
                 }
 
+                // since the Accept request header may affect the response, indicate that it should be taken into account
+                // when deciding whether or not a cached response can be used
+                res.headers().add(web::http::header_names::vary, web::http::header_names::accept);
+
                 nmos::details::add_cors_headers(res);
 
                 // experimental extension, to support human-readable HTML rendering of NMOS responses
