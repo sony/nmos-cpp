@@ -10,6 +10,7 @@
 #include "nmos/settings.h"
 #include "nmos/tai.h"
 #include "nmos/type.h"
+#include "nmos/sdp_utils.h"
 
 namespace nmos
 {
@@ -48,6 +49,8 @@ namespace nmos
         // resource data is stored directly as json rather than e.g. being deserialized to a class hierarchy to allow quick
         // prototyping; json validation at the API boundary ensures the data met the schema for the specified version
         web::json::value data;
+        //Keeping track of latest patched sdp file params. Useful for having all sdp fields available when joining media-streams after IS-05 activation
+        struct nmos::sdp_parameters sdp_params;
         // when the resource data is null, the resource has been deleted or expired
         bool has_data() const { return !data.is_null(); }
 

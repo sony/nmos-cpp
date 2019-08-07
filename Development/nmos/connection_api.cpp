@@ -682,6 +682,7 @@ namespace nmos
                 // On successful staging/activation, this copy will also be used for the response.
 
                 auto merged = nmos::fields::endpoint_staged(resource->data);
+                struct sdp_parameters sdp_params = {};
 
                 // "In the case where the transport file and transport parameters are updated in the same PATCH request
                 // transport parameters specified in the request object take precedence over those in the transport file."
@@ -708,10 +709,9 @@ namespace nmos
                             const auto transport_file_params = parse_transport_file(*matching_resource, *resource, transport_type_data.first, transport_type_data.second, gate);
 
                             // Merge the transport file into the transport parameters
-
                             auto& transport_params = nmos::fields::transport_params(merged);
-
-                            web::json::merge_patch(transport_params, transport_file_params);
+                            sdp_params = transport_file_params.first;
+                            web::json::merge_patch(transport_params, transport_file_params.second);
                         }
                         catch (const web::json::json_exception& e)
                         {
@@ -748,11 +748,16 @@ namespace nmos
 
                 // Finally, update the staged endpoint
 
-                modify_resource(resources, id_type.first, [&patch_state, &merged](nmos::resource& resource)
+                modify_resource(resources, id_type.first, [&patch_state, &merged, &sdp_params](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
 
                     nmos::fields::endpoint_staged(resource.data) = merged;
+                    // Simple check that SDP-file is not empty. Riedel NMOS Explorer does staging in two
+                    // phases: 1. Patch SDP file, 2. Patch Activation. So we don't want override SDP info from second patch
+                    if (!sdp_params.media_type.name.empty()) {
+                        resource.sdp_params = sdp_params;
+                    }
                     // In the case of an immediate activation, this is not yet a valid response
                     // to a 'subsequent' GET request on the staged endpoint; that should be dealt with
                     // by calling details::handle_immediate_activation_pending
@@ -924,7 +929,7 @@ namespace nmos
     }
 
     // Validate and parse the specified transport file for the specified receiver
-    web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
+    std::pair<sdp_parameters, web::json::value> parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
         if (transport_file_type != U("application/sdp"))
         {
@@ -955,7 +960,7 @@ namespace nmos
             web::json::push_back(sdp_transport_params.second, web::json::value_of({ { U("rtp_enabled"), false } }));
         }
 
-        return sdp_transport_params.second;
+        return sdp_transport_params;
     }
 
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
