@@ -398,7 +398,7 @@ namespace sdp
     namespace fields
     {
         // See https://tools.ietf.org/html/rfc4175
-        // and SMPTE ST2110-21:2017
+        // and SMPTE ST 2110-21:2017
         // and VSF TR-05:2018
         const web::json::field<uint32_t> width{ U("width") };
         const web::json::field<uint32_t> height{ U("height") };
@@ -411,7 +411,15 @@ namespace sdp
         const web::json::field_as_string packing_mode{ U("PM") };
         const web::json::field_as_string smpte_standard_number{ U("SSN") };
         const web::json::field_as_string type_parameter{ U("TP") };
-        const web::json::field_as_string channel_order{ U("channel-order") };
+
+        // See SMPTE ST 2110-30:2017
+        // and https://tools.ietf.org/html/rfc3190
+        const web::json::field_as_string channel_order{ U("channel-order") }; // "<convention>.<order>", e.g. "SMPTE2110.(ST)"
+
+        // See SMPTE ST 2110-40:2018
+        // and https://tools.ietf.org/html/rfc8331
+        const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}"
+        const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255
     }
 }
 

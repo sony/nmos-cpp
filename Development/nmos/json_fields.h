@@ -76,6 +76,10 @@ namespace nmos
         const web::json::field_as_integer bit_depth{ U("bit_depth") }; // also used in flow_audio_raw
         // flow_audio
         const web::json::field_as_value sample_rate{ U("sample_rate") };
+        // flow_sdianc_data
+        const web::json::field_as_value_or DID_SDID{ U("DID_SDID"), web::json::value::array() };
+        const web::json::field_as_string_or DID{ U("DID"), U("0x00") }; // probably an oversight this isn't required
+        const web::json::field_as_string_or SDID{ U("SDID"), U("0x00") };
         // sender
         const web::json::field_as_array interface_bindings{ U("interface_bindings") }; // also used in receiver
         const web::json::field_as_string transport{ U("transport") }; // also used in receiver

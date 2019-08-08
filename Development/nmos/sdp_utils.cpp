@@ -2,6 +2,7 @@
 
 #include <map>
 #include <boost/asio/ip/address.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/format.h"
@@ -129,6 +130,16 @@ namespace nmos
     static sdp_parameters make_data_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::data_t params;
+
+        // format_specific_parameters
+
+        // did_sdid map directly to flow_sdianc_data "DID_SDID"
+        params.did_sdids = boost::copy_range<std::vector<nmos::did_sdid>>(nmos::fields::DID_SDID(flow).as_array() | boost::adaptors::transformed([](const web::json::value& did_sdid)
+        {
+            return nmos::parse_did_sdid(did_sdid);
+        }));
+
+        // hm, no vpid_code in the flow
 
         return{ sender.at(nmos::fields::label).as_string(), params, 100, media_stream_ids };
     }
@@ -421,7 +432,7 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4566#section-6
         const auto rtpmap = value_of({
             { sdp::fields::name, sdp::attributes::rtpmap },
-            { sdp::fields::value, web::json::value_of({
+            { sdp::fields::value, value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
                 { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
                 { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate },
@@ -434,9 +445,9 @@ namespace nmos
         const auto format_specific_parameters = sdp_params.audio.channel_order.empty() ? value::array() : value_of({
             sdp::named_value(sdp::fields::channel_order, sdp_params.audio.channel_order)
         });
-        const auto fmtp = web::json::value_of({
+        const auto fmtp = value_of({
             { sdp::fields::name, sdp::attributes::fmtp },
-            { sdp::fields::value, web::json::value_of({
+            { sdp::fields::value, value_of({
                 { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
                 { sdp::fields::format_specific_parameters, format_specific_parameters }
             }, keep_order) }
@@ -445,8 +456,24 @@ namespace nmos
         return make_session_description(sdp_params, transport_params, ptime, rtpmap, fmtp);
     }
 
+    static web::json::value make_data_format_specific_parameters(const sdp_parameters::data_t& data_params)
+    {
+        auto result = web::json::value_from_elements(data_params.did_sdids | boost::adaptors::transformed([](const nmos::did_sdid& did_sdid)
+        {
+            return sdp::named_value(sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid));
+        }));
+
+        if (0 != data_params.vpid_code)
+        {
+            web::json::push_back(result, sdp::named_value(sdp::fields::VPID_Code, utility::ostringstreamed(data_params.vpid_code)));
+        }
+
+        return result;
+    }
+
     static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
     {
+        using web::json::value;
         using web::json::value_of;
 
         const bool keep_order = true;
@@ -455,14 +482,24 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4566#section-6
         const auto rtpmap = value_of({
             { sdp::fields::name, sdp::attributes::rtpmap },
-            { sdp::fields::value, web::json::value_of({
+            { sdp::fields::value, value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
                 { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
                 { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, {});
+        // a=fmtp:<format> <format specific parameters>
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        const auto fmtp = sdp_params.data.did_sdids.empty() && 0 == sdp_params.data.vpid_code ? value::null() : value_of({
+            { sdp::fields::name, sdp::attributes::fmtp },
+            { sdp::fields::value, value_of({
+                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
+                { sdp::fields::format_specific_parameters, make_data_format_specific_parameters(sdp_params.data) }
+            }, keep_order) }
+        }, keep_order);
+
+        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
     }
 
     namespace details
@@ -817,6 +854,7 @@ namespace nmos
         const auto format = details::get_format(sdp_params);
         const auto is_video_sdp = nmos::formats::video == format;
         const auto is_audio_sdp = nmos::formats::audio == format;
+        const auto is_data_sdp = nmos::formats::data == format;
 
         if (is_audio_sdp)
         {
@@ -877,7 +915,6 @@ namespace nmos
 
             const auto depth = sdp::find_name(format_specific_parameters, sdp::fields::depth);
             if (format_specific_parameters.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
-            auto test = sdp::fields::value(*depth);
             sdp_params.video.depth = utility::istringstreamed<uint32_t>(sdp::fields::value(*depth).as_string());
 
             // optional
@@ -922,6 +959,31 @@ namespace nmos
             if (format_specific_parameters.end() != channel_order)
             {
                 sdp_params.audio.channel_order = sdp::fields::value(*channel_order).as_string();
+            }
+        }
+        else if (is_data_sdp && attributes.end() != fmtp)
+        {
+            const auto& fmtp_value = sdp::fields::value(*fmtp);
+            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
+
+            // "The SDP object shall be constructed as described in IETF RFC 8331"
+            // See SMPTE ST 2110-40:2018 Section 6
+            // and https://tools.ietf.org/html/rfc8331
+
+            // optional
+            sdp_params.data.did_sdids = boost::copy_range<std::vector<nmos::did_sdid>>(format_specific_parameters | boost::adaptors::filtered([](const web::json::value& nv)
+            {
+                return sdp::fields::DID_SDID.key == sdp::fields::name(nv);
+            }) | boost::adaptors::transformed([](const web::json::value& did_sdid)
+            {
+                return parse_fmtp_did_sdid(did_sdid.as_string());
+            }));
+
+            // optional
+            const auto vpid_code = sdp::find_name(format_specific_parameters, sdp::fields::VPID_Code);
+            if (format_specific_parameters.end() != vpid_code)
+            {
+                sdp_params.data.vpid_code = (nmos::vpid_code)utility::istringstreamed<uint32_t>(sdp::fields::value(*vpid_code).as_string());
             }
         }
 

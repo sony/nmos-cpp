@@ -4,7 +4,9 @@
 #include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
+#include "nmos/did_sdid.h"
 #include "nmos/rational.h"
+#include "nmos/vpid_code.h"
 
 namespace nmos
 {
@@ -150,8 +152,20 @@ namespace nmos
         } audio;
 
         // additional "video/smpte291" data parameters (data only)
+        // see SMPTE ST 2110-40:2018
+        // and https://www.iana.org/assignments/media-types/video/smpte291
+        // and https://tools.ietf.org/html/rfc8331
         struct data_t
         {
+            // fmtp optionally indicates multiple DID_SDID parameters
+            std::vector<nmos::did_sdid> did_sdids;
+            // fmtp optionally indicates VPID Code of the source interface
+            nmos::vpid_code vpid_code;
+
+            data_t(const std::vector<nmos::did_sdid>& did_sdids = {}, nmos::vpid_code vpid_code = {})
+                : did_sdids(did_sdids)
+                , vpid_code(vpid_code)
+            {}
         } data;
 
         struct ts_refclk_t

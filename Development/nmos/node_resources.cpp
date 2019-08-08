@@ -8,6 +8,7 @@
 #include "nmos/connection_resources.h" // for nmos::make_connection_api_transportfile
 #include "nmos/components.h"
 #include "nmos/device_type.h"
+#include "nmos/did_sdid.h"
 #include "nmos/event_type.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
@@ -286,18 +287,30 @@ namespace nmos
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_sdianc_data.json
-    nmos::resource make_sdianc_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
+    nmos::resource make_sdianc_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const std::vector<nmos::did_sdid>& did_sdids, const nmos::settings& settings)
     {
         using web::json::value;
+        using web::json::value_from_elements;
 
         auto resource = make_flow(id, source_id, device_id, {}, settings);
         auto& data = resource.data;
 
         data[U("format")] = value::string(nmos::formats::data.name);
         data[U("media_type")] = value::string(nmos::media_types::video_smpte291.name);
-        //data[U("DID_SDID")] = value::array(); // optional
+        if (!did_sdids.empty())
+        {
+            data[U("DID_SDID")] = value_from_elements(did_sdids | boost::adaptors::transformed([](const nmos::did_sdid& did_sdid)
+            {
+                return nmos::make_did_sdid(did_sdid);
+            }));
+        }
 
         return resource;
+    }
+
+    nmos::resource make_sdianc_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
+    {
+        return make_sdianc_data_flow(id, source_id, device_id, {}, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_data.json

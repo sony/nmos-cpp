@@ -574,6 +574,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/connection_api.cpp
     ${NMOS_CPP_DIR}/nmos/connection_events_activation.cpp
     ${NMOS_CPP_DIR}/nmos/connection_resources.cpp
+    ${NMOS_CPP_DIR}/nmos/did_sdid.cpp
     ${NMOS_CPP_DIR}/nmos/events_api.cpp
     ${NMOS_CPP_DIR}/nmos/events_resources.cpp
     ${NMOS_CPP_DIR}/nmos/events_ws_api.cpp
@@ -624,6 +625,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/connection_events_activation.h
     ${NMOS_CPP_DIR}/nmos/connection_resources.h
     ${NMOS_CPP_DIR}/nmos/device_type.h
+    ${NMOS_CPP_DIR}/nmos/did_sdid.h
     ${NMOS_CPP_DIR}/nmos/event_type.h
     ${NMOS_CPP_DIR}/nmos/events_api.h
     ${NMOS_CPP_DIR}/nmos/events_resources.h
@@ -684,6 +686,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/transport.h
     ${NMOS_CPP_DIR}/nmos/type.h
     ${NMOS_CPP_DIR}/nmos/version.h
+    ${NMOS_CPP_DIR}/nmos/vpid_code.h
     ${NMOS_CPP_DIR}/nmos/websockets.h
     )
 
