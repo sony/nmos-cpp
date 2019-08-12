@@ -15,7 +15,7 @@ namespace nmos
     {
         const clock_name clk0{ U("clk0") };
 
-        inline const clock_name NSC(unsigned int n)
+        inline const clock_name clk(unsigned int n)
         {
             return clock_name{ U("clk") + utility::ostringstreamed(n) };
         }
