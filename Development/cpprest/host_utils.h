@@ -14,6 +14,7 @@ namespace web
             utility::string_t host_name();
             std::vector<utility::string_t> interface_addresses();
 
+            std::vector<utility::string_t> host_names(const utility::string_t& address);
             std::vector<utility::string_t> host_addresses(const utility::string_t& host_name);
         }
     }

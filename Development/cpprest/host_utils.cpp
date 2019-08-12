@@ -123,6 +123,31 @@ namespace web
                 return addresses;
             }
 
+            std::vector<utility::string_t> host_names(const utility::string_t& address)
+            {
+                boost::asio::io_service service;
+                boost::asio::ip::tcp::resolver resolver(service);
+                std::vector<utility::string_t> host_names;
+                boost::system::error_code ec;
+#if BOOST_VERSION >= 106600
+                const auto ip_address = boost::asio::ip::make_address(utility::conversions::to_utf8string(address));
+#else
+                const auto ip_address = boost::asio::ip::address::from_string(utility::conversions::to_utf8string(address));
+#endif
+                const auto results = resolver.resolve({ ip_address, 0 }, ec);
+#if BOOST_VERSION >= 106600
+                for (const auto& re : results)
+                {
+#else
+                for (auto it = results; it != boost::asio::ip::tcp::resolver::iterator{}; ++it)
+                {
+                    const auto& re = *it;
+#endif
+                    host_names.push_back(utility::conversions::to_string_t(re.host_name()));
+                }
+                return host_names; // empty if address cannot be resolved
+            }
+
             std::vector<utility::string_t> host_addresses(const utility::string_t& host_name)
             {
                 boost::asio::io_service service;
