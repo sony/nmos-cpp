@@ -4,6 +4,7 @@
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/channels.h"
+#include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
 #include "nmos/connection_resources.h" // for nmos::make_connection_api_transportfile
 #include "nmos/components.h"
@@ -98,7 +99,7 @@ namespace nmos
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_core.json
-    nmos::resource make_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
+    nmos::resource make_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
         using web::json::value;
 
@@ -108,17 +109,17 @@ namespace nmos
         data[U("caps")] = value::object();
         data[U("device_id")] = value::string(device_id);
         data[U("parents")] = value::array();
-        data[U("clock_name")] = value::null();
+        data[U("clock_name")] = !clk.name.empty() ? value::string(clk.name) : value::null();
 
         return{ is04_versions::v1_3, types::source, data, false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
-    nmos::resource make_generic_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::format& format, const nmos::settings& settings)
+    nmos::resource make_generic_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::format& format, const nmos::settings& settings)
     {
         using web::json::value;
 
-        auto resource = make_source(id, device_id, grain_rate, settings);
+        auto resource = make_source(id, device_id, clk, grain_rate, settings);
         auto& data = resource.data;
 
         data[U("format")] = value::string(format.name);
@@ -126,24 +127,39 @@ namespace nmos
         return resource;
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
-    nmos::resource make_video_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
+    nmos::resource make_generic_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::format& format, const nmos::settings& settings)
     {
-        return make_generic_source(id, device_id, grain_rate, nmos::formats::video, settings);
+        return make_generic_source(id, device_id, {}, grain_rate, format, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
+    nmos::resource make_video_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::settings& settings)
+    {
+        return make_generic_source(id, device_id, clk, grain_rate, nmos::formats::video, settings);
+    }
+
+    nmos::resource make_video_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
+    {
+        return make_video_source(id, device_id, {}, grain_rate, settings);
+    }
+
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
+    nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::settings& settings)
+    {
+        return make_generic_source(id, device_id, clk, grain_rate, nmos::formats::data, settings);
+    }
+
     nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
-        return make_generic_source(id, device_id, grain_rate, nmos::formats::data, settings);
+        return make_data_source(id, device_id, {}, grain_rate, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/APIs/schemas/source_data.json
-    nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::event_type& event_type, const nmos::settings& settings)
+    nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::event_type& event_type, const nmos::settings& settings)
     {
         using web::json::value;
 
-        auto resource = make_data_source(id, device_id, grain_rate, settings);
+        auto resource = make_data_source(id, device_id, clk, grain_rate, settings);
         auto& data = resource.data;
 
         data[U("event_type")] = value::string(event_type.name);
@@ -151,12 +167,17 @@ namespace nmos
         return resource;
     }
 
+    nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::event_type& event_type, const nmos::settings& settings)
+    {
+        return make_data_source(id, device_id, {}, grain_rate, event_type, settings);
+    }
+
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_audio.json
-    nmos::resource make_audio_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const std::vector<channel>& channels, const nmos::settings& settings)
+    nmos::resource make_audio_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const std::vector<channel>& channels, const nmos::settings& settings)
     {
         using web::json::value;
 
-        auto resource = make_source(id, device_id, grain_rate, settings);
+        auto resource = make_source(id, device_id, clk, grain_rate, settings);
         auto& data = resource.data;
 
         data[U("format")] = value::string(nmos::formats::audio.name);
@@ -169,6 +190,11 @@ namespace nmos
         data[U("channels")] = std::move(channels_data);
 
         return resource;
+    }
+
+    nmos::resource make_audio_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const std::vector<channel>& channels, const nmos::settings& settings)
+    {
+        return make_audio_source(id, device_id, {}, grain_rate, channels, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_core.json

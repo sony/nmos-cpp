@@ -14,10 +14,19 @@ namespace nmos
             web::json::insert(settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
 
             // if the "host_addresses" setting was omitted, add all the interface addresses
-            const auto interface_addresses = web::http::experimental::interface_addresses();
-            if (!interface_addresses.empty())
+            if (!settings.has_field(nmos::fields::host_addresses))
             {
-                web::json::insert(settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(interface_addresses)));
+                const auto interfaces = web::hosts::experimental::host_interfaces();
+                if (!interfaces.empty())
+                {
+                    std::vector<utility::string_t> addresses;
+                    for (auto& interface : interfaces)
+                    {
+                        addresses.insert(addresses.end(), interface.addresses.begin(), interface.addresses.end());
+                    }
+
+                    web::json::insert(settings, std::make_pair(nmos::fields::host_addresses, web::json::value_from_elements(addresses)));
+                }
             }
 
             // if the "host_address" setting was omitted, use the first of the "host_addresses"
@@ -63,7 +72,7 @@ namespace nmos
     {
         return !nmos::fields::host_name(settings).empty()
             ? nmos::fields::host_name(settings)
-            : web::http::experimental::host_name();
+            : web::hosts::experimental::host_name();
     }
 
     // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')

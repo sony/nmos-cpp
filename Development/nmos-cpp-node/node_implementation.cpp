@@ -1,6 +1,8 @@
 #include "node_implementation.h"
 
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
+#include "cpprest/host_utils.h"
+#include "nmos/clock_name.h"
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
@@ -70,17 +72,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto resolve_auto = make_node_implementation_auto_resolver(model.settings);
     const auto set_transportfile = make_node_implementation_transportfile_setter(model.node_resources, model.settings);
 
+    const auto clocks = web::json::value_of({ nmos::make_internal_clock(nmos::clock_names::clk0) });
+    const auto interfaces = web::hosts::experimental::host_interfaces();
+
     // example node
     {
-        auto node = nmos::make_node(node_id, model.settings);
-        // add one example network interface
-        node.data[U("interfaces")] = value_of({
-            value_of({
-                { U("chassis_id"), value::null() },
-                { U("port_id"), U("ff-ff-ff-ff-ff-ff") },
-                { U("name"), U("example") }
-            })
-        });
+        auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) return;
     }
 
@@ -95,7 +92,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     // example source, flow and sender
     {
-        auto source = nmos::make_video_source(source_id, device_id, { 25, 1 }, model.settings);
+        auto source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, { 25, 1 }, model.settings);
 
         auto flow = nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings);
 
@@ -103,8 +100,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
-        // add example network interface binding for both primary and secondary
-        auto sender = nmos::make_sender(sender_id, flow_id, device_id, { U("example"), U("example") }, model.settings);
+        // add network interface bindings for primary and secondary (both to the same interface)
+        auto sender = nmos::make_sender(sender_id, flow_id, device_id, { interfaces.front().name, interfaces.front().name }, model.settings);
         // add example "natural grouping" hint
         web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
 
@@ -119,7 +116,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // example receiver
     {
         // add example network interface binding for both primary and secondary
-        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { U("example"), U("example") }, model.settings);
+        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { interfaces.front().name, interfaces.front().name }, model.settings);
         // add example "natural grouping" hint
         web::json::push_back(receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 0") }));
 
@@ -144,7 +141,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
 
         auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
-        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { U("example") }, model.settings);
+        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { interfaces.front().name }, model.settings);
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
         resolve_auto(temperature_ws_sender, connection_temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
@@ -238,7 +235,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [device_id, sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri, temperature_ws_receiver_id](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [sender_id, receiver_id, temperature_ws_sender_id, temperature_ws_sender_uri, temperature_ws_receiver_id](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
 

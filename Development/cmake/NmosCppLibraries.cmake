@@ -617,6 +617,8 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/api_version.h
     ${NMOS_CPP_DIR}/nmos/channels.h
     ${NMOS_CPP_DIR}/nmos/client_utils.h
+    ${NMOS_CPP_DIR}/nmos/clock_name.h
+    ${NMOS_CPP_DIR}/nmos/clock_ref_type.h
     ${NMOS_CPP_DIR}/nmos/colorspace.h
     ${NMOS_CPP_DIR}/nmos/components.h
     ${NMOS_CPP_DIR}/nmos/copyable_atomic.h

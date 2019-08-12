@@ -149,6 +149,7 @@ namespace nmos
         const auto pri = nmos::fields::pri(model.settings);
         if (nmos::service_priorities::no_priority != pri) // no_priority allows the registry to run unadvertised
         {
+            nmos::experimental::register_addresses(advertiser, model.settings);
             nmos::experimental::register_service(advertiser, nmos::service_types::query, model.settings);
             nmos::experimental::register_service(advertiser, nmos::service_types::registration, model.settings);
             nmos::experimental::register_service(advertiser, nmos::service_types::node, model.settings);

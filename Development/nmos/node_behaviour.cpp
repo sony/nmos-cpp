@@ -182,6 +182,7 @@ namespace nmos
             // no_priority allows the node to run unadvertised
             if (nmos::service_priorities::no_priority != pri)
             {
+                nmos::experimental::register_addresses(advertiser, settings);
                 nmos::experimental::register_service(advertiser, nmos::service_types::node, settings);
             }
         }

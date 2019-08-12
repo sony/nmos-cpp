@@ -413,11 +413,11 @@ namespace mdns_details
 
 #ifdef _WIN32
             // on Windows, resolution of multicast .local domain names doesn't seem to work even with the Bonjour service running?
-            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(without_suffix(host_name)));
+            const auto ip_addresses = web::hosts::experimental::host_addresses(utility::s2us(without_suffix(host_name)));
 #else
             // on Linux, the name-service switch should be configured to use Avahi to resolve multicast .local domain names
             // by including 'mdns4' or 'mdns4_minimal' in the hosts stanza of /etc/nsswitch.conf
-            const auto ip_addresses = web::http::experimental::host_addresses(utility::s2us(host_name));
+            const auto ip_addresses = web::hosts::experimental::host_addresses(utility::s2us(host_name));
 #endif
             for (auto& ip_address : ip_addresses)
             {

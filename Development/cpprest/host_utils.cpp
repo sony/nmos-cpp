@@ -1,18 +1,34 @@
 #include "cpprest/host_utils.h"
 
+#include <iomanip> // for std::setfill
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/asyncrt_utils.h" // for utility::conversions
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
+#if !defined(HOST_UTILS_USE_GETADAPTERSADDRESSES) && !defined(HOST_UTILS_USE_GETADDRINFO)
+#define HOST_UTILS_USE_GETADAPTERSADDRESSES
+#endif
+#ifdef HOST_UTILS_USE_GETADAPTERSADDRESSES
+#include <iphlpapi.h>
+
+#pragma comment(lib, "IPHLPAPI.lib")
+#endif
+#else
 #include <ifaddrs.h> // for ifaddrs
 #include <net/if.h> // for ifa_flags
+#if defined(__linux__)
+#include <linux/if_packet.h> // for sockaddr_ll
+#elif defined(__APPLE__)
+#include <net/if_dl.h> // for sockaddr_dl
+#endif
 #endif
 
 namespace web
 {
-    namespace http
+    namespace hosts
     {
         namespace experimental
         {
@@ -28,19 +44,19 @@ namespace web
                 {
                     if (address.sa_family == AF_INET)
                     {
-                        auto addr_in = (const sockaddr_in&)address;
-                        auto addr = addr_in.sin_addr.s_addr;
+                        auto& addr_in = (const sockaddr_in&)address;
+                        auto& addr = addr_in.sin_addr.s_addr;
 
                         return boost::asio::ip::address_v4(ntohl(addr));
                     }
                     else if (address.sa_family == AF_INET6)
                     {
-                        auto addr_in6 = (const sockaddr_in6&)address;
-                        auto addr6 = addr_in6.sin6_addr.s6_addr;
+                        auto& addr_in6 = (const sockaddr_in6&)address;
+                        auto& addr6 = addr_in6.sin6_addr.s6_addr;
                         boost::asio::ip::address_v6::bytes_type addr6_bytes;
                         std::copy_n(addr6, addr6_bytes.size(), addr6_bytes.begin());
 
-                        //auto scope_id = addr_in6.sin6_scope_id;
+                        //auto& scope_id = addr_in6.sin6_scope_id;
                         //return boost::asio::ip::address_v6(addr6_bytes, scope_id);
                         return boost::asio::ip::address_v6(addr6_bytes);
                     }
@@ -51,14 +67,64 @@ namespace web
                 }
             }
 
-            std::vector<utility::string_t> interface_addresses()
+            namespace details
             {
-                std::vector<utility::string_t> addresses;
+                inline utility::string_t make_physical_address(const uint8_t* data, const size_t size)
+                {
+                    utility::ostringstream_t physical_address;
+                    physical_address << std::hex << std::nouppercase << std::setfill(U('0'));
+                    for (size_t i = 0; i < size; ++i)
+                    {
+                        if (0 != i) physical_address << U('-');
+                        physical_address << std::setw(2) << (uint32_t)data[i];
+                    }
+
+                    return physical_address.str();
+                }
+            }
+
+            std::vector<host_interface> host_interfaces()
+            {
+                std::vector<host_interface> interfaces;
 
                 // for now, limited to IPv4
                 const bool ipv6 = false;
 
 #if defined(_WIN32)
+#ifdef HOST_UTILS_USE_GETADAPTERSADDRESSES
+                // "The recommended method of calling the GetAdaptersAddresses function is to pre-allocate a 15KB working buffer
+                // pointed to by the AdapterAddresses parameter."
+                // See https://docs.microsoft.com/en-gb/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses
+                std::array<unsigned char, 15000> working_buffer; // default-initialized
+                PIP_ADAPTER_ADDRESSES adapter_addresses = (PIP_ADAPTER_ADDRESSES)&working_buffer[0];
+                ULONG size = (ULONG)working_buffer.size();
+
+                auto family = ipv6 ? AF_UNSPEC : AF_INET;
+                ULONG rv = ::GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+                if (rv != ERROR_SUCCESS) return interfaces;
+
+                for (PIP_ADAPTER_ADDRESSES adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next)
+                {
+
+                    host_interface interface((uint32_t)adapter->IfIndex, utility::conversions::to_string_t(adapter->AdapterName), details::make_physical_address(adapter->PhysicalAddress, adapter->PhysicalAddressLength));
+
+                    // FriendlyName and DnsSuffix might also be helpful?
+
+                    for (PIP_ADAPTER_UNICAST_ADDRESS address = adapter->FirstUnicastAddress; NULL != address; address = address->Next)
+                    {
+                        const auto ip_address = details::from_sockaddr(*address->Address.lpSockaddr);
+
+                        if (ip_address.is_unspecified()) continue;
+                        if (ip_address.is_loopback()) continue;
+
+                        if (!ipv6 && ip_address.is_v6()) continue;
+
+                        interface.addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
+                    }
+
+                    interfaces.push_back(std::move(interface));
+                }
+#else
                 addrinfo hints = {};
                 hints.ai_family = ipv6 ? AF_UNSPEC : AF_INET;
 
@@ -71,6 +137,8 @@ namespace web
                 // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
                 if (0 == ::getaddrinfo("", NULL, &hints, &results))
                 {
+                    host_interface interface; // no interface index, name or physical address using getaddrinfo
+
                     for (auto ptr = results; ptr != NULL; ptr = ptr->ai_next)
                     {
                         const auto ip_address = details::from_sockaddr(*ptr->ai_addr);
@@ -80,12 +148,16 @@ namespace web
 
                         if (!ipv6 && ip_address.is_v6()) continue;
 
-                        addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
+                        interface.addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
                     }
 
                     ::freeaddrinfo(results);
+
+                    interfaces.push_back(std::move(interface));
                 }
+#endif
 #else
+                auto nameindex = ::if_nameindex();
                 ifaddrs* results = NULL;
 
                 // On Linux, getaddrinfo does not have the same extension; getifaddrs is used instead
@@ -93,7 +165,7 @@ namespace web
                 // interface containing lower-level details about the interface and its physical layer")
                 // so those must be filtered out.
                 // See http://man7.org/linux/man-pages/man3/getifaddrs.3.html
-                if (0 == ::getifaddrs(&results))
+                if (0 != nameindex && 0 == ::getifaddrs(&results))
                 {
                     for (auto ptr = results; ptr != NULL; ptr = ptr->ifa_next)
                     {
@@ -104,23 +176,64 @@ namespace web
 
                         if (0 != (ptr->ifa_flags & IFF_LOOPBACK)) continue;
 
-                        if (!ipv6 && ptr->ifa_addr->sa_family == AF_INET6) continue;
+                        // find interface index for this address
+                        const std::string name(ptr->ifa_name);
+                        auto ni = nameindex;
+                        for (; 0 != ni->if_index; ++ni)
+                        {
+                            if (ni->if_name == name) break;
+                        }
+                        const auto index = (uint32_t)ni->if_index;
 
-                        const auto ip_address = details::from_sockaddr(*ptr->ifa_addr);
+                        // find or insert a new interface for this interface index
+                        auto interface = std::find_if(interfaces.begin(), interfaces.end(), [index](const host_interface& interface)
+                        {
+                            return interface.index == index;
+                        });
+                        if (interfaces.end() == interface)
+                        {
+                            interface = interfaces.insert(interface, 0 != index ? host_interface(index, utility::conversions::to_string_t(name)) : host_interface());
+                        }
 
-                        if (ip_address.is_unspecified()) continue;
-                        if (ip_address.is_loopback()) continue;
+#if defined __linux__
+                        if (ptr->ifa_addr->sa_family == AF_PACKET)
+                        {
+                            auto& addr_ll = (const sockaddr_ll&)*ptr->ifa_addr;
+                            interface->physical_address = details::make_physical_address(addr_ll.sll_addr, addr_ll.sll_halen);
+                        }
+                        else
+#elif defined __APPLE__
+                        if (ptr->ifa_addr->sa_family == AF_LINK)
+                        {
+                            auto& addr_dl = (const sockaddr_dl&)*ptr->ifa_addr;
+                            interface->physical_address = details::make_physical_address((const uint8_t*)LLADDR(addr_dl), addr_ll.sdl_alen);
+                        }
+                        else
+#endif
+                        {
+                            if (!ipv6 && ptr->ifa_addr->sa_family == AF_INET6) continue;
 
-                        if (!ipv6 && ip_address.is_v6()) continue;
+                            const auto ip_address = details::from_sockaddr(*ptr->ifa_addr);
 
-                        addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
+                            if (ip_address.is_unspecified()) continue;
+                            if (ip_address.is_loopback()) continue;
+
+                            if (!ipv6 && ip_address.is_v6()) continue;
+
+                            interface->addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
+                        }
                     }
 
                     ::freeifaddrs(results);
+                    ::if_freenameindex(nameindex);
                 }
 #endif
 
-                return addresses;
+                // don't return interfaces with no addresses
+                return boost::copy_range<std::vector<host_interface>>(interfaces | boost::adaptors::filtered([](const host_interface& interface)
+                {
+                    return !interface.addresses.empty();
+                }));
             }
 
             std::vector<utility::string_t> host_names(const utility::string_t& address)

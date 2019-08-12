@@ -8,6 +8,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
+#include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
@@ -258,20 +259,33 @@ namespace nmos
             return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
-        // helper function for registering the specified service (API)
-        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const std::string& host_name, const std::string& domain, const nmos::settings& settings)
+        // helper function for registering addresses when the host name is explicitly configured
+        void register_addresses(mdns::service_advertiser& advertiser, const std::string& host_name, const std::string& domain, const nmos::settings& settings)
         {
             // if a host_name has been explicitly specified, attempt to register it in the specified domain
             if (!host_name.empty())
             {
+                const auto interfaces = web::hosts::experimental::host_interfaces();
+
                 const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
                 const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
                 for (const auto& host_address : host_addresses)
                 {
-                    advertiser.register_address(host_name, utility::us2s(host_address.as_string()), domain).wait();
+                    // find the appropriate interface on which to register this address
+                    const auto interface = std::find_if(interfaces.begin(), interfaces.end(), [&host_address](const web::hosts::experimental::host_interface& interface)
+                    {
+                        return interface.addresses.end() != std::find(interface.addresses.begin(), interface.addresses.end(), host_address.as_string());
+                    });
+                    const auto index = interfaces.end() != interface ? interface->index : 0;
+
+                    advertiser.register_address(host_name, utility::us2s(host_address.as_string()), domain, index).wait();
                 }
             }
+        }
 
+        // helper function for registering the specified service (API)
+        void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const std::string& host_name, const std::string& domain, const nmos::settings& settings)
+        {
             const auto instance_name = service_name(service, settings);
             const auto instance_port_or_disabled = details::service_port(service, settings);
             if (0 > instance_port_or_disabled) return;
@@ -311,6 +325,22 @@ namespace nmos
             return boost::algorithm::iends_with(input, tail)
                 ? boost::algorithm::erase_tail_copy(input, (int)tail.size())
                 : input;
+        }
+
+        // helper function for registering addresses when the host name is explicitly configured
+        void register_addresses(mdns::service_advertiser& advertiser, const nmos::settings& settings)
+        {
+            const auto domain = utility::us2s(nmos::fields::domain(settings));
+            // nmos::settings has the fully-qualified host name, but mdns::service_advertiser needs the host name and domain separately
+            const auto full_name = utility::us2s(nmos::fields::host_name(settings));
+            const auto host_name = ierase_tail_copy(full_name, "." + domain);
+
+            if (!domain.empty())
+            {
+                // also advertise via mDNS
+                register_addresses(advertiser, host_name, {}, settings);
+            }
+            register_addresses(advertiser, host_name, domain, settings);
         }
 
         // helper function for registering the specified service (API)

@@ -3,13 +3,15 @@
 #include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
+#include "nmos/clock_name.h"
+#include "nmos/clock_ref_type.h"
 #include "nmos/is04_versions.h"
 #include "nmos/resource.h"
 
 namespace nmos
 {
     // See  https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/schemas/node.json
-    nmos::resource make_node(const nmos::id& id, const nmos::settings& settings)
+    nmos::resource make_node(const nmos::id& id, const web::json::value& clocks, const web::json::value& interfaces, const nmos::settings& settings)
     {
         using web::json::value;
         using web::json::value_from_elements;
@@ -51,10 +53,57 @@ namespace nmos
 
         data[U("services")] = value::array();
 
-        data[U("clocks")] = value::array();
+        data[U("clocks")] = !web::json::empty(clocks) ? clocks : value::array();
 
-        data[U("interfaces")] = value::array();
+        data[U("interfaces")] = !web::json::empty(interfaces) ? interfaces : value::array();
 
         return{ is04_versions::v1_3, types::node, data, false };
+    }
+
+    nmos::resource make_node(const nmos::id& id, const nmos::settings& settings)
+    {
+        // for now, default clocks and interfaces are empty...
+        return make_node(id, {}, {}, settings);
+    }
+
+    web::json::value make_node_interfaces(const std::vector<web::hosts::experimental::host_interface>& interfaces)
+    {
+        using web::json::value_from_elements;
+        using web::json::value_of;
+
+        return value_from_elements(interfaces | boost::adaptors::transformed([](const web::hosts::experimental::host_interface& interface)
+        {
+            return value_of({
+                { nmos::fields::chassis_id, !interface.addresses.empty() ? interface.addresses.front() : interface.name },
+                { nmos::fields::port_id, interface.physical_address },
+                { nmos::fields::name, interface.name }
+            });
+        }));
+    }
+
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
+    web::json::value make_internal_clock(const nmos::clock_name& clk)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::name, clk.name },
+            { nmos::fields::ref_type, nmos::clock_ref_types::internal.name }
+        });
+    }
+
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
+    web::json::value make_ptp_clock(const nmos::clock_name& clk, bool traceable, const utility::string_t& gmid, bool locked)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::name, clk.name },
+            { nmos::fields::ref_type, nmos::clock_ref_types::ptp.name },
+            { U("version"), U("IEEE1588-2008") }, // cf. sdp::ptp_versions::IEEE1588_2008
+            { U("traceable"), traceable },
+            { U("gmid"), gmid },
+            { U("locked"), locked }
+        });
     }
 }

@@ -132,6 +132,9 @@ namespace nmos
 
     namespace experimental
     {
+        // helper function for registering addresses when the host name is explicitly configured
+        void register_addresses(mdns::service_advertiser& advertiser, const nmos::settings& settings);
+
         // helper function for registering the specified service (API)
         void register_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings);
 

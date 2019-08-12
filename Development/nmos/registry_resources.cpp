@@ -14,7 +14,7 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            auto resource = nmos::make_node(id, settings);
+            auto resource = nmos::make_node(id, {}, nmos::make_node_interfaces(web::hosts::experimental::host_interfaces()), settings);
             auto& data = resource.data;
 
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });

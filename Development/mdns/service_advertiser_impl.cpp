@@ -69,7 +69,7 @@ namespace mdns_details
         }
     }
 
-    static bool register_address(DNSServiceRef client, const std::string& host_name, const std::string& ip_address_, const std::string& domain, slog::base_gate& gate)
+    static bool register_address(DNSServiceRef client, const std::string& host_name, const std::string& ip_address_, const std::string& domain, std::uint32_t interface_id, slog::base_gate& gate)
     {
         // since empty host_name is valid for other functions, check that logic error here
         if (host_name.empty()) return false;
@@ -117,7 +117,7 @@ namespace mdns_details
                 (DNSServiceRef)client,
                 &recordRef,
                 kDNSServiceFlagsShared,
-                kDNSServiceInterfaceIndexAny,
+                interface_id, // 0 == kDNSServiceInterfaceIndexAny
                 fullname.c_str(),
                 kDNSServiceType_A,
                 kDNSServiceClass_IN,
@@ -294,7 +294,7 @@ namespace mdns
                 return pplx::task_from_result();
             }
 
-            pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain = {})
+            pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain, std::uint32_t interface_id)
             {
                 return pplx::create_task([=]
                 {
@@ -302,11 +302,11 @@ namespace mdns
                     // they are shared between concurrent threads."
                     // See dns_sd.h
                     std::lock_guard<std::mutex> lock(mutex);
-                    return mdns_details::register_address(client, host_name, ip_address, domain, gate);
+                    return mdns_details::register_address(client, host_name, ip_address, domain, interface_id, gate);
                 });
             }
 
-            pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain = {}, const std::string& host_name = {}, const txt_records& txt_records = {})
+            pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& txt_records)
             {
                 return pplx::create_task([=]
                 {
@@ -316,7 +316,7 @@ namespace mdns
                 });
             }
 
-            pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain = {}, const txt_records& txt_records = {})
+            pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain, const txt_records& txt_records)
             {
                 return pplx::create_task([=]
                 {
@@ -367,9 +367,9 @@ namespace mdns
         return impl->close();
     }
 
-    pplx::task<bool> service_advertiser::register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain)
+    pplx::task<bool> service_advertiser::register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain, std::uint32_t interface_id)
     {
-        return impl->register_address(host_name, ip_address, domain);
+        return impl->register_address(host_name, ip_address, domain, interface_id);
     }
 
     pplx::task<bool> service_advertiser::register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& txt_records)

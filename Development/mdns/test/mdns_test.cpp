@@ -211,9 +211,12 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     // get the ip addresses
     std::set<std::string> ipAddresses;
-    for (const auto& a : web::http::experimental::interface_addresses())
+    for (const auto& i : web::hosts::experimental::host_interfaces())
     {
-        ipAddresses.insert(utility::us2s(a));
+        for (const auto& a : i.addresses)
+        {
+            ipAddresses.insert(utility::us2s(a));
+        }
     }
     if (ipAddresses.empty())
     {

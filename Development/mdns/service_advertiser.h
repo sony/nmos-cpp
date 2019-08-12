@@ -28,7 +28,7 @@ namespace mdns
 
         pplx::task<void> open();
         pplx::task<void> close();
-        pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain = {});
+        pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain = {}, std::uint32_t interface_id = {});
         pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain = {}, const std::string& host_name = {}, const txt_records& txt_records = {});
         pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain = {}, const txt_records& txt_records = {});
 
