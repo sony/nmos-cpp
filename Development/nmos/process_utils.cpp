@@ -29,9 +29,9 @@ namespace nmos
         void wait_term_signal()
         {
             boost::asio::io_service service;
-            // On Windows, Ctrl+C generates SIGINT
+            // On Windows, Ctrl+C generates SIGINT and closing the console window generates SIGBREAK
             // On Linux, the kill command generates SIGTERM by default
-            boost::asio::signal_set signals(service, SIGINT, SIGTERM);
+            boost::asio::signal_set signals(service, SIGINT, SIGBREAK, SIGTERM);
             signals.async_wait([](const boost::system::error_code&, int){});
             service.run_one();
         }
