@@ -11,6 +11,19 @@ namespace nmos
     // (uint64_t ought to work, but I can't be bothered to fix the resulting compile warnings...)
     typedef boost::rational<int64_t> rational; // defaults to { 0, 1 }
 
+    namespace rationals
+    {
+        const rational rate60{ 60, 1 };
+        const rational rate59_94{ 60000, 1001 };
+        const rational rate50{ 50, 1 };
+        const rational rate30{ 30, 1 };
+        const rational rate29_97{ 30000, 1001 };
+        const rational rate25{ 25, 1 };
+        const rational rate24{ 24, 1 };
+        const rational rate23_98{ 24000, 1001 };
+    }
+    namespace rates = rationals;
+
     inline web::json::value make_rational(const rational& value = {})
     {
         return web::json::value_of({

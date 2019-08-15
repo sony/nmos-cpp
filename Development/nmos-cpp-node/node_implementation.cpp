@@ -3,10 +3,13 @@
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "cpprest/host_utils.h"
 #include "nmos/clock_name.h"
+#include "nmos/colorspace.h"
+#include "nmos/components.h" // for nmos::chroma_subsampling
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
 #include "nmos/group_hint.h"
+#include "nmos/interlace_mode.h"
 #include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_resource.h"
@@ -14,6 +17,7 @@
 #include "nmos/random.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
 
@@ -92,9 +96,15 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     // example source, flow and sender
     {
-        auto source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, { 25, 1 }, model.settings);
-
-        auto flow = nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings);
+        auto source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
+        // note, nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings) would basically use the following default values
+        auto flow = nmos::make_raw_video_flow(
+            flow_id, source_id, device_id,
+            nmos::rates::rate25,
+            1920, 1080, nmos::interlace_modes::interlaced_bff,
+            nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
+            model.settings
+        );
 
         // set_transportfile needs to find the matching source and flow for the sender, so insert these first
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
