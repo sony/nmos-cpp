@@ -1,5 +1,6 @@
 #include "nmos/system_resources.h"
 
+#include "nmos/is09_versions.h"
 #include "nmos/json_fields.h"
 #include "nmos/resource.h"
 
@@ -19,7 +20,7 @@ namespace nmos
             { U("domain_number"), nmos::fields::ptp_domain_number(settings) }
         });
 
-        return{ { 1, 0 }, types::global, data, true };
+        return{ is09_versions::v1_0, types::global, data, true };
     }
 
     namespace experimental
