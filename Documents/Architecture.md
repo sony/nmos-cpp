@@ -187,12 +187,13 @@ In addition, the ``nmos::connection_activation_thread`` manages scheduling of Co
 
 > [nmos-cpp-node/node_implementation.cpp](../Development/nmos-cpp-node/node_implementation.cpp)
 
-It is a principle of both AMWA IS-04 and IS-05 that the resources exposed by the APIs should reflect the current state of the underlying implementation.
+It is a principle of both AMWA IS-04 and IS-05 that the resources exposed by the APIs should reflect the current configuration of the underlying implementation.
 
 It is therefore expected that a Node implementation using **nmos-cpp** will contain one or more additional threads that synchronise the NMOS data model with the underlying state.
-For example, such a thread may wait to be notified of changes in the data model as a result of Connection API activation requests.
-At any time, it may make changes to the model to reflect other events in the underlying implementation, provided it correctly locks the model mutex and notifies the condition variable.
+At any time, such a thread may make changes to the model to reflect events in the underlying implementation, provided it correctly locks the model mutex and notifies the condition variable.
+It may also wait to be notified of changes in the data model, for example, as a result of Connection API activation requests.
 The example ``node_implementation_thread`` demonstrates how such a thread might behave.
+Example implementation-specific callbacks to customize how the Node API and Connection API process requests are also included.
 
 ### Registry Behaviour
 
