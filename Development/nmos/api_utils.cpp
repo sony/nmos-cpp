@@ -225,7 +225,7 @@ namespace nmos
         {
             for (auto& sub_route : sub_routes)
             {
-                // build a full path, using use request_uri, rather than just the simple relative href
+                // build a full path, using request_uri, rather than just the simple relative href
                 // in order to make working links when the current request didn't have a trailing slash
                 results.insert(experimental::details::make_html_response_a_tag(sub_route, req));
             }

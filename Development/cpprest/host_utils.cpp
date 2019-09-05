@@ -105,7 +105,7 @@ namespace web
 
                 for (PIP_ADAPTER_ADDRESSES adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next)
                 {
-					if (adapter->OperStatus != IfOperStatusUp) continue;
+                    if (adapter->OperStatus != IfOperStatusUp) continue;
 
                     host_interface interface((uint32_t)adapter->IfIndex, utility::conversions::to_string_t(adapter->AdapterName), details::make_physical_address(adapter->PhysicalAddress, adapter->PhysicalAddressLength));
 
