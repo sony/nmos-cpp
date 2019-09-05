@@ -164,7 +164,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     // example temperature event receiver
     {
-        auto temperature_receiver = nmos::make_data_receiver(temperature_ws_receiver_id, device_id, nmos::transports::websocket, { U("example") }, nmos::media_types::application_json, { temperature_wildcard }, model.settings);
+        auto temperature_receiver = nmos::make_data_receiver(temperature_ws_receiver_id, device_id, nmos::transports::websocket, { interfaces.front().name }, nmos::media_types::application_json, { temperature_wildcard }, model.settings);
         web::json::push_back(temperature_receiver.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("receiver 1") }));
 
         auto connection_temperature_receiver = nmos::make_connection_events_websocket_receiver(temperature_ws_receiver_id, model.settings);
