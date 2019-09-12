@@ -150,7 +150,7 @@ namespace nmos
                         // "A disconnection IS-05 PATCH request should always trigger the client to remove the associated source id
                         // from the current WebSocket subscriptions list. If the source is the last item in the subscriptions list,
                         // then it is recommended for the client to close the underlying WebSocket connection."
-                        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/5.2.%20Transport%20-%20Websocket.md#35-disconnectingparking
+                        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/5.2.%20Transport%20-%20Websocket.md#35-disconnectingparking
                         // Doesn't seem much point in sending an empty subscription command, so just close the connection in that case...
 
                         auto& by_connection_uri = subscriptions.get<nmos::tags::events_ws_subscription>();

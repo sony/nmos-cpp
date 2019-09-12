@@ -154,7 +154,7 @@ namespace nmos
         return make_data_source(id, device_id, {}, grain_rate, settings);
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/APIs/schemas/source_data.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/APIs/schemas/source_data.json
     nmos::resource make_data_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::event_type& event_type, const nmos::settings& settings)
     {
         using web::json::value;
@@ -403,7 +403,7 @@ namespace nmos
         nmos::resource result{ is04_versions::v1_3, types::sender, data, false };
 
         // only RTP Senders are permitted prior to v1.3, so specify an appropriate minimum API version
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
+        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
         result.downgrade_version = nmos::transports::rtp == nmos::transport_base(transport)
             ? is04_versions::v1_0
             : is04_versions::v1_3;
@@ -440,7 +440,7 @@ namespace nmos
         nmos::resource result{ is04_versions::v1_3, types::receiver, data, false };
 
         // only RTP Receivers are permitted prior to v1.3, so specify an appropriate minimum API version
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
+        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
         result.downgrade_version = nmos::transports::rtp == nmos::transport_base(transport)
             ? is04_versions::v1_0
             : is04_versions::v1_3;

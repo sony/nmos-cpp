@@ -29,9 +29,9 @@ namespace nmos
     // "staged" and "active" fields, which must each have a value conforming to the sender-response-schema or receiver-response-schema,
     // and for senders, also a "transportfile" field, the value of which must be an object, with either
     // "data" and "type" fields, or an "href" field
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/constraints-schema.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender-response-schema.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-response-schema.json
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender-response-schema.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver-response-schema.json
 
     // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
     // See nmos::resolve_rtp_auto

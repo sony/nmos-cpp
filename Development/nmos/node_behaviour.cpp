@@ -696,7 +696,7 @@ namespace nmos
 
                     // "Nodes which support multiple versions simultaneously MUST ensure that all of their resources meet the schemas for each corresponding version of the specification[...]
                     // It may be necessary to expose only a limited subset of a Node's resources from lower versioned endpoints."
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/docs/6.0.%20Upgrade%20Path.md#version-translations
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.2/docs/6.0.%20Upgrade%20Path.md#version-translations
 
                     // base uri should be like http://example.api.com/x-nmos/registration/{version}
                     const auto registry_version = parse_api_version(web::uri::split_path(base_uri.path()).back());

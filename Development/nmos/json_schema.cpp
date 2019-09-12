@@ -17,11 +17,11 @@ namespace nmos
             return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-discovery-registration/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/APIs/schemas/
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3.x/APIs/schemas/
         namespace v1_3
         {
-            using namespace nmos::is04_schemas::v1_3_dev;
-            const utility::string_t tag(_XPLATSTR("v1.3-dev"));
+            //using namespace nmos::is04_schemas::v1_3_x;
+            const utility::string_t tag(_XPLATSTR("v1.3"));
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
@@ -69,11 +69,11 @@ namespace nmos
             return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-device-connection-management/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.x/APIs/schemas/
         namespace v1_1
         {
-            using namespace nmos::is05_schemas::v1_1_dev;
-            const utility::string_t tag(_XPLATSTR("v1.1-dev"));
+            //using namespace nmos::is05_schemas::v1_1_x;
+            const utility::string_t tag(_XPLATSTR("v1.1"));
 
             const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("sender-stage-schema.json"));
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("receiver-stage-schema.json"));

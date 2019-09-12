@@ -296,7 +296,7 @@ namespace nmos
 
             // advertise "_nmos-register._tcp" for v1.3 (and as an experimental extension, for lower versions)
             // don't advertise "_nmos-registration._tcp" if only v1.3
-            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#dns-sd-advertisement
+            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#dns-sd-advertisement
             if (nmos::service_types::registration == service)
             {
                 if (*api_ver.begin() < nmos::is04_versions::v1_3)
@@ -306,7 +306,7 @@ namespace nmos
                 advertiser.register_service(instance_name, nmos::service_types::register_, instance_port, domain, host_name, txt_records).wait();
             }
             // don't advertise "_nmos-node._tcp" if only v1.3
-            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/3.2.%20Discovery%20-%20Peer%20to%20Peer%20Operation.md#dns-sd-advertisement
+            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/3.2.%20Discovery%20-%20Peer%20to%20Peer%20Operation.md#dns-sd-advertisement
             else if (nmos::service_types::node == service)
             {
                 if (*api_ver.begin() < nmos::is04_versions::v1_3)
@@ -413,8 +413,8 @@ namespace nmos
                 {
                     const bool cancel = pplx::canceled == discovery.resolve([=](const mdns::resolve_result& resolved)
                     {
-                        // "The Node [filters] out any APIs which do not support its required API version, protocol and authorization mode(TXT api_ver, api_proto and api_auth)."
-                        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3-dev/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#client-interaction-procedure
+                        // "The Node [filters] out any APIs which do not support its required API version, protocol and authorization mode (TXT api_ver, api_proto and api_auth)."
+                        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#client-interaction-procedure
 
                         // note, since we specified the interface_id, we expect only one result...
 

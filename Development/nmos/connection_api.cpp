@@ -62,7 +62,7 @@ namespace nmos
         if (resource.version.minor <= version.minor) return true;
 
         // "Where a transport type is added in a new version of the Connection Management API specification, earlier versioned APIs must not list any Senders or Receivers which make use of this new transport type."
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/5.0.%20Upgrade%20Path.md#requirements-for-connection-management-apis
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/5.0.%20Upgrade%20Path.md#requirements-for-connection-management-apis
 
         typedef const std::map<nmos::api_version, std::set<nmos::transport>> versions_transport_bases_t;
         versions_transport_bases_t versions_transport_bases
@@ -135,8 +135,8 @@ namespace nmos
         static const std::map<nmos::type, std::set<utility::string_t>>& rtp_auto_constraints()
         {
             // These are the constraints that support "auto" in /staged; cf. resolve_rtp_auto
-            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
-            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_rtp.json
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_rtp.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_rtp.json
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -176,8 +176,8 @@ namespace nmos
         static const std::map<nmos::type, std::set<utility::string_t>>& websocket_auto_constraints()
         {
             // These are the constraints that support "auto" in /staged
-            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_websocket.json
-            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_websocket.json
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_websocket.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_websocket.json
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -200,8 +200,8 @@ namespace nmos
         static const std::map<nmos::type, std::set<utility::string_t>>& mqtt_auto_constraints()
         {
             // These are the constraints that support "auto" in /staged
-            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_mqtt.json
-            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_mqtt.json
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_mqtt.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_mqtt.json
             static const std::map<nmos::type, std::set<utility::string_t>> auto_constraints
             {
                 {
@@ -373,8 +373,8 @@ namespace nmos
                 activation[nmos::fields::mode] = value::null();
 
                 // Each of these fields "returns to null [...] when the resource is unlocked by setting the activation mode to null."
-                // See https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/v1.0-activation-response-schema.json
-                // and https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/activation-response-schema.json
+                // See https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
+                // and https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.1/APIs/schemas/activation-response-schema.json
                 activation[nmos::fields::requested_time] = value::null();
                 activation[nmos::fields::activation_time] = value::null();
 
@@ -423,8 +423,8 @@ namespace nmos
         std::pair<utility::string_t, utility::string_t> get_transport_type_data(const web::json::value& transport_file)
         {
             // "'data' and 'type' must both be strings or both be null"
-            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/v1.0-receiver-response-schema.json
-            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver-transport-file.json
+            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.2/APIs/schemas/v1.0-receiver-response-schema.json
+            // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver-transport-file.json
 
             if (!transport_file.has_field(nmos::fields::data)) throw transport_file_error("data is required");
 
@@ -641,7 +641,7 @@ namespace nmos
 
                         // "If a 'bulk' request includes multiple sets of parameters for the same Sender or Receiver ID the behaviour is defined by the implementation.
                         // In order to maximise interoperability clients are encouraged not to include the same Sender or Receiver ID multiple times in the same 'bulk' request."
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/docs/4.0.%20Behaviour.md#salvo-operation
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.2/docs/4.0.%20Behaviour.md#salvo-operation
                         if (!requested_time_or_null.is_null() && request_time == web::json::as<nmos::tai>(requested_time_or_null))
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation from the same bulk request";
@@ -649,7 +649,7 @@ namespace nmos
                             return details::make_connection_resource_patch_error_response(status_codes::BadRequest);
                         }
                         // "If an API implementation receives a new PATCH request to the /staged resource while an activation is in progress it SHOULD block the request until the previous activation is complete."
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.0.%20Behaviour.md#in-progress-activations
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.0.%20Behaviour.md#in-progress-activations
                         else if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to a pending immediate activation";
@@ -836,8 +836,8 @@ namespace nmos
         // transport parameters must not change, and the underlying sender must continue as before."
         // Therefore, in case it throws an exception, resolve_auto is called on a copy of the /staged resource data,
         // before making any changes to the /active resource data.
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L289
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L300-L309
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
         auto activating = staged;
         resolve_auto(activating);
 
@@ -898,7 +898,7 @@ namespace nmos
 
         // "The 'receiver_id' key MUST be set to `null` in all cases except where a unicast push-based Sender is configured to transmit to an NMOS Receiver, and the 'active' key is set to 'true'."
         // "The 'sender_id' key MUST be set to `null` in all cases except where the Receiver is currently configured to receive from an NMOS Sender, and the 'active' key is set to 'true'.
-        // See https://github.com/amwa-tv/nmos-discovery-registration/blob/v1.2.x/docs/4.3.%20Behaviour%20-%20Nodes.md#api-resources
+        // See https://github.com/amwa-tv/nmos-discovery-registration/blob/v1.2.2/docs/4.3.%20Behaviour%20-%20Nodes.md#api-resources
         const auto ci = active && !connected_id.empty() ? value::string(connected_id) : value::null();
 
         // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters
@@ -959,16 +959,17 @@ namespace nmos
     }
 
     // "On activation all instances of "auto" should be resolved into the actual values that will be used"
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L280-L281
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/sender_transport_params_rtp.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/schemas/receiver_transport_params_rtp.json
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L300-L301
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_rtp.json
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_rtp.json
     // "In many cases this is a simple operation, and the behaviour is very clearly defined in the relevant transport parameter schemas.
     // For example a port number may be offset from the RTP port number by a pre-determined value. The specification makes suggestions
     // of a sensible default value for "auto" to resolve to, but the Sender or Receiver may choose any value permitted by the schema
     // and constraints."
     // This function implements those sensible defaults for the RTP transport type.
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
     void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port)
     {
@@ -1381,7 +1382,7 @@ namespace nmos
                         if (details::immediate_activation_pending == staged_state)
                         {
                             // "Any GET requests to `/staged` during this time [while an activation is in progress] MAY also be blocked until the activation is complete."
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/docs/4.0.%20Behaviour.md#in-progress-activations
+                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.0.%20Behaviour.md#in-progress-activations
                             if (!details::wait_immediate_activation_not_pending(model, lock, id_type) || model.shutdown)
                             {
                                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting GET request for " << id_type << " due to a pending immediate activation";
@@ -1488,7 +1489,7 @@ namespace nmos
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for " << id_type << " which does not have one";
 
                             // An HTTP 404 response may be returned if "the transport type does not require a transport file".
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L314-L315
+                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L339-L340
                             set_error_reply(res, status_codes::NotFound, U("Sender does not have a transport file"));
                         }
                     }
@@ -1550,7 +1551,7 @@ namespace nmos
                 if (nmos::is_connection_api_permitted_downgrade(*matching_resource, *resource, version))
                 {
                     // "Returns the URN base for the transport type employed by this sender with any subclassifications or versions removed."
-                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1-dev/APIs/ConnectionAPI.raml#L519
+                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L349
                     const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
                     set_reply(res, status_codes::OK, web::json::value::string(nmos::transport_base(transport_subclassification).name));
                 }

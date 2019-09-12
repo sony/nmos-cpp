@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace is05_schemas
     {
-        namespace v1_1_dev
+        namespace v1_1
         {
             extern const char* activation_schema;
             extern const char* sender_stage_schema;

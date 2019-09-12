@@ -34,11 +34,11 @@ namespace nmos
     // Maybe these belong in their own file, e.g. nmos/events_messages.h?
 
     // reboot message
-    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/2.0.%20Message%20types.md#12-the-reboot-message-type
+    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/2.0.%20Message%20types.md#12-the-reboot-message-type
     web::json::value make_events_reboot_message(const nmos::details::events_state_identity& identity, const nmos::details::events_state_timing& timing = {});
 
     // shutdown message
-    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/2.0.%20Message%20types.md#13-the-shutdown-message-type
+    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/2.0.%20Message%20types.md#13-the-shutdown-message-type
     web::json::value make_events_shutdown_message(const nmos::details::events_state_identity& identity, const nmos::details::events_state_timing& timing = {});
 
     // health message

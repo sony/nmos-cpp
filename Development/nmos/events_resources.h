@@ -126,9 +126,9 @@ namespace nmos
 
     // Events commands
     // These are not resources, so maybe these belong in their own file, e.g. nmos/events_commands.h?
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/5.2.%20Transport%20-%20Websocket.md#4-subscriptions-strategy
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/5.2.%20Transport%20-%20Websocket.md#4-subscriptions-strategy
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/APIs/schemas/command_subscription.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/APIs/schemas/command_subscription.json
     web::json::value make_events_subscription_command(const std::vector<nmos::id>& sources);
 
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/command_health.json

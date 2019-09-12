@@ -41,10 +41,11 @@ namespace nmos
         const utility::string_t wildcard{ U("*") };
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/docs/3.0.%20Event%20types.md#event-types-capability-management
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#event-types-capability-management
     inline bool is_matching_event_type(const event_type& capability, const event_type& type)
     {
         // "Comparisons between event_type values must be case sensitive."
+        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#1-introduction
         auto& c = capability.name;
         auto& t = type.name;
         if (!c.empty() && U('*') == c.back())

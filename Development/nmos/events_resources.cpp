@@ -164,7 +164,7 @@ namespace nmos
         return value_of({ { U("type"), nmos::event_types::object.name } });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.x/APIs/schemas/command_subscription.json
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/APIs/schemas/command_subscription.json
     web::json::value make_events_subscription_command(const std::vector<nmos::id>& sources)
     {
         using web::json::value_of;

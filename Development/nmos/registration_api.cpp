@@ -308,9 +308,7 @@ namespace nmos
                 else if (nmos::types::device == type)
                 {
                     // "The 'senders' and 'receivers' arrays in a Device have been deprecated, but will continue to be present until v2.0."
-                    // Therefore, issue warnings rather than errors here and don't worry too much about other issues such as whether to
-                    // merge senders and receivers with existing device if present?
-                    // or remove previous senders and receivers?
+                    // Therefore, issue warnings rather than errors here
                     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.2.%20Behaviour%20-%20Querying.md#referential-integrity
 
                     for (auto& element : nmos::fields::senders(data))
