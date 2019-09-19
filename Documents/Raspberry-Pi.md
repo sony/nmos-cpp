@@ -71,7 +71,7 @@ echo "import option ; import feature ; using gcc : arm : arm-linux-gnueabihf-g++
 
 # Cross-compile required Boost libraries, and install into ${RPI_LIBS}.
 ./b2 install toolset=gcc-arm \
-  --prefix=${RPI_LIBS}
+  --prefix=${RPI_LIBS} \
   --with-atomic \
   --with-chrono \
   --with-date_time \
@@ -87,7 +87,7 @@ echo "import option ; import feature ; using gcc : arm : arm-linux-gnueabihf-g++
 
 ```sh
 # Fetch the library.
-git clone https://github.com/Microsoft/cpprestsdk.git
+git clone --recurse-submodules https://github.com/Microsoft/cpprestsdk.git
 
 # Configure for cross-compiling.
 cd ~/cpprestsdk/Release
