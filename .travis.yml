@@ -122,7 +122,8 @@ after_script:
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     sudo -H python3 get-pip.py
     sudo -H python3 -m pip install -r requirements.txt
-    
+    sudo -H python3 -m pip install -r utilities/gsheets-import/requirements.txt
+
   - mkdir results && mkdir badges
 
   # Run Node tests
@@ -216,6 +217,9 @@ after_script:
       ./gdrive update --service-account credentials.json 1MkQNv8v2r0ydB1mQ55k-pktlzE8LZ3g9 nmos-testing/badges/IS-05-02.json
       ./gdrive update --service-account credentials.json 1XQuAN13xAQ81G_Eokj6AAYv5kMInPXkZ nmos-testing/badges/IS-07-01.json
       ./gdrive update --service-account credentials.json 16t7ncRp3SbHHoftQY-RBi2NFC283fOTn nmos-testing/badges/IS-09-01.json
+
+      export SHEET=https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64
+      for f in nmos-testing/results/$GITHUB_COMMIT-*; do python3 nmos-testing/utilities/gsheets-import/resultsImporter.py --credentials ~/.gdrive/credentials.json --sheet "$SHEET" --json $f; done
     fi
   - echo "Done"
   
