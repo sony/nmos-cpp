@@ -116,8 +116,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         web::json::push_back(sender.data[U("tags")][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), U("sender 0") }));
 
         auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
+        // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
+        connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
         resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
         set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
+        nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
 
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
         if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
