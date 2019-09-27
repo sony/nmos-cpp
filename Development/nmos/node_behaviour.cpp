@@ -200,7 +200,7 @@ namespace nmos
 
             if (nmos::service_priorities::no_priority != priorities.first)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API in domain: " << browse_domain;
 
                 registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, versions, priorities, protocols, authorization, true, timeout, token).get();
 

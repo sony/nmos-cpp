@@ -327,6 +327,11 @@ namespace nmos
                 : input;
         }
 
+        inline bool is_local_domain(const std::string& domain)
+        {
+            return ierase_tail_copy(ierase_tail_copy(domain, "."), "local").empty();
+        }
+
         // helper function for registering addresses when the host name is explicitly configured
         void register_addresses(mdns::service_advertiser& advertiser, const nmos::settings& settings)
         {
@@ -335,7 +340,7 @@ namespace nmos
             const auto full_name = utility::us2s(nmos::fields::host_name(settings));
             const auto host_name = ierase_tail_copy(full_name, "." + domain);
 
-            if (!domain.empty())
+            if (!is_local_domain(domain))
             {
                 // also advertise via mDNS
                 register_addresses(advertiser, host_name, {}, settings);
@@ -351,7 +356,7 @@ namespace nmos
             const auto full_name = utility::us2s(nmos::fields::host_name(settings));
             const auto host_name = ierase_tail_copy(full_name, "." + domain);
 
-            if (!domain.empty())
+            if (!is_local_domain(domain))
             {
                 // also advertise via mDNS
                 register_service(advertiser, service, host_name, {}, settings);
@@ -393,7 +398,7 @@ namespace nmos
         void update_service(mdns::service_advertiser& advertiser, const nmos::service_type& service, const nmos::settings& settings, mdns::structured_txt_records add_records)
         {
             const auto domain = utility::us2s(nmos::fields::domain(settings));
-            if (!domain.empty())
+            if (!is_local_domain(domain))
             {
                 // also advertise via mDNS
                 update_service(advertiser, service, {}, settings, add_records);
