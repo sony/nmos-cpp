@@ -1,17 +1,18 @@
-# An NMOS C++ Implementation [![Build Status](https://travis-ci.org/sony/nmos-cpp.svg?branch=master)](https://travis-ci.org/sony/nmos-cpp)
+# An NMOS C++ Implementation [![Build Status](https://travis-ci.org/sony/nmos-cpp.svg?branch=master)][Travis-CI]
+[Travis-CI]: https://travis-ci.org/sony/nmos-cpp
 
 ## Introduction
 
-This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://github.com/AMWA-TV/nmos) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
+This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://amwa-tv.github.io/nmos) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
 
-- [AMWA IS-04 NMOS Discovery and Registration Specification](https://github.com/AMWA-TV/nmos-discovery-registration)
-- [AMWA IS-05 NMOS Connection Management Specification](https://github.com/AMWA-TV/nmos-device-connection-management)
-- [AMWA IS-07 NMOS Event & Tally Specification](https://github.com/AMWA-TV/nmos-event-tally)
-- [AMWA IS-09 NMOS System Specification](https://github.com/AMWA-TV/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
-- [AMWA BCP-002-01 NMOS Grouping Recommendations](https://github.com/AMWA-TV/nmos-grouping) - Natural Grouping
-- [AMWA BCP-003-01 NMOS API Security Recommendations](https://github.com/AMWA-TV/nmos-api-security) - Securing Communications
+- [AMWA IS-04 NMOS Discovery and Registration Specification](https://amwa-tv.github.io/nmos-discovery-registration)
+- [AMWA IS-05 NMOS Connection Management Specification](https://amwa-tv.github.io/nmos-device-connection-management)
+- [AMWA IS-07 NMOS Event & Tally Specification](https://amwa-tv.github.io/nmos-event-tally)
+- [AMWA IS-09 NMOS System Specification](https://amwa-tv.github.io/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
+- [AMWA BCP-002-01 NMOS Grouping Recommendations](https://amwa-tv.github.io/nmos-grouping) - Natural Grouping
+- [AMWA BCP-003-01 NMOS API Security Recommendations](https://amwa-tv.github.io/nmos-api-security) - Securing Communications
 
-This software is a **work in progress**, tracking the ongoing development of the NMOS specifications in the AMWA Networked Media Incubator. For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
+For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
 
 - The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, and the NMOS Connection API.
 - The [nmos-cpp-registry application](Development/nmos-cpp-registry) provides a simple but functional instance of an NMOS Registration & Discovery System (RDS), utilising the nmos module.
@@ -36,30 +37,43 @@ The implementation is functional and has been used successfully in several Netwo
 
 The following configurations are built and unit tested automatically via continuous integration.
 
-| Build Name                     | Status            |
-|--------------------------------|-------------------|
-| Linux (Ubuntu 14.04/GCC 4.8.4) | [![Build1][1]][3] |
-| Linux (Ubuntu 18.04/GCC 7.4.0) | [![Build2][2]][3] |
+| Build Name                     | Status                                 |
+|--------------------------------|----------------------------------------|
+| Linux (Ubuntu 14.04/GCC 4.8.4) | [![Build 1][Build-1-badge]][Travis-CI] |
+| Linux (Ubuntu 18.04/GCC 7.4.0) | [![Build 2][Build-2-badge]][Travis-CI] |
 
-[1]: https://travis-matrix-badges.herokuapp.com/repos/sony/nmos-cpp/branches/master/1
-[2]: https://travis-matrix-badges.herokuapp.com/repos/sony/nmos-cpp/branches/master/2
-[3]: https://travis-ci.org/sony/nmos-cpp
+[Build-1-badge]: https://travis-matrix-badges.herokuapp.com/repos/sony/nmos-cpp/branches/master/1
+[Build-2-badge]: https://travis-matrix-badges.herokuapp.com/repos/sony/nmos-cpp/branches/master/2
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
-**Test Suite/Status:** [![IS-04-01][IS-04-01-link]][3] [![IS-04-02][IS-04-02-link]][3] [![IS-04-03][IS-04-03-link]][3] [![IS-05-01][IS-05-01-link]][3] [![IS-05-02][IS-05-02-link]][3] [![IS-07-01][IS-07-01-link]][3] [![IS-09-01][IS-09-01-link]][3]
+**Test Suite/Status:**
+[![IS-04-01][IS-04-01-badge]][IS-04-01-sheet]
+[![IS-04-02][IS-04-02-badge]][IS-04-02-sheet]
+[![IS-04-03][IS-04-03-badge]][IS-04-03-sheet]
+[![IS-05-01][IS-05-01-badge]][IS-05-01-sheet]
+[![IS-05-02][IS-05-02-badge]][IS-05-02-sheet]
+[![IS-07-01][IS-07-01-badge]][IS-07-01-sheet]
+[![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 
-[IS-04-01-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1VrCPcYeTs5uoBgECxbfuWbbhJZpbHcPy
-[IS-04-02-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D14vgZF4CSx2oayEAbeNFGiHmPW95HKMXt
-[IS-04-03-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16616xSByskr3PbeqhnCcNTjfJcDdzUav
-[IS-05-01-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1tW25Xim9LymIvPXnxM5taGmlLVsXa71p
-[IS-05-02-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1MkQNv8v2r0ydB1mQ55k-pktlzE8LZ3g9
-[IS-07-01-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1XQuAN13xAQ81G_Eokj6AAYv5kMInPXkZ
-[IS-09-01-link]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7ncRp3SbHHoftQY-RBi2NFC283fOTn
+[IS-04-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1VrCPcYeTs5uoBgECxbfuWbbhJZpbHcPy
+[IS-04-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D14vgZF4CSx2oayEAbeNFGiHmPW95HKMXt
+[IS-04-03-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16616xSByskr3PbeqhnCcNTjfJcDdzUav
+[IS-05-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1tW25Xim9LymIvPXnxM5taGmlLVsXa71p
+[IS-05-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1MkQNv8v2r0ydB1mQ55k-pktlzE8LZ3g9
+[IS-07-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1XQuAN13xAQ81G_Eokj6AAYv5kMInPXkZ
+[IS-09-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7ncRp3SbHHoftQY-RBi2NFC283fOTn
+[IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
+[IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
+[IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
+[IS-05-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=517163955
+[IS-05-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=205041321
+[IS-07-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=828991990
+[IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
 
 ### Recent Activity
 
-The implementation is incomplete in some areas. Development is ongoing! The NMOS specifications are being continuously developed, as enhancements are proposed and prototyped by the Incubator participants.
+The implementation is incomplete in some areas. Development is ongoing, tracking the evolution of the NMOS specifications in the AMWA Networked Media Incubator.
 
 Recent activity on the project (newest first):
 
@@ -86,8 +100,6 @@ Recent activity on the project (newest first):
 - Cross-platform build support using CMake
 - An initial release of the **nmos-cpp-node** example application
 - Back-end enhancements as part of the NMOS Scalability Activity
-
-And of course, the software will continue to be updated to track the ongoing development of the NMOS specifications, and the work of the Networked Media Incubator.
 
 ## Contributing
 
