@@ -19,9 +19,10 @@ namespace web
                 utility::string_t name;
                 utility::string_t physical_address;
                 std::vector<utility::string_t> addresses;
+                utility::string_t domain;
 
-                host_interface(uint32_t index = {}, const utility::string_t& name = {}, const utility::string_t& physical_address = {}, const std::vector<utility::string_t>& addresses = {})
-                    : index(index), name(name), physical_address(physical_address), addresses(addresses)
+                host_interface(uint32_t index = {}, const utility::string_t& name = {}, const utility::string_t& physical_address = {}, const std::vector<utility::string_t>& addresses = {}, const utility::string_t& domain = {})
+                    : index(index), name(name), physical_address(physical_address), addresses(addresses), domain(domain)
                 {}
             };
 

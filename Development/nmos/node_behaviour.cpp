@@ -251,7 +251,7 @@ namespace nmos
             with_read_lock(model.mutex, [&]
             {
                 auto& settings = model.settings;
-                browse_domain = utility::us2s(nmos::fields::domain(settings));
+                browse_domain = utility::us2s(nmos::get_domain(settings));
                 versions = nmos::is04_versions::from_settings(settings);
                 priorities = { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
                 protocols = { nmos::get_service_protocol(settings) };

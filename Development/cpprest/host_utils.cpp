@@ -19,6 +19,7 @@
 #else
 #include <ifaddrs.h> // for ifaddrs
 #include <net/if.h> // for ifa_flags
+#include <resolv.h>
 #if defined(__linux__)
 #include <linux/if_packet.h> // for sockaddr_ll
 #elif defined(__APPLE__)
@@ -36,6 +37,23 @@ namespace web
             {
                 return utility::conversions::to_string_t(boost::asio::ip::host_name());
             }
+
+#if !defined(_WIN32)
+            // get the default domain name for the system
+            utility::string_t domain()
+            {
+                utility::string_t result;
+
+                struct __res_state res{};
+                res.options = RES_DEFAULT;
+                if (0 == ::res_ninit(&res))
+                {
+                    result = utility::conversions::to_string_t(res.defdname);
+                    ::res_nclose(&res);
+                }
+                return result;
+            }
+#endif
 
             namespace details
             {
@@ -107,9 +125,7 @@ namespace web
                 {
                     if (adapter->OperStatus != IfOperStatusUp) continue;
 
-                    host_interface interface((uint32_t)adapter->IfIndex, utility::conversions::to_string_t(adapter->AdapterName), details::make_physical_address(adapter->PhysicalAddress, adapter->PhysicalAddressLength));
-
-                    // FriendlyName and DnsSuffix might also be helpful?
+                    std::vector<utility::string_t> addresses;
 
                     for (PIP_ADAPTER_UNICAST_ADDRESS address = adapter->FirstUnicastAddress; NULL != address; address = address->Next)
                     {
@@ -120,10 +136,16 @@ namespace web
 
                         if (!ipv6 && ip_address.is_v6()) continue;
 
-                        interface.addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
+                        addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
                     }
 
-                    interfaces.push_back(std::move(interface));
+                    interfaces.push_back({
+                        (uint32_t)adapter->IfIndex,
+                        utility::conversions::to_string_t(adapter->AdapterName),
+                        details::make_physical_address(adapter->PhysicalAddress, adapter->PhysicalAddressLength),
+                        std::move(addresses),
+                        utility::conversions::to_string_t(adapter->DnsSuffix)
+                    });
                 }
 #else
                 addrinfo hints = {};
@@ -138,7 +160,7 @@ namespace web
                 // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
                 if (0 == ::getaddrinfo("", NULL, &hints, &results))
                 {
-                    host_interface interface; // no interface index, name or physical address using getaddrinfo
+                    host_interface interface; // no interface index, name, physical address or domain using getaddrinfo
 
                     for (auto ptr = results; ptr != NULL; ptr = ptr->ai_next)
                     {
@@ -168,6 +190,9 @@ namespace web
                 // See http://man7.org/linux/man-pages/man3/getifaddrs.3.html
                 if (0 != nameindex && 0 == ::getifaddrs(&results))
                 {
+                    // for now, get the default domain name from the system resolver, not per-interface
+                    auto domain = web::hosts::experimental::domain();
+
                     for (auto ptr = results; ptr != NULL; ptr = ptr->ifa_next)
                     {
                         if (NULL == ptr->ifa_addr) continue;
@@ -223,6 +248,8 @@ namespace web
 
                             interface->addresses.push_back(utility::conversions::to_string_t(ip_address.to_string()));
                         }
+
+                        interface->domain = domain;
                     }
 
                     ::freeifaddrs(results);

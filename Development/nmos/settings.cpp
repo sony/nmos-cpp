@@ -7,6 +7,23 @@ namespace nmos
 {
     namespace details
     {
+        // Get default DNS domain name
+        utility::string_t default_domain()
+        {
+            for (const auto& interface : web::hosts::experimental::host_interfaces())
+            {
+                if (!interface.domain.empty())
+                    return interface.domain;
+            }
+            return U("local");
+        }
+
+        // Get default (system) host name as an FQDN (fully qualified domain name)
+        utility::string_t default_host_name(const utility::string_t& domain = default_domain())
+        {            
+            return web::hosts::experimental::host_name() + U('.') + domain;
+        }
+
         // Inserts run-time default settings for those which are impossible to determine at compile-time
         // if not already present in the specified settings
         void insert_default_settings(settings& settings, bool registry)
@@ -67,12 +84,20 @@ namespace nmos
         details::insert_default_settings(settings, true);
     }
 
+    // Get domain from settings or return the default (system) domain
+    utility::string_t get_domain(const settings& settings)
+    {
+        return !nmos::fields::domain(settings).empty()
+            ? nmos::fields::domain(settings)
+            : details::default_domain();
+    }
+
     // Get host name from settings or return the default (system) host name
     utility::string_t get_host_name(const settings& settings)
     {
         return !nmos::fields::host_name(settings).empty()
             ? nmos::fields::host_name(settings)
-            : web::hosts::experimental::host_name();
+            : details::default_host_name(get_domain(settings));
     }
 
     // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')

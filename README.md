@@ -63,6 +63,7 @@ The implementation is incomplete in some areas. Development is ongoing! The NMOS
 
 Recent activity on the project (newest first):
 
+- Attempt to determine the DNS domain name automatically if not explicitly specified, for TR-1001-1
 - Travis CI integration
 - Updates for resolutions of specification issues in IS-04 v1.3 and IS-05 v1.1 final drafts
 - Experimental support for human-readable HTML rendering of NMOS responses

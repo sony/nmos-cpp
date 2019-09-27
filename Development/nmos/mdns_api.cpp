@@ -77,7 +77,7 @@ namespace nmos
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 nmos::details::decode_elements(flat_query_params);
 
-                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
+                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); });
                 const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
 
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));
@@ -110,7 +110,7 @@ namespace nmos
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 nmos::details::decode_elements(flat_query_params);
 
-                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
+                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); });
                 const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
 
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));
@@ -186,7 +186,7 @@ namespace nmos
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 nmos::details::decode_elements(flat_query_params);
 
-                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::fields::domain(model.settings); });
+                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); });
                 const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
 
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));

@@ -55,14 +55,17 @@ endif()
 
 # boost
 # note: some components are only required for one platform or other
-set(FIND_BOOST_COMPONENTS system date_time regex)
+list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 
 # platform-specific dependencies
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find bonjour (for mdns_static)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
-    set (BONJOUR_LIB libdns_sd.so)
+    set (BONJOUR_LIB -ldns_sd)
+
+    # find resolver (for cpprest/host_utils.cpp)
+    list(APPEND PLATFORM_LIBS -lresolv)
 
     # define __STDC_LIMIT_MACROS to work around C99 vs. C++11 bug in glibc 2.17
     # should be harmless with newer glibc or in other scenarios
@@ -72,7 +75,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 
     # add dependency required by nmos/filesystem_route.cpp
     if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
-        set (PLATFORM_LIBS -lstdc++fs)
+        list(APPEND PLATFORM_LIBS -lstdc++fs)
     else()
         list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
