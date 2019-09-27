@@ -127,7 +127,7 @@ after_script:
   - mkdir results && mkdir badges
 
   # Run Node tests
-  - $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-node "{\"http_port\":1080}" > nodeoutput 2>&1 &
+  - $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\"}" > nodeoutput 2>&1 &
 
   # IS-04-01
   - |
@@ -170,7 +170,7 @@ after_script:
     printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
 
   # Run Registry tests (leave Node running)
-  - $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080}" > registryoutput 2>&1 &
+  - $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\"}" > registryoutput 2>&1 &
 
   # IS-04-02
   - |
