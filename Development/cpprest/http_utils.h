@@ -130,8 +130,17 @@ namespace web
             utility::string_t make_ptokens_header(const ptokens& values);
             ptokens parse_ptokens_header(const utility::string_t& value);
 
-            // Server Timing
-            // See https://w3c.github.io/server-timing/#the-server-timing-header-field
+
+            namespace header_names
+            {
+                // Server Timing
+                // See https://w3c.github.io/server-timing/#the-server-timing-header-field
+                const web::http::http_headers::key_type server_timing{ _XPLATSTR("Server-Timing") };
+
+                // Resource Timing 2
+                // See https://www.w3.org/TR/resource-timing-2/#sec-timing-allow-origin
+                const web::http::http_headers::key_type timing_allow_origin{ _XPLATSTR("Timing-Allow-Origin") };
+            }
 
             struct timing_metric
             {

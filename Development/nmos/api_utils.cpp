@@ -10,6 +10,7 @@
 #include "nmos/api_version.h"
 #include "nmos/slog.h"
 #include "nmos/type.h"
+#include "nmos/version.h"
 
 namespace web
 {
@@ -457,6 +458,7 @@ namespace nmos
             };
         }
 
+        static const utility::string_t received_time{ U("X-Received-Time") };
         static const utility::string_t actual_method{ U("X-Actual-Method") };
 
         // make handler to set appropriate response headers, and error response body if indicated
@@ -468,14 +470,27 @@ namespace nmos
             {
                 nmos::api_gate gate(gate_, req, parameters);
 
+                const auto received_time = req.headers().find(details::received_time);
+                const auto processing_dur = req.headers().end() != received_time
+                    ? std::chrono::duration_cast<std::chrono::microseconds>(nmos::tai_clock::now() - nmos::time_point_from_tai(nmos::parse_version(received_time->second))).count() / 1000.0
+                    : 0.0;
+
+                // experimental extension, to add Server-Timing response header
+                if (req.headers().end() != received_time)
+                {
+                    req.headers().remove(details::received_time);
+                    res.headers().add(web::http::experimental::header_names::server_timing, web::http::experimental::make_timing_header({ { U("proc"), processing_dur } }));
+                    res.headers().add(web::http::experimental::header_names::timing_allow_origin, U("*"));
+                }
+
                 // if it was a HEAD request, restore that and discard any response body
                 // since RFC 7231 says "the server MUST NOT send a message body in the response"
                 // see https://tools.ietf.org/html/rfc7231#section-4.3.2
-                if (web::http::has_header_value(req.headers(), actual_method, methods::HEAD))
+                if (web::http::has_header_value(req.headers(), details::actual_method, methods::HEAD))
                 {
                     req.set_method(methods::HEAD);
-                    req.headers().remove(actual_method);
-                    if (res.body()) res.body() = concurrency::streams::bytestream::open_istream(std::vector<unsigned char>{});
+                    req.headers().remove(details::actual_method);
+                    if (res.body()) res.body() = concurrency::streams::istream();
                 }
 
                 if (web::http::empty_status_code == res.status_code())
@@ -543,7 +558,7 @@ namespace nmos
                     res.headers().set_content_type(U("text/html; charset=utf-8"));
                 }
 
-                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response";
+                slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response after " << processing_dur << "ms";
 
                 req.reply(res);
                 return pplx::task_from_result(false); // don't continue matching routes
@@ -628,12 +643,23 @@ namespace nmos
     }
 
     // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener - captures api by reference!
-    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api, slog::base_gate& gate)
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api_, slog::base_gate& gate)
     {
-        add_api_finally_handler(api, gate);
-        listener.support(std::ref(api));
-        listener.support(web::http::methods::OPTIONS, std::ref(api)); // to handle CORS preflight requests
-        listener.support(web::http::methods::HEAD, [&api](web::http::http_request req) // to handle HEAD requests
+        add_api_finally_handler(api_, gate);
+        auto api = [&api_, &gate](web::http::http_request req)
+        {
+            req.headers().add(details::received_time, nmos::make_version());
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF)
+                << stash_remote_address(req.remote_address())
+                << stash_http_method(req.method())
+                << stash_request_uri(req.request_uri())
+                << stash_http_version(req.http_version())
+                << "Received request";
+            api_(req);
+        };
+        listener.support(api);
+        listener.support(web::http::methods::OPTIONS, api); // to handle CORS preflight requests
+        listener.support(web::http::methods::HEAD, [api](web::http::http_request req) // to handle HEAD requests
         {
             // this naive approach means that the API may well generate a response body
             req.headers().add(details::actual_method, web::http::methods::HEAD);
