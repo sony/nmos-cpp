@@ -110,6 +110,48 @@ namespace web
         // Get the standard reason phrase corresponding to the status code, same as used by http_response
         utility::string_t get_default_reason_phrase(web::http::status_code code);
 
+        namespace experimental
+        {
+            // Parameterised-Tokens = #ptoken
+            // ptoken               = ptoken-name *( OWS ";" OWS ptoken-param )
+            // ptoken-name          = token
+            // ptoken-param         = ptoken-param-name OWS "=" OWS ptoken-param-value
+            // ptoken-param-name    = token
+            // ptoken-param-value   = token / quoted-string
+            // E.g. Transfer-Encoding uses this format
+            // See https://tools.ietf.org/html/rfc7230#section-4
+
+            typedef utility::string_t token;
+            typedef std::pair<token, utility::string_t> ptoken_param;
+            typedef std::vector<ptoken_param> ptoken_params;
+            typedef std::pair<token, ptoken_params> ptoken;
+            typedef std::vector<ptoken> ptokens;
+
+            utility::string_t make_ptokens_header(const ptokens& values);
+            ptokens parse_ptokens_header(const utility::string_t& value);
+
+            // Server Timing
+            // See https://w3c.github.io/server-timing/#the-server-timing-header-field
+
+            struct timing_metric
+            {
+                utility::string_t name;
+                double duration; // milliseconds
+                utility::string_t description;
+                timing_metric(utility::string_t name, double duration = 0.0, utility::string_t description = {}) : name(name), duration(duration), description(description) {}
+                timing_metric(utility::string_t name, utility::string_t description) : name(name), duration(0.0), description(description) {}
+
+                auto tied() const -> decltype(std::tie(name, duration, description)) { return std::tie(name, duration, description); }
+                friend bool operator==(const timing_metric& lhs, const timing_metric& rhs) { return lhs.tied() == rhs.tied(); }
+                friend bool operator!=(const timing_metric& lhs, const timing_metric& rhs) { return !(lhs == rhs); }
+            };
+
+            typedef std::vector<timing_metric> timing_metrics;
+
+            utility::string_t make_timing_header(const timing_metrics& values);
+            timing_metrics parse_timing_header(const utility::string_t& value);
+        }
+
         // Determine whether http_request::reply() has been called already
         bool has_initiated_response(const web::http::http_request& req);
 

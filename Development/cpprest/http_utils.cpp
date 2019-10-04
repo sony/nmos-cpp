@@ -1,8 +1,10 @@
 #include "cpprest/http_utils.h"
 
 #include <algorithm>
+#include <cctype>
 #include <map>
 #include <set>
+#include <boost/algorithm/string/predicate.hpp>
 #include "cpprest/basic_utils.h" // for utility::conversions
 #include "detail/private_access.h"
 
@@ -59,6 +61,7 @@ namespace web
             {
                 // this provides protection against substring matches but relies on a comma being followed by single space
                 // consistently, and doesn't handle quoted string values that may contain this delimiter
+                // (http_headers::add does the former, and doesn't explicitly support the latter)
                 const auto comma = _XPLATSTR(", ");
                 const auto searchable = comma + header->second + comma;
                 return utility::string_t::npos != searchable.find(comma + value + comma);
@@ -162,6 +165,201 @@ namespace web
 
             auto found = default_reason_phrases.find(code);
             return default_reason_phrases.end() != found ? found->second : _XPLATSTR("");
+        }
+
+        namespace experimental
+        {
+            namespace details
+            {
+                // token = 1*tchar
+                // tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+                //       / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+                //       / DIGIT / ALPHA
+                // see https://tools.ietf.org/html/rfc7230#section-3.2.6
+                inline bool is_tchar(utility::char_t c)
+                {
+                    static const utility::string_t tchar_punct{ U("!#$%&'*+-.^_`|~") };
+                    return std::isalnum(c) || std::string::npos != tchar_punct.find(c);
+                }
+
+                // "A sender SHOULD NOT generate a quoted-pair in a quoted-string except where necessary to quote DQUOTE and backslash"
+                // see https://tools.ietf.org/html/rfc7230#section-3.2.6
+                inline bool is_backslash_required(utility::char_t c)
+                {
+                    return U('"') == c || U('\\') == c;
+                }
+            }
+
+            utility::string_t make_ptokens_header(const ptokens& values)
+            {
+                utility::string_t result;
+                for (const auto& value : values)
+                {
+                    // comma is followed by a single space (as in http_headers::add)
+                    if (!result.empty()) { result.push_back(U(',')); result.push_back(U(' ')); }
+                    result += value.first;
+                    for (const auto& param : value.second)
+                    {
+                        result.push_back(U(';'));
+                        result.append(param.first);
+                        result.push_back(U('='));
+                        if (param.second.empty() || param.second.end() != std::find_if(param.second.begin(), param.second.end(), [](utility::char_t c) { return !details::is_tchar(c); }))
+                        {
+                            result.push_back(U('"'));
+                            for (auto c : param.second)
+                            {
+                                if (details::is_backslash_required(c))
+                                {
+                                    result.push_back(U('\\'));
+                                }
+                                result.push_back(c);
+                            }
+                            result.push_back(U('"'));
+                        }
+                        else
+                        {
+                            result.append(param.second);
+                        }
+                    }
+                }
+                return result;
+            }
+
+            ptokens parse_ptokens_header(const utility::string_t& value)
+            {
+                enum {
+                    pre_value,
+                    value_name,
+                    pre_param,
+                    pre_param_name,
+                    param_name,
+                    pre_param_value,
+                    param_value,
+                    param_value_token,
+                    param_value_quoted_string,
+                    param_value_quoted_string_escape
+                } state = pre_value;
+
+                ptokens result;
+                utility::string_t name;
+                for (auto c : value)
+                {
+                    switch (state)
+                    {
+                    case pre_value:
+                        // surprising handling of multiple commas is due to the ABNF List Extension: #rule
+                        // #element => [ ( "," / element ) *( OWS "," [ OWS element ] ) ]
+                        // see https://tools.ietf.org/html/rfc7230#section-7
+                        if (details::is_tchar(c)) { name.push_back(c); state = value_name; break; }
+                        if (U(',') == c) { break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid value name, expected tchar");
+                    case value_name:
+                        if (details::is_tchar(c)) { name.push_back(c); break; }
+                        result.push_back({ name, {} }); name.clear();
+                        if (U(',') == c) { state = pre_value;  break; }
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_param; break; }
+                        throw std::invalid_argument("invalid value name, expected tchar");
+                    case pre_param:
+                        if (U(',') == c) { state = pre_value; break; }
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid value, expected ',' or ';'");
+                    case pre_param_name:
+                        if (details::is_tchar(c)) { name.push_back(c); state = param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid parameter name, expected tchar");
+                    case param_name:
+                        if (details::is_tchar(c)) { name.push_back(c); break; }
+                        result.back().second.push_back({ name, {} }); name.clear();
+                        if (U('=') == c) { state = param_value; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_param_value; break; }
+                        throw std::invalid_argument("invalid parameter name, expected tchar");
+                    case pre_param_value:
+                        if (U('=') == c) { state = param_value; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid parameter, expected '='");
+                    case param_value:
+                        if (details::is_tchar(c)) { result.back().second.back().second.push_back(c); state = param_value_token; break; }
+                        if (U('"') == c) { state = param_value_quoted_string; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid parameter value, expected tchar or '\"'");
+                    case param_value_token:
+                        if (details::is_tchar(c)) { result.back().second.back().second.push_back(c); break; }
+                        if (U(',') == c) { state = pre_value; break; }
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_param; break; }
+                        throw std::invalid_argument("invalid parameter value, expected tchar");
+                    case param_value_quoted_string:
+                        if (U('"') == c) { state = pre_param; break; }
+                        if (U('\\') == c) { state = param_value_quoted_string_escape; break; }
+                        result.back().second.back().second.push_back(c);
+                        break;
+                    case param_value_quoted_string_escape:
+                        result.back().second.back().second.push_back(c);
+                        state = param_value_quoted_string;
+                        break;
+                    default:
+                        throw std::logic_error("unreachable code");
+                    }
+                }
+
+                if (!name.empty())
+                {
+                    switch (state)
+                    {
+                    case value_name:
+                        result.push_back({ name, {} }); name.clear(); break;
+                    case param_name:
+                        throw std::invalid_argument("invalid parameter, expected '='");
+                    default:
+                        throw std::logic_error("unreachable code");
+                    }
+                }
+                return result;
+            }
+
+            namespace details
+            {
+                template <typename TimePoint>
+                inline double milliseconds_since_epoch(const TimePoint& tp)
+                {
+                    return std::chrono::duration_cast<std::chrono::microseconds>(tp.time_since_epoch()) / 1000.0;
+                }
+            }
+
+            utility::string_t make_timing_header(const timing_metrics& values)
+            {
+                ptokens results;
+                for (auto& value : values)
+                {
+                    ptoken token{ value.name, {} };
+                    if (0.0 != value.duration) token.second.push_back({ U("dur"), utility::ostringstreamed(value.duration) });
+                    if (!value.description.empty()) token.second.push_back({ U("desc"), value.description });
+                    results.push_back(std::move(token));
+                }
+                return make_ptokens_header(results);
+            }
+
+            timing_metrics parse_timing_header(const utility::string_t& value)
+            {
+                // See https://w3c.github.io/server-timing/#server-timing-header-parsing-algorithm
+                timing_metrics results;
+                auto ptokens = parse_ptokens_header(value);
+                for (auto& ptoken : ptokens)
+                {
+                    timing_metric metric{ ptoken.first };
+                    // "Set duration to the server-timing-param-value for the server-timing-param where server-timing-param-name
+                    // is case-insensitively equal to "dur", or value 0 if omitted or not representable as a double"
+                    const auto dur = std::find_if(ptoken.second.begin(), ptoken.second.end(), [](const ptoken_param& param) { return boost::algorithm::iequals(param.first, U("dur")); });
+                    if (ptoken.second.end() != dur) metric.duration = utility::istringstreamed(dur->second, 0.0);
+                    const auto desc = std::find_if(ptoken.second.begin(), ptoken.second.end(), [](const ptoken_param& param) { return boost::algorithm::iequals(param.first, U("desc")); });
+                    if (ptoken.second.end() != desc) metric.description = desc->second;
+                    results.push_back(std::move(metric));
+                }
+                return results;
+            }
         }
 
         namespace details
