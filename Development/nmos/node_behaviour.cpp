@@ -486,7 +486,7 @@ namespace nmos
 
                 auto body = make_registration_request_body(id_type.second, event.at(U("post")));
 
-                return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response) mutable
+                return api_request(client, web::http::methods::POST, U("/resource"), body, gate, token).then([=, &gate](web::http::http_response response) mutable
                 {
                     // hmm, when I tried to make this a task-based continuation in order to just return the response_task argument (in most cases)
                     // the enclosing then call failed to compile
@@ -517,11 +517,11 @@ namespace nmos
                             // Location may be a relative (to the request URL) or absolute URL
                             auto request_uri = web::uri_builder(client.base_uri()).append_path(U("/resource")).to_uri();
                             auto location_uri = request_uri.resolve_uri(response.headers()[web::http::header_names::location]);
-                            deletion = web::http::client::http_client(location_uri, client.client_config()).request(web::http::methods::DEL, token);
+                            deletion = api_request(web::http::client::http_client(location_uri, client.client_config()), web::http::methods::DEL, gate, token);
                         }
                         else
                         {
-                            deletion = client.request(web::http::methods::DEL, U("/resource/") + path, token);
+                            deletion = api_request(client, web::http::methods::DEL, U("/resource/") + path, gate, token);
                         }
 
                         return deletion.then([=, &gate](web::http::http_response response) mutable
@@ -538,7 +538,7 @@ namespace nmos
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Re-requesting registration creation for " << id_type;
 
                             // "A new Node registration after this point should result in the correct 201 response code."
-                            return client.request(web::http::methods::POST, U("/resource"), body, token);
+                            return api_request(client, web::http::methods::POST, U("/resource"), body, gate, token);
                         });
                     }
                     else
@@ -568,7 +568,7 @@ namespace nmos
 
                 auto body = make_registration_request_body(id_type.second, event.at(U("post")));
 
-                return client.request(web::http::methods::POST, U("/resource"), body, token).then([=, &gate](web::http::http_response response)
+                return api_request(client, web::http::methods::POST, U("/resource"), body, gate, token).then([=, &gate](web::http::http_response response)
                 {
                     if (web::http::status_codes::OK == response.status_code())
                     {
@@ -584,7 +584,7 @@ namespace nmos
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting registration deletion for " << id_type;
 
-                return client.request(web::http::methods::DEL, U("/resource/") + path, token).then([=, &gate](web::http::http_response response)
+                return api_request(client, web::http::methods::DEL, U("/resource/") + path, gate, token).then([=, &gate](web::http::http_response response)
                 {
                     if (web::http::status_codes::NoContent == response.status_code())
                     {
@@ -606,7 +606,7 @@ namespace nmos
         {
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Posting registration heartbeat for node: " << id;
 
-            return client.request(web::http::methods::POST, U("/health/nodes/") + id, token).then([=, &gate](pplx::task<web::http::http_response> response_task)
+            return api_request(client, web::http::methods::POST, U("/health/nodes/") + id, gate, token).then([=, &gate](pplx::task<web::http::http_response> response_task)
             {
                 auto response = response_task.get(); // may throw http_exception
 

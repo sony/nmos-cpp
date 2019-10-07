@@ -5,8 +5,9 @@
 #endif
 #include "cpprest/basic_utils.h"
 #include "cpprest/details/system_error.h"
-#include "cpprest/http_client.h"
+#include "cpprest/http_utils.h"
 #include "cpprest/ws_client.h"
+#include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
 
 // Utility types, constants and functions for implementing NMOS REST API clients
@@ -75,5 +76,53 @@ namespace nmos
 #endif
 
         return config;
+    }
+
+    // make a request with logging
+    pplx::task<web::http::http_response> api_request(web::http::client::http_client client, web::http::http_request request, slog::base_gate& gate, const pplx::cancellation_token& token)
+    {
+        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Sending request";
+        // see https://developer.mozilla.org/en-US/docs/Web/API/Resource_Timing_API#Resource_loading_timestamps
+        const auto start_time = std::chrono::system_clock::now();
+        return client.request(request, token).then([start_time, &gate](web::http::http_response res)
+        {
+            const auto response_start = std::chrono::system_clock::now();
+            const auto request_dur = std::chrono::duration_cast<std::chrono::microseconds>(response_start - start_time).count() / 1000.0;
+
+            // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+            const auto server_timing = res.headers().find(web::http::experimental::header_names::server_timing);
+
+            if (res.headers().end() != server_timing)
+            {
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Response received after " << request_dur << "ms (server-timing: " << server_timing->second << ")";
+            }
+            else
+            {
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Response received after " << request_dur << "ms";
+            }
+
+            return res;
+        });
+    }
+
+    pplx::task<web::http::http_response> api_request(web::http::client::http_client client, const web::http::method& mtd, slog::base_gate& gate, const pplx::cancellation_token& token)
+    {
+        web::http::http_request msg(mtd);
+        return api_request(client, msg, gate, token);
+    }
+
+    pplx::task<web::http::http_response> api_request(web::http::client::http_client client, const web::http::method& mtd, const utility::string_t& path_query_fragment, slog::base_gate& gate, const pplx::cancellation_token& token)
+    {
+        web::http::http_request msg(mtd);
+        msg.set_request_uri(path_query_fragment);
+        return api_request(client, msg, gate, token);
+    }
+
+    pplx::task<web::http::http_response> api_request(web::http::client::http_client client, const web::http::method& mtd, const utility::string_t& path_query_fragment, const web::json::value& body_data, slog::base_gate& gate, const pplx::cancellation_token& token)
+    {
+        web::http::http_request msg(mtd);
+        msg.set_request_uri(path_query_fragment);
+        msg.set_body(body_data);
+        return api_request(client, msg, gate, token);
     }
 }

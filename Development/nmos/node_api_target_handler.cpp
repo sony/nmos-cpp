@@ -29,7 +29,7 @@ namespace nmos
                 const auto manifest_href = nmos::fields::manifest_href(sender_data).as_string();
 
                 web::http::client::http_client client(manifest_href, nmos::with_read_lock(model.mutex, [&model] { return nmos::make_http_client_config(model.settings); }));
-                return client.request(web::http::methods::GET).then([manifest_href, &gate](web::http::http_response res)
+                return api_request(client, web::http::methods::GET, gate).then([manifest_href, &gate](web::http::http_response res)
                 {
                     if (res.status_code() != web::http::status_codes::OK)
                     {

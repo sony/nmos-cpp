@@ -649,7 +649,7 @@ namespace nmos
         auto api = [&api_, &gate](web::http::http_request req)
         {
             req.headers().add(details::received_time, nmos::make_version());
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF)
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF)
                 << stash_remote_address(req.remote_address())
                 << stash_http_method(req.method())
                 << stash_request_uri(req.request_uri())
