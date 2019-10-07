@@ -27,6 +27,7 @@ add_executable(
     nmos-cpp-node
     ${NMOS_CPP_NODE_SOURCES}
     ${NMOS_CPP_NODE_HEADERS}
+    ${NMOS_CPP_DIR}/nmos-cpp-node/config.json
     )
 
 source_group("Source Files" FILES ${NMOS_CPP_NODE_SOURCES})
@@ -54,6 +55,7 @@ add_executable(
     nmos-cpp-registry
     ${NMOS_CPP_REGISTRY_SOURCES}
     ${NMOS_CPP_REGISTRY_HEADERS}
+    ${NMOS_CPP_DIR}/nmos-cpp-registry/config.json
     )
 
 source_group("Source Files" FILES ${NMOS_CPP_REGISTRY_SOURCES})
