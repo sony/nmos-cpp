@@ -183,8 +183,10 @@ namespace nmos
         // for "state" messages
         const web::json::field_as_string state_event_type{ U("event_type") };
         const web::json::field_as_value state_payload{ U("payload") };
+        const web::json::field_as_bool payload_boolean_value{ U("value") };
         const web::json::field_as_number payload_number_value{ U("value") };
         const web::json::field_with_default<int64_t> payload_number_scale{ U("scale"), 1 };
+        const web::json::field_as_string payload_string_value{ U("value") };
 
         // for connection_api
         const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string or null
