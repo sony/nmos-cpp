@@ -175,7 +175,8 @@ namespace nmos
             // see http_port
 
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
-            const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3214 };
+            const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3208 };
+            const web::json::field_as_integer_or schemas_port{ U("schemas_port"), 3208 };
 
             // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
 
@@ -186,6 +187,7 @@ namespace nmos
 
             const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
             const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
+            const web::json::field_as_string_or schemas_address{ U("schemas_address"), U("") };
 
             // query_ws_paging_default/query_ws_paging_limit [registry]: default/maximum number of events per message when using the Query WebSocket API (a client may request a lower limit)
             const web::json::field_as_integer_or query_ws_paging_default{ U("query_ws_paging_default"), 10 };

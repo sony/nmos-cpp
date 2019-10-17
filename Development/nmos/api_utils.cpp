@@ -52,17 +52,18 @@ namespace nmos
         template <typename HttpMessage>
         inline pplx::task<web::json::value> extract_json(const HttpMessage& msg, slog::base_gate& gate)
         {
-            auto content_type = web::http::details::get_mime_type(msg.headers().content_type());
+            auto mime_type = web::http::details::get_mime_type(msg.headers().content_type());
 
-            if (web::http::details::mime_types::application_json == content_type)
+            if (web::http::details::is_mime_type_json(mime_type))
             {
-                // No "charset" parameter is defined for the application/json media-type
+                // No "charset" parameter is defined for the application/json media type
                 // but it's quite common so don't even bother to log a warning...
                 // See https://www.iana.org/assignments/media-types/application/json
 
-                return msg.extract_json(false);
+                // by default, extract_json only allows application/json itself - the above check is better!
+                return msg.extract_json(true);
             }
-            else if (content_type.empty())
+            else if (mime_type.empty())
             {
                 // "If a Content-Type header field is not present, the recipient MAY
                 // [...] examine the data to determine its type."
@@ -217,7 +218,7 @@ namespace nmos
 
         if (res.body())
         {
-            auto body = res.extract_json().get();
+            auto body = res.extract_json(false).get();
             results.insert(body.as_array().begin(), body.as_array().end());
         }
 
@@ -364,7 +365,7 @@ namespace nmos
         };
 
         // construct an HTML rendering of an NMOS response
-        std::string make_html_response_body(const web::http::http_response& res)
+        std::string make_html_response_body(const web::http::http_response& res, slog::base_gate& gate)
         {
             typedef basic_html_visitor<char> html_visitor;
 
@@ -424,7 +425,7 @@ namespace nmos
             }
             html << "</ol></div><br/>";
             html << "<div class=\"json\">";
-            web::json::visit(html_visitor(html), res.extract_json().get());
+            web::json::visit(html_visitor(html), nmos::details::extract_json(res, gate).get());
             html << "</div>";
             html << "</body></html>";
             return html.str();
@@ -552,9 +553,9 @@ namespace nmos
                 // experimental extension, to support human-readable HTML rendering of NMOS responses
 
                 const auto mime_type = web::http::details::get_mime_type(res.headers().content_type());
-                if (web::http::details::mime_types::application_json == mime_type && experimental::details::is_html_response_preferred(req, mime_type))
+                if (web::http::details::is_mime_type_json(mime_type) && experimental::details::is_html_response_preferred(req, mime_type))
                 {
-                    res.set_body(nmos::experimental::make_html_response_body(res));
+                    res.set_body(nmos::experimental::make_html_response_body(res, gate));
                     res.headers().set_content_type(U("text/html; charset=utf-8"));
                 }
 

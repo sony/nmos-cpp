@@ -9,6 +9,11 @@ namespace nmos
     struct api_version;
     struct type;
 
+    namespace details
+    {
+        std::map<web::uri, web::json::value> make_schemas();
+    }
+
     namespace experimental
     {
         web::uri make_systemapi_global_schema_uri(const nmos::api_version& version);

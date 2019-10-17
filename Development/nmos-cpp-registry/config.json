@@ -90,7 +90,8 @@
     // see http_port
 
     //"admin_port": 3208,
-    //"mdns_port": 3214,
+    //"mdns_port": 3208,
+    //"schemas_port": 3208,
 
     // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
 
@@ -101,6 +102,7 @@
 
     //"admin_address": "",
     //"mdns_address": "",
+    //"schemas_address": "",
 
     // query_ws_paging_default/query_ws_paging_limit [registry]: default/maximum number of events per message when using the Query WebSocket API (a client may request a lower limit)
     //"query_ws_paging_default": 10,

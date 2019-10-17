@@ -39,7 +39,7 @@ namespace web
 
         namespace details
         {
-            // Extract the basic 'type/subtype' from a Content-Type value
+            // Extract the basic 'type/subtype' media type from a Content-Type value
             utility::string_t get_mime_type(const utility::string_t& content_type)
             {
                 auto first = std::find_if_not(content_type.begin(), content_type.end(), [](utility::char_t c) { return U(' ') == c || U('\t') == c; });
@@ -47,6 +47,14 @@ namespace web
                 // OWS        = *( SP / HTAB )
                 auto last = std::find_if(first, content_type.end(), [](utility::char_t c) { return U(';') == c || U(' ') == c || U('\t') == c; });
                 return{ first, last };
+            }
+
+            // Check if a media type is JSON
+            bool is_mime_type_json(const utility::string_t& mime_type)
+            {
+                // as well as application/json, also check for the +json structured syntax suffix
+                // see https://tools.ietf.org/html/rfc6839#section-3.1
+                return web::http::details::mime_types::application_json == mime_type || boost::algorithm::iends_with(mime_type, U("+json"));
             }
         }
 

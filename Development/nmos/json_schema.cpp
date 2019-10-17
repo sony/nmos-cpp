@@ -281,7 +281,7 @@ namespace nmos
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
         }
 
-        static std::map<web::uri, web::json::value> make_schemas()
+        std::map<web::uri, web::json::value> make_schemas()
         {
             auto result = make_is04_schemas();
             merge(result, make_is05_schemas());

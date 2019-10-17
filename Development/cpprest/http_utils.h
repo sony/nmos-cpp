@@ -14,8 +14,11 @@ namespace web
 
         namespace details
         {
-            // Extract the basic 'type/subtype' from a Content-Type value
+            // Extract the basic 'type/subtype' media type from a Content-Type value
             utility::string_t get_mime_type(const utility::string_t& content_type);
+
+            // Check if a media type is JSON
+            bool is_mime_type_json(const utility::string_t& mime_type);
         }
 
         // Determine if a value is found in a header that represents a set of values, like "Allow", "Accept" or "Link"

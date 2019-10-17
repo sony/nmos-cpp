@@ -14,6 +14,7 @@
 #include "nmos/query_ws_api.h"
 #include "nmos/registration_api.h"
 #include "nmos/registry_resources.h"
+#include "nmos/schemas_api.h"
 #include "nmos/server.h"
 #include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
@@ -90,6 +91,11 @@ namespace nmos
             nmos::experimental::assign_system_global_resource(registry_model.system_global_resource, registry_model.settings);
 
             registry_server.api_routers[{ {}, nmos::fields::system_port(registry_model.settings) }].mount({}, nmos::make_system_api(registry_model, gate));
+
+            // Configure the Schemas API
+
+            const host_port schemas_address(nmos::experimental::fields::schemas_address(registry_model.settings), nmos::experimental::fields::schemas_port(registry_model.settings));
+            registry_server.api_routers[schemas_address].mount({}, nmos::experimental::make_schemas_api(gate));
 
             // Configure the Admin UI
 
