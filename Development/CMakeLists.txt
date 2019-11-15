@@ -36,9 +36,7 @@ source_group("Header Files" FILES ${NMOS_CPP_NODE_HEADERS})
 target_link_libraries(
     nmos-cpp-node
     nmos-cpp_static
-    mdns_static
     cpprestsdk::cpprest
-    ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )
@@ -64,9 +62,7 @@ source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
 target_link_libraries(
     nmos-cpp-registry
     nmos-cpp_static
-    mdns_static
     cpprestsdk::cpprest
-    ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )

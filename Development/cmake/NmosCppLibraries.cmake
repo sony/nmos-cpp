@@ -22,7 +22,7 @@ endif()
 
 install(FILES ${DETAIL_HEADERS} DESTINATION include/detail)
 
-# mdns library
+# mDNS support library
 
 set(MDNS_SOURCES
     ${NMOS_CPP_DIR}/mdns/core.cpp
@@ -45,17 +45,58 @@ add_library(
     ${BONJOUR_HEADERS}
     )
 
-source_group("Source Files" FILES ${MDNS_SOURCES} ${BONJOUR_SOURCES})
-source_group("Header Files" FILES ${MDNS_HEADERS} ${BONJOUR_HEADERS})
+source_group("mdns\\Source Files" FILES ${MDNS_SOURCES})
+source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
+source_group("Source Files" FILES ${BONJOUR_SOURCES})
+source_group("Header Files" FILES ${BONJOUR_HEADERS})
 
 # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
 target_link_libraries(
     mdns_static
     cpprestsdk::cpprest
+    ${BONJOUR_LIB}
     )
 
 install(TARGETS mdns_static DESTINATION lib)
 install(FILES ${MDNS_HEADERS} DESTINATION include/mdns)
+
+# LLDP support library
+if (BUILD_LLDP)
+  set(LLDP_SOURCES
+      ${NMOS_CPP_DIR}/lldp/lldp.cpp
+      ${NMOS_CPP_DIR}/lldp/lldp_frame.cpp
+      ${NMOS_CPP_DIR}/lldp/lldp_manager_impl.cpp
+      )
+  set(LLDP_HEADERS
+      ${NMOS_CPP_DIR}/lldp/lldp.h
+      ${NMOS_CPP_DIR}/lldp/lldp_frame.h
+      ${NMOS_CPP_DIR}/lldp/lldp_manager.h
+      )
+
+  add_library(
+      lldp_static STATIC
+      ${LLDP_SOURCES}
+      ${LLDP_HEADERS}
+      )
+
+  source_group("lldp\\Source Files" FILES ${LLDP_SOURCES})
+  source_group("lldp\\Header Files" FILES ${LLDP_HEADERS})
+
+  # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
+  target_link_libraries(
+      lldp_static
+      cpprestsdk::cpprest
+      ${PCAP_LIB}
+      )
+
+  target_compile_definitions(
+      lldp_static INTERFACE
+      HAVE_LLDP
+      )
+
+  install(TARGETS lldp_static DESTINATION lib)
+  install(FILES ${LLDP_HEADERS} DESTINATION include/lldp)
+endif()
 
 # nmos_is04_schemas library
 
@@ -582,6 +623,8 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/filesystem_route.cpp
     ${NMOS_CPP_DIR}/nmos/group_hint.cpp
     ${NMOS_CPP_DIR}/nmos/id.cpp
+    ${NMOS_CPP_DIR}/nmos/lldp_handler.cpp
+    ${NMOS_CPP_DIR}/nmos/lldp_manager.cpp
     ${NMOS_CPP_DIR}/nmos/json_schema.cpp
     ${NMOS_CPP_DIR}/nmos/log_model.cpp
     ${NMOS_CPP_DIR}/nmos/logging_api.cpp
@@ -590,6 +633,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/node_api.cpp
     ${NMOS_CPP_DIR}/nmos/node_api_target_handler.cpp
     ${NMOS_CPP_DIR}/nmos/node_behaviour.cpp
+    ${NMOS_CPP_DIR}/nmos/node_interfaces.cpp
     ${NMOS_CPP_DIR}/nmos/node_resource.cpp
     ${NMOS_CPP_DIR}/nmos/node_resources.cpp
     ${NMOS_CPP_DIR}/nmos/node_server.cpp
@@ -646,6 +690,8 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is09_versions.h
     ${NMOS_CPP_DIR}/nmos/json_fields.h
     ${NMOS_CPP_DIR}/nmos/json_schema.h
+    ${NMOS_CPP_DIR}/nmos/lldp_handler.h
+    ${NMOS_CPP_DIR}/nmos/lldp_manager.h
     ${NMOS_CPP_DIR}/nmos/log_gate.h
     ${NMOS_CPP_DIR}/nmos/log_manip.h
     ${NMOS_CPP_DIR}/nmos/log_model.h
@@ -658,6 +704,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/node_api.h
     ${NMOS_CPP_DIR}/nmos/node_api_target_handler.h
     ${NMOS_CPP_DIR}/nmos/node_behaviour.h
+    ${NMOS_CPP_DIR}/nmos/node_interfaces.h
     ${NMOS_CPP_DIR}/nmos/node_resource.h
     ${NMOS_CPP_DIR}/nmos/node_resources.h
     ${NMOS_CPP_DIR}/nmos/node_server.h
@@ -762,10 +809,15 @@ target_link_libraries(
     nmos_is04_schemas_static
     nmos_is05_schemas_static
     nmos_is09_schemas_static
-    ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )
+if (BUILD_LLDP)
+    target_link_libraries(
+        nmos-cpp_static
+        lldp_static
+        )
+endif()
 
 install(TARGETS nmos-cpp_static DESTINATION lib)
 

@@ -60,7 +60,7 @@ list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 # platform-specific dependencies
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # find bonjour (for mdns_static)
+    # find Bonjour or Avahi compatibility library for the mDNS support library (mdns_static)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
     set (BONJOUR_LIB -ldns_sd)
 
@@ -79,10 +79,18 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     else()
         list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
+
+    # enable or disable the LLDP support library (lldp_static)
+    set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
+
+    if(BUILD_LLDP)
+        # find libpcap for the LLDP support library (lldp_static)
+        set (PCAP_LIB -lpcap)
+    endif()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # find bonjour (for mdns_static)
+    # find Bonjour for the mDNS support library (mdns_static)
     set (MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
     if(MDNS_SYSTEM_BONJOUR)
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
@@ -119,6 +127,19 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
     # does one of our dependencies result in needing to do this?
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
+
+    # enable or disable the LLDP support library (lldp_static)
+    set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
+
+    if(BUILD_LLDP)
+        # find WinPcap for the LLDP support library (lldp_static)
+        set (PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
+        set (PCAP_LIB_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
+        set (PCAP_LIB wpcap)
+
+        # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
+        add_definitions(/DHAVE_REMOTE)
+    endif()
 endif()
 
 # since std::shared_mutex is not available until C++17
@@ -168,6 +189,7 @@ include_directories(
     ${WEBSOCKETPP_INCLUDE_DIR} # defined by find_package(websocketpp)
     ${Boost_INCLUDE_DIRS} # defined by find_package(Boost)
     ${BONJOUR_INCLUDE} # defined above
+    ${PCAP_INCLUDE_DIR} # defined above
     ${NMOS_CPP_DIR}/third_party/nlohmann
     )
 
@@ -175,6 +197,7 @@ include_directories(
 link_directories(
     ${Boost_LIBRARY_DIRS}
     ${BONJOUR_LIB_DIR}
+    ${PCAP_LIB_DIR}
     )
 
 # additional configuration for common dependencies

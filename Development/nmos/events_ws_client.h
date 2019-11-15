@@ -26,7 +26,7 @@ namespace nmos
         struct events_ws_client_impl;
     }
 
-    // an events_ws_message_handler callback indicates the specified message has been received on the specified connection 
+    // an events_ws_message_handler callback indicates the specified message has been received on the specified connection
     typedef std::function<void(const web::uri& connection_uri, const web::json::value& message)> events_ws_message_handler;
 
     // an events_ws_close_handler callback indicates the connection to the specified WebSocket URI has been closed with the specified status and reason

@@ -421,7 +421,7 @@ namespace nmos
 
     void events_ws_client::set_message_handler(events_ws_message_handler message_handler)
     {
-        // updating the close handler with open connections is not supported, so no lock
+        // updating the message handler with open connections is not supported, so no lock
         impl->user_message = message_handler;
     }
 

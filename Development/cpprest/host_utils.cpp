@@ -58,7 +58,7 @@ namespace web
             namespace details
             {
                 // this just shouldn't be this hard!
-                boost::asio::ip::address from_sockaddr(const sockaddr& address)
+                static boost::asio::ip::address from_sockaddr(const sockaddr& address)
                 {
                     if (address.sa_family == AF_INET)
                     {

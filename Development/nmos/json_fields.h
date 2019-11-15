@@ -47,6 +47,7 @@ namespace nmos
         const web::json::field_as_string name{ U("name") };
         const web::json::field_as_string chassis_id{ U("chassis_id") };
         const web::json::field_as_string port_id{ U("port_id") };
+        const web::json::field_as_value_or attached_network_device{ U("attached_network_device"), {} }; // object
         const web::json::field_as_array clocks{ U("clocks") };
         const web::json::field_as_string ref_type{ U("ref_type") };
         // device

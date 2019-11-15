@@ -85,7 +85,6 @@ target_link_libraries(
     nmos-cpp_static
     mdns_static
     cpprestsdk::cpprest
-    ${BONJOUR_LIB}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )

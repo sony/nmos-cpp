@@ -16,3 +16,5 @@ Third-party source files used by the nmos-cpp libraries
   The JSON Schema files used for validation of e.g. Registration API requests and responses
 - [nmos-system](nmos-system)  
   The JSON Schema files used for validation of System API requests and responses
+- [WpdPack](WpdPack)  
+  Libraries and header files from the [WinPcap](https://www.winpcap.org/) Developer's Pack

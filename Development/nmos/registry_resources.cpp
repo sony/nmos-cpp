@@ -1,8 +1,8 @@
 #include "nmos/registry_resources.h"
 
-#include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
+#include "nmos/node_interfaces.h"
 #include "nmos/node_resource.h"
 
 namespace nmos
@@ -14,7 +14,7 @@ namespace nmos
             using web::json::value;
             using web::json::value_of;
 
-            auto resource = nmos::make_node(id, {}, nmos::make_node_interfaces(web::hosts::experimental::host_interfaces()), settings);
+            auto resource = nmos::make_node(id, {}, nmos::make_node_interfaces(nmos::experimental::node_interfaces()), settings);
             auto& data = resource.data;
 
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });

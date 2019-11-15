@@ -1,6 +1,5 @@
 #include "nmos/node_resource.h"
 
-#include "cpprest/host_utils.h"
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/clock_name.h"
@@ -64,21 +63,6 @@ namespace nmos
     {
         // for now, default clocks and interfaces are empty...
         return make_node(id, {}, {}, settings);
-    }
-
-    web::json::value make_node_interfaces(const std::vector<web::hosts::experimental::host_interface>& interfaces)
-    {
-        using web::json::value_from_elements;
-        using web::json::value_of;
-
-        return value_from_elements(interfaces | boost::adaptors::transformed([](const web::hosts::experimental::host_interface& interface)
-        {
-            return value_of({
-                { nmos::fields::chassis_id, !interface.addresses.empty() ? interface.addresses.front() : interface.name },
-                { nmos::fields::port_id, interface.physical_address },
-                { nmos::fields::name, interface.name }
-            });
-        }));
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json

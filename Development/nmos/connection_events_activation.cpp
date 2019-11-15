@@ -92,7 +92,7 @@ namespace nmos
                         if (ext_is_07_source_id_or_null.is_null() || source_id != ext_is_07_source_id_or_null.as_string()) continue;
 
                         // subscription-specific behaviour
-                        
+
                         const auto& event_type_caps = nmos::fields::event_types(nmos::fields::caps(receiver->data)).as_array();
 
                         const bool match = 0 == event_type_caps.size() || event_type_caps.end() != std::find_if(event_type_caps.begin(), event_type_caps.end(), [event_type](const web::json::value& event_type_cap)
