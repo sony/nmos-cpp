@@ -275,17 +275,19 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
         if (sender_id == id_type.first)
         {
-            nmos::resolve_rtp_auto(id_type.second, transport_params);
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [] { return value::string(U("192.168.255.0")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [] { return value::string(U("192.168.255.1")); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
+            // lastly, apply the specification defaults for any properties not handled above
+            nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
         else if (receiver_id == id_type.first)
         {
-            nmos::resolve_rtp_auto(id_type.second, transport_params);
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.2")); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [] { return value::string(U("192.168.255.3")); });
+            // lastly, apply the specification defaults for any properties not handled above
+            nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
         else if (temperature_ws_sender_id == id_type.first)
         {
