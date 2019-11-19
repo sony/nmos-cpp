@@ -231,9 +231,6 @@ namespace lldp
         return{ port_id_subtypes::reserved,{} };
     }
 
-    // forward declaration
-    agent_circuit_id parse_agent_circuit_id(const std::vector<uint8_t>& data);
-
     // parse a Port ID
     // return empty if invalid; non-throwing
     std::string parse_port_id(const port_id& port_id)
@@ -245,13 +242,10 @@ namespace lldp
         case port_id_subtypes::network_address:
             return parse_network_address(port_id.data);
         case port_id_subtypes::agent_circuit_id:
-            // lossy...
-            return parse_agent_circuit_id(port_id.data).agent_id;
         case port_id_subtypes::port_component:
         case port_id_subtypes::interface_alias:
         case port_id_subtypes::interface_name:
         case port_id_subtypes::locally_assigned:
-            // but then so are these...
             return std::string{ port_id.data.begin(), port_id.data.end() };
         case port_id_subtypes::reserved:
         default:
@@ -295,60 +289,6 @@ namespace lldp
         auto address = parse_network_address(port_id.data);
         if (address.empty()) throw lldp_exception("invalid network address for Port ID");
         return address;
-    }
-
-    std::vector<uint8_t> make_agent_circuit_id(const lldp::agent_circuit_id& agent_circuit_id)
-    {
-        std::vector<uint8_t> data;
-        data.push_back(agent_circuit_id.subopt);
-        if (0xFF < agent_circuit_id.agent_id.size())
-        {
-            throw lldp_exception("invalid agent circuit ID length for Port ID");
-        }
-        data.push_back((uint8_t)agent_circuit_id.agent_id.size());
-        data.insert(data.end(), agent_circuit_id.agent_id.begin(), agent_circuit_id.agent_id.end());
-        return data;
-    }
-
-    agent_circuit_id parse_agent_circuit_id(const std::vector<uint8_t>& data)
-    {
-        agent_circuit_id agent_circuit_id;
-        const size_t min_agent_circuit_id_port_id_size(2);
-        if (data.size() >= min_agent_circuit_id_port_id_size)
-        {
-            int idx = 0;
-            // subopt
-            agent_circuit_id.subopt = data.at(idx++);
-            if (agent_circuit_id_subopts::local == agent_circuit_id.subopt || agent_circuit_id_subopts::remote == agent_circuit_id.subopt)
-            {
-                // circuit length
-                size_t circuit_id_len = data.at(idx++);
-                // agent circuit id
-                if ((data.size() - idx) >= circuit_id_len)
-                {
-                    agent_circuit_id.agent_id = std::string((const char*)data.data() + idx, circuit_id_len);
-                }
-            }
-        }
-        return agent_circuit_id;
-    }
-
-    // make a Port ID with the specified agent circuit ID
-    // may throw
-    port_id make_agent_circuit_id_port_id(const agent_circuit_id& agent_circuit_id)
-    {
-        return{ port_id_subtypes::agent_circuit_id, make_agent_circuit_id(agent_circuit_id) };
-    }
-
-    // parse a agent circuit ID subtype Port ID
-    // may throw
-    agent_circuit_id parse_agent_circuit_id_port_id(const port_id& port_id)
-    {
-        if (port_id_subtypes::agent_circuit_id != port_id.subtype)
-        {
-            throw lldp_exception("wrong Port ID subtype");
-        }
-        return parse_agent_circuit_id(port_id.data);
     }
 
     network_address_family_number management_address::address_family() const

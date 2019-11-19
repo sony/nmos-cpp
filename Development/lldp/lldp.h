@@ -181,37 +181,6 @@ namespace lldp
     // may throw
     std::string parse_network_address_port_id(const port_id& port_id);
 
-    // agent circuit ID sub-option definitions
-    typedef uint8_t agent_circuit_id_subopt;
-    namespace agent_circuit_id_subopts
-    {
-        const agent_circuit_id_subopt local = 1;
-        const agent_circuit_id_subopt remote = 2;
-    }
-
-    struct agent_circuit_id
-    {
-        agent_circuit_id_subopt subopt;
-        std::string agent_id;
-
-        agent_circuit_id(agent_circuit_id_subopt subopt = agent_circuit_id_subopts::local, const std::string& agent_id = {})
-            : subopt(subopt)
-            , agent_id(agent_id)
-        {}
-
-        auto tied() const -> decltype(std::tie(subopt, agent_id)) { return std::tie(subopt, agent_id); }
-        friend bool operator==(const agent_circuit_id& lhs, const agent_circuit_id& rhs) { return lhs.tied() == rhs.tied(); }
-        friend bool operator!=(const agent_circuit_id& lhs, const agent_circuit_id& rhs) { return !(lhs == rhs); }
-    };
-
-    // make a Port ID with the specified agent circuit ID
-    // may throw
-    port_id make_agent_circuit_id_port_id(const agent_circuit_id& agent_circuit_id);
-
-    // parse a agent circuit ID subtype Port ID
-    // may throw
-    agent_circuit_id parse_agent_circuit_id_port_id(const port_id& port_id);
-
     // System Capabilities
 
     typedef uint16_t capability_bitmap;

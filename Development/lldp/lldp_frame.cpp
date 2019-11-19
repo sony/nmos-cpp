@@ -217,8 +217,6 @@ namespace lldp
                 case port_id_subtypes::reserved:
                 case port_id_subtypes::interface_alias:
                 case port_id_subtypes::port_component:
-                case port_id_subtypes::interface_name:
-                case port_id_subtypes::locally_assigned:
                     break;
                 case port_id_subtypes::mac_address:
                     // vertify MAC address Port ID
@@ -228,9 +226,9 @@ namespace lldp
                     // verify network address Port ID
                     parse_network_address_port_id(port_id);
                     break;
+                case port_id_subtypes::interface_name:
                 case port_id_subtypes::agent_circuit_id:
-                    // verify agent circuit id Port ID
-                    parse_agent_circuit_id_port_id(port_id);
+                case port_id_subtypes::locally_assigned:
                     break;
                 default:
                     throw lldp_exception("invalid Port ID subtype");
