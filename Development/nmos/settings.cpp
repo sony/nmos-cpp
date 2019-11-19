@@ -20,7 +20,7 @@ namespace nmos
 
         // Get default (system) host name as an FQDN (fully qualified domain name)
         utility::string_t default_host_name(const utility::string_t& domain = default_domain())
-        {            
+        {
             return web::hosts::experimental::host_name() + U('.') + domain;
         }
 

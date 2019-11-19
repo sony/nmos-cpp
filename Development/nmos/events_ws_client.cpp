@@ -264,7 +264,7 @@ namespace nmos
 
                         return client.connect(connection_uri);
                     });
-                    
+
                     auto heartbeats = result.then([this, client, token]() mutable
                     {
                         // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
