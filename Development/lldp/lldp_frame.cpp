@@ -472,7 +472,8 @@ namespace lldp
             {
                 throw lldp_exception("invalid interface number for Management Address");
             }
-            management_address.interface_number = (((uint32_t)value.at(idx++) << 24) | ((uint32_t)value.at(idx++) << 16) | ((uint32_t)value.at(idx++) << 8) | value.at(idx++));
+            management_address.interface_number = (((uint32_t)value.at(idx) << 24) | ((uint32_t)value.at(idx + 1) << 16) | ((uint32_t)value.at(idx + 2) << 8) | value.at(idx + 3));
+            idx += interface_number_size;
             len -= interface_number_size;
 
             // verify interface numbering subtype & interface number

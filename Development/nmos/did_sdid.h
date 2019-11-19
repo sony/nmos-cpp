@@ -1,6 +1,7 @@
 #ifndef NMOS_DID_SDID_H
 #define NMOS_DID_SDID_H
 
+#include <tuple>
 #include "cpprest/details/basic_types.h"
 
 namespace web
@@ -22,6 +23,14 @@ namespace nmos
         uint8_t sdid;
 
         did_sdid(uint8_t did = 0, uint8_t sdid = 0) : did(did), sdid(sdid) {}
+
+        auto tied() const -> decltype(std::tie(did, sdid)) { return std::tie(did, sdid); }
+        friend bool operator==(const did_sdid& lhs, const did_sdid& rhs) { return lhs.tied() == rhs.tied(); }
+        friend bool operator< (const did_sdid& lhs, const did_sdid& rhs) { return lhs.tied() <  rhs.tied(); }
+        friend bool operator> (const did_sdid& lhs, const did_sdid& rhs) { return rhs < lhs; }
+        friend bool operator!=(const did_sdid& lhs, const did_sdid& rhs) { return !(lhs == rhs); }
+        friend bool operator<=(const did_sdid& lhs, const did_sdid& rhs) { return !(rhs < lhs); }
+        friend bool operator>=(const did_sdid& lhs, const did_sdid& rhs) { return !(lhs < rhs); }
     };
 
     // SMPTE ST 291 Data Identification Word Assignments for Registered DIDs

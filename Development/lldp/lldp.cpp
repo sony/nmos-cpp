@@ -1,57 +1,61 @@
 #include "lldp/lldp.h"
 
-#include <boost/algorithm/string.hpp> // for boost::for is_any_of & boost::split
+#include <iomanip>  // for std::setfill
+#include <sstream>
 #include <boost/asio.hpp>
 #include "bst/regex.h"
-#include <iomanip>  // for std::setfill
-#include <sstream>  // for std::ostringstream
+#include "slog/all_in_one.h" // for slog::manip_function, etc.
 
 namespace lldp
 {
+    namespace details
+    {
+        slog::manip_function<std::istream> const_char_of(std::initializer_list<char> cs)
+        {
+            return slog::manip_function<std::istream>([cs](std::istream& is)
+            {
+                if (cs.end() == std::find(cs.begin(), cs.end(), is.get())) is.setstate(std::ios_base::failbit);
+            });
+        }
+    }
+
     // return empty if invalid; non-throwing
     std::vector<uint8_t> make_mac_address(const std::string& mac_address)
     {
         std::vector<uint8_t> data;
 
         // mac_address is xx-xx-xx-xx-xx-xx
-        if (mac_address.size() == 17)
+        const size_t mac_size(6);
+        std::istringstream is(mac_address);
+        
+        is >> std::hex;
+        uint32_t d = 0;
+
+        for (size_t i = 0; i < mac_size; ++i)
         {
-            std::vector<std::string> tokens;
-            boost::split(tokens, mac_address, boost::is_any_of("-:"), boost::token_compress_on);
-
-            auto parse_hex = [](const std::string& num)
-            {
-                return std::stoi(num.c_str(), 0, 16);
-            };
-
-            for (const auto token : tokens)
-            {
-                data.push_back((uint8_t)parse_hex(token));
-            }
+            if (0 != i) is >> details::const_char_of({ '-', ':' });
+            is >> std::setw(2) >> d;
+            data.push_back((uint8_t)d);
         }
-
-        return data;
+        return !is.fail() ? data : std::vector<uint8_t>{};
     }
 
     // return empty if invalid; non-throwing
     std::string parse_mac_address(const std::vector<uint8_t>& data, char separator)
     {
-        std::string mac_address;
-
         const size_t mac_size(6);
-        if (data.size() >= mac_size)
-        {
-            std::ostringstream os;
-            os << std::setfill('0') << std::hex << std::nouppercase << std::setw(2) << (int)data[0]
-                << separator << std::setw(2) << (int)data[1]
-                << separator << std::setw(2) << (int)data[2]
-                << separator << std::setw(2) << (int)data[3]
-                << separator << std::setw(2) << (int)data[4]
-                << separator << std::setw(2) << (int)data[5];
-            mac_address = os.str();
-        }        
 
-        return mac_address;
+        if (data.size() < mac_size) return std::string{};
+
+        std::ostringstream os;
+        os << std::setfill('0') << std::hex << std::nouppercase;
+
+        for (size_t i = 0; i < mac_size; ++i)
+        {
+            if (0 != i) os << separator;
+            os << std::setw(2) << (uint32_t)data[i];
+        }
+        return os.str();
     }
 
     // make a network address, i.e. address_family and address data

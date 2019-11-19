@@ -62,40 +62,40 @@ install(FILES ${MDNS_HEADERS} DESTINATION include/mdns)
 
 # LLDP support library
 if (BUILD_LLDP)
-  set(LLDP_SOURCES
-      ${NMOS_CPP_DIR}/lldp/lldp.cpp
-      ${NMOS_CPP_DIR}/lldp/lldp_frame.cpp
-      ${NMOS_CPP_DIR}/lldp/lldp_manager_impl.cpp
-      )
-  set(LLDP_HEADERS
-      ${NMOS_CPP_DIR}/lldp/lldp.h
-      ${NMOS_CPP_DIR}/lldp/lldp_frame.h
-      ${NMOS_CPP_DIR}/lldp/lldp_manager.h
-      )
+    set(LLDP_SOURCES
+        ${NMOS_CPP_DIR}/lldp/lldp.cpp
+        ${NMOS_CPP_DIR}/lldp/lldp_frame.cpp
+        ${NMOS_CPP_DIR}/lldp/lldp_manager_impl.cpp
+        )
+    set(LLDP_HEADERS
+        ${NMOS_CPP_DIR}/lldp/lldp.h
+        ${NMOS_CPP_DIR}/lldp/lldp_frame.h
+        ${NMOS_CPP_DIR}/lldp/lldp_manager.h
+        )
 
-  add_library(
-      lldp_static STATIC
-      ${LLDP_SOURCES}
-      ${LLDP_HEADERS}
-      )
+    add_library(
+        lldp_static STATIC
+        ${LLDP_SOURCES}
+        ${LLDP_HEADERS}
+        )
 
-  source_group("lldp\\Source Files" FILES ${LLDP_SOURCES})
-  source_group("lldp\\Header Files" FILES ${LLDP_HEADERS})
+    source_group("lldp\\Source Files" FILES ${LLDP_SOURCES})
+    source_group("lldp\\Header Files" FILES ${LLDP_HEADERS})
 
-  # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
-  target_link_libraries(
-      lldp_static
-      cpprestsdk::cpprest
-      ${PCAP_LIB}
-      )
+    # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
+    target_link_libraries(
+        lldp_static
+        cpprestsdk::cpprest
+        ${PCAP_LIB}
+        )
 
-  target_compile_definitions(
-      lldp_static INTERFACE
-      HAVE_LLDP
-      )
+    target_compile_definitions(
+        lldp_static INTERFACE
+        HAVE_LLDP
+        )
 
-  install(TARGETS lldp_static DESTINATION lib)
-  install(FILES ${LLDP_HEADERS} DESTINATION include/lldp)
+    install(TARGETS lldp_static DESTINATION lib)
+    install(FILES ${LLDP_HEADERS} DESTINATION include/lldp)
 endif()
 
 # nmos_is04_schemas library
