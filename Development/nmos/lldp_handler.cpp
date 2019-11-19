@@ -77,6 +77,6 @@ namespace nmos
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Self resource not found!";
                 }
             };
-        }        
+        }
     }
 }

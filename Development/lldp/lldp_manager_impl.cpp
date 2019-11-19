@@ -2,7 +2,6 @@
 
 #include <thread>
 #include <pcap.h>
-#include <cstring>  // for std::strstr
 #include "cpprest/basic_utils.h"
 #include "cpprest/host_utils.h"
 #include "lldp/lldp_frame.h"
@@ -42,8 +41,7 @@ namespace lldp
                 pcap_if_t* device{ nullptr };
                 for (device = devices; device != nullptr; device = device->next)
                 {
-                    auto found = std::strstr(device->name, interface_id.c_str());
-                    if (found)
+                    if (std::string::npos != std::string(device->name).find(interface_id))
                     {
                         return device;
                     }
@@ -97,7 +95,7 @@ namespace lldp
         struct receive_context
         {
             const std::string& interface_id;
-            lldp::details::ether_header& header;
+            std::vector<uint8_t>& source_mac_address;
             const lldp_handler& handler;
             slog::base_gate& gate;
         };
@@ -109,11 +107,11 @@ namespace lldp
             auto context = reinterpret_cast<receive_context*>(user);
 
             try
-            {                
+            {
                 if (context->handler)
                 {
                     const auto lldp_frame = parse_lldp_frame(bytes, header->len);
-                    if (context->header.src_mac_address != lldp_frame.header.src_mac_address)
+                    if (context->source_mac_address != lldp_frame.source_mac_address)
                     {
                         context->handler(context->interface_id, lldp_frame.lldpdu);
                     }
@@ -144,9 +142,9 @@ namespace lldp
                 slog::log<slog::severities::error>(context->gate, SLOG_FLF) << "Unable to transmit the LLDP frame: " << pcap_geterr(context->handle);
             }
         }
-        
+
         class lldp_agent_impl
-        {        
+        {
             pcap_t* handle;
             std::string interface_id; // for receive callback
 
@@ -155,13 +153,15 @@ namespace lldp
             bool active_transmit;
             bool active_receive;
 
+            std::vector<uint8_t> source_mac_address;
+
             // transmit operation
             std::chrono::seconds transmit_interval;
-            lldp::details::ether_header ether_header;
+            std::vector<uint8_t> transmit_mac_address;
             lldp_data_unit transmit_lldpdu;
             pplx::cancellation_token_source transmit_cancellation_source;
             pplx::task<void> transmit_task;
-            
+
             // receive operation
             // possibly, multiple agents could share a single thread by using pcap_dispatch instead of pcap_loop?
             std::thread receive_thread;
@@ -169,19 +169,20 @@ namespace lldp
 
             slog::base_gate& gate;
 
-        public:         
-            lldp_agent_impl(pcap_t* handle, const std::string& interface_id, const lldp::details::ether_header& ether_header, const std::chrono::seconds& transmit_interval, const lldp_handler& receive_handler, slog::base_gate& gate)
+        public:
+            lldp_agent_impl(pcap_t* handle, const std::string& interface_id, const std::vector<uint8_t>& destination_mac_address, const std::vector<uint8_t>& source_mac_address, const std::chrono::seconds& transmit_interval, const lldp_handler& receive_handler, slog::base_gate& gate)
                 : handle(handle)
                 , interface_id(interface_id)
                 , config_transmit(false)
                 , config_receive(false)
                 , active_transmit(false)
                 , active_receive(false)
+                , source_mac_address(source_mac_address)
                 , transmit_interval(transmit_interval)
-                , ether_header(ether_header)
+                , transmit_mac_address(destination_mac_address)
                 , receive_handler(receive_handler)
                 , gate(gate)
-            {                
+            {
             }
 
             ~lldp_agent_impl()
@@ -223,15 +224,15 @@ namespace lldp
 
                 transmit_cancellation_source = pplx::cancellation_token_source();
 
-                const lldp_frame frame{ ether_header, transmit_lldpdu };
+                const lldp_frame frame{ transmit_mac_address, source_mac_address, transmit_lldpdu };
                 std::shared_ptr<transmit_context> context(new transmit_context{ handle, make_lldp_frame(frame), gate });
                 on_transmit_frame(context);
 
-                auto token = transmit_cancellation_source.get_token();                
-                
+                auto token = transmit_cancellation_source.get_token();
+
                 const auto interval = transmit_interval;
                 transmit_task = pplx::do_while([interval, context, token]
-                {                    
+                {
                     return pplx::complete_after(interval, token).then([context]
                     {
                         on_transmit_frame(context);
@@ -248,7 +249,7 @@ namespace lldp
                 transmit_cancellation_source.cancel();
                 transmit_task.wait();
 
-                const lldp_frame frame{ ether_header, shutdown_data_unit(transmit_lldpdu.chassis_id, transmit_lldpdu.port_id) };
+                const lldp_frame frame{ transmit_mac_address, source_mac_address, shutdown_data_unit(transmit_lldpdu.chassis_id, transmit_lldpdu.port_id) };
                 std::shared_ptr<transmit_context> context(new transmit_context{ handle, make_lldp_frame(frame), gate });
                 on_transmit_frame(context);
 
@@ -259,7 +260,7 @@ namespace lldp
             {
                 if (!receive_thread.joinable())
                 {
-                    std::shared_ptr<receive_context> context(new receive_context{ interface_id, ether_header, receive_handler, gate });
+                    std::shared_ptr<receive_context> context(new receive_context{ interface_id, source_mac_address, receive_handler, gate });
 
                     // start a thread to receive LLDP frames
                     receive_thread = std::thread(&lldp::details::receive_thread, handle, context);
@@ -278,7 +279,7 @@ namespace lldp
                 }
 
                 active_receive = false;
-            }  
+            }
         };
 
         class lldp_manager_impl
@@ -291,7 +292,7 @@ namespace lldp
             {}
 
             void set_handler(lldp_handler handler)
-            {                
+            {
                 user_handler = std::move(handler);
             }
 
@@ -373,8 +374,12 @@ namespace lldp
 
                         if (interfaces.end() == interface_) throw lldp_exception("interface " + interface_id + " not found");
 
-                        const ether_header ether_header{ utility::us2s(interface_->physical_address), config.destination_address() };
-                        std::shared_ptr<lldp_agent_impl> agent_impl(new lldp_agent_impl(open_device(interface_id), interface_id, ether_header, config.transmit_interval(), user_handler, gate));
+                        const auto destination_mac_address = make_mac_address(config.destination_address());
+                        if (destination_mac_address.empty()) throw lldp_exception("invalid destination MAC address");
+                        const auto source_mac_address = make_mac_address(utility::us2s(interface_->physical_address));
+                        if (source_mac_address.empty()) throw lldp_exception("invalid source MAC address");
+
+                        std::shared_ptr<lldp_agent_impl> agent_impl(new lldp_agent_impl(open_device(interface_id), interface_id, destination_mac_address, source_mac_address, config.transmit_interval(), user_handler, gate));
                         agent = agents.insert(std::make_pair(interface_id, agent_impl)).first;
                     }
 
@@ -404,7 +409,7 @@ namespace lldp
             slog::base_gate& gate;
             lldp_handler user_handler;
             std::mutex mutex;
-            bool opened;            
+            bool opened;
             std::map<std::string, std::shared_ptr<lldp_agent_impl>> agents;
         };
     }
@@ -448,7 +453,7 @@ namespace lldp
     }
 
     void lldp_manager::set_handler(lldp_handler handler)
-    {        
+    {
         impl->set_handler(std::move(handler));
     }
 

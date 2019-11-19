@@ -128,7 +128,7 @@ namespace lldp
 
     // Port ID
 
-    // Port ID subtype definitions 
+    // Port ID subtype definitions
     typedef uint8_t port_id_subtype;
     namespace port_id_subtypes
     {
@@ -181,7 +181,7 @@ namespace lldp
     // may throw
     std::string parse_network_address_port_id(const port_id& port_id);
 
-    // agent circuit ID sub-option definitions 
+    // agent circuit ID sub-option definitions
     typedef uint8_t agent_circuit_id_subopt;
     namespace agent_circuit_id_subopts
     {

@@ -38,7 +38,7 @@ namespace nmos
             }
 
             return manager;
-        }        
+        }
     }
 }
 #endif

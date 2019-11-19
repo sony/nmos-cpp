@@ -14,14 +14,14 @@ namespace lldp
             return{ "lldp parse error - " + std::move(message) };
         }
 
-        // make a Ethernet type byte array
+        // make an EtherType byte array
         // non-throwing
         std::vector<uint8_t> make_ether_type(uint16_t ether_type)
         {
             return{ (uint8_t)((ether_type >> 8) & 0xFF), (uint8_t)(ether_type & 0xFF) };
         }
-        
-        // make a Ethernet type with the given byte array
+
+        // make an EtherType with the given byte array
         // may throw
         uint16_t parse_ether_type(const std::vector<uint8_t>& data)
         {
@@ -30,31 +30,27 @@ namespace lldp
             {
                 return uint16_t((data[0] << 8) | data[1]);
             }
-            throw lldp_exception("no Ethernet type");
+            throw lldp_exception("invalid EtherType");
         }
 
-        // make a Ethernet header byte array
+        // make an Ethernet frame header byte array
         // may throw
-        std::vector<uint8_t> make_ether_header(const ether_header& header)
+        std::vector<uint8_t> make_ether_header(const std::vector<uint8_t>& dest_mac, const std::vector<uint8_t>& src_mac)
         {
             std::vector<uint8_t> data;
             // Destination MAC
-            const auto dest_mac = make_mac_address(header.dest_mac_address);
-            if (dest_mac.empty()) throw lldp_exception("invalid MAC address");
             data.insert(data.end(), dest_mac.begin(), dest_mac.end());
             // Source MAC
-            const auto src_mac = make_mac_address(header.src_mac_address);
-            if (src_mac.empty()) throw lldp_exception("invalid MAC address");
             data.insert(data.end(), src_mac.begin(), src_mac.end());
             // EtherType
-            const auto ether_type = make_ether_type(header.ether_type);
+            const auto ether_type = make_ether_type(lldp_ether_type);
             data.insert(data.end(), ether_type.begin(), ether_type.end());
             return data;
         }
 
-        // make a Ethernet header with the given byte array
+        // make an Ethernet frame header with the given byte array
         // returns the number of bytes consumed, may throw
-        size_t parse_ether_header(const uint8_t* data, size_t len, ether_header& header)
+        size_t parse_ether_header(const uint8_t* data, size_t len, std::vector<uint8_t>& dest_mac, std::vector<uint8_t>& src_mac)
         {
             auto consumed{ 0 };
 
@@ -62,39 +58,31 @@ namespace lldp
             const size_t ether_type_size(2);
             if (mac_size + mac_size + ether_type_size > len)
             {
-                throw lldp_exception("invalid length of Ethernet header");
+                throw lldp_exception("invalid length of Ethernet frame header");
             }
 
             // Destination MAC
-            header.dest_mac_address = parse_mac_address({ data, data + mac_size });
-            if (header.dest_mac_address.empty())
-            {
-                throw lldp_exception("destination MAC address not found in Ethernet header");
-            }
+            dest_mac = { data, data + mac_size };
             data += mac_size;
             consumed += mac_size;
 
             // Source MAC
-            header.src_mac_address = parse_mac_address({ data, data + mac_size });
-            if (header.src_mac_address.empty())
-            {
-                throw lldp_exception("source MAC address not found in Ethernet header");
-            }
+            src_mac = { data, data + mac_size };
             data += mac_size;
             consumed += mac_size;
 
-            // Ethertype
-            header.ether_type = parse_ether_type({ data, data + ether_type_size });
-            if (header.ether_type != lldp_ether_type)
+            // EtherType
+            const uint16_t ether_type = parse_ether_type({ data, data + ether_type_size });
+            if (lldp_ether_type != ether_type)
             {
-                throw lldp_exception("not LLDP EtherType found in Ethernet header");
+                throw lldp_exception("unexpected EtherType found in Ethernet frame header");
             }
             consumed += ether_type_size;
 
             return consumed;
         }
 
-        // LLDP TLV type definitions 
+        // LLDP TLV type definitions
         typedef uint8_t tlv_type;
         namespace tlv_types
         {
@@ -136,7 +124,7 @@ namespace lldp
         }
 
         // make a TLV with given byte array
-        // returns the number of bytes consumed, may throw        
+        // returns the number of bytes consumed, may throw
         size_t parse_tlv(const uint8_t* data, size_t len, tlv& tlv)
         {
             const auto min_tlv_size(2);
@@ -158,7 +146,7 @@ namespace lldp
             }
             throw lldp_exception("no data value for TLV");
         }
-        
+
         // make a Chassis ID byte array
         // non-throwing
         std::vector<uint8_t> make_classis_id(const chassis_id& chassis_id)
@@ -196,7 +184,7 @@ namespace lldp
                     break;
                 default:
                     // invalid Chassis ID subtype
-                    throw lldp_exception("invalid Chassis ID subtype");                    
+                    throw lldp_exception("invalid Chassis ID subtype");
                 }
                 return chassis_id;
             }
@@ -245,7 +233,7 @@ namespace lldp
                     parse_agent_circuit_id_port_id(port_id);
                     break;
                 default:
-                    throw lldp_exception("invalid Port ID subtype");                    
+                    throw lldp_exception("invalid Port ID subtype");
                 }
                 return port_id;
             }
@@ -490,7 +478,7 @@ namespace lldp
             const auto oid_string_length = value.at(idx++);
             --len;
 
-            // object identifier 
+            // object identifier
             management_address.object_identifier = { value.begin() + idx, value.end() };
             if (oid_string_length != management_address.object_identifier.size())
             {
@@ -527,7 +515,7 @@ namespace lldp
                 data.insert(data.end(), port_description_tlv.begin(), port_description_tlv.end());
             }
 
-            // System Name TLV(s)            
+            // System Name TLV(s)
             if (!lldpdu.system_name.empty())
             {
                 const auto system_name_tlv = make_tlv({ tlv_types::system_name, make_system_name(lldpdu.system_name) });
@@ -568,12 +556,12 @@ namespace lldp
         {
             lldp_data_unit lldpdu;
 
-            // see IEEE Std 802.1AB-2016 8.2 LLDPDU format
-            // The LLDPDU shall contain the following ordered sequence of three mandatory TLVs followed by zero or more optional TLVs
+            // "The LLDPDU shall contain the following ordered sequence of three mandatory TLVs followed by zero or more optional TLVs
             // Three mandatory TLVs shall be included at the beginning of each LLDPDU and shall be in the order shown.
             //    1) Chassis ID TLV
             //    2) Port ID TLV
-            //    3) Time To Live TLV
+            //    3) Time To Live TLV"
+            // See IEEE Std 802.1AB-2016 8.2 LLDPDU format
             std::vector<tlv_type> ordered_mandatory_TLVs{ tlv_types::chassis_id, tlv_types::port_id, tlv_types::time_to_live };
 
             // parse the mandatory TLVs
@@ -618,25 +606,25 @@ namespace lldp
                 case tlv_types::end_of_LLDPDU:
                     return lldpdu;
                 case tlv_types::chassis_id:
-                    // see IEEE Std 802.1AB-2016 8.5.2.4 Chassis ID TLV usage rules
-                    // An LLDPDU shall contain exactly one Chassis ID TLV.
+                    // "An LLDPDU shall contain exactly one Chassis ID TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.2.4 Chassis ID TLV usage rules
                     throw lldp_exception("found more than 1 Chassis ID TLV");
                 case tlv_types::port_id:
-                    // see IEEE Std 802.1AB-2016 8.5.3.4 Port ID TLV usage rules
-                    // An LLDPDU shall contain exactly one Port ID TLV.
+                    // "An LLDPDU shall contain exactly one Port ID TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.3.4 Port ID TLV usage rules
                     throw lldp_exception("found more than 1 Port ID TLV");
                 case tlv_types::time_to_live:
-                    // see IEEE Std 802.1AB-2016 8.5.4.2 Time To Live TLV usage rules
-                    // An LLDPDU shall contain exactly one Time To Live TLV.
+                    // "An LLDPDU shall contain exactly one Time To Live TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.4.2 Time To Live TLV usage rules
                     throw lldp_exception("found more than 1 Time To Live TLV");
                 case tlv_types::port_description:
-                    // see IEEE Std 802.1AB-2016 8.5.5.3 Port Description TLV usage rules
-                    // An LLDPDU should not contain more than one Port Description TLV.
+                    // "An LLDPDU should not contain more than one Port Description TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.5.3 Port Description TLV usage rules
                     lldpdu.port_descriptions.push_back(parse_port_description(tlv.value));
                     break;
                 case tlv_types::system_name:
-                    // see IEEE Std 802.1AB-2016 8.5.6.3 System Name TLV usage rules
-                    // An LLDPDU shall not contain more than one System Name TLV.
+                    // "An LLDPDU shall not contain more than one System Name TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.6.3 System Name TLV usage rules
                     if (system_name_count++)
                     {
                         throw lldp_exception("found more than 1 System Name TLV");
@@ -644,8 +632,8 @@ namespace lldp
                     lldpdu.system_name = parse_system_name(tlv.value);
                     break;
                 case tlv_types::system_description:
-                    // see IEEE Std 802.1AB-2016 8.5.7.3 System Description TLV usage rules
-                    // An LLDPDU shall not contain more than one System Description TLV.
+                    // "An LLDPDU shall not contain more than one System Description TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.7.3 System Description TLV usage rules
                     if (system_description_count++)
                     {
                         throw lldp_exception("found more than 1 System Description TLV");
@@ -653,8 +641,8 @@ namespace lldp
                     lldpdu.system_description = parse_system_description(tlv.value);
                     break;
                 case tlv_types::system_capabilities:
-                    // see IEEE Std 802.1AB-2016 8.5.8.3 System Capabilities TLV usage rules
-                    // An LLDPDU shall not contain more than one System Capabilities TLV.
+                    // "An LLDPDU shall not contain more than one System Capabilities TLV."
+                    // See IEEE Std 802.1AB-2016 8.5.8.3 System Capabilities TLV usage rules
                     if (system_capabilities_count++)
                     {
                         throw lldp_exception("found more than 1 System Capabilities TLV");
@@ -662,8 +650,7 @@ namespace lldp
                     lldpdu.system_capabilities = parse_system_capabilities(tlv.value);
                     break;
                 case tlv_types::management_address:
-                    // see IEEE Std 802.1AB-2016 8.5.9.9 Management Address TLV usage rules
-                    // a) At least one Management Address TLV should be included in every LLDPDU.
+                    // "a) At least one Management Address TLV should be included in every LLDPDU.
                     // b) Since there are typically a number of different addresses associated with a MSAP identifier, an
                     //    individual LLDPDU may contain more than one Management Address TLV.
                     // c) When Management Address TLV(s) are included in an LLDPDU, the included address(es) should
@@ -674,7 +661,8 @@ namespace lldp
                     // f) In a properly formed Management Address TLV, the TLV information string length is equal to :
                     //    (management address string length) + (OID string length) + 7.
                     //    If the TLV information string length in a received Management Address TLV is incorrect, then it is
-                    //    ignored and processing of that LLDPDU is terminated.
+                    //    ignored and processing of that LLDPDU is terminated."
+                    // See IEEE Std 802.1AB-2016 8.5.9.9 Management Address TLV usage rules
                     lldpdu.management_addresses.push_back(parse_management_address(tlv.value));
                     break;
                 default:
@@ -688,16 +676,17 @@ namespace lldp
             return lldpdu;
         }
 
-        // make a LLDP farme byte array
+        // encode an LLDP frame
         // may throw
         std::vector<uint8_t> make_lldp_frame(const lldp_frame& lldp_frame)
         {
             try
             {
+                // hm, less copying here and elsewhere would be better, but at least LLDP frames are sent and received only infrequently...
                 std::vector<uint8_t> data;
 
                 // Ethernet header
-                const auto ether_header = make_ether_header(lldp_frame.header);
+                const auto ether_header = make_ether_header(lldp_frame.destination_mac_address, lldp_frame.source_mac_address);
                 data.insert(data.end(), ether_header.begin(), ether_header.end());
 
                 // LLDPDU (sequence of TLVs)
@@ -721,7 +710,7 @@ namespace lldp
                 lldp_frame frame;
 
                 // Ethernet header
-                auto consumed = parse_ether_header(data, len, frame.header);
+                auto consumed = parse_ether_header(data, len, frame.destination_mac_address, frame.source_mac_address);
 
                 // LLDPDU (sequence of TLVs)
                 frame.lldpdu = parse_lldp_data_uint(data + consumed, len - consumed);
@@ -732,6 +721,6 @@ namespace lldp
             {
                 throw lldp_parse_error(e.what());
             }
-        }        
+        }
     }
 }

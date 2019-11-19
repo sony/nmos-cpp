@@ -27,7 +27,7 @@ namespace lldp
         // mac_address is xx-xx-xx-xx-xx-xx
         const size_t mac_size(6);
         std::istringstream is(mac_address);
-        
+
         is >> std::hex;
         uint32_t d = 0;
 
@@ -143,7 +143,7 @@ namespace lldp
             else if (network_address_family_numbers::dns == network_address_family)
             {
                 address = std::string{ data.begin() + idx, data.end() };
-            }            
+            }
         }
 
         return address;
@@ -169,7 +169,7 @@ namespace lldp
         case chassis_id_subtypes::mac_address:
             return parse_mac_address(chassis_id.data);
         case chassis_id_subtypes::network_address:
-            return parse_network_address(chassis_id.data);        
+            return parse_network_address(chassis_id.data);
         case chassis_id_subtypes::chassis_component:
         case chassis_id_subtypes::port_component:
         case chassis_id_subtypes::interface_alias:
