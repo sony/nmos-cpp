@@ -41,6 +41,7 @@ namespace nmos
         // resource_core
         const web::json::field_as_string label{ U("label") };
         const web::json::field_as_string description{ U("description") };
+        const web::json::field_as_object tags{ U("tags") };
         // node
         const web::json::field_as_value_or caps{ U("caps"), web::json::value::object() }; // required in node, receiver, source, optional in sender (and up to v1.3 only used in receiver)
         const web::json::field_as_array interfaces{ U("interfaces") };
