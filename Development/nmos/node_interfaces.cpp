@@ -25,11 +25,9 @@ namespace nmos
 
     namespace experimental
     {
-        // make a map from local interface_id to the (recommended) node interface details
-        // cf. web::hosts::experimental::host_interfaces()
-        std::map<utility::string_t, node_interface> node_interfaces()
+        // make a map from local interface_id to the (recommended) node interface details for the specified host interfaces
+        std::map<utility::string_t, node_interface> node_interfaces(const std::vector<web::hosts::experimental::host_interface>& host_interfaces)
         {
-            const auto host_interfaces = web::hosts::experimental::host_interfaces();
             return boost::copy_range<std::map<utility::string_t, node_interface>>(host_interfaces | boost::adaptors::transformed([&](const web::hosts::experimental::host_interface& interface)
             {
                 return std::map<utility::string_t, node_interface>::value_type{
@@ -37,6 +35,12 @@ namespace nmos
                     { host_interfaces.front().physical_address, interface.physical_address, interface.name }
                 };
             }));
+        }
+
+        // make a map from local interface_id to the (recommended) node interface details
+        std::map<utility::string_t, node_interface> node_interfaces()
+        {
+            return node_interfaces(web::hosts::experimental::host_interfaces());
         }
     }
 }

@@ -2,10 +2,19 @@
 #define NMOS_NODE_INTERFACES_H
 
 #include <map>
+#include <vector>
 #include "cpprest/details/basic_types.h"
 
 namespace web
 {
+    namespace hosts
+    {
+        namespace experimental
+        {
+            struct host_interface;
+        }
+    }
+
     namespace json
     {
         class value;
@@ -32,8 +41,10 @@ namespace nmos
 
     namespace experimental
     {
+        // make a map from local interface_id to the (recommended) node interface details for the specified host interfaces
+        std::map<utility::string_t, node_interface> node_interfaces(const std::vector<web::hosts::experimental::host_interface>& host_interfaces);
+
         // make a map from local interface_id to the (recommended) node interface details
-        // cf. web::hosts::experimental::host_interfaces()
         std::map<utility::string_t, node_interface> node_interfaces();
     }
 }
