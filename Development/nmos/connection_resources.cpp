@@ -161,7 +161,7 @@ namespace nmos
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 sender
 
-        return{ is05_versions::v1_1, types::sender, data, false };
+        return{ is05_versions::v1_1, types::sender, std::move(data), false };
     }
 
     web::json::value make_connection_rtp_sender_transportfile(const utility::string_t& transportfile)
@@ -220,7 +220,7 @@ namespace nmos
 
         // Note that the transporttype endpoint is implemented in terms of the matching IS-04 receiver
 
-        return{ is05_versions::v1_1, types::receiver, data, false };
+        return{ is05_versions::v1_1, types::receiver, std::move(data), false };
     }
 
     namespace details
@@ -531,7 +531,7 @@ namespace nmos
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
-        return{ is05_versions::v1_1, types::sender, data, false };
+        return{ is05_versions::v1_1, types::sender, std::move(data), false };
     }
 
     nmos::resource make_connection_events_websocket_receiver(const nmos::id& id, const nmos::settings& settings)
@@ -559,7 +559,7 @@ namespace nmos
 
         data[nmos::fields::endpoint_active] = data[nmos::fields::endpoint_staged];
 
-        return{ is05_versions::v1_1, types::receiver, data, false };
+        return{ is05_versions::v1_1, types::receiver, std::move(data), false };
     }
 
     web::uri make_events_ws_api_connection_uri(const nmos::id& device_id, const nmos::settings& settings)

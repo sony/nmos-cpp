@@ -16,7 +16,7 @@ namespace nmos
             { nmos::fields::endpoint_type, type }
         });
 
-        return{ is07_versions::v1_0, types::source, data, true };
+        return{ is07_versions::v1_0, types::source, std::move(data), true };
     }
 
     namespace details

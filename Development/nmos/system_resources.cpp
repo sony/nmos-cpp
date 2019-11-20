@@ -20,7 +20,7 @@ namespace nmos
             { U("domain_number"), nmos::fields::ptp_domain_number(settings) }
         });
 
-        return{ is09_versions::v1_0, types::global, data, true };
+        return{ is09_versions::v1_0, types::global, std::move(data), true };
     }
 
     namespace experimental

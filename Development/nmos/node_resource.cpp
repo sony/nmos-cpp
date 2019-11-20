@@ -56,7 +56,7 @@ namespace nmos
 
         data[U("interfaces")] = !web::json::empty(interfaces) ? interfaces : value::array();
 
-        return{ is04_versions::v1_3, types::node, data, false };
+        return{ is04_versions::v1_3, types::node, std::move(data), false };
     }
 
     nmos::resource make_node(const nmos::id& id, const nmos::settings& settings)

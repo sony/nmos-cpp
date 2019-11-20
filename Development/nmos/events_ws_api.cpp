@@ -93,7 +93,7 @@ namespace nmos
                 });
 
                 // hm, could version be determined from ws_resource_path?
-                nmos::resource subscription_{ is07_versions::v1_0, nmos::types::subscription, data, nmos::fields::persist(data) };
+                nmos::resource subscription_{ is07_versions::v1_0, nmos::types::subscription, std::move(data), nmos::fields::persist(data) };
 
                 subscription = insert_resource(resources, std::move(subscription_)).first;
             }
@@ -123,7 +123,7 @@ namespace nmos
                 // like the subscription, the connection resource is not persistent
                 // it is deleted if a health command is not received soon enough
                 // or when the connection is closed
-                resource grain{ subscription->version, nmos::types::grain, data, false };
+                resource grain{ subscription->version, nmos::types::grain, std::move(data), false };
 
                 insert_resource(resources, std::move(grain));
 

@@ -95,7 +95,7 @@ namespace nmos
             }
         }
 
-        return{ is04_versions::v1_3, types::device, data, false };
+        return{ is04_versions::v1_3, types::device, std::move(data), false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_core.json
@@ -111,7 +111,7 @@ namespace nmos
         data[U("parents")] = value::array();
         data[U("clock_name")] = !clk.name.empty() ? value::string(clk.name) : value::null();
 
-        return{ is04_versions::v1_3, types::source, data, false };
+        return{ is04_versions::v1_3, types::source, std::move(data), false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
@@ -210,7 +210,7 @@ namespace nmos
         data[U("device_id")] = value::string(device_id);
         data[U("parents")] = value::array();
 
-        return{ is04_versions::v1_3, types::flow, data, false };
+        return{ is04_versions::v1_3, types::flow, std::move(data), false };
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
@@ -400,7 +400,7 @@ namespace nmos
         subscription[U("active")] = value::boolean(false);
         data[U("subscription")] = std::move(subscription);
 
-        nmos::resource result{ is04_versions::v1_3, types::sender, data, false };
+        nmos::resource result{ is04_versions::v1_3, types::sender, std::move(data), false };
 
         // only RTP Senders are permitted prior to v1.3, so specify an appropriate minimum API version
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
@@ -437,7 +437,7 @@ namespace nmos
         subscription[U("active")] = value::boolean(false);
         data[U("subscription")] = std::move(subscription);
 
-        nmos::resource result{ is04_versions::v1_3, types::receiver, data, false };
+        nmos::resource result{ is04_versions::v1_3, types::receiver, std::move(data), false };
 
         // only RTP Receivers are permitted prior to v1.3, so specify an appropriate minimum API version
         // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport

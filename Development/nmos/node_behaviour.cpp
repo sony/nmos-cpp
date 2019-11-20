@@ -315,7 +315,7 @@ namespace nmos
             // no ws_href since subscriptions are inaccessible on the Node API anyway
 
             // the subscription version must be updated for the Registration API version (see initial_registration)
-            return{ nmos::is04_versions::v1_3, nmos::types::subscription, data, true };
+            return{ nmos::is04_versions::v1_3, nmos::types::subscription, std::move(data), true };
         }
 
         nmos::resource make_node_behaviour_grain(const nmos::id& id, const nmos::id& subscription_id)
@@ -327,7 +327,7 @@ namespace nmos
             data[nmos::fields::message] = details::make_grain(nmos::make_id(), subscription_id, node_behaviour_topic);
             nmos::fields::message_grain_data(data) = value::array();
 
-            return{ nmos::is04_versions::v1_3, nmos::types::grain, data, true };
+            return{ nmos::is04_versions::v1_3, nmos::types::grain, std::move(data), true };
         }
 
         struct node_behaviour_grain_guard

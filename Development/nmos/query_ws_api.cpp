@@ -78,7 +78,7 @@ namespace nmos
                 // track the grain for the websocket connection as a sub-resource of the subscription
 
                 // never expire the grain resource, they are only deleted when the connection is closed
-                resource grain{ subscription->version, nmos::types::grain, data, true };
+                resource grain{ subscription->version, nmos::types::grain, std::move(data), true };
 
                 insert_resource(resources, std::move(grain));
 
