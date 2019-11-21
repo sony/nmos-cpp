@@ -71,12 +71,12 @@ namespace lldp
         // interfaces may be (re)configured before or after calling open()
         // if status includes transmit, the data is defaulted
         // management of a single interface may be stopped by passing management_status::unmanaged, and if currently transmitting, this will attempt to send an LLDP frame with TTL=0
-        pplx::task<void> configure_interface(const std::string& interface_id, management_status status = transmit_receive);
+        pplx::task<bool> configure_interface(const std::string& interface_id, management_status status = transmit_receive);
 
         // interfaces may be (re)configured before or after calling open()
         // if status includes transmit, the specified data is used
         // management of a single interface may be stopped by passing management_status::unmanaged, and if currently transmitting, this will attempt to send an LLDP frame with TTL=0
-        pplx::task<void> configure_interface(const std::string& interface_id, management_status status, const lldp_data_unit& data);
+        pplx::task<bool> configure_interface(const std::string& interface_id, management_status status, const lldp_data_unit& data);
 
         lldp_manager(lldp_manager&& other);
         lldp_manager& operator=(lldp_manager&& other);

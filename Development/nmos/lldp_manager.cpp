@@ -34,7 +34,11 @@ namespace nmos
                     { utility::us2s(interface.second.name) },
                     utility::us2s(nmos::get_host_name(model.settings))
                 );
-                manager.configure_interface(utility::us2s(interface.first), status, data);
+
+                auto configure = manager.configure_interface(utility::us2s(interface.first), status, data);
+                // current configure_interface implementation is synchronous, but just to make clear...
+                // for now, wait for it to complete
+                configure.wait();
             }
 
             return manager;

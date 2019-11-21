@@ -100,7 +100,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
 #ifdef HAVE_LLDP
     // LLDP manager for advertising server identity, capabilities, and discovering neighbours on a local area network
+    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting to configure LLDP";
     auto lldp_manager = nmos::experimental::make_lldp_manager(model, interfaces, true, gate);
+    // hm, open may potentially throw?
     lldp::lldp_manager_guard lldp_manager_guard(lldp_manager);
 #endif
 

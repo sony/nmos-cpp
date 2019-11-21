@@ -329,7 +329,7 @@ namespace lldp
                 return pplx::task_from_result();
             }
 
-            pplx::task<void> configure_interface(const std::string& interface_id, management_status status)
+            pplx::task<bool> configure_interface(const std::string& interface_id, management_status status)
             {
                 try
                 {
@@ -351,11 +351,12 @@ namespace lldp
                 }
                 catch (const lldp_exception& e)
                 {
-                    return pplx::task_from_exception<void>(e);
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "LLDP error: " << e.what();
+                    return pplx::task_from_result(false);
                 }
             }
 
-            pplx::task<void> configure_interface(const std::string& interface_id, management_status status, const lldp_data_unit& data)
+            pplx::task<bool> configure_interface(const std::string& interface_id, management_status status, const lldp_data_unit& data)
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -391,11 +392,12 @@ namespace lldp
                         agent->second->activate_configuration();
                     }
 
-                    return pplx::task_from_result();
+                    return pplx::task_from_result(true);
                 }
                 catch (const lldp_exception& e)
                 {
-                    return pplx::task_from_exception<void>(e);
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "LLDP error: " << e.what();
+                    return pplx::task_from_result(false);
                 }
             }
 
@@ -467,12 +469,12 @@ namespace lldp
         return impl->close();
     }
 
-    pplx::task<void> lldp_manager::configure_interface(const std::string& interface_id, management_status status)
+    pplx::task<bool> lldp_manager::configure_interface(const std::string& interface_id, management_status status)
     {
         return impl->configure_interface(interface_id, status);
     }
 
-    pplx::task<void> lldp_manager::configure_interface(const std::string& interface_id, management_status status, const lldp_data_unit& data)
+    pplx::task<bool> lldp_manager::configure_interface(const std::string& interface_id, management_status status, const lldp_data_unit& data)
     {
         return impl->configure_interface(interface_id, status, data);
     }
