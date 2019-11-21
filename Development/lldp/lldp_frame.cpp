@@ -149,7 +149,7 @@ namespace lldp
 
         // make a Chassis ID byte array
         // non-throwing
-        std::vector<uint8_t> make_classis_id(const chassis_id& chassis_id)
+        std::vector<uint8_t> make_chassis_id(const chassis_id& chassis_id)
         {
             std::vector<uint8_t> data;
             data.push_back(chassis_id.subtype);
@@ -493,8 +493,8 @@ namespace lldp
             std::vector<uint8_t> data;
 
             // Chassis ID TLV
-            const auto classis_id_tlv = make_tlv({ tlv_types::chassis_id, make_classis_id(lldpdu.chassis_id) });
-            data.insert(data.end(), classis_id_tlv.begin(), classis_id_tlv.end());
+            const auto chassis_id_tlv = make_tlv({ tlv_types::chassis_id, make_chassis_id(lldpdu.chassis_id) });
+            data.insert(data.end(), chassis_id_tlv.begin(), chassis_id_tlv.end());
 
             // Port ID TLV
             const auto port_id_tlv = make_tlv({ tlv_types::port_id, make_port_id(lldpdu.port_id) });
