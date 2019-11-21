@@ -185,7 +185,6 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
-        // add network interface bindings for primary and secondary (both to the same interface)
         auto sender = nmos::make_sender(sender_id, flow_id, device_id, { primary_interface.name, secondary_interface.name }, model.settings);
         set_node_implementation_label(sender, suffix);
         insert_node_implementation_group_hint(sender, suffix);
@@ -215,7 +214,6 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         const auto& suffix = suffixes[i];
         const auto& receiver_id = receiver_ids[i];
 
-        // add example network interface binding for both primary and secondary
         auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
         set_node_implementation_label(receiver, suffix);
         insert_node_implementation_group_hint(receiver, suffix);
