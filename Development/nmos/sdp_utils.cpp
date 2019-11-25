@@ -58,16 +58,16 @@ namespace nmos
                 const auto& Cr = dimensions.at(U("Cr"));
                 if (Cb.width != Cr.width || Cb.height != Cr.height) throw sdp_creation_error("unsupported YCbCr dimensions");
                 const auto& C = Cb;
-                if (Y.width == C.width)
+                if (Y.height == C.height)
                 {
-                    if (Y.height == C.height) return sdp::samplings::YCbCr_4_4_4;
-                    else if (Y.height / 2 == C.height) return sdp::samplings::YCbCr_4_2_2;
-                    else if (Y.height / 4 == C.height) return sdp::samplings::YCbCr_4_1_1;
+                    if (Y.width == C.width) return sdp::samplings::YCbCr_4_4_4;
+                    else if (Y.width / 2 == C.width) return sdp::samplings::YCbCr_4_2_2;
+                    else if (Y.width / 4 == C.width) return sdp::samplings::YCbCr_4_1_1;
                     else throw sdp_creation_error("unsupported YCbCr dimensions");
                 }
-                else if (Y.width / 2 == C.width)
+                else if (Y.height / 2 == C.height)
                 {
-                    if (Y.height / 2 == C.height) return sdp::samplings::YCbCr_4_2_0;
+                    if (Y.width / 2 == C.width) return sdp::samplings::YCbCr_4_2_0;
                     else throw sdp_creation_error("unsupported YCbCr dimensions");
                 }
                 else throw sdp_creation_error("unsupported YCbCr dimensions");
