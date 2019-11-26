@@ -105,18 +105,22 @@ namespace nmos
             uint32_t height;
             nmos::rational exactframerate;
             bool interlace;
+            bool segmented;
+            bool top_field_first;
             sdp::sampling sampling;
             uint32_t depth;
             sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is a subset
             sdp::colorimetry colorimetry; // nmos::colorspace is a subset
             sdp::type_parameter tp;
 
-            video_t() : width(), height(), depth() {}
-            video_t(uint32_t width, uint32_t height, const nmos::rational& exactframerate, bool interlace, const sdp::sampling& sampling, uint32_t depth, const sdp::transfer_characteristic_system& tcs, const sdp::colorimetry& colorimetry, const sdp::type_parameter& tp)
+            video_t() : width(), height(), interlace(), segmented(), top_field_first(), depth() {}
+            video_t(uint32_t width, uint32_t height, const nmos::rational& exactframerate, bool interlace, bool segmented, bool top_field_first, const sdp::sampling& sampling, uint32_t depth, const sdp::transfer_characteristic_system& tcs, const sdp::colorimetry& colorimetry, const sdp::type_parameter& tp)
                 : width(width)
                 , height(height)
                 , exactframerate(exactframerate)
                 , interlace(interlace)
+                , segmented(segmented)
+                , top_field_first(top_field_first)
                 , sampling(sampling)
                 , depth(depth)
                 , tcs(tcs)

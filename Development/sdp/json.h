@@ -398,18 +398,22 @@ namespace sdp
     namespace fields
     {
         // See https://tools.ietf.org/html/rfc4175
-        // and SMPTE ST 2110-21:2017
+        // and SMPTE ST 2110-20:2017 Section 7 Session Description Protocol (SDP) Considerations
         // and VSF TR-05:2018
         const web::json::field<uint32_t> width{ U("width") };
         const web::json::field<uint32_t> height{ U("height") };
         const web::json::field_as_string exactframerate{ U("exactframerate") };
         const web::json::field_as_bool_or interlace{ U("interlace"), false };
+        const web::json::field_as_bool_or segmented{ U("segmented"), false };
+        const web::json::field_as_bool_or top_field_first{ U("top-field-first"), false };
         const web::json::field_as_string sampling{ U("sampling") };
         const web::json::field<uint32_t> depth{ U("depth") };
-        const web::json::field_as_string transfer_characteristic_system{ U("TCS") };
+        const web::json::field_as_string transfer_characteristic_system{ U("TCS") }; // "if unspecified, receivers shall assume the value SDR"
         const web::json::field_as_string colorimetry{ U("colorimetry") };
         const web::json::field_as_string packing_mode{ U("PM") };
         const web::json::field_as_string smpte_standard_number{ U("SSN") };
+
+        // See SMPTE ST 2110-21:2017 Section 8 Session Description Considerations
         const web::json::field_as_string type_parameter{ U("TP") };
 
         // See SMPTE ST 2110-30:2017
