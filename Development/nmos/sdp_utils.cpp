@@ -5,6 +5,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
+#include "nmos/channels.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
 #include "nmos/json_fields.h"
@@ -119,9 +120,11 @@ namespace nmos
 
         // format_specific_parameters
 
-        // hmm, params.channel_order should be created from source json "channels"
-        // this requires careful mapping from the VSF TR-03 Appendix A channel symbols
-        // to the SMPTE ST 2110-30 Table 1 grouping symbols
+        const auto channel_symbols = boost::copy_range<std::vector<nmos::channel_symbol>>(nmos::fields::channels(source) | boost::adaptors::transformed([](const web::json::value& channel)
+        {
+            return channel_symbol{ nmos::fields::symbol(channel) };
+        }));
+        params.channel_order = nmos::make_fmtp_channel_order(channel_symbols);
 
         // ptime
         params.packet_time = 1;

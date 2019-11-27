@@ -609,6 +609,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/admin_ui.cpp
     ${NMOS_CPP_DIR}/nmos/api_downgrade.cpp
     ${NMOS_CPP_DIR}/nmos/api_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/channels.cpp
     ${NMOS_CPP_DIR}/nmos/client_utils.cpp
     ${NMOS_CPP_DIR}/nmos/components.cpp
     ${NMOS_CPP_DIR}/nmos/connection_activation.cpp

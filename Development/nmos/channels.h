@@ -1,9 +1,16 @@
 #ifndef NMOS_CHANNELS_H
 #define NMOS_CHANNELS_H
 
-#include "cpprest/json_ops.h"
-#include "cpprest/basic_utils.h"
+#include <vector>
 #include "nmos/string_enum.h"
+
+namespace web
+{
+    namespace json
+    {
+        class value;
+    }
+}
 
 namespace nmos
 {
@@ -58,17 +65,11 @@ namespace nmos
         // Surround
         const channel_symbol S{ U("S") };
 
-        // Numbered Source Channel
-        inline const channel_symbol NSC(unsigned int channel_number)
-        {
-            return channel_symbol{ U("NSC") + utility::ostringstreamed(channel_number) };
-        }
+        // Numbered Source Channel (001..127)
+        const channel_symbol NSC(unsigned int channel_number);
 
-        // Undefined
-        inline const channel_symbol Undefined(unsigned int channel_number)
-        {
-            return channel_symbol{ U("U") + utility::ostringstreamed(channel_number) };
-        }
+        // Undefined channel (01..64)
+        const channel_symbol Undefined(unsigned int channel_number);
 
 #include "cpprest/details/push_undef_u.h"
         inline const channel_symbol U(unsigned int channel_number)
@@ -84,13 +85,31 @@ namespace nmos
         nmos::channel_symbol symbol;
     };
 
-    inline web::json::value make_channel(const channel& channel)
+    web::json::value make_channel(const channel& channel);
+    channel parse_channel(const web::json::value& channel);
+
+    // Audio channel order convention groupings
+    // See SMPTE ST 2110-30:2017 Table 1 - Channel Order Convention Grouping Symbols
+    namespace channel_symbols
     {
-        return web::json::value_of({
-            { U("label"), web::json::value(channel.label) },
-            { U("symbol"), web::json::value(channel.symbol.name) }
-        });
+        // Mono
+        const std::vector<channel_symbol> M{ M1 };
+        // Dual Mono
+        const std::vector<channel_symbol> DM{ M1, M2 };
+        // Standard Stereo
+        const std::vector<channel_symbol> ST{ L, R };
+        // Matrix Stereo
+        const std::vector<channel_symbol> LtRt{ Lt, Rt };
+        // 5.1 Surround
+        const std::vector<channel_symbol> S51{ L, R, C, LFE, Ls, Rs };
+        // 7.1 Surround
+        const std::vector<channel_symbol> S71{ L, R, C, LFE, Lss, Rss, Lrs, Rrs };
+        // 22.2 Surround ('222') cannot be indicated using the channel symbols defined in NMOS
+        // SDI audio group ('SGRP') cannot be indicated using the channel symbols defined in NMOS
     }
+
+    // See SMPTE ST 2110-30:2017 Section 6.2.2 Channel Order Convention
+    utility::string_t make_fmtp_channel_order(const std::vector<channel_symbol>& channels);
 }
 
 #endif
