@@ -52,7 +52,7 @@ namespace lldp
         // returns the number of bytes consumed, may throw
         size_t parse_ether_header(const uint8_t* data, size_t len, std::vector<uint8_t>& dest_mac, std::vector<uint8_t>& src_mac)
         {
-            auto consumed{ 0 };
+            size_t consumed{ 0 };
 
             const size_t mac_size(6);
             const size_t ether_type_size(2);
@@ -374,7 +374,7 @@ namespace lldp
             management_address management_address;
 
             auto len = value.size();
-            auto idx{ 0 };
+            int idx{ 0 };
 
             // management address string length
             if (len < 1)
@@ -589,9 +589,9 @@ namespace lldp
             }
 
             // Optional TLVs may be inserted in any order
-            auto system_name_count{ 0 };
-            auto system_description_count{ 0 };
-            auto system_capabilities_count{ 0 };
+            int system_name_count{ 0 };
+            int system_description_count{ 0 };
+            int system_capabilities_count{ 0 };
 
             // parse the optional TLVs
             while (len > 0)
