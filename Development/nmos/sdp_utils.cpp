@@ -1,10 +1,12 @@
 #include "nmos/sdp_utils.h"
 
 #include <map>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
+#include "nmos/clock_ref_type.h"
 #include "nmos/channels.h"
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
@@ -29,6 +31,45 @@ namespace nmos
             const auto ip_address = boost::asio::ip::address::from_string(utility::us2s(address));
 #endif
             return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
+        }
+
+        sdp_parameters::ts_refclk_t make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender)
+        {
+            const auto& clock_name = nmos::fields::clock_name(source);
+            if (clock_name.is_null()) throw sdp_creation_error("no source clock");
+
+            const auto& clocks = nmos::fields::clocks(node);
+            const auto clock = std::find_if(clocks.begin(), clocks.end(), [&](const web::json::value& clock)
+            {
+                return nmos::fields::name(clock) == clock_name.as_string();
+            });
+            if (clocks.end() == clock) throw sdp_creation_error("source clock not found");
+
+            const nmos::clock_ref_type ref_type{ nmos::fields::ref_type(*clock) };
+            if (nmos::clock_ref_types::ptp == ref_type)
+            {
+                const sdp::ptp_version version{ nmos::fields::ptp_version(*clock) };
+
+                // since 'gmid' is required, always indicate it rather than 'traceable'
+                return sdp_parameters::ts_refclk_t::ptp(version, boost::algorithm::to_upper_copy(nmos::fields::gmid(*clock)));
+            }
+            else if (nmos::clock_ref_types::internal == ref_type)
+            {
+                const auto& interface_bindings = nmos::fields::interface_bindings(sender);
+                if (0 == interface_bindings.size()) throw sdp_creation_error("no sender interface_bindings");
+                // use the primary interface
+                const auto& interface_name = *interface_bindings.begin();
+
+                const auto& interfaces = nmos::fields::interfaces(node);
+                const auto interface = std::find_if(interfaces.begin(), interfaces.end(), [&](const web::json::value& interface)
+                {
+                    return nmos::fields::name(interface) == interface_name.as_string();
+                });
+                if (interfaces.end() == interface) throw sdp_creation_error("sender interface not found");
+
+                return sdp_parameters::ts_refclk_t::local_mac(boost::algorithm::to_upper_copy(nmos::fields::port_id(*interface)));
+            }
+            else throw sdp_creation_error("unexpected clock ref_type");
         }
 
         sdp::sampling make_sampling(const web::json::array& components)
@@ -77,7 +118,7 @@ namespace nmos
         }
     }
 
-    static sdp_parameters make_video_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    static sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::video_t params;
         params.tp = sdp::type_parameters::type_N;
@@ -104,10 +145,10 @@ namespace nmos
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
         params.exactframerate = nmos::rational(nmos::fields::numerator(grain_rate), nmos::fields::denominator(grain_rate));
 
-        return{ sender.at(nmos::fields::label).as_string(), params, 96, media_stream_ids };
+        return{ sender.at(nmos::fields::label).as_string(), params, 96, media_stream_ids, details::make_ts_refclk(node, source, sender) };
     }
 
-    static sdp_parameters make_audio_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    static sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::audio_t params;
 
@@ -129,10 +170,10 @@ namespace nmos
         // ptime
         params.packet_time = 1;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, 97, media_stream_ids };
+        return{ sender.at(nmos::fields::label).as_string(), params, 97, media_stream_ids, details::make_ts_refclk(node, source, sender) };
     }
 
-    static sdp_parameters make_data_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    static sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::data_t params;
 
@@ -146,18 +187,18 @@ namespace nmos
 
         // hm, no vpid_code in the flow
 
-        return{ sender.at(nmos::fields::label).as_string(), params, 100, media_stream_ids };
+        return{ sender.at(nmos::fields::label).as_string(), params, 100, media_stream_ids, details::make_ts_refclk(node, source, sender) };
     }
 
-    sdp_parameters make_sdp_parameters(const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         const auto& format = nmos::fields::format(flow);
         if (nmos::formats::video.name == format)
-            return make_video_sdp_parameters(source, flow, sender, media_stream_ids);
+            return make_video_sdp_parameters(node, source, flow, sender, media_stream_ids);
         else if (nmos::formats::audio.name == format)
-            return make_audio_sdp_parameters(source, flow, sender, media_stream_ids);
+            return make_audio_sdp_parameters(node, source, flow, sender, media_stream_ids);
         else if (nmos::formats::data.name == format)
-            return make_data_sdp_parameters(source, flow, sender, media_stream_ids);
+            return make_data_sdp_parameters(node, source, flow, sender, media_stream_ids);
         else
             throw details::sdp_creation_error("unsuported media format");
     }

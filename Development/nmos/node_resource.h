@@ -27,7 +27,7 @@ namespace nmos
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
     web::json::value make_internal_clock(const nmos::clock_name& clock_name);
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_ptp.json
     web::json::value make_ptp_clock(const nmos::clock_name& clock_name, bool traceable, const utility::string_t& gmid, bool locked);
 }
 

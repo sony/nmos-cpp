@@ -45,12 +45,14 @@ namespace nmos
         // node
         const web::json::field_as_value_or caps{ U("caps"), web::json::value::object() }; // required in node, receiver, source, optional in sender (and up to v1.3 only used in receiver)
         const web::json::field_as_array interfaces{ U("interfaces") };
-        const web::json::field_as_string name{ U("name") };
+        const web::json::field_as_string name{ U("name") }; // used in both interfaces and clocks
         const web::json::field_as_string chassis_id{ U("chassis_id") };
         const web::json::field_as_string port_id{ U("port_id") };
         const web::json::field_as_value_or attached_network_device{ U("attached_network_device"), {} }; // object
         const web::json::field_as_array clocks{ U("clocks") };
         const web::json::field_as_string ref_type{ U("ref_type") };
+        const web::json::field_as_string ptp_version{ U("version") };
+        const web::json::field_as_string gmid{ U("gmid") };
         // device
         const web::json::field_as_string node_id{ U("node_id") };
         const web::json::field_as_array senders{ U("senders") }; // deprecated
@@ -58,6 +60,7 @@ namespace nmos
         // source_core
         const web::json::field_as_string device_id{ U("device_id") }; // also used in also used in sender, receiver, and flow from v1.1
         const web::json::field_as_array parents{ U("parents") }; // also used in flow
+        const web::json::field_as_value clock_name{ U("clock_name") }; // string or null
         const web::json::field_as_string format{ U("format") }; // also used in flow
         // source_audio
         const web::json::field_as_array channels{ U("channels") };

@@ -76,7 +76,7 @@ namespace nmos
         });
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_ptp.json
     web::json::value make_ptp_clock(const nmos::clock_name& clk, bool traceable, const utility::string_t& gmid, bool locked)
     {
         using web::json::value_of;
@@ -84,9 +84,9 @@ namespace nmos
         return value_of({
             { nmos::fields::name, clk.name },
             { nmos::fields::ref_type, nmos::clock_ref_types::ptp.name },
-            { U("version"), U("IEEE1588-2008") }, // cf. sdp::ptp_versions::IEEE1588_2008
+            { nmos::fields::ptp_version, U("IEEE1588-2008") }, // cf. sdp::ptp_versions::IEEE1588_2008
             { U("traceable"), traceable },
-            { U("gmid"), gmid },
+            { nmos::fields::gmid, gmid },
             { U("locked"), locked }
         });
     }

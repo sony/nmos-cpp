@@ -405,6 +405,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     using web::json::value;
 
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
+    const auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
     const auto how_many = node_implementation_field_how_many(settings);
     const auto suffixes = boost::irange(0u, how_many * 2, 2);
     const auto source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), suffixes);
@@ -412,7 +413,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
 
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    return [&node_resources, source_ids, flow_ids, sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    return [&node_resources, node_id, source_ids, flow_ids, sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
     {
         const uint32_t i = boost::range::find(sender_ids, connection_sender.id) - sender_ids.begin();
         if (sender_ids.size() != i)
@@ -421,14 +422,15 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
             const auto& flow_id = flow_ids[i];
 
             // note, model mutex is already locked by the calling thread, so access to node_resources is OK...
+            auto node = nmos::find_resource(node_resources, { node_id, nmos::types::node });
             auto source = nmos::find_resource(node_resources, { source_id, nmos::types::source });
             auto flow = nmos::find_resource(node_resources, { flow_id, nmos::types::flow });
-            if (node_resources.end() == source || node_resources.end() == flow)
+            if (node_resources.end() == node || node_resources.end() == source || node_resources.end() == flow)
             {
-                throw std::logic_error("matching IS-04 source or flow not found");
+                throw std::logic_error("matching IS-04 node, source or flow not found");
             }
 
-            auto sdp_params = nmos::make_sdp_parameters(source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+            auto sdp_params = nmos::make_sdp_parameters(node->data, source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
             auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
             auto session_description = nmos::make_session_description(sdp_params, transport_params);
             auto sdp = utility::s2us(sdp::make_session_description(session_description));
