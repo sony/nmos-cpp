@@ -82,18 +82,19 @@ namespace nmos
                     .set_path(ws_resource_path)
                     .to_uri();
 
+                const bool non_persistent = false;
                 value data = value_of({
                     { nmos::fields::id, nmos::make_id() },
                     { nmos::fields::max_update_rate_ms, 0 },
                     { nmos::fields::resource_path, U('/') + nmos::resourceType_from_type(nmos::types::source) },
                     { nmos::fields::params, value_of({ { U("query.rql"), U("in(id,())") } }) },
-                    { nmos::fields::persist, value::boolean(false) },
-                    { nmos::fields::secure, value::boolean(secure) },
+                    { nmos::fields::persist, non_persistent },
+                    { nmos::fields::secure, secure },
                     { nmos::fields::ws_href, ws_href.to_string() }
                 });
 
                 // hm, could version be determined from ws_resource_path?
-                nmos::resource subscription_{ is07_versions::v1_0, nmos::types::subscription, std::move(data), nmos::fields::persist(data) };
+                nmos::resource subscription_{ is07_versions::v1_0, nmos::types::subscription, std::move(data), non_persistent };
 
                 subscription = insert_resource(resources, std::move(subscription_)).first;
             }
