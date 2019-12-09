@@ -33,7 +33,7 @@ namespace nmos
             return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
         }
 
-        sdp_parameters::ts_refclk_t make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender)
+        std::vector<sdp_parameters::ts_refclk_t> make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender)
         {
             const auto& clock_name = nmos::fields::clock_name(source);
             if (clock_name.is_null()) throw sdp_creation_error("no source clock");
@@ -45,29 +45,30 @@ namespace nmos
             });
             if (clocks.end() == clock) throw sdp_creation_error("source clock not found");
 
+            const auto& interface_bindings = nmos::fields::interface_bindings(sender);
+            if (0 == interface_bindings.size()) throw sdp_creation_error("no sender interface_bindings");
+
             const nmos::clock_ref_type ref_type{ nmos::fields::ref_type(*clock) };
             if (nmos::clock_ref_types::ptp == ref_type)
             {
                 const sdp::ptp_version version{ nmos::fields::ptp_version(*clock) };
 
                 // since 'gmid' is required, always indicate it rather than 'traceable'
-                return sdp_parameters::ts_refclk_t::ptp(version, boost::algorithm::to_upper_copy(nmos::fields::gmid(*clock)));
+                return{ interface_bindings.size(), sdp_parameters::ts_refclk_t::ptp(version, boost::algorithm::to_upper_copy(nmos::fields::gmid(*clock))) };
             }
             else if (nmos::clock_ref_types::internal == ref_type)
             {
-                const auto& interface_bindings = nmos::fields::interface_bindings(sender);
-                if (0 == interface_bindings.size()) throw sdp_creation_error("no sender interface_bindings");
-                // use the primary interface
-                const auto& interface_name = *interface_bindings.begin();
-
                 const auto& interfaces = nmos::fields::interfaces(node);
-                const auto interface = std::find_if(interfaces.begin(), interfaces.end(), [&](const web::json::value& interface)
+                return boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(interface_bindings | boost::adaptors::transformed([&](const web::json::value& interface_binding)
                 {
-                    return nmos::fields::name(interface) == interface_name.as_string();
-                });
-                if (interfaces.end() == interface) throw sdp_creation_error("sender interface not found");
-
-                return sdp_parameters::ts_refclk_t::local_mac(boost::algorithm::to_upper_copy(nmos::fields::port_id(*interface)));
+                    const auto& interface_name = interface_binding.as_string();
+                    const auto interface = std::find_if(interfaces.begin(), interfaces.end(), [&](const web::json::value& interface)
+                    {
+                        return nmos::fields::name(interface) == interface_name;
+                    });
+                    if (interfaces.end() == interface) throw sdp_creation_error("sender interface not found");
+                    return sdp_parameters::ts_refclk_t::local_mac(boost::algorithm::to_upper_copy(nmos::fields::port_id(*interface)));
+                }));
             }
             else throw sdp_creation_error("unexpected clock ref_type");
         }
@@ -214,6 +215,8 @@ namespace nmos
         {
             throw details::sdp_creation_error("not enough sdp parameters media stream ids for transport_params");
         }
+        // for backward compatibility, use default ts-refclk when not (enough) specified
+        const auto ts_refclk_default = sdp_parameters::ts_refclk_t::ptp_traceable();
 
         // so far so good, now build the session_description
 
@@ -264,9 +267,13 @@ namespace nmos
         // Media Descriptions
         // See https://tools.ietf.org/html/rfc4566#section-5
         auto media_descriptions = value::array();
-        int idx = 0;
+        size_t leg = 0;
         for (const auto& transport_param : transport_params.as_array())
         {
+            const auto& ts_refclk = sdp_params.ts_refclk.size() > leg
+                ? sdp_params.ts_refclk[leg]
+                : ts_refclk_default;
+
             // build media_description
             auto media_description = value_of({
                 // Media
@@ -300,13 +307,17 @@ namespace nmos
                     // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
                     value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },
-                        { sdp::fields::value, sdp::ts_refclk_sources::ptp == sdp_params.ts_refclk.clock_source ? value_of({
+                        { sdp::fields::value, sdp::ts_refclk_sources::ptp == ts_refclk.clock_source ? ts_refclk.ptp_server.empty() ? value_of({
                             { sdp::fields::clock_source, sdp::ts_refclk_sources::ptp.name },
-                            { sdp::fields::ptp_version, sdp_params.ts_refclk.ptp_version.name },
-                            { sdp::fields::ptp_server, !sdp_params.ts_refclk.ptp_server.empty() ? sdp_params.ts_refclk.ptp_server : U("traceable") }
-                        }, keep_order) : sdp::ts_refclk_sources::local_mac == sdp_params.ts_refclk.clock_source ? value_of({
+                            { sdp::fields::ptp_version, ts_refclk.ptp_version.name },
+                            { sdp::fields::traceable, true }
+                        }, keep_order) : value_of({
+                            { sdp::fields::clock_source, sdp::ts_refclk_sources::ptp.name },
+                            { sdp::fields::ptp_version, ts_refclk.ptp_version.name },
+                            { sdp::fields::ptp_server, ts_refclk.ptp_server }
+                        }, keep_order) : sdp::ts_refclk_sources::local_mac == ts_refclk.clock_source ? value_of({
                             { sdp::fields::clock_source, sdp::ts_refclk_sources::local_mac.name },
-                            { sdp::fields::mac_address, sdp_params.ts_refclk.mac_address }
+                            { sdp::fields::mac_address, ts_refclk.mac_address }
                         }, keep_order) : value::null() }
                     }, keep_order),
 
@@ -373,7 +384,7 @@ namespace nmos
             // See https://tools.ietf.org/html/rfc5888
             if (transport_params.size() > 1)
             {
-                const auto& mid = sdp_params.group.media_stream_ids[idx++];
+                const auto& mid = sdp_params.group.media_stream_ids[leg];
 
                 // build up mids based on group::media_stream_ids
                 web::json::push_back(mids, mid);
@@ -388,6 +399,8 @@ namespace nmos
             }
 
             web::json::push_back(media_descriptions, media_description);
+
+            ++leg;
         }
 
         // add group attribute if there are more than 1 leg
@@ -811,6 +824,12 @@ namespace nmos
             }
         }
 
+        // hmm, this code does not handle Synchronization Source (SSRC) level grouping or attributes
+        // i.e. the 'ssrc-group' attribute or 'ssrc' used to convey e.g. 'fmtp', 'mediaclk' or 'ts-refclk'
+        // see https://tools.ietf.org/html/rfc7104#section-3.2
+        // and https://tools.ietf.org/html/rfc5576
+        // and https://www.iana.org/assignments/sdp-parameters/sdp-parameters.xhtml#sdp-att-field
+
         // Group
         // a=group:<semantics>[ <identification-tag>]*
         // See https://tools.ietf.org/html/rfc5888
@@ -833,12 +852,41 @@ namespace nmos
         // Media Descriptions
         // See https://tools.ietf.org/html/rfc4566#section-5
         const auto& media_descriptions = sdp::fields::media_descriptions(sdp);
+
+        // ts-refclk attributes
+        // See https://tools.ietf.org/html/rfc7273
+        sdp_params.ts_refclk = boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(media_descriptions.as_array() | boost::adaptors::filtered([](const value& media_description)
+        {
+            auto& attributes = sdp::fields::attributes(media_description).as_array();
+            auto ts_refclk = sdp::find_name(attributes, sdp::attributes::ts_refclk);
+            return attributes.end() != ts_refclk;
+        }) | boost::adaptors::transformed([](const value& media_description)
+        {
+            auto& attributes = sdp::fields::attributes(media_description).as_array();
+            auto ts_refclk = sdp::find_name(attributes, sdp::attributes::ts_refclk);
+
+            const auto& value = sdp::fields::value(*ts_refclk);
+            sdp::ts_refclk_source clock_source{ sdp::fields::clock_source(value) };
+            if (sdp::ts_refclk_sources::ptp == clock_source)
+            {
+                // no ptp-server implies traceable
+                return sdp_parameters::ts_refclk_t::ptp(sdp::ptp_version{ sdp::fields::ptp_version(value) }, sdp::fields::ptp_server(value));
+            }
+            else if (sdp::ts_refclk_sources::local_mac == clock_source)
+            {
+                return sdp_parameters::ts_refclk_t::local_mac(sdp::fields::mac_address(value));
+            }
+            else throw details::sdp_processing_error("unsupported timestamp reference clock source");
+        }));
+
+        // hmm, for simplicity, the remainder of this code assumes that format-related information must be the same
+        // in every media description, so reads it only from the first one!
         if (0 == media_descriptions.size()) throw details::sdp_processing_error("missing media descriptions");
         const auto& media_description = media_descriptions.at(0);
 
         // Connection Data
         // get default multicast_ip via Connection Data
-        // see https://tools.ietf.org/html/rfc4566#section-5.7
+        // See https://tools.ietf.org/html/rfc4566#section-5.7
         {
             const auto& media_connection_data = sdp::fields::connection_data(media_description);
             if (!media_connection_data.is_null() && 0 != media_connection_data.size())
@@ -858,26 +906,6 @@ namespace nmos
 
         // media description attributes
         auto& attributes = sdp::fields::attributes(media_description).as_array();
-
-        // ts-refclk attribute
-        // See https://tools.ietf.org/html/rfc7273
-        auto ts_refclk = sdp::find_name(attributes, sdp::attributes::ts_refclk);
-        if (attributes.end() != ts_refclk)
-        {
-            const auto& value = sdp::fields::value(*ts_refclk);
-
-            sdp_params.ts_refclk.clock_source = sdp::ts_refclk_source{ sdp::fields::clock_source(value) };
-            if (sdp::ts_refclk_sources::ptp == sdp_params.ts_refclk.clock_source)
-            {
-                sdp_params.ts_refclk.ptp_version = sdp::ptp_version{ sdp::fields::ptp_version(value) };
-                sdp_params.ts_refclk.ptp_server = sdp::fields::ptp_server(value);
-            }
-            else if (sdp::ts_refclk_sources::local_mac == sdp_params.ts_refclk.clock_source)
-            {
-                sdp_params.ts_refclk.mac_address = sdp::fields::mac_address(value);
-            }
-            else throw details::sdp_processing_error("unsupported timestamp reference clock source");
-        }
 
         // mediaclk attribute
         // See https://tools.ietf.org/html/rfc7273

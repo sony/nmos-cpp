@@ -181,9 +181,20 @@ namespace nmos
             // for sdp::ts_refclk_sources::local_mac
             utility::string_t mac_address;
 
+            // ptp-server = ptp-gmid [":" ptp-domain]
             static ts_refclk_t ptp(const sdp::ptp_version& ptp_version, const utility::string_t& ptp_server)
             {
                 return{ sdp::ts_refclk_sources::ptp, ptp_version, ptp_server, {} };
+            }
+            // ptp-server = ptp-gmid [":" ptp-domain]
+            static ts_refclk_t ptp(const utility::string_t& ptp_server)
+            {
+                return{ sdp::ts_refclk_sources::ptp, sdp::ptp_versions::IEEE1588_2008, ptp_server, {} };
+            }
+            // ptp-server = "traceable"
+            static ts_refclk_t ptp_traceable(const sdp::ptp_version& ptp_version = sdp::ptp_versions::IEEE1588_2008)
+            {
+                return{ sdp::ts_refclk_sources::ptp, ptp_version, {}, {} };
             }
             static ts_refclk_t local_mac(const utility::string_t& mac_address)
             {
@@ -196,7 +207,8 @@ namespace nmos
                 , ptp_server(ptp_server)
                 , mac_address(mac_address)
             {}
-        } ts_refclk;
+        };
+        std::vector<sdp_parameters::ts_refclk_t> ts_refclk;
 
         struct mediaclk_t
         {
@@ -214,7 +226,7 @@ namespace nmos
         sdp_parameters() {}
 
         // construct "video/raw" SDP parameters with sensible defaults for unspecified fields
-        sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const ts_refclk_t& ts_refclk = ts_refclk_t::ptp(sdp::ptp_versions::IEEE1588_2008, U("traceable")))
+        sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {})
             : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
@@ -231,7 +243,7 @@ namespace nmos
         {}
 
         // construct "audio/L" SDP parameters with sensible defaults for unspecified fields
-        sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const ts_refclk_t& ts_refclk = ts_refclk_t::ptp(sdp::ptp_versions::IEEE1588_2008, U("traceable")))
+        sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {})
             : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
@@ -248,7 +260,7 @@ namespace nmos
         {}
 
         // construct "video/smpte291" SDP parameters with sensible defaults for unspecified fields
-        sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const ts_refclk_t& ts_refclk = ts_refclk_t::ptp(sdp::ptp_versions::IEEE1588_2008, U("traceable")))
+        sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {})
             : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
