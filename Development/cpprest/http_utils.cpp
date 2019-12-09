@@ -112,8 +112,10 @@ namespace web
             // this http_response::set_body overload blindly adds "; charset=utf-8" (because it converts body_text to UTF-8)
             // which for "application/json" isn't necessary, or strictly valid
             // see https://www.iana.org/assignments/media-types/application/json
+            // same goes for "application/sdp"
+            // see https://www.iana.org/assignments/media-types/application/sdp
             res.set_body(body_text, content_type);
-            if (web::http::details::mime_types::application_json == content_type)
+            if (web::http::details::mime_types::application_json == content_type || U("application/sdp") == content_type)
             {
                 res.headers().set_content_type(content_type);
             }
