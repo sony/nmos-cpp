@@ -77,6 +77,7 @@ The implementation is incomplete in some areas. Development is ongoing, tracking
 
 Recent activity on the project (newest first):
 
+- Added a minimum viable LLDP implementation (enabled by a CMake configuration option) to support sending and receiving the IS-04 v1.3 additional network data for Nodes required by IS-06
 - Update the IS-05 schemas to correct an unfortunate bug in the IS-05 v1.1 spec (see [AMWA-TV/nmos-device-connection-management#99](https://github.com/AMWA-TV/nmos-device-connection-management/pull/99))
 - Attempt to determine the DNS domain name automatically if not explicitly specified, for TR-1001-1
 - Travis CI integration

@@ -54,6 +54,8 @@ namespace lldp
         class lldp_manager_impl;
     }
 
+    // This is a minimal viable Link Layer Discovery Protocol implementation to support both sending and receiving LLDP packets
+    // when using a full LLDP agent, such as lldpd or lldpad on Linux, is not feasible
     class lldp_manager
     {
     public:
