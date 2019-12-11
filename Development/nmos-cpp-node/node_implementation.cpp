@@ -161,7 +161,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 
     // example sources, flows and senders
-    for (uint32_t i = 0; i < how_many; ++i)
+    for (int i = 0; i < how_many; ++i)
     {
         const auto& suffix = suffixes[i];
         const auto& source_id = source_ids[i];
@@ -209,7 +209,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 
     // example receivers
-    for (uint32_t i = 0; i < how_many; ++i)
+    for (int i = 0; i < how_many; ++i)
     {
         const auto& suffix = suffixes[i];
         const auto& receiver_id = receiver_ids[i];
@@ -234,7 +234,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 
     // example temperature event source, sender, flow
-    for (uint32_t i = 0; 0 <= nmos::fields::events_port(model.settings) && i < how_many; ++i)
+    for (int i = 0; 0 <= nmos::fields::events_port(model.settings) && i < how_many; ++i)
     {
         const auto& temperature_suffix = temperature_suffixes[i];
         const auto& temperature_source_id = temperature_source_ids[i];
@@ -270,7 +270,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 
     // example temperature event receiver
-    for (uint32_t i = 0; i < how_many; ++i)
+    for (int i = 0; i < how_many; ++i)
     {
         const auto& temperature_suffix = temperature_suffixes[i];
         const auto& temperature_ws_receiver_id = temperature_ws_receiver_ids[i];
