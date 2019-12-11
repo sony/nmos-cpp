@@ -39,7 +39,7 @@
 const nmos::category node_implementation_category{ "node_implementation" };
 
 // custom setting for the example node to provide for very basic testing of a node with many sub-resources
-const web::json::field_with_default<uint32_t> node_implementation_field_how_many{ U("how_many"), 1u };
+const web::json::field_as_integer_or node_implementation_field_how_many{ U("how_many"), 1 };
 
 // generate repeatable ids for a range of resources
 template <typename Suffixes>
@@ -73,12 +73,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
     const auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
     const auto how_many = node_implementation_field_how_many(model.settings);
-    const auto suffixes = boost::irange(0u, how_many * 2, 2);
+    const auto suffixes = boost::irange(0, how_many * 2, 2);
     const auto source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), suffixes);
     const auto flow_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/flow/"), suffixes);
     const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
     const auto receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), suffixes);
-    const auto temperature_suffixes = boost::irange(1u, how_many * 2 + 1, 2);
+    const auto temperature_suffixes = boost::irange(1, how_many * 2 + 1, 2);
     const auto temperature_source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), temperature_suffixes);
     const auto temperature_flow_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/flow/"), temperature_suffixes);
     const auto temperature_ws_sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), temperature_suffixes);
@@ -353,10 +353,10 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
     const auto how_many = node_implementation_field_how_many(settings);
-    const auto suffixes = boost::irange(0u, how_many * 2, 2);
+    const auto suffixes = boost::irange(0, how_many * 2, 2);
     const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
     const auto receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), suffixes);
-    const auto temperature_suffixes = boost::irange(1u, how_many * 2 + 1, 2);
+    const auto temperature_suffixes = boost::irange(1, how_many * 2 + 1, 2);
     const auto temperature_ws_sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), temperature_suffixes);
     const auto temperature_ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
     const auto temperature_ws_receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), temperature_suffixes);
@@ -407,7 +407,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
     const auto how_many = node_implementation_field_how_many(settings);
-    const auto suffixes = boost::irange(0u, how_many * 2, 2);
+    const auto suffixes = boost::irange(0, how_many * 2, 2);
     const auto source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), suffixes);
     const auto flow_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/flow/"), suffixes);
     const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
@@ -455,7 +455,7 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
 {
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto how_many = node_implementation_field_how_many(model.settings);
-    const auto temperature_suffixes = boost::irange(1u, how_many * 2 + 1, 2);
+    const auto temperature_suffixes = boost::irange(1, how_many * 2 + 1, 2);
     const auto temperature_ws_receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), temperature_suffixes);
 
     // the message handler will be used for all Events WebSocket connections, and each connection may potentially
