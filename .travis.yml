@@ -127,7 +127,9 @@ after_script:
   - mkdir results && mkdir badges
 
   # Run Node tests
-  - $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\"}" > nodeoutput 2>&1 &
+  - |
+    $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\"}" > nodeoutput 2>&1 &
+    NODE_PID=$!
 
   # IS-04-01
   - |
@@ -170,7 +172,9 @@ after_script:
     printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
 
   # Run Registry tests (leave Node running)
-  - $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\"}" > registryoutput 2>&1 &
+  - |
+    $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\"}" > registryoutput 2>&1 &
+    REGISTRY_PID=$!
 
   # IS-04-02
   - |
@@ -187,6 +191,10 @@ after_script:
     *)      testmessage="Fail" && testcolour="red";;
     esac
     printf "{\"schemaVersion\":1,\"label\":\"IS-09-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-01.json
+
+  # Stop Node and Registry
+  - kill $NODE_PID
+  - kill $REGISTRY_PID
 
   # Get Google Drive CLI and decrypt credentials
   - cd $TRAVIS_BUILD_DIR/..
