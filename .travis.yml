@@ -96,6 +96,9 @@ install:
     cd mDNSResponder-878.200.35/mDNSPosix
   - make os=linux && sudo make os=linux install
 
+  # Install SDPoker
+  - npm install -g garethsb-sony/sdpoker#nmos-testing
+
 script:
   # Build nmos-cpp
   - travis_fold start "cmake"
