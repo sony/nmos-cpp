@@ -25,7 +25,7 @@ namespace mdns
     struct browse_result
     {
         browse_result() : interface_id(0) {}
-        browse_result(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id) : name(name), type(type), domain(domain), interface_id(interface_id) {}
+        browse_result(const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0) : name(name), type(type), domain(domain), interface_id(interface_id) {}
 
         std::string name;
         std::string type;
@@ -40,11 +40,12 @@ namespace mdns
     struct resolve_result
     {
         resolve_result() {}
-        resolve_result(const std::string& host_name, std::uint16_t port, const mdns::txt_records& txt_records) : host_name(host_name), port(port), txt_records(txt_records) {}
+        resolve_result(const std::string& host_name, std::uint16_t port, const mdns::txt_records& txt_records, std::uint32_t interface_id = 0) : host_name(host_name), port(port), txt_records(txt_records), interface_id(interface_id) {}
 
         std::string host_name;
         std::uint16_t port;
         mdns::txt_records txt_records;
+        std::uint32_t interface_id;
 
         std::vector<std::string> ip_addresses;
     };

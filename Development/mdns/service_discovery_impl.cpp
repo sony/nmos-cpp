@@ -19,6 +19,12 @@ namespace mdns_details
             : more_coming ? (std::max)(earliest_timeout, latest_timeout) : latest_timeout;
     }
 
+    // map kDNSServiceInterfaceIndexLocalOnly to kDNSServiceInterfaceIndexAny, to handle AVAHI_IF_UNSPEC escaping from the Avahi compatibility layer
+    static inline std::uint32_t make_interface_id(std::uint32_t interfaceIndex)
+    {
+        return kDNSServiceInterfaceIndexLocalOnly == interfaceIndex ? kDNSServiceInterfaceIndexAny : interfaceIndex;
+    }
+
     struct browse_context
     {
         // browse in-flight state
@@ -44,8 +50,7 @@ namespace mdns_details
         {
             if (0 != (flags & kDNSServiceFlagsAdd))
             {
-                // map kDNSServiceInterfaceIndexLocalOnly to kDNSServiceInterfaceIndexAny, to handle AVAHI_IF_UNSPEC escaping from the Avahi compatibility layer
-                const browse_result result{ serviceName, regtype, replyDomain, kDNSServiceInterfaceIndexLocalOnly == interfaceIndex ? kDNSServiceInterfaceIndexAny : interfaceIndex };
+                const browse_result result{ serviceName, regtype, replyDomain, make_interface_id(interfaceIndex) };
 
                 slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceBrowse, DNSServiceBrowseReply got service: " << result.name << " for regtype: " << result.type << " domain: " << result.domain << " on interface: " << result.interface_id;
 
@@ -179,7 +184,7 @@ namespace mdns_details
         if (errorCode == kDNSServiceErr_NoError)
         {
             {
-                const resolve_result result{ hosttarget, ntohs(port), parse_txt_records(txtRecord, txtLen) };
+                const resolve_result result{ hosttarget, ntohs(port), parse_txt_records(txtRecord, txtLen), make_interface_id(interfaceIndex) };
 
                 slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceResolve, DNSServiceResolveReply got host: " << result.host_name << " port: " << (int)result.port;
 
@@ -197,11 +202,12 @@ namespace mdns_details
     struct address_result
     {
         address_result() {}
-        address_result(const std::string& host_name, const std::string& ip_address, std::uint32_t ttl = 0) : host_name(host_name), ip_address(ip_address), ttl(ttl) {}
+        address_result(const std::string& host_name, const std::string& ip_address, std::uint32_t ttl = 0, std::uint32_t interface_id = 0) : host_name(host_name), ip_address(ip_address), ttl(ttl), interface_id(interface_id) {}
 
         std::string host_name;
         std::string ip_address;
         std::uint32_t ttl;
+        std::uint32_t interface_id;
     };
 
     // return true from the address result callback if the operation should be ended before its specified timeout once no more results are "imminent"
@@ -263,7 +269,7 @@ namespace mdns_details
                 const auto ip_address = from_sockaddr(*address);
                 if (!ip_address.is_unspecified())
                 {
-                    const address_result result{ hostname, ip_address.to_string(), ttl };
+                    const address_result result{ hostname, ip_address.to_string(), ttl, make_interface_id(interfaceIndex) };
                     slog::log<slog::severities::more_info>(impl->gate, SLOG_FLF) << "After DNSServiceGetAddrInfo, DNSServiceGetAddrInfoReply got address: " << result.ip_address << " for host: " << result.host_name;
 
                     impl->had_enough = impl->handler(result);
@@ -281,7 +287,8 @@ namespace mdns_details
 
     static bool resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
-        const auto earliest_timeout_ = std::chrono::seconds(0);
+        // apply a minimum timeout when the interface id isn't known e.g. from the result of a browse
+        const auto earliest_timeout_ = std::chrono::seconds(0 == interface_id ? 1 : 0);
 
         bool had_enough = false;
         bool more_coming = true;
@@ -339,7 +346,8 @@ namespace mdns_details
 
     static bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
-        const auto earliest_timeout_ = std::chrono::seconds(0);
+        // apply a minimum timeout when the interface id isn't known e.g. from the result of a browse
+        const auto earliest_timeout_ = std::chrono::seconds(0 == interface_id ? 1 : 0);
 
         bool had_enough = false;
 #ifdef HAVE_DNSSERVICEGETADDRINFO
@@ -501,7 +509,7 @@ namespace mdns
                         {
                             resolved.ip_addresses.push_back(address.ip_address);
                             return true;
-                        }, resolved.host_name, interface_id, timeout, guard.target, *gate_);
+                        }, resolved.host_name, resolved.interface_id, timeout, guard.target, *gate_);
                         return handler(resolved);
                     }, name, type, domain, interface_id, timeout, guard.target, *gate_);
                     // when this task is cancelled, make sure it doesn't just return an empty/partial result

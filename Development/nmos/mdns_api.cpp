@@ -120,40 +120,56 @@ namespace nmos
                 {
                     if (!browsed.empty())
                     {
-                        std::shared_ptr<std::map<std::string, value>> results(new std::map<std::string, value>());
-
-                        // add a continuation for each discovered service to resolve it
-                        // but, to simplify inserting these into the priority map, the continuations are sequential
-                        // rather than parallelised using pplx::when_all
-                        auto resolve_all = pplx::task_from_result();
-                        for (const auto& resolving : browsed)
+                        typedef std::pair<std::string, std::vector<::mdns::resolve_result>> mdns_result;
+                        std::vector<pplx::task<mdns_result>> tasks;
+                        for (const auto& service : browsed)
                         {
-                            resolve_all = resolve_all.then([discovery, results, resolving, gate]
+                            const auto& serviceName = service.name;
+                            tasks.push_back(discovery->resolve(service.name, service.type, service.domain, service.interface_id)
+                                .then([serviceName, gate](std::vector<::mdns::resolve_result> resolved)
                             {
-                                const auto& serviceName = resolving.name;
-
-                                // check if we already have resolved this service
-                                if (results->end() != results->find(serviceName)) return pplx::task_from_result();
-
-                                // if not, resolve and add a result for it
-                                return discovery->resolve(resolving.name, resolving.type, resolving.domain, resolving.interface_id)
-                                    .then([results, serviceName, gate](std::vector<::mdns::resolve_result> resolved)
-                                {
-                                    if (!resolved.empty())
-                                    {
-                                        (*results)[serviceName] = make_mdns_result(serviceName, resolved.front());
-                                    }
-                                });
-                            });
+                                return mdns_result(serviceName, resolved);
+                            }));
                         }
-                        return resolve_all.then([res, results]() mutable
+                        return pplx::when_all(tasks.begin(), tasks.end()).then([res, tasks](pplx::task<std::vector<mdns_result>> finally) mutable
                         {
-                            if (!results->empty())
+                            // to ensure an exception from one doesn't leave other tasks' exceptions unobserved
+                            for (auto& task : tasks)
+                            {
+                                try { task.wait(); } catch (...) {}
+                            }
+
+                            // merge results that have the same host_target, port and txt records
+                            // and only differ in the resolved addresses
+
+                            std::map<value, std::set<std::string>> results;
+                            for (auto& resolved : finally.get())
+                            {
+                                const auto& serviceName = resolved.first;
+
+                                for (auto& service : resolved.second)
+                                {
+                                    auto ip_addresses = service.ip_addresses;
+                                    service.ip_addresses.clear();
+                                    auto instance = make_mdns_result(serviceName, service);
+                                    results[instance].insert(ip_addresses.begin(), ip_addresses.end());
+                                }
+                            }
+
+                            if (!results.empty())
                             {
                                 set_reply(res, status_codes::OK,
-                                    web::json::serialize(*results, [](const std::map<std::string, value>::value_type& kv) { return kv.second; }),
+                                    web::json::serialize(results, [](const std::map<value, std::set<std::string>>::value_type& result)
+                                    {
+                                        auto instance = result.first;
+                                        for (const auto& address : result.second)
+                                        {
+                                            web::json::push_back(instance[U("addresses")], web::json::value::string(utility::s2us(address)));
+                                        }
+                                        return instance;
+                                    }),
                                     web::http::details::mime_types::application_json);
-                                res.headers().add(U("X-Total-Count"), results->size());
+                                res.headers().add(U("X-Total-Count"), results.size());
                             }
                             else
                             {
@@ -196,12 +212,29 @@ namespace nmos
                 return discovery->resolve(serviceName, serviceType, service_domain.empty() ? "local." : service_domain)
                     .then([res, serviceName, gate](std::vector<::mdns::resolve_result> resolved) mutable
                 {
-                    if (!resolved.empty())
-                    {
-                        // for now, pick one result, even though there may be one per interface
-                        value result = make_mdns_result(serviceName, resolved.front());
+                    // merge results that have the same host_target, port and txt records
+                    // and only differ in the resolved addresses
 
-                        set_reply(res, status_codes::OK, result);
+                    std::map<value, std::set<std::string>> results;
+                    for (auto& service : resolved)
+                    {
+                        auto ip_addresses = service.ip_addresses;
+                        service.ip_addresses.clear();
+                        auto instance = make_mdns_result(serviceName, service);
+                        results[instance].insert(ip_addresses.begin(), ip_addresses.end());
+                    }
+
+                    if (!results.empty())
+                    {
+                        // for now, pick one of the merged results, even though there conceivably may be one per interface
+                        const auto& result = *results.begin();
+
+                        auto instance = result.first;
+                        for (const auto& address : result.second)
+                        {
+                            web::json::push_back(instance[U("addresses")], web::json::value::string(utility::s2us(address)));
+                        }
+                        set_reply(res, status_codes::OK, instance);
                     }
                     else
                     {
