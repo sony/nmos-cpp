@@ -68,22 +68,25 @@ namespace lldp
         // see https://stackoverflow.com/a/3824105
         static const bst::regex dns_regex(R"(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*\.?)");
 
-        static const bst::regex mac_regex(R"([0-9a-fA-F]{2}-){5}([0-9a-fA-F]{2})");
+        static const bst::regex mac_regex(R"(([0-9a-fA-F]{2}-){5}([0-9a-fA-F]{2}))");
 
         boost::system::error_code ec;
         auto addr = boost::asio::ip::address::from_string(address, ec);
 
-        if (addr.is_v4())
+        if (!ec)
         {
-            data.push_back(network_address_family_numbers::ipv4);
-            const auto network_address = addr.to_v4().to_bytes();
-            data.insert(data.end(), network_address.begin(), network_address.end());
-        }
-        else if (addr.is_v6())
-        {
-            data.push_back(network_address_family_numbers::ipv6);
-            const auto network_address = addr.to_v6().to_bytes();
-            data.insert(data.end(), network_address.begin(), network_address.end());
+            if (addr.is_v4())
+            {
+                data.push_back(network_address_family_numbers::ipv4);
+                const auto network_address = addr.to_v4().to_bytes();
+                data.insert(data.end(), network_address.begin(), network_address.end());
+            }
+            else if (addr.is_v6())
+            {
+                data.push_back(network_address_family_numbers::ipv6);
+                const auto network_address = addr.to_v6().to_bytes();
+                data.insert(data.end(), network_address.begin(), network_address.end());
+            }
         }
         else if (bst::regex_match(address, mac_regex))
         {
