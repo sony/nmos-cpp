@@ -259,8 +259,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         set_node_implementation_label(temperature_ws_sender, temperature_suffix);
         insert_node_implementation_group_hint(temperature_ws_sender, temperature_suffix);
 
+        // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
         auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
+        connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_temperature_ws_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
         resolve_auto(temperature_ws_sender, connection_temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        nmos::set_resource_subscription(temperature_ws_sender, nmos::fields::master_enable(connection_temperature_ws_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
 
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate)) return;
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate)) return;
