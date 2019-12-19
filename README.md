@@ -54,6 +54,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-05-01][IS-05-01-badge]][IS-05-01-sheet]
 [![IS-05-02][IS-05-02-badge]][IS-05-02-sheet]
 [![IS-07-01][IS-07-01-badge]][IS-07-01-sheet]
+[![IS-07-02][IS-07-02-badge]][IS-07-02-sheet]
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 
 [IS-04-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1VrCPcYeTs5uoBgECxbfuWbbhJZpbHcPy
@@ -62,6 +63,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-05-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1tW25Xim9LymIvPXnxM5taGmlLVsXa71p
 [IS-05-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1MkQNv8v2r0ydB1mQ55k-pktlzE8LZ3g9
 [IS-07-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1XQuAN13xAQ81G_Eokj6AAYv5kMInPXkZ
+[IS-07-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7XCmsQaOw5eEqq6yuuy1U9I3J-9zN9
 [IS-09-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7ncRp3SbHHoftQY-RBi2NFC283fOTn
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
 [IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
@@ -69,6 +71,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-05-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=517163955
 [IS-05-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=205041321
 [IS-07-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=828991990
+[IS-07-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=367400040
 [IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
 
 ### Recent Activity
