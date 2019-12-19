@@ -22,6 +22,8 @@ namespace nmos
                     return;
                 }
 
+                const auto& interface_name = interface->second.name;
+
                 using web::json::value_of;
 
                 auto lock = model.write_lock();
@@ -30,12 +32,11 @@ namespace nmos
                 auto resource = nmos::find_self_resource(resources);
                 if (resources.end() != resource)
                 {
-                    const auto& data = resource->data;
-                    const auto& json_interfaces = nmos::fields::interfaces(data);
+                    auto& json_interfaces = nmos::fields::interfaces(resource->data);
 
                     const auto json_interface = std::find_if(json_interfaces.begin(), json_interfaces.end(), [&](const web::json::value& nv)
                     {
-                        return nmos::fields::name(nv) == interface->second.name;
+                        return nmos::fields::name(nv) == interface_name;
                     });
 
                     if (json_interfaces.end() == json_interface)
@@ -54,17 +55,20 @@ namespace nmos
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "LLDP received - updating attached network device info for network interface " << interface->second.name;
 
-                        nmos::modify_resource(resources, resource->id, [interface_id, attached_network_device](nmos::resource& resource)
+                        nmos::modify_resource(resources, resource->id, [&interface_name, &attached_network_device](nmos::resource& resource)
                         {
-                            auto& interfaces = nmos::fields::interfaces(resource.data);
-                            for (auto& interface : interfaces)
+                            resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+
+                            auto& json_interfaces = nmos::fields::interfaces(resource.data);
+
+                            const auto json_interface = std::find_if(json_interfaces.begin(), json_interfaces.end(), [&](const web::json::value& nv)
                             {
-                                if (nmos::fields::name(interface) == utility::s2us(interface_id))
-                                {
-                                    resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                                    interface[nmos::fields::attached_network_device] = attached_network_device;
-                                    break;
-                                }
+                                return nmos::fields::name(nv) == interface_name;
+                            });
+
+                            if (json_interfaces.end() != json_interface)
+                            {
+                                (*json_interface)[nmos::fields::attached_network_device] = attached_network_device;
                             }
                         });
 
