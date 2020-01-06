@@ -156,25 +156,18 @@ namespace nmos
                                 }
                             }
 
-                            if (!results.empty())
-                            {
-                                set_reply(res, status_codes::OK,
-                                    web::json::serialize(results, [](const std::map<value, std::set<std::string>>::value_type& result)
+                            set_reply(res, status_codes::OK,
+                                web::json::serialize(results, [](const std::map<value, std::set<std::string>>::value_type& result)
+                                {
+                                    auto instance = result.first;
+                                    for (const auto& address : result.second)
                                     {
-                                        auto instance = result.first;
-                                        for (const auto& address : result.second)
-                                        {
-                                            web::json::push_back(instance[U("addresses")], web::json::value::string(utility::s2us(address)));
-                                        }
-                                        return instance;
-                                    }),
-                                    web::http::details::mime_types::application_json);
-                                res.headers().add(U("X-Total-Count"), results.size());
-                            }
-                            else
-                            {
-                                set_reply(res, status_codes::NotFound);
-                            }
+                                        web::json::push_back(instance[U("addresses")], web::json::value::string(utility::s2us(address)));
+                                    }
+                                    return instance;
+                                }),
+                                web::http::details::mime_types::application_json);
+                            res.headers().add(U("X-Total-Count"), results.size());
                             return true;
                         });
                     }
@@ -182,7 +175,8 @@ namespace nmos
                     {
                         return pplx::create_task([] {}).then([res]() mutable
                         {
-                            set_reply(res, status_codes::NotFound);
+                            set_reply(res, status_codes::OK, value::array());
+                            res.headers().add(U("X-Total-Count"), 0);
                             return true;
                         });
                     }
