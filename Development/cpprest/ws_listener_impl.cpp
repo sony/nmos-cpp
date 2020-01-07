@@ -176,8 +176,8 @@ namespace web
                         std::stringstream ss;
                         ss.imbue(std::locale::classic());
                         ss << location
-                            << ": " << ec.value()
-                            << ": " << ec.message();
+                            << ": " << ec
+                            << " (" << ec.message() << ")";
                         return ss.str();
                     }
 
@@ -508,16 +508,25 @@ namespace web
 
                         websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> handle_tls_init(websocketpp::connection_hdl hdl)
                         {
-                            auto ctx = websocketpp::lib::make_shared<websocketpp::lib::asio::ssl::context>(websocketpp::lib::asio::ssl::context::sslv23);
-
-                            ctx->set_options(websocketpp::lib::asio::ssl::context::default_workarounds);
-
-                            if (config.get_ssl_context_callback())
+                            try
                             {
-                                config.get_ssl_context_callback()(*ctx);
-                            }
+                                auto ctx = websocketpp::lib::make_shared<websocketpp::lib::asio::ssl::context>(websocketpp::lib::asio::ssl::context::sslv23);
 
-                            return ctx;
+                                ctx->set_options(websocketpp::lib::asio::ssl::context::default_workarounds);
+
+                                if (config.get_ssl_context_callback())
+                                {
+                                    // this handler may throw
+                                    config.get_ssl_context_callback()(*ctx);
+                                }
+
+                                return ctx;
+                            }
+                            catch (const web::websockets::websocket_exception& e)
+                            {
+                                server.get_elog().write(websocketpp::log::elevel::fatal, build_error_msg(e.error_code(), "handle_tls_init"));
+                                return{};
+                            }
                         }
 
                         bool handle_validate(websocketpp::connection_hdl hdl)
