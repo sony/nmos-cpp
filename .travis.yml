@@ -97,7 +97,7 @@ install:
   - make os=linux && sudo make os=linux install
 
   # Install SDPoker
-  - npm install -g garethsb-sony/sdpoker#nmos-testing
+  - npm install -g AMWA-TV/sdpoker
 
 script:
   # Build nmos-cpp
