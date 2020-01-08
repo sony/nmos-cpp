@@ -86,6 +86,7 @@ int main(int argc, char* argv[])
         // Log the process ID and initial settings
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Process ID: " << nmos::details::get_process_id();
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Build settings: " << nmos::get_build_settings_info();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << registry_model.settings.serialize();
 
         // Set up the registry server

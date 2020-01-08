@@ -137,13 +137,17 @@
     //"proxy_port": 8080,
 
     // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
+    // when true, CA root certificates must also be configured
     //"client_secure": false,
 
     // ca_certificate_file [registry, node]: full path of certification authorities file in PEM format
+    // on Windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
+    // the trusted root CA certificates must also be imported into the certificate store
     //"ca_certificate_file": "ca.pem",
 
     // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
     // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
+    // when true, server certificates etc. must also be configured
     //"server_secure": false,
 
     // private_key_files [registry, node]: full paths of private key files in PEM format
@@ -151,6 +155,8 @@
 
     // certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
     // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+    // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
+    // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
     //"certificate_chain_files": ["server-ecdsa-chain.pem", "server-rsa-chain.pem"],
 
     // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)

@@ -23,6 +23,9 @@ namespace nmos
     // when a request URL is not available
     utility::string_t get_host(const settings& settings);
 
+    // Get a summary of the build configuration, including versions of dependencies
+    utility::string_t get_build_settings_info();
+
     // Field accessors simplify access to fields in the settings and provide the compile-time defaults
     namespace fields
     {
@@ -214,13 +217,17 @@ namespace nmos
             const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
 
             // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
+            // when true, CA root certificates must also be configured
             const web::json::field_as_bool_or client_secure{ U("client_secure"), false };
 
             // ca_certificate_file [registry, node]: full path of certification authorities file in PEM format
+            // on Windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
+            // the trusted root CA certificates must also be imported into the certificate store
             const web::json::field_as_string_or ca_certificate_file{ U("ca_certificate_file"), U("") };
 
             // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
             // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
+            // when true, server certificates etc. must also be configured
             const web::json::field_as_bool_or server_secure{ U("server_secure"), false };
 
             // private_key_files [registry, node]: full paths of private key files in PEM format
@@ -228,6 +235,8 @@ namespace nmos
 
             // certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
             // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+            // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
+            // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
             const web::json::field_as_value_or certificate_chain_files{ U("certificate_chain_files"), web::json::value::array() };
 
             // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)

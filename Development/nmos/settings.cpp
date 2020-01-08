@@ -1,7 +1,11 @@
 #include "nmos/settings.h"
 
+#include <boost/version.hpp>
 #include "cpprest/host_utils.h"
+#include "cpprest/version.h"
+#include "openssl/opensslv.h"
 #include "nmos/id.h"
+#include "websocketpp/version.hpp"
 
 namespace nmos
 {
@@ -110,5 +114,36 @@ namespace nmos
         return nmos::experimental::fields::client_secure(settings)
             ? get_host_name(settings)
             : nmos::fields::host_address(settings);
+    }
+
+    // Get a summary of the build configuration, including versions of dependencies
+    utility::string_t get_build_settings_info()
+    {
+        utility::ostringstream_t s;
+        s.imbue(std::locale::classic());
+        s
+            << U("cpprestsdk/") << CPPREST_VERSION_MAJOR << U('.') << CPPREST_VERSION_MINOR << U('.') << CPPREST_VERSION_REVISION
+            << U(" (")
+            << U("listener=") // CPPREST_HTTP_LISTENER_IMPL
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+            << U("asio")
+#else
+            << U("httpsys")
+#endif
+            << U("; ")
+            << U("client=") // CPPREST_HTTP_CLIENT_IMPL
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+            << U("asio")
+#else
+            << U("winhttp")
+#endif
+            << U("); ")
+            << websocketpp::user_agent // "WebSocket++/<major_version>.<minor_version>.<patch_version>[-<prerelease_flag>]"
+            << U("; ")
+            << U("Boost ") << (BOOST_VERSION / 100000) << U('.') << (BOOST_VERSION / 100 % 1000) << U('.') << (BOOST_VERSION % 100)
+            << U("; ")
+            << U(OPENSSL_VERSION_TEXT)
+            ;
+        return s.str();
     }
 }
