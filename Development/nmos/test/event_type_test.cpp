@@ -18,6 +18,10 @@ BST_TEST_CASE(testIsMatchingEventType)
     BST_REQUIRE(!nmos::is_matching_event_type(number, boolean));
     BST_REQUIRE(nmos::is_matching_event_type(number, number));
 
+    BST_REQUIRE(!nmos::is_matching_event_type(number, temperature_Celsius));
+    BST_REQUIRE(nmos::is_matching_event_type(number_wildcard, temperature_Celsius));
+    BST_REQUIRE(nmos::is_matching_event_type(number_wildcard, number));
+
     BST_REQUIRE(nmos::is_matching_event_type(temperature_Celsius, temperature_Celsius));
     BST_REQUIRE(!nmos::is_matching_event_type(temperature_Celsius, temperature_Fahrenheit));
     BST_REQUIRE(!nmos::is_matching_event_type(temperature_Fahrenheit, temperature_Celsius));
