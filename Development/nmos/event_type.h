@@ -21,13 +21,11 @@ namespace nmos
         const event_type object{ U("object") };
 
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
-        inline const event_type measurement(const event_type& base_type, const utility::string_t& name, const utility::string_t& unit = {})
+        inline const event_type measurement(const utility::string_t& name, const utility::string_t& unit)
         {
-            // specific measurement types are always "{baseType}/{Name}/{Unit}"
-            // partial types use the wildcard "*" and may be "{baseType}/{Name}/*" or "{baseType}/*" (but not e.g. "{baseType}/*/{Unit}")
-            return !unit.empty()
-                ? event_type{ base_type.name + U('/') + name + U('/') + unit }
-                : event_type{ base_type.name + U('/') + name };
+            // specific measurement types are always "number/{Name}/{Unit}"
+            // names and units should not be empty or contain the '/' character
+            return event_type{ number.name + U('/') + name + U('/') + unit };
         }
 
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#3-enum
@@ -38,7 +36,44 @@ namespace nmos
 
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#event-types-capability-management
         // "A wildcard (*) must replace a whole word and can only be used at the end of an event_type definition."
-        const utility::string_t wildcard{ U("*") };
+        struct wildcard_type
+        {
+            const event_type operator()(const event_type& base_type) const
+            {
+                return event_type{ base_type.name + U("/*") };
+            }
+        };
+        const wildcard_type wildcard;
+
+        // "any measurement unit" partial event type
+        inline const event_type measurement(const utility::string_t& name, const wildcard_type&)
+        {
+            return wildcard(event_type{ number.name + U('/') + name });
+        }
+
+        // "any named enumeration" partial event type
+        inline const event_type named_enum(const event_type& base_type, const wildcard_type&)
+        {
+            return wildcard(event_type{ base_type.name + U("/enum") });
+        }
+
+        // deprecated, provided for backwards compatibility, use measurement(name, unit) since a measurement must be a number
+        inline const event_type measurement(const event_type& base_type, const utility::string_t& name, const utility::string_t& unit)
+        {
+            return event_type{ base_type.name + U('/') + name + U('/') + unit };
+        }
+
+        // deprecated, provided for backwards compatibility, use measurement(name, wildcard) since a measurement must be a number
+        inline const event_type measurement(const event_type& base_type, const utility::string_t& name, const wildcard_type&)
+        {
+            return wildcard(event_type{ base_type.name + U('/') + name });
+        }
+
+        // deprecated, provided for backwards compatibility, use wildcard(base_type) since these wildcards do not only match measurements
+        inline const event_type measurement(const event_type& base_type, const wildcard_type&)
+        {
+            return wildcard(base_type);
+        }
     }
 
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#event-types-capability-management
