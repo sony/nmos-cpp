@@ -83,8 +83,11 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#1-introduction
         auto& c = capability.name;
         auto& t = type.name;
-        if (!c.empty() && U('*') == c.back())
-            return c.size() <= t.size() && std::equal(c.begin(), c.end() - 1, t.begin());
+        // The wildcard in a partial event type matches zero or more 'levels', e.g. "number/*" matches both "number" and "number/temperature/C".
+        // A wildcard cannot be used at the top 'level', i.e. "*" is not a partial event type that matches any base type.
+        if (2 < c.size() && c[c.size() - 2] == U('/') && c[c.size() - 1] == U('*'))
+            return c.size() - 2 <= t.size() && std::equal(c.begin(), c.end() - 2, t.begin())
+            && (c.size() - 2 == t.size() || t[c.size() - 2] == U('/'));
         else
             return c == t;
     }
