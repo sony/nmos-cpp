@@ -54,8 +54,8 @@ template <typename Suffix>
 void insert_node_implementation_group_hint(nmos::resource& resource, Suffix suffix);
 
 // specific event types used by the example node
-const auto temperature_Celsius = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C"));
-const auto temperature_wildcard = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), nmos::event_types::wildcard);
+const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
+const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,

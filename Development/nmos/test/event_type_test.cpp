@@ -8,10 +8,10 @@ BST_TEST_CASE(testIsMatchingEventType)
 {
     const auto boolean = nmos::event_types::boolean;
     const auto number = nmos::event_types::number;
-    const auto number_wildcard = nmos::event_types::measurement(nmos::event_types::number, nmos::event_types::wildcard);
-    const auto temperature_Celsius = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("C"));
-    const auto temperature_Fahrenheit = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), U("F"));
-    const auto temperature_wildcard = nmos::event_types::measurement(nmos::event_types::number, U("temperature"), nmos::event_types::wildcard);
+    const auto number_wildcard = nmos::event_types::wildcard(nmos::event_types::number);
+    const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
+    const auto temperature_Fahrenheit = nmos::event_types::measurement(U("temperature"), U("F"));
+    const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
 
     BST_REQUIRE(nmos::is_matching_event_type(boolean, boolean));
     BST_REQUIRE(!nmos::is_matching_event_type(boolean, number));
