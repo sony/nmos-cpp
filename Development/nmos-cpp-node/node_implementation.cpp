@@ -252,7 +252,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
         auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
 
-        auto temperature_flow = nmos::make_data_flow(temperature_flow_id, temperature_source_id, device_id, nmos::media_types::application_json, model.settings);
+        auto temperature_flow = nmos::make_json_data_flow(temperature_flow_id, temperature_source_id, device_id, temperature_Celsius, model.settings);
         set_node_implementation_label(temperature_flow, temperature_suffix);
 
         auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);

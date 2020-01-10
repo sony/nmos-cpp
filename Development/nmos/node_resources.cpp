@@ -339,8 +339,32 @@ namespace nmos
         return make_sdianc_data_flow(id, source_id, device_id, {}, settings);
     }
 
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/APIs/schemas/flow_json_data.json
+    nmos::resource make_json_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::event_type& event_type, const nmos::settings& settings)
+    {
+        using web::json::value;
+        using web::json::value_from_elements;
+
+        auto resource = make_flow(id, source_id, device_id, {}, settings);
+        auto& data = resource.data;
+
+        data[U("format")] = value::string(nmos::formats::data.name);
+        data[U("media_type")] = value::string(nmos::media_types::application_json.name);
+        if (!event_type.name.empty())
+        {
+            data[U("event_type")] = value::string(event_type.name);
+        }
+
+        return resource;
+    }
+
+    nmos::resource make_json_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
+    {
+        return make_json_data_flow(id, source_id, device_id, {}, settings);
+    }
+
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_data.json
-    // (media_type must *not* be nmos::media_types::video_smpte291; cf. nmos::make_sdianc_data_flow)
+    // (media_type must *not* be nmos::media_types::video_smpte291 or nmos::media_types::application_json; cf. nmos::make_sdianc_data_flow and nmos::make_json_data_flow)
     nmos::resource make_data_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::media_type& media_type, const nmos::settings& settings)
     {
         using web::json::value;
