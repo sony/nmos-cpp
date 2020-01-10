@@ -141,7 +141,7 @@ namespace nmos
         params.interlace = !interlace_mode.empty() && nmos::interlace_modes::progressive.name != interlace_mode;
         params.segmented = !interlace_mode.empty() && nmos::interlace_modes::interlaced_psf.name == interlace_mode;
         // RFC 4175 top-field-first refers to a specific payload packing option for chrominance samples in 4:2:0 video;
-        // it does not correspond to nmos::interlace_modes::interlaced_tff, so we can't automatically set params.top_field_first
+        // it does not correspond to nmos::interlace_modes::interlaced_tff
 
         // grain_rate is optional in the flow, but if it's not there, for a video flow, it must be in the source
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
@@ -456,7 +456,6 @@ namespace nmos
         });
         if (sdp_params.video.interlace) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::interlace));
         if (sdp_params.video.segmented) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::segmented));
-        if (sdp_params.video.top_field_first) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::top_field_first));
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::sampling, sdp_params.video.sampling.name));
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::depth, utility::ostringstreamed(sdp_params.video.depth)));
         web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::colorimetry, sdp_params.video.colorimetry.name));
@@ -989,10 +988,6 @@ namespace nmos
             // optional
             const auto segmented = sdp::find_name(format_specific_parameters, sdp::fields::segmented);
             sdp_params.video.segmented = format_specific_parameters.end() != segmented;
-
-            // optional
-            const auto top_field_first = sdp::find_name(format_specific_parameters, sdp::fields::top_field_first);
-            sdp_params.video.top_field_first = format_specific_parameters.end() != top_field_first;
 
             const auto sampling = sdp::find_name(format_specific_parameters, sdp::fields::sampling);
             if (format_specific_parameters.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
