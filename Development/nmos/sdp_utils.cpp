@@ -140,7 +140,8 @@ namespace nmos
         const auto& interlace_mode = nmos::fields::interlace_mode(flow);
         params.interlace = !interlace_mode.empty() && nmos::interlace_modes::progressive.name != interlace_mode;
         params.segmented = !interlace_mode.empty() && nmos::interlace_modes::interlaced_psf.name == interlace_mode;
-        params.top_field_first = !interlace_mode.empty() && nmos::interlace_modes::interlaced_tff.name == interlace_mode;
+        // RFC 4175 top-field-first refers to a specific payload packing option for chrominance samples in 4:2:0 video;
+        // it does not correspond to nmos::interlace_modes::interlaced_tff, so we can't automatically set params.top_field_first
 
         // grain_rate is optional in the flow, but if it's not there, for a video flow, it must be in the source
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
