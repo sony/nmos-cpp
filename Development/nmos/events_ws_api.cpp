@@ -323,6 +323,28 @@ namespace nmos
         });
     }
 
+    namespace details
+    {
+        struct observe_websocket_exception
+        {
+            observe_websocket_exception(slog::base_gate& gate) : gate(gate) {}
+
+            void operator()(pplx::task<void> finally)
+            {
+                try
+                {
+                    finally.get();
+                }
+                catch (const web::websockets::websocket_exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
+                }
+            }
+
+            slog::base_gate& gate;
+        };
+    }
+
     void send_events_ws_messages_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::send_events_ws_messages));
@@ -361,8 +383,10 @@ namespace nmos
                 const auto grain = find_resource(resources, { websocket.first, nmos::types::grain });
                 if (resources.end() == grain)
                 {
+                    auto close = listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired"))
+                        .then(details::observe_websocket_exception(gate));
                     // theoretically blocking, but in fact not
-                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired")).wait();
+                    close.wait();
 
                     wit = websockets.left.erase(wit);
                     continue;
@@ -373,8 +397,10 @@ namespace nmos
                     // a grain without a subscription shouldn't be possible, but let's be tidy
                     erase_resource(resources, grain->id);
 
+                    auto close = listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired"))
+                        .then(details::observe_websocket_exception(gate));
                     // theoretically blocking, but in fact not
-                    listener.close(websocket.second, web::websockets::websocket_close_status::server_terminate, U("Expired")).wait();
+                    close.wait();
 
                     wit = websockets.left.erase(wit);
                     continue;
@@ -429,17 +455,8 @@ namespace nmos
             for (auto& outgoing_message : outgoing_messages)
             {
                 // hmmm, no way to cancel this currently...
-                auto send = listener.send(outgoing_message.first, outgoing_message.second).then([&](pplx::task<void> finally)
-                {
-                    try
-                    {
-                        finally.get();
-                    }
-                    catch (const web::websockets::websocket_exception& e)
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
-                    }
-                });
+                auto send = listener.send(outgoing_message.first, outgoing_message.second)
+                    .then(details::observe_websocket_exception(gate));
                 // current websocket_listener implementation is synchronous in any case, but just to make clear...
                 // for now, wait for the message to be sent
                 send.wait();
