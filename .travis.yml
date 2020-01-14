@@ -186,6 +186,8 @@ after_script:
   - |
     $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\"}" > registryoutput 2>&1 &
     REGISTRY_PID=$!
+    # short delay to give the Node a chance to register before running the Registry test suite
+    sleep 2
 
   # IS-04-02
   - |
