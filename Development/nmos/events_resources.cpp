@@ -1,5 +1,6 @@
 #include "nmos/events_resources.h"
 
+#include <boost/range/adaptor/transformed.hpp>
 #include "nmos/resource.h"
 #include "nmos/is07_versions.h"
 
@@ -153,6 +154,60 @@ namespace nmos
             { 0 != min_length ? U("min_length") : U(""), min_length },
             { 0 != max_length ? U("max_length") : U(""), max_length },
             { !pattern.empty() ? U("pattern") : U(""), pattern }
+        });
+    }
+
+    namespace details
+    {
+        template <typename T>
+        web::json::value make_events_enum_element(const std::pair<T, events_enum_element_details>& element)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { U("value"), element.first },
+                { U("label"), element.second.label },
+                { U("description"), element.second.description }
+            });
+        }
+    }
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_boolean_enum.json
+    // hmm, map or vector-of-pair?
+    web::json::value make_events_boolean_enum_type(const std::vector<std::pair<bool, events_enum_element_details>>& values)
+    {
+        using web::json::value_of;
+        using web::json::value_from_elements;
+
+        return value_of({
+            { U("type"), nmos::event_types::boolean.name },
+            { U("values"), value_from_elements(values | boost::adaptors::transformed(details::make_events_enum_element<bool>)) }
+        });
+    }
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number_enum.json
+    web::json::value make_events_number_enum_type(const std::vector<std::pair<double, events_enum_element_details>>& values)
+    {
+        // hmm, web::json::number rather than double?
+
+        using web::json::value_of;
+        using web::json::value_from_elements;
+
+        return value_of({
+            { U("type"), nmos::event_types::number.name },
+            { U("values"), value_from_elements(values | boost::adaptors::transformed(details::make_events_enum_element<double>)) }
+        });
+    }
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string_enum.json
+    web::json::value make_events_string_enum_type(const std::vector<std::pair<utility::string_t, events_enum_element_details>>& values)
+    {
+        using web::json::value_of;
+        using web::json::value_from_elements;
+
+        return value_of({
+            { U("type"), nmos::event_types::string.name },
+            { U("values"), value_from_elements(values | boost::adaptors::transformed(details::make_events_enum_element<utility::string_t>)) }
         });
     }
 

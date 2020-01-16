@@ -76,6 +76,7 @@ namespace nmos
         bool is_scaled() const { return 0 != scale; }
         double scaled_value() const { return is_scaled() ? value / (double)scale : value; }
 
+        // hmm, web::json::number rather than double?
         double value;
         int64_t scale;
     };
@@ -120,6 +121,26 @@ namespace nmos
 
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string.json
     web::json::value make_events_string_type(int64_t min_length = {}, int64_t max_length = {}, const utility::string_t& pattern = {});
+
+    struct events_enum_element_details
+    {
+        events_enum_element_details(utility::string_t label, utility::string_t description)
+            : label(std::move(label))
+            , description(std::move(description))
+        {}
+        utility::string_t label;
+        utility::string_t description;
+    };
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_boolean_enum.json
+    // hmm, map or vector-of-pair?
+    web::json::value make_events_boolean_enum_type(const std::vector<std::pair<bool, events_enum_element_details>>& values);
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number_enum.json
+    web::json::value make_events_number_enum_type(const std::vector<std::pair<double, events_enum_element_details>>& values);
+
+    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string_enum.json
+    web::json::value make_events_string_enum_type(const std::vector<std::pair<utility::string_t, events_enum_element_details>>& values);
 
     // (out of scope for version 1.0 of this specification)
     web::json::value make_events_object_type();
