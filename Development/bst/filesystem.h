@@ -15,9 +15,21 @@
 
 #elif defined(_MSC_VER)
 
-#if _MSC_VER >= 1900
+#if _MSC_VER >= 1910
+// From VS2017, /std:c++17 switch is introduced, but this is only indicated in __cplusplus if /Zc:__cplusplus is also specified
+#if __cplusplus >= 201703L
+#define BST_FILESYSTEM_STD
+#else
+#define BST_FILESYSTEM_STD_EXPERIMENTAL
+#if _MSC_VER >= 1920
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#endif
+#endif
+#elif _MSC_VER >= 1900
+// VS2015
 #define BST_FILESYSTEM_STD_EXPERIMENTAL
 #else
+// Earlier
 #define BST_FILESYSTEM_MICROSOFT_TR2
 #endif
 
