@@ -33,12 +33,10 @@ include(safeguards)
 # find dependencies
 
 # cpprestsdk
-# note: 2.10.9 has been tested but there's no cpprestsdk-configVersion.cmake
+# note: 2.10.14 or higher is recommended but there's no cpprestsdk-configVersion.cmake
 # and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk::cpprest
 find_package(cpprestsdk REQUIRED NAMES cpprestsdk cpprest)
-if(cpprestsdk_FOUND)
-    message(STATUS "Found cpprestsdk")
-endif()
+message(STATUS "Found cpprestsdk")
 get_target_property(CPPREST_INCLUDE_DIR cpprestsdk::cpprest INTERFACE_INCLUDE_DIRECTORIES)
 
 # websocketpp
@@ -46,11 +44,17 @@ get_target_property(CPPREST_INCLUDE_DIR cpprestsdk::cpprest INTERFACE_INCLUDE_DI
 if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
     message(STATUS "Using configured websocketpp include directory at " ${WEBSOCKETPP_INCLUDE_DIR})
 else()
-    find_package(websocketpp 0.5.1 REQUIRED)
-    if(websocketpp_FOUND)
+    set (WEBSOCKETPP_VERSION_MIN "0.5.1")
+    set (WEBSOCKETPP_VERSION_CUR "0.8.1")
+    find_package(websocketpp REQUIRED)
+    if (websocketpp_VERSION VERSION_LESS WEBSOCKETPP_VERSION_MIN)
+        message(FATAL_ERROR "Found websocketpp version " ${websocketpp_VERSION} " that is lower than the minimum version: " ${WEBSOCKETPP_VERSION_MIN})
+    elseif(websocketpp_VERSION VERSION_GREATER WEBSOCKETPP_VERSION_CUR)
+        message(STATUS "Found websocketpp version " ${websocketpp_VERSION} " that is higher than the current tested version: " ${WEBSOCKETPP_VERSION_CUR})
+    else()
         message(STATUS "Found websocketpp version " ${websocketpp_VERSION})
-        message(STATUS "Using websocketpp include directory at " ${WEBSOCKETPP_INCLUDE_DIR})
     endif()
+    message(STATUS "Using websocketpp include directory at " ${WEBSOCKETPP_INCLUDE_DIR})
 endif()
 
 # boost
