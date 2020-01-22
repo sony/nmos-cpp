@@ -4,7 +4,8 @@
 #include "nmos/api_utils.h" // for web::http::experimental::listener::api_router and nmos::route_pattern
 #include "nmos/slog.h" // for slog::base_gate and slog::severity, etc.
 
-// This is an experimental extension to expose mDNS Service Discovery via a REST API
+// This is an experimental extension to expose DNS Service Discovery (DNS-SD) via a REST API
+// supporting unicast DNS and multicast DNS (mDNS)
 namespace nmos
 {
     struct base_model;

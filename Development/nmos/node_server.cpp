@@ -84,7 +84,7 @@ namespace nmos
 
             auto& events_ws_listener = node_server.ws_listeners.back();
 
-            // Set up node operation (including the mDNS advertisements)
+            // Set up node operation (including the DNS-SD advertisements)
 
             node_server.thread_functions.assign({
                 [&] { nmos::node_behaviour_thread(node_model, gate); },

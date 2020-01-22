@@ -132,7 +132,7 @@ namespace nmos
 
             auto& query_ws_listener = registry_server.ws_listeners.back();
 
-            // Set up registry management (including the mDNS advertisements)
+            // Set up registry management (including the DNS-SD advertisements)
 
             registry_server.thread_functions.assign({
                 [&] { nmos::send_query_ws_events_thread(query_ws_listener, registry_model, query_ws_api.second, gate); },
@@ -148,7 +148,7 @@ namespace nmos
     {
         auto lock = model.read_lock();
 
-        // Configure the mDNS advertisements for our APIs
+        // Configure the DNS-SD advertisements for our APIs
 
         mdns::service_advertiser advertiser(gate);
         mdns::service_advertiser_guard advertiser_guard(advertiser);

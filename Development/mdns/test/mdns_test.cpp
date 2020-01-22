@@ -10,6 +10,8 @@
 #include "cpprest/basic_utils.h" // for utility::us2s, utility::s2us
 #include "cpprest/host_utils.h" // for host_name
 #include "slog/all_in_one.h"
+#include "mdns/service_advertiser_impl.h"
+#include "mdns/service_discovery_impl.h"
 
 static uint16_t testPort1 = 49999;
 static uint16_t testPort2 = 49998;
@@ -309,4 +311,90 @@ BST_TEST_CASE(testMdnsResolveAPIs)
     advertiser.close().wait();
 
     BST_REQUIRE(gate.hasLogMessage("Advertisement stopped for: test-mdns-resolve-1"));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+namespace
+{
+    struct test_advertiser_impl : public mdns::details::service_advertiser_impl
+    {
+        explicit test_advertiser_impl(slog::base_gate& gate)
+            : gate(gate)
+        {}
+
+        pplx::task<void> open() override
+        {
+            return pplx::create_task([&]
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Open";
+            });
+        }
+
+        pplx::task<void> close() override
+        {
+            return pplx::create_task([&]
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Close";
+            });
+        }
+
+        pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain, std::uint32_t interface_id) override
+        {
+            return pplx::task_from_result(true);
+        }
+
+        pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const mdns::txt_records& txt_records) override
+        {
+            return pplx::task_from_result(true);
+        }
+
+        pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain, const mdns::txt_records& txt_records) override
+        {
+            return pplx::task_from_result(false);
+        }
+
+        slog::base_gate& gate;
+    };
+
+    class test_discovery_impl : public mdns::details::service_discovery_impl
+    {
+    public:
+        explicit test_discovery_impl(slog::base_gate& gate)
+            : gate(gate)
+        {}
+
+        pplx::task<bool> browse(const mdns::browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
+        {
+            return pplx::create_task([&]
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Browsed";
+                return true;
+            });
+        }
+        pplx::task<bool> resolve(const mdns::resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
+        {
+            return pplx::task_from_result(false);
+        }
+
+        slog::base_gate& gate;
+    };
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMdnsImpl)
+{
+    test_gate gate;
+
+    mdns::service_advertiser advertiser(std::unique_ptr<mdns::details::service_advertiser_impl>(new test_advertiser_impl(gate)));
+    mdns::service_discovery browser(std::unique_ptr<mdns::details::service_discovery_impl>(new test_discovery_impl(gate)));
+
+    advertiser.open().wait();
+    BST_REQUIRE(gate.hasLogMessage("Open"));
+
+    auto browsed = browser.browse("_sea-lion-test1._tcp").get();
+    BST_REQUIRE(gate.hasLogMessage("Browsed"));
+    BST_REQUIRE(browsed.empty());
+
+    advertiser.close().wait();
+    BST_REQUIRE(gate.hasLogMessage("Close"));
 }

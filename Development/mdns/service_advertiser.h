@@ -11,7 +11,8 @@ namespace slog
     class base_gate;
 }
 
-// An interface for straightforward mDNS Service Discovery advertisement
+// An interface for straightforward DNS Service Discovery (DNS-SD) advertisement
+// typically via multicast DNS (mDNS)
 namespace mdns
 {
     // service advertiser implementation
@@ -34,6 +35,8 @@ namespace mdns
 
         service_advertiser(service_advertiser&& other);
         service_advertiser& operator=(service_advertiser&& other);
+
+        service_advertiser(std::unique_ptr<details::service_advertiser_impl> impl);
 
     private:
         service_advertiser(const service_advertiser& other);

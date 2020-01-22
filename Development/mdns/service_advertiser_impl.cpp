@@ -1,4 +1,4 @@
-#include "mdns/service_advertiser.h"
+#include "mdns/service_advertiser_impl.h"
 
 #include <boost/asio/ip/address.hpp>
 #include "mdns/dns_sd_impl.h"
@@ -247,16 +247,17 @@ namespace mdns
 {
     namespace details
     {
-        class service_advertiser_impl
+        // hm, 'final' may be appropriate here rather than 'override'?
+        class service_advertiser_impl_ : public service_advertiser_impl
         {
         public:
-            explicit service_advertiser_impl(slog::base_gate& gate)
+            explicit service_advertiser_impl_(slog::base_gate& gate)
                 : client(nullptr)
                 , gate(gate)
             {
             }
 
-            ~service_advertiser_impl()
+            ~service_advertiser_impl_() override
             {
                 try
                 {
@@ -265,13 +266,13 @@ namespace mdns
                 catch (...) {}
             }
 
-            pplx::task<void> open()
+            pplx::task<void> open() override
             {
                 // this might be the right place to create the client connection, rather than doing it lazily in register_address?
                 return pplx::task_from_result();
             }
 
-            pplx::task<void> close()
+            pplx::task<void> close() override
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
@@ -294,7 +295,7 @@ namespace mdns
                 return pplx::task_from_result();
             }
 
-            pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain, std::uint32_t interface_id)
+            pplx::task<bool> register_address(const std::string& host_name, const std::string& ip_address, const std::string& domain, std::uint32_t interface_id) override
             {
                 return pplx::create_task([=]
                 {
@@ -306,7 +307,7 @@ namespace mdns
                 });
             }
 
-            pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& txt_records)
+            pplx::task<bool> register_service(const std::string& name, const std::string& type, std::uint16_t port, const std::string& domain, const std::string& host_name, const txt_records& txt_records) override
             {
                 return pplx::create_task([=]
                 {
@@ -316,7 +317,7 @@ namespace mdns
                 });
             }
 
-            pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain, const txt_records& txt_records)
+            pplx::task<bool> update_record(const std::string& name, const std::string& type, const std::string& domain, const txt_records& txt_records) override
             {
                 return pplx::create_task([=]
                 {
@@ -334,8 +335,13 @@ namespace mdns
         };
     }
 
+    service_advertiser::service_advertiser(std::unique_ptr<details::service_advertiser_impl> impl)
+        : impl(std::move(impl))
+    {
+    }
+
     service_advertiser::service_advertiser(slog::base_gate& gate)
-        : impl(new details::service_advertiser_impl(gate))
+        : impl(new details::service_advertiser_impl_(gate))
     {
     }
 

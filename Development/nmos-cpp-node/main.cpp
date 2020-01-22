@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
 
-        // Open the API ports and start up node operation (including the mDNS advertisements)
+        // Open the API ports and start up node operation (including the DNS-SD advertisements)
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 

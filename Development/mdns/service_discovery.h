@@ -13,7 +13,8 @@ namespace slog
     class base_gate;
 }
 
-// An interface for straightforward mDNS Service Discovery browsing
+// An interface for straightforward DNS Service Discovery (DNS-SD) browsing
+// via unicast DNS, or multicast DNS (mDNS)
 namespace mdns
 {
     // service discovery implementation
@@ -91,6 +92,8 @@ namespace mdns
 
         service_discovery(service_discovery&& other);
         service_discovery& operator=(service_discovery&& other);
+
+        service_discovery(std::unique_ptr<details::service_discovery_impl> impl);
 
     private:
         service_discovery(const service_discovery& other);

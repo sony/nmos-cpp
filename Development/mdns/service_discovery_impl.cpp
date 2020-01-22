@@ -1,4 +1,4 @@
-#include "mdns/service_discovery.h"
+#include "mdns/service_discovery_impl.h"
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -470,19 +470,20 @@ namespace mdns
             pplx::cancellation_token_registration reg;
         };
 
-        class service_discovery_impl
+        // hm, 'final' may be appropriate here rather than 'override'?
+        class service_discovery_impl_ : public service_discovery_impl
         {
         public:
-            explicit service_discovery_impl(slog::base_gate& gate)
+            explicit service_discovery_impl_(slog::base_gate& gate)
                 : gate(gate)
             {
             }
 
-            ~service_discovery_impl()
+            ~service_discovery_impl_() override
             {
             }
 
-            pplx::task<bool> browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+            pplx::task<bool> browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
             {
                 auto gate_ = &this->gate;
                 return pplx::create_task([=]
@@ -496,7 +497,7 @@ namespace mdns
                 }, token);
             }
 
-            pplx::task<bool> resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+            pplx::task<bool> resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
             {
                 auto gate_ = &this->gate;
                 return pplx::create_task([=]
@@ -524,8 +525,13 @@ namespace mdns
         };
     }
 
+    service_discovery::service_discovery(std::unique_ptr<details::service_discovery_impl> impl)
+        : impl(std::move(impl))
+    {
+    }
+
     service_discovery::service_discovery(slog::base_gate& gate)
-        : impl(new details::service_discovery_impl(gate))
+        : impl(new details::service_discovery_impl_(gate))
     {
     }
 

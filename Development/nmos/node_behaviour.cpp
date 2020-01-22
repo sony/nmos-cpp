@@ -21,6 +21,8 @@ namespace nmos
 {
     namespace details
     {
+        void node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
+
         // registered operation
         void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate);
         void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate);
@@ -42,6 +44,23 @@ namespace nmos
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
 
+        mdns::service_advertiser advertiser(gate);
+        mdns::service_advertiser_guard advertiser_guard(advertiser);
+
+        mdns::service_discovery discovery(gate);
+
+        details::node_behaviour_thread(model, advertiser, discovery, gate);
+    }
+
+    void node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate_)
+    {
+        nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
+
+        details::node_behaviour_thread(model, advertiser, discovery, gate);
+    }
+
+    void details::node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
+    {
         // The possible states of node behaviour represent the two primary modes (registered operation and peer-to-peer operation)
         // and a few hopefully ephemeral states as the node works through the "Standard Registration Sequences".
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md
@@ -59,13 +78,11 @@ namespace nmos
         // These should have happened by now...
 
         // "3. The Node produces an mDNS advertisement of type '_nmos-node._tcp' in the '.local' domain as specified in Node API."
-        mdns::service_advertiser advertiser(gate);
-        mdns::service_advertiser_guard advertiser_guard(advertiser);
         details::advertise_node_service(model, advertiser);
 
         // "If the chosen Registration API does not respond correctly at any time, another Registration API should be selected from the discovered list."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
-        mdns::service_discovery discovery(gate);
+
         // hmm, it seems inefficient to store the discovered list in settings, when it's currently only used by this thread, but TR-1001-1:2018 insists
         // "Media Nodes should, through product-specific means, provide a status parameter indicating which registration service is currently in use."
         with_write_lock(model.mutex, [&model] { model.settings[nmos::fields::registration_services] = web::json::value::array(); });

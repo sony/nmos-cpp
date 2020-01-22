@@ -34,7 +34,9 @@ set(MDNS_HEADERS
     ${NMOS_CPP_DIR}/mdns/core.h
     ${NMOS_CPP_DIR}/mdns/dns_sd_impl.h
     ${NMOS_CPP_DIR}/mdns/service_advertiser.h
+    ${NMOS_CPP_DIR}/mdns/service_advertiser_impl.h
     ${NMOS_CPP_DIR}/mdns/service_discovery.h
+    ${NMOS_CPP_DIR}/mdns/service_discovery_impl.h
     )
 
 add_library(

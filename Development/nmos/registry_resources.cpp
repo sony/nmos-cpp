@@ -20,7 +20,7 @@ namespace nmos
             const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
             const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
 
-            // This is the experimental REST API for mDNS Service Discovery
+            // This is the experimental REST API for DNS Service Discovery (DNS-SD)
 
             auto mdns_uri = web::uri_builder()
                 .set_scheme(nmos::http_scheme(settings))
