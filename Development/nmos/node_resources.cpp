@@ -505,7 +505,7 @@ namespace nmos
 
     nmos::resource make_audio_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, unsigned int bit_depth, const nmos::settings& settings)
     {
-        return make_audio_receiver(id, device_id, transport, interfaces, { 1, bit_depth }, settings);
+        return make_audio_receiver(id, device_id, transport, interfaces, std::vector<unsigned int>{ bit_depth }, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_data.json
