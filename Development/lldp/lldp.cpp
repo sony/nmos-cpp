@@ -8,6 +8,16 @@
 
 namespace lldp
 {
+    static lldp_exception lldp_format_error(std::string message)
+    {
+        return{ "lldp format error - " + std::move(message) };
+    }
+
+    static lldp_exception lldp_parse_error(std::string message)
+    {
+        return{ "lldp parse error - " + std::move(message) };
+    }
+
     namespace details
     {
         slog::manip_function<std::istream> const_char_of(std::initializer_list<char> cs)
@@ -19,13 +29,16 @@ namespace lldp
         }
     }
 
+    const size_t ipv4_size(boost::asio::ip::address_v4::bytes_type().size());
+    const size_t ipv6_size(boost::asio::ip::address_v6::bytes_type().size());
+    const size_t mac_size(6);
+
     // return empty if invalid; non-throwing
     std::vector<uint8_t> make_mac_address(const std::string& mac_address)
     {
         std::vector<uint8_t> data;
 
         // mac_address is xx-xx-xx-xx-xx-xx
-        const size_t mac_size(6);
         std::istringstream is(mac_address);
 
         is >> std::hex;
@@ -43,8 +56,6 @@ namespace lldp
     // return empty if invalid; non-throwing
     std::string parse_mac_address(const std::vector<uint8_t>& data, char separator)
     {
-        const size_t mac_size(6);
-
         if (data.size() < mac_size) return std::string{};
 
         std::ostringstream os;
@@ -56,6 +67,23 @@ namespace lldp
             os << std::setw(2) << (uint32_t)data[i];
         }
         return os.str();
+    }
+
+    bool is_valid_network_address_data_size(network_address_family_number address_family, size_t data_size)
+    {
+        switch (address_family)
+        {
+        case network_address_family_numbers::ipv4:
+            return ipv4_size == data_size;
+        case network_address_family_numbers::ipv6:
+            return ipv6_size == data_size;
+        case network_address_family_numbers::mac:
+            return mac_size == data_size;
+        case network_address_family_numbers::dns:
+        case network_address_family_numbers::reserved:
+        default:
+            return true;
+        }
     }
 
     // make a network address, i.e. address_family and address data
@@ -109,43 +137,34 @@ namespace lldp
     {
         std::string address;
 
-        auto len = data.size();
-        if (len)
+        if (!data.empty())
         {
-            int idx = 0;
-
             // IANA Address Family Numbers enum value byte
-            network_address_family_number network_address_family = data[idx++];
+            network_address_family_number address_family(*data.begin());
+            auto first = std::next(data.begin()), last = data.end();
 
-            auto address_data = data.data() + idx;
-
-            if (network_address_family_numbers::ipv4 == network_address_family)
+            if (is_valid_network_address_data_size(address_family, std::distance(first, last)))
             {
-                const size_t ipv4_size(4);
-                if (len > ipv4_size)
+                if (network_address_family_numbers::ipv4 == address_family)
                 {
                     boost::asio::ip::address_v4::bytes_type addr4_bytes;
-                    std::copy_n(address_data, addr4_bytes.size(), addr4_bytes.begin());
+                    std::copy_n(first, addr4_bytes.size(), addr4_bytes.begin());
                     address = boost::asio::ip::address_v4(addr4_bytes).to_string();
                 }
-            }
-            else if (network_address_family_numbers::ipv6 == network_address_family)
-            {
-                const size_t ipv6_size(8);
-                if (len > ipv6_size)
+                else if (network_address_family_numbers::ipv6 == address_family)
                 {
                     boost::asio::ip::address_v6::bytes_type addr6_bytes;
-                    std::copy_n(address_data, addr6_bytes.size(), addr6_bytes.begin());
+                    std::copy_n(first, addr6_bytes.size(), addr6_bytes.begin());
                     address = boost::asio::ip::address_v6(addr6_bytes).to_string();
                 }
-            }
-            else if (network_address_family_numbers::mac == network_address_family)
-            {
-                address = parse_mac_address({ data.begin() + idx, data.end() });
-            }
-            else if (network_address_family_numbers::dns == network_address_family)
-            {
-                address = std::string{ data.begin() + idx, data.end() };
+                else if (network_address_family_numbers::mac == address_family)
+                {
+                    address = parse_mac_address({ first, last });
+                }
+                else if (network_address_family_numbers::dns == address_family)
+                {
+                    address = std::string{ first, last };
+                }
             }
         }
 
@@ -190,7 +209,7 @@ namespace lldp
     chassis_id make_mac_address_chassis_id(const std::string& mac_address)
     {
         auto data = make_mac_address(mac_address);
-        if (data.empty()) throw lldp_exception("invalid MAC address for Chassis ID");
+        if (data.empty()) throw lldp_format_error("invalid MAC address for Chassis ID");
         return{ chassis_id_subtypes::mac_address, std::move(data) };
     }
 
@@ -198,9 +217,9 @@ namespace lldp
     // may throw
     std::string parse_mac_address_chassis_id(const chassis_id& chassis_id)
     {
-        if (chassis_id_subtypes::mac_address != chassis_id.subtype) throw lldp_exception("wrong Chassis ID subtype");
+        if (chassis_id_subtypes::mac_address != chassis_id.subtype) throw lldp_parse_error("wrong Chassis ID subtype");
         auto mac_address = parse_mac_address(chassis_id.data);
-        if (mac_address.empty()) throw lldp_exception("invalid MAC address for Chassis ID");
+        if (mac_address.empty()) throw lldp_parse_error("invalid MAC address for Chassis ID");
         return mac_address;
     }
 
@@ -209,7 +228,7 @@ namespace lldp
     chassis_id make_network_address_chassis_id(const std::string& address)
     {
         auto data = make_network_address(address);
-        if (data.empty()) throw lldp_exception("invalid network address for Chassis ID");
+        if (data.empty()) throw lldp_format_error("invalid network address for Chassis ID");
         return{ chassis_id_subtypes::network_address, std::move(data) };
     }
 
@@ -217,9 +236,9 @@ namespace lldp
     // may throw
     std::string parse_network_address_chassis_id(const chassis_id& chassis_id)
     {
-        if (chassis_id_subtypes::network_address != chassis_id.subtype) throw lldp_exception("wrong Chassis ID subtype");
+        if (chassis_id_subtypes::network_address != chassis_id.subtype) throw lldp_parse_error("wrong Chassis ID subtype");
         auto address = parse_network_address(chassis_id.data);
-        if (address.empty()) throw lldp_exception("invalid network address for Chassis ID");
+        if (address.empty()) throw lldp_parse_error("invalid network address for Chassis ID");
         return address;
     }
 
@@ -261,7 +280,7 @@ namespace lldp
     port_id make_mac_address_port_id(const std::string& mac_address)
     {
         auto data = make_mac_address(mac_address);
-        if (data.empty()) throw lldp_exception("invalid MAC address for Port ID");
+        if (data.empty()) throw lldp_format_error("invalid MAC address for Port ID");
         return{ port_id_subtypes::mac_address, std::move(data) };
     }
 
@@ -269,9 +288,9 @@ namespace lldp
     // may throw
     std::string parse_mac_address_port_id(const port_id& port_id)
     {
-        if (port_id_subtypes::mac_address != port_id.subtype) throw lldp_exception("wrong Port ID subtype");
+        if (port_id_subtypes::mac_address != port_id.subtype) throw lldp_parse_error("wrong Port ID subtype");
         auto mac_address = parse_mac_address(port_id.data);
-        if (mac_address.empty()) throw lldp_exception("invalid MAC address for Port ID");
+        if (mac_address.empty()) throw lldp_parse_error("invalid MAC address for Port ID");
         return mac_address;
     }
 
@@ -280,7 +299,7 @@ namespace lldp
     port_id make_network_address_port_id(const std::string& address)
     {
         auto data = make_network_address(address);
-        if (data.empty()) throw lldp_exception("invalid network address for Port ID");
+        if (data.empty()) throw lldp_format_error("invalid network address for Port ID");
         return{ port_id_subtypes::network_address, std::move(data) };
     }
 
@@ -288,9 +307,9 @@ namespace lldp
     // may throw
     std::string parse_network_address_port_id(const port_id& port_id)
     {
-        if (port_id_subtypes::network_address != port_id.subtype) throw lldp_exception("wrong Port ID subtype");
+        if (port_id_subtypes::network_address != port_id.subtype) throw lldp_parse_error("wrong Port ID subtype");
         auto address = parse_network_address(port_id.data);
-        if (address.empty()) throw lldp_exception("invalid network address for Port ID");
+        if (address.empty()) throw lldp_parse_error("invalid network address for Port ID");
         return address;
     }
 
@@ -305,7 +324,7 @@ namespace lldp
     management_address make_management_address(const std::string& address, interface_numbering_subtype interface_numbering_subtype, uint32_t interface_number, const std::vector<uint8_t>& object_identifier)
     {
         auto data = make_network_address(address);
-        if (data.empty()) throw lldp_exception("invalid network address for Management Address");
+        if (data.empty()) throw lldp_format_error("invalid network address for Management Address");
         return{
             std::move(data),
             interface_numbering_subtype,

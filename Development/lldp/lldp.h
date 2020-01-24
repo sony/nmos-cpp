@@ -60,12 +60,14 @@ namespace lldp
         const network_address_family_number dns = 16;
     }
 
+    bool is_valid_network_address_data_size(network_address_family_number address_family, size_t data_size);
+
     // make a network address, i.e. address_family and address data
     // address must be an IPv4 or IPv6 address, a MAC address or DNS name
     // return empty if invalid; non-throwing
     std::vector<uint8_t> make_network_address(const std::string& address);
 
-    // data must be an IPv4 or IPv6 address
+    // data must be an IPv4 or IPv6 or MAC address or DNS name
     // return empty if invalid; non-throwing
     std::string parse_network_address(const std::vector<uint8_t>& data);
 
