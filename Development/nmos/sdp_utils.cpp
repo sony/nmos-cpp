@@ -192,6 +192,14 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, 100, media_stream_ids, details::make_ts_refclk(node, source, sender) };
     }
 
+    static sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
+    {
+        sdp_parameters::mux_t params;
+        params.tp = sdp::type_parameters::type_NL;
+
+        return{ sender.at(nmos::fields::label).as_string(), params, 98, media_stream_ids, details::make_ts_refclk(node, source, sender) };
+    }
+
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         const auto& format = nmos::fields::format(flow);
@@ -201,6 +209,8 @@ namespace nmos
             return make_audio_sdp_parameters(node, source, flow, sender, media_stream_ids);
         else if (nmos::formats::data.name == format)
             return make_data_sdp_parameters(node, source, flow, sender, media_stream_ids);
+        else if (nmos::formats::mux.name == format)
+            return make_mux_sdp_parameters(node, source, flow, sender, media_stream_ids);
         else
             throw details::sdp_creation_error("unsuported media format");
     }
@@ -563,6 +573,40 @@ namespace nmos
         return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
     }
 
+    static web::json::value make_mux_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    {
+        using web::json::value;
+        using web::json::value_of;
+
+        const bool keep_order = true;
+
+        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        const auto rtpmap = value_of({
+            { sdp::fields::name, sdp::attributes::rtpmap },
+            { sdp::fields::value, value_of({
+                { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
+                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
+            }, keep_order) }
+        }, keep_order);
+
+        auto format_specific_parameters = value_of({});
+        if (!sdp_params.video.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.video.tp.name));
+
+        // a=fmtp:<format> <format specific parameters>
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        const auto fmtp = value_of({
+            { sdp::fields::name, sdp::attributes::fmtp },
+            { sdp::fields::value, value_of({
+                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
+                { sdp::fields::format_specific_parameters, format_specific_parameters }
+            }, keep_order) }
+        }, keep_order);
+
+        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+    }
+
     namespace details
     {
         nmos::format get_format(const sdp_parameters& sdp_params)
@@ -570,6 +614,7 @@ namespace nmos
             if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
             if (sdp::media_types::audio == sdp_params.media_type) return nmos::formats::audio;
             if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
+            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
             return{};
         }
 
@@ -585,6 +630,7 @@ namespace nmos
         if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params);
         if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params);
         if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params);
+        if (nmos::formats::mux == format)  return make_mux_session_description(sdp_params, transport_params);
         throw details::sdp_creation_error("unsupported ST2110 media");
     }
 

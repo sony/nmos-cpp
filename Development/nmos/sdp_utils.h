@@ -85,7 +85,7 @@ namespace nmos
         struct rtpmap_t
         {
             uint64_t payload_type;
-            // encoding-name is "raw" for video, "L24" or "L16" for audio, "smpte291" for data
+            // encoding-name is "raw" for video, "L24" or "L16" for audio, "smpte291" for data, "SMPTE2022-6" for mux
             utility::string_t encoding_name;
             uint64_t clock_rate;
 
@@ -170,6 +170,18 @@ namespace nmos
             {}
         } data;
 
+        // additional "video/SMPTE2022-6" parameters (mux only)
+        // see SMPTE ST 2022-8:2019
+        struct mux_t
+        {
+            sdp::type_parameter tp;
+
+            mux_t() {}
+            mux_t(const sdp::type_parameter& tp)
+                : tp(tp)
+            {}
+        } mux;
+
         struct ts_refclk_t
         {
             sdp::ts_refclk_source clock_source;
@@ -236,6 +248,7 @@ namespace nmos
             , video(video)
             , audio()
             , data()
+            , mux()
             , ts_refclk(ts_refclk)
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
         {}
@@ -253,6 +266,7 @@ namespace nmos
             , video()
             , audio(audio)
             , data()
+            , mux()
             , ts_refclk(ts_refclk)
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
         {}
@@ -270,6 +284,25 @@ namespace nmos
             , video()
             , audio()
             , data(data)
+            , mux()
+            , ts_refclk(ts_refclk)
+            , mediaclk(sdp::mediaclk_sources::direct, U("0"))
+        {}
+
+        // construct "video/SMPTE2022-6" SDP parameters with sensible defaults for unspecified fields
+        sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {})
+            : origin(U("-"), sdp::ntp_now() >> 32)
+            , session_name(session_name)
+            , connection_data(32)
+            , timing()
+            , group(!media_stream_ids.empty() ? group_t{ sdp::group_semantics::duplication, media_stream_ids } : group_t{})
+            , media_type(sdp::media_types::video)
+            , protocol(sdp::protocols::RTP_AVP)
+            , rtpmap(payload_type, U("SMPTE2022-6"), 27000000)
+            , video()
+            , audio()
+            , data()
+            , mux(mux)
             , ts_refclk(ts_refclk)
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
         {}
