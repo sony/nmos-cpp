@@ -977,6 +977,7 @@ namespace nmos
         const auto is_video_sdp = nmos::formats::video == format;
         const auto is_audio_sdp = nmos::formats::audio == format;
         const auto is_data_sdp = nmos::formats::data == format;
+        const auto is_mux_sdp = nmos::formats::mux == format;
 
         if (is_audio_sdp)
         {
@@ -1111,6 +1112,23 @@ namespace nmos
             {
                 sdp_params.data.vpid_code = (nmos::vpid_code)utility::istringstreamed<uint32_t>(sdp::fields::value(*vpid_code).as_string());
             }
+        }
+        else if (is_mux_sdp && attributes.end() != fmtp)
+        {
+            const auto& fmtp_value = sdp::fields::value(*fmtp);
+            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
+
+            // "Senders shall signal Media Type Parameters TP and TROFF as specified in ST 2110-21"
+            // See SMPTE ST 2022-8:2019 Section 6
+
+            // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
+            // and Section 8.2 Optional Parameters
+
+            const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
+            if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
+            sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+
+            // don't examine optional parameter "TROFF"
         }
 
         return sdp_params;
