@@ -1,6 +1,7 @@
 #ifndef NMOS_SDP_UTILS_H
 #define NMOS_SDP_UTILS_H
 
+#include <boost/optional.hpp>
 #include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
@@ -13,6 +14,8 @@ namespace nmos
     struct sdp_parameters;
 
     // Sender helper functions
+
+    sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, boost::optional<int> ptp_domain);
 
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids);
 
