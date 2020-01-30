@@ -195,6 +195,8 @@ namespace nmos
     static sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids)
     {
         sdp_parameters::mux_t params;
+        // "Senders shall comply with either the Narrow Linear Senders (Type NL) requirements, or the Wide Senders (Type W) requirements."
+        // See SMPTE 2022-8:2019 Section 6 Network Compatibility and Transmission Traffic Shape Models
         params.tp = sdp::type_parameters::type_NL;
 
         // Payload type 98 is "High bit rate media transport / 27-MHz Clock"
@@ -1127,9 +1129,13 @@ namespace nmos
             // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
             // and Section 8.2 Optional Parameters
 
+            // "TP" (type parameter) is required, but allow it to be omitted for now...
             const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
-            if (format_specific_parameters.end() == tp) throw details::sdp_processing_error("missing format parameter: TP");
-            sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+            if (format_specific_parameters.end() != tp)
+            {
+                sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+            }
+            // else sdp_params.video.tp = {};
 
             // don't examine optional parameter "TROFF"
         }
