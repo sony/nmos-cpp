@@ -35,7 +35,7 @@ namespace nmos
 
         // Mux media types
 
-        // See http://www.videoservicesforum.org/download/technical_recommendations/VSF_TR-04_2015-11-12.pdf
+        // See SMPTE ST 2022-8:2019
         const media_type video_SMPTE2022_6{ U("video/SMPTE2022-6") };
     }
 }

@@ -197,6 +197,16 @@ namespace nmos
         return make_audio_source(id, device_id, {}, grain_rate, channels, settings);
     }
 
+    nmos::resource make_mux_source(const nmos::id& id, const nmos::id& device_id, const nmos::clock_name& clk, const nmos::rational& grain_rate, const nmos::settings& settings)
+    {
+        return make_generic_source(id, device_id, clk, grain_rate, nmos::formats::mux, settings);
+    }
+
+    nmos::resource make_mux_source(const nmos::id& id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
+    {
+        return make_mux_source(id, device_id, {}, grain_rate, settings);
+    }
+
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_core.json
     nmos::resource make_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, const nmos::settings& settings)
     {
@@ -554,7 +564,7 @@ namespace nmos
         auto resource = make_receiver(id, device_id, transport, interfaces, settings);
         auto& data = resource.data;
 
-        data[U("format")] = value::string(nmos::formats::data.name);
+        data[U("format")] = value::string(nmos::formats::mux.name);
         data[U("caps")][U("media_types")][0] = value::string(media_type.name);
 
         return resource;
