@@ -197,6 +197,9 @@ namespace nmos
         sdp_parameters::mux_t params;
         params.tp = sdp::type_parameters::type_NL;
 
+        // Payload type 98 is "High bit rate media transport / 27-MHz Clock"
+        // Payload type 99 is "High bit rate media transport FEC / 27-MHz Clock"
+        // See SMPTE ST 2022-6:2012 Section 6.3 RTP/UDP/IP Header
         return{ sender.at(nmos::fields::label).as_string(), params, 98, media_stream_ids, details::make_ts_refclk(node, source, sender) };
     }
 
