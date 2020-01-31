@@ -53,6 +53,8 @@ namespace nmos
         const web::json::field_as_string ref_type{ U("ref_type") };
         const web::json::field_as_string ptp_version{ U("version") };
         const web::json::field_as_string gmid{ U("gmid") };
+        const web::json::field_as_bool traceable{ U("traceable") };
+        const web::json::field_as_bool locked{ U("locked") };
         // device
         const web::json::field_as_string node_id{ U("node_id") };
         const web::json::field_as_array senders{ U("senders") }; // deprecated

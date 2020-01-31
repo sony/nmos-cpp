@@ -1,6 +1,7 @@
 #ifndef NMOS_SDP_UTILS_H
 #define NMOS_SDP_UTILS_H
 
+#include "bst/optional.h"
 #include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
@@ -14,6 +15,9 @@ namespace nmos
 
     // Sender helper functions
 
+    sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain);
+
+    // deprecated, provided for backwards compatibility, because it may be necessary to also specify the PTP domain to generate an RFC 7273 'ts-refclk' attribute that meets the additional constraints of ST 2110-10
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids);
 
     web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params);
