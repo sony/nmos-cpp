@@ -317,16 +317,20 @@ namespace nmos
 
         std::vector<web::json::value> events;
 
-        // resources are traversed in order of increasing creation timestamp, so that events for super-resources are inserted before events for sub-resources
-        // hmm, that's assuming not out-of-order insertion by the allow_invalid_resources setting
-        // maybe better if resources were traversed in order of nmos::types::all?
-        auto& by_created = resources.get<tags::created>();
-        for (const auto& resource : by_created | boost::adaptors::reversed)
+        // resources are traversed in order of nmos::types::all, so that events for super-resources are inserted before events for sub-resources
+        // there is no defined ordering between resources of the same type
+        for (const auto& type : nmos::types::all)
         {
-            if (!details::is_queryable_resource(resource.type)) continue;
+            if (!details::is_queryable_resource(type)) continue;
 
-            if (match(resource))
+            auto& by_type = resources.get<tags::type>();
+            const auto range = by_type.equal_range(details::has_data(type));
+            for (auto found = range.first; range.second != found; ++found)
             {
+                auto& resource = *found;
+
+                if (!match(resource)) continue;
+
                 const auto resource_data = match.downgrade(resource);
                 auto event = details::make_resource_event(resource_path, resource.type, resource_data, resource_data);
 
