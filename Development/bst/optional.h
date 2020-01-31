@@ -47,6 +47,7 @@ namespace bst
 {
     using std::nullopt_t;
     using std::nullopt;
+    using std::bad_optional_access;
 }
 
 #elif defined(BST_OPTIONAL_BOOST)
@@ -58,6 +59,12 @@ namespace bst
 {
     typedef boost::none_t nullopt_t;
     const boost::none_t nullopt = boost::none;
+#if BOOST_VERSION >= 105600
+    using boost::bad_optional_access;
+#else
+    // Prior to Boost 1.56.0, boost::optional provided an interface that differed in a number of ways from that ultimately defined for C++17 std::optional
+    // e.g. no member function value
+#endif
 }
 
 #endif
@@ -66,7 +73,6 @@ namespace bst
 {
     using bst_optional::optional;
     using bst_optional::make_optional;
-    using bst_optional::bad_optional_access;
 }
 
 #endif
