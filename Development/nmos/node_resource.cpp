@@ -85,9 +85,9 @@ namespace nmos
             { nmos::fields::name, clk.name },
             { nmos::fields::ref_type, nmos::clock_ref_types::ptp.name },
             { nmos::fields::ptp_version, U("IEEE1588-2008") }, // cf. sdp::ptp_versions::IEEE1588_2008
-            { U("traceable"), traceable },
+            { nmos::fields::traceable, traceable },
             { nmos::fields::gmid, gmid },
-            { U("locked"), locked }
+            { nmos::fields::locked, locked }
         });
     }
 }

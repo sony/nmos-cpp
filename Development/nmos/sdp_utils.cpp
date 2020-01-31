@@ -53,16 +53,24 @@ namespace nmos
             {
                 const sdp::ptp_version version{ nmos::fields::ptp_version(*clock) };
 
-                // since 'gmid' is required, always indicate it (and the domain) rather than 'traceable'
-                auto server = boost::algorithm::to_upper_copy(nmos::fields::gmid(*clock));
-                if (ptp_domain)
+                // "If the PTP timescale is in use, and the current grandmaster indicates that its timesource is traceable, devices shall signal that the PTP is traceable in the SDP."
+                // See ST 2110-10:2020
+                if (nmos::fields::traceable(*clock))
                 {
-                    if (*ptp_domain < 0 || *ptp_domain > 127) throw sdp_creation_error("PTP domain out of range");
-
-                    server += U(":") + utility::conversions::details::to_string_t(*ptp_domain);
+                    return{ interface_bindings.size(), sdp_parameters::ts_refclk_t::ptp_traceable(version) };
                 }
+                else
+                {
+                    auto server = boost::algorithm::to_upper_copy(nmos::fields::gmid(*clock));
+                    if (ptp_domain)
+                    {
+                        if (*ptp_domain < 0 || *ptp_domain > 127) throw sdp_creation_error("PTP domain out of range");
 
-                return{ interface_bindings.size(), sdp_parameters::ts_refclk_t::ptp(version, server) };
+                        server += U(":") + utility::conversions::details::to_string_t(*ptp_domain);
+                    }
+
+                    return{ interface_bindings.size(), sdp_parameters::ts_refclk_t::ptp(version, server) };
+                }
             }
             else if (nmos::clock_ref_types::internal == ref_type)
             {
