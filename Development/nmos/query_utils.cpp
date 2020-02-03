@@ -311,7 +311,8 @@ namespace nmos
     }
 
     // make the initial 'sync' resource events for a new grain, including all resources that match the specified version, resource path and flat query parameters
-    web::json::value make_resource_events(const nmos::resources& resources, const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& params)
+    // optionally, make 'added' resource events instead of 'sync' events
+    web::json::value make_resource_events(const nmos::resources& resources, const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& params, bool sync)
     {
         const resource_query match(version, resource_path, params);
 
@@ -332,7 +333,7 @@ namespace nmos
                 if (!match(resource)) continue;
 
                 const auto resource_data = match.downgrade(resource);
-                auto event = details::make_resource_event(resource_path, resource.type, resource_data, resource_data);
+                auto event = details::make_resource_event(resource_path, resource.type, sync ? resource_data : web::json::value::null(), resource_data);
 
                 // experimental extension, for the query.strip flag
 

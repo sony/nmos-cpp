@@ -490,11 +490,11 @@ namespace nmos
             // An 'added' event calls for registration creation, i.e. a POST request with a 201 'Created' response (200 'OK' is unexpected)
             // A 'removed' event calls for registration deletion, i.e. a DELETE request with a 204 'No Content' response
             // A 'modified' event calls for a registration update, i.e. a POST request with a 200 'OK' response (201 'Created'is unexpected)
-            // A 'sync' event is the call for registration creation when first interacting with a registry
+            // A 'sync' event is also an (unnecessary) registration update, i.e. a POST request with a 200 'OK' response
             // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml
 
-            const bool creation = resource_added_event == event_type || resource_unchanged_event == event_type;
-            const bool update = resource_modified_event == event_type;
+            const bool creation = resource_added_event == event_type;
+            const bool update = resource_modified_event == event_type || resource_unchanged_event == event_type;
             const bool deletion = resource_removed_event == event_type;
 
             if (creation)
@@ -735,7 +735,7 @@ namespace nmos
                         auto& events = nmos::fields::message_grain_data(grain.data);
 
                         // the node behaviour subscription resource_path and params are currently fixed (see make_node_behaviour_subscription)
-                        events = make_resource_events(resources, registry_version, U(""), web::json::value::object());
+                        events = make_resource_events(resources, registry_version, U(""), web::json::value::object(), false);
 
                         grain.updated = strictly_increasing_update(resources);
                     });
@@ -754,8 +754,8 @@ namespace nmos
                     const auto id_type = get_resource_event_resource(node_behaviour_topic, events.at(0));
                     const auto event_type = get_resource_event_type(events.at(0));
 
-                    // discard events prior to the node 'added' or 'sync' event (shouldn't generally be necessary?)
-                    if (!(nmos::types::node == id_type.second && (resource_added_event == event_type || resource_unchanged_event == event_type)))
+                    // discard events prior to the node 'added' event (shouldn't generally be necessary?)
+                    if (!(nmos::types::node == id_type.second && resource_added_event == event_type))
                     {
                         events.erase(0);
                         continue;
