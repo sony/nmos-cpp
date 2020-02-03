@@ -108,14 +108,14 @@ BST_TEST_CASE(testOstreamVisitorNumbers)
         BST_REQUIRE_EQUAL(two_thirds.serialize(), os.str());
     }
     {
-        web::json::value big_uint(12345678901234567890ul);
+        web::json::value big_uint(UINT64_C(12345678901234567890));
         const auto expected = big_uint.serialize();
         utility::ostringstream_t os;
         web::json::visit(web::json::ostream_visitor(os), big_uint);
         BST_REQUIRE_EQUAL(big_uint.serialize(), os.str());
     }
     {
-        web::json::value big_int(-1234567890123456789l);
+        web::json::value big_int(INT64_C(-1234567890123456789));
         const auto expected = big_int.serialize();
         utility::ostringstream_t os;
         web::json::visit(web::json::ostream_visitor(os), big_int);

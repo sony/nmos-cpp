@@ -652,7 +652,7 @@ namespace rql
             {
                 return value_indeterminate;
             }
-            return web::json::value::number(arg.size());
+            return web::json::value::number((uint64_t)arg.size());
         }
 
         // get(<call-operator>) - Value of the property specified by the result of the call-operator (rather than that value directly)
