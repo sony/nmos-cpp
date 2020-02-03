@@ -2,7 +2,7 @@
 #define SLOG_ALL_IN_ONE_H
 ////////////////////////////////////////////////////////////////////////////////////////////
 // AUTO-GENERATED AMALGAMATED HEADER
-// Generated at r368; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
+// Generated at r374; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "slog/config.h"
 #ifndef SLOG_CONFIG_H
@@ -2654,8 +2654,16 @@ namespace slog
         // Workaround for libc++ bug: https://llvm.org/bugs/show_bug.cgi?id=21321#c4
         // pword and iword elements are not initialised to 0 when the capacity of the array is increased by more than one.
         struct ios_base_xindex { typedef std::atomic<int>* type; };
-        template struct ::detail::stow_private<ios_base_xindex, &std::ios_base::__xindex_>;
+    }
+}
 
+// Sigh. "An explicit instantiation shall appear in an enclosing namespace of its template."
+template struct detail::stow_private<slog::detail::ios_base_xindex, &std::ios_base::__xindex_>;
+
+namespace slog
+{
+    namespace detail
+    {
         inline void init_stash(std::ios_base& ios)
         {
             const int xindex = *::detail::stowed<ios_base_xindex>::value;
