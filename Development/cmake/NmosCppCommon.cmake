@@ -70,7 +70,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns_static)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
     set (BONJOUR_LIB -ldns_sd)
+endif()
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # find resolver (for cpprest/host_utils.cpp)
     list(APPEND PLATFORM_LIBS -lresolv)
 
