@@ -232,7 +232,7 @@ namespace web
                         if (ptr->ifa_addr->sa_family == AF_LINK)
                         {
                             auto& addr_dl = (const sockaddr_dl&)*ptr->ifa_addr;
-                            interface->physical_address = details::make_physical_address((const uint8_t*)LLADDR(addr_dl), addr_ll.sdl_alen);
+                            interface->physical_address = details::make_physical_address((const uint8_t*)LLADDR(&addr_dl), addr_dl.sdl_alen);
                         }
                         else
 #endif
