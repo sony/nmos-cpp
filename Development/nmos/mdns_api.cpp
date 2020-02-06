@@ -61,6 +61,13 @@ namespace nmos
             return result;
         }
 
+        namespace fields
+        {
+            const web::json::field_as_string_or query_domain{ U("query.domain"), {} };
+        }
+
+        const std::chrono::seconds mdns_api_response_max(5);
+
         web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -77,14 +84,14 @@ namespace nmos
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 nmos::details::decode_elements(flat_query_params);
 
-                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); });
-                const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+                const auto query_domain = nmos::experimental::fields::query_domain(flat_query_params);
+                const auto browse_domain = utility::us2s(!query_domain.empty() ? query_domain : with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); }));
 
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));
 
                 // note, only the list of available service types that are explicitly being advertised is returned by "_services._dns-sd._udp"
                 // see https://tools.ietf.org/html/rfc6763#section-9
-                return discovery->browse("_services._dns-sd._udp", browse_domain).then([req, res, gate](std::vector<::mdns::browse_result> browsed) mutable
+                return discovery->browse("_services._dns-sd._udp", browse_domain, 0, mdns_api_response_max).then([req, res, gate](std::vector<::mdns::browse_result> browsed) mutable
                 {
                     auto results = boost::copy_range<std::set<utility::string_t>>(browsed | boost::adaptors::transformed([](const ::mdns::browse_result& br)
                     {
@@ -110,13 +117,13 @@ namespace nmos
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 nmos::details::decode_elements(flat_query_params);
 
-                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); });
-                const auto browse_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+                const auto query_domain = nmos::experimental::fields::query_domain(flat_query_params);
+                const auto browse_domain = utility::us2s(!query_domain.empty() ? query_domain : with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); }));
 
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));
 
                 // hmm, how to add cancellation on shutdown to the browse and resolve operations?
-                return discovery->browse(serviceType, browse_domain).then([res, discovery, gate](std::vector<::mdns::browse_result> browsed) mutable
+                return discovery->browse(serviceType, browse_domain, 0, mdns_api_response_max).then([res, discovery, gate](std::vector<::mdns::browse_result> browsed) mutable
                 {
                     if (!browsed.empty())
                     {
@@ -125,7 +132,7 @@ namespace nmos
                         for (const auto& service : browsed)
                         {
                             const auto& serviceName = service.name;
-                            tasks.push_back(discovery->resolve(service.name, service.type, service.domain, service.interface_id)
+                            tasks.push_back(discovery->resolve(service.name, service.type, service.domain, service.interface_id, mdns_api_response_max)
                                 .then([serviceName, gate](std::vector<::mdns::resolve_result> resolved)
                             {
                                 return mdns_result(serviceName, resolved);
@@ -196,14 +203,14 @@ namespace nmos
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
                 nmos::details::decode_elements(flat_query_params);
 
-                const auto settings_domain = with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); });
-                const auto service_domain = utility::us2s(web::json::field_as_string_or{ { nmos::fields::domain }, settings_domain }(flat_query_params));
+                const auto query_domain = nmos::experimental::fields::query_domain(flat_query_params);
+                const auto service_domain = utility::us2s(!query_domain.empty() ? query_domain : with_read_lock(model.mutex, [&] { return nmos::get_domain(model.settings); }));
 
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));
 
                 // When browsing, we resolve using the browse results' domain and interface
                 // so this can give different results...
-                return discovery->resolve(serviceName, serviceType, service_domain.empty() ? "local." : service_domain)
+                return discovery->resolve(serviceName, serviceType, service_domain, 0, mdns_api_response_max)
                     .then([res, serviceName, gate](std::vector<::mdns::resolve_result> resolved) mutable
                 {
                     // merge results that have the same host_target, port and txt records
