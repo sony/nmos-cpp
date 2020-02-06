@@ -78,7 +78,7 @@ namespace nmos
 
     resource_paging::resource_paging(const web::json::value& flat_query_params, const nmos::tai& max_until, size_t default_limit, size_t max_limit)
         : order_by_created(false) // i.e. order by updated timestamp
-        , until(max_until)
+        , until(nmos::tai_max())
         , since(nmos::tai_min())
         , limit(default_limit)
         , since_specified(false)
@@ -100,16 +100,11 @@ namespace nmos
                 else if (field.first == U("until"))
                 {
                     until = nmos::parse_version(field.second.as_string());
-                    // "These parameters may be used to construct a URL which would return the same set of bounded data on consecutive requests"
-                    // therefore the response to a request with 'until' in the future should be fixed up...
-                    if (until > max_until) until = max_until;
                 }
                 else if (field.first == U("since"))
                 {
                     since = nmos::parse_version(field.second.as_string());
                     since_specified = true;
-                    // how should a request with 'since' in the future be fixed up?
-                    if (since > until && until == max_until) until = since;
                 }
                 else if (field.first == U("limit"))
                 {
@@ -124,6 +119,15 @@ namespace nmos
                 }
             }
         }
+
+        if (valid())
+        {
+            // fix up a valid request which has 'since' in the future (where max_until is 'now') to represent an empty interval at that time
+            if (max_until < since) until = since;
+            // "These parameters may be used to construct a URL which would return the same set of bounded data on consecutive requests"
+            // therefore also fix up a valid request which has 'until' in the future...
+            else if (max_until < until) until = max_until;
+        }
     }
 
     bool resource_paging::valid() const
@@ -136,7 +140,7 @@ namespace nmos
         // make user error information (to be used with status_codes::BadRequest)
         utility::string_t make_valid_paging_error(const nmos::resource_paging& paging)
         {
-            return U("the value of the 'paging.since' parameter must be less than or equal to the value of the 'paging.until' parameter");
+            return U("the value of the 'paging.since' parameter must be less than or equal to the effective value of the 'paging.until' parameter");
         }
     }
 
