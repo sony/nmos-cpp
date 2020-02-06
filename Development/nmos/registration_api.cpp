@@ -247,7 +247,7 @@ namespace nmos
                 bool valid = true;
 
                 // a modification request must not change the existing type
-                const auto resource = nmos::find_resource(resources, id);
+                auto resource = nmos::find_resource(resources, id);
                 const bool creating = resources.end() == resource;
                 const bool valid_type = creating || resource->type == type;
                 valid = valid && valid_type;
@@ -403,7 +403,7 @@ namespace nmos
                         set_reply(res, status_codes::Created, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(created_resource));
 
-                        insert_resource(resources, std::move(created_resource), allow_invalid_resources);
+                        resource = insert_resource(resources, std::move(created_resource), allow_invalid_resources).first;
                     }
                     else
                     {
@@ -415,6 +415,9 @@ namespace nmos
                             resource.data = data;
                         });
                     }
+
+                    // experimental extension, for debugging
+                    res.headers().add(U("X-Paging-Timestamp"), make_version(resource->updated));
 
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(resources);
 
