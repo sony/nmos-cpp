@@ -41,9 +41,9 @@ namespace nmos
 
         // "It is important that there are no duplicate creation or update timestamps stored against resources."
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#pagination
-        // It is therefore advantageous, though not sufficient, to provide a clock with monotonically increasing
+        // Unfortunately, this clock is based on the system_clock, so may not produce monotonically increasing
         // time points; nmos::strictly_increasing_update is used to prevent duplicate values in nmos::resources
-        static const bool is_steady = true;
+        static const bool is_steady = std::chrono::system_clock::is_steady;
 
         static time_point now()
         {
@@ -56,10 +56,8 @@ namespace nmos
             // Howard Hinnant has "spoken to the current maintainers of VS, gcc and clang, and gotten informal
             // agreement that they will not change their epoch of system_clock."
             // See https://stackoverflow.com/a/29800557
-            // Unfortunately, std::system_clock is not guaranteed to be steady, it may be adjusted at any moment.
-            // Therefore, use a steady clock adjusted by a fixed offset.
             // Note that on VS 2013 and earlier, the resolution of these clocks is woeful (10ms).
-            // On the other hand, the fact that system_clock is UTC, means that it is offset from the PTP/SMPTE
+            // Unfortunately, the fact that system_clock is UTC, means that it is offset from the PTP/SMPTE
             // Epoch by a number of seconds that increases every time a leap second is introduced.
             // A nice solution would be to wait for std::chrono::tai_clock (C++20), or to use Howard Hinnant's
             // date library, but for now, just fix the offset to the current value...
@@ -70,10 +68,10 @@ namespace nmos
             // and https://en.wikipedia.org/wiki/International_Atomic_Time
             // and https://github.com/HowardHinnant/date/issues/129
             // and https://cr.yp.to/proto/utctai.html
+            // and https://www.iers.org/SharedDocs/News/EN/BulletinC.html
             static const duration tai_offset = std::chrono::seconds(37);
-            static const duration steady_epoch = std::chrono::system_clock::now().time_since_epoch() + tai_offset - std::chrono::steady_clock::now().time_since_epoch();
 
-            return time_point(steady_epoch + std::chrono::steady_clock::now().time_since_epoch());
+            return time_point(tai_offset + std::chrono::system_clock::now().time_since_epoch());
         }
     };
 
