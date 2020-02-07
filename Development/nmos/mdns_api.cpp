@@ -66,7 +66,18 @@ namespace nmos
             const web::json::field_as_string_or query_domain{ U("query.domain"), {} };
         }
 
-        const std::chrono::seconds mdns_api_response_max(5);
+        namespace details
+        {
+            unsigned int get_request_timeout(const web::http::http_headers& headers)
+            {
+                // hm, ought to use the "wait" preference instead really
+                // see https://tools.ietf.org/html/rfc7240#section-4.3
+                auto header = headers.find(U("Request-Timeout"));
+                return headers.end() != header
+                    ? utility::conversions::details::scan_string(header->second, mdns::default_timeout_seconds)
+                    : mdns::default_timeout_seconds;
+            };
+        }
 
         web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate_)
         {
@@ -78,6 +89,8 @@ namespace nmos
             {
                 // hmmm, fragile; make shared, and capture into continuation below, in order to extend lifetime until after discovery
                 std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
+
+                const std::chrono::seconds timeout(details::get_request_timeout(req.headers()));
 
                 // get the browse domain from the query parameters or settings
 
@@ -91,7 +104,7 @@ namespace nmos
 
                 // note, only the list of available service types that are explicitly being advertised is returned by "_services._dns-sd._udp"
                 // see https://tools.ietf.org/html/rfc6763#section-9
-                return discovery->browse("_services._dns-sd._udp", browse_domain, 0, mdns_api_response_max).then([req, res, gate](std::vector<::mdns::browse_result> browsed) mutable
+                return discovery->browse("_services._dns-sd._udp", browse_domain, 0, timeout).then([req, res, gate](std::vector<::mdns::browse_result> browsed) mutable
                 {
                     auto results = boost::copy_range<std::set<utility::string_t>>(browsed | boost::adaptors::transformed([](const ::mdns::browse_result& br)
                     {
@@ -112,6 +125,8 @@ namespace nmos
                 // hmm, something to think about... the regex patterns are presumably being used on encoded paths?
                 const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
 
+                const std::chrono::seconds timeout(details::get_request_timeout(req.headers()));
+
                 // get the browse domain from the query parameters or settings
 
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
@@ -123,7 +138,7 @@ namespace nmos
                 std::shared_ptr<::mdns::service_discovery> discovery(new ::mdns::service_discovery(*gate));
 
                 // hmm, how to add cancellation on shutdown to the browse and resolve operations?
-                return discovery->browse(serviceType, browse_domain, 0, mdns_api_response_max).then([res, discovery, gate](std::vector<::mdns::browse_result> browsed) mutable
+                return discovery->browse(serviceType, browse_domain, 0, timeout).then([res, discovery, timeout, gate](std::vector<::mdns::browse_result> browsed) mutable
                 {
                     if (!browsed.empty())
                     {
@@ -132,7 +147,7 @@ namespace nmos
                         for (const auto& service : browsed)
                         {
                             const auto& serviceName = service.name;
-                            tasks.push_back(discovery->resolve(service.name, service.type, service.domain, service.interface_id, mdns_api_response_max)
+                            tasks.push_back(discovery->resolve(service.name, service.type, service.domain, service.interface_id, timeout)
                                 .then([serviceName, gate](std::vector<::mdns::resolve_result> resolved)
                             {
                                 return mdns_result(serviceName, resolved);
@@ -198,6 +213,8 @@ namespace nmos
                 const std::string serviceType = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceType.name)));
                 const std::string serviceName = utility::us2s(web::uri::decode(parameters.at(nmos::experimental::patterns::mdnsServiceName.name)));
 
+                const std::chrono::seconds timeout(details::get_request_timeout(req.headers()));
+
                 // get the service domain from the query parameters or settings
 
                 auto flat_query_params = web::json::value_from_query(req.request_uri().query());
@@ -210,7 +227,7 @@ namespace nmos
 
                 // When browsing, we resolve using the browse results' domain and interface
                 // so this can give different results...
-                return discovery->resolve(serviceName, serviceType, service_domain, 0, mdns_api_response_max)
+                return discovery->resolve(serviceName, serviceType, service_domain, 0, timeout)
                     .then([res, serviceName, gate](std::vector<::mdns::resolve_result> resolved) mutable
                 {
                     // merge results that have the same host_target, port and txt records
