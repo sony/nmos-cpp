@@ -76,7 +76,7 @@ namespace nmos
                 return headers.end() != header
                     ? utility::conversions::details::scan_string(header->second, mdns::default_timeout_seconds)
                     : mdns::default_timeout_seconds;
-            };
+            }
         }
 
         web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate_)
