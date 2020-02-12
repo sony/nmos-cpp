@@ -1022,7 +1022,7 @@ namespace nmos
             if (is_audio_sdp)
             {
                 if (attributes.end() == ptime) throw details::sdp_processing_error("missing attribute: ptime");
-                sdp_params.audio.packet_time = sdp::fields::value(*ptime).as_integer();
+                sdp_params.audio.packet_time = sdp::fields::value(*ptime).as_double();
             }
         }
 
