@@ -10,8 +10,6 @@
       "description": "Describes an empty object",
       "title": "Empty object schema",
       "additionalProperties": false,
-      "required": [
-      ],
       "properties": {
       }
     }
