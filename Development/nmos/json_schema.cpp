@@ -20,8 +20,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3.x/APIs/schemas/
         namespace v1_3
         {
-            //using namespace nmos::is04_schemas::v1_3_x;
-            const utility::string_t tag(_XPLATSTR("v1.3"));
+            using namespace nmos::is04_schemas::v1_3_x;
+            const utility::string_t tag(_XPLATSTR("v1.3.x"));
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
@@ -31,8 +31,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/APIs/schemas/
         namespace v1_2
         {
-            using namespace nmos::is04_schemas::v1_2_2;
-            const utility::string_t tag(_XPLATSTR("v1.2.2"));
+            using namespace nmos::is04_schemas::v1_2_x;
+            const utility::string_t tag(_XPLATSTR("v1.2.x"));
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
@@ -42,8 +42,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.1.x/APIs/schemas/
         namespace v1_1
         {
-            using namespace nmos::is04_schemas::v1_1_3;
-            const utility::string_t tag(_XPLATSTR("v1.1.3"));
+            using namespace nmos::is04_schemas::v1_1_x;
+            const utility::string_t tag(_XPLATSTR("v1.1.x"));
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
@@ -53,8 +53,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
-            using namespace nmos::is04_schemas::v1_0_3;
-            const utility::string_t tag(_XPLATSTR("v1.0.3"));
+            using namespace nmos::is04_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-v1.0-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json"));
@@ -72,8 +72,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.x/APIs/schemas/
         namespace v1_1
         {
-            //using namespace nmos::is05_schemas::v1_1_x;
-            const utility::string_t tag(_XPLATSTR("v1.1"));
+            using namespace nmos::is05_schemas::v1_1_x;
+            const utility::string_t tag(_XPLATSTR("v1.1.x"));
 
             const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("sender-stage-schema.json"));
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("receiver-stage-schema.json"));
@@ -82,8 +82,8 @@ namespace nmos
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
-            using namespace nmos::is05_schemas::v1_0_2;
-            const utility::string_t tag(_XPLATSTR("v1.0.2"));
+            using namespace nmos::is05_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
             const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-sender-stage-schema.json"));
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-receiver-stage-schema.json"));

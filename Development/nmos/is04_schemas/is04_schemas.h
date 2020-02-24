@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace is04_schemas
     {
-        namespace v1_3
+        namespace v1_3_x
         {
             extern const char* registrationapi_resource_post_request;
             extern const char* clock_internal;
@@ -43,7 +43,7 @@ namespace nmos
             extern const char* nodeapi_receiver_target;
         }
 
-        namespace v1_2_2
+        namespace v1_2_x
         {
             extern const char* registrationapi_resource_post_request;
             extern const char* clock_internal;
@@ -77,7 +77,7 @@ namespace nmos
             extern const char* nodeapi_receiver_target;
         }
 
-        namespace v1_1_3
+        namespace v1_1_x
         {
             extern const char* registrationapi_resource_post_request;
             extern const char* clock_internal;
@@ -111,7 +111,7 @@ namespace nmos
             extern const char* nodeapi_receiver_target;
         }
 
-        namespace v1_0_3
+        namespace v1_0_x
         {
             extern const char* registrationapi_v1_0_resource_post_request;
             extern const char* device;

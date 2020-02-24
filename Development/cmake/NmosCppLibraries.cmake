@@ -106,10 +106,10 @@ set(NMOS_IS04_SCHEMAS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is04_schemas/is04_schemas.h
     )
 
-set(NMOS_IS04_V1_3_TAG v1.3)
-set(NMOS_IS04_V1_2_TAG v1.2.2)
-set(NMOS_IS04_V1_1_TAG v1.1.3)
-set(NMOS_IS04_V1_0_TAG v1.0.3)
+set(NMOS_IS04_V1_3_TAG v1.3.x)
+set(NMOS_IS04_V1_2_TAG v1.2.x)
+set(NMOS_IS04_V1_1_TAG v1.1.x)
+set(NMOS_IS04_V1_0_TAG v1.0.x)
 
 set(NMOS_IS04_V1_3_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_3_TAG}/APIs/schemas/clock_internal.json
@@ -348,8 +348,8 @@ set(NMOS_IS05_SCHEMAS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is05_schemas/is05_schemas.h
     )
 
-set(NMOS_IS05_V1_1_TAG v1.1)
-set(NMOS_IS05_V1_0_TAG v1.0.2)
+set(NMOS_IS05_V1_1_TAG v1.1.x)
+set(NMOS_IS05_V1_0_TAG v1.0.x)
 
 set(NMOS_IS05_V1_1_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_1_TAG}/APIs/schemas/activation-response-schema.json
