@@ -78,7 +78,7 @@ install:
   
   # Retrieve and build C++ REST SDK
   - |
-    git clone --recurse-submodules --branch v2.10.14 https://github.com/Microsoft/cpprestsdk
+    git clone --recurse-submodules --branch v2.10.15 https://github.com/Microsoft/cpprestsdk
     cd cpprestsdk/Release
     mkdir build
     cd build

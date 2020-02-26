@@ -36,7 +36,7 @@ include(safeguards)
 # find dependencies
 
 # cpprestsdk
-# note: 2.10.14 or higher is recommended but there's no cpprestsdk-configVersion.cmake
+# note: 2.10.15 or higher is recommended but there's no cpprestsdk-configVersion.cmake
 # and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk::cpprest
 find_package(cpprestsdk REQUIRED NAMES cpprestsdk cpprest)
 message(STATUS "Found cpprestsdk")
