@@ -324,7 +324,10 @@ namespace web
                                 server.set_close_handler(bind(&websocket_listener_wspp::handle_close, this, _1));
                                 server.set_message_handler(bind(&websocket_listener_wspp::handle_message, this, _1, _2));
 
-                                server.set_listen_backlog(configuration().backlog());
+                                if (0 != configuration().backlog())
+                                {
+                                    server.set_listen_backlog(configuration().backlog());
+                                }
                                 websocketpp::lib::asio::ip::tcp::resolver resolver(server.get_io_service());
                                 websocketpp::lib::asio::ip::tcp::resolver::query query(host, service, {});
                                 websocketpp::lib::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
