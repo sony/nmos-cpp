@@ -13,19 +13,21 @@ namespace nmos
         class seed_generator
         {
         public:
+            typedef std::uint32_t result_type;
+
             seed_generator() {}
             template <typename InputIterator> seed_generator(InputIterator first, InputIterator last) {}
-            template <typename T> seed_generator(const std::initializer_list<T>&) {}
+            seed_generator(std::initializer_list<result_type>) {}
 
             template <typename RandomAccessorIterator>
             void generate(const RandomAccessorIterator first, const RandomAccessorIterator last)
             {
-                std::uniform_int_distribution<std::uint32_t> uint32s;
-                std::generate(first, last, [&] { return uint32s(device); });
+                std::uniform_int_distribution<result_type> results;
+                std::generate(first, last, [&] { return results(device); });
             }
 
             size_t size() const { return 0; }
-            template <typename OutputIterator> void param(OutputIterator) {}
+            template <typename OutputIterator> void param(OutputIterator) const {}
 
         private:
             std::random_device device;
