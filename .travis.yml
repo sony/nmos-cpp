@@ -131,7 +131,7 @@ after_script:
 
   # Run Node tests
   - |
-    $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\"}" > nodeoutput 2>&1 &
+    $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > nodeoutput 2>&1 &
     NODE_PID=$!
 
   # IS-04-01
@@ -192,7 +192,7 @@ after_script:
 
   # Run Registry tests (leave Node running)
   - |
-    $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\"}" > registryoutput 2>&1 &
+    $TRAVIS_BUILD_DIR/Development/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > registryoutput 2>&1 &
     REGISTRY_PID=$!
     # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
     sleep 2
