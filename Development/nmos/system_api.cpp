@@ -1,10 +1,13 @@
 #include "nmos/system_api.h"
 
+#include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/is09_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
+#include "nmos/thread_utils.h"
 
 namespace nmos
 {
@@ -28,7 +31,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        const std::set<api_version> versions{ { 1, 0 } };
+        const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is09_versions::from_settings(model.settings); });
         system_api.support(U("/x-nmos/") + nmos::patterns::system_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
@@ -67,7 +70,7 @@ namespace nmos
             }
             else
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "System global resource not configured!";
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "System global configuration resource not configured!";
                 set_reply(res, status_codes::InternalError); // rather than Not Found, since the System API doesn't allow a 404 response
             }
 
@@ -77,7 +80,7 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            { experimental::make_systemapi_global_schema_uri({ 1, 0 }) }
+            boost::copy_range<std::vector<web::uri>>(is09_versions::all | boost::adaptors::transformed(experimental::make_systemapi_global_schema_uri))
         };
 
         // experimental extension, to allow the global configuration resource to be replaced
@@ -174,7 +177,7 @@ namespace nmos
                 }
                 else
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "System global resource not configured!";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "System global configuration resource not configured!";
                     set_reply(res, status_codes::InternalError); // rather than Not Found, since the System API doesn't allow a 404 response
                 }
 

@@ -4,6 +4,7 @@
 #include "nmos/connection_activation.h"
 #include "nmos/connection_api.h"
 #include "nmos/events_ws_client.h" // just a forward declaration of nmos::events_ws_message_handler
+#include "nmos/node_system_behaviour.h"
 #include "nmos/resources.h" // just a forward declaration of nmos::resources
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
 
@@ -22,10 +23,13 @@ namespace nmos
 // starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
 void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate);
 
+// Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
+nmos::system_global_handler make_node_implementation_system_global_handler(nmos::node_model& model, slog::base_gate& gate);
+
 // Example Connection API callback to parse "transport_file" during a PATCH /staged request
 nmos::transport_file_parser make_node_implementation_transport_file_parser();
 
-// Example Connection API callback to to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
+// Example Connection API callback to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
 nmos::details::connection_resource_patch_validator make_node_implementation_patch_validator();
 
 // Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
