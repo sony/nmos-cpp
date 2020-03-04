@@ -640,6 +640,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/node_resource.cpp
     ${NMOS_CPP_DIR}/nmos/node_resources.cpp
     ${NMOS_CPP_DIR}/nmos/node_server.cpp
+    ${NMOS_CPP_DIR}/nmos/node_system_behaviour.cpp
     ${NMOS_CPP_DIR}/nmos/process_utils.cpp
     ${NMOS_CPP_DIR}/nmos/query_api.cpp
     ${NMOS_CPP_DIR}/nmos/query_utils.cpp
@@ -711,6 +712,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/node_resource.h
     ${NMOS_CPP_DIR}/nmos/node_resources.h
     ${NMOS_CPP_DIR}/nmos/node_server.h
+    ${NMOS_CPP_DIR}/nmos/node_system_behaviour.h
     ${NMOS_CPP_DIR}/nmos/paging_utils.h
     ${NMOS_CPP_DIR}/nmos/process_utils.h
     ${NMOS_CPP_DIR}/nmos/query_api.h

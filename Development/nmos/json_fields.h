@@ -198,6 +198,15 @@ namespace nmos
         // for connection_api
         const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string or null
         const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string or null
+
+        // IS-09 System
+
+        // for system_api
+        const web::json::field_as_value is04{ U("is04") };
+        const web::json::field_as_integer heartbeat_interval{ U("heartbeat_interval") }; // 1..1000, typically 5
+        const web::json::field_as_value ptp{ U("ptp") };
+        const web::json::field_as_integer announce_receipt_timeout{ U("announce_receipt_timeout") }; // 2..10, typically 3
+        const web::json::field_as_integer domain_number{ U("domain_number") }; // 0..127
     }
 
     // Fields for experimental extensions

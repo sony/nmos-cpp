@@ -64,7 +64,7 @@ namespace nmos
         // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is07_versions{ U("is07_versions") }; // when omitted, nmos::is07_versions::all is used
 
-        // is09_versions [registry]: used to specify the enabled API versions for a version-locked configuration
+        // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is09_versions{ U("is09_versions") }; // when omitted, nmos::is09_versions::all is used
 
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
@@ -74,7 +74,7 @@ namespace nmos
         const web::json::field_as_integer_or highest_pri{ U("highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
         const web::json::field_as_integer_or lowest_pri{ U("lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
 
-        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs
+        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs or System APIs
         const web::json::field_as_integer_or discovery_backoff_min{ U("discovery_backoff_min"), 1 };
         const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_backoff_max"), 30 };
         const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_backoff_factor"), 1.5 };
@@ -98,13 +98,14 @@ namespace nmos
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
         const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
         const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
+        // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
         const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };
 
         // registration_services [node]: the discovered list of Registration APIs, in the order they should be used
-        // this list is created and maintained by nmos::node_behaviour_thread; each entry is a uri like http://example.api.com/x-nmos/registration/{version}
+        // this list is created and maintained by nmos::node_behaviour_thread; each entry is a uri like http://api.example.com/x-nmos/registration/{version}
         const web::json::field_as_value registration_services{ U("registration_services") };
 
         // registration_heartbeat_interval [node]:
@@ -148,6 +149,19 @@ namespace nmos
         // it should clear the subscriptions for that particular client and close the websocket connection."
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
         const web::json::field_as_integer_or events_expiry_interval{ U("events_expiry_interval"), 12 };
+
+        // system_services [node]: the discovered list of System APIs, in the order they should be used
+        // this list is created and maintained by nmos::node_system_behaviour_thread; each entry is a uri like http://api.example.com/x-nmos/system/{version}
+        const web::json::field_as_value system_services{ U("system_services") };
+
+        // system_address [node]: IP address or host name used to construct request URLs for the System API (if not discovered via DNS-SD)
+        const web::json::field_as_string system_address{ U("system_address") };
+
+        // system_version [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
+        const web::json::field_as_string_or system_version{ U("system_version"), U("v1.0") };
+
+        // system_request_max [node]: timeout for interactions with the System API
+        const web::json::field_as_integer_or system_request_max{ U("system_request_max"), 30 };
     }
 
     // Configuration settings and defaults for experimental extensions
@@ -244,6 +258,10 @@ namespace nmos
 
             // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
             const web::json::field_as_string_or dh_param_file{ U("dh_param_file"), U("") };
+
+            // system_interval_min/system_interval_max [node]: used to poll for System API changes; default is about one hour
+            const web::json::field_as_integer_or system_interval_min{ U("system_interval_min"), 3600 };
+            const web::json::field_as_integer_or system_interval_max{ U("system_interval_max"), 3660 };
         }
     }
 }
