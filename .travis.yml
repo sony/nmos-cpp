@@ -43,10 +43,12 @@ matrix:
 before_install:
   # Get IP address and short form Git Hash
   - |
-    hostname -I
     export HOST_IP_ADDRESS="$(hostname -I | cut -f2 -d' ')"
     echo $HOST_IP_ADDRESS
+    export HOST_IP_ADDRESS0="$(hostname -I | cut -f1 -d' ')"
+    echo $HOST_IP_ADDRESS0
     GITHUB_COMMIT=$(echo "$TRAVIS_COMMIT" | cut -c1-7)
+    echo $GITHUB_COMMIT
 
   # Allow Travis folds
   - |
@@ -184,7 +186,7 @@ after_script:
 
   # IS-09-02
   - |
-    case $(python3 nmos-test.py suite IS-09-02 --selection all --host "$HOST_IP_ADDRESS" null --port 0 0 --version null v1.0 --output "results/$GITHUB_COMMIT-IS-09-02.json" >/dev/null 2>&1; echo $?) in
+    case $(python3 nmos-test.py suite IS-09-02 --selection all --host "$HOST_IP_ADDRESS0" null --port 0 0 --version null v1.0 --output "results/$GITHUB_COMMIT-IS-09-02.json" >/dev/null 2>&1; echo $?) in
     [0-1])  testmessage="Pass" && testcolour="brightgreen";;
     *)      testmessage="Fail" && testcolour="red";;
     esac
