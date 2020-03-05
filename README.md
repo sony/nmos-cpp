@@ -14,7 +14,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 
 For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
 
-- The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, and the NMOS Connection API.
+- The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, the NMOS Connection API, and so on.
 - The [nmos-cpp-registry application](Development/nmos-cpp-registry) provides a simple but functional instance of an NMOS Registration & Discovery System (RDS), utilising the nmos module.
 - The [nmos-cpp-node application](Development/nmos-cpp-node) provides an example NMOS Node, also utilising the nmos module.
 
@@ -56,6 +56,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-07-01][IS-07-01-badge]][IS-07-01-sheet]
 [![IS-07-02][IS-07-02-badge]][IS-07-02-sheet]
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
+[![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
 
 [IS-04-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1VrCPcYeTs5uoBgECxbfuWbbhJZpbHcPy
 [IS-04-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D14vgZF4CSx2oayEAbeNFGiHmPW95HKMXt
@@ -65,6 +66,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-07-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1XQuAN13xAQ81G_Eokj6AAYv5kMInPXkZ
 [IS-07-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7XCmsQaOw5eEqq6yuuy1U9I3J-9zN9
 [IS-09-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7ncRp3SbHHoftQY-RBi2NFC283fOTn
+[IS-09-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1f4FHD6vI1LotF7Sm8U6tmNp58seW9397
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
 [IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
 [IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
@@ -73,6 +75,7 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-07-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=828991990
 [IS-07-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=367400040
 [IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
+[IS-09-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=2135469955
 
 ### Recent Activity
 
@@ -80,6 +83,7 @@ The implementation is incomplete in some areas. Development is ongoing, tracking
 
 Recent activity on the project (newest first):
 
+- Added support in the Node implementation for discovery of, and interaction with, a System API, as required for compliance with TR-1001-1
 - Changed the implementation of `nmos::tai_clock` with the effect that it may no longer be monotonic
 - Added a minimum viable LLDP implementation (enabled by a CMake configuration option) to support sending and receiving the IS-04 v1.3 additional network data for Nodes required by IS-06
 - Update the IS-05 schemas to correct an unfortunate bug in the IS-05 v1.1 spec (see [AMWA-TV/nmos-device-connection-management#99](https://github.com/AMWA-TV/nmos-device-connection-management/pull/99))

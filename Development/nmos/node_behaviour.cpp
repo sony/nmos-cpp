@@ -21,11 +21,11 @@ namespace nmos
 {
     namespace details
     {
-        void node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
+        void node_behaviour_thread(nmos::model& model, registration_handler registration_changed, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
 
         // registered operation
         void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate);
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate);
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, registration_handler registration_changed, slog::base_gate& gate);
 
         // peer to peer operation
         void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
@@ -40,7 +40,9 @@ namespace nmos
         nmos::resource make_node_behaviour_grain(const nmos::id& id, const nmos::id& subscription_id);
     }
 
-    void node_behaviour_thread(nmos::model& model, slog::base_gate& gate_)
+    // uses the default DNS-SD implementation
+    // callbacks from this function are called with the model locked, and may read or write directly to the model
+    void node_behaviour_thread(nmos::model& model, registration_handler registration_changed, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
 
@@ -49,17 +51,31 @@ namespace nmos
 
         mdns::service_discovery discovery(gate);
 
-        details::node_behaviour_thread(model, advertiser, discovery, gate);
+        details::node_behaviour_thread(model, std::move(registration_changed), advertiser, discovery, gate);
     }
 
-    void node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate_)
+    // uses the specified DNS-SD implementation
+    // callbacks from this function are called with the model locked, and may read or write directly to the model
+    void node_behaviour_thread(nmos::model& model, registration_handler registration_changed, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
 
-        details::node_behaviour_thread(model, advertiser, discovery, gate);
+        details::node_behaviour_thread(model, std::move(registration_changed), advertiser, discovery, gate);
     }
 
-    void details::node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
+    // uses the default DNS-SD implementation
+    void node_behaviour_thread(nmos::model& model, slog::base_gate& gate)
+    {
+        node_behaviour_thread(model, {}, gate);
+    }
+
+    // uses the specified DNS-SD implementation
+    void node_behaviour_thread(nmos::model& model, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
+    {
+        node_behaviour_thread(model, {}, advertiser, discovery, gate);
+    }
+
+    void details::node_behaviour_thread(nmos::model& model, registration_handler registration_changed, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
     {
         // The possible states of node behaviour represent the two primary modes (registered operation and peer-to-peer operation)
         // and a few hopefully ephemeral states as the node works through the "Standard Registration Sequences".
@@ -161,7 +177,7 @@ namespace nmos
             case registered_operation:
                 // "6. The Node persists itself in the registry by issuing heartbeats."
                 // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
-                details::registered_operation(self_id, model, grain_id, gate);
+                details::registered_operation(self_id, model, grain_id, registration_changed, gate);
 
                 if (details::has_discovered_registration_services(model))
                 {
@@ -715,7 +731,7 @@ namespace nmos
                     // It may be necessary to expose only a limited subset of a Node's resources from lower versioned endpoints."
                     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.2/docs/6.0.%20Upgrade%20Path.md#version-translations
 
-                    // base uri should be like http://example.api.com/x-nmos/registration/{version}
+                    // base uri should be like http://api.example.com/x-nmos/registration/{version}
                     const auto registry_version = parse_api_version(web::uri::split_path(base_uri.path()).back());
 
                     // reset the node behaviour subscription for the Registration API version
@@ -811,7 +827,7 @@ namespace nmos
             request.wait();
         }
 
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, slog::base_gate& gate)
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, registration_handler registration_changed, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting registered operation";
 
@@ -895,7 +911,18 @@ namespace nmos
                         auto lock = model.write_lock(); // in order to update local state
 
                         node_registered = success;
-                        if (!node_registered)
+
+                        if (node_registered)
+                        {
+                            // Synchronous notification that registered operation has been adopted successfully
+
+                            if (registration_changed)
+                            {
+                                // this callback should not throw exceptions
+                                registration_changed(heartbeat_client->base_uri());
+                            }
+                        }
+                        else
                         {
                             node_unregistered = true;
                         }
@@ -995,6 +1022,15 @@ namespace nmos
                     // wait for the request because interactions with the Registration API /resource endpoint must be sequential
                     condition.wait(lock, [&]{ return shutdown || registration_service_error || node_unregistered || request.is_done(); });
                 }
+            }
+
+            // Synchronous notification that registered operation is ending
+            // hmm, perhaps only if (!shutdown)?
+
+            if (registration_changed)
+            {
+                // this callback should not throw exceptions
+                registration_changed({});
             }
 
             cancellation_source.cancel();

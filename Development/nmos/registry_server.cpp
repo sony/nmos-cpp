@@ -27,7 +27,7 @@ namespace nmos
 
     namespace experimental
     {
-        // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-10 System API
+        // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-09 System API
         // and the experimental DNS-SD Browsing API, Logging API and Settings API, according to the specified data models
         nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {

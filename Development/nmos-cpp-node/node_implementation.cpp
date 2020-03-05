@@ -31,6 +31,7 @@
 #include "nmos/random.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/system_resources.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
@@ -332,6 +333,30 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     temperature_events.wait();
 }
 
+// Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
+nmos::system_global_handler make_node_implementation_system_global_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example uses the callback to update the settings
+    // (an 'empty' std::function disables System API node behaviour)
+    return [&](const web::uri& system_uri, const web::json::value& system_global)
+    {
+        if (!system_uri.is_empty())
+        {
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "System global configuration changed at " << system_uri.to_string();
+
+            // although this example immediately updates the settings, the effect is not propagated
+            // in either Registration API behaviour or the senders' /transportfile endpoints until
+            // an update to these is forced by other circumstances
+
+            web::json::merge_patch(model.settings, nmos::parse_system_global_data(system_global).second, true);
+        }
+        else
+        {
+            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "System global configuration is not discoverable";
+        }
+    };
+}
+
 // Example Connection API callback to parse "transport_file" during a PATCH /staged request
 nmos::transport_file_parser make_node_implementation_transport_file_parser()
 {
@@ -340,7 +365,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
     return &nmos::parse_rtp_transport_file;
 }
 
-// Example Connection API callback to to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
+// Example Connection API callback to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
 nmos::details::connection_resource_patch_validator make_node_implementation_patch_validator()
 {
     // this example uses an 'empty' std::function because it does not need to do any validation

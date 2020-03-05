@@ -37,6 +37,9 @@
     // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is07_versions": ["v1.0"],
 
+    // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
+    //"is09_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
@@ -44,7 +47,7 @@
     //"highest_pri": 0,
     //"lowest_pri": 2147483647,
 
-    // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs
+    // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs or System APIs
     //"discovery_backoff_min": 1,
     //"discovery_backoff_max": 30,
     //"discovery_backoff_factor": 1.5,
@@ -66,6 +69,8 @@
     //"connection_port": 3215,
     //"events_port": 3216,
     //"events_ws_port": 3217,
+    // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
+    //"system_port": 10641,
 
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
     //"listen_backlog": 0,
@@ -80,7 +85,7 @@
 
     // registration_heartbeat_max [node]: timeout for interactions with the Registration API /health/nodes endpoint
     // Note that the default timeout is the same as the default heartbeat interval, in order that there is then a reasonable opportunity to try the next available Registration API
-	// though in some circumstances registration expiry could potentially still be avoided with a timeout that is (almost) twice the garbage collection interval...
+    // though in some circumstances registration expiry could potentially still be avoided with a timeout that is (almost) twice the garbage collection interval...
     //"registration_heartbeat_max": 5,
 
     // immediate_activation_max [node]: timeout for immediate activations within the Connection API /staged endpoint
@@ -96,6 +101,15 @@
     // it should clear the subscriptions for that particular client and close the websocket connection."
     // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
     //"events_expiry_interval": 12,
+
+    // system_address [node]: IP address or host name used to construct request URLs for the System API (if not discovered via DNS-SD)
+    //"system_address": ip-address-string,
+
+    // system_version [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
+    //"system_version": "v1.0",
+
+    // system_request_max [node]: timeout for interactions with the System API
+    //"system_request_max": 30,
 
     // Configuration settings and defaults for experimental extensions
 
@@ -164,6 +178,10 @@
 
     // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
     //"dh_param_file": "dhparam.pem",
+
+    // system_interval_min/system_interval_max [node]: used to poll for System API changes; default is about one hour
+    //"system_interval_min": 3600,
+    //"system_interval_max": 3660,
 
     "don't worry": "about trailing commas"
 }

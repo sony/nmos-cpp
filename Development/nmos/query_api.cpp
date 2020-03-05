@@ -254,7 +254,7 @@ namespace nmos
 
             struct query_api_html_response_body_visitor : web::json::value_assigning_visitor
             {
-                // query uri should be like http://example.api.com/x-nmos/query/{version}
+                // query uri should be like http://api.example.com/x-nmos/query/{version}
                 query_api_html_response_body_visitor(web::json::value& value, const web::uri& query_uri, const nmos::type& type)
                     : web::json::value_assigning_visitor(value)
                     , query_uri(query_uri)
