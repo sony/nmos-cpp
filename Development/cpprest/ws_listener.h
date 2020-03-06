@@ -75,8 +75,14 @@ namespace web
                 typedef std::function<void(const web::uri& uri, const connection_id& id, const websocket_incoming_message& message)> message_handler;
 
                 // a convenience type to simplify passing around all the necessary handlers for a websocket_listener
+                // use the default constructor and chaining member functions for fluent initialization
                 struct websocket_listener_handlers
                 {
+                    websocket_listener_handlers& on_validate(web::websockets::experimental::listener::validate_handler handler) { validate_handler = std::move(handler); return *this; }
+                    websocket_listener_handlers& on_open(web::websockets::experimental::listener::open_handler handler) { open_handler = std::move(handler); return *this; }
+                    websocket_listener_handlers& on_close(web::websockets::experimental::listener::close_handler handler) { close_handler = std::move(handler); return *this; }
+                    websocket_listener_handlers& on_message(web::websockets::experimental::listener::message_handler handler) { message_handler = std::move(handler); return *this; }
+
                     web::websockets::experimental::listener::validate_handler validate_handler;
                     web::websockets::experimental::listener::open_handler open_handler;
                     web::websockets::experimental::listener::close_handler close_handler;

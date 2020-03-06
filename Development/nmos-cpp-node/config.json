@@ -14,7 +14,7 @@
     //"logging_level": 0,
 
     // logging_categories [registry, node]: array of logging categories to be included in the error log
-    //"logging_categories": ["node_behaviour"],
+    //"logging_categories": ["node_implementation"],
 
     // Configuration settings and defaults for the NMOS APIs
 

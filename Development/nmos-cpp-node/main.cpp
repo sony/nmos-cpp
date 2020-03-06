@@ -1,7 +1,6 @@
 #include <fstream>
 #include <iostream>
 #include "nmos/log_gate.h"
-#include "nmos/connection_events_activation.h"
 #include "nmos/model.h"
 #include "nmos/node_server.h"
 #include "nmos/process_utils.h"
@@ -92,16 +91,13 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Build settings: " << nmos::get_build_settings_info();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << node_model.settings.serialize();
 
+        // Set up the callbacks between the node server and the underlying implementation
+
+        auto node_implementation = make_node_implementation(node_model, gate);
+
         // Set up the node server
 
-        auto system_changed = make_node_implementation_system_global_handler(node_model, gate); // may be omitted if not required
-        auto parse_transport_file = make_node_implementation_transport_file_parser(); // may be omitted if the default is sufficient
-        auto validate_merged = make_node_implementation_patch_validator(); // may be omitted if not required
-        auto resolve_auto = make_node_implementation_auto_resolver(node_model.settings);
-        auto set_transportfile = make_node_implementation_transportfile_setter(node_model.node_resources, node_model.settings);
-        auto connection_activated = make_node_implementation_activation_handler(node_model, gate);
-
-        auto node_server = nmos::experimental::make_node_server(node_model, system_changed, parse_transport_file, validate_merged, resolve_auto, set_transportfile, connection_activated, log_model, gate);
+        auto node_server = nmos::experimental::make_node_server(node_model, node_implementation, log_model, gate);
 
         if (!nmos::experimental::fields::http_trace(node_model.settings))
         {

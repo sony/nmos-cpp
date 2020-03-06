@@ -28,6 +28,7 @@
 #include "nmos/node_interfaces.h"
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
+#include "nmos/node_server.h"
 #include "nmos/random.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -57,6 +58,10 @@ void insert_node_implementation_group_hint(nmos::resource& resource, Suffix suff
 // specific event types used by the example node
 const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
 const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
+
+// forward declarations for node_implementation_thread
+nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
+nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
@@ -342,7 +347,7 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
     {
         if (!system_uri.is_empty())
         {
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "System global configuration changed at " << system_uri.to_string();
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "New system global configuration discovered from the System API at: " << system_uri.to_string();
 
             // although this example immediately updates the settings, the effect is not propagated
             // in either Registration API behaviour or the senders' /transportfile endpoints until
@@ -352,7 +357,23 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
         }
         else
         {
-            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "System global configuration is not discoverable";
+            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "System global configuration is not discoverable";
+        }
+    };
+}
+
+// Example Registration API node behaviour callback to perform application-specific operations when the current Registration API changes
+nmos::registration_handler make_node_implementation_registration_handler(slog::base_gate& gate)
+{
+    return [&](const web::uri& registration_uri)
+    {
+        if (!registration_uri.is_empty())
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Started registered operation with Registration API at: " << registration_uri.to_string();
+        }
+        else
+        {
+            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Stopped registered operation";
         }
     };
 }
@@ -467,17 +488,6 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     };
 }
 
-// Example Connection API activation callback to perform application-specific operations to complete activation
-nmos::connection_activation_handler make_node_implementation_activation_handler(nmos::node_model& model, slog::base_gate& gate)
-{
-    // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
-    // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
-    // connection errors are reflected into the /active endpoint by setting master_enable to false
-    auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
-    auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
-    return nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, handle_close, model.settings, gate);
-}
-
 // Example Events WebSocket API client message handler
 nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
@@ -498,9 +508,28 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
             const auto& payload = nmos::fields::state_payload(message);
             const nmos::events_number value(nmos::fields::payload_number_value(payload).to_double(), nmos::fields::payload_number_scale(payload));
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature received: " << value.scaled_value() << " (" << event_type.name << ")";
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Temperature received: " << value.scaled_value() << " (" << event_type.name << ")";
         }
     }, gate);
+}
+
+// Example Connection API activation callback to perform application-specific operations to complete activation
+nmos::connection_activation_handler make_node_implementation_activation_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
+    // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
+    // connection errors are reflected into the /active endpoint by setting master_enable to false
+    auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
+    auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
+    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, handle_close, model.settings, gate);
+
+    return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    {
+        const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Activating " << id_type;
+
+        connection_events_activation_handler(resource, connection_resource);
+    };
 }
 
 // generate repeatable ids for a range of resources
@@ -531,4 +560,18 @@ template <typename Suffix>
 void insert_node_implementation_group_hint(nmos::resource& resource, Suffix suffix)
 {
     web::json::push_back(resource.data[nmos::fields::tags][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), resource.type.name + U(' ') + utility::conversions::details::to_string_t(suffix) }));
+}
+
+// This constructs all the callbacks used to integrate the example device-specific underlying implementation
+// into the server instance for the NMOS Node.
+nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
+{
+    return nmos::experimental::node_implementation()
+        .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
+        .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
+        .on_parse_transport_file(make_node_implementation_transport_file_parser()) // may be omitted if the default is sufficient
+        .on_validate_merged(make_node_implementation_patch_validator()) // may be omitted if not required
+        .on_resolve_auto(make_node_implementation_auto_resolver(model.settings))
+        .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
+        .on_connection_activated(make_node_implementation_activation_handler(model, gate));
 }

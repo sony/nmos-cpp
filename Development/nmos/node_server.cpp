@@ -18,7 +18,7 @@ namespace nmos
     {
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API
         // and the experimental Logging API and Settings API, according to the specified data models and callbacks
-        nmos::server make_node_server(nmos::node_model& node_model, nmos::system_global_handler system_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using
 
@@ -42,12 +42,12 @@ namespace nmos
 
             // Configure the Node API
 
-            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, parse_transport_file, validate_merged);
+            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.parse_transport_file, node_implementation.validate_merged);
             node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
 
             // Configure the Connection API
 
-            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, parse_transport_file, validate_merged, gate));
+            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_merged, gate));
 
             // Configure the Events API
             node_server.api_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
@@ -86,13 +86,18 @@ namespace nmos
 
             // Set up node operation (including the DNS-SD advertisements)
 
+            auto registration_changed = node_implementation.registration_changed;
+            auto resolve_auto = node_implementation.resolve_auto;
+            auto set_transportfile = node_implementation.set_transportfile;
+            auto connection_activated = node_implementation.connection_activated;
             node_server.thread_functions.assign({
-                [&] { nmos::node_behaviour_thread(node_model, gate); },
+                [&, registration_changed] { nmos::node_behaviour_thread(node_model, registration_changed, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); }
             });
 
+            auto system_changed = node_implementation.system_changed;
             if (system_changed)
             {
                 node_server.thread_functions.push_back([&, system_changed] { nmos::node_system_behaviour_thread(node_model, system_changed, gate); });
@@ -101,29 +106,19 @@ namespace nmos
             return node_server;
         }
 
-        nmos::server make_node_server(nmos::node_model& node_model, nmos::system_global_handler system_changed, nmos::transport_file_parser parse_transport_file, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
-        {
-            return make_node_server(node_model, system_changed, parse_transport_file, {}, resolve_auto, set_transportfile, connection_activated, log_model, gate);
-        }
-
-        nmos::server make_node_server(nmos::node_model& node_model, nmos::system_global_handler system_changed, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
-        {
-            return make_node_server(node_model, system_changed, &nmos::parse_rtp_transport_file, resolve_auto, set_transportfile, connection_activated, log_model, gate);
-        }
-
         nmos::server make_node_server(nmos::node_model& node_model, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_node_server(node_model, {}, parse_transport_file, validate_merged, resolve_auto, set_transportfile, connection_activated, log_model, gate);
+            return make_node_server(node_model, node_implementation().on_parse_transport_file(std::move(parse_transport_file)).on_validate_merged(std::move(validate_merged)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
 
         nmos::server make_node_server(nmos::node_model& node_model, nmos::transport_file_parser parse_transport_file, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_node_server(node_model, parse_transport_file, {}, resolve_auto, set_transportfile, connection_activated, log_model, gate);
+            return make_node_server(node_model, node_implementation().on_parse_transport_file(std::move(parse_transport_file)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
 
         nmos::server make_node_server(nmos::node_model& node_model, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_node_server(node_model, &nmos::parse_rtp_transport_file, resolve_auto, set_transportfile, connection_activated, log_model, gate);
+            return make_node_server(node_model, node_implementation().on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
     }
 }
