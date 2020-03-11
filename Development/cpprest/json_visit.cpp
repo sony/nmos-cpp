@@ -30,7 +30,8 @@ namespace web
 }
 .json ul, .json ol
 {
-  list-style: none
+  list-style: none;
+  border-left: 0.5px dotted rgba(0, 128, 0, 0.25)
 }
 .json ul:empty, .json ol:empty
 {
