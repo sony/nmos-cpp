@@ -1130,7 +1130,7 @@ namespace nmos
                 return sdp::fields::DID_SDID.key == sdp::fields::name(nv);
             }) | boost::adaptors::transformed([](const web::json::value& did_sdid)
             {
-                return parse_fmtp_did_sdid(did_sdid.as_string());
+                return parse_fmtp_did_sdid(sdp::fields::value(did_sdid).as_string());
             }));
 
             // optional
