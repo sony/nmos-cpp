@@ -528,19 +528,19 @@ namespace web
                 }
 
                 // visit_object callbacks
-                void operator()(web::json::enter_object_tag tag) { start_span("object"); os << literals::enter_object << "<ul>"; empty = true; }
-                void operator()(web::json::enter_field_tag tag) { if (!empty) os << literals::object_separator << "</li>"; os << "<li>"; name = true; }
-                void operator()(web::json::field_separator_tag tag) { name = false; os << literals::field_separator << ' '; }
-                void operator()(web::json::leave_field_tag tag) { empty = false; }
-                void operator()(web::json::object_separator_tag tag) {}
-                void operator()(web::json::leave_object_tag tag) { if (!empty) os << "</li>"; os << "</ul>" << literals::leave_object; end_span(); }
+                void operator()(web::json::enter_object_tag) { start_span("object"); start_compound(literals::enter_object, "<ul>"); }
+                void operator()(web::json::enter_field_tag) { if (!empty) os << literals::object_separator << "</li>"; os << "<li>"; name = true; }
+                void operator()(web::json::field_separator_tag) { name = false; os << literals::field_separator << ' '; }
+                void operator()(web::json::leave_field_tag) { empty = false; }
+                void operator()(web::json::object_separator_tag) {}
+                void operator()(web::json::leave_object_tag) { end_compound("</ul>", literals::leave_object); end_span(); }
 
                 // visit_array callbacks
-                void operator()(web::json::enter_array_tag tag) { start_span("array"); os << literals::enter_array << "<ol>"; empty = true; }
-                void operator()(web::json::enter_element_tag tag) { if (!empty) os << literals::array_separator << "</li>"; os << "<li>"; }
-                void operator()(web::json::leave_element_tag tag) { empty = false; }
-                void operator()(web::json::array_separator_tag tag) {}
-                void operator()(web::json::leave_array_tag tag) { if (!empty) os << "</li>"; os << "</ol>" << literals::leave_array; end_span(); }
+                void operator()(web::json::enter_array_tag) { start_span("array"); start_compound(literals::enter_array, "<ol>"); }
+                void operator()(web::json::enter_element_tag) { if (!empty) os << literals::array_separator << "</li>"; os << "<li>"; }
+                void operator()(web::json::leave_element_tag) { empty = false; }
+                void operator()(web::json::array_separator_tag) {}
+                void operator()(web::json::leave_array_tag) { end_compound("</ol>", literals::leave_array); end_span(); }
 
                 using base::escape_characters;
                 static std::basic_string<char_type> escape(const std::basic_string<char_type>& unescaped) { return details::html_escape(unescaped); }
@@ -553,6 +553,9 @@ namespace web
 
                 void start_span(const char* clazz) { os << "<span class=\"" << clazz << "\">"; }
                 void end_span() { os << "</span>"; }
+
+                void start_compound(char_type enter, const char* start) { os << enter << start; empty = true; }
+                void end_compound(const char* end, char_type leave) { if (!empty) os << "</li>"; os << end << leave; }
             };
 
             typedef basic_html_visitor<utility::char_t> html_visitor;
