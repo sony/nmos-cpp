@@ -561,6 +561,7 @@ set(NMOS_CPP_BST_SOURCES
     )
 set(NMOS_CPP_BST_HEADERS
     ${NMOS_CPP_DIR}/bst/filesystem.h
+    ${NMOS_CPP_DIR}/bst/optional.h
     ${NMOS_CPP_DIR}/bst/regex.h
     ${NMOS_CPP_DIR}/bst/shared_mutex.h
     )
