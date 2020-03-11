@@ -370,7 +370,10 @@ namespace nmos
             typedef basic_html_visitor<char> html_visitor;
 
             std::ostringstream html;
-            html << "<html><head><style>" << headers_stylesheet << web::json::experimental::html_stylesheet << "</style></head><body>";
+            html << "<html><head>";
+            html << "<style>" << headers_stylesheet << web::json::experimental::html_stylesheet << "</style>";
+            html << "<script>" << web::json::experimental::html_script << "</script>";
+            html << "</head><body>";
             html << "<div class=\"headers\"><ol>";
             for (const auto& header : res.headers())
             {
