@@ -1445,62 +1445,61 @@ namespace nmos
 
                 if (nmos::is_connection_api_permitted_downgrade(*matching_resource, *resource, version))
                 {
-                    if (nmos::fields::master_enable(nmos::fields::endpoint_active(resource->data)))
+                    auto& transportfile = nmos::fields::endpoint_transportfile(resource->data);
+
+                    if (!transportfile.is_null())
                     {
-                        auto& transportfile = nmos::fields::endpoint_transportfile(resource->data);
+                        // The transportfile endpoint data in the resource must have either "data" and "type", or an "href" for the redirect
+                        auto& data = nmos::fields::transportfile_data(transportfile);
 
-                        if (!transportfile.is_null())
+                        if (!data.is_null())
                         {
-                            // The transportfile endpoint data in the resource must have either "data" and "type", or an "href" for the redirect
-                            auto& data = nmos::fields::transportfile_data(transportfile);
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
 
-                            if (!data.is_null())
+                            // hmm, parsing of the Accept header could be much better and should take account of quality values
+                            const auto accept = req.headers().find(web::http::header_names::accept);
+                            if (req.headers().end() != accept && web::http::details::mime_types::application_json == web::http::details::get_mime_type(accept->second) && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
                             {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
-
-                                // hmm, parsing of the Accept header could be much better and should take account of quality values
-                                const auto accept = req.headers().find(web::http::header_names::accept);
-                                if (req.headers().end() != accept && web::http::details::mime_types::application_json == web::http::details::get_mime_type(accept->second) && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
-                                {
-                                    // Experimental extension - SDP as JSON
-                                    set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
-                                }
-                                else
-                                {
-                                    // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
-                                    set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
-                                }
-
-                                // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
-                                // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
-                                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md#transport-files--caching
-                                res.headers().set_cache_control(U("no-cache"));
+                                // Experimental extension - SDP as JSON
+                                set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
                             }
                             else
                             {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to transport file for " << id_type;
-
-                                set_reply(res, status_codes::TemporaryRedirect);
-                                res.headers().add(web::http::header_names::location, nmos::fields::transportfile_href(transportfile));
+                                // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
+                                set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
                             }
+
+                            // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
+                            // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
+                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md#transport-files--caching
+                            res.headers().set_cache_control(U("no-cache"));
                         }
                         else
                         {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for " << id_type << " which does not have one";
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to transport file for " << id_type;
 
-                            // An HTTP 404 response may be returned if "the transport type does not require a transport file".
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L339-L340
-                            set_error_reply(res, status_codes::NotFound, U("Sender does not have a transport file"));
+                            set_reply(res, status_codes::TemporaryRedirect);
+                            res.headers().add(web::http::header_names::location, nmos::fields::transportfile_href(transportfile));
                         }
                     }
                     else
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for disabled " << id_type;
+                        // Either this sender uses a transport type which does not require a transport file in which case a 404 response is required
+                        // or the sender does use a transport file, but is inactive and not currently configured in which case a 404 is also allowed
+                        // (or this is an internal server error, but since a 5xx response is not defined, assume one of the former cases)
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for " << id_type << " which does not have one";
 
+                        // An HTTP 404 response may be returned if "the transport type does not require a transport file".
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L339-L340
                         // "When the `master_enable` parameter is false [...] the `/transportfile` endpoint should return an HTTP 404 response."
+                        // In other words an HTTP 404 response is returned "if the sender is not currently configured".
                         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L163-L165
                         // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L277
-                        set_error_reply(res, status_codes::NotFound, U("Sender is not currently configured"));
+                        // Those statements are going to be combined and adjusted slightly in the next specification patch release to say:
+                        // An HTTP 404 response is returned if "the transport type does not require a transport file, or if the sender is not currently configured"
+                        // and "may also be returned when the `master_enable` parameter is false in /active, if the sender only maintains a transport file when transmitting."
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/pull/111
+                        set_error_reply(res, status_codes::NotFound, U("Sender is not configured with a transport file"));
                     }
                 }
                 else
