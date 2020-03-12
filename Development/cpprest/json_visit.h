@@ -557,8 +557,8 @@ namespace web
                 void start_span(const char* clazz) { os << "<span class=\"" << clazz << "\">"; }
                 void end_span() { os << "</span>"; }
 
-                void start_compound(char_type enter, const char* start) { start_span("toggle"); os << enter; end_span(); start_span("elided"); os << "&#x2026;"; end_span(); start_span("normal"); os << start; empty = true; }
-                void end_compound(const char* end, char_type leave) { if (!empty) os << "</li>"; os << end; end_span(); os << leave; }
+                void start_compound(char_type enter, const char* start) { start_span("toggle"); os << enter; end_span(); start_span("normal"); os << start; empty = true; }
+                void end_compound(const char* end, char_type leave) { if (!empty) os << "</li>"; os << end; end_span(); start_span("elided"); if (!empty) os << "&#x2026;"; end_span(); os << leave; }
             };
 
             typedef basic_html_visitor<utility::char_t> html_visitor;

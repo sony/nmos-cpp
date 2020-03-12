@@ -427,7 +427,7 @@ namespace nmos
                 html << "</li>";
             }
             html << "</ol></div><br/>";
-            html << "<div class=\"json\">";
+            html << "<div class=\"json gutter\">";
             web::json::visit(html_visitor(html), nmos::details::extract_json(res, gate).get());
             html << "</div>";
             html << "</body></html>";
