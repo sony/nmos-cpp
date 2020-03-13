@@ -106,6 +106,23 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set (BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
         set (BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
         set (BONJOUR_LIB dnssd)
+        # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
+        if(CMAKE_VERSION VERSION_LESS 3.15)
+            foreach(Config ${CMAKE_CONFIGURATION_TYPES})
+                string(TOUPPER ${Config} CONFIG)
+                # default is /MD or /MDd
+                if(NOT("${CMAKE_CXX_FLAGS_${CONFIG}}" MATCHES "/MT"))
+                    message(STATUS "Excluding libcmt for ${Config} because CMAKE_CXX_FLAGS_${CONFIG} is: ${CMAKE_CXX_FLAGS_${CONFIG}}")
+                    set (CMAKE_EXE_LINKER_FLAGS_${CONFIG} "${CMAKE_EXE_LINKER_FLAGS_${CONFIG}} /NODEFAULTLIB:libcmt")
+                endif()
+            endforeach()
+        else()
+            # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+            if((NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY) OR (${CMAKE_MSVC_RUNTIME_LIBRARY} MATCHES "DLL"))
+                message(STATUS "Excluding libcmt because CMAKE_MSVC_RUNTIME_LIBRARY is: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+                set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
+            endif()
+        endif()
     else()
         # note: use the patched files rather than the system installed version
         set (BONJOUR_INCLUDE "${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSShared")
@@ -133,9 +150,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
     #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
     add_definitions(/D_WIN32_WINNT=0x0600)
-
-    # does one of our dependencies result in needing to do this?
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
 
     # enable or disable the LLDP support library (lldp_static)
     set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
