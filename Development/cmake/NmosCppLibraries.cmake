@@ -20,7 +20,7 @@ if(MSVC)
         )
 endif()
 
-install(FILES ${DETAIL_HEADERS} DESTINATION include/detail)
+install(FILES ${DETAIL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/detail)
 
 # mDNS support library
 
@@ -60,7 +60,7 @@ target_link_libraries(
     )
 
 install(TARGETS mdns_static DESTINATION lib)
-install(FILES ${MDNS_HEADERS} DESTINATION include/mdns)
+install(FILES ${MDNS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/mdns)
 
 # LLDP support library
 if (BUILD_LLDP)
@@ -97,7 +97,7 @@ if (BUILD_LLDP)
         )
 
     install(TARGETS lldp_static DESTINATION lib)
-    install(FILES ${LLDP_HEADERS} DESTINATION include/lldp)
+    install(FILES ${LLDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/lldp)
 endif()
 
 # nmos_is04_schemas library
@@ -827,11 +827,11 @@ endif()
 
 install(TARGETS nmos-cpp_static DESTINATION lib)
 
-install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION include/bst)
-install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION include/cpprest)
-install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION include/cpprest/details)
-install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include/nmos)
-install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include/pplx)
-install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include/rql)
-install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include/sdp)
-install(FILES ${NMOS_CPP_SLOG_HEADERS} DESTINATION include/slog)
+install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/bst)
+install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/cpprest)
+install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/cpprest/details)
+install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/nmos)
+install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/pplx)
+install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/rql)
+install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/sdp)
+install(FILES ${NMOS_CPP_SLOG_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/slog)
