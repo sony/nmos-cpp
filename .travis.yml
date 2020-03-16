@@ -1,11 +1,10 @@
 language: cpp
 
-matrix:
+jobs:
   include:
     - os: linux
       dist: trusty
       name: Ubuntu 14.04 / GCC 4.8.4
-      sudo: true
       compiler: gcc
       addons:
         apt:
@@ -19,11 +18,9 @@ matrix:
             - libboost-filesystem-dev
             - openssl
             - libssl-dev
-
     - os: linux
       dist: bionic
       name: Ubuntu 18.04 / GCC 7.4.0
-      sudo: true
       compiler: gcc
       addons:
         apt:
@@ -41,12 +38,15 @@ matrix:
             - openssl
 
 before_install:
+  # As we run the test suite within the same host, and the tes suite checks IP addresses of mDNS advertisements (e.g. IS-04-03)
+  # and the 'remote' address of requests received by the test suite mocks (e.g. IS-09-02), things are much simpler with a single
+  # interface configured with an IP address. Although 'docker0' is down, it has an address, so flush that, leaving only 'eth0'.
+  - sudo ip addr flush dev docker0
+
   # Get IP address and short form Git Hash
   - |
-    export HOST_IP_ADDRESS="$(hostname -I | cut -f2 -d' ')"
+    export HOST_IP_ADDRESS="$(hostname -I | cut -f1 -d' ')"
     echo $HOST_IP_ADDRESS
-    export HOST_IP_ADDRESS0="$(hostname -I | cut -f1 -d' ')"
-    echo $HOST_IP_ADDRESS0
     GITHUB_COMMIT=$(echo "$TRAVIS_COMMIT" | cut -c1-7)
     echo $GITHUB_COMMIT
 
@@ -59,15 +59,6 @@ before_install:
 
 install:
   - cd $TRAVIS_BUILD_DIR/..
-
-  # If on trusty Python must be updated to 3.6
-  - |
-    if [[ ${TRAVIS_DIST} == "trusty" ]]; then
-      sudo add-apt-repository ppa:deadsnakes/ppa -y
-      sudo apt-get --allow-unauthenticated update -q
-      sudo apt-get --allow-unauthenticated install python3.6 python3.6-gdbm
-      sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 3
-    fi
 
   # Install minimum required CMake on trusty
   - |
@@ -98,9 +89,6 @@ install:
     cd mDNSResponder-878.200.35/mDNSPosix
   - make os=linux && sudo make os=linux install
 
-  # Install SDPoker
-  - npm install -g AMWA-TV/sdpoker
-
 script:
   # Build nmos-cpp
   - travis_fold start "cmake"
@@ -122,12 +110,24 @@ after_script:
   - cd $TRAVIS_BUILD_DIR/..
   - git clone https://github.com/AMWA-TV/nmos-testing.git && cd nmos-testing
 
+  # If on trusty Python must be updated to 3.6
+  - |
+    if [[ ${TRAVIS_DIST} == "trusty" ]]; then
+      sudo add-apt-repository ppa:deadsnakes/ppa -y
+      sudo apt-get --allow-unauthenticated update -q
+      sudo apt-get --allow-unauthenticated install python3.6 python3.6-gdbm
+      sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 3
+    fi
+
   # Install pip and dependencies
   - |
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     sudo -H python3 get-pip.py
     sudo -H python3 -m pip install -r requirements.txt
     sudo -H python3 -m pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+
+  # Install SDPoker
+  - npm install -g AMWA-TV/sdpoker
 
   - mkdir results && mkdir badges
 
@@ -186,7 +186,7 @@ after_script:
 
   # IS-09-02
   - |
-    case $(python3 nmos-test.py suite IS-09-02 --selection all --host "$HOST_IP_ADDRESS0" null --port 0 0 --version null v1.0 --output "results/$GITHUB_COMMIT-IS-09-02.json" >/dev/null 2>&1; echo $?) in
+    case $(python3 nmos-test.py suite IS-09-02 --selection all --host "$HOST_IP_ADDRESS" null --port 0 0 --version null v1.0 --output "results/$GITHUB_COMMIT-IS-09-02.json" >/dev/null 2>&1; echo $?) in
     [0-1])  testmessage="Pass" && testcolour="brightgreen";;
     *)      testmessage="Fail" && testcolour="red";;
     esac
