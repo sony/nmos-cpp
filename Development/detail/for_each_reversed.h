@@ -1,8 +1,6 @@
 #ifndef DETAIL_FOR_EACH_REVERSED_H
 #define DETAIL_FOR_EACH_REVERSED_H
 
-#include <utility>
-
 namespace detail
 {
     // for_each_reversed(first, last, f) is basically equivalent to
@@ -20,7 +18,7 @@ namespace detail
             }
             f(*first);
         }
-        return std::move(f);
+        return f;
     }
 }
 

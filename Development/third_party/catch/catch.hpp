@@ -2211,7 +2211,7 @@ namespace Catch {
                 static_cast<void>(expr); \
                 __catchResult.captureResult( Catch::ResultWas::DidntThrowException ); \
             } \
-            catch( exceptionType ) { \
+            catch( exceptionType const& ) { \
                 __catchResult.captureResult( Catch::ResultWas::Ok ); \
             } \
             catch( ... ) { \

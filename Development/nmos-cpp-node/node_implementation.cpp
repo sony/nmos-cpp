@@ -464,9 +464,10 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
     return [&node_resources, node_id, source_ids, flow_ids, sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
     {
-        const uint32_t i = boost::range::find(sender_ids, connection_sender.id) - sender_ids.begin();
-        if (sender_ids.size() != i)
+        const auto found = boost::range::find(sender_ids, connection_sender.id);
+        if (sender_ids.end() != found)
         {
+            const auto i = found - sender_ids.begin();
             const auto& source_id = source_ids[i];
             const auto& flow_id = flow_ids[i];
 
@@ -501,8 +502,8 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
     // that enables simple processing of "state" messages (events) per receiver
     return nmos::experimental::make_events_ws_message_handler(model, [temperature_ws_receiver_ids, &gate](const nmos::resource& receiver, const nmos::resource& connection_receiver, const web::json::value& message)
     {
-        const uint32_t i = boost::range::find(temperature_ws_receiver_ids, connection_receiver.id) - temperature_ws_receiver_ids.begin();
-        if (temperature_ws_receiver_ids.size() != i)
+        const auto found = boost::range::find(temperature_ws_receiver_ids, connection_receiver.id);
+        if (temperature_ws_receiver_ids.end() != found)
         {
             const auto event_type = nmos::event_type(nmos::fields::state_event_type(message));
             const auto& payload = nmos::fields::state_payload(message);
