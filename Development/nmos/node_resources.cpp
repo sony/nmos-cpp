@@ -6,7 +6,6 @@
 #include "nmos/channels.h"
 #include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
-#include "nmos/connection_resources.h" // for nmos::make_connection_api_transportfile
 #include "nmos/components.h"
 #include "nmos/device_type.h"
 #include "nmos/did_sdid.h"
@@ -92,6 +91,32 @@ namespace nmos
                         { U("type"), type }
                     }));
                 }
+            }
+        }
+
+        if (0 <= nmos::experimental::fields::manifest_port(settings))
+        {
+            // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/master/device-control-types/manifest-base.md
+            // and nmos::experimental::make_manifest_api_manifest
+            auto manifest_uri = web::uri_builder()
+                .set_scheme(nmos::http_scheme(settings))
+                .set_port(nmos::experimental::fields::manifest_port(settings))
+                .set_path(U("/x-manifest/"));
+            auto type = U("urn:x-nmos:control:manifest-base/v1.0");
+
+            if (nmos::experimental::fields::client_secure(settings))
+            {
+                web::json::push_back(data[U("controls")], value_of({
+                    { U("href"), manifest_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                    { U("type"), type }
+                }));
+            }
+            else for (const auto& host_address : host_addresses)
+            {
+                web::json::push_back(data[U("controls")], value_of({
+                    { U("href"), manifest_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                    { U("type"), type }
+                }));
             }
         }
 
@@ -445,9 +470,22 @@ namespace nmos
         return result;
     }
 
+    namespace experimental
+    {
+        web::uri make_manifest_api_manifest(const nmos::id& sender_id, const nmos::settings& settings)
+        {
+            return web::uri_builder()
+                .set_scheme(nmos::http_scheme(settings))
+                .set_host(nmos::get_host(settings))
+                .set_port(nmos::experimental::fields::manifest_port(settings))
+                .set_path(U("/x-manifest/senders/") + sender_id + U("/manifest"))
+                .to_uri();
+        }
+    }
+
     nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::id& device_id, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
     {
-        return make_sender(id, flow_id, nmos::transports::rtp_mcast, device_id, make_connection_api_transportfile(id, settings).to_string(), interfaces, settings);
+        return make_sender(id, flow_id, nmos::transports::rtp_mcast, device_id, experimental::make_manifest_api_manifest(id, settings).to_string(), interfaces, settings);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_core.json

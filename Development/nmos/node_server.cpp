@@ -5,6 +5,7 @@
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
 #include "nmos/logging_api.h"
+#include "nmos/manifest_api.h"
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/server.h"
@@ -44,6 +45,7 @@ namespace nmos
 
             nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.parse_transport_file, node_implementation.validate_merged);
             node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
+            node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
 
             // Configure the Connection API
 

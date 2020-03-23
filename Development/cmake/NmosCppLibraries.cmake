@@ -632,6 +632,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/json_schema.cpp
     ${NMOS_CPP_DIR}/nmos/log_model.cpp
     ${NMOS_CPP_DIR}/nmos/logging_api.cpp
+    ${NMOS_CPP_DIR}/nmos/manifest_api.cpp
     ${NMOS_CPP_DIR}/nmos/mdns.cpp
     ${NMOS_CPP_DIR}/nmos/mdns_api.cpp
     ${NMOS_CPP_DIR}/nmos/node_api.cpp
@@ -701,6 +702,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/log_manip.h
     ${NMOS_CPP_DIR}/nmos/log_model.h
     ${NMOS_CPP_DIR}/nmos/logging_api.h
+    ${NMOS_CPP_DIR}/nmos/manifest_api.h
     ${NMOS_CPP_DIR}/nmos/mdns.h
     ${NMOS_CPP_DIR}/nmos/mdns_api.h
     ${NMOS_CPP_DIR}/nmos/media_type.h

@@ -616,7 +616,7 @@ namespace nmos
                 auto matching_resource = find_resource(model.node_resources, id_type);
                 if (model.node_resources.end() == matching_resource)
                 {
-                    throw std::logic_error("matching IS-04 resource not found");
+                    throw std::logic_error("matching IS-04 and IS-05 resources not found");
                 }
 
                 if (nmos::is_connection_api_permitted_downgrade(*matching_resource, *resource, version))
@@ -673,7 +673,7 @@ namespace nmos
                 auto matching_resource = find_resource(model.node_resources, id_type);
                 if (model.node_resources.end() == matching_resource)
                 {
-                    throw std::logic_error("matching IS-04 resource not found");
+                    throw std::logic_error("matching IS-04 and IS-05 resources not found");
                 }
 
                 // Merge this patch request into a *copy* of the current staged endpoint
@@ -807,6 +807,97 @@ namespace nmos
             {
                 // don't replace an existing response body which might contain richer error information
                 set_reply(res, result.first, !result.second.is_null() ? result.second : nmos::make_error_response_body(result.first));
+            }
+        }
+
+        void handle_connection_resource_transportfile(web::http::http_response res, const nmos::node_model& model, const nmos::api_version& version, const std::pair<nmos::id, nmos::type>& id_type, const utility::string_t& accept, slog::base_gate& gate)
+        {
+            using namespace web::http::experimental::listener::api_router_using_declarations;
+
+            auto lock = model.read_lock();
+            auto& resources = model.connection_resources;
+
+            auto resource = find_resource(resources, id_type);
+            if (resources.end() != resource)
+            {
+                auto matching_resource = find_resource(model.node_resources, id_type);
+                if (model.node_resources.end() == matching_resource)
+                {
+                    throw std::logic_error("matching IS-04 and IS-05 resources not found");
+                }
+
+                if (nmos::is_connection_api_permitted_downgrade(*matching_resource, *resource, version))
+                {
+                    auto& transportfile = nmos::fields::endpoint_transportfile(resource->data);
+
+                    if (!transportfile.is_null())
+                    {
+                        // The transportfile endpoint data in the resource must have either "data" and "type", or an "href" for the redirect
+                        auto& data = nmos::fields::transportfile_data(transportfile);
+
+                        if (!data.is_null())
+                        {
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
+
+                            // hmm, parsing of the Accept header could be much better and should take account of quality values
+                            if (!accept.empty() && web::http::details::mime_types::application_json == web::http::details::get_mime_type(accept) && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
+                            {
+                                // Experimental extension - SDP as JSON
+                                set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
+                            }
+                            else
+                            {
+                                // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
+                                set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
+                            }
+
+                            // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
+                            // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
+                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md#transport-files--caching
+                            res.headers().set_cache_control(U("no-cache"));
+                        }
+                        else
+                        {
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to transport file for " << id_type;
+
+                            set_reply(res, status_codes::TemporaryRedirect);
+                            res.headers().add(web::http::header_names::location, nmos::fields::transportfile_href(transportfile));
+                        }
+                    }
+                    else
+                    {
+                        // Either this sender uses a transport type which does not require a transport file in which case a 404 response is required
+                        // or the sender does use a transport file, but is inactive and not currently configured in which case a 404 is also allowed
+                        // (or this is an internal server error, but since a 5xx response is not defined, assume one of the former cases)
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for " << id_type << " which does not have one";
+
+                        // An HTTP 404 response may be returned if "the transport type does not require a transport file".
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L339-L340
+                        // "When the `master_enable` parameter is false [...] the `/transportfile` endpoint should return an HTTP 404 response."
+                        // In other words an HTTP 404 response is returned "if the sender is not currently configured".
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L163-L165
+                        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L277
+                        // Those statements are going to be combined and adjusted slightly in the next specification patch release to say:
+                        // An HTTP 404 response is returned if "the transport type does not require a transport file, or if the sender is not currently configured"
+                        // and "may also be returned when the `master_enable` parameter is false in /active, if the sender only maintains a transport file when transmitting."
+                        // See https://github.com/AMWA-TV/nmos-device-connection-management/pull/111
+                        set_error_reply(res, status_codes::NotFound, U("Sender is not configured with a transport file"));
+                    }
+                }
+                else
+                {
+                    // experimental extension, proposed for v1.1, to distinguish from Not Found
+                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, version));
+                    res.headers().add(web::http::header_names::location, make_connection_api_resource_location(*resource, U("/transportfile")));
+                }
+            }
+            else if (details::is_erased_resource(resources, id_type))
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
+            }
+            else
+            {
+                set_reply(res, status_codes::NotFound);
             }
         }
     }
@@ -1427,96 +1518,16 @@ namespace nmos
         connection_api.support(U("/single/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/transportfile/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
-            auto lock = model.read_lock();
-            auto& resources = model.connection_resources;
 
             const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
             const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sender };
-            auto resource = find_resource(resources, id_type);
-            if (resources.end() != resource)
-            {
-                auto matching_resource = find_resource(model.node_resources, id_type);
-                if (model.node_resources.end() == matching_resource)
-                {
-                    throw std::logic_error("matching IS-04 resource not found");
-                }
 
-                if (nmos::is_connection_api_permitted_downgrade(*matching_resource, *resource, version))
-                {
-                    auto& transportfile = nmos::fields::endpoint_transportfile(resource->data);
+            const auto accept = req.headers().find(web::http::header_names::accept);
+            const auto accept_or_empty = req.headers().end() != accept ? accept->second : utility::string_t{};
 
-                    if (!transportfile.is_null())
-                    {
-                        // The transportfile endpoint data in the resource must have either "data" and "type", or an "href" for the redirect
-                        auto& data = nmos::fields::transportfile_data(transportfile);
-
-                        if (!data.is_null())
-                        {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
-
-                            // hmm, parsing of the Accept header could be much better and should take account of quality values
-                            const auto accept = req.headers().find(web::http::header_names::accept);
-                            if (req.headers().end() != accept && web::http::details::mime_types::application_json == web::http::details::get_mime_type(accept->second) && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
-                            {
-                                // Experimental extension - SDP as JSON
-                                set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
-                            }
-                            else
-                            {
-                                // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
-                                set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
-                            }
-
-                            // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
-                            // This is important to ensure that connection management clients do not cache the contents of transport files which are liable to change."
-                            // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.0.%20Behaviour.md#transport-files--caching
-                            res.headers().set_cache_control(U("no-cache"));
-                        }
-                        else
-                        {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to transport file for " << id_type;
-
-                            set_reply(res, status_codes::TemporaryRedirect);
-                            res.headers().add(web::http::header_names::location, nmos::fields::transportfile_href(transportfile));
-                        }
-                    }
-                    else
-                    {
-                        // Either this sender uses a transport type which does not require a transport file in which case a 404 response is required
-                        // or the sender does use a transport file, but is inactive and not currently configured in which case a 404 is also allowed
-                        // (or this is an internal server error, but since a 5xx response is not defined, assume one of the former cases)
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Transport file requested for " << id_type << " which does not have one";
-
-                        // An HTTP 404 response may be returned if "the transport type does not require a transport file".
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L339-L340
-                        // "When the `master_enable` parameter is false [...] the `/transportfile` endpoint should return an HTTP 404 response."
-                        // In other words an HTTP 404 response is returned "if the sender is not currently configured".
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L163-L165
-                        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L277
-                        // Those statements are going to be combined and adjusted slightly in the next specification patch release to say:
-                        // An HTTP 404 response is returned if "the transport type does not require a transport file, or if the sender is not currently configured"
-                        // and "may also be returned when the `master_enable` parameter is false in /active, if the sender only maintains a transport file when transmitting."
-                        // See https://github.com/AMWA-TV/nmos-device-connection-management/pull/111
-                        set_error_reply(res, status_codes::NotFound, U("Sender is not configured with a transport file"));
-                    }
-                }
-                else
-                {
-                    // experimental extension, proposed for v1.1, to distinguish from Not Found
-                    set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_permitted_downgrade_error(*resource, version));
-                    res.headers().add(web::http::header_names::location, make_connection_api_resource_location(*resource, U("/transportfile")));
-                }
-            }
-            else if (details::is_erased_resource(resources, id_type))
-            {
-                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + details::make_erased_resource_error());
-            }
-            else
-            {
-                set_reply(res, status_codes::NotFound);
-            }
+            details::handle_connection_resource_transportfile(res, model, version, id_type, accept_or_empty, gate);
 
             return pplx::task_from_result(true);
         });

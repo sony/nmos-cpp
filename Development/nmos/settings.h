@@ -185,6 +185,7 @@ namespace nmos
             // port numbers [registry, node]: ports to which clients should connect for each API
             // see http_port
 
+            const web::json::field_as_integer_or manifest_port{ U("manifest_port"), 3212 };
             const web::json::field_as_integer_or settings_port{ U("settings_port"), 3209 };
             const web::json::field_as_integer_or logging_port{ U("logging_port"), 5106 };
 
