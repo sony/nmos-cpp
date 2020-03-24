@@ -31,7 +31,7 @@ namespace nmos
     }
 
     // uses the default DNS-SD implementation
-    // callbacks from this function are called with the model not locked
+    // callbacks from this function are called with the model locked, and may read or write directly to the model
     void node_system_behaviour_thread(nmos::model& model, system_global_handler system_changed, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_system_behaviour));
@@ -42,7 +42,7 @@ namespace nmos
     }
 
     // uses the specified DNS-SD implementation
-    // callbacks from this function are called with the model not locked
+    // callbacks from this function are called with the model locked, and may read or write directly to the model
     void node_system_behaviour_thread(nmos::model& model, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_system_behaviour));
@@ -421,10 +421,10 @@ namespace nmos
             // Synchronous notification that errors have been encountered with all discoverable System API instances
             // hmm, perhaps only if (!shutdown)?
 
-            if (system_changed)
+            if (state.handler)
             {
                 // this callback should not throw exceptions
-                system_changed({}, {});
+                state.handler({}, {});
             }
 
             cancellation_source.cancel();
