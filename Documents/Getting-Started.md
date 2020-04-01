@@ -47,7 +47,8 @@ cmake .. ^
 ```
 
 <details>
-<summary>Or without Conan...</summary>
+<summary>Or if not using Conan...</summary>
+
 ```
 cd <home-dir>\nmos-cpp\Development
 mkdir build
@@ -60,6 +61,7 @@ cmake .. ^
   -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_72_0/x64/lib" ^
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
 ```
+
 </details>
 
 Then, open and build the generated nmos-cpp Visual Studio Solution.
@@ -83,7 +85,8 @@ make
 ```
 
 <details>
-<summary>Or without Conan...</summary>
+<summary>Or if not using Conan...</summary>
+
 ```
 cd <home-dir>/nmos-cpp/Development
 mkdir build
@@ -93,6 +96,7 @@ cmake .. \
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
 make
 ```
+
 </details>
 
 ## Run Tests

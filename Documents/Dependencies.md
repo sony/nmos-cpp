@@ -51,17 +51,19 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 By default nmos-cpp uses [Conan](https://conan.io) to download most of its dependencies.
 
-If you don't want to use Conan, install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN=OFF` when building nmos-cpp.
+If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
 
 1. Install Python 3 if necessary
 2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`
 3. Install [DNS Service Discovery](#dns-service-discovery)
-4. Run CMake as detailed in [instructions](Getting-Started.md)
-5. Due to [an issue](https://github.com/bincrafters/community/issues/998) with the C++ REST SDK recipe you may need to force Conan to install from source rather than using a pre-built package. In [cmake/NmosCppConan.cmake](cmake/NmosCppConan.cmake) change `BUILD missing` in `conan_cmake_run` to `BUILD missing cpprestsdk`, run CMake once then revert this change. You may need to repeat this step when switching to a new build configuration.
+
+Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
+
+Note: Due to [an issue](https://github.com/bincrafters/community/issues/998) with the C++ REST SDK recipe you may need to force Conan to install from source rather than using a pre-built package. In [cmake/NmosCppConan.cmake](cmake/NmosCppConan.cmake) change `BUILD missing` in `conan_cmake_run` to `BUILD missing cpprestsdk`, run CMake once then revert this change. You may need to repeat this step when switching to a new build configuration.
 
 ### Boost C++ Libraries
 
-If using Conan this section can be skipped.
+If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
@@ -109,7 +111,7 @@ sudo ./b2 \
 
 ### WebSocket++
 
-If using Conan this section can be skipped.
+If using Conan, this section can be skipped.
 
 WebSocket++ v0.8.1 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
 Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
@@ -118,7 +120,7 @@ Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
 
 ### OpenSSL
 
-If using Conan this section can be skipped.
+If using Conan, this section can be skipped.
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
 It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
@@ -133,7 +135,7 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
 
 ### C++ REST SDK
 
-If using Conan this section can be skipped.
+If using Conan, this section can be skipped.
 
 1. Get the source code
    - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.15 tag  
