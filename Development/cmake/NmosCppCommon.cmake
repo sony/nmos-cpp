@@ -172,7 +172,18 @@ add_definitions(/DBST_SHARED_MUTEX_BOOST)
 # find boost
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
-set(Boost_VERSION_COMPONENTS "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+# cope with historical versions of FindBoost.cmake
+if (DEFINED Boost_VERSION_STRING)
+    set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
+elseif (DEFINED Boost_VERSION_MAJOR)
+    set(Boost_VERSION_COMPONENTS "${Boost_VERSION_MAJOR}.${Boost_VERSION_MINOR}.${Boost_VERSION_SUBMINOR}")
+elseif (DEFINED Boost_MAJOR_VERSION)
+    set(Boost_VERSION_COMPONENTS "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+elseif (DEFINED Boost_VERSION)
+    set(Boost_VERSION_COMPONENTS "${Boost_VERSION}")
+else()
+    message(FATAL_ERROR "Boost_VERSION_STRING is not defined")
+endif()
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
