@@ -1,44 +1,7 @@
 language: cpp
 
-jobs:
-  include:
-    - os: linux
-      dist: trusty
-      name: Ubuntu 14.04 / GCC 4.8.4
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libboost-chrono-dev
-            - libboost-date-time-dev
-            - libboost-regex-dev
-            - libboost-system-dev
-            - libboost-thread-dev
-            - libboost-random-dev
-            - libboost-filesystem-dev
-            - openssl
-            - libssl-dev
-    - os: linux
-      dist: bionic
-      name: Ubuntu 18.04 / GCC 7.4.0
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - gcc
-            - g++
-            - cmake
-            - libboost-chrono-dev
-            - libboost-date-time-dev
-            - libboost-regex-dev
-            - libboost-system-dev
-            - libboost-thread-dev
-            - libboost-random-dev
-            - libboost-filesystem-dev
-            - openssl
-
 before_install:
-  # As we run the test suite within the same host, and the tes suite checks IP addresses of mDNS advertisements (e.g. IS-04-03)
+  # As we run the test suite within the same host, and the test suite checks IP addresses of mDNS advertisements (e.g. IS-04-03)
   # and the 'remote' address of requests received by the test suite mocks (e.g. IS-09-02), things are much simpler with a single
   # interface configured with an IP address. Although 'docker0' is down, it has an address, so flush that, leaving only 'eth0'.
   - sudo ip addr flush dev docker0
@@ -57,37 +20,77 @@ before_install:
     export -f travis_time_start
     export -f travis_time_finish
 
-install:
-  - cd $TRAVIS_BUILD_DIR/..
+_install_cmake: &install_cmake
+  # Install minimum required CMake
+  |
+  cd $TRAVIS_BUILD_DIR/..
+  wget "https://github.com/Kitware/CMake/releases/download/v3.9.0/cmake-3.9.0-Linux-x86_64.sh"
+  sudo mkdir /opt/cmake
+  sudo sh cmake-3.9.0-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
+  sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
 
-  # Install minimum required CMake on trusty
-  - |
-    if [[ ${TRAVIS_DIST} == "trusty" ]]; then
-      wget "https://github.com/Kitware/CMake/releases/download/v3.9.0/cmake-3.9.0-Linux-x86_64.sh"
-      sudo mkdir /opt/cmake
-      sudo sh cmake-3.9.0-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
-      sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-    fi
-  
+_install_cpprestsdk: &install_cpprestsdk
   # Retrieve and build C++ REST SDK
-  - |
-    git clone --recurse-submodules --branch v2.10.15 https://github.com/Microsoft/cpprestsdk
-    cd cpprestsdk/Release
-    mkdir build
-    cd build
-  - cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
-  - make -j 2 && sudo make install
+  |
+  cd $TRAVIS_BUILD_DIR/..
+  git clone --recurse-submodules --branch v2.10.15 https://github.com/Microsoft/cpprestsdk
+  cd cpprestsdk/Release
+  mkdir build
+  cd build
+  cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
+  make -j 2 && sudo make install
 
+_install_mdns: &install_mdns
   # Install mDNSResponder
-  - cd $TRAVIS_BUILD_DIR/..
-  - |
-    wget https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-878.200.35.tar.gz
-    tar -xzf mDNSResponder-878.200.35.tar.gz
-    patch -d mDNSResponder-878.200.35/ -p1 < $TRAVIS_BUILD_DIR/Development/third_party/mDNSResponder/unicast.patch
-    patch -d mDNSResponder-878.200.35/ -p1 < $TRAVIS_BUILD_DIR/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
-    patch -d mDNSResponder-878.200.35/ -p1 < $TRAVIS_BUILD_DIR/Development/third_party/mDNSResponder/poll-rather-than-select.patch
-    cd mDNSResponder-878.200.35/mDNSPosix
-  - make os=linux && sudo make os=linux install
+  |
+  cd $TRAVIS_BUILD_DIR/..
+  wget https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-878.200.35.tar.gz
+  tar -xzf mDNSResponder-878.200.35.tar.gz
+  patch -d mDNSResponder-878.200.35/ -p1 < $TRAVIS_BUILD_DIR/Development/third_party/mDNSResponder/unicast.patch
+  patch -d mDNSResponder-878.200.35/ -p1 < $TRAVIS_BUILD_DIR/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
+  patch -d mDNSResponder-878.200.35/ -p1 < $TRAVIS_BUILD_DIR/Development/third_party/mDNSResponder/poll-rather-than-select.patch
+  cd mDNSResponder-878.200.35/mDNSPosix
+  make os=linux && sudo make os=linux install
+
+jobs:
+  include:
+    - os: linux
+      dist: trusty
+      name: Ubuntu 14.04 / GCC 4.8.4
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - libboost-chrono-dev
+            - libboost-date-time-dev
+            - libboost-regex-dev
+            - libboost-system-dev
+            - libboost-thread-dev
+            - libboost-random-dev
+            - libboost-filesystem-dev
+            - openssl
+            - libssl-dev
+      install:
+        # Install minimum required CMake
+        - *install_cmake
+        # Retrieve and build C++ REST SDK
+        - *install_cpprestsdk
+        # Install mDNSResponder
+        - *install_mdns
+    - os: linux
+      dist: bionic
+      name: Ubuntu 18.04 / GCC 7.4.0
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - python3-pip
+            - python3-setuptools
+      install:
+        # Install Conan
+        - python3 -m pip install conan
+        # Install mDNSResponder
+        - *install_mdns
 
 script:
   # Build nmos-cpp
@@ -96,7 +99,13 @@ script:
     cd $TRAVIS_BUILD_DIR/Development
     mkdir -p build
     cd build
-  - cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWEBSOCKETPP_INCLUDE_DIR:PATH="$TRAVIS_BUILD_DIR/../cpprestsdk/Release/libs/websocketpp"
+  - |
+    if [[ ${TRAVIS_DIST} == "trusty" ]]; then
+      cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DUSE_CONAN:BOOL="0" -DWEBSOCKETPP_INCLUDE_DIR:PATH="$TRAVIS_BUILD_DIR/../cpprestsdk/Release/libs/websocketpp"
+    else
+      # Use Conan by default
+      cmake .. -DCMAKE_BUILD_TYPE:STRING="Release"
+    fi
   - travis_fold end "cmake"
   - travis_fold start "make.nmos-cpp"
   - make -j 2
@@ -106,11 +115,12 @@ script:
   - travis_fold end "make.test"
 
 after_script:
-  # Install AMWA test suite. Tests are run in after_script so not the fail the build stage.
   - cd $TRAVIS_BUILD_DIR/..
+
+  # Install AMWA test suite. Tests are run in after_script so as not to fail the build stage.
   - git clone https://github.com/AMWA-TV/nmos-testing.git && cd nmos-testing
 
-  # If on trusty Python must be updated to 3.6
+  # Install minimum required Python for the testing tool
   - |
     if [[ ${TRAVIS_DIST} == "trusty" ]]; then
       sudo add-apt-repository ppa:deadsnakes/ppa -y
@@ -129,6 +139,7 @@ after_script:
   # Install SDPoker
   - npm install -g AMWA-TV/sdpoker
 
+  # Create output directories
   - mkdir results && mkdir badges
 
   # Run Node tests
