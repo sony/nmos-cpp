@@ -1,0 +1,14 @@
+[requires]
+boost/1.72.0
+openssl/1.1.1e
+cpprestsdk/2.10.15@bincrafters/stable
+websocketpp/0.8.1@bincrafters/stable
+zlib/1.2.11
+
+[imports]
+bin, *.dll -> ./bin
+lib, *.so* -> ./lib
+lib, *.dylib* -> ./lib
+
+[options]
+boost:shared=False

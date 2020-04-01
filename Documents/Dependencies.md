@@ -5,6 +5,7 @@ This software is being developed for multiple platforms (Windows, Mac OS X, Linu
 The codebase utilizes a number of great open-source projects (licenses vary).
 
 - The [CMake](https://cmake.org/) build tools
+- The [Conan](https://conan.io) package manager
 - The [C++ REST SDK](https://github.com/Microsoft/cpprestsdk), for client-server communication over REST APIs
   - This library incorporates some third-party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and OpenSSL.
 - For JSON Schema validation, the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library, which is implemented on top of [JSON for Modern C++](https://github.com/nlohmann/json)
@@ -17,9 +18,9 @@ The codebase utilizes a number of great open-source projects (licenses vary).
 
 The following instructions describe how to prepare these external dependencies when building this software.
 
-On Windows, Visual Studio is required. Visual Studio 2015 is the primary development environment; more recent toolchains should also be supported.
+On Windows, Visual Studio 2015 or higher is required.
 
-On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series has been tested, although a more recent compiler is to be recommended!
+On Linux, ``g++`` (the GNU project C++ compiler) is supported; the GCC 4.8 release series is tested, although a more recent compiler is to be recommended!
 
 Notes:
 - **Visual Studio 2013 is not supported**, because it does not implement C++11 [thread-safe function-local static initialization](https://en.cppreference.com/w/cpp/language/storage_duration#Static_local_variables).
@@ -31,7 +32,7 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
    Notes:
-   - C++ REST SDK currently requires CMake 3.9 or higher, and using Boost 1.66.0 or higher requires CMake 3.11
+   - C++ REST SDK currently requires CMake 3.9 or higher, and, if not using Conan, using Boost 1.66.0 or higher requires CMake 3.11
    - Pre-built binary distributions are available for many platforms
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
      Fetch, build and install a suitable version:  
@@ -46,13 +47,29 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
      ```
    - Some CMake modules derived from third-party sources are included in the [third_party/cmake](../Development/third_party/cmake) directory
 
+### Conan
+
+By default nmos-cpp uses [Conan](https://conan.io) to download most of its dependencies.
+
+If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
+
+1. Install Python 3 if necessary
+2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`
+3. Install [DNS Service Discovery](#dns-service-discovery)
+
+Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
+
+Note: Due to [an issue](https://github.com/bincrafters/community/issues/998) with the C++ REST SDK recipe you may need to force Conan to install from source rather than using a pre-built package. In [cmake/NmosCppConan.cmake](cmake/NmosCppConan.cmake) change `BUILD missing` in `conan_cmake_run` to `BUILD missing cpprestsdk`, run CMake once then revert this change. You may need to repeat this step when switching to a new build configuration.
+
 ### Boost C++ Libraries
+
+If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
-   - Several Boost releases have been tested, including Version 1.67.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.72.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_67\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_72\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - chrono
    - date_time
@@ -60,10 +77,10 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
    - system
    - thread
 
-For example, on Windows, for Visual Studio 2015:
+For example, on Windows, for Visual Studio 2017:
 ```
 bootstrap
-b2 toolset=msvc-14.0 ^
+b2 toolset=msvc-14.1 ^
   --prefix=. ^
   --with-chrono ^
   --with-date_time ^
@@ -94,12 +111,16 @@ sudo ./b2 \
 
 ### WebSocket++
 
+If using Conan, this section can be skipped.
+
 WebSocket++ v0.8.1 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
 Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
 
 (The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
 
 ### OpenSSL
+
+If using Conan, this section can be skipped.
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
 It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
@@ -113,6 +134,8 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
      The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
 
 ### C++ REST SDK
+
+If using Conan, this section can be skipped.
 
 1. Get the source code
    - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.15 tag  
@@ -133,28 +156,28 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-     - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0`` to match the suggested ``b2`` command
-     - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_67_0/x64/lib`` to match the suggested ``b2`` command
+     - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_72_0`` to match the suggested ``b2`` command
+     - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_72_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install  
-   On Windows, the "Visual Studio 14 2015 Win64" generator has been tested
+   "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
 
 **Windows**
 
-For example, for Visual Studio 2015:
+For example, for Visual Studio 2017:
 ```
 cd <home-dir>\cpprestsdk\Release
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 14 2015 Win64" ^
+  -G "Visual Studio 15 2017 Win64" ^
   -DCPPREST_PPLX_IMPL:STRING="winpplx" ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_67_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_67_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_72_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_72_0/x64/lib" ^
   -DWERROR:BOOL="0" ^
   -DBUILD_SAMPLES:BOOL="0" ^
   -DBUILD_TESTS:BOOL="0"
