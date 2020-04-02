@@ -10,6 +10,7 @@ conan_add_remote(NAME bincrafters URL https://api.bintray.com/conan/bincrafters/
 
 conan_cmake_run(CONANFILE conanfile.txt
                 BASIC_SETUP
+                NO_OUTPUT_DIRS
                 GENERATORS cmake_find_package cmake_paths
                 KEEP_RPATHS
                 BUILD missing)
