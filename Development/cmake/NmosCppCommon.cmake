@@ -26,16 +26,20 @@ enable_testing()
 # location of additional CMake modules
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
+    ${CMAKE_BINARY_DIR}
     ${NMOS_CPP_DIR}/third_party/cmake
     ${NMOS_CPP_DIR}/cmake
     )
 
-if(${USE_CONAN})
-    # location of <PackageName>Config.cmake files created by Conan
-    set(CMAKE_PREFIX_PATH
-        ${CMAKE_PREFIX_PATH}
-        ${CMAKE_BINARY_DIR}
-        )
+# location of <PackageName>Config.cmake files created by Conan
+set(CMAKE_PREFIX_PATH
+    ${CMAKE_PREFIX_PATH}
+    ${CMAKE_BINARY_DIR}
+    )
+
+if(${USE_CONAN} AND CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    # use <PackageName>Config.cmake
+    set(FIND_PACKAGE_USE_CONFIG CONFIG)
 endif()
 
 # guard against in-source builds and bad build-type strings
@@ -46,7 +50,7 @@ include(safeguards)
 # cpprestsdk
 # note: 2.10.15 or higher is recommended but there's no cpprestsdk-configVersion.cmake
 # and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk
-find_package(cpprestsdk REQUIRED CONFIG NAMES cpprestsdk cpprest)
+find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_USE_CONFIG} NAMES cpprestsdk cpprest)
 if (TARGET cpprestsdk::cpprest)
     message(STATUS "Found cpprestsdk::cpprest")
     set(CPPRESTSDK_TARGET cpprestsdk::cpprest)
@@ -63,7 +67,7 @@ if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
 else()
     set (WEBSOCKETPP_VERSION_MIN "0.5.1")
     set (WEBSOCKETPP_VERSION_CUR "0.8.1")
-    find_package(websocketpp REQUIRED CONFIG)
+    find_package(websocketpp REQUIRED ${FIND_PACKAGE_USE_CONFIG})
     if (websocketpp_VERSION VERSION_LESS WEBSOCKETPP_VERSION_MIN)
         message(FATAL_ERROR "Found websocketpp version " ${websocketpp_VERSION} " that is lower than the minimum version: " ${WEBSOCKETPP_VERSION_MIN})
     elseif(websocketpp_VERSION VERSION_GREATER WEBSOCKETPP_VERSION_CUR)
@@ -185,7 +189,7 @@ add_definitions(/DBST_SHARED_MUTEX_BOOST)
 
 # find boost
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
-find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} CONFIG)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} ${FIND_PACKAGE_USE_CONFIG})
 # cope with historical versions of FindBoost.cmake
 if (DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
