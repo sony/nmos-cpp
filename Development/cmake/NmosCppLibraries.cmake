@@ -52,10 +52,10 @@ source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
 source_group("Source Files" FILES ${BONJOUR_SOURCES})
 source_group("Header Files" FILES ${BONJOUR_HEADERS})
 
-# ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
+# ensure e.g. target_compile_definitions for cppprestsdk are applied when building this target
 target_link_libraries(
     mdns_static
-    cpprestsdk::cpprest
+    ${CPPRESTSDK_TARGET}
     ${BONJOUR_LIB}
     )
 
@@ -87,7 +87,7 @@ if (BUILD_LLDP)
     # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
     target_link_libraries(
         lldp_static
-        cpprestsdk::cpprest
+        ${CPPRESTSDK_TARGET}
         ${PCAP_LIB}
         )
 
@@ -812,7 +812,7 @@ source_group("slog\\Header Files" FILES ${NMOS_CPP_SLOG_HEADERS})
 target_link_libraries(
     nmos-cpp_static
     mdns_static
-    cpprestsdk::cpprest
+    ${CPPRESTSDK_TARGET}
     json_schema_validator_static
     nmos_is04_schemas_static
     nmos_is05_schemas_static

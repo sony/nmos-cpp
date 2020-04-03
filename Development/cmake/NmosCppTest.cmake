@@ -98,7 +98,7 @@ target_link_libraries(
     nmos-cpp-test
     nmos-cpp_static
     mdns_static
-    cpprestsdk::cpprest
+    ${CPPRESTSDK_TARGET}
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )

@@ -30,6 +30,14 @@ set(CMAKE_MODULE_PATH
     ${NMOS_CPP_DIR}/cmake
     )
 
+if(${USE_CONAN})
+    # location of <PackageName>Config.cmake files created by Conan
+    set(CMAKE_PREFIX_PATH
+        ${CMAKE_PREFIX_PATH}
+        ${CMAKE_BINARY_DIR}
+        )
+endif()
+
 # guard against in-source builds and bad build-type strings
 include(safeguards)
 
@@ -37,10 +45,16 @@ include(safeguards)
 
 # cpprestsdk
 # note: 2.10.15 or higher is recommended but there's no cpprestsdk-configVersion.cmake
-# and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk::cpprest
-find_package(cpprestsdk REQUIRED NAMES cpprestsdk cpprest)
-message(STATUS "Found cpprestsdk")
-get_target_property(CPPREST_INCLUDE_DIR cpprestsdk::cpprest INTERFACE_INCLUDE_DIRECTORIES)
+# and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk
+find_package(cpprestsdk REQUIRED CONFIG NAMES cpprestsdk cpprest)
+if (TARGET cpprestsdk::cpprest)
+    message(STATUS "Found cpprestsdk::cpprest")
+    set(CPPRESTSDK_TARGET cpprestsdk::cpprest)
+else()
+    message(STATUS "Found cpprestsdk::cpprestsdk")
+    set(CPPRESTSDK_TARGET cpprestsdk::cpprestsdk)
+endif()
+get_target_property(CPPREST_INCLUDE_DIR ${CPPRESTSDK_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
 
 # websocketpp
 # note: good idea to use same version as cpprestsdk was built with!
@@ -49,7 +63,7 @@ if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
 else()
     set (WEBSOCKETPP_VERSION_MIN "0.5.1")
     set (WEBSOCKETPP_VERSION_CUR "0.8.1")
-    find_package(websocketpp REQUIRED)
+    find_package(websocketpp REQUIRED CONFIG)
     if (websocketpp_VERSION VERSION_LESS WEBSOCKETPP_VERSION_MIN)
         message(FATAL_ERROR "Found websocketpp version " ${websocketpp_VERSION} " that is lower than the minimum version: " ${WEBSOCKETPP_VERSION_MIN})
     elseif(websocketpp_VERSION VERSION_GREATER WEBSOCKETPP_VERSION_CUR)
@@ -171,7 +185,7 @@ add_definitions(/DBST_SHARED_MUTEX_BOOST)
 
 # find boost
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
-find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
+find_package(Boost 1.54.0 REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} CONFIG)
 # cope with historical versions of FindBoost.cmake
 if (DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
@@ -219,7 +233,7 @@ endif()
 include_directories(
     ${NMOS_CPP_DIR}
     ${NMOS_CPP_DIR}/third_party
-    ${CPPREST_INCLUDE_DIR} # defined above from target cpprestsdk::cpprest of find_package(cpprestsdk)
+    ${CPPREST_INCLUDE_DIR} # defined above from target of find_package(cpprestsdk)
     ${WEBSOCKETPP_INCLUDE_DIR} # defined by find_package(websocketpp)
     ${Boost_INCLUDE_DIRS} # defined by find_package(Boost)
     ${BONJOUR_INCLUDE} # defined above
