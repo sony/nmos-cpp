@@ -12,6 +12,7 @@
 #ifdef HAVE_LLDP
 #include "lldp/lldp_manager.h"
 #endif
+#include "nmos/channels.h"
 #include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
 #include "nmos/components.h" // for nmos::chroma_subsampling
@@ -182,72 +183,124 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // example sources, flows and senders
     for (int index = 0; index < how_many; ++index)
     {
-        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::video, index);
-        const auto flow_id = impl::make_id(seed_id, nmos::types::flow, impl::ports::video, index);
-        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, index);
+        for (auto& port : impl::ports::rtp)
+        {
+            const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
+            const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
 
-        auto source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
-        impl::set_label(source, impl::ports::video, index);
+            nmos::resource source;
+            if (impl::ports::video == port)
+            {
+                source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
+            }
+            else if (impl::ports::audio == port)
+            {
+                const std::vector<nmos::channel> stereo{
+                    { {}, nmos::channel_symbols::L },
+                    { {}, nmos::channel_symbols::R }
+                };
+                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, stereo, model.settings);
+            }
+            else if (impl::ports::data == port)
+            {
+                source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
+            }
+            impl::set_label(source, port, index);
 
-        // note, nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings) would basically use the following default values
-        auto flow = nmos::make_raw_video_flow(
-            flow_id, source_id, device_id,
-            nmos::rates::rate25,
-            1920, 1080, nmos::interlace_modes::interlaced_bff,
-            nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
-            model.settings
-        );
-        impl::set_label(flow, impl::ports::video, index);
+            nmos::resource flow;
+            if (impl::ports::video == port)
+            {
+                // note, nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings) would basically use the following default values
+                flow = nmos::make_raw_video_flow(
+                    flow_id, source_id, device_id,
+                    nmos::rates::rate25,
+                    1920, 1080, nmos::interlace_modes::interlaced_bff,
+                    nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
+                    model.settings
+                );
+            }
+            else if (impl::ports::audio == port)
+            {
+                // note, nmos::make_raw_audio_flow(flow_id, source_id, device_id, model.settings) would use the following default values
+                flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 24, model.settings);
+                // add optional grain_rate
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(nmos::rates::rate25);
+            }
+            else if (impl::ports::data == port)
+            {
+                nmos::did_sdid timecode{ 0x60, 0x60 };
+                flow = nmos::make_sdianc_data_flow(flow_id, source_id, device_id, { timecode }, model.settings);
+                // add optional grain_rate
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(nmos::rates::rate25);
+            }
+            impl::set_label(flow, port, index);
 
-        // set_transportfile needs to find the matching source and flow for the sender, so insert these first
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+            // set_transportfile needs to find the matching source and flow for the sender, so insert these first
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
-        auto sender = nmos::make_sender(sender_id, flow_id, device_id, { primary_interface.name, secondary_interface.name }, model.settings);
-        impl::set_label(sender, impl::ports::video, index);
-        impl::insert_group_hint(sender, impl::ports::video, index);
+            auto sender = nmos::make_sender(sender_id, flow_id, device_id, { primary_interface.name, secondary_interface.name }, model.settings);
+            impl::set_label(sender, port, index);
+            impl::insert_group_hint(sender, port, index);
 
-        auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
-        // add some example constraints; these should be completed fully!
-        connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
-            { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
-        });
-        connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
-            { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
-        });
+            auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
+            // add some example constraints; these should be completed fully!
+            connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
+                { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
+            });
+            connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
+                { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
+            });
 
-        // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
-        connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-        resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-        set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
-        nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+            // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
+            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
+            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+            set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
+            nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
-        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+        }
     }
 
     // example receivers
     for (int index = 0; index < how_many; ++index)
     {
-        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::video, index);
+        for (auto& port : impl::ports::rtp)
+        {
+            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
-        auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
-        impl::set_label(receiver, impl::ports::video, index);
-        impl::insert_group_hint(receiver, impl::ports::video, index);
+            nmos::resource receiver;
+            if (impl::ports::video == port)
+            {
+                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
+            }
+            else if (impl::ports::audio == port)
+            {
+                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, 24, model.settings);
+            }
+            else if (impl::ports::data == port)
+            {
+                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
+            }
+            impl::set_label(receiver, port, index);
+            impl::insert_group_hint(receiver, port, index);
 
-        auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
-        // add some example constraints; these should be completed fully!
-        connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
-            { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
-        });
-        connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
-            { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
-        });
+            auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
+            // add some example constraints; these should be completed fully!
+            connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
+                { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
+            });
+            connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
+                { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
+            });
 
-        resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+            resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
-        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+        }
     }
 
     // example temperature event source, sender, flow
