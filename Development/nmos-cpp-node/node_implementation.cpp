@@ -37,27 +37,51 @@
 #include "nmos/transport.h"
 #include "sdp/sdp.h"
 
-// custom logging category for the example node implementation thread
-const nmos::category node_implementation_category{ "node_implementation" };
+// example node implementation details
+namespace impl
+{
+    // custom logging category for the example node implementation thread
+    namespace categories
+    {
+        const nmos::category node_implementation{ "node_implementation" };
+    }
 
-// custom setting for the example node to provide for very basic testing of a node with many sub-resources
-const web::json::field_as_integer_or node_implementation_field_how_many{ U("how_many"), 1 };
+    // custom setting for the example node to provide for very basic testing of a node with many sub-resources
+    namespace fields
+    {
+        const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
+    }
 
-// generate repeatable ids for a range of resources
-template <typename Suffixes>
-std::vector<nmos::id> make_repeatable_ids(const nmos::id& seed_id, const utility::string_t& name_prefix, Suffixes name_suffixes);
+    // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
+    // each 'port' of the example node has a source, flow, sender and compatible receiver
+    DEFINE_STRING_ENUM(port)
+    namespace ports
+    {
+        const port video{ U("v") };
+        const port audio{ U("a") };
+        const port data{ U("d") };
+        const port temperature{ U("t") };
 
-// add a helpful suffix to the label of a sub-resource for the example node
-template <typename Suffix>
-void set_node_implementation_label(nmos::resource& resource, Suffix suffix);
+        const std::vector<port> rtp{ video, audio, data };
+        const std::vector<port> ws{ temperature };
+        const std::vector<port> all{ video, audio, data, temperature };
+    }
 
-// add an example "natural grouping" hint to a sender or receiver
-template <typename Suffix>
-void insert_node_implementation_group_hint(nmos::resource& resource, Suffix suffix);
+    // generate repeatable ids for the example node's resources
+    nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const port& port = {}, int index = 0);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const port& port, int how_many);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many);
 
-// specific event types used by the example node
-const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
-const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
+    // add a helpful suffix to the label of a sub-resource for the example node
+    void set_label(nmos::resource& resource, const port& port, int index);
+
+    // add an example "natural grouping" hint to a sender or receiver
+    void insert_group_hint(nmos::resource& resource, const port& port, int index);
+
+    // specific event types used by the example node
+    const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
+    const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
+}
 
 // forward declarations for node_implementation_thread
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
@@ -68,7 +92,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
 // starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
 void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 {
-    nmos::details::omanip_gate gate{ gate_, nmos::stash_category(node_implementation_category) };
+    nmos::details::omanip_gate gate{ gate_, nmos::stash_category(impl::categories::node_implementation) };
 
     using web::json::value;
     using web::json::value_of;
@@ -76,19 +100,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     auto lock = model.write_lock(); // in order to update the resources
 
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
-    const auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
-    const auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
-    const auto how_many = node_implementation_field_how_many(model.settings);
-    const auto suffixes = boost::irange(0, how_many * 2, 2);
-    const auto source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), suffixes);
-    const auto flow_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/flow/"), suffixes);
-    const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
-    const auto receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), suffixes);
-    const auto temperature_suffixes = boost::irange(1, how_many * 2 + 1, 2);
-    const auto temperature_source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), temperature_suffixes);
-    const auto temperature_flow_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/flow/"), temperature_suffixes);
-    const auto temperature_ws_sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), temperature_suffixes);
-    const auto temperature_ws_receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), temperature_suffixes);
+    const auto node_id = impl::make_id(seed_id, nmos::types::node);
+    const auto device_id = impl::make_id(seed_id, nmos::types::device);
+    const auto how_many = impl::fields::how_many(model.settings);
 
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
@@ -159,23 +173,21 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     // example device
     {
-        std::vector<nmos::id> senders(sender_ids);
-        if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(senders, temperature_ws_sender_ids);
-        std::vector<nmos::id> receivers(receiver_ids);
-        boost::range::push_back(receivers, temperature_ws_receiver_ids);
-        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, senders, receivers, model.settings), gate)) return;
+        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
+        if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many));
+        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::all, how_many);
+        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) return;
     }
 
     // example sources, flows and senders
-    for (int i = 0; i < how_many; ++i)
+    for (int index = 0; index < how_many; ++index)
     {
-        const auto& suffix = suffixes[i];
-        const auto& source_id = source_ids[i];
-        const auto& flow_id = flow_ids[i];
-        const auto& sender_id = sender_ids[i];
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::video, index);
+        const auto flow_id = impl::make_id(seed_id, nmos::types::flow, impl::ports::video, index);
+        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, index);
 
         auto source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
-        set_node_implementation_label(source, suffix);
+        impl::set_label(source, impl::ports::video, index);
 
         // note, nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings) would basically use the following default values
         auto flow = nmos::make_raw_video_flow(
@@ -185,15 +197,15 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
             model.settings
         );
-        set_node_implementation_label(flow, suffix);
+        impl::set_label(flow, impl::ports::video, index);
 
         // set_transportfile needs to find the matching source and flow for the sender, so insert these first
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
         auto sender = nmos::make_sender(sender_id, flow_id, device_id, { primary_interface.name, secondary_interface.name }, model.settings);
-        set_node_implementation_label(sender, suffix);
-        insert_node_implementation_group_hint(sender, suffix);
+        impl::set_label(sender, impl::ports::video, index);
+        impl::insert_group_hint(sender, impl::ports::video, index);
 
         auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
         // add some example constraints; these should be completed fully!
@@ -215,14 +227,13 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 
     // example receivers
-    for (int i = 0; i < how_many; ++i)
+    for (int index = 0; index < how_many; ++index)
     {
-        const auto& suffix = suffixes[i];
-        const auto& receiver_id = receiver_ids[i];
+        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::video, index);
 
         auto receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
-        set_node_implementation_label(receiver, suffix);
-        insert_node_implementation_group_hint(receiver, suffix);
+        impl::set_label(receiver, impl::ports::video, index);
+        impl::insert_group_hint(receiver, impl::ports::video, index);
 
         auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
         // add some example constraints; these should be completed fully!
@@ -240,59 +251,57 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 
     // example temperature event source, sender, flow
-    for (int i = 0; 0 <= nmos::fields::events_port(model.settings) && i < how_many; ++i)
+    for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
     {
-        const auto& temperature_suffix = temperature_suffixes[i];
-        const auto& temperature_source_id = temperature_source_ids[i];
-        const auto& temperature_flow_id = temperature_flow_ids[i];
-        const auto& temperature_ws_sender_id = temperature_ws_sender_ids[i];
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::temperature, index);
+        const auto flow_id = impl::make_id(seed_id, nmos::types::flow, impl::ports::temperature, index);
+        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::temperature, index);
 
         // grain_rate is not set because temperature events are aperiodic
-        auto temperature_source = nmos::make_data_source(temperature_source_id, device_id, {}, temperature_Celsius, model.settings);
-        set_node_implementation_label(temperature_source, temperature_suffixes[i]);
+        auto source = nmos::make_data_source(source_id, device_id, {}, impl::temperature_Celsius, model.settings);
+        impl::set_label(source, impl::ports::temperature, index);
 
         // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
-        auto events_temperature_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
-        auto events_temperature_state = nmos::make_events_number_state(temperature_source_id, { 201, 10 });
-        auto events_temperature_source = nmos::make_events_source(temperature_source_id, events_temperature_state, events_temperature_type);
+        auto events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
+        auto events_state = nmos::make_events_number_state(source_id, { 201, 10 });
+        auto events_source = nmos::make_events_source(source_id, events_state, events_type);
 
-        auto temperature_flow = nmos::make_json_data_flow(temperature_flow_id, temperature_source_id, device_id, temperature_Celsius, model.settings);
-        set_node_implementation_label(temperature_flow, temperature_suffix);
+        auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, impl::temperature_Celsius, model.settings);
+        impl::set_label(flow, impl::ports::temperature, index);
 
-        auto temperature_ws_sender = nmos::make_sender(temperature_ws_sender_id, temperature_flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
-        set_node_implementation_label(temperature_ws_sender, temperature_suffix);
-        insert_node_implementation_group_hint(temperature_ws_sender, temperature_suffix);
+        auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
+        impl::set_label(sender, impl::ports::temperature, index);
+        impl::insert_group_hint(sender, impl::ports::temperature, index);
 
         // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
-        auto connection_temperature_ws_sender = nmos::make_connection_events_websocket_sender(temperature_ws_sender_id, device_id, temperature_source_id, model.settings);
-        connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_temperature_ws_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-        resolve_auto(temperature_ws_sender, connection_temperature_ws_sender, connection_temperature_ws_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-        nmos::set_resource_subscription(temperature_ws_sender, nmos::fields::master_enable(connection_temperature_ws_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+        auto connection_sender = nmos::make_connection_events_websocket_sender(sender_id, device_id, source_id, model.settings);
+        connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
+        resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_source), gate)) return;
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_flow), gate)) return;
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_sender), gate)) return;
-        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_sender), gate)) return;
-        if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_temperature_source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) return;
     }
 
     // example temperature event receiver
-    for (int i = 0; i < how_many; ++i)
+    for (int index = 0; index < how_many; ++index)
     {
-        const auto& temperature_suffix = temperature_suffixes[i];
-        const auto& temperature_ws_receiver_id = temperature_ws_receiver_ids[i];
+        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::temperature, index);
 
-        auto temperature_ws_receiver = nmos::make_data_receiver(temperature_ws_receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { temperature_wildcard }, model.settings);
-        set_node_implementation_label(temperature_ws_receiver, temperature_suffix);
-        insert_node_implementation_group_hint(temperature_ws_receiver, temperature_suffix);
+        auto receiver = nmos::make_data_receiver(receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { impl::temperature_wildcard }, model.settings);
+        impl::set_label(receiver, impl::ports::temperature, index);
+        impl::insert_group_hint(receiver, impl::ports::temperature, index);
 
-        auto connection_temperature_ws_receiver = nmos::make_connection_events_websocket_receiver(temperature_ws_receiver_id, model.settings);
-        resolve_auto(temperature_ws_receiver, connection_temperature_ws_receiver, connection_temperature_ws_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
+        resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(temperature_ws_receiver), gate)) return;
-        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_temperature_ws_receiver), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
     }
 
     // start background tasks to intermittently update the state of the temperature event source, to cause events to be emitted to connected receivers
@@ -302,10 +311,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     auto cancellation_source = pplx::cancellation_token_source();
     auto token = cancellation_source.get_token();
-    auto temperature_events = pplx::do_while([&model, temperature_source_ids, temperature_interval_engine, &gate, token]
+    auto temperature_events = pplx::do_while([&model, seed_id, how_many, temperature_interval_engine, &gate, token]
     {
         const auto temp_interval = std::uniform_real_distribution<>(0.5, 5.0)(*temperature_interval_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * temp_interval)), token).then([&model, temperature_source_ids, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * temp_interval)), token).then([&model, seed_id, how_many, &gate]
         {
             auto lock = model.write_lock();
 
@@ -313,15 +322,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             const nmos::events_number value(175.0 + std::abs(nmos::tai_now().seconds % 100 - 50), 10);
             // i.e. 17.5-22.5 C
 
-            for (const auto& temperature_source_id : temperature_source_ids)
+            for (int index = 0; index < how_many; ++index)
             {
-                modify_resource(model.events_resources, temperature_source_id, [&value](nmos::resource& resource)
+                const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::temperature, index);
+                modify_resource(model.events_resources, source_id, [&value](nmos::resource& resource)
                 {
-                    nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, value, temperature_Celsius);
+                    nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, value, impl::temperature_Celsius);
                 });
             }
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << value.scaled_value() << " (" << temperature_Celsius.name << ")";
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << value.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
 
             model.notify();
 
@@ -347,7 +357,7 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
     {
         if (!system_uri.is_empty())
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "New system global configuration discovered from the System API at: " << system_uri.to_string();
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "New system global configuration discovered from the System API at: " << system_uri.to_string();
 
             // although this example immediately updates the settings, the effect is not propagated
             // in either Registration API behaviour or the senders' /transportfile endpoints until
@@ -357,7 +367,7 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
         }
         else
         {
-            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "System global configuration is not discoverable";
+            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "System global configuration is not discoverable";
         }
     };
 }
@@ -369,11 +379,11 @@ nmos::registration_handler make_node_implementation_registration_handler(slog::b
     {
         if (!registration_uri.is_empty())
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Started registered operation with Registration API at: " << registration_uri.to_string();
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Started registered operation with Registration API at: " << registration_uri.to_string();
         }
         else
         {
-            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Stopped registered operation";
+            slog::log<slog::severities::warning>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Stopped registered operation";
         }
     };
 }
@@ -400,19 +410,17 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     using web::json::value;
 
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
-    const auto device_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/device/0"));
-    const auto how_many = node_implementation_field_how_many(settings);
-    const auto suffixes = boost::irange(0, how_many * 2, 2);
-    const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
-    const auto receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), suffixes);
-    const auto temperature_suffixes = boost::irange(1, how_many * 2 + 1, 2);
-    const auto temperature_ws_sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), temperature_suffixes);
-    const auto temperature_ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
-    const auto temperature_ws_receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), temperature_suffixes);
+    const auto device_id = impl::make_id(seed_id, nmos::types::device);
+    const auto how_many = impl::fields::how_many(settings);
+    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
+    const auto ws_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many);
+    const auto ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
+    const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::rtp, how_many);
+    const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::ws, how_many);
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [sender_ids, receiver_ids, temperature_ws_sender_ids, temperature_ws_sender_uri, temperature_ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by nmos_implementation_thread
@@ -420,7 +428,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-        if (sender_ids.end() != boost::range::find(sender_ids, id_type.first))
+        if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
@@ -429,19 +437,19 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
-        else if (receiver_ids.end() != boost::range::find(receiver_ids, id_type.first))
+        else if (rtp_receiver_ids.end() != boost::range::find(rtp_receiver_ids, id_type.first))
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
             nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
-        else if (temperature_ws_sender_ids.end() != boost::range::find(temperature_ws_sender_ids, id_type.first))
+        else if (ws_sender_ids.end() != boost::range::find(ws_sender_ids, id_type.first))
         {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(temperature_ws_sender_uri.to_string()); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(ws_sender_uri.to_string()); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
         }
-        else if (temperature_ws_receiver_ids.end() != boost::range::find(temperature_ws_receiver_ids, id_type.first))
+        else if (ws_receiver_ids.end() != boost::range::find(ws_receiver_ids, id_type.first))
         {
             nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
         }
@@ -454,22 +462,21 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     using web::json::value;
 
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
-    const auto node_id = nmos::make_repeatable_id(seed_id, U("/x-nmos/node/self"));
-    const auto how_many = node_implementation_field_how_many(settings);
-    const auto suffixes = boost::irange(0, how_many * 2, 2);
-    const auto source_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/source/"), suffixes);
-    const auto flow_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/flow/"), suffixes);
-    const auto sender_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/sender/"), suffixes);
+    const auto node_id = impl::make_id(seed_id, nmos::types::node);
+    const auto how_many = impl::fields::how_many(settings);
+    const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, impl::ports::rtp, how_many);
+    const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, impl::ports::rtp, how_many);
+    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
 
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    return [&node_resources, node_id, source_ids, flow_ids, sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
     {
-        const auto found = boost::range::find(sender_ids, connection_sender.id);
-        if (sender_ids.end() != found)
+        const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
+        if (rtp_sender_ids.end() != found)
         {
-            const auto i = found - sender_ids.begin();
-            const auto& source_id = source_ids[i];
-            const auto& flow_id = flow_ids[i];
+            const auto index = int(found - rtp_sender_ids.begin());
+            const auto source_id = rtp_source_ids.at(index);
+            const auto flow_id = rtp_flow_ids.at(index);
 
             // note, model mutex is already locked by the calling thread, so access to node_resources is OK...
             auto node = nmos::find_resource(node_resources, { node_id, nmos::types::node });
@@ -493,23 +500,22 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
 nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
-    const auto how_many = node_implementation_field_how_many(model.settings);
-    const auto temperature_suffixes = boost::irange(1, how_many * 2 + 1, 2);
-    const auto temperature_ws_receiver_ids = make_repeatable_ids(seed_id, U("/x-nmos/node/receiver/"), temperature_suffixes);
+    const auto how_many = impl::fields::how_many(model.settings);
+    const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::ws, how_many);
 
     // the message handler will be used for all Events WebSocket connections, and each connection may potentially
     // have subscriptions to a number of sources, for multiple receivers, so this example uses a handler adaptor
     // that enables simple processing of "state" messages (events) per receiver
-    return nmos::experimental::make_events_ws_message_handler(model, [temperature_ws_receiver_ids, &gate](const nmos::resource& receiver, const nmos::resource& connection_receiver, const web::json::value& message)
+    return nmos::experimental::make_events_ws_message_handler(model, [receiver_ids, &gate](const nmos::resource& receiver, const nmos::resource& connection_receiver, const web::json::value& message)
     {
-        const auto found = boost::range::find(temperature_ws_receiver_ids, connection_receiver.id);
-        if (temperature_ws_receiver_ids.end() != found)
+        const auto found = boost::range::find(receiver_ids, connection_receiver.id);
+        if (receiver_ids.end() != found)
         {
             const auto event_type = nmos::event_type(nmos::fields::state_event_type(message));
             const auto& payload = nmos::fields::state_payload(message);
             const nmos::events_number value(nmos::fields::payload_number_value(payload).to_double(), nmos::fields::payload_number_scale(payload));
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Temperature received: " << value.scaled_value() << " (" << event_type.name << ")";
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Temperature received: " << value.scaled_value() << " (" << event_type.name << ")";
         }
     }, gate);
 }
@@ -527,40 +533,55 @@ nmos::connection_activation_handler make_node_implementation_activation_handler(
     return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(node_implementation_category) << "Activating " << id_type;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
     };
 }
 
-// generate repeatable ids for a range of resources
-template <typename Suffixes>
-std::vector<nmos::id> make_repeatable_ids(const nmos::id& seed_id, const utility::string_t& name_prefix, Suffixes name_suffixes)
+namespace impl
 {
-    typedef decltype(*std::begin(name_suffixes)) value_type;
-    return boost::copy_range<std::vector<nmos::id>>(name_suffixes | boost::adaptors::transformed([&](const value_type& name_suffix)
+    // generate repeatable ids for the example node's resources
+    nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const impl::port& port, int index)
     {
-        return nmos::make_repeatable_id(seed_id, name_prefix + utility::conversions::details::to_string_t(name_suffix));
-    }));
-}
+        return nmos::make_repeatable_id(seed_id, U("/x-nmos/node/") + type.name + U('/') + port.name + utility::conversions::details::to_string_t(index));
+    }
 
-// add a helpful suffix to the label of a sub-resource for the example node
-template <typename Suffix>
-void set_node_implementation_label(nmos::resource& resource, Suffix suffix)
-{
-    using web::json::value;
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const impl::port& port, int how_many)
+    {
+        return boost::copy_range<std::vector<nmos::id>>(boost::irange(0, how_many) | boost::adaptors::transformed([&](const int& index)
+        {
+            return impl::make_id(seed_id, type, port, index);
+        }));
+    }
 
-    auto label = nmos::fields::label(resource.data);
-    if (!label.empty()) label += U('/');
-    label += resource.type.name + U('/') + utility::conversions::details::to_string_t(suffix);
-    resource.data[nmos::fields::label] = resource.data[nmos::fields::description] = value::string(label);
-}
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many)
+    {
+        // hm, boost::range::combine arrived in Boost 1.56.0
+        std::vector<nmos::id> ids;
+        for (auto& port : ports)
+        {
+            boost::range::push_back(ids, make_ids(seed_id, type, port, how_many));
+        }
+        return ids;
+    }
 
-// add an example "natural grouping" hint to a sender or receiver
-template <typename Suffix>
-void insert_node_implementation_group_hint(nmos::resource& resource, Suffix suffix)
-{
-    web::json::push_back(resource.data[nmos::fields::tags][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), resource.type.name + U(' ') + utility::conversions::details::to_string_t(suffix) }));
+    // add a helpful suffix to the label of a sub-resource for the example node
+    void set_label(nmos::resource& resource, const impl::port& port, int index)
+    {
+        using web::json::value;
+
+        auto label = nmos::fields::label(resource.data);
+        if (!label.empty()) label += U('/');
+        label += resource.type.name + U('/') + port.name + utility::conversions::details::to_string_t(index);
+        resource.data[nmos::fields::label] = resource.data[nmos::fields::description] = value::string(label);
+    }
+
+    // add an example "natural grouping" hint to a sender or receiver
+    void insert_group_hint(nmos::resource& resource, const impl::port& port, int index)
+    {
+        web::json::push_back(resource.data[nmos::fields::tags][nmos::fields::group_hint], nmos::make_group_hint({ U("example"), resource.type.name + U(' ') + port.name + utility::conversions::details::to_string_t(index) }));
+    }
 }
 
 // This constructs all the callbacks used to integrate the example device-specific underlying implementation
