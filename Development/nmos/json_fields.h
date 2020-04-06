@@ -71,7 +71,7 @@ namespace nmos
         const web::json::field_as_string source_id{ U("source_id") };
         const web::json::field_as_value grain_rate{ U("grain_rate") }; // or field<nmos::rational> with a bit of work!
         const web::json::field_as_integer numerator{ U("numerator") };
-        const web::json::field_as_integer denominator{ U("denominator") };
+        const web::json::field_as_integer_or denominator{ U("denominator"), 1 };
         // flow_video
         const web::json::field_as_integer frame_width{ U("frame_width") };
         const web::json::field_as_integer frame_height{ U("frame_height") };
