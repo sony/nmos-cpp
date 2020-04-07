@@ -47,10 +47,20 @@ namespace impl
         const nmos::category node_implementation{ "node_implementation" };
     }
 
-    // custom setting for the example node to provide for very basic testing of a node with many sub-resources
+    // custom settings for the example node
     namespace fields
     {
+        // how_many: provides for very basic testing of a node with many sub-resources
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
+        // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
+        // the value must be an object like { "numerator": 25, "denominator": 1 }
+        // hm, unfortunately can't use nmos::make_rational(nmos::rates::rate25) during static initialization
+        const web::json::field_as_value_or frame_rate{ U("frame_rate"), web::json::value_of({
+            { nmos::fields::numerator, 25 },
+            { nmos::fields::denominator, 1 }
+        }) };
+        // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
+        const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
     }
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
@@ -104,6 +114,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
     const auto how_many = impl::fields::how_many(model.settings);
+    const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
+    const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
@@ -171,6 +183,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's senders and receivers
     const auto& primary_interface = host_interfaces.front();
     const auto& secondary_interface = host_interfaces.back();
+    const auto interface_names = smpte2022_7
+        ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
+        : std::vector<utility::string_t>{ primary_interface.name };
 
     // example device
     {
@@ -192,7 +207,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource source;
             if (impl::ports::video == port)
             {
-                source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
+                source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
             }
             else if (impl::ports::audio == port)
             {
@@ -200,39 +215,41 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                     { {}, nmos::channel_symbols::L },
                     { {}, nmos::channel_symbols::R }
                 };
-                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, stereo, model.settings);
+                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, stereo, model.settings);
             }
             else if (impl::ports::data == port)
             {
-                source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, nmos::rates::rate25, model.settings);
+                source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
             }
             impl::set_label(source, port, index);
 
             nmos::resource flow;
             if (impl::ports::video == port)
             {
-                // note, nmos::make_raw_video_flow(flow_id, source_id, device_id, model.settings) would basically use the following default values
+                // hm, could add another custom setting for interlace_mode?
+                const auto interlace_mode = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
+                    ? nmos::interlace_modes::interlaced_bff
+                    : nmos::interlace_modes::progressive;
                 flow = nmos::make_raw_video_flow(
                     flow_id, source_id, device_id,
-                    nmos::rates::rate25,
-                    1920, 1080, nmos::interlace_modes::interlaced_bff,
+                    frame_rate,
+                    1920, 1080, interlace_mode,
                     nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
                     model.settings
                 );
             }
             else if (impl::ports::audio == port)
             {
-                // note, nmos::make_raw_audio_flow(flow_id, source_id, device_id, model.settings) would use the following default values
                 flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 24, model.settings);
                 // add optional grain_rate
-                flow.data[nmos::fields::grain_rate] = nmos::make_rational(nmos::rates::rate25);
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
             }
             else if (impl::ports::data == port)
             {
                 nmos::did_sdid timecode{ 0x60, 0x60 };
                 flow = nmos::make_sdianc_data_flow(flow_id, source_id, device_id, { timecode }, model.settings);
                 // add optional grain_rate
-                flow.data[nmos::fields::grain_rate] = nmos::make_rational(nmos::rates::rate25);
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
             }
             impl::set_label(flow, port, index);
 
@@ -240,16 +257,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
-            auto sender = nmos::make_sender(sender_id, flow_id, device_id, { primary_interface.name, secondary_interface.name }, model.settings);
+            auto sender = nmos::make_sender(sender_id, flow_id, device_id, interface_names, model.settings);
             impl::set_label(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
-            auto connection_sender = nmos::make_connection_rtp_sender(sender_id, true);
+            auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
             // add some example constraints; these should be completed fully!
             connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
                 { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
             });
-            connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
+            if (smpte2022_7) connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
                 { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
             });
 
@@ -274,25 +291,25 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource receiver;
             if (impl::ports::video == port)
             {
-                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
+                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
             }
             else if (impl::ports::audio == port)
             {
-                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, 24, model.settings);
+                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
             }
             else if (impl::ports::data == port)
             {
-                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, { primary_interface.name, secondary_interface.name }, model.settings);
+                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
             }
             impl::set_label(receiver, port, index);
             impl::insert_group_hint(receiver, port, index);
 
-            auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, true);
+            auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
             // add some example constraints; these should be completed fully!
             connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
             });
-            connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
+            if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
             });
 
@@ -483,17 +500,19 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
         if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
+            const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
+            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
-            nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
+            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
         else if (rtp_receiver_ids.end() != boost::range::find(rtp_receiver_ids, id_type.first))
         {
+            const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
-            nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
+            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }

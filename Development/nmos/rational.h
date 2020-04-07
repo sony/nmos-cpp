@@ -2,7 +2,7 @@
 #define NMOS_RATIONAL_H
 
 #include <boost/rational.hpp>
-#include "cpprest/json_ops.h"
+#include "cpprest/json.h"
 
 namespace nmos
 {
@@ -24,18 +24,14 @@ namespace nmos
     }
     namespace rates = rationals;
 
-    inline web::json::value make_rational(const rational& value = {})
-    {
-        return web::json::value_of({
-            { U("numerator"), value.numerator() },
-            { U("denominator"), value.denominator() }
-        });
-    }
+    web::json::value make_rational(const rational& value = {});
 
     inline web::json::value make_rational(int64_t numerator, int64_t denominator)
     {
         return make_rational({ numerator, denominator });
     }
+
+    rational parse_rational(const web::json::value& value);
 }
 
 #endif

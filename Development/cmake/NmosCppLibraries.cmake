@@ -647,6 +647,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/query_api.cpp
     ${NMOS_CPP_DIR}/nmos/query_utils.cpp
     ${NMOS_CPP_DIR}/nmos/query_ws_api.cpp
+    ${NMOS_CPP_DIR}/nmos/rational.cpp
     ${NMOS_CPP_DIR}/nmos/registration_api.cpp
     ${NMOS_CPP_DIR}/nmos/registry_resources.cpp
     ${NMOS_CPP_DIR}/nmos/registry_server.cpp
