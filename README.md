@@ -83,6 +83,8 @@ The implementation is incomplete in some areas. Development is ongoing, tracking
 
 Recent activity on the project (newest first):
 
+- Extended the **nmos-cpp-node** to include mock senders/receivers of audio and ancillary data and offer some additional configuration settings
+- Simplified the build process to use Conan by default to download most of the dependencies
 - Added support in the Node implementation for discovery of, and interaction with, a System API, as required for compliance with TR-1001-1
 - Changed the implementation of `nmos::tai_clock` with the effect that it may no longer be monotonic
 - Added a minimum viable LLDP implementation (enabled by a CMake configuration option) to support sending and receiving the IS-04 v1.3 additional network data for Nodes required by IS-06

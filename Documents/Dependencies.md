@@ -51,15 +51,16 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 By default nmos-cpp uses [Conan](https://conan.io) to download most of its dependencies.
 
-If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
-
-1. Install Python 3 if necessary
+1. Install Python 3 if necessary  
+   Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
 2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`
-3. Install [DNS Service Discovery](#dns-service-discovery)
+3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
 
 Note: Due to [an issue](https://github.com/bincrafters/community/issues/998) with the C++ REST SDK recipe you may need to force Conan to install from source rather than using a pre-built package. In [cmake/NmosCppConan.cmake](cmake/NmosCppConan.cmake) change `BUILD missing` in `conan_cmake_run` to `BUILD missing cpprestsdk`, run CMake once then revert this change. You may need to repeat this step when switching to a new build configuration.
+
+If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
 
 ### Boost C++ Libraries
 

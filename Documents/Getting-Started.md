@@ -113,16 +113,16 @@ it is necessary to set ``CTEST_OUTPUT_ON_FAILURE`` to ``1`` in the environment f
 The build output should conclude something like this:
 
 ```
-  100% tests passed, 0 tests failed out of 35
-  
-  Total Test time (real) =  14.03 sec
+100% tests passed, 0 tests failed out of 52
+
+Total Test time (real) =  18.50 sec
 ```
 
 The application can also be run with other options, for example to run a single test case.
 Use ``--help`` to display usage information.
 
 Notes:
-- On Windows, if not using Conan, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
+- On Windows, the correct configuration of the C++ REST SDK library (e.g. cpprestsdk140_2_10.dll or cpprest140_2_10d.dll) needs to be on the ``PATH`` or copied into the output directory.
 - Intermittent failures of the DNS Service Discovery (DNS-SD) tests may be encountered because short time-outs and no retries are used in the test code.
   However if these tests fail repeatedly a system problem may need to be diagnosed.
 
@@ -152,10 +152,10 @@ There are several test suites for NMOS Nodes which can be run from the web servi
 For example, to test **nmos-cpp-node**, try:
 
 ```
-nmos-cpp-node "{\"http_port\":1080}"
+nmos-cpp-node "{\"http_port\":8080}"
 ```
 
-Check it is running by opening http://localhost:1080/ in a browser.
+Check it is running by opening http://localhost:8080/ in a browser.
 
 Then run the "IS-04 Node API", "IS-05 Connection Management API" and "IS-05 Interaction with Node API" test suites from the web service.
 
@@ -164,10 +164,10 @@ There are also test suites for NMOS Registries.
 For example, to test **nmos-cpp-registry**, try:
 
 ```
-nmos-cpp-registry "{\"http_port\":8080}"
+nmos-cpp-registry "{\"http_port\":1080}"
 ```
 
-Check it is running by opening http://localhost:8080/ in a browser.
+Check it is running by opening http://localhost:1080/ in a browser.
 
 Then try running the "IS-04 Registry APIs" test suites from the web service.
 
