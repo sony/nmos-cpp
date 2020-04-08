@@ -6,6 +6,7 @@
 #include "nmos/events_ws_api.h"
 #include "nmos/logging_api.h"
 #include "nmos/manifest_api.h"
+#include "nmos/model.h"
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/server.h"
