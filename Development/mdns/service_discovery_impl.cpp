@@ -96,6 +96,7 @@ namespace mdns_details
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                 // process the next browse responses (callback may be called more than once, or (at least with Avahi!) not at all, in any call to DNSServiceProcessResult)
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceProcessResult for " << wait_millis << "ms";
                 errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
 
                 if (errorCode == kDNSServiceErr_NoError)
@@ -314,6 +315,7 @@ namespace mdns_details
                 int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                 // process the next resolve responses (callback may be called more than once, or not at all, in any call to DNSServiceProcessResult)
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceProcessResult for " << wait_millis << "ms";
                 errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
 
                 if (errorCode == kDNSServiceErr_NoError)
@@ -385,6 +387,7 @@ namespace mdns_details
                     int wait_millis = (std::max)(0, (int)std::chrono::duration_cast<std::chrono::milliseconds>(absolute_timeout - std::chrono::steady_clock::now()).count());
 
                     // process the next lookup responses (callback may be called more than once, or potentially not at all, in any call to DNSServiceProcessResult)
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "DNSServiceProcessResult for " << wait_millis << "ms";
                     errorCode = DNSServiceProcessResult(client, wait_millis, cancel);
 
                     if (errorCode == kDNSServiceErr_NoError)
