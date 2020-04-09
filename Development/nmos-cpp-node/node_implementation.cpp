@@ -47,10 +47,10 @@ namespace impl
         const nmos::category node_implementation{ "node_implementation" };
     }
 
-    // custom settings for the example node
+    // custom settings for the example node implementation
     namespace fields
     {
-        // how_many: provides for very basic testing of a node with many sub-resources
+        // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
         // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
         // the value must be an object like { "numerator": 25, "denominator": 1 }
@@ -335,7 +335,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
         // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
         auto events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
-        auto events_state = nmos::make_events_number_state(source_id, { 201, 10 });
+        auto events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 });
         auto events_source = nmos::make_events_source(source_id, events_state, events_type);
 
         auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, impl::temperature_Celsius, model.settings);
@@ -395,9 +395,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             for (int index = 0; index < how_many; ++index)
             {
                 const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::temperature, index);
-                modify_resource(model.events_resources, source_id, [&value](nmos::resource& resource)
+                const auto flow_id = impl::make_id(seed_id, nmos::types::flow, impl::ports::temperature, index);
+                modify_resource(model.events_resources, source_id, [&](nmos::resource& resource)
                 {
-                    nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state(resource.id, value, impl::temperature_Celsius);
+                    nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state({ source_id, flow_id }, value, impl::temperature_Celsius);
                 });
             }
 
