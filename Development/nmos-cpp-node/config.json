@@ -2,6 +2,18 @@
 
 // Configuration settings and defaults
 {
+    // Custom settings for the example node implementation
+
+    // how_many: provides for very basic testing of a node with many sub-resources of each type
+    //"how_many" : 7,
+
+    // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
+    // the value must be an object like { "numerator": 25, "denominator": 1 }
+    //"frame_rate": { "numerator": 60000, "denominator": 1001 },
+
+    // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
+    //"smpte2022_7": false,
+
     // Configuration settings and defaults for logging
 
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr
