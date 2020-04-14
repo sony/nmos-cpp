@@ -86,7 +86,7 @@ namespace impl
 
         const std::vector<port> rtp{ video, audio, data };
         const std::vector<port> ws{ temperature, burn, nonsense, catcall };
-        const std::vector<port> all{ video, audio, data, temperature };
+        const std::vector<port> all{ video, audio, data, temperature, burn, nonsense, catcall };
     }
 
     // generate repeatable ids for the example node's resources
