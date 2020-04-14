@@ -68,13 +68,24 @@ namespace impl
     DEFINE_STRING_ENUM(port)
     namespace ports
     {
+        // video/raw
         const port video{ U("v") };
+        // audio/L24
         const port audio{ U("a") };
+        // video/smpte291
         const port data{ U("d") };
+
+        // example measurement event
         const port temperature{ U("t") };
+        // example boolean event
+        const port burn{ U("b") };
+        // example string event
+        const port nonsense{ U("s") };
+        // example number/enum event
+        const port catcall{ U("c") };
 
         const std::vector<port> rtp{ video, audio, data };
-        const std::vector<port> ws{ temperature };
+        const std::vector<port> ws{ temperature, burn, nonsense, catcall };
         const std::vector<port> all{ video, audio, data, temperature };
     }
 
@@ -92,6 +103,7 @@ namespace impl
     // specific event types used by the example node
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
     const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
+    const auto catcall = nmos::event_types::named_enum(nmos::event_types::number, U("caterwaul"));
 }
 
 // forward declarations for node_implementation_thread
@@ -198,7 +210,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // example sources, flows and senders
     for (int index = 0; index < how_many; ++index)
     {
-        for (auto& port : impl::ports::rtp)
+        for (const auto& port : impl::ports::rtp)
         {
             const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
             const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
@@ -284,7 +296,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // example receivers
     for (int index = 0; index < how_many; ++index)
     {
-        for (auto& port : impl::ports::rtp)
+        for (const auto& port : impl::ports::rtp)
         {
             const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
@@ -320,89 +332,179 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         }
     }
 
-    // example temperature event source, sender, flow
+    // example event sources, senders, flows
     for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
     {
-        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::temperature, index);
-        const auto flow_id = impl::make_id(seed_id, nmos::types::flow, impl::ports::temperature, index);
-        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::temperature, index);
+        for (const auto& port : impl::ports::ws)
+        {
+            const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
+            const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
 
-        // grain_rate is not set because temperature events are aperiodic
-        auto source = nmos::make_data_source(source_id, device_id, {}, impl::temperature_Celsius, model.settings);
-        impl::set_label(source, impl::ports::temperature, index);
+            nmos::event_type event_type;
+            web::json::value events_type;
+            web::json::value events_state;
+            if (impl::ports::temperature == port)
+            {
+                event_type = impl::temperature_Celsius;
 
-        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-type-number-measurement-get-200.json
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/examples/eventsapi-v1.0-state-number-rational-get-200.json
-        auto events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
-        auto events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 });
-        auto events_source = nmos::make_events_source(source_id, events_state, events_type);
+                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#231-measurements
+                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-type-number-measurement-get-200.json
+                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-state-number-measurement-get-200.json
+                events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
+                events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 }, event_type);
+            }
+            else if (impl::ports::burn == port)
+            {
+                event_type = nmos::event_types::boolean;
 
-        auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, impl::temperature_Celsius, model.settings);
-        impl::set_label(flow, impl::ports::temperature, index);
+                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#21-boolean
+                events_type = nmos::make_events_boolean_type();
+                events_state = nmos::make_events_boolean_state({ source_id, flow_id }, false);
+            }
+            else if(impl::ports::nonsense == port)
+            {
+                event_type = nmos::event_types::string;
 
-        auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
-        impl::set_label(sender, impl::ports::temperature, index);
-        impl::insert_group_hint(sender, impl::ports::temperature, index);
+                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#22-string
+                // and of course, https://en.wikipedia.org/wiki/Metasyntactic_variable
+                events_type = nmos::make_events_string_type(0, 0, U("^foo|bar|baz|qu+x$"));
+                events_state = nmos::make_events_string_state({ source_id, flow_id }, U("foo"));
+            }
+            else if(impl::ports::catcall == port)
+            {
+                event_type = impl::catcall;
 
-        // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
-        auto connection_sender = nmos::make_connection_events_websocket_sender(sender_id, device_id, source_id, model.settings);
-        connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-        resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-        nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#3-enum
+                events_type = nmos::make_events_number_enum_type({
+                    { 1, { U("meow"), U("chatty") } },
+                    { 2, { U("purr"), U("happy") } },
+                    { 4, { U("hiss"), U("afraid") } },
+                    { 8, { U("yowl"), U("sonorous") } }
+                });
+                events_state = nmos::make_events_number_state({ source_id, flow_id }, 1, event_type);
+            }
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
-        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
-        if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) return;
+            // grain_rate is not set because these events are aperiodic
+            auto source = nmos::make_data_source(source_id, device_id, {}, event_type, model.settings);
+            impl::set_label(source, port, index);
+
+            auto events_source = nmos::make_events_source(source_id, events_state, events_type);
+
+            auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, event_type, model.settings);
+            impl::set_label(flow, port, index);
+
+            auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
+            impl::set_label(sender, port, index);
+            impl::insert_group_hint(sender, port, index);
+
+            // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
+            auto connection_sender = nmos::make_connection_events_websocket_sender(sender_id, device_id, source_id, model.settings);
+            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
+            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+            nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+            if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) return;
+        }
     }
 
-    // example temperature event receiver
+    // example event receivers
     for (int index = 0; index < how_many; ++index)
     {
-        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::temperature, index);
+        for (const auto& port : impl::ports::ws)
+        {
+            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
 
-        auto receiver = nmos::make_data_receiver(receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { impl::temperature_wildcard }, model.settings);
-        impl::set_label(receiver, impl::ports::temperature, index);
-        impl::insert_group_hint(receiver, impl::ports::temperature, index);
+            nmos::event_type event_type;
+            if (impl::ports::temperature == port)
+            {
+                // accept e.g. "number/temperature/F" or "number/temperature/K" as well as "number/temperature/C"
+                event_type = impl::temperature_wildcard;
+            }
+            else if (impl::ports::burn == port)
+            {
+                // accept any boolean
+                event_type = nmos::event_types::wildcard(nmos::event_types::boolean);
+            }
+            else if (impl::ports::nonsense == port)
+            {
+                // accept any string
+                event_type = nmos::event_types::wildcard(nmos::event_types::string);
+            }
+            else if (impl::ports::catcall == port)
+            {
+                // accept only a catcall
+                event_type = impl::catcall;
+            }
 
-        auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
-        resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+            auto receiver = nmos::make_data_receiver(receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { event_type }, model.settings);
+            impl::set_label(receiver, port, index);
+            impl::insert_group_hint(receiver, port, index);
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
-        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+            auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
+            resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+        }
     }
 
-    // start background tasks to intermittently update the state of the temperature event source, to cause events to be emitted to connected receivers
+    // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
-    nmos::details::seed_generator temperature_interval_seeder;
-    std::shared_ptr<std::default_random_engine> temperature_interval_engine(new std::default_random_engine(temperature_interval_seeder));
+    nmos::details::seed_generator events_seeder;
+    std::shared_ptr<std::default_random_engine> events_engine(new std::default_random_engine(events_seeder));
 
     auto cancellation_source = pplx::cancellation_token_source();
     auto token = cancellation_source.get_token();
-    auto temperature_events = pplx::do_while([&model, seed_id, how_many, temperature_interval_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, events_engine, &gate, token]
     {
-        const auto temp_interval = std::uniform_real_distribution<>(0.5, 5.0)(*temperature_interval_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * temp_interval)), token).then([&model, seed_id, how_many, &gate]
+        const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
             // make example temperature data ... \/\/\/\/ ... around 200
-            const nmos::events_number value(175.0 + std::abs(nmos::tai_now().seconds % 100 - 50), 10);
+            const nmos::events_number temp(175.0 + std::abs(nmos::tai_now().seconds % 100 - 50), 10);
             // i.e. 17.5-22.5 C
 
             for (int index = 0; index < how_many; ++index)
             {
-                const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::temperature, index);
-                const auto flow_id = impl::make_id(seed_id, nmos::types::flow, impl::ports::temperature, index);
-                modify_resource(model.events_resources, source_id, [&](nmos::resource& resource)
+                for (const auto& port : impl::ports::ws)
                 {
-                    nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state({ source_id, flow_id }, value, impl::temperature_Celsius);
-                });
+                    const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
+                    const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
+
+                    modify_resource(model.events_resources, source_id, [&](nmos::resource& resource)
+                    {
+                        if (impl::ports::temperature == port)
+                        {
+                            nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state({ source_id, flow_id }, temp, impl::temperature_Celsius);
+                        }
+                        else if (impl::ports::burn == port)
+                        {
+                            nmos::fields::endpoint_state(resource.data) = nmos::make_events_boolean_state({ source_id, flow_id }, temp.scaled_value() > 20.0);
+                        }
+                        else if (impl::ports::nonsense == port)
+                        {
+                            const auto nonsenses = { U("foo"), U("bar"), U("baz"), U("qux"), U("quux"), U("quuux") };
+                            const auto& nonsense = *(nonsenses.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), nonsenses.size() - 1));
+                            nmos::fields::endpoint_state(resource.data) = nmos::make_events_string_state({ source_id, flow_id }, nonsense);
+                        }
+                        else if (impl::ports::catcall == port)
+                        {
+                            const auto catcalls = { 1, 2, 4, 8 };
+                            const auto& catcall = *(catcalls.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), catcalls.size() - 1));
+                            nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state({ source_id, flow_id }, catcall, impl::catcall);
+                        }
+                    });
+                }
             }
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << value.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << temp.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
 
             model.notify();
 
@@ -416,7 +518,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     cancellation_source.cancel();
     // wait without the lock since it is also used by the background tasks
     nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-    temperature_events.wait();
+    events.wait();
 }
 
 // Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
@@ -586,9 +688,20 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
         {
             const auto event_type = nmos::event_type(nmos::fields::state_event_type(message));
             const auto& payload = nmos::fields::state_payload(message);
-            const nmos::events_number value(nmos::fields::payload_number_value(payload).to_double(), nmos::fields::payload_number_scale(payload));
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Temperature received: " << value.scaled_value() << " (" << event_type.name << ")";
+            if (nmos::is_matching_event_type(nmos::event_types::wildcard(nmos::event_types::number), event_type))
+            {
+                const nmos::events_number value(nmos::fields::payload_number_value(payload).to_double(), nmos::fields::payload_number_scale(payload));
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Event received: " << value.scaled_value() << " (" << event_type.name << ")";
+            }
+            else if (nmos::is_matching_event_type(nmos::event_types::wildcard(nmos::event_types::string), event_type))
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Event received: " << nmos::fields::payload_string_value(payload) << " (" << event_type.name << ")";
+            }
+            else if (nmos::is_matching_event_type(nmos::event_types::wildcard(nmos::event_types::boolean), event_type))
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Event received: " << std::boolalpha << nmos::fields::payload_boolean_value(payload) << " (" << event_type.name << ")";
+            }
         }
     }, gate);
 }
@@ -632,7 +745,7 @@ namespace impl
     {
         // hm, boost::range::combine arrived in Boost 1.56.0
         std::vector<nmos::id> ids;
-        for (auto& port : ports)
+        for (const auto& port : ports)
         {
             boost::range::push_back(ids, make_ids(seed_id, type, port, how_many));
         }
