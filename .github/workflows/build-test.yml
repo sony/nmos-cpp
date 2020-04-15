@@ -4,12 +4,16 @@ on: [pull_request, push]
 
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        install_mdns: [false]
+        include:
+          - install_mdns: true
+            os: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -54,8 +58,20 @@ jobs:
       if: matrix.os =='macos-latest'
       run: echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
 
-    - name: linux setup
-      if: matrix.os =='ubuntu-latest'
+    - name: ubuntu mdns install
+      if: matrix.os =='ubuntu-latest' && matrix.install_mdns == true
+      run: |
+        cd ${{ github.workspace }}
+        wget https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-878.200.35.tar.gz
+        tar -xzf mDNSResponder-878.200.35.tar.gz
+        patch -d mDNSResponder-878.200.35/ -p1 < ${{ github.workspace }}/Development/third_party/mDNSResponder/unicast.patch
+        patch -d mDNSResponder-878.200.35/ -p1 < ${{ github.workspace }}/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
+        patch -d mDNSResponder-878.200.35/ -p1 < ${{ github.workspace }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
+        cd mDNSResponder-878.200.35/mDNSPosix
+        make os=linux && sudo make os=linux install
+
+    - name: ubuntu avahi setup
+      if: matrix.os =='ubuntu-latest' && matrix.install_mdns == false
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
