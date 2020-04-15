@@ -51,12 +51,29 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
         ${{ env.GDRIVE_PATH }} --config ${{ github.workspace }}/gdrive --service-account credentials.json download --path ${{ github.workspace }} ${{ env.bonjourid }}
         msiexec /i ${{ github.workspace }}\Bonjour64.msi /qn /norestart
+        $env:hostip = (
+          Get-NetIPConfiguration |
+          Where-Object {
+              $_.IPv4DefaultGateway -ne $null -and
+              $_.NetAdapter.Status -ne "Disconnected"
+          }
+        ).IPv4Address.IPAddress
+        echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
       env:
         bonjourid: ${{ secrets.BONJOUR_DRIVE_ID }}
 
     - name: mac setup
       if: matrix.os =='macos-latest'
-      run: echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
+      run: |
+        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
+        hostip=$(ipconfig getifaddr en0)
+        echo "::set-env name=HOST_IP_ADDRESS::$hostip"
+
+    - name: ubuntu setup
+      if: matrix.os =='ubuntu-latest'
+      run: |
+        hostip=$(hostname -I | cut -f1 -d' ')
+        echo "::set-env name=HOST_IP_ADDRESS::$hostip"
 
     - name: ubuntu mdns install
       if: matrix.os =='ubuntu-latest' && matrix.install_mdns == true
@@ -90,5 +107,117 @@ jobs:
         cd ${{ runner.workspace }}/build/
         ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
 
+    - name: AMWA test suite
+      shell: bash
+      working-directory: ${{ runner.workspace }}
+      run:
+        |
+        set -x
+        root_dir=`pwd`
+        # Install AMWA test suite.
+        git clone https://github.com/AMWA-TV/nmos-testing.git
+        cd nmos-testing
 
+        pip install -r requirements.txt
+        pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+
+        # Install SDPoker
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          npm install -g AMWA-TV/sdpoker
+        else
+          sudo npm install -g AMWA-TV/sdpoker
+        fi
+
+        # Create output directories
+        mkdir results
+        mkdir badges
+
+        ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
+        NODE_PID=$!
+
+        # IS-04-01
+        case $(python nmos-test.py suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/"${{ env.GITHUB_SHA }}-"IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-04-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-01.json
+
+        # IS-04-03
+        case $(python nmos-test.py suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/"${{ env.GITHUB_SHA }}-"IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-04-03\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-03.json
+
+        # IS-05-01
+        case $(python nmos-test.py suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/"${{ env.GITHUB_SHA }}-"IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-05-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-01.json
+
+        # IS-05-02
+        case $(python nmos-test.py suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/"${{ env.GITHUB_SHA }}-"IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-05-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-02.json
+
+        # IS-07-01
+        case $(python nmos-test.py suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/"${{ env.GITHUB_SHA }}-"IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
+
+        # IS-07-02
+        case $(python nmos-test.py suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/"${{ env.GITHUB_SHA }}-"IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-07-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-02.json
+
+        # IS-09-02
+        case $(python nmos-test.py suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/"${{ env.GITHUB_SHA }}-"IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-09-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-02.json
+
+        # Run Registry tests (leave Node running)
+        ${root_dir}/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > results/registryoutput 2>&1 &
+        REGISTRY_PID=$!
+        # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
+        sleep 2
+        # add a persistent Query WebSocket API subscription before running the Registry test suite
+        curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
+
+        # IS-04-02
+        case $(python nmos-test.py suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/"${{ env.GITHUB_SHA }}-"IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-04-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-02.json
+
+        # IS-09-01
+        case $(python nmos-test.py suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/"${{ env.GITHUB_SHA }}-"IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
+        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+        *)      testmessage="Fail" && testcolour="red";;
+        esac
+        printf "{\"schemaVersion\":1,\"label\":\"IS-09-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-01.json
+
+        # Stop Node and Registry
+        kill $NODE_PID || echo "node not running"
+        kill $REGISTRY_PID || echo "registry not running"
+        exit 0
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.os }}_${{ matrix.install_mdns }}_badges
+        path: ${{ runner.workspace }}/nmos-testing/badges
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.os }}_${{ matrix.install_mdns }}_results
+        path: ${{ runner.workspace }}/nmos-testing/results
 
