@@ -45,6 +45,9 @@ endif()
 # guard against in-source builds and bad build-type strings
 include(safeguards)
 
+# enable or disable the LLDP support library (lldp_static)
+set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
+
 # find dependencies
 
 # cpprestsdk
@@ -111,9 +114,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
         list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
 
-    # enable or disable the LLDP support library (lldp_static)
-    set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
-
     if(BUILD_LLDP)
         # find libpcap for the LLDP support library (lldp_static)
         set (PCAP_LIB -lpcap)
@@ -172,9 +172,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
     #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
     add_definitions(/D_WIN32_WINNT=0x0600)
-
-    # enable or disable the LLDP support library (lldp_static)
-    set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
 
     if(BUILD_LLDP)
         # find WinPcap for the LLDP support library (lldp_static)
