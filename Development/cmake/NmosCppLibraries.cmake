@@ -819,8 +819,9 @@ target_link_libraries(
     nmos_is04_schemas_static
     nmos_is05_schemas_static
     nmos_is09_schemas_static
-    ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
+    ${OPENSSL_TARGETS}
+    ${PLATFORM_LIBS}
     )
 if (BUILD_LLDP)
     target_link_libraries(

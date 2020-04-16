@@ -89,6 +89,19 @@ endif()
 # so find_package(Boost) is called after adding those components
 list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 
+# openssl
+# note: good idea to use same version as cpprestsk was built with!
+find_package(OpenSSL REQUIRED ${FIND_PACKAGE_USE_CONFIG})
+if (TARGET OpenSSL::SSL)
+    set(OPENSSL_TARGETS OpenSSL::Crypto OpenSSL::SSL)
+else()
+    set(OPENSSL_TARGETS OpenSSL::OpenSSL)
+endif()
+message(STATUS "Using OpenSSL target(s) ${OPENSSL_TARGETS}")
+if (DEFINED OPENSSL_INCLUDE_DIR)
+    message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
+endif()
+
 # platform-specific dependencies
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -243,12 +256,13 @@ endif()
 include_directories(
     ${NMOS_CPP_DIR}
     ${NMOS_CPP_DIR}/third_party
+    ${NMOS_CPP_DIR}/third_party/nlohmann
     ${CPPREST_INCLUDE_DIR}
     ${WEBSOCKETPP_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
     ${BONJOUR_INCLUDE}
     ${PCAP_INCLUDE_DIR}
-    ${NMOS_CPP_DIR}/third_party/nlohmann
     )
 
 # location of libraries
