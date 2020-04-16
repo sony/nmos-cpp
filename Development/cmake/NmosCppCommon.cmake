@@ -52,13 +52,14 @@ include(safeguards)
 # and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk
 find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_USE_CONFIG} NAMES cpprestsdk cpprest)
 if (TARGET cpprestsdk::cpprest)
-    message(STATUS "Found cpprestsdk::cpprest")
     set(CPPRESTSDK_TARGET cpprestsdk::cpprest)
 else()
-    message(STATUS "Found cpprestsdk::cpprestsdk")
     set(CPPRESTSDK_TARGET cpprestsdk::cpprestsdk)
 endif()
-get_target_property(CPPREST_INCLUDE_DIR ${CPPRESTSDK_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "Using cpprestsdk target ${CPPRESTSDK_TARGET}")
+if (DEFINED CPPREST_INCLUDE_DIR)
+    message(STATUS "Using cpprestsdk include directory at ${CPPREST_INCLUDE_DIR}")
+endif()
 
 # websocketpp
 # note: good idea to use same version as cpprestsdk was built with!
@@ -75,11 +76,14 @@ else()
     else()
         message(STATUS "Found websocketpp version " ${websocketpp_VERSION})
     endif()
-    message(STATUS "Using websocketpp include directory at " ${WEBSOCKETPP_INCLUDE_DIR})
+    if (DEFINED WEBSOCKETPP_INCLUDE_DIR)
+        message(STATUS "Using websocketpp include directory at ${WEBSOCKETPP_INCLUDE_DIR}")
+    endif()
 endif()
 
 # boost
 # note: some components are only required for one platform or other
+# so find_package(Boost) is called after adding those components
 list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 
 # platform-specific dependencies
@@ -202,6 +206,9 @@ elseif (DEFINED Boost_VERSION)
 else()
     message(FATAL_ERROR "Boost_VERSION_STRING is not defined")
 endif()
+if (DEFINED Boost_INCLUDE_DIRS)
+    message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
+endif()
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -234,14 +241,16 @@ elseif(MSVC)
 endif()
 
 # location of header files (should be using specific target_include_directories?)
+# though these will be determined from INTERFACE_INCLUDE_DIRECTORIES for targets
+# mentioned in target_link_libraries
 include_directories(
     ${NMOS_CPP_DIR}
     ${NMOS_CPP_DIR}/third_party
-    ${CPPREST_INCLUDE_DIR} # defined above from target of find_package(cpprestsdk)
-    ${WEBSOCKETPP_INCLUDE_DIR} # defined by find_package(websocketpp)
-    ${Boost_INCLUDE_DIRS} # defined by find_package(Boost)
-    ${BONJOUR_INCLUDE} # defined above
-    ${PCAP_INCLUDE_DIR} # defined above
+    ${CPPREST_INCLUDE_DIR}
+    ${WEBSOCKETPP_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS}
+    ${BONJOUR_INCLUDE}
+    ${PCAP_INCLUDE_DIR}
     ${NMOS_CPP_DIR}/third_party/nlohmann
     )
 
