@@ -14,6 +14,20 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: setup google drive
+      run: |
+        mkdir ${{ github.workspace }}/gdrive
+        echo "${{ env.credentials }}" | openssl base64 -d -A -out ${{ github.workspace }}/gdrive/credentials.json
+      env:
+        credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+    - name: download google drive windows
+      if: matrix.os =='windows-latest'
+      run: |
+        choco install wget -r
+        wget https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -O ${{ github.workspace }}/gdrive/gdrive-windows-x64.exe -q
+        echo "::set-env name=GDRIVE_PATH::${{ github.workspace }}/gdrive/gdrive-windows-x64.exe"
+
     - name: install python
       uses: actions/setup-python@v1
       with:
@@ -29,7 +43,12 @@ jobs:
 
     - name: windows setup
       if: matrix.os =='windows-latest'
-      run: echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+      run: |
+        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        ${{ env.GDRIVE_PATH }} --config ${{ github.workspace }}/gdrive --service-account credentials.json download --path ${{ github.workspace }} ${{ env.bonjourid }}
+        msiexec /i ${{ github.workspace }}\Bonjour64.msi /qn /norestart
+      env:
+        bonjourid: ${{ secrets.BONJOUR_DRIVE_ID }}
 
     - name: mac setup
       if: matrix.os =='macos-latest'
@@ -37,7 +56,9 @@ jobs:
 
     - name: linux setup
       if: matrix.os =='ubuntu-latest'
-      run: sudo apt-get install -f libavahi-compat-libdnssd-dev
+      run: |
+        sudo apt-get install -f libavahi-compat-libdnssd-dev
+        echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
 
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build
@@ -47,6 +68,11 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/Development/CMakeLists.txt'
         buildDirectory: '${{ runner.workspace }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+
+    - name: unit test
+      run: |
+        cd ${{ runner.workspace }}/build/
+        ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
 
 
 
