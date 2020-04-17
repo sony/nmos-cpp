@@ -85,6 +85,7 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
         & "${{ github.workspace }}/gdrive/gdrive-windows-x64.exe" --config ${{ github.workspace }}/gdrive --service-account credentials.json download --path ${{ github.workspace }} ${{ env.bonjourid }}
         msiexec /i ${{ github.workspace }}\Bonjour64.msi /qn /norestart
+        netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         $env:hostip = (
           Get-NetIPConfiguration |
           Where-Object {
@@ -93,6 +94,7 @@ jobs:
           }
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
+        ipconfig
       env:
         bonjourid: ${{ secrets.BONJOUR_DRIVE_ID }}
 
@@ -102,12 +104,15 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
+        ifconfig
 
     - name: ubuntu setup
       if: matrix.os =='ubuntu-latest'
       run: |
+        sudo ip addr flush dev docker0
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
+        ip address
 
     - name: ubuntu mdns install
       if: matrix.os =='ubuntu-latest' && matrix.install_mdns == true
