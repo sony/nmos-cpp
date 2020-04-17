@@ -158,6 +158,7 @@ jobs:
         # Install AMWA test suite.
         git clone https://github.com/alanb-sony/nmos-testing.git
         cd nmos-testing
+        git checkout temp
 
         pip install -r requirements.txt
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
