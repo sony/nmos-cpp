@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: set build name
+    - name: set environment variables
       shell: bash
       run: |
         if [[ "${{ matrix.os }}"  == "ubuntu-latest" ]]; then
@@ -30,6 +30,8 @@ jobs:
         else
           echo "::set-env name=BUILD_NAME::${{ matrix.os }}"
         fi
+        GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
+        echo "::set-env name=GITHUB_COMMIT::$GITHUB_COMMIT"
 
     - name: setup google drive
       run: |
@@ -178,49 +180,49 @@ jobs:
         NODE_PID=$!
 
         # IS-04-01
-        case $(python nmos-test.py suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-04-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-01.json
 
         # IS-04-03
-        case $(python nmos-test.py suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-04-03\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-03.json
 
         # IS-05-01
-        case $(python nmos-test.py suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-05-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-01.json
 
         # IS-05-02
-        case $(python nmos-test.py suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-05-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-02.json
 
         # IS-07-01
-        case $(python nmos-test.py suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
 
         # IS-07-02
-        case $(python nmos-test.py suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-07-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-02.json
 
         # IS-09-02
-        case $(python nmos-test.py suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
@@ -235,14 +237,14 @@ jobs:
         curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
 
         # IS-04-02
-        case $(python nmos-test.py suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-04-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-02.json
 
         # IS-09-01
-        case $(python nmos-test.py suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ github.sha }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
+        case $(python nmos-test.py suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
@@ -268,7 +270,7 @@ jobs:
         }
 
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
-        python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" `join_with " --json " nmos-testing/results/${{ github.sha }}-*.json`
+        python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" `join_with " --json " nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json`
 
     - uses: actions/upload-artifact@v1
       with:
