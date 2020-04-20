@@ -131,6 +131,8 @@ jobs:
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+        sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
+        sudo systemctl restart avahi-daemon
 
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build
