@@ -106,6 +106,7 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
+        echo "::set-env name=HOST_INTERFACE_NAME::en0"
         ifconfig
 
     - name: ubuntu setup
@@ -144,6 +145,10 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/Development/CMakeLists.txt'
         buildDirectory: '${{ runner.workspace }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+
+    - name: setup tmate
+      uses: mxschmitt/action-tmate@v2
+      if: matrix.os =='macos-latest'
 
     - name: unit test
       run: |
