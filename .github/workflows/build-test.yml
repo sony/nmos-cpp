@@ -18,6 +18,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    #- name: setup tmate
+    #  uses: mxschmitt/action-tmate@v2
+    #  if: matrix.os =='macos-latest'
+
     - name: set environment variables
       shell: bash
       run: |
@@ -106,8 +110,32 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
-        echo "::set-env name=HOST_INTERFACE_NAME::en0"
+        echo "::set-env name=DOCKER_TEST_SUITE::true"
         ifconfig
+
+    - name: mac docker install
+      if: matrix.os =='macos-latest'
+      run: |
+        brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
+        sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+        sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+        mkdir -p /Users/runner/.docker/machine/cache/
+        curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
+        i=0
+        while ! docker-machine "--github-api-token=${{ secrets.GITHUB_TOKEN }}" create default --driver xhyve; do
+          docker-machine rm -f default
+          sleep 1
+          $(( i++ ))
+          if [[ $i -gt 5 ]]; then
+            exit 1
+          fi
+        done
+        eval $(docker-machine env default)
+        echo "::set-env name=DOCKER_MACHINE_NAME::$DOCKER_MACHINE_NAME"
+        echo "::set-env name=DOCKER_TLS_VERIFY::$DOCKER_TLS_VERIFY"
+        echo "::set-env name=DOCKER_HOST::$DOCKER_HOST"
+        echo "::set-env name=DOCKER_CERT_PATH::$DOCKER_CERT_PATH"
+
 
     - name: ubuntu setup
       if: matrix.os =='ubuntu-latest'
@@ -146,10 +174,6 @@ jobs:
         buildDirectory: '${{ runner.workspace }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
 
-    - name: setup tmate
-      uses: mxschmitt/action-tmate@v2
-      if: matrix.os =='macos-latest'
-
     - name: unit test
       run: |
         cd ${{ runner.workspace }}/build/
@@ -167,67 +191,74 @@ jobs:
         cd nmos-testing
         git checkout temp
 
-        pip install -r requirements.txt
-        pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
-
-        # Install SDPoker
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          npm install -g AMWA-TV/sdpoker
-        else
-          sudo npm install -g AMWA-TV/sdpoker
-        fi
-
         # Create output directories
         mkdir results
         mkdir badges
+
+        if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+          docker pull amwa/nmos-testing
+          docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
+          run_test="docker exec -it nmos_testing python3 nmos-test.py"
+        else
+          pip install -r requirements.txt
+
+          # Install SDPoker
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npm install -g AMWA-TV/sdpoker
+          else
+            sudo npm install -g AMWA-TV/sdpoker
+          fi
+          run_test="python nmos-test.py"
+        fi
+        pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
         NODE_PID=$!
 
         # IS-04-01
-        case $(python nmos-test.py suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-04-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-01.json
 
         # IS-04-03
-        case $(python nmos-test.py suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-04-03\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-03.json
 
         # IS-05-01
-        case $(python nmos-test.py suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-05-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-01.json
 
         # IS-05-02
-        case $(python nmos-test.py suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-05-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-02.json
 
         # IS-07-01
-        case $(python nmos-test.py suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
 
         # IS-07-02
-        case $(python nmos-test.py suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-07-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-02.json
 
         # IS-09-02
-        case $(python nmos-test.py suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
@@ -242,14 +273,14 @@ jobs:
         curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
 
         # IS-04-02
-        case $(python nmos-test.py suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
         printf "{\"schemaVersion\":1,\"label\":\"IS-04-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-02.json
 
         # IS-09-01
-        case $(python nmos-test.py suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
+        case $($run_test suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
         [0-1])  testmessage="Pass" && testcolour="brightgreen";;
         *)      testmessage="Fail" && testcolour="red";;
         esac
@@ -258,6 +289,11 @@ jobs:
         # Stop Node and Registry
         kill $NODE_PID || echo "node not running"
         kill $REGISTRY_PID || echo "registry not running"
+
+        if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+          docker stop nmos_testing
+          docker rm nmos_testing
+        fi
         exit 0
 
     - name: upload to google drive
