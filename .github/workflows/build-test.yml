@@ -106,7 +106,6 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
-        echo "::set-env name=VAGRANT_TEST_SUITE::true"
         ifconfig
 
     - name: mac docker install
@@ -319,9 +318,9 @@ jobs:
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" `join_with " --json " nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json` || echo "upload failed"
 
-    - name: setup tmate
-      uses: mxschmitt/action-tmate@v2
-      if: matrix.os =='macos-latest'
+    #- name: setup tmate
+    #  uses: mxschmitt/action-tmate@v2
+    #  if: matrix.os =='macos-latest'
 
     - uses: actions/upload-artifact@v1
       with:
