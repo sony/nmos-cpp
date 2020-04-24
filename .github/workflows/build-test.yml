@@ -106,11 +106,11 @@ jobs:
         echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
-        echo "::set-env name=DOCKER_TEST_SUITE::true"
+        echo "::set-env name=VAGRANT_TEST_SUITE::true"
         ifconfig
 
     - name: mac docker install
-      if: matrix.os =='macos-latest'
+      if: false
       run: |
         brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
         sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
@@ -194,7 +194,13 @@ jobs:
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
-          run_test="docker exec -it nmos_testing python3 nmos-test.py"
+          run_test="docker exec -i nmos_testing python3 nmos-test.py"
+        elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+          cp ${{ github.workspace }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
+          vagrant plugin install vagrant-scp
+          vagrant up
+          vagrant ssh -- mkdir results
+          run_test="vagrant ssh -- python3 nmos-test.py"
         else
           pip install -r requirements.txt
 
@@ -289,6 +295,10 @@ jobs:
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing
           docker rm nmos_testing
+        fi
+        if  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+          vagrant scp :results/* results/
+          vagrant destroy -f
         fi
         exit 0
 
