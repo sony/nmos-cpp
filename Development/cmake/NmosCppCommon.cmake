@@ -53,7 +53,7 @@ set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
 # cpprestsdk
 # note: 2.10.15 or higher is recommended but there's no cpprestsdk-configVersion.cmake
 # and CPPREST_VERSION_MAJOR, etc. also aren't exported by cpprestsdk
-find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_USE_CONFIG} NAMES cpprestsdk cpprest)
+find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_USE_CONFIG})
 if (TARGET cpprestsdk::cpprest)
     set(CPPRESTSDK_TARGET cpprestsdk::cpprest)
 else()
