@@ -313,14 +313,8 @@ jobs:
         root_dir_id=`${{ env.GDRIVE_GET_ID }} "${{ secrets.OUTPUT_FOLDER_ID }}" build/${{ env.BUILD_NAME }}`
         ${{ env.GDRIVE_PATH }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
 
-        function join_with {
-          local sep=$1;
-          shift
-          printf "$d%s" "${@/#/$sep}"
-        }
-
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
-        python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert `join_with " --json " nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json` || echo "upload failed"
+        python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
     #- name: setup tmate
     #  uses: mxschmitt/action-tmate@v2
