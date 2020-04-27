@@ -2,6 +2,11 @@ name: 'build-test'
 
 on: [pull_request, push]
 
+# secrets:
+#  * GOOGLE_CREDENTIALS - base64 encoded google service account credentials, must be a single line with no whitespace
+#  * BONJOUR_DRIVE_ID - google drive id of windows bonjour installer (Bonjour64.msi)
+#  * OUTPUT_FOLDER_ID - google drive id of folder to upload build results to
+#  * RESULTS_SHEET_ID - google sheets id of sheet to upload results to
 jobs:
   build_and_test:
     name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }})'
@@ -182,9 +187,8 @@ jobs:
         set -x
         root_dir=`pwd`
         # Install AMWA test suite.
-        git clone https://github.com/alanb-sony/nmos-testing.git
+        git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
-        git checkout temp
 
         # Create output directories
         mkdir results
@@ -316,7 +320,7 @@ jobs:
         }
 
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
-        python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" `join_with " --json " nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json` || echo "upload failed"
+        python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert `join_with " --json " nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json` || echo "upload failed"
 
     #- name: setup tmate
     #  uses: mxschmitt/action-tmate@v2
@@ -333,6 +337,7 @@ jobs:
         path: ${{ runner.workspace }}/nmos-testing/results
 
   make_badges:
+    if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
     needs: build_and_test
     runs-on: ubuntu-latest
     steps:
