@@ -1,8 +1,8 @@
 [requires]
 boost/1.72.0
-openssl/1.1.1e
-cpprestsdk/2.10.15@bincrafters/stable
-websocketpp/0.8.1@bincrafters/stable
+openssl/1.1.1g
+cpprestsdk/2.10.15
+websocketpp/0.8.2
 zlib/1.2.11
 
 [imports]
