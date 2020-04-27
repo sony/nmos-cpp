@@ -332,3 +332,27 @@ jobs:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
 
+  make_badges:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: setup google drive
+      run: |
+        mkdir ${{ github.workspace }}/gdrive
+        echo "${{ env.credentials }}" | openssl base64 -d -A -out ${{ github.workspace }}/gdrive/credentials.json
+      env:
+        credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+    - name: download google drive ubuntu
+      run: |
+        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ github.workspace }}/gdrive/gdrive-linux-x64 -q
+        chmod +x ${{ github.workspace }}/gdrive/gdrive-linux-x64
+        echo "::set-env name=GDRIVE_PATH::${{ github.workspace }}/gdrive/gdrive-linux-x64" --config ${{ github.workspace }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_GET_ID::${{ github.workspace }}/Sandbox/get_gdrive_id.sh"
+        echo "::set-env name=GDRIVE_CREDENTIALS::${{ github.workspace }}/gdrive/credentials.json"
+
+    - name: make badges
+      run: |
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} macos-latest
