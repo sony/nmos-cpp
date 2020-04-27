@@ -6,6 +6,25 @@
 
 namespace nmos
 {
+    namespace details
+    {
+        // Chassis ID may be a MAC address (recommended) or IPv4 or IPv6 address; empty string indicates null
+        web::json::value make_node_interfaces_chassis_id(const utility::string_t& chassis_id)
+        {
+            using web::json::value;
+            return !chassis_id.empty() ? value::string(chassis_id) : value::null();
+        }
+
+        // Port ID must be a MAC address
+        web::json::value make_node_interfaces_port_id(const utility::string_t& port_id)
+        {
+            using web::json::value;
+            // when no physical address is available, use the common null value of all zeros
+            // see https://standards.ieee.org/content/dam/ieee-standards/standards/web/documents/tutorials/eui.pdf
+            return value::string(!port_id.empty() ? port_id : U("00-00-00-00-00-00"));
+        }
+    }
+
     // make node interfaces JSON data, for the specified map from local interface_id
     // no attached_network_device details are included
     web::json::value make_node_interfaces(const std::map<utility::string_t, node_interface>& interfaces)
@@ -16,8 +35,8 @@ namespace nmos
         return value_from_elements(interfaces | boost::adaptors::transformed([](const std::map<utility::string_t, node_interface>::value_type& interface)
         {
             return value_of({
-                { nmos::fields::chassis_id, interface.second.chassis_id },
-                { nmos::fields::port_id, interface.second.port_id },
+                { nmos::fields::chassis_id, details::make_node_interfaces_chassis_id(interface.second.chassis_id) },
+                { nmos::fields::port_id, details::make_node_interfaces_port_id(interface.second.port_id) },
                 { nmos::fields::name, interface.second.name }
             });
         }));
