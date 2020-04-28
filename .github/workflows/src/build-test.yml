@@ -95,7 +95,7 @@ jobs:
     @import build-and-test
 
   make_badges:
-    if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-latest
     steps:

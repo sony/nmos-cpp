@@ -1,5 +1,5 @@
-- name: upload to google drive
-  if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
+- name: upload to google sheets
+  if: github.ref == 'refs/heads/master' && github.event_name == 'push'
   working-directory: ${{ env.RUNNER_WORKSPACE }}
   shell: bash
   run: |

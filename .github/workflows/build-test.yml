@@ -322,8 +322,8 @@ jobs:
         fi
         exit 0
     
-    - name: upload to google drive
-      if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
+    - name: upload to google sheets
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
@@ -648,8 +648,8 @@ jobs:
         fi
         exit 0
     
-    - name: upload to google drive
-      if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
+    - name: upload to google sheets
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
@@ -669,7 +669,7 @@ jobs:
 
 
   make_badges:
-    if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-latest
     steps:
