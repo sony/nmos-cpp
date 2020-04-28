@@ -1,0 +1,125 @@
+- name: AMWA test suite
+  shell: bash
+  working-directory: ${{ env.RUNNER_WORKSPACE }}
+  run:
+    |
+    set -x
+    root_dir=`pwd`
+    # Install AMWA test suite.
+    git clone https://github.com/AMWA-TV/nmos-testing.git
+    cd nmos-testing
+
+    # Create output directories
+    mkdir results
+    mkdir badges
+
+    if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+      docker pull amwa/nmos-testing
+      docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
+      run_test="docker exec -i nmos_testing python3 nmos-test.py"
+    elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+      cp ${{ env.GITHUB_WORKSPACE }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
+      vagrant plugin install vagrant-scp
+      vagrant up
+      vagrant ssh -- mkdir results
+      run_test="vagrant ssh -- python3 nmos-test.py"
+    else
+      pip install -r requirements.txt
+
+      # Install SDPoker
+      if [[ "${{ matrix.os }}" == "windows-latest" || "$EUID" == "0" ]]; then
+        npm install -g AMWA-TV/sdpoker
+      else
+        sudo npm install -g AMWA-TV/sdpoker
+      fi
+      run_test="python nmos-test.py"
+    fi
+    pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+
+    ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
+    NODE_PID=$!
+
+    # IS-04-01
+    case $($run_test suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-04-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-01.json
+
+    # IS-04-03
+    case $($run_test suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-04-03\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-03.json
+
+    # IS-05-01
+    case $($run_test suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-05-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-01.json
+
+    # IS-05-02
+    case $($run_test suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-05-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-02.json
+
+    # IS-07-01
+    case $($run_test suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
+
+    # IS-07-02
+    case $($run_test suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-07-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-02.json
+
+    # IS-09-02
+    case $($run_test suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-09-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-02.json
+
+    # Run Registry tests (leave Node running)
+    ${root_dir}/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > results/registryoutput 2>&1 &
+    REGISTRY_PID=$!
+    # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
+    sleep 2
+    # add a persistent Query WebSocket API subscription before running the Registry test suite
+    curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
+
+    # IS-04-02
+    case $($run_test suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-04-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-02.json
+
+    # IS-09-01
+    case $($run_test suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
+    [0-1])  testmessage="Pass" && testcolour="brightgreen";;
+    *)      testmessage="Fail" && testcolour="red";;
+    esac
+    printf "{\"schemaVersion\":1,\"label\":\"IS-09-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-01.json
+
+    # Stop Node and Registry
+    kill $NODE_PID || echo "node not running"
+    kill $REGISTRY_PID || echo "registry not running"
+
+    if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+      docker stop nmos_testing
+      docker rm nmos_testing
+    fi
+    if  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+      vagrant scp :results/* results/
+      vagrant destroy -f
+    fi
+    exit 0

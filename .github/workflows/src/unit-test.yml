@@ -1,0 +1,5 @@
+- name: unit test
+  run: |
+    cd ${{ env.RUNNER_WORKSPACE }}/build/
+    ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
+
