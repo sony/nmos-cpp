@@ -46,8 +46,8 @@
       suite=$1
       shift
       case $($run_test suite ${suite} --selection all "$@" --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-${suite}.json" >> results/testoutput 2>&1; echo $?) in
-      [0-1])  echo "Pass" > badges/${suite}.txt
-      *)      echo "Fail" > badges/${suite}.txt
+      [0-1])  echo "Pass" > badges/${suite}.txt ;;
+      *)      echo "Fail" > badges/${suite}.txt ;;
       esac
     }
 
