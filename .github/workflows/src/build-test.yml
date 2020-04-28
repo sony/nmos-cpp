@@ -11,7 +11,7 @@ on: [pull_request, push]
 #  * RESULTS_SHEET_ID - google sheets id of sheet to upload results to
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -56,7 +56,7 @@ jobs:
     @import build-and-test
 
   build_and_test_ubuntu_14:
-    name: 'Ubuntu 14.04 mdns no conan'
+    name: 'ubuntu-14.04: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
     runs-on: ubuntu-latest
     container:
       image: ubuntu:14.04
