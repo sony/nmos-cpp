@@ -273,54 +273,28 @@ jobs:
         ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
         NODE_PID=$!
     
-        # IS-04-01
-        case $($run_test suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-04-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-01.json
+        function do_run_test() {
+          suite=$1
+          shift
+          case $($run_test suite ${suite} --selection all "$@" --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-${suite}.json" >> results/testoutput 2>&1; echo $?) in
+          [0-1])  echo "Pass" > badges/${suite}.txt
+          *)      echo "Fail" > badges/${suite}.txt
+          esac
+        }
     
-        # IS-04-03
-        case $($run_test suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-04-03\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-03.json
+        do_run_test IS-04-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
     
-        # IS-05-01
-        case $($run_test suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-05-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-01.json
+        do_run_test IS-04-03 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
     
-        # IS-05-02
-        case $($run_test suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-05-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-02.json
+        do_run_test IS-05-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1
     
-        # IS-07-01
-        case $($run_test suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
+        do_run_test IS-05-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1
     
-        # IS-07-02
-        case $($run_test suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-07-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-02.json
+        do_run_test IS-07-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
     
-        # IS-09-02
-        case $($run_test suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-09-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-02.json
+        do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
+    
+        do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
     
         # Run Registry tests (leave Node running)
         ${root_dir}/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > results/registryoutput 2>&1 &
@@ -330,19 +304,9 @@ jobs:
         # add a persistent Query WebSocket API subscription before running the Registry test suite
         curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
     
-        # IS-04-02
-        case $($run_test suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-04-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-02.json
+        do_run_test IS-04-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3
     
-        # IS-09-01
-        case $($run_test suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-09-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-01.json
+        do_run_test IS-09-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0
     
         # Stop Node and Registry
         kill $NODE_PID || echo "node not running"
@@ -359,13 +323,10 @@ jobs:
         exit 0
     
     - name: upload to google drive
-      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
-        root_dir_id=`${{ env.GDRIVE_GET_ID }} "${{ secrets.OUTPUT_FOLDER_ID }}" build/${{ env.BUILD_NAME }}`
-        ${{ env.GDRIVE_CMD }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
-    
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
     
@@ -638,54 +599,28 @@ jobs:
         ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
         NODE_PID=$!
     
-        # IS-04-01
-        case $($run_test suite IS-04-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-01.json" >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-04-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-01.json
+        function do_run_test() {
+          suite=$1
+          shift
+          case $($run_test suite ${suite} --selection all "$@" --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-${suite}.json" >> results/testoutput 2>&1; echo $?) in
+          [0-1])  echo "Pass" > badges/${suite}.txt
+          *)      echo "Fail" > badges/${suite}.txt
+          esac
+        }
     
-        # IS-04-03
-        case $($run_test suite IS-04-03 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-03.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-04-03\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-03.json
+        do_run_test IS-04-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
     
-        # IS-05-01
-        case $($run_test suite IS-05-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-01.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-05-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-01.json
+        do_run_test IS-04-03 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
     
-        # IS-05-02
-        case $($run_test suite IS-05-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-05-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-05-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-05-02.json
+        do_run_test IS-05-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1
     
-        # IS-07-01
-        case $($run_test suite IS-07-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-01.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-07-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-01.json
+        do_run_test IS-05-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1
     
-        # IS-07-02
-        case $($run_test suite IS-07-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-07-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-07-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-07-02.json
+        do_run_test IS-07-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
     
-        # IS-09-02
-        case $($run_test suite IS-09-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-09-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-02.json
+        do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
+    
+        do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
     
         # Run Registry tests (leave Node running)
         ${root_dir}/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > results/registryoutput 2>&1 &
@@ -695,19 +630,9 @@ jobs:
         # add a persistent Query WebSocket API subscription before running the Registry test suite
         curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
     
-        # IS-04-02
-        case $($run_test suite IS-04-02 --selection all --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-04-02.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-04-02\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-04-02.json
+        do_run_test IS-04-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3
     
-        # IS-09-01
-        case $($run_test suite IS-09-01 --selection all --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0 --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-IS-09-01.json"  >> results/testoutput 2>&1; echo $?) in
-        [0-1])  testmessage="Pass" && testcolour="brightgreen";;
-        *)      testmessage="Fail" && testcolour="red";;
-        esac
-        printf "{\"schemaVersion\":1,\"label\":\"IS-09-01\",\"message\":\"$testmessage\",\"color\":\"$testcolour\"}" > badges/IS-09-01.json
+        do_run_test IS-09-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0
     
         # Stop Node and Registry
         kill $NODE_PID || echo "node not running"
@@ -724,13 +649,10 @@ jobs:
         exit 0
     
     - name: upload to google drive
-      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
-        root_dir_id=`${{ env.GDRIVE_GET_ID }} "${{ secrets.OUTPUT_FOLDER_ID }}" build/${{ env.BUILD_NAME }}`
-        ${{ env.GDRIVE_CMD }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
-    
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
     
@@ -747,7 +669,7 @@ jobs:
 
 
   make_badges:
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
     needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-latest
     steps:
@@ -758,6 +680,10 @@ jobs:
       run: |
         echo "::set-env name=GITHUB_WORKSPACE::${{ github.workspace }}"
         echo "::set-env name=RUNNER_WORKSPACE::${{ runner.workspace }}"
+
+    - uses: actions/download-artifact@v2.0
+      with:
+        path: ${{ github.workspace }}/artifacts
 
     - name: setup google drive
       run: |
@@ -797,4 +723,4 @@ jobs:
     - name: make badges
       run: |
         # combine badges from all builds, exclude macos-latest
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} macos-latest
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} ${{ github.workspace }}/artifacts macos-latest

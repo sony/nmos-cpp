@@ -95,7 +95,7 @@ jobs:
     @import build-and-test
 
   make_badges:
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
     needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-latest
     steps:
@@ -107,9 +107,13 @@ jobs:
         echo "::set-env name=GITHUB_WORKSPACE::${{ github.workspace }}"
         echo "::set-env name=RUNNER_WORKSPACE::${{ runner.workspace }}"
 
+    - uses: actions/download-artifact@v2.0
+      with:
+        path: ${{ github.workspace }}/artifacts
+
     @import google-setup
 
     - name: make badges
       run: |
         # combine badges from all builds, exclude macos-latest
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} macos-latest
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} ${{ github.workspace }}/artifacts macos-latest

@@ -1,11 +1,8 @@
 - name: upload to google drive
-  if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  if: github.ref == 'refs/heads/github-actions' && github.event_name == 'push'
   working-directory: ${{ env.RUNNER_WORKSPACE }}
   shell: bash
   run: |
-    root_dir_id=`${{ env.GDRIVE_GET_ID }} "${{ secrets.OUTPUT_FOLDER_ID }}" build/${{ env.BUILD_NAME }}`
-    ${{ env.GDRIVE_CMD }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
-
     export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
     python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
