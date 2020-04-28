@@ -12,10 +12,10 @@
 - uses: actions/upload-artifact@v1
   with:
     name: ${{ env.BUILD_NAME }}_badges
-    path: ${{ env.RUNNER_WORKSPACE }}/nmos-testing/badges
+    path: ${{ runner.workspace }}/nmos-testing/badges
 
 - uses: actions/upload-artifact@v1
   with:
     name: ${{ env.BUILD_NAME }}_results
-    path: ${{ env.RUNNER_WORKSPACE }}/nmos-testing/results
+    path: ${{ runner.workspace }}/nmos-testing/results
 
