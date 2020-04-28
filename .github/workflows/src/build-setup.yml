@@ -9,10 +9,14 @@
 - name: windows setup
   if: runner.os == 'Windows'
   run: |
-    echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+    # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
+    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+    # download bonjour installer
     & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.bonjourid }}
     msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
+    # disable unused network interface
     netsh interface set interface name="vEthernet (nat)" admin=DISABLED
+    # get host IP address
     $env:hostip = (
       Get-NetIPConfiguration |
       Where-Object {
@@ -28,18 +32,21 @@
 - name: mac setup
   if: runner.os == 'macOS'
   run: |
-    echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
+    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
     hostip=$(ipconfig getifaddr en0)
     echo "::set-env name=HOST_IP_ADDRESS::$hostip"
     ifconfig
 
 - name: mac docker install
+  # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
+  # can be used to run AWMA test suite but test suite doesn't seem to be able to communicate with nodes running on the host
   if: false
   run: |
     brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
     sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
     sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
     mkdir -p /Users/runner/.docker/machine/cache/
+    # workaround "docker-machine" failing to download boot2docker.iso
     curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
     i=0
     while ! docker-machine "--github-api-token=${{ secrets.GITHUB_TOKEN }}" create default --driver xhyve; do
@@ -98,18 +105,20 @@
     cd build
     cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
     make -j 2 && sudo make install
-    echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
+
+    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
 
 - name: disable conan
   if: matrix.use_conan == false
   run: |
-    echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DUSE_CONAN:BOOL=\"0\""
+    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\""
 
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
   run: |
     sudo apt-get install -f libavahi-compat-libdnssd-dev
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+    # make avahi only respond on the "eth0" interface
     sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
     sudo systemctl restart avahi-daemon
 

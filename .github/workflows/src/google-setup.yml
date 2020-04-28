@@ -8,19 +8,19 @@
 - name: download google drive windows
   if: runner.os == 'Windows'
   shell: bash
-  working-directory: ${{ env.GITHUB_WORKSPACE }}/gdrive
+  working-directory: ${{ env.GITHUB_WORKSPACE }}
   run: |
-    curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive-windows-x64.exe -q
-    echo "::set-env name=GDRIVE_PATH::`pwd`/gdrive-windows-x64.exe --config `pwd` --service-account credentials.json"
-    echo "::set-env name=GDRIVE_GET_ID::`pwd`/../Sandbox/get_gdrive_id.sh"
-    echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/credentials.json"
+    curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive/gdrive-windows-x64.exe -q
+    echo "::set-env name=GDRIVE_CMD::`pwd`/gdrive/gdrive-windows-x64.exe --config `pwd`/gdrive --service-account credentials.json"
+    echo "::set-env name=GDRIVE_GET_ID::`pwd`/Sandbox/get_gdrive_id.sh"
+    echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
 
 - name: download google drive mac
   if: runner.os == 'macOS'
   run: |
     curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
     chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
-    echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+    echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
     echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
     echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
 
@@ -29,6 +29,6 @@
   run: |
     curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
     chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
-    echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+    echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
     echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
     echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"

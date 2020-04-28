@@ -10,7 +10,7 @@ if [ -x badges_build ]; then
   rm -rf badges_build
 fi
 mkdir badges_build
-$GDRIVE_PATH download $build_dir --recursive --path badges_build || ( echo "error downloading build results"; exit 1 )
+$GDRIVE_CMD download $build_dir --recursive --path badges_build || ( echo "error downloading build results"; exit 1 )
 
 if [ -x badges_out ]; then
   rm -rf badges_out
@@ -43,4 +43,4 @@ for file in badges_build/build/${builds[0]}/*.json; do
   fi
 done
 
-$GDRIVE_PATH sync upload --keep-local --delete-extraneous badges_out $badges_dir || ( echo "error uploading badges"; exit 1 )
+$GDRIVE_CMD sync upload --keep-local --delete-extraneous badges_out $badges_dir || ( echo "error uploading badges"; exit 1 )

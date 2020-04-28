@@ -14,16 +14,19 @@
     mkdir badges
 
     if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+      # run test suite in amwa/nmos-testing docker container
       docker pull amwa/nmos-testing
       docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
       run_test="docker exec -i nmos_testing python3 nmos-test.py"
     elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+      # run test suite in vagrant VM
       cp ${{ env.GITHUB_WORKSPACE }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
       vagrant plugin install vagrant-scp
       vagrant up
       vagrant ssh -- mkdir results
       run_test="vagrant ssh -- python3 nmos-test.py"
     else
+      # run test suite directly
       pip install -r requirements.txt
 
       # Install SDPoker

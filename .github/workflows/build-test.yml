@@ -1,3 +1,5 @@
+# This file is auto generated, changes should be made to src/* then run build.sh to regenerate this file
+
 name: 'build-test'
 
 on: [pull_request, push]
@@ -61,19 +63,19 @@ jobs:
     - name: download google drive windows
       if: runner.os == 'Windows'
       shell: bash
-      working-directory: ${{ env.GITHUB_WORKSPACE }}/gdrive
+      working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
-        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive-windows-x64.exe -q
-        echo "::set-env name=GDRIVE_PATH::`pwd`/gdrive-windows-x64.exe --config `pwd` --service-account credentials.json"
-        echo "::set-env name=GDRIVE_GET_ID::`pwd`/../Sandbox/get_gdrive_id.sh"
-        echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/credentials.json"
+        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive/gdrive-windows-x64.exe -q
+        echo "::set-env name=GDRIVE_CMD::`pwd`/gdrive/gdrive-windows-x64.exe --config `pwd`/gdrive --service-account credentials.json"
+        echo "::set-env name=GDRIVE_GET_ID::`pwd`/Sandbox/get_gdrive_id.sh"
+        echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
     
     - name: download google drive mac
       if: runner.os == 'macOS'
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
-        echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
         echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
@@ -82,7 +84,7 @@ jobs:
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
-        echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
         echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
@@ -97,10 +99,14 @@ jobs:
     - name: windows setup
       if: runner.os == 'Windows'
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        # download bonjour installer
         & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.bonjourid }}
         msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
+        # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
+        # get host IP address
         $env:hostip = (
           Get-NetIPConfiguration |
           Where-Object {
@@ -116,18 +122,21 @@ jobs:
     - name: mac setup
       if: runner.os == 'macOS'
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
     
     - name: mac docker install
+      # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
+      # can be used to run AWMA test suite but test suite doesn't seem to be able to communicate with nodes running on the host
       if: false
       run: |
         brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
         sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
         sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
         mkdir -p /Users/runner/.docker/machine/cache/
+        # workaround "docker-machine" failing to download boot2docker.iso
         curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
         i=0
         while ! docker-machine "--github-api-token=${{ secrets.GITHUB_TOKEN }}" create default --driver xhyve; do
@@ -186,18 +195,20 @@ jobs:
         cd build
         cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
         make -j 2 && sudo make install
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
+    
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
     
     - name: disable conan
       if: matrix.use_conan == false
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DUSE_CONAN:BOOL=\"0\""
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\""
     
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+        # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
     
@@ -234,16 +245,19 @@ jobs:
         mkdir badges
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+          # run test suite in amwa/nmos-testing docker container
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
           run_test="docker exec -i nmos_testing python3 nmos-test.py"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+          # run test suite in vagrant VM
           cp ${{ env.GITHUB_WORKSPACE }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
           run_test="vagrant ssh -- python3 nmos-test.py"
         else
+          # run test suite directly
           pip install -r requirements.txt
     
           # Install SDPoker
@@ -350,7 +364,7 @@ jobs:
       shell: bash
       run: |
         root_dir_id=`${{ env.GDRIVE_GET_ID }} "${{ secrets.OUTPUT_FOLDER_ID }}" build/${{ env.BUILD_NAME }}`
-        ${{ env.GDRIVE_PATH }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
+        ${{ env.GDRIVE_CMD }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
     
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
@@ -414,19 +428,19 @@ jobs:
     - name: download google drive windows
       if: runner.os == 'Windows'
       shell: bash
-      working-directory: ${{ env.GITHUB_WORKSPACE }}/gdrive
+      working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
-        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive-windows-x64.exe -q
-        echo "::set-env name=GDRIVE_PATH::`pwd`/gdrive-windows-x64.exe --config `pwd` --service-account credentials.json"
-        echo "::set-env name=GDRIVE_GET_ID::`pwd`/../Sandbox/get_gdrive_id.sh"
-        echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/credentials.json"
+        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive/gdrive-windows-x64.exe -q
+        echo "::set-env name=GDRIVE_CMD::`pwd`/gdrive/gdrive-windows-x64.exe --config `pwd`/gdrive --service-account credentials.json"
+        echo "::set-env name=GDRIVE_GET_ID::`pwd`/Sandbox/get_gdrive_id.sh"
+        echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
     
     - name: download google drive mac
       if: runner.os == 'macOS'
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
-        echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
         echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
@@ -435,7 +449,7 @@ jobs:
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
-        echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
         echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
@@ -450,10 +464,14 @@ jobs:
     - name: windows setup
       if: runner.os == 'Windows'
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        # download bonjour installer
         & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.bonjourid }}
         msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
+        # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
+        # get host IP address
         $env:hostip = (
           Get-NetIPConfiguration |
           Where-Object {
@@ -469,18 +487,21 @@ jobs:
     - name: mac setup
       if: runner.os == 'macOS'
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
     
     - name: mac docker install
+      # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
+      # can be used to run AWMA test suite but test suite doesn't seem to be able to communicate with nodes running on the host
       if: false
       run: |
         brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
         sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
         sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
         mkdir -p /Users/runner/.docker/machine/cache/
+        # workaround "docker-machine" failing to download boot2docker.iso
         curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
         i=0
         while ! docker-machine "--github-api-token=${{ secrets.GITHUB_TOKEN }}" create default --driver xhyve; do
@@ -539,18 +560,20 @@ jobs:
         cd build
         cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
         make -j 2 && sudo make install
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
+    
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
     
     - name: disable conan
       if: matrix.use_conan == false
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::$CMAKE_EXTRA_ARGS -DUSE_CONAN:BOOL=\"0\""
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\""
     
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+        # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
     
@@ -587,16 +610,19 @@ jobs:
         mkdir badges
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
+          # run test suite in amwa/nmos-testing docker container
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
           run_test="docker exec -i nmos_testing python3 nmos-test.py"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+          # run test suite in vagrant VM
           cp ${{ env.GITHUB_WORKSPACE }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
           run_test="vagrant ssh -- python3 nmos-test.py"
         else
+          # run test suite directly
           pip install -r requirements.txt
     
           # Install SDPoker
@@ -703,7 +729,7 @@ jobs:
       shell: bash
       run: |
         root_dir_id=`${{ env.GDRIVE_GET_ID }} "${{ secrets.OUTPUT_FOLDER_ID }}" build/${{ env.BUILD_NAME }}`
-        ${{ env.GDRIVE_PATH }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
+        ${{ env.GDRIVE_CMD }} sync upload --keep-local --delete-extraneous nmos-testing/badges $root_dir_id
     
         export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
@@ -718,7 +744,6 @@ jobs:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ env.RUNNER_WORKSPACE }}/nmos-testing/results
     
-
 
 
   make_badges:
@@ -744,19 +769,19 @@ jobs:
     - name: download google drive windows
       if: runner.os == 'Windows'
       shell: bash
-      working-directory: ${{ env.GITHUB_WORKSPACE }}/gdrive
+      working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
-        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive-windows-x64.exe -q
-        echo "::set-env name=GDRIVE_PATH::`pwd`/gdrive-windows-x64.exe --config `pwd` --service-account credentials.json"
-        echo "::set-env name=GDRIVE_GET_ID::`pwd`/../Sandbox/get_gdrive_id.sh"
-        echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/credentials.json"
+        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive/gdrive-windows-x64.exe -q
+        echo "::set-env name=GDRIVE_CMD::`pwd`/gdrive/gdrive-windows-x64.exe --config `pwd`/gdrive --service-account credentials.json"
+        echo "::set-env name=GDRIVE_GET_ID::`pwd`/Sandbox/get_gdrive_id.sh"
+        echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
     
     - name: download google drive mac
       if: runner.os == 'macOS'
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
-        echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
         echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
@@ -765,10 +790,11 @@ jobs:
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
-        echo "::set-env name=GDRIVE_PATH::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
+        echo "::set-env name=GDRIVE_CMD::${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json
         echo "::set-env name=GDRIVE_GET_ID::${{ env.GITHUB_WORKSPACE }}/Sandbox/get_gdrive_id.sh"
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
 
     - name: make badges
       run: |
+        # combine badges from all builds, exclude macos-latest
         ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} macos-latest

@@ -1,3 +1,5 @@
+@import header
+
 name: 'build-test'
 
 on: [pull_request, push]
@@ -92,7 +94,6 @@ jobs:
 
     @import build-and-test
 
-
   make_badges:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [build_and_test, build_and_test_ubuntu_14]
@@ -110,4 +111,5 @@ jobs:
 
     - name: make badges
       run: |
+        # combine badges from all builds, exclude macos-latest
         ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} macos-latest
