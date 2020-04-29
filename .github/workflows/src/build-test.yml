@@ -71,7 +71,7 @@ jobs:
 
     - name: set environment variables
       run: |
-        echo "::set-env name=BUILD_NAME::ubuntu_14.04_mdns"
+        echo "::set-env name=BUILD_NAME::ubuntu-14.04_mdns"
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "::set-env name=GITHUB_COMMIT::$GITHUB_COMMIT"
         # github.workspace points to the host path not the docker path, the home directory defaults to the workspace directory
