@@ -1,0 +1,27 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu1804"
+
+  config.vm.network "public_network", bridge: "en0"
+
+  config.vm.provision "file", source: "nmostesting", destination: "$HOME/"
+  config.vm.provision "file", source: "nmos-test.py", destination: "$HOME/"
+  config.vm.provision "file", source: "requirements.txt", destination: "$HOME/"
+  config.vm.provision "file", source: "config.ini", destination: "$HOME/"
+  config.vm.provision "file", source: "test_data", destination: "$HOME/"
+  config.vm.provision "file", source: "testssl", destination: "$HOME/"
+
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update \
+    && apt-get install -y g++ libffi-dev nodejs npm python3-pip avahi-daemon\
+    && pip3 install -r requirements.txt \
+    && cd testssl \
+    && wget https://github.com/drwetter/testssl.sh/archive/3.0rc5.tar.gz \
+    && tar -xvzf 3.0rc5.tar.gz --strip-components=1 \
+    && rm 3.0rc5.tar.gz \
+    && npm config set unsafe-perm true \
+    && npm install -g AMWA-TV/sdpoker
+  SHELL
+end

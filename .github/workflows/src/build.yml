@@ -1,0 +1,9 @@
+- uses: ilammy/msvc-dev-cmd@v1
+- name: build
+  uses: lukka/run-cmake@v2.0
+  with:
+    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+    cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
+    buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
+    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+

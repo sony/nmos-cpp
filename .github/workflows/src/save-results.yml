@@ -1,0 +1,18 @@
+- name: upload to google sheets
+  if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  working-directory: ${{ env.RUNNER_WORKSPACE }}
+  shell: bash
+  run: |
+    export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
+    python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
+
+- uses: actions/upload-artifact@v1
+  with:
+    name: ${{ env.BUILD_NAME }}_badges
+    path: ${{ runner.workspace }}/nmos-testing/badges
+
+- uses: actions/upload-artifact@v1
+  with:
+    name: ${{ env.BUILD_NAME }}_results
+    path: ${{ runner.workspace }}/nmos-testing/results
+
