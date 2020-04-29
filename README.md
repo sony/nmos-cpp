@@ -1,5 +1,4 @@
-# An NMOS C++ Implementation [![Build Status](https://travis-ci.org/sony/nmos-cpp.svg?branch=master)][Travis-CI] [![Build Status](https://github.com/sony/nmos-cpp/workflows/build-test/badge.svg)][build-test]
-[Travis-CI]: https://travis-ci.org/sony/nmos-cpp
+# An NMOS C++ Implementation [![Build Status](https://github.com/sony/nmos-cpp/workflows/build-test/badge.svg)][build-test]
 [build-test]: https://github.com/sony/nmos-cpp/actions?query=workflow%3Abuild-test
 
 ## Introduction
@@ -24,27 +23,30 @@ Some information about the overall design of **nmos-cpp** is also included in th
 
 ### Getting Started
 
-The codebase is intended to be portable, and the nmos-cpp [CMake project](Development/CMakeLists.txt) can be built on at least Windows and Linux.
+The codebase is intended to be portable, and the nmos-cpp [CMake project](Development/CMakeLists.txt) can be built on at least Linux, Windows and macOS.
 
 After setting up the dependencies, follow these [instructions](Documents/Getting-Started.md) to build nmos-cpp on your platform, and run the test suite.
 
 Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
-## Active Development
+## Agile Approach
 
-The implementation is functional and has been used successfully in several Networked Media Incubator workshop "plug-fests", interoperating with other NMOS implementations, and is being used to build NMOS support for several products.
+> Ready for deployment, continual developments
+
+The nmos-cpp applications have been successfully tested in many AMWA Networked Media Incubator workshops, and are used as reference NMOS implementations in the [JT-NM Tested](https://jt-nm.org/jt-nm_tested/) programme.
+Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to their customers.
 
 ### Build Status
 
-The following configurations are built and unit tested automatically via continuous integration.
+The following configurations, defined by the [build-test](.github/workflows/src/build-test.yml) jobs, are built and unit tested automatically via continuous integration.
 
-| Build Name                     | Status                                 |
-|--------------------------------|----------------------------------------|
-| Linux (Ubuntu 14.04/GCC 4.8.4) | [![Build 1][Build-1-badge]][Travis-CI] |
-| Linux (Ubuntu 18.04/GCC 7.4.0) | [![Build 2][Build-2-badge]][Travis-CI] |
-
-[Build-1-badge]: https://travis-matrix-badges.herokuapp.com/repos/sony/nmos-cpp/branches/master/1
-[Build-2-badge]: https://travis-matrix-badges.herokuapp.com/repos/sony/nmos-cpp/branches/master/2
+| Platform | Version                  | Configuration Options                  |
+|----------|--------------------------|----------------------------------------|
+| Linux    | Ubuntu 18.04 (GCC 7.5.0) | Avahi                                  |
+| Linux    | Ubuntu 18.04 (GCC 7.5.0) | mDNSResponder                          |
+| Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan         |
+| Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder)                |
+| macOS    | 10.15 (AppleClang 11.0)  |                                        |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
@@ -59,15 +61,15 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 [![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
 
-[IS-04-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1VrCPcYeTs5uoBgECxbfuWbbhJZpbHcPy
-[IS-04-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D14vgZF4CSx2oayEAbeNFGiHmPW95HKMXt
-[IS-04-03-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16616xSByskr3PbeqhnCcNTjfJcDdzUav
-[IS-05-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1tW25Xim9LymIvPXnxM5taGmlLVsXa71p
-[IS-05-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1MkQNv8v2r0ydB1mQ55k-pktlzE8LZ3g9
-[IS-07-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1XQuAN13xAQ81G_Eokj6AAYv5kMInPXkZ
-[IS-07-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7XCmsQaOw5eEqq6yuuy1U9I3J-9zN9
-[IS-09-01-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D16t7ncRp3SbHHoftQY-RBi2NFC283fOTn
-[IS-09-02-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1f4FHD6vI1LotF7Sm8U6tmNp58seW9397
+[IS-04-01-badge]: https://drive.google.com/open?id=1s4mKwzujyoqS976r-DCa7pwDEQqvSdfP
+[IS-04-02-badge]: https://drive.google.com/open?id=1halAIV6n6Kk7lGwBRRuHgpR2jaK2x8GC
+[IS-04-03-badge]: https://drive.google.com/open?id=1TGcOAvt1FV64LktC6DcUu5E5OHM-Xvm6
+[IS-05-01-badge]: https://drive.google.com/open?id=1x_HtDNds4PaTpB67Gx39AdwPOc0qVbmF
+[IS-05-02-badge]: https://drive.google.com/open?id=1WC4rcR-FtIl2bwiXZ7LCt55po3tEz9Fo
+[IS-07-01-badge]: https://drive.google.com/open?id=1S4qf7d6056utc8W5Bfg0l2HhiW0sZNmH
+[IS-07-02-badge]: https://drive.google.com/open?id=13ib46LMAYzROJmARGKUyfEsvTM-n6L0N
+[IS-09-01-badge]: https://drive.google.com/open?id=1_WvtE72R8kvF5x4x7KLdejAWd2eZauUE
+[IS-09-02-badge]: https://drive.google.com/open?id=14TgNmeAZVCyfWMlAtqnFGiVq8WwbYhXq
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
 [IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
 [IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
@@ -84,6 +86,7 @@ The implementation is incomplete in some areas. Development is ongoing, tracking
 
 Recent activity on the project (newest first):
 
+- Switched Continous Integration to GitHub Actions and added Windows and macOS to the tested platforms
 - Extended the **nmos-cpp-node** to include mock senders/receivers of audio and ancillary data and offer some additional configuration settings
 - Simplified the build process to use Conan by default to download most of the dependencies
 - Added support in the Node implementation for discovery of, and interaction with, a System API, as required for compliance with TR-1001-1
