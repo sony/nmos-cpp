@@ -11,9 +11,6 @@
   run: |
     # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
     echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
-    # download bonjour installer
-    & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.bonjourid }}
-    msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
     # disable unused network interface
     netsh interface set interface name="vEthernet (nat)" admin=DISABLED
     # get host IP address
@@ -26,8 +23,18 @@
     ).IPv4Address.IPAddress
     echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
     ipconfig
-  env:
-    bonjourid: ${{ secrets.BONJOUR_DRIVE_ID }}
+
+- name: windows install bonjour
+  if: runner.os == 'Windows' && env.SECRET_BONJOUR_DRIVE_ID && env.SECRET_GOOGLE_CREDENTIALS
+  run: |
+    # download bonjour installer
+    & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.SECRET_BONJOUR_DRIVE_ID }}
+    msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
+
+- name: windows disable bonjour tests
+  if: runner.os == 'Windows' && (! env.SECRET_BONJOUR_DRIVE_ID || ! env.SECRET_GOOGLE_CREDENTIALS)
+  run: |
+    echo "::set-env name=CTEST_EXTRA_ARGS::${{ env.CTEST_EXTRA_ARGS }} -E `"testMdns(AdvertiseAddress|AdvertiseAPIs|BrowseAPIs|BrowseCancellation|ResolveAPIs)`""
 
 - name: mac setup
   if: runner.os == 'macOS'

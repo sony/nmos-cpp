@@ -1,12 +1,11 @@
 - name: setup google drive
+  if: env.SECRET_GOOGLE_CREDENTIALS
   run: |
     mkdir -p ${{ env.GITHUB_WORKSPACE }}/gdrive
-    echo "${{ env.credentials }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
-  env:
-    credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+    echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
 
 - name: download google drive windows
-  if: runner.os == 'Windows'
+  if: runner.os == 'Windows' && env.SECRET_GOOGLE_CREDENTIALS
   shell: bash
   working-directory: ${{ env.GITHUB_WORKSPACE }}
   run: |
@@ -16,7 +15,7 @@
     echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
 
 - name: download google drive mac
-  if: runner.os == 'macOS'
+  if: runner.os == 'macOS' && env.SECRET_GOOGLE_CREDENTIALS
   run: |
     curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
     chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
@@ -25,7 +24,7 @@
     echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
 
 - name: download google drive ubuntu
-  if: runner.os == 'Linux'
+  if: runner.os == 'Linux' && env.SECRET_GOOGLE_CREDENTIALS
   run: |
     curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
     chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64

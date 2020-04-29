@@ -9,6 +9,11 @@ on: [pull_request, push]
 #  * BONJOUR_DRIVE_ID - google drive id of windows bonjour installer (Bonjour64.msi)
 #  * OUTPUT_FOLDER_ID - google drive id of folder to upload build results to
 #  * RESULTS_SHEET_ID - google sheets id of sheet to upload results to
+env:
+  SECRET_GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+  SECRET_BONJOUR_DRIVE_ID: ${{ secrets.BONJOUR_DRIVE_ID }}
+  SECRET_OUTPUT_FOLDER_ID: ${{ secrets.OUTPUT_FOLDER_ID }}
+  SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
     name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
@@ -54,14 +59,13 @@ jobs:
         python -m pip install --upgrade pip
 
     - name: setup google drive
+      if: env.SECRET_GOOGLE_CREDENTIALS
       run: |
         mkdir -p ${{ env.GITHUB_WORKSPACE }}/gdrive
-        echo "${{ env.credentials }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
-      env:
-        credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+        echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
     
     - name: download google drive windows
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && env.SECRET_GOOGLE_CREDENTIALS
       shell: bash
       working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
@@ -71,7 +75,7 @@ jobs:
         echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
     
     - name: download google drive mac
-      if: runner.os == 'macOS'
+      if: runner.os == 'macOS' && env.SECRET_GOOGLE_CREDENTIALS
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
@@ -80,7 +84,7 @@ jobs:
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
     - name: download google drive ubuntu
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' && env.SECRET_GOOGLE_CREDENTIALS
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
@@ -101,9 +105,6 @@ jobs:
       run: |
         # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
         echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
-        # download bonjour installer
-        & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.bonjourid }}
-        msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -116,8 +117,18 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
-      env:
-        bonjourid: ${{ secrets.BONJOUR_DRIVE_ID }}
+    
+    - name: windows install bonjour
+      if: runner.os == 'Windows' && env.SECRET_BONJOUR_DRIVE_ID && env.SECRET_GOOGLE_CREDENTIALS
+      run: |
+        # download bonjour installer
+        & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.SECRET_BONJOUR_DRIVE_ID }}
+        msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
+    
+    - name: windows disable bonjour tests
+      if: runner.os == 'Windows' && (! env.SECRET_BONJOUR_DRIVE_ID || ! env.SECRET_GOOGLE_CREDENTIALS)
+      run: |
+        echo "::set-env name=CTEST_EXTRA_ARGS::${{ env.CTEST_EXTRA_ARGS }} -E `"testMdns(AdvertiseAddress|AdvertiseAPIs|BrowseAPIs|BrowseCancellation|ResolveAPIs)`""
     
     - name: mac setup
       if: runner.os == 'macOS'
@@ -327,7 +338,7 @@ jobs:
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
-        export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
+        export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
     
     - uses: actions/upload-artifact@v1
@@ -380,14 +391,13 @@ jobs:
         echo "::add-path::`pwd`/node-v12.16.2-linux-x64/bin"
 
     - name: setup google drive
+      if: env.SECRET_GOOGLE_CREDENTIALS
       run: |
         mkdir -p ${{ env.GITHUB_WORKSPACE }}/gdrive
-        echo "${{ env.credentials }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
-      env:
-        credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+        echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
     
     - name: download google drive windows
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && env.SECRET_GOOGLE_CREDENTIALS
       shell: bash
       working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
@@ -397,7 +407,7 @@ jobs:
         echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
     
     - name: download google drive mac
-      if: runner.os == 'macOS'
+      if: runner.os == 'macOS' && env.SECRET_GOOGLE_CREDENTIALS
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
@@ -406,7 +416,7 @@ jobs:
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
     - name: download google drive ubuntu
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' && env.SECRET_GOOGLE_CREDENTIALS
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
@@ -427,9 +437,6 @@ jobs:
       run: |
         # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
         echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
-        # download bonjour installer
-        & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.bonjourid }}
-        msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -442,8 +449,18 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
-      env:
-        bonjourid: ${{ secrets.BONJOUR_DRIVE_ID }}
+    
+    - name: windows install bonjour
+      if: runner.os == 'Windows' && env.SECRET_BONJOUR_DRIVE_ID && env.SECRET_GOOGLE_CREDENTIALS
+      run: |
+        # download bonjour installer
+        & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.SECRET_BONJOUR_DRIVE_ID }}
+        msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
+    
+    - name: windows disable bonjour tests
+      if: runner.os == 'Windows' && (! env.SECRET_BONJOUR_DRIVE_ID || ! env.SECRET_GOOGLE_CREDENTIALS)
+      run: |
+        echo "::set-env name=CTEST_EXTRA_ARGS::${{ env.CTEST_EXTRA_ARGS }} -E `"testMdns(AdvertiseAddress|AdvertiseAPIs|BrowseAPIs|BrowseCancellation|ResolveAPIs)`""
     
     - name: mac setup
       if: runner.os == 'macOS'
@@ -653,7 +670,7 @@ jobs:
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       shell: bash
       run: |
-        export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
+        export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
         python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
     
     - uses: actions/upload-artifact@v1
@@ -686,14 +703,13 @@ jobs:
         path: ${{ github.workspace }}/artifacts
 
     - name: setup google drive
+      if: env.SECRET_GOOGLE_CREDENTIALS
       run: |
         mkdir -p ${{ env.GITHUB_WORKSPACE }}/gdrive
-        echo "${{ env.credentials }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
-      env:
-        credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+        echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}" | openssl base64 -d -A -out ${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json
     
     - name: download google drive windows
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && env.SECRET_GOOGLE_CREDENTIALS
       shell: bash
       working-directory: ${{ env.GITHUB_WORKSPACE }}
       run: |
@@ -703,7 +719,7 @@ jobs:
         echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
     
     - name: download google drive mac
-      if: runner.os == 'macOS'
+      if: runner.os == 'macOS' && env.SECRET_GOOGLE_CREDENTIALS
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-osx-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-osx-x64
@@ -712,7 +728,7 @@ jobs:
         echo "::set-env name=GDRIVE_CREDENTIALS::${{ env.GITHUB_WORKSPACE }}/gdrive/credentials.json"
     
     - name: download google drive ubuntu
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' && env.SECRET_GOOGLE_CREDENTIALS
       run: |
         curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-linux-x64 -o ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64 -q
         chmod +x ${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-linux-x64
@@ -723,4 +739,4 @@ jobs:
     - name: make badges
       run: |
         # combine badges from all builds, exclude macos-latest
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ secrets.OUTPUT_FOLDER_ID }} ${{ github.workspace }}/artifacts macos-latest
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ env.SECRET_OUTPUT_FOLDER_ID }} ${{ github.workspace }}/artifacts macos-latest
