@@ -39,4 +39,12 @@ for file in ${artifacts_dir}/${builds[0]}_badges/*.txt; do
   fi
 done
 
-$GDRIVE_CMD sync upload --keep-local --delete-extraneous badges_out $badges_dir || ( echo "error uploading badges"; exit 1 )
+for badge in badges_out/*.svg; do
+  badge_name=`basename $badge`
+  badge_id=`$GDRIVE_CMD list --query "'${badges_dir}' in parents and name = '$badge_name'" | sed -n 2p | cut -d " " -f 1 -` || ( echo "error getting badge id"; exit 1 )
+  if [[ "$badge_id" == "" ]]; then
+    $GDRIVE_CMD upload --parent ${badges_dir} --mime "image/svg+xml" $badge
+  else
+    $GDRIVE_CMD update --mime "image/svg+xml" $badge_id $badge
+  fi
+done
