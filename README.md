@@ -1,5 +1,6 @@
-# An NMOS C++ Implementation [![Build Status](https://travis-ci.org/sony/nmos-cpp.svg?branch=master)][Travis-CI]
+# An NMOS C++ Implementation [![Build Status](https://travis-ci.org/sony/nmos-cpp.svg?branch=master)][Travis-CI] [![Build Status](https://github.com/sony/nmos-cpp/workflows/build-test/badge.svg)][build-test]
 [Travis-CI]: https://travis-ci.org/sony/nmos-cpp
+[build-test]: https://github.com/sony/nmos-cpp/actions?query=workflow%3Abuild-test
 
 ## Introduction
 
