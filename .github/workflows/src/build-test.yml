@@ -60,6 +60,41 @@ jobs:
 
     @import build-and-test
 
+  build_and_test_ubuntu_20:
+    name: 'ubuntu-20.04: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        install_mdns: [true]
+        use_conan: [true]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: set environment variables
+      run: |
+        echo "::set-env name=BUILD_NAME::ubuntu-20.04_mdns"
+        GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
+        echo "::set-env name=GITHUB_COMMIT::$GITHUB_COMMIT"
+        # github.workspace points to the host path not the docker path, the home directory defaults to the workspace directory
+        echo "::set-env name=GITHUB_WORKSPACE::`pwd`"
+        cd ..
+        echo "::set-env name=RUNNER_WORKSPACE::`pwd`"
+
+    - name: install build tools
+      run: |
+        apt-get update -q
+        apt-get install -y curl g++ git iproute2 make patch python3-pip sudo
+        ln -s /usr/bin/python3 /usr/bin/python
+        ln -s /usr/bin/pip3 /usr/bin/pip
+        curl -sS https://nodejs.org/dist/v12.16.2/node-v12.16.2-linux-x64.tar.xz | tar -xJ
+        echo "::add-path::`pwd`/node-v12.16.2-linux-x64/bin"
+
+    @import build-and-test
+
   build_and_test_ubuntu_14:
     name: 'ubuntu-14.04: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
     runs-on: ubuntu-latest
@@ -90,7 +125,7 @@ jobs:
         apt-get install -y software-properties-common
         add-apt-repository ppa:deadsnakes/ppa -y
         apt-get --allow-unauthenticated update -q
-        apt-get --allow-unauthenticated install -y python3.6 python3.6-gdbm curl g++ make patch git
+        apt-get --allow-unauthenticated install -y curl g++ git make patch python3.6 python3.6-gdbm
         update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 3
         ln -s /usr/bin/python3.6 /usr/bin/python
         curl -sS https://bootstrap.pypa.io/get-pip.py | python
@@ -101,7 +136,7 @@ jobs:
 
   make_badges:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    needs: [build_and_test, build_and_test_ubuntu_14]
+    needs: [build_and_test, build_and_test_ubuntu_20, build_and_test_ubuntu_14]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
