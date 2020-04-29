@@ -58,8 +58,6 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
 
-Note: Due to [an issue](https://github.com/bincrafters/community/issues/998) with the C++ REST SDK recipe you may need to force Conan to install from source rather than using a pre-built package. In [cmake/NmosCppConan.cmake](cmake/NmosCppConan.cmake) change `BUILD missing` in `conan_cmake_run` to `BUILD missing cpprestsdk`, run CMake once then revert this change. You may need to repeat this step when switching to a new build configuration.
-
 If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
 
 ### Boost C++ Libraries

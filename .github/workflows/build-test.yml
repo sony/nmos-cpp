@@ -103,8 +103,8 @@ jobs:
     - name: windows setup
       if: runner.os == 'Windows'
       run: |
-        # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
-        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        # set compiler to cl.exe to avoid building with gcc.
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -133,7 +133,6 @@ jobs:
     - name: mac setup
       if: runner.os == 'macOS'
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
@@ -435,8 +434,8 @@ jobs:
     - name: windows setup
       if: runner.os == 'Windows'
       run: |
-        # force build cpprestsdk, set compiler to cl.exe to avoid building with gcc.
-        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+        # set compiler to cl.exe to avoid building with gcc.
+        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -465,7 +464,6 @@ jobs:
     - name: mac setup
       if: runner.os == 'macOS'
       run: |
-        echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} '-DNMOS_CPP_CONAN_BUILD_LIBS=cpprestsdk;missing'"
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
