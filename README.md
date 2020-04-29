@@ -61,15 +61,15 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 [![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
 
-[IS-04-01-badge]: https://drive.google.com/open?id=1s4mKwzujyoqS976r-DCa7pwDEQqvSdfP
-[IS-04-02-badge]: https://drive.google.com/open?id=1halAIV6n6Kk7lGwBRRuHgpR2jaK2x8GC
-[IS-04-03-badge]: https://drive.google.com/open?id=1TGcOAvt1FV64LktC6DcUu5E5OHM-Xvm6
-[IS-05-01-badge]: https://drive.google.com/open?id=1x_HtDNds4PaTpB67Gx39AdwPOc0qVbmF
-[IS-05-02-badge]: https://drive.google.com/open?id=1WC4rcR-FtIl2bwiXZ7LCt55po3tEz9Fo
-[IS-07-01-badge]: https://drive.google.com/open?id=1S4qf7d6056utc8W5Bfg0l2HhiW0sZNmH
-[IS-07-02-badge]: https://drive.google.com/open?id=13ib46LMAYzROJmARGKUyfEsvTM-n6L0N
-[IS-09-01-badge]: https://drive.google.com/open?id=1_WvtE72R8kvF5x4x7KLdejAWd2eZauUE
-[IS-09-02-badge]: https://drive.google.com/open?id=14TgNmeAZVCyfWMlAtqnFGiVq8WwbYhXq
+[IS-04-01-badge]: https://drive.google.com/uc?export=download&id=1s4mKwzujyoqS976r-DCa7pwDEQqvSdfP
+[IS-04-02-badge]: https://drive.google.com/uc?export=download&id=1halAIV6n6Kk7lGwBRRuHgpR2jaK2x8GC
+[IS-04-03-badge]: https://drive.google.com/uc?export=download&id=1TGcOAvt1FV64LktC6DcUu5E5OHM-Xvm6
+[IS-05-01-badge]: https://drive.google.com/uc?export=download&id=1x_HtDNds4PaTpB67Gx39AdwPOc0qVbmF
+[IS-05-02-badge]: https://drive.google.com/uc?export=download&id=1WC4rcR-FtIl2bwiXZ7LCt55po3tEz9Fo
+[IS-07-01-badge]: https://drive.google.com/uc?export=download&id=1S4qf7d6056utc8W5Bfg0l2HhiW0sZNmH
+[IS-07-02-badge]: https://drive.google.com/uc?export=download&id=13ib46LMAYzROJmARGKUyfEsvTM-n6L0N
+[IS-09-01-badge]: https://drive.google.com/uc?export=download&id=1_WvtE72R8kvF5x4x7KLdejAWd2eZauUE
+[IS-09-02-badge]: https://drive.google.com/uc?export=download&id=14TgNmeAZVCyfWMlAtqnFGiVq8WwbYhXq
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
 [IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
 [IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
