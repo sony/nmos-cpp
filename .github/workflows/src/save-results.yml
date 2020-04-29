@@ -3,7 +3,7 @@
   working-directory: ${{ env.RUNNER_WORKSPACE }}
   shell: bash
   run: |
-    export SHEET=https://docs.google.com/spreadsheets/d/${{ secrets.RESULTS_SHEET_ID }}
+    export SHEET=https://docs.google.com/spreadsheets/d/${{ env.SECRET_RESULTS_SHEET_ID }}
     python nmos-testing/utilities/run-test-suites/gsheetsImport/resultsImporter.py --credentials ${{ env.GDRIVE_CREDENTIALS }} --sheet "$SHEET" --insert --json nmos-testing/results/${{ env.GITHUB_COMMIT }}-*.json || echo "upload failed"
 
 - uses: actions/upload-artifact@v1
