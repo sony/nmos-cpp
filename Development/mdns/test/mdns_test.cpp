@@ -295,7 +295,7 @@ BST_TEST_CASE(testMdnsResolveAPIs)
 
     BST_REQUIRE(advertiser.update_record("test-mdns-resolve-1", "_sea-lion-test1._tcp", {}, textRecords).get());
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 
     // Now resolve again and check the txt records
     auto& resolving = browsed[0];
