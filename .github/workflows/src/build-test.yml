@@ -7,12 +7,10 @@ on: [pull_request, push]
 # secrets:
 #  * GOOGLE_CREDENTIALS - base64 encoded google service account credentials, must be a single line with no whitespace
 #  * BONJOUR_DRIVE_ID - google drive id of windows bonjour installer (Bonjour64.msi)
-#  * OUTPUT_FOLDER_ID - google drive id of folder to upload build results to
 #  * RESULTS_SHEET_ID - google sheets id of sheet to upload results to
 env:
   SECRET_GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
   SECRET_BONJOUR_DRIVE_ID: ${{ secrets.BONJOUR_DRIVE_ID }}
-  SECRET_OUTPUT_FOLDER_ID: ${{ secrets.OUTPUT_FOLDER_ID }}
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:

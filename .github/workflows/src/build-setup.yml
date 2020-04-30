@@ -28,7 +28,8 @@
   if: runner.os == 'Windows' && env.SECRET_BONJOUR_DRIVE_ID && env.SECRET_GOOGLE_CREDENTIALS
   run: |
     # download bonjour installer
-    & "${{ env.GITHUB_WORKSPACE }}/gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.SECRET_BONJOUR_DRIVE_ID }}
+    curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive/gdrive-windows-x64.exe -q
+    & "gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.SECRET_BONJOUR_DRIVE_ID }}
     msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
 
 - name: windows disable bonjour tests
