@@ -69,6 +69,7 @@ namespace nmos
             // and https://github.com/HowardHinnant/date/issues/129
             // and https://cr.yp.to/proto/utctai.html
             // and https://www.iers.org/SharedDocs/News/EN/BulletinC.html
+            // and https://www.ietf.org/timezones/data/leap-seconds.list
             static const duration tai_offset = std::chrono::seconds(37);
 
             return time_point(tai_offset + std::chrono::system_clock::now().time_since_epoch());
