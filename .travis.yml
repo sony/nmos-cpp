@@ -33,7 +33,7 @@ _install_cpprestsdk: &install_cpprestsdk
   # Retrieve and build C++ REST SDK
   |
   cd $TRAVIS_BUILD_DIR/..
-  git clone --recurse-submodules --branch v2.10.15 https://github.com/Microsoft/cpprestsdk
+  git clone --recurse-submodules --branch v2.10.16 https://github.com/Microsoft/cpprestsdk
   cd cpprestsdk/Release
   mkdir build
   cd build
