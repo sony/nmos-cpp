@@ -31,7 +31,7 @@ Next, try out the registry and node applications in the [tutorial](Documents/Tut
 
 ## Agile Development
 
-[![JT-NM Tested 03/20 NMOS & TR-1001-1](Documents/images/jt-nm-tested-03-20-registry.png?raw=true)](https://jt-nm.org/jt-nm_tested/)
+[<img alt="JT-NM Tested 03/20 NMOS & TR-1001-1" src="Documents/images/jt-nm-tested-03-20-registry.png?raw=true" height="135" align="right"/>](https://jt-nm.org/jt-nm_tested/)
 
 The nmos-cpp applications, like the NMOS Specifications, are intended to be always ready, but continually developing.
 They have been successfully tested in many AMWA Networked Media Incubator workshops, and are used as reference NMOS implementations in the [JT-NM Tested](https://jt-nm.org/jt-nm_tested/) programme.
