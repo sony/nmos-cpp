@@ -6,9 +6,9 @@
 This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://amwa-tv.github.io/nmos) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
 
 - [AMWA IS-04 NMOS Discovery and Registration Specification](https://amwa-tv.github.io/nmos-discovery-registration)
-- [AMWA IS-05 NMOS Connection Management Specification](https://amwa-tv.github.io/nmos-device-connection-management)
+- [AMWA IS-05 NMOS Device Connection Management Specification](https://amwa-tv.github.io/nmos-device-connection-management)
 - [AMWA IS-07 NMOS Event & Tally Specification](https://amwa-tv.github.io/nmos-event-tally)
-- [AMWA IS-09 NMOS System Specification](https://amwa-tv.github.io/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
+- [AMWA IS-09 NMOS System Parameters Specification](https://amwa-tv.github.io/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations](https://amwa-tv.github.io/nmos-grouping) - Natural Grouping
 - [AMWA BCP-003-01 NMOS API Security Recommendations](https://amwa-tv.github.io/nmos-api-security) - Securing Communications
 
@@ -29,11 +29,12 @@ After setting up the dependencies, follow these [instructions](Documents/Getting
 
 Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
-## Agile Approach
+## Agile Development
 
-> Ready for deployment, continual developments
+[![JT-NM Tested 03/20 NMOS & TR-1001-1](Documents/images/jt-nm-tested-03-20-registry.png?raw=true)](https://jt-nm.org/jt-nm_tested/)
 
-The nmos-cpp applications have been successfully tested in many AMWA Networked Media Incubator workshops, and are used as reference NMOS implementations in the [JT-NM Tested](https://jt-nm.org/jt-nm_tested/) programme.
+The nmos-cpp applications, like the NMOS Specifications, are intended to be always ready, but continually developing.
+They have been successfully tested in many AMWA Networked Media Incubator workshops, and are used as reference NMOS implementations in the [JT-NM Tested](https://jt-nm.org/jt-nm_tested/) programme.
 Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to their customers.
 
 ### Build Status
@@ -46,7 +47,7 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 | Linux    | Ubuntu 18.04 (GCC 7.5.0) | mDNSResponder                          |
 | Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan         |
 | Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder)                |
-| macOS    | 10.15 (AppleClang 11.0)  |                                        |
+| macOS    | 10.15 (AppleClang 11.0)  | (Experimental)                         |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
@@ -82,10 +83,11 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 
 ### Recent Activity
 
-The implementation is incomplete in some areas. Development is ongoing, tracking the evolution of the NMOS specifications in the AMWA Networked Media Incubator.
+The implementation is designed to be extended. Development is ongoing, following the evolution of the NMOS specifications in the AMWA Networked Media Incubator.
 
 Recent activity on the project (newest first):
 
+- JT-NM Tested 03/20 badge
 - Switched Continous Integration to GitHub Actions and added Windows and macOS to the tested platforms
 - Extended the **nmos-cpp-node** to include mock senders/receivers of audio and ancillary data and offer some additional configuration settings
 - Simplified the build process to use Conan by default to download most of the dependencies
@@ -119,7 +121,8 @@ Recent activity on the project (newest first):
 
 ## Contributing
 
-We welcome bug reports, feature requests and contributions to the implementation and documentation. Please have a look at the simple [Contribution Guidelines](CONTRIBUTING.md).
+We welcome bug reports, feature requests and contributions to the implementation and documentation.
+Please have a look at the simple [Contribution Guidelines](CONTRIBUTING.md).
 
 Thank you for your interest!
 
