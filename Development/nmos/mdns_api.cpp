@@ -1,5 +1,6 @@
 #include "nmos/mdns_api.h"
 
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "mdns/service_discovery.h"
 #include "nmos/api_utils.h"
@@ -179,7 +180,7 @@ namespace nmos
                             }
 
                             set_reply(res, status_codes::OK,
-                                web::json::serialize(results, [](const std::map<value, std::set<std::string>>::value_type& result)
+                                web::json::serialize_array(results | boost::adaptors::transformed([](const std::map<value, std::set<std::string>>::value_type& result)
                                 {
                                     auto instance = result.first;
                                     for (const auto& address : result.second)
@@ -187,7 +188,7 @@ namespace nmos
                                         web::json::push_back(instance[U("addresses")], web::json::value::string(utility::s2us(address)));
                                     }
                                     return instance;
-                                }),
+                                })),
                                 web::http::details::mime_types::application_json);
                             res.headers().add(U("X-Total-Count"), results.size());
                             return true;

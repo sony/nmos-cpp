@@ -1,5 +1,6 @@
 #include "nmos/logging_api.h"
 
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "nmos/api_utils.h"
 #include "nmos/query_utils.h"
@@ -355,8 +356,10 @@ namespace nmos
                     size_t count = 0;
 
                     set_reply(res, status_codes::OK,
-                        web::json::serialize(page,
-                            [&count](const log_event& event){ ++count; return event.data; }),
+                        web::json::serialize_array(page
+                            | boost::adaptors::transformed(
+                                [&count](const log_event& event){ ++count; return event.data; }
+                            )),
                         web::http::details::mime_types::application_json);
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Returning " << count << " matching log events";

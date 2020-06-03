@@ -100,14 +100,76 @@ namespace web
 {
     namespace json
     {
+        // serialize a forward range of json values (e.g. vector, list) as an array
+        template <typename ForwardRange>
+        inline void serialize_array(utility::ostream_t& os, const ForwardRange& elements)
+        {
+            os.put(_XPLATSTR('['));
+            bool empty = true;
+            for (const auto& element : elements)
+            {
+                if (!empty)
+                {
+                    os.put(_XPLATSTR(','));
+                }
+                else
+                {
+                    empty = false;
+                }
+                element.serialize(os);
+            }
+            os.put(_XPLATSTR(']'));
+        }
+
+        // serialize a forward range of pairs of strings and json values (e.g. map) as an object
+        template <typename ForwardRange>
+        inline void serialize_object(utility::ostream_t& os, const ForwardRange& fields)
+        {
+            os.put(_XPLATSTR('{'));
+            bool empty = true;
+            for (const auto& field : fields)
+            {
+                if (!empty)
+                {
+                    os.put(_XPLATSTR(','));
+                }
+                else
+                {
+                    empty = false;
+                }
+                value::string(std::get<0>(field)).serialize(os);
+                os.put(_XPLATSTR(':'));
+                std::get<1>(field).serialize(os);
+            }
+            os.put(_XPLATSTR('}'));
+        }
+
+        // serialize a forward range of json values (e.g. vector, list) as an array
+        template <typename ForwardRange>
+        inline utility::string_t serialize_array(const ForwardRange& elements)
+        {
+            utility::ostringstream_t os;
+            serialize_array(os, elements);
+            return os.str();
+        }
+
+        // serialize a forward range of pairs of strings and json values (e.g. map) as an object
+        template <typename ForwardRange>
+        inline utility::string_t serialize_object(const ForwardRange& fields)
+        {
+            utility::ostringstream_t os;
+            serialize_object(os, fields);
+            return os.str();
+        }
+
         // filter, transform and serialize a forward range (e.g. vector, list) of json values as an array
-        // (yes, this could be factored into independent range filter, transform and serialize operations, but bah!)
+        // deprecated, use serialize_array with e.g. boost::adaptors::filtered/transformed
         template <typename ForwardRange, typename Pred, typename Transform>
         inline void serialize_if(utility::ostream_t& os, const ForwardRange& range, Pred pred, Transform transform)
         {
             os << _XPLATSTR('[');
             bool empty = true;
-            for (auto& element : range)
+            for (const auto& element : range)
             {
                 if (pred(element))
                 {
@@ -125,6 +187,7 @@ namespace web
             os << _XPLATSTR(']');
         }
 
+        // deprecated, use serialize_array with e.g. boost::adaptors::filtered/transformed
         template <typename ForwardRange, typename Pred, typename Transform>
         inline utility::string_t serialize_if(const ForwardRange& range, Pred pred, Transform transform)
         {
@@ -133,6 +196,7 @@ namespace web
             return os.str();
         }
 
+        // deprecated, use serialize_array with e.g. boost::adaptors::filtered
         template <typename ForwardRange, typename Pred>
         inline utility::string_t serialize_if(const ForwardRange& range, Pred pred)
         {
@@ -142,6 +206,7 @@ namespace web
             return os.str();
         }
 
+        // deprecated, use serialize_array with e.g. boost::adaptors::transformed
         template <typename ForwardRange, typename Transform>
         inline utility::string_t serialize(const ForwardRange& range, Transform transform)
         {
@@ -149,6 +214,7 @@ namespace web
             return serialize_if(range, [](const typename std::iterator_traits<decltype(begin(range))>::value_type& element) { return true; }, transform);
         }
 
+        // deprecated, use serialize_array
         template <typename ForwardRange>
         inline utility::string_t serialize(const ForwardRange& range)
         {

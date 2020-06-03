@@ -1,6 +1,8 @@
 // The first "test" is of course whether the header compiles standalone
 #include "cpprest/json_utils.h"
 
+#include <map>
+#include "boost/range/adaptor/transformed.hpp"
 #include "bst/test/test.h"
 
 namespace
@@ -207,4 +209,37 @@ qux */ 42,
 
     // ho hum, turns out web::json::value::parse doesn't advertise the fact, but it actually handles single- and multi-line comments already...
     BST_REQUIRE_EQUAL(parsed, web::json::value::parse(example));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSerialize)
+{
+    {
+        auto ints = { 1, 2, 4, 8, 16, 32 };
+
+        auto expected = web::json::value::array(std::vector<web::json::value>(ints.begin(), ints.end())).serialize();
+        auto actual = web::json::serialize_array(ints | boost::adaptors::transformed([](int i) { return web::json::value(i); }));
+        BST_REQUIRE_EQUAL(expected, actual);
+    }
+
+    {
+        std::vector<utility::string_t> strs{ U("meow"), U("purr"), U("hiss"), U("yowl") };
+
+        auto expected = web::json::value::array(std::vector<web::json::value>(strs.begin(), strs.end())).serialize();
+        auto actual = web::json::serialize_array(strs | boost::adaptors::transformed([](const utility::string_t& s) { return web::json::value(s); }));
+        BST_REQUIRE_EQUAL(expected, actual);
+    }
+
+    {
+        std::map<utility::string_t, web::json::value> fields{
+            { U("meow"), web::json::value::string(U("foo")) },
+            { U("purr"), web::json::value::boolean(true) },
+            { U("hiss"), web::json::value::number(42) },
+            { U("yowl"), web::json::value::array() }
+        };
+
+        auto expected = web::json::value::object(std::vector<std::pair<utility::string_t, web::json::value>>(fields.begin(), fields.end())).serialize();
+        auto actual = web::json::serialize_object(fields);
+        BST_REQUIRE_EQUAL(expected, actual);
+    }
 }

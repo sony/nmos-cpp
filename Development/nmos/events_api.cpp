@@ -1,5 +1,6 @@
 #include "nmos/events_api.h"
 
+#include <boost/range/adaptor/filtered.hpp>
 #include "nmos/api_utils.h"
 #include "nmos/is07_versions.h"
 #include "nmos/model.h"
@@ -71,17 +72,21 @@ namespace nmos
             if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
             {
                 set_reply(res, status_codes::OK,
-                    web::json::serialize_if(resources,
-                        match,
-                        [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }),
+                    web::json::serialize_array(resources
+                        | boost::adaptors::filtered(match)
+                        | boost::adaptors::transformed(
+                            [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }
+                        )),
                     web::http::details::mime_types::application_json);
             }
             else
             {
                 set_reply(res, status_codes::OK,
-                    web::json::serialize_if(resources,
-                        match,
-                        [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }),
+                    web::json::serialize_array(resources
+                        | boost::adaptors::filtered(match)
+                        | boost::adaptors::transformed(
+                            [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }
+                        )),
                     web::http::details::mime_types::application_json);
             }
 

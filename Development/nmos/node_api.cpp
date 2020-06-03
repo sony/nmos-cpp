@@ -1,6 +1,6 @@
 #include "nmos/node_api.h"
 
-#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
@@ -119,9 +119,11 @@ namespace nmos
             size_t count = 0;
 
             set_reply(res, status_codes::OK,
-                web::json::serialize_if(resources,
-                    match,
-                    [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }),
+                web::json::serialize_array(resources
+                    | boost::adaptors::filtered(match)
+                    | boost::adaptors::transformed(
+                        [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::downgrade(resource, version); }
+                    )),
                 web::http::details::mime_types::application_json);
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;

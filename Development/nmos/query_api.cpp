@@ -1,6 +1,6 @@
 #include "nmos/query_api.h"
 
-#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/json_validator.h"
 #include "cpprest/json_visit.h"
 #include "cpprest/uri_schemes.h"
@@ -363,15 +363,19 @@ namespace nmos
                 if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
                 {
                     set_reply(res, status_codes::OK,
-                        web::json::serialize(page,
-                            [&count, &match, &version, &resourceType](const nmos::resource& resource) { ++count; return experimental::details::make_query_api_html_response_body(version, nmos::type_from_resourceType(resourceType), match.downgrade(resource)); }),
+                        web::json::serialize_array(page
+                            | boost::adaptors::transformed(
+                                [&count, &match, &version, &resourceType](const nmos::resource& resource) { ++count; return experimental::details::make_query_api_html_response_body(version, nmos::type_from_resourceType(resourceType), match.downgrade(resource)); }
+                            )),
                         web::http::details::mime_types::application_json);
                 }
                 else
                 {
                     set_reply(res, status_codes::OK,
-                        web::json::serialize(page,
-                            [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }),
+                        web::json::serialize_array(page
+                            | boost::adaptors::transformed(
+                                [&count, &match](const nmos::resources::value_type& resource) { ++count; return match.downgrade(resource); }
+                            )),
                         web::http::details::mime_types::application_json);
                 }
 
