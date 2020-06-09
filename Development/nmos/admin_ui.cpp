@@ -42,6 +42,7 @@ namespace nmos
                 { U("ico"), U("image/x-icon") },
                 { U("html"), U("text/html") },
                 { U("js"), U("application/javascript") },
+                { U("map"), U("application/json") },
                 { U("json"), U("application/json") },
                 { U("css"), U("text/css") },
                 { U("png"), U("image/png") }
