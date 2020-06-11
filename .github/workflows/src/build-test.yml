@@ -19,13 +19,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-18.04, macos-latest, windows-latest]
         install_mdns: [false]
         use_conan: [true]
         include:
           - install_mdns: true
             use_conan: true
-            os: ubuntu-latest
+            os: ubuntu-18.04
+          - install_mdns: true
+            use_conan: true
+            os: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v2
@@ -33,7 +36,7 @@ jobs:
     - name: set environment variables
       shell: bash
       run: |
-        if [[ "${{ matrix.os }}"  == "ubuntu-latest" ]]; then
+        if [[ "${{ matrix.os }}"  == "ubuntu-18.04" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
             echo "::set-env name=BUILD_NAME::${{ matrix.os }}_mdns"
           else
@@ -55,41 +58,6 @@ jobs:
     - name: install pip
       run: |
         python -m pip install --upgrade pip
-
-    @import build-and-test
-
-  build_and_test_ubuntu_20:
-    name: 'ubuntu-20.04: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        install_mdns: [true]
-        use_conan: [true]
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: set environment variables
-      run: |
-        echo "::set-env name=BUILD_NAME::ubuntu-20.04_mdns"
-        GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
-        echo "::set-env name=GITHUB_COMMIT::$GITHUB_COMMIT"
-        # github.workspace points to the host path not the docker path, the home directory defaults to the workspace directory
-        echo "::set-env name=GITHUB_WORKSPACE::`pwd`"
-        cd ..
-        echo "::set-env name=RUNNER_WORKSPACE::`pwd`"
-
-    - name: install build tools
-      run: |
-        apt-get update -q
-        apt-get install -y curl g++ git iproute2 make patch python3-pip sudo
-        ln -s /usr/bin/python3 /usr/bin/python
-        ln -s /usr/bin/pip3 /usr/bin/pip
-        curl -sS https://nodejs.org/dist/v12.16.2/node-v12.16.2-linux-x64.tar.xz | tar -xJ
-        echo "::add-path::`pwd`/node-v12.16.2-linux-x64/bin"
 
     @import build-and-test
 
@@ -134,7 +102,7 @@ jobs:
 
   make_badges:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    needs: [build_and_test, build_and_test_ubuntu_20, build_and_test_ubuntu_14]
+    needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
