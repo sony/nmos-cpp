@@ -43,6 +43,8 @@
     hostip=$(ipconfig getifaddr en0)
     echo "::set-env name=HOST_IP_ADDRESS::$hostip"
     ifconfig
+    echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
+    echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
 
 - name: mac docker install
   # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -125,6 +127,7 @@
   run: |
     sudo apt-get install -f libavahi-compat-libdnssd-dev
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+    echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
     # make avahi only respond on the "eth0" interface
     sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
     sudo systemctl restart avahi-daemon

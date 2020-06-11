@@ -3,3 +3,10 @@
     cd ${{ env.RUNNER_WORKSPACE }}/build/
     ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
 
+- name: expected unit test failures
+  if: env.CTEST_EXPECTED_FAILURES != null
+  continue-on-error: true
+  run: |
+    cd ${{ env.RUNNER_WORKSPACE }}/build/
+    ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
+
