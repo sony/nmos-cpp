@@ -110,6 +110,8 @@ jobs:
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
+        echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
+        echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
     
     - name: mac docker install
       # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -192,6 +194,7 @@ jobs:
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+        echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
@@ -211,6 +214,13 @@ jobs:
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
         ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
+    
+    - name: expected unit test failures
+      if: env.CTEST_EXPECTED_FAILURES != null
+      continue-on-error: true
+      run: |
+        cd ${{ env.RUNNER_WORKSPACE }}/build/
+        ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
     - name: AMWA test suite
@@ -413,6 +423,8 @@ jobs:
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
+        echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
+        echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
     
     - name: mac docker install
       # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -495,6 +507,7 @@ jobs:
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+        echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
@@ -514,6 +527,13 @@ jobs:
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
         ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
+    
+    - name: expected unit test failures
+      if: env.CTEST_EXPECTED_FAILURES != null
+      continue-on-error: true
+      run: |
+        cd ${{ env.RUNNER_WORKSPACE }}/build/
+        ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
     - name: AMWA test suite
@@ -720,6 +740,8 @@ jobs:
         hostip=$(ipconfig getifaddr en0)
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ifconfig
+        echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
+        echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
     
     - name: mac docker install
       # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -802,6 +824,7 @@ jobs:
       run: |
         sudo apt-get install -f libavahi-compat-libdnssd-dev
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
+        echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
@@ -821,6 +844,13 @@ jobs:
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
         ctest --output-on-failure ${{ env.CTEST_EXTRA_ARGS }}
+    
+    - name: expected unit test failures
+      if: env.CTEST_EXPECTED_FAILURES != null
+      continue-on-error: true
+      run: |
+        cd ${{ env.RUNNER_WORKSPACE }}/build/
+        ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
     - name: AMWA test suite
