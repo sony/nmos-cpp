@@ -36,7 +36,7 @@ jobs:
     - name: set environment variables
       shell: bash
       run: |
-        if [[ "${{ matrix.os }}"  == "ubuntu-18.04" ]]; then
+        if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
             echo "::set-env name=BUILD_NAME::${{ matrix.os }}_mdns"
           else
