@@ -164,3 +164,7 @@
     # install Name Service Cache Daemon to speed up repeated mDNS name discovery
     sudo apt-get install -f nscd
 
+- name: force cpprest asio
+  if: matrix.force_cpprest_asio == true
+  run: |
+    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_CPPREST_FORCE_ASIO:BOOL=\"1\""
