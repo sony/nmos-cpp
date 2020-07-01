@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace is09_schemas
     {
-        namespace v1_0_dev
+        namespace v1_0_x
         {
             extern const char* base;
             extern const char* error;

@@ -97,10 +97,11 @@ namespace nmos
             return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-system/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
+        // See https://github.com/AMWA-TV/nmos-system/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
-            using namespace nmos::is09_schemas::v1_0_dev;
-            const utility::string_t tag(_XPLATSTR("v1.0-dev"));
+            using namespace nmos::is09_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
             const web::uri systemapi_global_schema_uri = make_schema_uri(tag, _XPLATSTR("global.json"));
         }

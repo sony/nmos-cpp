@@ -117,7 +117,7 @@ namespace nmos
         const web::json::field<tai> sync_timestamp{ U("sync_timestamp") };
         const web::json::field_as_string topic{ U("topic") };
 
-        // IS-05 Connection Management
+        // IS-05 Device Connection Management
 
         // for connection_api
         const web::json::field_as_value endpoint_constraints{ U("constraints") }; // array
@@ -199,7 +199,7 @@ namespace nmos
         const web::json::field_as_value_or ext_is_07_source_id{ U("ext_is_07_source_id"), {} }; // string or null
         const web::json::field_as_value_or ext_is_07_rest_api_url{ U("ext_is_07_rest_api_url"), {} }; // string or null
 
-        // IS-09 System
+        // IS-09 System Parameters
 
         // for system_api
         const web::json::field_as_value is04{ U("is04") };

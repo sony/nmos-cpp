@@ -9,7 +9,7 @@ namespace nmos
     struct resource;
 
     // System API global configuration resource
-    // See https://github.com/AMWA-TV/nmos-system/blob/v1.0-dev/APIs/schemas/global.json
+    // See https://github.com/AMWA-TV/nmos-system/blob/v1.0/APIs/schemas/global.json
     nmos::resource make_system_global(const nmos::id& id, const nmos::settings& settings);
 
     web::json::value make_system_global_data(const nmos::id& id, const nmos::settings& settings);

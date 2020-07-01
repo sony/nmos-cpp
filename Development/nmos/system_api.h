@@ -9,7 +9,7 @@ namespace slog
 }
 
 // System API implementation
-// See https://github.com/AMWA-TV/nmos-system/blob/v1.0-dev/APIs/SystemAPI.raml
+// See https://github.com/AMWA-TV/nmos-system/blob/v1.0/APIs/SystemAPI.raml
 namespace nmos
 {
     struct registry_model;

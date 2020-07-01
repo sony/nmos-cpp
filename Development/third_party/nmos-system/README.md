@@ -1,6 +1,6 @@
-# AMWA IS-09 NMOS System Specification
+# AMWA IS-09 NMOS System Parameters Specification
 
-This directory contains files from the [AMWA IS-09 NMOS System Specification](https://github.com/AMWA-TV/nmos-system), in particular tagged versions of the JSON schemas used by the API specifications.
+This directory contains files from the [AMWA IS-09 NMOS System Parameters Specification](https://github.com/AMWA-TV/nmos-system), in particular tagged versions of the JSON schemas used by the API specifications.
 
 Original source code:
 

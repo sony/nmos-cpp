@@ -470,7 +470,7 @@ set(NMOS_IS09_SCHEMAS_HEADERS
     ${NMOS_CPP_DIR}/nmos/is09_schemas/is09_schemas.h
     )
 
-set(NMOS_IS09_V1_0_TAG v1.0-dev)
+set(NMOS_IS09_V1_0_TAG v1.0.x)
 
 set(NMOS_IS09_V1_0_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_IS09_V1_0_TAG}/APIs/schemas/base.json

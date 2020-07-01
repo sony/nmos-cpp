@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "Defines the Global System Constants",
-  "title": "System resource - globals",
+  "description": "Defines the global configuration parameters",
+  "title": "Global configuration resource",
   "allOf": [
     { "$ref": "resource_core.json" },
     {
@@ -11,17 +11,16 @@
         "is04",
         "ptp"
       ],
-      "additionalProperties": true,
       "properties": {
         "is04": {
-          "description": "Constants relating to AMWA NMOS IS-04",
+          "description": "Constants relating to AMWA IS-04 NMOS Discovery and Registration",
           "type": "object",
           "required": [
             "heartbeat_interval"
           ],
           "properties": {
             "heartbeat_interval": {
-              "description": "How often a Node should re-assert its registration (in seconds)",
+              "description": "How often Nodes should perform a heartbeat to maintain their resources in the Registration API (in seconds)",
               "type": "integer",
               "default": 5,
               "minimum": 1,
@@ -30,7 +29,7 @@
           }
         },
         "ptp": {
-          "description": "Constants relating to IEEE1588 PTP",
+          "description": "Constants relating to PTP (IEEE 1588-2008 or later)",
           "type": "object",
           "required": [
             "announce_receipt_timeout",
@@ -52,17 +51,20 @@
           }
         },
         "syslogv2": {
-          "description": "Constants relating to syslog v2 servers",
+          "description": "Constants relating to syslog v2 servers using TLS transport (IETF RFC 5424, RFC 5425)",
           "type": "object",
-          "additionalProperties": true,
           "properties": {
             "hostname": {
-              "description": "Hostname or IP of a syslog v2 server (optional)",
+              "description": "Hostname or IP address of a syslog v2 server",
               "type": "string",
-              "format": "hostname"
+              "anyOf": [
+                {"format": "hostname"},
+                {"format": "ipv4"},
+                {"format": "ipv6"}
+              ]
             },
             "port": {
-              "description": "destination port number for syslog v2 messages",
+              "description": "Destination port number for syslog v2 messages (default 6514)",
               "type": "integer",
               "minimum": 1,
               "maximum": 65535
@@ -70,17 +72,20 @@
           }
         },
         "syslog": {
-          "description": "Constants relating to syslog v1 servers",
+          "description": "Constants relating to syslog v1 servers using UDP transport (IETF RFC 5424, RFC 5426)",
           "type": "object",
-          "additionalProperties": true,
           "properties": {
             "hostname": {
-              "description": "Hostname or IP of a syslog v1 server (optional)",
+              "description": "Hostname or IP address of a syslog v1 server",
               "type": "string",
-              "format": "hostname"
+              "anyOf": [
+                {"format": "hostname"},
+                {"format": "ipv4"},
+                {"format": "ipv6"}
+              ]
             },
             "port": {
-              "description": "destination port number for syslog v1 messages",
+              "description": "Destination port number for syslog v1 messages (default 514)",
               "type": "integer",
               "minimum": 1,
               "maximum": 65535
