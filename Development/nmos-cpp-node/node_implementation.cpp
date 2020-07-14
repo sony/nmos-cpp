@@ -13,6 +13,7 @@
 #include "lldp/lldp_manager.h"
 #endif
 #include "nmos/channels.h"
+#include "nmos/channelmapping_resources.h"
 #include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
 #include "nmos/components.h" // for nmos::chroma_subsampling
@@ -223,11 +224,14 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::audio == port)
             {
-                const std::vector<nmos::channel> stereo{
-                    { {}, nmos::channel_symbols::L },
-                    { {}, nmos::channel_symbols::R }
+                const std::vector<nmos::channel> channels3_1{
+                    { U("Left Channel"), nmos::channel_symbols::L },
+                    { U("Right Channel"), nmos::channel_symbols::R },
+                    { U("Center Channel"), nmos::channel_symbols::C },
+                    { U("Low Frequency Effects Channel"), nmos::channel_symbols::LFE }
                 };
-                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, stereo, model.settings);
+                    
+                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels3_1, model.settings);
             }
             else if (impl::ports::data == port)
             {
@@ -362,7 +366,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 events_type = nmos::make_events_boolean_type();
                 events_state = nmos::make_events_boolean_state({ source_id, flow_id }, false);
             }
-            else if(impl::ports::nonsense == port)
+            else if (impl::ports::nonsense == port)
             {
                 event_type = nmos::event_types::string;
 
@@ -371,7 +375,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 events_type = nmos::make_events_string_type(0, 0, U("^foo|bar|baz|qu+x$"));
                 events_state = nmos::make_events_string_state({ source_id, flow_id }, U("foo"));
             }
-            else if(impl::ports::catcall == port)
+            else if (impl::ports::catcall == port)
             {
                 event_type = impl::catcall;
 
@@ -451,6 +455,69 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
         }
+    }
+
+    // example audio inputs
+
+    for (int index = 0; index < how_many; ++index)
+    {
+        const auto stri = utility::conversions::details::to_string_t(index);
+
+        const auto id = U("input") + stri;
+
+        const auto name = U("AES-") + stri;
+        const auto description = U("AES digital audio input ") + stri;
+
+        const bool reordering = index % 2 != 0;
+        const unsigned int block_size = index < 2 ? 1 : 2; // block sizes 1 for first two inputs and 2 for the others
+
+        // no parent
+        const auto parent = std::pair<nmos::id, nmos::type>();
+
+        const auto channel_labels = std::vector<utility::string_t>({
+            U("Left Channel"),
+            U("Right Channel"),
+            U("Center Channel"),
+            U("Low Frequency Effects Channel")
+        });
+
+        // for now, use default input capabilities
+        auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
+    }
+
+    // example audio outputs
+
+    for (int index = 0; index < how_many; ++index)
+    {
+        const auto stri = utility::conversions::details::to_string_t(index);
+
+        const auto id = U("output") + stri;
+
+        const auto name = U("IP Output ") + stri;
+        const auto description = U("SMPTE 2110-30 IP Output ") + stri;
+
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, index);
+
+        const auto channel_labels = std::vector<utility::string_t>({
+            U("Left Channel"),
+            U("Right Channel"),
+            U("Center Channel"),
+            U("Low Frequency Effects Channel")
+        });
+
+        // for a weird example, allow all inputs up to the same-numbered one to be routed
+        auto routable_inputs = boost::copy_range<std::vector<nmos::channelmapping_id>>(
+            boost::irange(0, index + 1) | boost::adaptors::transformed([&](const int& input_index)
+            {
+                return U("input") + utility::conversions::details::to_string_t(input_index);
+            })
+        );
+        // allow unrouted channels
+        routable_inputs.push_back({});
+
+        auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels, routable_inputs);
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
     }
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
@@ -707,7 +774,7 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
 }
 
 // Example Connection API activation callback to perform application-specific operations to complete activation
-nmos::connection_activation_handler make_node_implementation_activation_handler(nmos::node_model& model, slog::base_gate& gate)
+nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
     // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
@@ -722,6 +789,24 @@ nmos::connection_activation_handler make_node_implementation_activation_handler(
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
+    };
+}
+
+// Example Channel Mapping API callback to perform application-specific validation of the merged active map during a POST /map/activations request
+nmos::details::channelmapping_output_map_validator make_node_implementation_map_validator()
+{
+    // this example uses an 'empty' std::function because it does not need to do any validation
+    // beyond what is expressed by the schemas and /caps endpoints
+    return{};
+}
+
+// Example Channel Mapping API activation callback to perform application-specific operations to complete activation
+nmos::channelmapping_activation_handler make_node_implementation_channelmapping_activation_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::resource& channelmapping_output)
+    {
+        const auto output_id = nmos::fields::channelmapping_id(channelmapping_output.data);
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating output: " << output_id;
     };
 }
 
@@ -778,8 +863,10 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
         .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
         .on_parse_transport_file(make_node_implementation_transport_file_parser()) // may be omitted if the default is sufficient
-        .on_validate_merged(make_node_implementation_patch_validator()) // may be omitted if not required
+        .on_validate_connection_resource_patch(make_node_implementation_patch_validator()) // may be omitted if not required
         .on_resolve_auto(make_node_implementation_auto_resolver(model.settings))
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
-        .on_connection_activated(make_node_implementation_activation_handler(model, gate));
+        .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
+        .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
+        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
 }

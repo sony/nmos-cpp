@@ -49,6 +49,9 @@
     // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is07_versions": ["v1.0"],
 
+    // is08_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is08_versions": ["v1.0"],
+
     // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
     //"is09_versions": ["v1.0"],
 
@@ -81,6 +84,7 @@
     //"connection_port": 3215,
     //"events_port": 3216,
     //"events_ws_port": 3217,
+    //"channelmapping_port": 3215,
     // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
     //"system_port": 10641,
 

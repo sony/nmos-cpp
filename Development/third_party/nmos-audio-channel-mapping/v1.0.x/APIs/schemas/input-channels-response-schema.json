@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "List of channels in an input",
+  "title": "Input channel resource",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": [
+      "label"
+    ],
+    "properties": {
+      "label": {
+        "type": "string"
+      }
+    }
+  }
+}

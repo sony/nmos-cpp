@@ -5,6 +5,7 @@
 #include "cpprest/http_utils.h"
 #include "cpprest/json_validator.h"
 #include "nmos/activation_mode.h"
+#include "nmos/activation_utils.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h"
 #include "nmos/is04_versions.h"
@@ -302,118 +303,6 @@ namespace nmos
             validator.validate(staged, uri);
         }
 
-        enum activation_state { immediate_activation_pending, scheduled_activation_pending, activation_not_pending, staging_only };
-
-        // Discover which kind of activation this is, or whether it is only a request for staging
-        activation_state get_activation_state(const web::json::value& activation)
-        {
-            if (activation.is_null()) return staging_only;
-
-            const auto& mode_or_null = nmos::fields::mode(activation);
-            if (mode_or_null.is_null()) return activation_not_pending;
-
-            const auto mode = nmos::activation_mode{ mode_or_null.as_string() };
-
-            if (nmos::activation_modes::activate_scheduled_absolute == mode || nmos::activation_modes::activate_scheduled_relative == mode)
-            {
-                return scheduled_activation_pending;
-            }
-            else if (nmos::activation_modes::activate_immediate == mode)
-            {
-                return immediate_activation_pending;
-            }
-            else
-            {
-                throw web::json::json_exception(U("invalid activation mode"));
-            }
-        }
-
-        // Calculate the absolute TAI from the requested time of a scheduled activation
-        nmos::tai get_absolute_requested_time(const web::json::value& activation, const nmos::tai& request_time)
-        {
-            const auto& mode_or_null = nmos::fields::mode(activation);
-            const auto& requested_time_or_null = nmos::fields::requested_time(activation);
-
-            const nmos::activation_mode mode{ mode_or_null.as_string() };
-
-            if (nmos::activation_modes::activate_scheduled_absolute == mode)
-            {
-                return web::json::as<nmos::tai>(requested_time_or_null);
-            }
-            else if (nmos::activation_modes::activate_scheduled_relative == mode)
-            {
-                return tai_from_time_point(time_point_from_tai(request_time) + duration_from_tai(web::json::as<nmos::tai>(requested_time_or_null)));
-            }
-            else
-            {
-                throw std::logic_error("cannot get absolute requested time for mode: " + utility::us2s(mode.name));
-            }
-        }
-
-        // Set the appropriate fields of the response/staged activation from the specified patch
-        void merge_activation(web::json::value& activation, const web::json::value& patch_activation, const nmos::tai& request_time)
-        {
-            using web::json::value;
-
-            switch (details::get_activation_state(patch_activation))
-            {
-            case details::staging_only:
-                // All three merged values should be null (already)
-
-                activation[nmos::fields::mode] = value::null();
-                activation[nmos::fields::requested_time] = value::null();
-
-                // "If no activation was requested in the PATCH `activation_time` will be set `null`."
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
-                activation[nmos::fields::activation_time] = value::null();
-
-                break;
-            case details::activation_not_pending:
-                // Merged "mode" should be null (already)
-
-                activation[nmos::fields::mode] = value::null();
-
-                // Each of these fields "returns to null [...] when the resource is unlocked by setting the activation mode to null."
-                // See https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
-                // and https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.1/APIs/schemas/activation-response-schema.json
-                activation[nmos::fields::requested_time] = value::null();
-                activation[nmos::fields::activation_time] = value::null();
-
-                break;
-            case details::immediate_activation_pending:
-                // Merged "mode" should be "activate_immediate", and "requested_time" should be null (already)
-
-                // "For immediate activations, in the response to the PATCH request this field
-                // will be set to 'activate_immediate'"
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
-                activation[nmos::fields::mode] = value::string(nmos::activation_modes::activate_immediate.name);
-
-                // "For an immediate activation this field will always be null on the staged endpoint,
-                // even in the response to the PATCH request."
-                // However, here it is set to indicate an in-flight immediate activation
-                activation[nmos::fields::requested_time] = value::string(nmos::make_version(request_time));
-
-                // "For immediate activations on the staged endpoint this property will be the time the activation actually
-                // occurred in the response to the PATCH request, but null in response to any GET requests thereafter."
-                // Therefore, this value will be set later
-                activation[nmos::fields::activation_time] = value::null();
-
-                break;
-            case details::scheduled_activation_pending:
-                // Merged "mode" and "requested_time" should be set (already)
-
-                activation[nmos::fields::mode] = patch_activation.at(nmos::fields::mode);
-                activation[nmos::fields::requested_time] = patch_activation.at(nmos::fields::requested_time);
-
-                // "For scheduled activations `activation_time` should be the absolute TAI time the parameters will actually transition."
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
-                auto absolute_requested_time = get_absolute_requested_time(activation, request_time);
-                activation[nmos::fields::activation_time] = value::string(nmos::make_version(absolute_requested_time));
-
-                break;
-            }
-        }
-
         // Apparently, the response to errors in the transport file should be 500 Internal Error rather than 400 Bad Request
         // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/40
         inline std::logic_error transport_file_error(const std::string& message)
@@ -445,101 +334,6 @@ namespace nmos
                 // Or only allow the type to be omitted? Or null?
                 return{};
             }
-        }
-
-        // wait for the staged activation mode of the specified resource to be set to something other than "activate_immediate"
-        // or for the resource to have vanished (unexpected!)
-        // or for the server to be shut down
-        // or for the timeout to expire
-        template <class ReadOrWriteLock>
-        bool wait_immediate_activation_not_pending(nmos::node_model& model, ReadOrWriteLock& lock, std::pair<nmos::id, nmos::type> id_type)
-        {
-            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
-            {
-                if (model.shutdown) return true;
-
-                auto resource = find_resource(model.connection_resources, id_type);
-                if (model.connection_resources.end() == resource) return true;
-
-                auto& mode = nmos::fields::mode(nmos::fields::activation(nmos::fields::endpoint_staged(resource->data)));
-                return mode.is_null() || mode.as_string() != nmos::activation_modes::activate_immediate.name;
-            });
-        }
-
-        // wait for the staged activation of the specified resource to have changed
-        // or for the resource to have vanished (unexpected!)
-        // or for the server to be shut down
-        // or for the timeout to expire
-        template <class ReadOrWriteLock>
-        bool wait_activation_modified(nmos::node_model& model, ReadOrWriteLock& lock, std::pair<nmos::id, nmos::type> id_type, web::json::value initial_activation)
-        {
-            return model.wait_for(lock, std::chrono::seconds(nmos::fields::immediate_activation_max(model.settings)), [&]
-            {
-                if (model.shutdown) return true;
-
-                auto resource = find_resource(model.connection_resources, id_type);
-                if (model.connection_resources.end() == resource) return true;
-
-                auto& activation = nmos::fields::activation(nmos::fields::endpoint_staged(resource->data));
-                return activation != initial_activation;
-            });
-        }
-
-        void handle_immediate_activation_pending(nmos::node_model& model, nmos::write_lock& lock, const std::pair<nmos::id, nmos::type>& id_type, web::json::value& response_activation, slog::base_gate& gate)
-        {
-            using web::json::value;
-
-            // lock.owns_lock() must be true initially; waiting releases and reacquires the lock
-            if (!wait_activation_modified(model, lock, id_type, response_activation) || model.shutdown)
-            {
-                throw std::logic_error("timed out waiting for in-flight immediate activation to complete");
-            }
-
-            auto& resources = model.connection_resources;
-
-            // after releasing and reacquiring the lock, must find the resource again!
-            const auto found = find_resource(resources, id_type);
-            if (resources.end() == found)
-            {
-                // since this has happened while the activation was in flight, the response is 500 Internal Error rather than 404 Not Found
-                throw std::logic_error("resource vanished during in-flight immediate activation");
-            }
-            else
-            {
-                auto& staged = nmos::fields::endpoint_staged(found->data);
-                auto& staged_activation = staged.at(nmos::fields::activation);
-
-                // use requested time to identify it's still the same in-flight immediate activation
-                if (staged_activation.at(nmos::fields::requested_time) != response_activation.at(nmos::fields::requested_time))
-                {
-                    throw std::logic_error("activation modified during in-flight immediate activation");
-                }
-            }
-
-            modify_resource(resources, id_type.first, [&response_activation](nmos::resource& resource)
-            {
-                auto& staged = nmos::fields::endpoint_staged(resource.data);
-                auto& staged_activation = staged[nmos::fields::activation];
-
-                resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-
-                // "For immediate activations, [the `mode` field] will be null in response to any subsequent GET requests."
-                staged_activation[nmos::fields::mode] = value::null();
-
-                // "For an immediate activation this field will always be null on the staged endpoint,
-                // even in the response to the PATCH request."
-                response_activation[nmos::fields::requested_time] = value::null();
-                staged_activation[nmos::fields::requested_time] = value::null();
-
-                // "For immediate activations on the staged endpoint this property will be the time the activation actually
-                // occurred in the response to the PATCH request, but null in response to any GET requests thereafter."
-                response_activation[nmos::fields::activation_time] = staged_activation[nmos::fields::activation_time];
-                staged_activation[nmos::fields::activation_time] = value::null();
-            });
-
-            // this is especially important to unblock other patch requests in details::wait_immediate_activation_not_pending
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying connection API - immediate activation completed";
-            model.notify();
         }
 
         typedef std::pair<web::http::status_code, web::json::value> connection_resource_patch_response;
@@ -749,7 +543,7 @@ namespace nmos
 
                 // Finally, update the staged endpoint
 
-                modify_resource(resources, id_type.first, [&patch_state, &merged](nmos::resource& resource)
+                modify_resource(resources, id_type.first, [&merged](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
 
@@ -770,7 +564,7 @@ namespace nmos
 
                 // details::notify_connection_resource_patch also needs to be called!
 
-                return{ details::scheduled_activation_pending == patch_state ? status_codes::Accepted : status_codes::OK, merged };
+                return{ details::scheduled_activation_pending == patch_state ? status_codes::Accepted : status_codes::OK, std::move(merged) };
             }
             else
             {
@@ -940,7 +734,7 @@ namespace nmos
         // Unclear whether the activation in the active endpoint should have values for mode, requested_time
         // (and even activation_time?) or whether they should be null? The examples have them with values.
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-receiver-active-get-200.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-sender-active-get-200.json
+        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/examples/v1.0-sender-active-get.json
 
         if (nmos::activation_modes::activate_scheduled_absolute == staged_mode ||
             nmos::activation_modes::activate_scheduled_relative == staged_mode)
@@ -955,12 +749,7 @@ namespace nmos
     // (This function should not be called after nmos::set_connection_resource_active.)
     void set_connection_resource_not_pending(nmos::resource& connection_resource)
     {
-        using web::json::value;
-        using web::json::value_of;
-
-        auto& resource = connection_resource;
-
-        auto& staged = nmos::fields::endpoint_staged(resource.data);
+        auto& staged = nmos::fields::endpoint_staged(connection_resource.data);
         auto& staged_activation = staged[nmos::fields::activation];
 
         // "This parameter returns to null on the staged endpoint once an activation is completed."
@@ -971,11 +760,7 @@ namespace nmos
         // "A resource may be unlocked by setting `mode` in `activation` to `null`, which will cancel the pending activation."
         // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml#L244
 
-        staged_activation = value_of({
-            { nmos::fields::mode, value::null() },
-            { nmos::fields::requested_time, value::null() },
-            { nmos::fields::activation_time, value::null() }
-        });
+        staged_activation = nmos::make_activation();
     }
 
     // Update the IS-04 sender or receiver after the active connection is changed in any way

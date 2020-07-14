@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the map for all outputs",
+  "title": "Map resource",
+  "additionalProperties": false,
+  "required":[
+    "activation",
+    "map"
+  ],
+  "properties": {
+    "activation": {
+      "$ref": "activation-response-schema.json"
+    },
+    "map":{
+      "$ref": "map-entries-schema.json"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes an output's capabilities",
+  "title": "Output capabilities resource",
+  "required":[
+    "routable_inputs"
+  ],
+  "properties": {
+    "routable_inputs":{
+      "description": "List of Inputs that may be routed to this Output, including null if unrouted Output channels are allowed. This property MUST be set to null, if no such restrictions exist.",
+      "anyOf": [{
+        "type": "array",
+        "items": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-zA-Z0-9\\-_]+$"
+        },
+        "uniqueItems": true
+      }, {
+        "type": "null"
+      }]
+    }
+  }
+}

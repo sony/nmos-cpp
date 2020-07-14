@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "description": "Properties of the output",
+    "title": "Output properties resource",
+    "required":[
+      "name",
+      "description"
+    ],
+    "properties": {
+        "name":{
+            "type": "string",
+            "description": "Human readable name for the output"
+        },
+        "description":{
+            "type": "string",
+            "description": "Human readable description of the output"
+        }
+    }
+  }
+  

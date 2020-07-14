@@ -24,15 +24,19 @@ namespace nmos
         // when any data is modified, the update timestamp must be set, and resource events should be generated
         // *or more accurately, after insertion into the registry
 
-        resource(api_version version, type type, web::json::value data, bool never_expire)
+        resource(api_version version, type type, web::json::value&& data, nmos::id id, bool never_expire)
             : version(version)
             , downgrade_version()
             , type(type)
             , data(std::move(data))
-            , id(fields::id(this->data))
+            , id(id)
             , created(tai_now())
             , updated(created)
             , health(never_expire ? health_forever : created.seconds)
+        {}
+
+        resource(api_version version, type type, web::json::value data, bool never_expire)
+            : resource(version, type, std::move(data), fields::id(data), never_expire)
         {}
 
         // the API version of the Node API, Registration API or Query API exposing this resource
@@ -52,6 +56,7 @@ namespace nmos
         bool has_data() const { return !data.is_null(); }
 
         // universally unique identifier for the resource
+        // typically corresponds to the "id" property of the resource data
         // see nmos/id.h
         nmos::id id;
 

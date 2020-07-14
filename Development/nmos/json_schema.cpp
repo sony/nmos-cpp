@@ -5,6 +5,9 @@
 #include "nmos/is04_schemas/is04_schemas.h"
 #include "nmos/is05_versions.h"
 #include "nmos/is05_schemas/is05_schemas.h"
+#include "nmos/is08_versions.h"
+#include "nmos/is08_schemas/is08_schemas.h"
+#include "nmos/is09_versions.h"
 #include "nmos/is09_schemas/is09_schemas.h"
 #include "nmos/type.h"
 
@@ -87,6 +90,22 @@ namespace nmos
 
             const web::uri connectionapi_sender_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-sender-stage-schema.json"));
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("v1.0-receiver-stage-schema.json"));
+        }
+    }
+
+    namespace is08_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-audio-channel-mapping/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        namespace v1_0
+        {
+            using namespace nmos::is08_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0.x"));
+
+            const web::uri map_activations_post_request_uri = make_schema_uri(tag, _XPLATSTR("map-activations-post-request-schema.json"));
         }
     }
 
@@ -265,6 +284,19 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is08_schemas()
+        {
+            using namespace nmos::is08_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("activation-schema.json")), make_schema(v1_0::activation_schema) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("map-activations-post-request-schema.json")), make_schema(v1_0::map_activations_post_request_schema) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("map-entries-schema.json")), make_schema(v1_0::map_entries_schema) },
+            };
+        }
+
         static std::map<web::uri, web::json::value> make_is09_schemas()
         {
             using namespace nmos::is09_schemas;
@@ -286,6 +318,7 @@ namespace nmos
         {
             auto result = make_is04_schemas();
             merge(result, make_is05_schemas());
+            merge(result, make_is08_schemas());
             merge(result, make_is09_schemas());
             return result;
         }
@@ -332,6 +365,11 @@ namespace nmos
             return nmos::types::sender == type
                 ? is05_schemas::v1_0::connectionapi_sender_staged_patch_request_uri
                 : is05_schemas::v1_0::connectionapi_receiver_staged_patch_request_uri;
+        }
+
+        web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version)
+        {
+            return is08_schemas::v1_0::map_activations_post_request_uri;
         }
 
         // load the json schema for the specified base URI

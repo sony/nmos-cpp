@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Activation resource",
+  "description": "Parameters concerned with activation of the channel mapping",
+  "additionalProperties": false,
+  "required": [
+    "mode"
+  ],
+  "properties": {
+    "mode": {
+      "description": "Mode of activation: immediate (on message receipt), scheduled_absolute (when internal clock >= requested_time), or scheduled_relative (when internal clock >= time of message receipt + requested_time)",
+      "type": "string",
+      "enum": [
+        "activate_immediate",
+        "activate_scheduled_absolute",
+        "activate_scheduled_relative"
+      ]
+    },
+    "requested_time": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating time (absolute or relative) for activation",
+      "anyOf": [{
+        "type": "string",
+        "pattern": "^[0-9]+:[0-9]+$"
+      }, {
+        "type": "null"
+      }]
+    }
+  }
+}

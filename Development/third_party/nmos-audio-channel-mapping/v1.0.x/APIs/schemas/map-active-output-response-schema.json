@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the map for one specific output",
+  "title": "Map resource",
+  "additionalProperties": false,
+  "required": [
+    "map"
+  ],
+  "properties": {
+    "activation": {
+      "$ref": "activation-response-schema.json"
+    },
+    "map":{
+      "allOf": [{
+        "$ref": "map-entries-schema.json"
+      }, {
+        "minProperties": 1,
+        "maxProperties": 1
+      }]
+    }
+  }
+}

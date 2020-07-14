@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes an input's capabilities",
+  "title": "Input capabilities resource",
+  "additionalProperties": false,
+  "required":[
+    "reordering",
+    "block_size"
+  ],
+  "properties":{
+    "reordering":{
+      "type": "boolean"
+    },
+    "block_size":{
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

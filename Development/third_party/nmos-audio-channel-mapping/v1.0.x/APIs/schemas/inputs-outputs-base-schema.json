@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "List of paths for the inputs or outputs",
+  "title": "Inputs or Outputs base resource",
+  "items": {
+    "type": "string",
+    "pattern": "^[a-zA-Z0-9\\-_]+/$"
+  },
+  "uniqueItems": true
+}

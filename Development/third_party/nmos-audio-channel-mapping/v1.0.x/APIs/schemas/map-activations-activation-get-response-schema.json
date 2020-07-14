@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Single activation endpoint",
+  "description": "A single pending activation",
+  "type": "object",
+  "additionalPropertes": false,
+  "required": [
+    "activation",
+    "action"
+  ],
+  "properties": {
+    "activation":{
+      "$ref": "activation-response-schema.json"
+    },
+    "action:":{
+      "$ref": "map-entries-schema.json"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "IO Information view for entire API",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "inputs",
+    "outputs"
+  ],
+  "properties": {
+    "inputs":{
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9\\-_]+$":{
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properties":{
+              "$ref": "input-properties-schema.json"
+            },
+            "parent":{
+              "$ref": "input-parent-response-schema.json"
+            },
+            "channels":{
+              "$ref": "input-channels-response-schema.json"
+            },
+            "caps":{
+              "$ref": "input-caps-response-schema.json"
+            }
+          }
+        }
+      }  
+    },
+    "outputs":{
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9\\-_]+$":{
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properties":{
+              "$ref": "output-properties-schema.json"
+            },
+            "source_id":{
+              "$ref": "output-sourceid-response-schema.json"
+            },
+            "channels":{
+              "$ref": "output-channels-response-schema.json"
+            },
+            "caps":{
+              "$ref": "output-caps-response-schema.json"
+            }
+          }
+        }
+      }
+    }
+  }
+}

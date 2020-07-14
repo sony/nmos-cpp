@@ -64,6 +64,9 @@ namespace nmos
         // is07_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is07_versions{ U("is07_versions") }; // when omitted, nmos::is07_versions::all is used
 
+        // is08_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is08_versions{ U("is08_versions") }; // when omitted, nmos::is08_versions::all is used
+
         // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is09_versions{ U("is09_versions") }; // when omitted, nmos::is09_versions::all is used
 
@@ -98,6 +101,7 @@ namespace nmos
         const web::json::field_as_integer_or connection_port{ U("connection_port"), 3215 };
         const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
         const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
+        const web::json::field_as_integer_or channelmapping_port{ U("channelmapping_port"), 3215 };
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 

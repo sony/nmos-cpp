@@ -2,6 +2,7 @@
 
 #include "cpprest/ws_utils.h"
 #include "nmos/api_utils.h"
+#include "nmos/channelmapping_activation.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
 #include "nmos/logging_api.h"
@@ -44,16 +45,19 @@ namespace nmos
 
             // Configure the Node API
 
-            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.parse_transport_file, node_implementation.validate_merged);
+            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged);
             node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
             node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
 
             // Configure the Connection API
 
-            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_merged, gate));
+            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged, gate));
 
             // Configure the Events API
             node_server.api_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
+
+            // Configure the Channel Mapping API
+            node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
 
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
             events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, gate);
@@ -93,11 +97,13 @@ namespace nmos
             auto resolve_auto = node_implementation.resolve_auto;
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
+            auto channelmapping_activated = node_implementation.channelmapping_activated;
             node_server.thread_functions.assign({
                 [&, registration_changed] { nmos::node_behaviour_thread(node_model, registration_changed, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
-                [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); }
+                [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
+                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
             });
 
             auto system_changed = node_implementation.system_changed;

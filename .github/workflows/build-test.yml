@@ -291,6 +291,10 @@ jobs:
     
         do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
     
+        do_run_test IS-08-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
+    
+        do_run_test IS-08-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.0
+    
         do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
     
         # Run Registry tests (leave Node running)
@@ -607,6 +611,10 @@ jobs:
         do_run_test IS-07-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
     
         do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
+    
+        do_run_test IS-08-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
+    
+        do_run_test IS-08-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.0
     
         do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
     

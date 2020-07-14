@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Describes the map table entries",
+  "title": "Map table entries",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^[a-zA-Z0-9\\-_]+$": {
+      "description": "Unique identifiers of the outputs",
+      "patternProperties":{
+        "^(0|([1-9][0-9]*))$":{
+          "description": "Indexes of channels",
+          "required":[
+            "input",
+            "channel_index"
+          ],
+          "properties": {
+            "input":{
+              "description": "Unique identifier of the input to which the channel to be routed belongs. null for unrouted.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "channel_index":{
+              "description": "Index of the input channel to be routed. null for unrouted.",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

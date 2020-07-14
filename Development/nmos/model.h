@@ -97,6 +97,10 @@ namespace nmos
         // IS-07 sources for this node
         // see nmos/events_resources.h
         nmos::resources events_resources;
+
+        // IS-08 inputs and outputs for this node
+        // see nmos/channelmapping_resources.h
+        nmos::resources channelmapping_resources;
     };
 
     struct registry_model : model

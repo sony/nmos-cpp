@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Parameters concerned with activation of the channel mapping",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode",
+    "requested_time",
+    "activation_time"
+  ],
+  "properties": {
+    "mode": {
+      "description": "Mode of activation: immediate (on message receipt), scheduled_absolute (when internal clock >= requested_time), scheduled_relative (when internal clock >= time of message receipt + requested_time), or null (no activation scheduled).",
+      "anyOf": [{
+        "type": "string",
+        "enum": [
+          "activate_immediate",
+          "activate_scheduled_absolute",
+          "activate_scheduled_relative"
+        ]
+      }, {
+        "type": "null"
+      }]
+    },
+    "requested_time": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating time (absolute or relative) for activation requested. For an immediate activation this field will always be null.",
+      "anyOf": [{
+        "type": "string",
+        "pattern": "^[0-9]+:[0-9]+$"
+      }, {
+        "type": "null"
+      }]
+    },
+    "activation_time": {
+      "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating the absolute time the channel mapping will or did actually activate for scheduled activations, or the time activation occurred for immediate activations. For immediate activations this property will be the time the activation actually occurred in the response to the POST request.",
+      "anyOf": [{
+        "type": "string",
+        "pattern": "^[0-9]+:[0-9]+$"
+      }, {
+        "type": "null"
+      }]
+    }
+  }
+}

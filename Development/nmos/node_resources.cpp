@@ -15,6 +15,7 @@
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
+#include "nmos/is08_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/resource.h"
 #include "nmos/transfer_characteristic.h"
@@ -88,6 +89,38 @@ namespace nmos
                 {
                     web::json::push_back(data[U("controls")], value_of({
                         { U("href"), events_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+            }
+        }
+
+        if (0 <= nmos::fields::channelmapping_port(settings))
+        {
+            // At the moment, it doesn't seem necessary to enable support multiple API instances via the API selector mechanism
+            // so therefore just a single Channel Mapping API instance is mounted directly at /x-nmos/channelmapping/{version}/
+            // If it becomes necessary, each device could associated with a specific API selector
+            // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/docs/2.0.%20APIs.md#api-paths
+
+            for (const auto& version : nmos::is08_versions::from_settings(settings))
+            {
+                auto channelmapping_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::channelmapping_port(settings))
+                    .set_path(U("/x-nmos/channelmapping/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:cm-ctrl/") + make_api_version(version);
+
+                if (nmos::experimental::fields::client_secure(settings))
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), channelmapping_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+                else for (const auto& host_address : host_addresses)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), channelmapping_uri.set_host(host_address.as_string()).to_uri().to_string() },
                         { U("type"), type }
                     }));
                 }

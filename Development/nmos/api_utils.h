@@ -45,6 +45,8 @@ namespace nmos
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
         // IS-07 Events API
         const route_pattern events_api = make_route_pattern(U("api"), U("events"));
+		// IS-08 Channel Mapping API
+		const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
 
@@ -68,6 +70,16 @@ namespace nmos
         // Each Events API source has a /type and /state endpoint
         const route_pattern eventTypeState = make_route_pattern(U("eventTypeState"), U("type|state"));
 
+        // Channel Mapping API
+        const route_pattern inputOutputType = make_route_pattern(U("resourceType"), U("inputs|outputs"));
+        const route_pattern inputType = make_route_pattern(U("resourceType"), U("inputs"));
+        const route_pattern outputType = make_route_pattern(U("resourceType"), U("outputs"));
+        const route_pattern inputOutputId = make_route_pattern(U("inputOutputId"), U("[a-zA-Z0-9\\-_]+"));
+        const route_pattern inputSubroute = make_route_pattern(U("inputSubroute"), U("properties|parent|channels|caps"));
+        const route_pattern outputSubroute = make_route_pattern(U("outputSubroute"), U("properties|sourceid|channels|caps"));
+        const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
+
+        // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
     }
 
