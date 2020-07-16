@@ -8,6 +8,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-04 NMOS Discovery and Registration Specification](https://amwa-tv.github.io/nmos-discovery-registration)
 - [AMWA IS-05 NMOS Device Connection Management Specification](https://amwa-tv.github.io/nmos-device-connection-management)
 - [AMWA IS-07 NMOS Event & Tally Specification](https://amwa-tv.github.io/nmos-event-tally)
+- [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://amwa-tv.github.io/nmos-audio-channel-mapping)
 - [AMWA IS-09 NMOS System Parameters Specification](https://amwa-tv.github.io/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations](https://amwa-tv.github.io/nmos-grouping) - Natural Grouping
 - [AMWA BCP-003-01 NMOS API Security Recommendations](https://amwa-tv.github.io/nmos-api-security) - Securing Communications
@@ -59,6 +60,8 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [![IS-05-02][IS-05-02-badge]][IS-05-02-sheet]
 [![IS-07-01][IS-07-01-badge]][IS-07-01-sheet]
 [![IS-07-02][IS-07-02-badge]][IS-07-02-sheet]
+[![IS-08-01][IS-08-01-badge]][IS-08-01-sheet]
+[![IS-08-02][IS-08-02-badge]][IS-08-02-sheet]
 [![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
 [![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
 
@@ -69,6 +72,8 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-05-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-05-02.svg
 [IS-07-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-07-01.svg
 [IS-07-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-07-02.svg
+[IS-08-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-08-01.svg
+[IS-08-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-08-02.svg
 [IS-09-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-01.svg
 [IS-09-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-02.svg
 [IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
@@ -78,6 +83,8 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is aut
 [IS-05-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=205041321
 [IS-07-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=828991990
 [IS-07-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=367400040
+[IS-08-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=776923255
+[IS-08-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1558470201
 [IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
 [IS-09-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=2135469955
 
@@ -87,6 +94,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for the IS-08 Channel Mapping API
 - JT-NM Tested 03/20 badge
 - Switched Continous Integration to GitHub Actions and added Windows and macOS to the tested platforms
 - Extended the **nmos-cpp-node** to include mock senders/receivers of audio and ancillary data and offer some additional configuration settings
