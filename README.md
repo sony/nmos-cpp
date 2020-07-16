@@ -44,6 +44,7 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 
 | Platform | Version                  | Configuration Options                  |
 |----------|--------------------------|----------------------------------------|
+| Linux    | Ubuntu 20.04 (GCC 9.3.0) | mDNSResponder                          |
 | Linux    | Ubuntu 18.04 (GCC 7.5.0) | Avahi                                  |
 | Linux    | Ubuntu 18.04 (GCC 7.5.0) | mDNSResponder                          |
 | Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan         |
