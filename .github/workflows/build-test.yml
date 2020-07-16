@@ -267,7 +267,7 @@ jobs:
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
     
-        ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
+        ${root_dir}/build/nmos-cpp-node "{\"how_many\":6,\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
         NODE_PID=$!
     
         function do_run_test() {
