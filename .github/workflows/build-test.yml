@@ -588,7 +588,7 @@ jobs:
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
     
-        ${root_dir}/build/nmos-cpp-node "{\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
+        ${root_dir}/build/nmos-cpp-node "{\"how_many\":6,\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
         NODE_PID=$!
     
         function do_run_test() {
@@ -612,9 +612,9 @@ jobs:
     
         do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
     
-        do_run_test IS-08-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
+        do_run_test IS-08-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --selector null
     
-        do_run_test IS-08-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.0
+        do_run_test IS-08-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.0 --selector null null
     
         do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
     
