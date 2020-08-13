@@ -2,6 +2,7 @@
 
 #include <boost/range/join.hpp>
 #include <boost/range/adaptor/filtered.hpp>
+#include <boost/bind/bind.hpp>
 #include "cpprest/http_utils.h"
 #include "cpprest/json_validator.h"
 #include "nmos/activation_mode.h"
@@ -100,8 +101,8 @@ namespace nmos
             {
                 nmos::experimental::load_json_schema,
                 boost::copy_range<std::vector<web::uri>>(boost::range::join(
-                    is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::sender)),
-                    is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, _1, nmos::types::receiver))
+                    is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, boost::placeholders::_1, nmos::types::sender)),
+                    is05_versions::all | boost::adaptors::transformed(boost::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, boost::placeholders::_1, nmos::types::receiver))
                 ))
             };
             return validator;
