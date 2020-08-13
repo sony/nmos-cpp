@@ -189,7 +189,7 @@ namespace nmos
                     // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#output-routing-constraints
                     if (!routable_inputs_or_null.is_null())
                     {
-                        // "If an Input is listed in an Output’s routable input list then channels from that input can be routed
+                        // "If an Input is listed in an Output's routable input list then channels from that input can be routed
                         // to that Output in the Map table."
                         const auto& routable_inputs = routable_inputs_or_null.as_array();
                         if (routable_inputs.end() == std::find(routable_inputs.begin(), routable_inputs.end(), input_id_or_null))
@@ -207,7 +207,7 @@ namespace nmos
 
                     // check the input channel index is valid
                     const auto& input_channels = nmos::fields::channels(nmos::fields::endpoint_io(input->data));
-                    if (input_channel_index >= input_channels.size())
+                    if (input_channel_index >= static_cast<int>(input_channels.size()))
                     {
                         return make_channelmapping_activation_post_error_response(status_codes::BadRequest, U("Bad Request; ") + make_channelmapping_input_channel_error(input_id, utility::ostringstreamed(input_channel_index)));
                     }
@@ -255,7 +255,7 @@ namespace nmos
             unsigned int current_block_size = 0;
             std::set<int> channels_in_current_block;
 
-            for (int output_channel_index = 0; output_channel_index < active_map.size(); ++output_channel_index)
+            for (int output_channel_index = 0; output_channel_index < static_cast<int>(active_map.size()); ++output_channel_index)
             {
                 const web::json::field_as_value output_channel_field{ utility::ostringstreamed(output_channel_index) };
 
@@ -276,7 +276,7 @@ namespace nmos
                     throw web::json::json_exception("invalid channel_index when input is not null");
                 }
                 const auto input_channel_index = input_channel_index_or_null.as_integer();
-                
+
                 if (input_id != current_input_id)
                 {
                     if (!current_input_id.empty())
