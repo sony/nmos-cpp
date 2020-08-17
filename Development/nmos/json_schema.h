@@ -22,7 +22,11 @@ namespace nmos
         web::uri make_queryapi_subscriptions_post_request_schema_uri(const nmos::api_version& version);
 
         web::uri make_nodeapi_receiver_target_put_request_schema_uri(const nmos::api_version& version);
+
         web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version& version, const nmos::type& type);
+        web::uri make_connectionapi_sender_staged_patch_request_schema_uri(const nmos::api_version& version);
+        web::uri make_connectionapi_receiver_staged_patch_request_schema_uri(const nmos::api_version& version);
+
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version);
 
         // load the json schema for the specified base URI

@@ -100,8 +100,8 @@ namespace nmos
             {
                 nmos::experimental::load_json_schema,
                 boost::copy_range<std::vector<web::uri>>(boost::range::join(
-                    is05_versions::all | boost::adaptors::transformed(std::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, std::placeholders::_1, nmos::types::sender)),
-                    is05_versions::all | boost::adaptors::transformed(std::bind(experimental::make_connectionapi_staged_patch_request_schema_uri, std::placeholders::_1, nmos::types::receiver))
+                    is05_versions::all | boost::adaptors::transformed(experimental::make_connectionapi_sender_staged_patch_request_schema_uri),
+                    is05_versions::all | boost::adaptors::transformed(experimental::make_connectionapi_receiver_staged_patch_request_schema_uri)
                 ))
             };
             return validator;

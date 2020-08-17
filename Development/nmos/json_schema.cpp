@@ -359,12 +359,21 @@ namespace nmos
 
         web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version& version, const nmos::type& type)
         {
-            if (is05_versions::v1_1 <= version) return nmos::types::sender == type
-                ? is05_schemas::v1_1::connectionapi_sender_staged_patch_request_uri
-                : is05_schemas::v1_1::connectionapi_receiver_staged_patch_request_uri;
             return nmos::types::sender == type
-                ? is05_schemas::v1_0::connectionapi_sender_staged_patch_request_uri
-                : is05_schemas::v1_0::connectionapi_receiver_staged_patch_request_uri;
+                ? make_connectionapi_sender_staged_patch_request_schema_uri(version)
+                : make_connectionapi_receiver_staged_patch_request_schema_uri(version);
+        }
+
+        web::uri make_connectionapi_sender_staged_patch_request_schema_uri(const nmos::api_version& version)
+        {
+            if (is05_versions::v1_1 <= version) return is05_schemas::v1_1::connectionapi_sender_staged_patch_request_uri;
+            return is05_schemas::v1_0::connectionapi_sender_staged_patch_request_uri;
+        }
+
+        web::uri make_connectionapi_receiver_staged_patch_request_schema_uri(const nmos::api_version& version)
+        {
+            if (is05_versions::v1_1 <= version) return is05_schemas::v1_1::connectionapi_receiver_staged_patch_request_uri;
+            return is05_schemas::v1_0::connectionapi_receiver_staged_patch_request_uri;
         }
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version)
