@@ -2,7 +2,7 @@
 #define SLOG_ALL_IN_ONE_H
 ////////////////////////////////////////////////////////////////////////////////////////////
 // AUTO-GENERATED AMALGAMATED HEADER
-// Generated at r374; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
+// Generated at r377; to be truly free of dependencies, define SLOG_DETAIL_PROVIDES_UNIQUE_PTR_BASED_OPTIONAL and probably SLOG_STATIC
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Amalgamating: #include "slog/config.h"
 #ifndef SLOG_CONFIG_H
@@ -531,9 +531,14 @@ namespace bst_placeholders = std::placeholders;
 
 #else
 
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
-namespace bst_functional = std;
+namespace bst_functional = boost;
+
+#if BOOST_VERSION >= 106000
+#include <boost/bind/bind.hpp>
+namespace bst_placeholders = boost::placeholders;
+#else
+#include <boost/bind.hpp>
 namespace bst_placeholders // can't alias the global namespace!
 {
     using ::_1;
@@ -546,6 +551,7 @@ namespace bst_placeholders // can't alias the global namespace!
     using ::_8;
     using ::_9;
 }
+#endif
 
 #endif
 
