@@ -202,7 +202,6 @@ namespace mdns_details
 
     struct address_result
     {
-        address_result() {}
         address_result(const std::string& host_name, const std::string& ip_address, std::uint32_t ttl = 0, std::uint32_t interface_id = 0) : host_name(host_name), ip_address(ip_address), ttl(ttl), interface_id(interface_id) {}
 
         std::string host_name;
