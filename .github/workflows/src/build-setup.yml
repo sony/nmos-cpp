@@ -6,6 +6,14 @@
 - name: install cmake
   uses: lukka/get-cmake@v3.17.1
 
+- name: setup bash path
+  working-directory: ${{ env.GITHUB_WORKSPACE }}
+  shell: bash
+  run: |
+    # translate GITHUB_WORKSPACE into a bash path from a windows path
+    workspace_dir=`pwd`
+    echo "::set-env name=GITHUB_WORKSPACE_BASH::${workspace_dir}"
+
 - name: windows setup
   if: runner.os == 'Windows'
   run: |
