@@ -9,6 +9,13 @@
     git clone https://github.com/AMWA-TV/nmos-testing.git
     cd nmos-testing
 
+    echo "ENABLE_HTTPS = True" >> nmostesting/Config.py
+
+    # Download testssl
+    cd testssl
+    curl -L https://github.com/drwetter/testssl.sh/archive/3.0rc5.tar.gz | tar -xvzf - --strip-components=1
+    cd ..
+
     # Create output directories
     mkdir results
     mkdir badges
@@ -38,6 +45,16 @@
       run_test="python nmos-test.py"
     fi
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+    
+    if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+        certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+        certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+
+        netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+        netsh http add sslcert ipport=${{ env.HOST_IP_ADDRESS }}:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"    
+    fi
 
     ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 

@@ -31,6 +31,7 @@
     ).IPv4Address.IPAddress
     echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
     ipconfig
+    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv"
 
 - name: windows install bonjour
   if: runner.os == 'Windows'
@@ -48,6 +49,9 @@
     ifconfig
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
     echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+    echo "$hostip api.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    echo "$hostip mocks.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
 
 - name: mac docker install
   # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -83,6 +87,9 @@
     hostip=$(hostname -I | cut -f1 -d' ')
     echo "::set-env name=HOST_IP_ADDRESS::$hostip"
     ip address
+    echo "$hostip api.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    echo "$hostip mocks.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
 
 - name: ubuntu mdns install
   if: runner.os == 'Linux' && matrix.install_mdns == true
