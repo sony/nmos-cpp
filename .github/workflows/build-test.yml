@@ -234,6 +234,15 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install wsl
+      if: runner.os == 'Windows'
+      run: |
+        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+        Expand-Archive .\ubuntu204.zip .\ubuntu204
+        cd ubuntu204
+        .\ubuntu2004.exe install --root
+    
     - name: AMWA test suite
       shell: bash
       working-directory: ${{ env.RUNNER_WORKSPACE }}
@@ -289,7 +298,13 @@ jobs:
             certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
     
             netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            netsh http add sslcert ipport=${{ env.HOST_IP_ADDRESS }}:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"    
+            netsh http add sslcert ipport=${{ env.HOST_IP_ADDRESS }}:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+    
+            # running testssl directly doesn't work, run it with wsl-bash instead
+            bash_path=bash
+            echo "bash at ${bash_path}"
+            find . -iname "*.py" -exec sed -i 's#("testssl/testssl.sh#("'"${bash_path}"' testssl/testssl.sh#g' {} +
+            find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
@@ -538,6 +553,15 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install wsl
+      if: runner.os == 'Windows'
+      run: |
+        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+        Expand-Archive .\ubuntu204.zip .\ubuntu204
+        cd ubuntu204
+        .\ubuntu2004.exe install --root
+    
     - name: AMWA test suite
       shell: bash
       working-directory: ${{ env.RUNNER_WORKSPACE }}
@@ -593,7 +617,13 @@ jobs:
             certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
     
             netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            netsh http add sslcert ipport=${{ env.HOST_IP_ADDRESS }}:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"    
+            netsh http add sslcert ipport=${{ env.HOST_IP_ADDRESS }}:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+    
+            # running testssl directly doesn't work, run it with wsl-bash instead
+            bash_path=bash
+            echo "bash at ${bash_path}"
+            find . -iname "*.py" -exec sed -i 's#("testssl/testssl.sh#("'"${bash_path}"' testssl/testssl.sh#g' {} +
+            find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
