@@ -150,22 +150,30 @@ BST_TEST_CASE(testMdnsBrowseAPIs)
     // Now discover the APIs
     mdns::service_discovery browser(gate);
     std::vector<mdns::browse_result> browsed;
-
-    browsed = browser.browse("_sea-lion-test1._tcp").get();
-
-    auto browseResult = std::count_if(browsed.begin(), browsed.end(), [](const mdns::browse_result& br)
+    auto browse_count = [&](const std::string& name)
     {
-        return br.name == "test-mdns-browse-2";
-    });
-    BST_REQUIRE(browseResult >= 1);
+        return std::count_if(browsed.begin(), browsed.end(), [&](const mdns::browse_result& br)
+        {
+            return br.name == name;
+        });
+    };
+
+    int retries = 0;
+    do
+    {
+        browsed = browser.browse("_sea-lion-test1._tcp").get();
+    }
+    while (retries++ < 3 && browse_count("test-mdns-browse-1") == 0 && browse_count("test-mdns-browse-2") == 0);
+
+    BST_CHECK(retries <= 3);
+
+    BST_CHECK(browse_count("test-mdns-browse-1") >= 1);
+
+    BST_CHECK(browse_count("test-mdns-browse-2") >= 1);
 
     browsed = browser.browse("_sea-lion-test2._tcp").get();
 
-    browseResult = std::count_if(browsed.begin(), browsed.end(), [](const mdns::browse_result& br)
-    {
-        return br.name == "test-mdns-browse-3";
-    });
-    BST_REQUIRE(browseResult >= 1);
+    BST_CHECK(browse_count("test-mdns-browse-3") >= 1);
 
     gate.clearLogMessages();
 
