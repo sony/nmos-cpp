@@ -253,6 +253,9 @@ namespace web
                     }
 
                     ::freeifaddrs(results);
+                }
+                if (0 != nameindex)
+                {
                     ::if_freenameindex(nameindex);
                 }
 #endif
