@@ -254,7 +254,7 @@ jobs:
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
     
-        echo "ENABLE_HTTPS = True" >> nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True" > nmostesting/UserConfig.py
     
         # Download testssl
         cd testssl
@@ -269,14 +269,14 @@ jobs:
           # run test suite in amwa/nmos-testing docker container
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
-          run_test="docker exec -i nmos_testing python3 nmos-test.py"
+          run_python="docker exec -i nmos_testing python3"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
           # run test suite in vagrant VM
           cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
-          run_test="vagrant ssh -- python3 nmos-test.py"
+          run_python="vagrant ssh -- python3"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -287,7 +287,7 @@ jobs:
           else
             sudo npm install -g AMWA-TV/sdpoker
           fi
-          run_test="python nmos-test.py"
+          run_python="python"
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
         
@@ -307,7 +307,7 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-" true
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing
@@ -573,7 +573,7 @@ jobs:
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
     
-        echo "ENABLE_HTTPS = True" >> nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True" > nmostesting/UserConfig.py
     
         # Download testssl
         cd testssl
@@ -588,14 +588,14 @@ jobs:
           # run test suite in amwa/nmos-testing docker container
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
-          run_test="docker exec -i nmos_testing python3 nmos-test.py"
+          run_python="docker exec -i nmos_testing python3"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
           # run test suite in vagrant VM
           cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
-          run_test="vagrant ssh -- python3 nmos-test.py"
+          run_python="vagrant ssh -- python3"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -606,7 +606,7 @@ jobs:
           else
             sudo npm install -g AMWA-TV/sdpoker
           fi
-          run_test="python nmos-test.py"
+          run_python="python"
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
         
@@ -626,7 +626,7 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-" true
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing

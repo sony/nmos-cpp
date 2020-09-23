@@ -1,6 +1,6 @@
 #!/bin/bash
 
-run_test=$1
+run_python=$1
 shift
 node_command=$1
 shift
@@ -14,10 +14,12 @@ host_ip=$1
 shift
 build_prefix=$1
 shift
-secure_tests=$1
-shift
 
-if [[ "${secure_tests}" == "true" ]]; then
+config_secure=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_HTTPS)'` || (echo "error running python"; exit 1)
+
+if [[ "${config_secure}" == "True" ]]; then
+  secure=true
+  echo "Running secure tests"
   host=api.testsuite.nmos.tv
   common_params=",\"client_secure\":true,\
   \"server_secure\":true,\
@@ -34,6 +36,8 @@ if [[ "${secure_tests}" == "true" ]]; then
   "
   registry_url=https://${host}:8088
 else
+  secure=false
+  echo "Not running secure tests"
   host=${host_ip}
   common_params=
   registry_url=http://localhost:8088
@@ -47,7 +51,7 @@ function do_run_test() {
   echo "Running $suite"
   shift
   output_file=${results_dir}/${build_prefix}${suite}.json
-  result=$(${run_test} suite ${suite} --selection all "$@" --output "${output_file}" >> ${results_dir}/testoutput 2>&1; echo $?)
+  result=$(${run_python} nmos-test.py suite ${suite} --selection all "$@" --output "${output_file}" >> ${results_dir}/testoutput 2>&1; echo $?)
   if [ ! -e ${output_file} ]; then
     echo "No output produced"
     result=2
@@ -58,7 +62,7 @@ function do_run_test() {
   esac
 }
 
-if [[ "${secure_tests}" == "true" ]]; then
+if $secure; then
   do_run_test BCP-003-01 --host "${host}" --port 1080 --version v1.0
 fi
 
@@ -86,7 +90,7 @@ REGISTRY_PID=$!
 # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
 sleep 2
 # add a persistent Query WebSocket API subscription before running the Registry test suite
-curl "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}" || echo "failed to add subscription"
+curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" || echo "failed to add subscription"
 
 do_run_test IS-04-02 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
 
