@@ -19,8 +19,8 @@ config_secure=`${run_python} -c $'from nmostesting import Config\nprint(Config.E
 
 if [[ "${config_secure}" == "True" ]]; then
   secure=true
-  echo "Running secure tests"
-  host=api.testsuite.nmos.tv
+  echo "Running TLS tests"
+  host=nmos-api.local
   common_params=",\"client_secure\":true,\
   \"server_secure\":true,\
   \"ca_certificate_file\":\"test_data/BCP00301/ca/certs/ca.cert.pem\",\
@@ -37,13 +37,15 @@ if [[ "${config_secure}" == "True" ]]; then
   registry_url=https://${host}:8088
 else
   secure=false
-  echo "Not running secure tests"
+  echo "Running non-TLS tests"
   host=${host_ip}
   common_params=
   registry_url=http://localhost:8088
 fi
 
-"${node_command}" "{\"how_many\":6,\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &
+common_params="${common_params} ,\"domain\":\"local\",\"logging_level\":-40"
+
+"${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &
 NODE_PID=$!
 
 function do_run_test() {
@@ -85,7 +87,7 @@ do_run_test IS-08-02 --host "${host}" "${host}" --port 1080 1080 --version v1.3 
 do_run_test IS-09-02 --host "${host}" null --port 0 0 --version null v1.0
 
 # Run Registry tests (leave Node running)
-"${registry_command}" "{\"pri\":0,\"http_port\":8088,\"domain\":\"local.\",\"logging_level\":-40 ${common_params}}" > ${results_dir}/registryoutput 2>&1 &
+"${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params}}" > ${results_dir}/registryoutput 2>&1 &
 REGISTRY_PID=$!
 # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
 sleep 2
