@@ -74,6 +74,14 @@ jobs:
     - name: install cmake
       uses: lukka/get-cmake@v3.17.1
     
+    - name: setup bash path
+      working-directory: ${{ env.GITHUB_WORKSPACE }}
+      shell: bash
+      run: |
+        # translate GITHUB_WORKSPACE into a bash path from a windows path
+        workspace_dir=`pwd`
+        echo "::set-env name=GITHUB_WORKSPACE_BASH::${workspace_dir}"
+    
     - name: windows setup
       if: runner.os == 'Windows'
       run: |
@@ -241,7 +249,7 @@ jobs:
           run_test="docker exec -i nmos_testing python3 nmos-test.py"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
           # run test suite in vagrant VM
-          cp ${{ env.GITHUB_WORKSPACE }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
+          cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
@@ -260,51 +268,7 @@ jobs:
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
     
-        ${root_dir}/build/nmos-cpp-node "{\"how_many\":6,\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
-        NODE_PID=$!
-    
-        function do_run_test() {
-          suite=$1
-          shift
-          case $($run_test suite ${suite} --selection all "$@" --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-${suite}.json" >> results/testoutput 2>&1; echo $?) in
-          [0-1])  echo "Pass" > badges/${suite}.txt ;;
-          *)      echo "Fail" > badges/${suite}.txt ;;
-          esac
-        }
-    
-        do_run_test IS-04-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
-    
-        do_run_test IS-04-03 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
-    
-        do_run_test IS-05-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1
-    
-        do_run_test IS-05-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1
-    
-        do_run_test IS-07-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
-    
-        do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
-    
-        do_run_test IS-08-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --selector null
-    
-        do_run_test IS-08-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.0 --selector null null
-    
-        do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
-    
-        # Run Registry tests (leave Node running)
-        ${root_dir}/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > results/registryoutput 2>&1 &
-        REGISTRY_PID=$!
-        # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
-        sleep 2
-        # add a persistent Query WebSocket API subscription before running the Registry test suite
-        curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
-    
-        do_run_test IS-04-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3
-    
-        do_run_test IS-09-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0
-    
-        # Stop Node and Registry
-        kill $NODE_PID || echo "node not running"
-        kill $REGISTRY_PID || echo "registry not running"
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing
@@ -390,6 +354,14 @@ jobs:
     - name: install cmake
       uses: lukka/get-cmake@v3.17.1
     
+    - name: setup bash path
+      working-directory: ${{ env.GITHUB_WORKSPACE }}
+      shell: bash
+      run: |
+        # translate GITHUB_WORKSPACE into a bash path from a windows path
+        workspace_dir=`pwd`
+        echo "::set-env name=GITHUB_WORKSPACE_BASH::${workspace_dir}"
+    
     - name: windows setup
       if: runner.os == 'Windows'
       run: |
@@ -409,17 +381,12 @@ jobs:
         ipconfig
     
     - name: windows install bonjour
-      if: runner.os == 'Windows' && env.SECRET_BONJOUR_DRIVE_ID && env.SECRET_GOOGLE_CREDENTIALS
+      if: runner.os == 'Windows'
       run: |
         # download bonjour installer
-        curl -L https://github.com/gdrive-org/gdrive/releases/download/2.1.0/gdrive-windows-x64.exe -o gdrive/gdrive-windows-x64.exe -q
-        & "gdrive/gdrive-windows-x64.exe" --config ${{ env.GITHUB_WORKSPACE }}/gdrive --service-account credentials.json download --path ${{ env.GITHUB_WORKSPACE }} ${{ env.SECRET_BONJOUR_DRIVE_ID }}
+        curl -L https://download.info.apple.com/Mac_OS_X/061-8098.20100603.gthyu/BonjourPSSetup.exe -o BonjourPSSetup.exe -q
+        & 7z.exe e BonjourPSSetup.exe Bonjour64.msi -y
         msiexec /i ${{ env.GITHUB_WORKSPACE }}\Bonjour64.msi /qn /norestart
-    
-    - name: windows disable bonjour tests
-      if: runner.os == 'Windows' && (! env.SECRET_BONJOUR_DRIVE_ID || ! env.SECRET_GOOGLE_CREDENTIALS)
-      run: |
-        echo "::set-env name=CTEST_EXTRA_ARGS::${{ env.CTEST_EXTRA_ARGS }} -E `"testMdns(AdvertiseAddress|AdvertiseAPIs|BrowseAPIs|BrowseCancellation|ResolveAPIs)`""
     
     - name: mac setup
       if: runner.os == 'macOS'
@@ -562,7 +529,7 @@ jobs:
           run_test="docker exec -i nmos_testing python3 nmos-test.py"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
           # run test suite in vagrant VM
-          cp ${{ env.GITHUB_WORKSPACE }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
+          cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
@@ -581,51 +548,7 @@ jobs:
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
     
-        ${root_dir}/build/nmos-cpp-node "{\"how_many\":6,\"http_port\":1080,\"domain\":\"local.\",\"logging_level\":-40}" > results/nodeoutput 2>&1 &
-        NODE_PID=$!
-    
-        function do_run_test() {
-          suite=$1
-          shift
-          case $($run_test suite ${suite} --selection all "$@" --output "results/${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-${suite}.json" >> results/testoutput 2>&1; echo $?) in
-          [0-1])  echo "Pass" > badges/${suite}.txt ;;
-          *)      echo "Fail" > badges/${suite}.txt ;;
-          esac
-        }
-    
-        do_run_test IS-04-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
-    
-        do_run_test IS-04-03 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.3
-    
-        do_run_test IS-05-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.1
-    
-        do_run_test IS-05-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.1
-    
-        do_run_test IS-07-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0
-    
-        do_run_test IS-07-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
-    
-        do_run_test IS-08-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 1080 --version v1.0 --selector null
-    
-        do_run_test IS-08-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 1080 1080 --version v1.3 v1.0 --selector null null
-    
-        do_run_test IS-09-02 --host "${{ env.HOST_IP_ADDRESS }}" null --port 0 0 --version null v1.0
-    
-        # Run Registry tests (leave Node running)
-        ${root_dir}/build/nmos-cpp-registry "{\"pri\":0,\"http_port\":8080,\"domain\":\"local.\",\"logging_level\":-40}" > results/registryoutput 2>&1 &
-        REGISTRY_PID=$!
-        # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
-        sleep 2
-        # add a persistent Query WebSocket API subscription before running the Registry test suite
-        curl "http://localhost:8080/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": false}"
-    
-        do_run_test IS-04-02 --host "${{ env.HOST_IP_ADDRESS }}" "${{ env.HOST_IP_ADDRESS }}" --port 8080 8080 --version v1.3 v1.3
-    
-        do_run_test IS-09-01 --host "${{ env.HOST_IP_ADDRESS }}" --port 8080 --version v1.0
-    
-        # Stop Node and Registry
-        kill $NODE_PID || echo "node not running"
-        kill $REGISTRY_PID || echo "registry not running"
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing
