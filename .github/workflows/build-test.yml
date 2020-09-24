@@ -308,9 +308,11 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
-        if [[ "${{ matrix.os }}" == "windows-latest" ||  "${{ matrix.os }}" == "macos-latest" ]]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" || "${{ matrix.os }}" == "macos-latest" ]]; then
           # force DNS lookups to IPv4 as mDNS lookups on Windows and Mac seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
-          printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n{}\n' "$(cat nmostesting/GenericTest.py)" > nmostesting/GenericTest.py
+          mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
+          printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
+          cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
         fi
     
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
@@ -638,9 +640,11 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
-        if [[ "${{ matrix.os }}" == "windows-latest" ||  "${{ matrix.os }}" == "macos-latest" ]]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" || "${{ matrix.os }}" == "macos-latest" ]]; then
           # force DNS lookups to IPv4 as mDNS lookups on Windows and Mac seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
-          printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n{}\n' "$(cat nmostesting/GenericTest.py)" > nmostesting/GenericTest.py
+          mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
+          printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
+          cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
         fi
     
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
