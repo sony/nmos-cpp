@@ -102,6 +102,7 @@
     patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
     cd mDNSResponder-878.200.35/mDNSPosix
     make os=linux && sudo make os=linux install
+    sudo apt install nscd
 
 - name: ubuntu non-conan setup
   if: runner.os == 'Linux' && matrix.use_conan == false
@@ -135,7 +136,7 @@
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
   run: |
-    sudo apt-get install -f libavahi-compat-libdnssd-dev
+    sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
     echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
     # make avahi only respond on the "eth0" interface
