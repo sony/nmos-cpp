@@ -136,7 +136,7 @@
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
   run: |
-    sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns
+    sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
     echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
     # make avahi only respond on the "eth0" interface

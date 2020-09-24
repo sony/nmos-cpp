@@ -204,7 +204,7 @@ jobs:
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
-        sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns
+        sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
@@ -243,6 +243,11 @@ jobs:
         Expand-Archive .\ubuntu204.zip .\ubuntu204
         cd ubuntu204
         .\ubuntu2004.exe install --root
+    
+    - name: setup tmate
+      uses: mxschmitt/action-tmate@v2
+      if: runner.os == 'macOS'
+    
     
     - name: AMWA test suite
       shell: bash
@@ -310,7 +315,7 @@ jobs:
     
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
           # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
-          avahi-publish-address nmos-api.local -a -R ${{ env.HOST_IP_ADDRESS }} &
+          avahi-publish -a -R nmos-api -d local ${{ env.HOST_IP_ADDRESS }} &
         fi
     
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
@@ -529,7 +534,7 @@ jobs:
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
-        sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns
+        sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
@@ -568,6 +573,11 @@ jobs:
         Expand-Archive .\ubuntu204.zip .\ubuntu204
         cd ubuntu204
         .\ubuntu2004.exe install --root
+    
+    - name: setup tmate
+      uses: mxschmitt/action-tmate@v2
+      if: runner.os == 'macOS'
+    
     
     - name: AMWA test suite
       shell: bash
@@ -635,7 +645,7 @@ jobs:
     
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
           # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
-          avahi-publish-address nmos-api.local -a -R ${{ env.HOST_IP_ADDRESS }} &
+          avahi-publish -a -R nmos-api -d local ${{ env.HOST_IP_ADDRESS }} &
         fi
     
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
