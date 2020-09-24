@@ -7,8 +7,6 @@
     cd ubuntu204
     .\ubuntu2004.exe install --root
 
-@import tmate
-
 - name: AMWA test suite
   shell: bash
   working-directory: ${{ env.RUNNER_WORKSPACE }}

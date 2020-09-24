@@ -244,11 +244,6 @@ jobs:
         cd ubuntu204
         .\ubuntu2004.exe install --root
     
-    - name: setup tmate
-      uses: mxschmitt/action-tmate@v2
-      if: runner.os == 'macOS'
-    
-    
     - name: AMWA test suite
       shell: bash
       working-directory: ${{ env.RUNNER_WORKSPACE }}
@@ -578,11 +573,6 @@ jobs:
         Expand-Archive .\ubuntu204.zip .\ubuntu204
         cd ubuntu204
         .\ubuntu2004.exe install --root
-    
-    - name: setup tmate
-      uses: mxschmitt/action-tmate@v2
-      if: runner.os == 'macOS'
-    
     
     - name: AMWA test suite
       shell: bash
