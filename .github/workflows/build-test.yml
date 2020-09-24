@@ -308,6 +308,11 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
+          # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
+          avahi-publish-address nmos-api.local -a -R ${{ env.HOST_IP_ADDRESS }} &
+        fi
+    
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
@@ -626,6 +631,11 @@ jobs:
             echo "bash at ${bash_path}"
             find . -iname "*.py" -exec sed -i 's#("testssl/testssl.sh#("'"${bash_path}"' testssl/testssl.sh#g' {} +
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
+        fi
+    
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
+          # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
+          avahi-publish-address nmos-api.local -a -R ${{ env.HOST_IP_ADDRESS }} &
         fi
     
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
