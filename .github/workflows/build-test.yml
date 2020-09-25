@@ -255,7 +255,8 @@ jobs:
         set -x
         root_dir=`pwd`
         # Install AMWA test suite.
-        git clone https://github.com/AMWA-TV/nmos-testing.git
+        git clone https://github.com/garethsb-sony/nmos-testing.git
+        git checkout hb-log
         cd nmos-testing
     
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.HTTP_TIMEOUT = 5\n" > nmostesting/UserConfig.py
@@ -597,7 +598,8 @@ jobs:
         set -x
         root_dir=`pwd`
         # Install AMWA test suite.
-        git clone https://github.com/AMWA-TV/nmos-testing.git
+        git clone https://github.com/garethsb-sony/nmos-testing.git
+        git checkout hb-log
         cd nmos-testing
     
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.HTTP_TIMEOUT = 5\n" > nmostesting/UserConfig.py
