@@ -16,8 +16,8 @@
     root_dir=`pwd`
     # Install AMWA test suite.
     git clone https://github.com/garethsb-sony/nmos-testing.git
-    git checkout hb-log
     cd nmos-testing
+    git checkout hb-log
 
     printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.HTTP_TIMEOUT = 5\n" > nmostesting/UserConfig.py
 
