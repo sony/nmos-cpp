@@ -99,7 +99,9 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
-        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv"
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv`n"
+        # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
     
     - name: windows install bonjour
       if: runner.os == 'Windows'
@@ -308,8 +310,8 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
-        if [[ "${{ matrix.os }}" == "windows-latest" || "${{ matrix.os }}" == "macos-latest" ]]; then
-          # force DNS lookups to IPv4 as mDNS lookups on Windows and Mac seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # force DNS lookups to IPv4 as mDNS lookups on macos seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
           mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
           printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
           cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
@@ -431,7 +433,9 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
-        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv"
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv`n"
+        # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
     
     - name: windows install bonjour
       if: runner.os == 'Windows'
@@ -640,8 +644,8 @@ jobs:
             find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
         fi
     
-        if [[ "${{ matrix.os }}" == "windows-latest" || "${{ matrix.os }}" == "macos-latest" ]]; then
-          # force DNS lookups to IPv4 as mDNS lookups on Windows and Mac seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # force DNS lookups to IPv4 as mDNS lookups on macos seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
           mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
           printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
           cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py

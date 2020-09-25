@@ -31,7 +31,9 @@
     ).IPv4Address.IPAddress
     echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
     ipconfig
-    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv"
+    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip api.testsuite.nmos.tv`n$env:hostip mocks.testsuite.nmos.tv`n$env:hostip crl.testsuite.nmos.tv`n"
+    # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
+    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
 
 - name: windows install bonjour
   if: runner.os == 'Windows'
