@@ -157,65 +157,22 @@ New-ItemProperty -path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders
 New-ItemProperty -path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\KeyExchangeAlgorithms\PKCS" -name 'ClientMinKeyBitLength' -value '2048' -PropertyType 'DWord' -Force | Out-Null
 
 # Set cipher suites order as secure as possible (Enables Perfect Forward Secrecy).
-$os = Get-WmiObject -class Win32_OperatingSystem
-if ([System.Version]$os.Version -lt [System.Version]'10.0') {
-  Write-Host 'Use cipher suites order for Windows 2008/2008R2/2012/2012R2.'
-  $cipherSuitesOrder = @(
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384_P521',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384_P384',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384_P256',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256_P521',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256_P384',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256_P256',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA_P521',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA_P384',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA_P256',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA_P521',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA_P384',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA_P256',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384_P521',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384_P384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256_P521',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256_P384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256_P256',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384_P521',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384_P384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256_P521',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256_P384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256_P256',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA_P521',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA_P384',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA_P256',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA_P521',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA_P384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA_P256',
-    # Below are the only AEAD ciphers available on Windows 2012R2 and earlier.
-    # - RSA certificates need below ciphers, but ECDSA certificates (EV) may not.
-    # - We get penalty for not using AEAD suites with RSA certificates.
-    'TLS_RSA_WITH_AES_256_GCM_SHA384',
-    'TLS_RSA_WITH_AES_128_GCM_SHA256',
-    'TLS_RSA_WITH_AES_256_CBC_SHA256',
-    'TLS_RSA_WITH_AES_128_CBC_SHA256',
-    'TLS_RSA_WITH_AES_256_CBC_SHA',
-    'TLS_RSA_WITH_AES_128_CBC_SHA'
-  )
-} else {
-  Write-Host 'Use cipher suites order for Windows 10/2016 and later.'
-  $cipherSuitesOrder = @(
-    'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384',
-    'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256',
-    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA',
-    'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256',
-    'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA',
-    'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA'
-  )
-}
+
+Write-Host 'Use cipher suites order for Windows 10/2016 and later.'
+$cipherSuitesOrder = @(
+  'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384',
+  'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+  'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384',
+  'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256',
+  'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA',
+  'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA',
+  'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384',
+  'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256',
+  'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384',
+  'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256',
+  'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA',
+  'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA'
+)
 $cipherSuitesAsString = [string]::join(',', $cipherSuitesOrder)
 # One user reported this key does not exists on Windows 2012R2. Cannot repro myself on a brand new Windows 2012R2 core machine. Adding this just to be save.
 New-Item 'HKLM:\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002' -ErrorAction SilentlyContinue
