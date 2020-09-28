@@ -255,10 +255,12 @@ jobs:
         |
         set -x
         root_dir=`pwd`
-        # Install AMWA test suite.
+    
+        # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
     
+        # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
     
         # Download testssl
@@ -598,10 +600,12 @@ jobs:
         |
         set -x
         root_dir=`pwd`
-        # Install AMWA test suite.
+    
+        # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
     
+        # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
     
         # Download testssl
