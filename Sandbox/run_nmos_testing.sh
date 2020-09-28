@@ -40,7 +40,7 @@ else
   echo "Running non-TLS tests"
   host=${host_ip}
   common_params=
-  registry_url=http://localhost:8088
+  registry_url=http://${host}:8088
 fi
 
 common_params="${common_params} ,\"domain\":\"local\",\"logging_level\":-40"
