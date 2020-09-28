@@ -14,3 +14,9 @@ Windows Registry Editor Version 5.00
 "Enabled"=dword:00000000
 "DisabledByDefault"=dword:00000001
 
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3]
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server]
+"Enabled"=dword:FFFFFFFF
+"DisabledByDefault"=dword:00000000
+
