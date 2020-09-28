@@ -99,6 +99,8 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
         # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
@@ -123,6 +125,7 @@ jobs:
         ifconfig
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     
     - name: mac docker install
@@ -159,6 +162,7 @@ jobs:
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ip address
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     
     - name: ubuntu mdns install
@@ -445,6 +449,8 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
         # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
@@ -469,6 +475,7 @@ jobs:
         ifconfig
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     
     - name: mac docker install
@@ -505,6 +512,7 @@ jobs:
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ip address
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     
     - name: ubuntu mdns install
