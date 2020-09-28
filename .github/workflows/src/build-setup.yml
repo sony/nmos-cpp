@@ -148,4 +148,6 @@
     # make avahi only respond on the "eth0" interface
     sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
     sudo systemctl restart avahi-daemon
+    # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+    sudo apt install nscd
 
