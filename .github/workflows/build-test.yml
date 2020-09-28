@@ -104,7 +104,8 @@ jobs:
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
         # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-mocks.local`n"
-        reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/disable_tls_1.0_1.1_server.reg
+        # Configure SCHANNEL, e.g. to disable TLS 1.0 and TLS 1.1
+        reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/configure_schannel.reg
     
     - name: windows install bonjour
       if: runner.os == 'Windows'
@@ -449,7 +450,8 @@ jobs:
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
         # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-mocks.local`n"
-        reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/disable_tls_1.0_1.1_server.reg
+        # Configure SCHANNEL, e.g. to disable TLS 1.0 and TLS 1.1
+        reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/configure_schannel.reg
     
     - name: windows install bonjour
       if: runner.os == 'Windows'
