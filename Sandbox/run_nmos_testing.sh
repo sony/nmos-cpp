@@ -61,10 +61,10 @@ function do_run_test() {
     result=2
   else
     disabled_tests=`grep -c '"Test Disabled"' ${output_file}`
-    if [[ $disabled_tests -gt $max_disabled_tests ]];
+    if [[ $disabled_tests -gt $max_disabled_tests ]]; then
       echo "$disabled_tests tests disabled, expected max $max_disabled_tests"
       result=2
-    elif [[ $disabled_tests -gt 0 ]];
+    elif [[ $disabled_tests -gt 0 ]]; then
       echo "$disabled_tests tests disabled"
     fi
   fi
