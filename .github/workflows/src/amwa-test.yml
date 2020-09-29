@@ -72,12 +72,6 @@
         netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
         # ECDSA
         #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
-
-        # running testssl directly doesn't work, run it with wsl-bash instead
-        bash_path=bash
-        echo "bash at ${bash_path}"
-        find . -iname "*.py" -exec sed -i 's#("testssl/testssl.sh#("'"${bash_path}"' testssl/testssl.sh#g' {} +
-        find . -iname "*.py" -exec sed -i 's#\["testssl/testssl.sh#\["'"${bash_path}"'", "testssl/testssl.sh#g' {} +
     fi
 
     if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
