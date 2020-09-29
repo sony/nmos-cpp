@@ -339,6 +339,12 @@ jobs:
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
         fi
     
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
+          # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
+          echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
+          echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
+        fi
+    
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
@@ -688,6 +694,12 @@ jobs:
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
           # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+        fi
+    
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
+          # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
+          echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
+          echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
         fi
     
         ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"

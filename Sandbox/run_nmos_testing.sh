@@ -15,6 +15,10 @@ shift
 build_prefix=$1
 shift
 
+cd `dirname $0`
+self_dir=`pwd`
+cd -
+
 config_secure=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_HTTPS)'` || (echo "error running python"; exit 1)
 
 if [[ "${config_secure}" == "True" ]]; then
@@ -54,8 +58,19 @@ function do_run_test() {
   shift
   max_disabled_tests=$1
   shift
+  max_disabled_file="${self_dir}/nmos-testing-options/${suite}_max_disabled.txt"
+  if [[ -f "$max_disabled_file" ]]; then
+    max_disabled_tests=`cat "$max_disabled_file"`
+    echo "Max disabled tests overridden: $max_disabled_tests"
+  fi
+  options_file="${self_dir}/nmos-testing-options/${suite}.txt"
+  suite_options=
+  if [[ -f "$options_file" ]]; then
+    suite_options=`cat "$options_file"`
+    echo "Using additional options: $suite_options"
+  fi
   output_file=${results_dir}/${build_prefix}${suite}.json
-  result=$(${run_python} nmos-test.py suite ${suite} --selection all "$@" --output "${output_file}" >> ${results_dir}/testoutput 2>&1; echo $?)
+  result=$(${run_python} nmos-test.py suite ${suite} --selection all "$@" --output "${output_file}" $suite_options >> ${results_dir}/testoutput 2>&1; echo $?)
   if [ ! -e ${output_file} ]; then
     echo "No output produced"
     result=2
