@@ -99,6 +99,15 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
+        # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
+        # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-mocks.local`n"
+        # Configure SCHANNEL, e.g. to disable TLS 1.0 and TLS 1.1
+        reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/configure_schannel.reg
     
     - name: windows install bonjour
       if: runner.os == 'Windows'
@@ -116,6 +125,10 @@ jobs:
         ifconfig
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+        # testssl.sh needs "timeout"
+        brew install coreutils
     
     - name: mac docker install
       # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -151,6 +164,8 @@ jobs:
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ip address
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     
     - name: ubuntu mdns install
       if: runner.os == 'Linux' && matrix.install_mdns == true
@@ -163,6 +178,13 @@ jobs:
         patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
         cd mDNSResponder-878.200.35/mDNSPosix
         make os=linux && sudo make os=linux install
+        # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+        sudo apt-get install -f nscd
+        if [ -f /.dockerenv ]; then
+          # nscd doesn't run automatically under docker
+          mkdir -p /var/run/nscd
+          nscd
+        fi
     
     - name: ubuntu non-conan setup
       if: runner.os == 'Linux' && matrix.use_conan == false
@@ -196,12 +218,14 @@ jobs:
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
-        sudo apt-get install -f libavahi-compat-libdnssd-dev
+        sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
+        # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+        sudo apt-get install -f nscd
     
     
     - uses: ilammy/msvc-dev-cmd@v1
@@ -227,6 +251,15 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install wsl
+      if: runner.os == 'Windows'
+      run: |
+        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+        Expand-Archive .\ubuntu204.zip .\ubuntu204
+        cd ubuntu204
+        .\ubuntu2004.exe install --root
+    
     - name: AMWA test suite
       shell: bash
       working-directory: ${{ env.RUNNER_WORKSPACE }}
@@ -234,9 +267,18 @@ jobs:
         |
         set -x
         root_dir=`pwd`
-        # Install AMWA test suite.
+    
+        # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
+    
+        # Configure the Testing Tool so all APIs are tested with TLS
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+    
+        # Download testssl
+        cd testssl
+        curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz | tar -xvzf - --strip-components=1
+        cd ..
     
         # Create output directories
         mkdir results
@@ -246,14 +288,14 @@ jobs:
           # run test suite in amwa/nmos-testing docker container
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
-          run_test="docker exec -i nmos_testing python3 nmos-test.py"
+          run_python="docker exec -i nmos_testing python3"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
           # run test suite in vagrant VM
           cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
-          run_test="vagrant ssh -- python3 nmos-test.py"
+          run_python="vagrant ssh -- python3"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -264,11 +306,47 @@ jobs:
           else
             sudo npm install -g AMWA-TV/sdpoker
           fi
-          run_test="python nmos-test.py"
+          run_python="python"
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+        
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+            certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
     
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+            # RSA
+            netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+            # ECDSA
+            #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+    
+            # RSA
+            netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+            # ECDSA
+            #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+        fi
+    
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # force DNS lookups to IPv4 as mDNS lookups on macos seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
+          mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
+          printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
+          cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
+        fi
+    
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
+          # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
+          avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+        fi
+    
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
+          # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
+          mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
+          echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
+          echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
+        fi
+    
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing
@@ -330,7 +408,7 @@ jobs:
         apt-get install -y software-properties-common
         add-apt-repository ppa:deadsnakes/ppa -y
         apt-get --allow-unauthenticated update -q
-        apt-get --allow-unauthenticated install -y curl g++ git make patch python3.6 python3.6-gdbm
+        apt-get --allow-unauthenticated install -y curl g++ git make patch python3.6 python3.6-gdbm bsdmainutils dnsutils
         update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 3
         ln -s /usr/bin/python3.6 /usr/bin/python
         curl -sS https://bootstrap.pypa.io/get-pip.py | python
@@ -379,6 +457,15 @@ jobs:
         ).IPv4Address.IPAddress
         echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
         ipconfig
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
+        # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
+        # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-mocks.local`n"
+        # Configure SCHANNEL, e.g. to disable TLS 1.0 and TLS 1.1
+        reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/configure_schannel.reg
     
     - name: windows install bonjour
       if: runner.os == 'Windows'
@@ -396,6 +483,10 @@ jobs:
         ifconfig
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+        # testssl.sh needs "timeout"
+        brew install coreutils
     
     - name: mac docker install
       # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -431,6 +522,8 @@ jobs:
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "::set-env name=HOST_IP_ADDRESS::$hostip"
         ip address
+        # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     
     - name: ubuntu mdns install
       if: runner.os == 'Linux' && matrix.install_mdns == true
@@ -443,6 +536,13 @@ jobs:
         patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
         cd mDNSResponder-878.200.35/mDNSPosix
         make os=linux && sudo make os=linux install
+        # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+        sudo apt-get install -f nscd
+        if [ -f /.dockerenv ]; then
+          # nscd doesn't run automatically under docker
+          mkdir -p /var/run/nscd
+          nscd
+        fi
     
     - name: ubuntu non-conan setup
       if: runner.os == 'Linux' && matrix.use_conan == false
@@ -476,12 +576,14 @@ jobs:
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
       run: |
-        sudo apt-get install -f libavahi-compat-libdnssd-dev
+        sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
         echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
         echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
         # make avahi only respond on the "eth0" interface
         sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
         sudo systemctl restart avahi-daemon
+        # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+        sudo apt-get install -f nscd
     
     
     - uses: ilammy/msvc-dev-cmd@v1
@@ -507,6 +609,15 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install wsl
+      if: runner.os == 'Windows'
+      run: |
+        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+        Expand-Archive .\ubuntu204.zip .\ubuntu204
+        cd ubuntu204
+        .\ubuntu2004.exe install --root
+    
     - name: AMWA test suite
       shell: bash
       working-directory: ${{ env.RUNNER_WORKSPACE }}
@@ -514,9 +625,18 @@ jobs:
         |
         set -x
         root_dir=`pwd`
-        # Install AMWA test suite.
+    
+        # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
+    
+        # Configure the Testing Tool so all APIs are tested with TLS
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+    
+        # Download testssl
+        cd testssl
+        curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz | tar -xvzf - --strip-components=1
+        cd ..
     
         # Create output directories
         mkdir results
@@ -526,14 +646,14 @@ jobs:
           # run test suite in amwa/nmos-testing docker container
           docker pull amwa/nmos-testing
           docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
-          run_test="docker exec -i nmos_testing python3 nmos-test.py"
+          run_python="docker exec -i nmos_testing python3"
         elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
           # run test suite in vagrant VM
           cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
           vagrant plugin install vagrant-scp
           vagrant up
           vagrant ssh -- mkdir results
-          run_test="vagrant ssh -- python3 nmos-test.py"
+          run_python="vagrant ssh -- python3"
         else
           # run test suite directly
           pip install -r requirements.txt
@@ -544,11 +664,47 @@ jobs:
           else
             sudo npm install -g AMWA-TV/sdpoker
           fi
-          run_test="python nmos-test.py"
+          run_python="python"
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+        
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+            certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
     
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+            # RSA
+            netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+            # ECDSA
+            #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+    
+            # RSA
+            netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+            # ECDSA
+            #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+        fi
+    
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # force DNS lookups to IPv4 as mDNS lookups on macos seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
+          mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
+          printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
+          cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
+        fi
+    
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
+          # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
+          avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+        fi
+    
+        if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
+          # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
+          mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
+          echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
+          echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
+        fi
+    
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing

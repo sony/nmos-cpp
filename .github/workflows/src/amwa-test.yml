@@ -1,3 +1,12 @@
+- name: install wsl
+  if: runner.os == 'Windows'
+  run: |
+    & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+    Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+    Expand-Archive .\ubuntu204.zip .\ubuntu204
+    cd ubuntu204
+    .\ubuntu2004.exe install --root
+
 - name: AMWA test suite
   shell: bash
   working-directory: ${{ env.RUNNER_WORKSPACE }}
@@ -5,9 +14,18 @@
     |
     set -x
     root_dir=`pwd`
-    # Install AMWA test suite.
+
+    # Install AMWA NMOS Testing Tool
     git clone https://github.com/AMWA-TV/nmos-testing.git
     cd nmos-testing
+
+    # Configure the Testing Tool so all APIs are tested with TLS
+    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+
+    # Download testssl
+    cd testssl
+    curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz | tar -xvzf - --strip-components=1
+    cd ..
 
     # Create output directories
     mkdir results
@@ -17,14 +35,14 @@
       # run test suite in amwa/nmos-testing docker container
       docker pull amwa/nmos-testing
       docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
-      run_test="docker exec -i nmos_testing python3 nmos-test.py"
+      run_python="docker exec -i nmos_testing python3"
     elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
       # run test suite in vagrant VM
       cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
       vagrant plugin install vagrant-scp
       vagrant up
       vagrant ssh -- mkdir results
-      run_test="vagrant ssh -- python3 nmos-test.py"
+      run_python="vagrant ssh -- python3"
     else
       # run test suite directly
       pip install -r requirements.txt
@@ -35,11 +53,47 @@
       else
         sudo npm install -g AMWA-TV/sdpoker
       fi
-      run_test="python nmos-test.py"
+      run_python="python"
     fi
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
+    
+    if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+        certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+        certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_test" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+        # RSA
+        netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+        # ECDSA
+        #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+
+        # RSA
+        netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+        # ECDSA
+        #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+    fi
+
+    if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+      # force DNS lookups to IPv4 as mDNS lookups on macos seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
+      mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
+      printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
+      cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
+    fi
+
+    if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
+      # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
+      avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+    fi
+
+    if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
+      # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
+      mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
+      echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
+      echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
+    fi
+
+    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
     if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
       docker stop nmos_testing

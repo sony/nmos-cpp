@@ -31,6 +31,15 @@
     ).IPv4Address.IPAddress
     echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
     ipconfig
+    # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+    # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
+    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
+    # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
+    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
+    # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
+    Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-mocks.local`n"
+    # Configure SCHANNEL, e.g. to disable TLS 1.0 and TLS 1.1
+    reg import ${{ env.GITHUB_WORKSPACE }}/Sandbox/configure_schannel.reg
 
 - name: windows install bonjour
   if: runner.os == 'Windows'
@@ -48,6 +57,10 @@
     ifconfig
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
     echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+    # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    # testssl.sh needs "timeout"
+    brew install coreutils
 
 - name: mac docker install
   # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
@@ -83,6 +96,8 @@
     hostip=$(hostname -I | cut -f1 -d' ')
     echo "::set-env name=HOST_IP_ADDRESS::$hostip"
     ip address
+    # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
 
 - name: ubuntu mdns install
   if: runner.os == 'Linux' && matrix.install_mdns == true
@@ -95,6 +110,13 @@
     patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
     cd mDNSResponder-878.200.35/mDNSPosix
     make os=linux && sudo make os=linux install
+    # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+    sudo apt-get install -f nscd
+    if [ -f /.dockerenv ]; then
+      # nscd doesn't run automatically under docker
+      mkdir -p /var/run/nscd
+      nscd
+    fi
 
 - name: ubuntu non-conan setup
   if: runner.os == 'Linux' && matrix.use_conan == false
@@ -128,10 +150,12 @@
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
   run: |
-    sudo apt-get install -f libavahi-compat-libdnssd-dev
+    sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
     echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
     echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
     # make avahi only respond on the "eth0" interface
     sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
     sudo systemctl restart avahi-daemon
+    # install Name Service Cache Daemon to speed up repeated mDNS name discovery
+    sudo apt-get install -f nscd
 

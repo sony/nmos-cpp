@@ -1,2 +1,4 @@
 - name: setup tmate
   uses: mxschmitt/action-tmate@v2
+  if: runner.os == 'macOS'
+
