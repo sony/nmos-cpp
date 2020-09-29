@@ -10,7 +10,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-07 NMOS Event & Tally Specification](https://amwa-tv.github.io/nmos-event-tally)
 - [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://amwa-tv.github.io/nmos-audio-channel-mapping)
 - [AMWA IS-09 NMOS System Parameters Specification](https://amwa-tv.github.io/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
-- [AMWA BCP-002-01 NMOS Grouping Recommendations](https://amwa-tv.github.io/nmos-grouping) - Natural Grouping
+- [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://amwa-tv.github.io/nmos-grouping)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://amwa-tv.github.io/nmos-secure-communication)
 
 For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
@@ -22,7 +22,14 @@ For more information about AMWA, NMOS and the Networked Media Incubator, please 
 The [repository structure](Documents/Repository-Structure.md), and the [external dependencies](Documents/Dependencies.md), are outlined in the documentation.
 Some information about the overall design of **nmos-cpp** is also included in the [architecture](Documents/Architecture.md) documentation.
 
-### Getting Started
+### Getting Started With NMOS
+
+The [Easy-NMOS](https://github.com/rhastie/easy-nmos) starter kit allows the user to launch a simple NMOS setup with minimal installation steps.
+It relies on nmos-cpp to provide an NMOS Registry and a virtual NMOS Node in a Docker Compose network, along with the AMWA NMOS Testing Tool and supporting services.
+
+### Getting Started For Developers
+
+Easy-NMOS is also a great first way to explore the relationship between NMOS services before building nmos-cpp for yourself.
 
 The codebase is intended to be portable, and the nmos-cpp [CMake project](Development/CMakeLists.txt) can be built on at least Linux, Windows and macOS.
 
@@ -34,7 +41,7 @@ Next, try out the registry and node applications in the [tutorial](Documents/Tut
 
 [<img alt="JT-NM Tested 03/20 NMOS & TR-1001-1" src="Documents/images/jt-nm-tested-03-20-registry.png?raw=true" height="135" align="right"/>](https://jt-nm.org/jt-nm_tested/)
 
-The nmos-cpp applications, like the NMOS Specifications, are intended to be always ready, but continually developing.
+The nmos-cpp applications, like the NMOS Specifications, are intended to be always ready, but steadily developing.
 They have been successfully tested in many AMWA Networked Media Incubator workshops, and are used as reference NMOS implementations in the [JT-NM Tested](https://jt-nm.org/jt-nm_tested/) programme.
 Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to their customers.
 
