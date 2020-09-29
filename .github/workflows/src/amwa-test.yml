@@ -88,6 +88,7 @@
 
     if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
       # ubuntu 14 non-conan build uses boost 1.54.0 which doesn't support disabling TLS 1.1
+      mkdir -p ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/
       echo "--ignore test_01" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01.txt
       echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
     fi
