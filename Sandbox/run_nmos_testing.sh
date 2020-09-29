@@ -119,9 +119,9 @@ sleep 2
 # add a persistent Query WebSocket API subscription before running the Registry test suite
 curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" || echo "failed to add subscription"
 
-do_run_test IS-04-02 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
+do_run_test IS-04-02 0 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
 
-do_run_test IS-09-01 --host "${host}" --port 8088 --version v1.0
+do_run_test IS-09-01 0 --host "${host}" --port 8088 --version v1.0
 
 # Stop Node and Registry
 kill $NODE_PID || echo "node not running"
