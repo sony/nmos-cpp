@@ -112,6 +112,11 @@
     make os=linux && sudo make os=linux install
     # install Name Service Cache Daemon to speed up repeated mDNS name discovery
     sudo apt-get install -f nscd
+    if [ -f /.dockerenv ]; then
+      # nscd doesn't run automatically under docker
+      mkdir -p /var/run/nscd
+      nscd
+    fi
 
 - name: ubuntu non-conan setup
   if: runner.os == 'Linux' && matrix.use_conan == false
