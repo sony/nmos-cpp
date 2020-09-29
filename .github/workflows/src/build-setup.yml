@@ -59,6 +59,8 @@
     echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
     # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
     echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    # testssl.sh needs "timeout"
+    brew install coreutils
 
 - name: mac docker install
   # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
