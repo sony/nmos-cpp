@@ -85,7 +85,8 @@ namespace nmos
     // erase all resources which expired *before* the specified time from the specified resources
     // and return the count of the number of resources erased
     // resources may optionally be initially "erased" by setting data to null, and remain in this non-extant state until they are explicitly forgotten (or reinserted)
-    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, bool forget_now = true);
+    // by default, the updated timestamp is not modified but this may be overridden
+    resources::size_type erase_expired_resources(resources& resources, const health& expire_health, bool forget_now = true, bool set_updated = false);
 
     // find the resource with the specified id in the specified resources (if present) and
     // set the health of the resource and all of its sub-resources, to prevent them expiring

@@ -502,8 +502,8 @@ namespace nmos
             // forget all resources expired in the previous interval
             forget_erased_resources(resources, forget_health);
 
-            // expire all nodes for which there hasn't been a heartbeat in the last expiry interval
-            const auto expired = erase_expired_resources(resources, expire_health, false);
+            // expire all connections for which there hasn't been a heartbeat in the last expiry interval
+            const auto expired = erase_expired_resources(resources, expire_health, false, true);
 
             if (0 != expired)
             {
