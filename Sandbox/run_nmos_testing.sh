@@ -19,7 +19,23 @@ cd `dirname $0`
 self_dir=`pwd`
 cd -
 
+expected_disabled_BCP_003_01=0
+# test_02, test_02_01, test_12
+expected_disabled_IS_04_01=3
+expected_disabled_IS_04_03=0
+expected_disabled_IS_05_01=0
+expected_disabled_IS_05_02=0
+expected_disabled_IS_07_01=0
+expected_disabled_IS_07_02=0
+expected_disabled_IS_08_01=0
+expected_disabled_IS_08_02=0
+# test_02, test_02_01
+expected_disabled_IS_09_02=2
+expected_disabled_IS_04_02=0
+expected_disabled_IS_09_01=0
+
 config_secure=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_HTTPS)'` || (echo "error running python"; exit 1)
+config_auth=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_AUTH)'` || (echo "error running python"; exit 1)
 
 if [[ "${config_secure}" == "True" ]]; then
   secure=true
@@ -45,6 +61,24 @@ else
   host=${host_ip}
   common_params=
   registry_url=http://${host}:8088
+fi
+
+if [[ "${config_auth}" == "True" ]]; then
+  echo "Running Auth tests"
+  auth=true
+else
+  echo "Running non-Auth tests"
+  auth=false
+  (( expected_disabled_IS_04_01+=6 ))
+  (( expected_disabled_IS_04_03+=6 ))
+  (( expected_disabled_IS_05_01+=6 ))
+  (( expected_disabled_IS_05_02+=12 ))
+  (( expected_disabled_IS_07_01+=6 ))
+  (( expected_disabled_IS_07_02+=18 ))
+  (( expected_disabled_IS_08_01+=6 ))
+  (( expected_disabled_IS_08_02+=12 ))
+  (( expected_disabled_IS_04_02+=14 ))
+  (( expected_disabled_IS_09_01+=6 ))
 fi
 
 common_params="${common_params} ,\"domain\":\"local\",\"logging_level\":-40"
@@ -90,26 +124,26 @@ function do_run_test() {
 }
 
 if $secure; then
-  do_run_test BCP-003-01 0 --host "${host}" --port 1080 --version v1.0
+  do_run_test BCP-003-01 $expected_disabled_BCP_003_01 --host "${host}" --port 1080 --version v1.0
 fi
 
-do_run_test IS-04-01 3 --host "${host}" --port 1080 --version v1.3
+do_run_test IS-04-01 $expected_disabled_IS_04_01 --host "${host}" --port 1080 --version v1.3
 
-do_run_test IS-04-03 0 --host "${host}" --port 1080 --version v1.3
+do_run_test IS-04-03 $expected_disabled_IS_04_03 --host "${host}" --port 1080 --version v1.3
 
-do_run_test IS-05-01 0 --host "${host}" --port 1080 --version v1.1
+do_run_test IS-05-01 $expected_disabled_IS_05_01 --host "${host}" --port 1080 --version v1.1
 
-do_run_test IS-05-02 0 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.1
+do_run_test IS-05-02 $expected_disabled_IS_05_02 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.1
 
-do_run_test IS-07-01 0 --host "${host}" --port 1080 --version v1.0
+do_run_test IS-07-01 $expected_disabled_IS_07_01 --host "${host}" --port 1080 --version v1.0
 
-do_run_test IS-07-02 0 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
+do_run_test IS-07-02 $expected_disabled_IS_07_02 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.3 v1.1 v1.0
 
-do_run_test IS-08-01 0 --host "${host}" --port 1080 --version v1.0 --selector null
+do_run_test IS-08-01 $expected_disabled_IS_08_01 --host "${host}" --port 1080 --version v1.0 --selector null
 
-do_run_test IS-08-02 0 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.0 --selector null null
+do_run_test IS-08-02 $expected_disabled_IS_08_02 --host "${host}" "${host}" --port 1080 1080 --version v1.3 v1.0 --selector null null
 
-do_run_test IS-09-02 2 --host "${host}" null --port 0 0 --version null v1.0
+do_run_test IS-09-02 $expected_disabled_IS_09_02 --host "${host}" null --port 0 0 --version null v1.0
 
 # Run Registry tests (leave Node running)
 "${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params}}" > ${results_dir}/registryoutput 2>&1 &
@@ -119,9 +153,9 @@ sleep 2
 # add a persistent Query WebSocket API subscription before running the Registry test suite
 curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" || echo "failed to add subscription"
 
-do_run_test IS-04-02 0 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
+do_run_test IS-04-02 $expected_disabled_IS_04_02 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
 
-do_run_test IS-09-01 0 --host "${host}" --port 8088 --version v1.0
+do_run_test IS-09-01 $expected_disabled_IS_09_01 --host "${host}" --port 8088 --version v1.0
 
 # Stop Node and Registry
 kill $NODE_PID || echo "node not running"
