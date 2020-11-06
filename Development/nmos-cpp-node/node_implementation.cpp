@@ -323,7 +323,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                         { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
                     })
                 });
-                receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::audio == port)
             {
@@ -344,7 +344,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                         { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 1 }) }
                     })
                 });
-                receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::data == port)
             {
