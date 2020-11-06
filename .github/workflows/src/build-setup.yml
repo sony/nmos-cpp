@@ -54,6 +54,7 @@
   run: |
     hostip=$(ipconfig getifaddr en0)
     echo "HOST_IP_ADDRESS=$hostip" >> $GITHUB_ENV
+    echo "SDKROOT=/Applications/Xcode_12.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" >> $GITHUB_ENV
     ifconfig
     echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs" >> $GITHUB_ENV
     echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs" >> $GITHUB_ENV
