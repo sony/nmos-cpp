@@ -5,4 +5,4 @@
   run: |
     mkdir -p gdrive
     echo "${{ env.SECRET_GOOGLE_CREDENTIALS }}" | openssl base64 -d -A -out gdrive/credentials.json
-    echo "::set-env name=GDRIVE_CREDENTIALS::`pwd`/gdrive/credentials.json"
+    echo "GDRIVE_CREDENTIALS=`pwd`/gdrive/credentials.json" >> $GITHUB_ENV

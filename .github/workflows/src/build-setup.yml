@@ -4,7 +4,7 @@
     pip install conan
 
 - name: install cmake
-  uses: lukka/get-cmake@v3.17.1
+  uses: lukka/get-cmake@v3.18.3
 
 - name: setup bash path
   working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -12,13 +12,13 @@
   run: |
     # translate GITHUB_WORKSPACE into a bash path from a windows path
     workspace_dir=`pwd`
-    echo "::set-env name=GITHUB_WORKSPACE_BASH::${workspace_dir}"
+    echo "GITHUB_WORKSPACE_BASH=${workspace_dir}" >> $GITHUB_ENV
 
 - name: windows setup
   if: runner.os == 'Windows'
   run: |
     # set compiler to cl.exe to avoid building with gcc.
-    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe"
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $GITHUB_ENV
     # disable unused network interface
     netsh interface set interface name="vEthernet (nat)" admin=DISABLED
     # get host IP address
@@ -29,7 +29,7 @@
           $_.NetAdapter.Status -ne "Disconnected"
       }
     ).IPv4Address.IPAddress
-    echo "::set-env name=HOST_IP_ADDRESS::$env:hostip"
+    echo "HOST_IP_ADDRESS=$env:hostip" >> $GITHUB_ENV
     ipconfig
     # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
     # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
@@ -53,10 +53,10 @@
   if: runner.os == 'macOS'
   run: |
     hostip=$(ipconfig getifaddr en0)
-    echo "::set-env name=HOST_IP_ADDRESS::$hostip"
+    echo "HOST_IP_ADDRESS=$hostip" >> $GITHUB_ENV
     ifconfig
-    echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs"
-    echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs"
+    echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs" >> $GITHUB_ENV
+    echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs" >> $GITHUB_ENV
     # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
     echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     # testssl.sh needs "timeout"
@@ -83,10 +83,10 @@
       fi
     done
     eval $(docker-machine env default)
-    echo "::set-env name=DOCKER_MACHINE_NAME::$DOCKER_MACHINE_NAME"
-    echo "::set-env name=DOCKER_TLS_VERIFY::$DOCKER_TLS_VERIFY"
-    echo "::set-env name=DOCKER_HOST::$DOCKER_HOST"
-    echo "::set-env name=DOCKER_CERT_PATH::$DOCKER_CERT_PATH"
+    echo "DOCKER_MACHINE_NAME=$DOCKER_MACHINE_NAME" >> $GITHUB_ENV
+    echo "DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY" >> $GITHUB_ENV
+    echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
+    echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH" >> $GITHUB_ENV
 
 
 - name: ubuntu setup
@@ -94,7 +94,7 @@
   run: |
     sudo ip addr flush dev docker0 || echo "remove docker ip failed"
     hostip=$(hostname -I | cut -f1 -d' ')
-    echo "::set-env name=HOST_IP_ADDRESS::$hostip"
+    echo "HOST_IP_ADDRESS=$hostip" >> $GITHUB_ENV
     ip address
     # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
     echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
@@ -140,19 +140,19 @@
     cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
     make -j 2 && sudo make install
 
-    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\""
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" >> $GITHUB_ENV
 
 - name: disable conan
   if: matrix.use_conan == false
   run: |
-    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\""
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
 
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
   run: |
     sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
-    echo "::set-env name=CTEST_EXTRA_ARGS::$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress"
-    echo "::set-env name=CTEST_EXPECTED_FAILURES::$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress"
+    echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsAdvertiseAddress" >> $GITHUB_ENV
+    echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsAdvertiseAddress" >> $GITHUB_ENV
     # make avahi only respond on the "eth0" interface
     sudo sed -i 's/#*allow-interfaces=.*/allow-interfaces=eth0/g' /etc/avahi/avahi-daemon.conf
     sudo systemctl restart avahi-daemon
