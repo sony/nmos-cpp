@@ -696,6 +696,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/admin_ui.cpp
     ${NMOS_CPP_DIR}/nmos/api_downgrade.cpp
     ${NMOS_CPP_DIR}/nmos/api_utils.cpp
+    ${NMOS_CPP_DIR}/nmos/capabilities.cpp
     ${NMOS_CPP_DIR}/nmos/channelmapping_activation.cpp
     ${NMOS_CPP_DIR}/nmos/channelmapping_api.cpp
     ${NMOS_CPP_DIR}/nmos/channelmapping_resources.cpp
@@ -756,6 +757,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/api_downgrade.h
     ${NMOS_CPP_DIR}/nmos/api_utils.h
     ${NMOS_CPP_DIR}/nmos/api_version.h
+    ${NMOS_CPP_DIR}/nmos/capabilities.h
     ${NMOS_CPP_DIR}/nmos/channelmapping_activation.h
     ${NMOS_CPP_DIR}/nmos/channelmapping_api.h
     ${NMOS_CPP_DIR}/nmos/channelmapping_resources.h

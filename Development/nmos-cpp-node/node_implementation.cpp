@@ -12,6 +12,7 @@
 #ifdef HAVE_LLDP
 #include "lldp/lldp_manager.h"
 #endif
+#include "nmos/capabilities.h"
 #include "nmos/channels.h"
 #include "nmos/channelmapping_resources.h"
 #include "nmos/clock_name.h"
@@ -119,6 +120,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     nmos::details::omanip_gate gate{ gate_, nmos::stash_category(impl::categories::node_implementation) };
 
     using web::json::value;
+    using web::json::value_from_elements;
     using web::json::value_of;
 
     auto lock = model.write_lock(); // in order to update the resources
@@ -280,10 +282,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
             // add some example constraints; these should be completed fully!
             connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
+                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
             });
             if (smpte2022_7) connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
+                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
 
             // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
@@ -308,10 +310,41 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             if (impl::ports::video == port)
             {
                 receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                // add an example constraint set; these should be completed fully!
+                const auto interlace_modes = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
+                    ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
+                    : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
+                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
+                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
+                    })
+                });
+                receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::audio == port)
             {
                 receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
+                // add some example constraint sets; these should be completed fully!
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ 2, 4, 8, 16 }) },
+                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({}, 8, 24) },
+                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125 }) }
+                    }),
+                    value_of({
+                        { nmos::caps::meta::preference, -1 },
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ 2, 4, 8 }) },
+                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({}, 8, 24) },
+                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 1 }) }
+                    })
+                });
+                receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::data == port)
             {
@@ -323,10 +356,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
             // add some example constraints; these should be completed fully!
             connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
-                { nmos::fields::constraint_enum, web::json::value_from_elements(primary_interface.addresses) }
+                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
             });
             if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
-                { nmos::fields::constraint_enum, web::json::value_from_elements(secondary_interface.addresses) }
+                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
