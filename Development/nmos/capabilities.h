@@ -6,7 +6,7 @@
 
 namespace nmos
 {
-    // BCP-xxx-01 Receiver Capabilities
+    // BCP-004-01 Receiver Capabilities
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md
     namespace fields
     {
