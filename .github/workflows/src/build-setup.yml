@@ -4,7 +4,7 @@
     pip install conan
 
 - name: install cmake
-  uses: lukka/get-cmake@v3.18.3
+  uses: lukka/get-cmake@v3.18.2
 
 - name: setup bash path
   working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -61,6 +61,9 @@
     echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
     # testssl.sh needs "timeout"
     brew install coreutils
+    # workaround configure issue since the runner has Xcode 12
+    echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+    echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
 
 - name: mac docker install
   # installs docker on a mac runner. Github's documentation states docker is already available so this shouldn't be necessary
