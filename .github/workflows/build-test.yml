@@ -87,7 +87,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # set compiler to cl.exe to avoid building with gcc.
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -98,7 +98,7 @@ jobs:
               $_.NetAdapter.Status -ne "Disconnected"
           }
         ).IPv4Address.IPAddress
-        echo "HOST_IP_ADDRESS=$env:hostip" >> $GITHUB_ENV
+        echo "HOST_IP_ADDRESS=$env:hostip" >> $env:GITHUB_ENV
         ipconfig
         # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
@@ -213,6 +213,7 @@ jobs:
     
     - name: disable conan
       if: matrix.use_conan == false
+      shell: bash
       run: |
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
     
@@ -445,7 +446,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # set compiler to cl.exe to avoid building with gcc.
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -456,7 +457,7 @@ jobs:
               $_.NetAdapter.Status -ne "Disconnected"
           }
         ).IPv4Address.IPAddress
-        echo "HOST_IP_ADDRESS=$env:hostip" >> $GITHUB_ENV
+        echo "HOST_IP_ADDRESS=$env:hostip" >> $env:GITHUB_ENV
         ipconfig
         # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
@@ -571,6 +572,7 @@ jobs:
     
     - name: disable conan
       if: matrix.use_conan == false
+      shell: bash
       run: |
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
     
