@@ -142,6 +142,12 @@ namespace nmos
         {
             return U("the value of the 'paging.since' parameter must be less than or equal to the effective value of the 'paging.until' parameter");
         }
+
+        template <typename T>
+        static inline T istringstreamed(const utility::string_t& value, const T& default_value = {})
+        {
+            T result{ default_value }; std::istringstream is(utility::us2s(value)); is >> result; return result;
+        }
     }
 
     // Extend RQL with some NMOS-specific types
@@ -152,6 +158,9 @@ namespace nmos
         {
             return rql::default_equal_to(lhs, rhs);
         }
+
+        // if either value is null/not found, return indeterminate
+        if (lhs.is_null() || rhs.is_null()) return rql::value_indeterminate;
 
         auto& ltype = (rql::is_typed_value(lhs) ? lhs : rhs).at(U("type")).as_string();
         auto& rtype = (rql::is_typed_value(rhs) ? rhs : lhs).at(U("type")).as_string();
@@ -167,6 +176,12 @@ namespace nmos
             {
                 return parse_version(lvalue.as_string()) == parse_version(rvalue.as_string()) ? rql::value_true : rql::value_false;
             }
+            else if (U("rational") == rtype)
+            {
+                const auto lrat = lvalue.is_string() ? details::istringstreamed<nmos::rational>(lvalue.as_string()) : parse_rational(lvalue);
+                const auto rrat = rvalue.is_string() ? details::istringstreamed<nmos::rational>(rvalue.as_string()) : parse_rational(rvalue);
+                return lrat == rrat ? rql::value_true : rql::value_false;
+            }
         }
 
         return rql::value_indeterminate;
@@ -178,6 +193,9 @@ namespace nmos
         {
             return rql::default_less(lhs, rhs);
         }
+
+        // if either value is null/not found, return indeterminate
+        if (lhs.is_null() || rhs.is_null()) return rql::value_indeterminate;
 
         auto& ltype = (rql::is_typed_value(lhs) ? lhs : rhs).at(U("type")).as_string();
         auto& rtype = (rql::is_typed_value(rhs) ? rhs : lhs).at(U("type")).as_string();
@@ -192,6 +210,12 @@ namespace nmos
             else if (U("version") == rtype)
             {
                 return parse_version(lvalue.as_string()) < parse_version(rvalue.as_string()) ? rql::value_true : rql::value_false;
+            }
+            else if (U("rational") == rtype)
+            {
+                const auto lrat = lvalue.is_string() ? details::istringstreamed<nmos::rational>(lvalue.as_string()) : parse_rational(lvalue);
+                const auto rrat = rvalue.is_string() ? details::istringstreamed<nmos::rational>(rvalue.as_string()) : parse_rational(rvalue);
+                return lrat < rrat ? rql::value_true : rql::value_false;
             }
         }
 
