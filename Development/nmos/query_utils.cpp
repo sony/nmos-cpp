@@ -7,6 +7,7 @@
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::resourceType_from_type
 #include "nmos/rational.h"
+#include "nmos/sdp_utils.h" // for nmos::details::make_sampling
 #include "nmos/version.h"
 #include "rql/rql.h"
 
@@ -181,6 +182,12 @@ namespace nmos
                 const auto lrat = lvalue.is_string() ? details::istringstreamed<nmos::rational>(lvalue.as_string()) : parse_rational(lvalue);
                 const auto rrat = rvalue.is_string() ? details::istringstreamed<nmos::rational>(rvalue.as_string()) : parse_rational(rvalue);
                 return lrat == rrat ? rql::value_true : rql::value_false;
+            }
+            else if (U("sampling") == rtype)
+            {
+                const auto lsam = lvalue.is_string() ? lvalue.as_string() : details::make_sampling(lvalue.as_array()).name;
+                const auto rsam = rvalue.is_string() ? rvalue.as_string() : details::make_sampling(rvalue.as_array()).name;
+                return lsam == rsam ? rql::value_true : rql::value_false;
             }
         }
 
