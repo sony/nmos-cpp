@@ -72,6 +72,12 @@ jobs:
       run: |
         pip install conan
     
+    # conan specifies an old version of crypography on macOS which causes nmos-testing to crash
+    - name: update python crypography
+      if: matrix.use_conan == true && runner.os == 'macOS'
+      run: |
+        pip install cryptography --upgrade
+    
     - name: install cmake
       uses: lukka/get-cmake@v3.18.3
     
@@ -432,6 +438,12 @@ jobs:
       if: matrix.use_conan == true
       run: |
         pip install conan
+    
+    # conan specifies an old version of crypography on macOS which causes nmos-testing to crash
+    - name: update python crypography
+      if: matrix.use_conan == true && runner.os == 'macOS'
+      run: |
+        pip install cryptography --upgrade
     
     - name: install cmake
       uses: lukka/get-cmake@v3.18.3
