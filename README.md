@@ -56,7 +56,7 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 | Linux    | Ubuntu 18.04 (GCC 7.5.0) | mDNSResponder                          |
 | Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan         |
 | Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder)                |
-| macOS    | 10.15 (AppleClang 11.0)  | (Experimental)                         |
+| macOS    | 10.15 (AppleClang 12.0)  | (Experimental)                         |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
