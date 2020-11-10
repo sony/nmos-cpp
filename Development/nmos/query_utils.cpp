@@ -1,6 +1,8 @@
 #include "nmos/query_utils.h"
 
 #include <set>
+#include <boost/algorithm/string/erase.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include "cpprest/basic_utils.h"
@@ -229,19 +231,47 @@ namespace nmos
         return rql::value_indeterminate;
     }
 
-    bool match_rql(const web::json::value& value, const web::json::value& query)
+    static inline utility::string_t erase_tail_copy(const utility::string_t& input, const utility::string_t& tail)
     {
-        return query.is_null() || rql::evaluator
-        {
-            [&value](web::json::value& results, const web::json::value& key)
-            {
-                return web::json::extract(value.as_object(), results, key.as_string());
-            },
-            rql::default_any_operators(equal_to, less)
-        }(query) == rql::value_true;
+        return boost::algorithm::ends_with(input, tail)
+            ? boost::algorithm::erase_tail_copy(input, (int)tail.size())
+            : input;
     }
 
-    resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data) const
+    static inline rql::extractor make_extractor(const web::json::value& value)
+    {
+        return [&value](web::json::value& results, const web::json::value& key)
+        {
+            return web::json::extract(value.as_object(), results, key.as_string());
+        };
+    }
+
+    bool match_rql(const web::json::value& value, const web::json::value& query, const nmos::resources& resources)
+    {
+        auto operators = rql::default_any_operators(equal_to, less);
+
+        // experimental support for the 'rel' operator, in order to allow e.g. matching senders based on their flows' formats
+        // rel(<relation-name>, <call-operator>) - Applies the provided call-operator against the linked data of the provided relation-name
+        operators[U("rel")] = [&resources](const rql::evaluator& eval, const web::json::value& args)
+        {
+            // initially support relation-names that are the '<type>_id' properties, such as a sender's flow_id
+            nmos::type relation_type{ erase_tail_copy(eval(args.at(0)).as_string(), U("_id")) };
+
+            auto relation_value = eval(args.at(0), true);
+            if (!relation_value.is_string()) return rql::value_indeterminate;
+            nmos::id relation_id{ relation_value.as_string() };
+
+            auto found = find_resource(resources, { relation_id, relation_type });
+            if (resources.end() == found) return rql::value_indeterminate;
+
+            // evaluate the call-operator against the linked data
+            return rql::evaluator{ make_extractor(found->data), eval.operators }(args.at(1));
+        };
+
+        return query.is_null() || rql::evaluator{ make_extractor(value), operators }(query) == rql::value_true;
+    }
+
+    resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::resources& resources) const
     {
         // in theory, should be performing match_query against the downgraded resource_data but
         // in practice, I don't think that can make a difference?
@@ -249,7 +279,7 @@ namespace nmos
             && (resource_path.empty() || resource_path == U('/') + nmos::resourceType_from_type(resource_type))
             && nmos::is_permitted_downgrade(resource_version, resource_downgrade_version, resource_type, version, downgrade_version)
             && web::json::match_query(resource_data, basic_query, match_flags)
-            && match_rql(resource_data, rql_query);
+            && match_rql(resource_data, rql_query, resources);
     }
 
     web::json::value resource_query::downgrade(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data) const
@@ -365,7 +395,7 @@ namespace nmos
             {
                 auto& resource = *found;
 
-                if (!match(resource)) continue;
+                if (!match(resource, resources)) continue;
 
                 const auto resource_data = match.downgrade(resource);
                 auto event = details::make_resource_event(resource_path, resource.type, sync ? resource_data : web::json::value::null(), resource_data);
@@ -412,8 +442,8 @@ namespace nmos
             const auto resource_path = nmos::fields::resource_path(subscription.data);
             const resource_query match(subscription.version, resource_path, nmos::fields::params(subscription.data));
 
-            const bool pre_match = match(version, downgrade_version, type, pre);
-            const bool post_match = match(version, downgrade_version, type, post);
+            const bool pre_match = match(version, downgrade_version, type, pre, resources);
+            const bool post_match = match(version, downgrade_version, type, post, resources);
 
             if (!pre_match && !post_match) continue;
 

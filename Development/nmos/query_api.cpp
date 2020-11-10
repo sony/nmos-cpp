@@ -343,6 +343,7 @@ namespace nmos
             // Configure the query predicate
 
             const resource_query match(version, U('/') + resourceType, flat_query_params);
+            const auto pred = std::bind(std::cref(match), std::placeholders::_1, std::cref(resources));
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Querying " << resourceType;
 
@@ -354,8 +355,7 @@ namespace nmos
             if (paging.valid())
             {
                 // Get the payload and update the paging parameters
-                struct default_constructible_resource_query_wrapper { const resource_query* impl; bool operator()(const nmos::resource& r) const { return (*impl)(r); } };
-                auto page = paging.page(resources, default_constructible_resource_query_wrapper{ &match }); // std::cref(match) is OK from Boost.Range 1.56.0
+                auto page = paging.page(resources, pred);
 
                 size_t count = 0;
 
