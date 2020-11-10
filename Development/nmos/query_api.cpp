@@ -343,7 +343,8 @@ namespace nmos
             // Configure the query predicate
 
             const resource_query match(version, U('/') + resourceType, flat_query_params);
-            const auto pred = std::bind(std::cref(match), std::placeholders::_1, std::cref(resources));
+            // const auto pred = [&](const nmos::resource& r) { return match(r, resources); }, or std::bind(std::cref(match), std::placeholders::_1, std::cref(resources)) OK from Boost.Range 1.56.0
+            struct { const resource_query* rq; const nmos::resources* rs; bool operator()(const nmos::resource& r) const { return (*rq)(r, *rs); } } pred{ &match, &resources };
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Querying " << resourceType;
 
