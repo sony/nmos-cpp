@@ -467,7 +467,7 @@ namespace sdp
         // ITU-R BT.2020-2
         const colorimetry BT2020{ U("BT2020") };
         // ITU-R BT.2100 Table 2
-        const colorimetry BT2110{ U("BT2100") };
+        const colorimetry BT2100{ U("BT2100") };
     }
 
     // Packing Mode
