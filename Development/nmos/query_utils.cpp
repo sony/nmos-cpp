@@ -254,18 +254,63 @@ namespace nmos
         // rel(<relation-name>, <call-operator>) - Applies the provided call-operator against the linked data of the provided relation-name
         operators[U("rel")] = [&resources](const rql::evaluator& eval, const web::json::value& args)
         {
-            // initially support relation-names that are the '<type>_id' properties, such as a sender's flow_id
-            nmos::type relation_type{ erase_tail_copy(eval(args.at(0)).as_string(), U("_id")) };
+            const auto relation_name = eval(args.at(0)).as_string();
+            const auto relation_value = eval(args.at(0), true);
+            const auto query = args.at(1);
 
-            auto relation_value = eval(args.at(0), true);
-            if (!relation_value.is_string()) return rql::value_indeterminate;
-            nmos::id relation_id{ relation_value.as_string() };
+            const auto& operators = eval.operators;
+            const auto rel = [&resources, &relation_name, &query, &operators](const web::json::value& relation_value)
+            {
+                if (relation_value.is_string())
+                {
+                    // filters for objects where the relation identifies a linked object that satisfies the specified query
 
-            auto found = find_resource(resources, { relation_id, relation_type });
-            if (resources.end() == found) return rql::value_indeterminate;
+                    // initially support relation-names that are the '<type>_id' properties, such as a sender's flow_id
+                    // and the 'subscription.sender_id' property of receivers (and vice-versa of senders)
+                    // other candidates are more complicated for various reasons...
+                    // for the 'parents' properties of sources and flows, the resource type is also needed
+                    // for 'interface_bindings' and 'clock_name', device_id and node_id are also needed to identify the node resource
+                    // some 'href' properties like the 'manifest_href' of a sender could be interesting
+                    nmos::type relation_type{ erase_tail_copy(relation_name.substr(relation_name.find_last_of(U('.')) +  1), U("_id")) };
+                    nmos::id relation_id{ relation_value.as_string() };
 
-            // evaluate the call-operator against the linked data
-            return rql::evaluator{ make_extractor(found->data), eval.operators }(args.at(1));
+                    auto found = find_resource(resources, { relation_id, relation_type });
+                    if (resources.end() == found) return rql::value_indeterminate;
+
+                    // evaluate the call-operator against the linked data
+                    return rql::evaluator{ make_extractor(found->data), operators }(query);
+                }
+                else if (relation_value.is_object())
+                {
+                    // filters for objects where the extracted value is an object that satisfies the specified query
+
+                    // effectively just changes the extractor context to a sub-object
+                    return rql::evaluator{ make_extractor(relation_value), operators }(query);
+                }
+                return rql::value_indeterminate;
+            };
+
+            // array-friendly 'rel'
+            // filters for objects where the extracted value is an array and any element of the array satisfies the specified query
+            // cf. rql::details::logical_or
+            if (!relation_value.is_array())
+            {
+                return rel(relation_value);
+            }
+            bool indeterminate = false;
+            for (const auto& rv : relation_value.as_array())
+            {
+                auto result = rel(rv);
+                if (!result.is_boolean())
+                {
+                    indeterminate = true;
+                }
+                else if (result.as_bool())
+                {
+                    return rql::value_true;
+                }
+            }
+            return indeterminate ? rql::value_indeterminate : rql::value_false;
         };
 
         return query.is_null() || rql::evaluator{ make_extractor(value), operators }(query) == rql::value_true;
