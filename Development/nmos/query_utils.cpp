@@ -246,13 +246,11 @@ namespace nmos
         };
     }
 
-    bool match_rql(const web::json::value& value, const web::json::value& query, const nmos::resources& resources)
+    namespace experimental
     {
-        auto operators = rql::default_any_operators(equal_to, less);
-
         // experimental support for the 'rel' operator, in order to allow e.g. matching senders based on their flows' formats
         // rel(<relation-name>, <call-operator>) - Applies the provided call-operator against the linked data of the provided relation-name
-        operators[U("rel")] = [&resources](const rql::evaluator& eval, const web::json::value& args)
+        web::json::value rel(const nmos::resources& resources, const rql::evaluator& eval, const web::json::value& args)
         {
             const auto relation_name = eval(args.at(0)).as_string();
             const auto relation_value = eval(args.at(0), true);
@@ -271,7 +269,7 @@ namespace nmos
                     // for the 'parents' properties of sources and flows, the resource type is also needed
                     // for 'interface_bindings' and 'clock_name', device_id and node_id are also needed to identify the node resource
                     // some 'href' properties like the 'manifest_href' of a sender could be interesting
-                    nmos::type relation_type{ erase_tail_copy(relation_name.substr(relation_name.find_last_of(U('.')) +  1), U("_id")) };
+                    nmos::type relation_type{ erase_tail_copy(relation_name.substr(relation_name.find_last_of(U('.')) + 1), U("_id")) };
                     nmos::id relation_id{ relation_value.as_string() };
 
                     auto found = find_resource(resources, { relation_id, relation_type });
@@ -311,7 +309,14 @@ namespace nmos
                 }
             }
             return indeterminate ? rql::value_indeterminate : rql::value_false;
-        };
+        }
+    }
+
+    bool match_rql(const web::json::value& value, const web::json::value& query, const nmos::resources& resources)
+    {
+        auto operators = rql::default_any_operators(equal_to, less);
+
+        operators[U("rel")] = std::bind(experimental::rel, std::cref(resources), std::placeholders::_1, std::placeholders::_2);
 
         return query.is_null() || rql::evaluator{ make_extractor(value), operators }(query) == rql::value_true;
     }
