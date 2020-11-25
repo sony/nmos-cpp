@@ -248,48 +248,25 @@ namespace nmos
 
     namespace experimental
     {
-        // experimental support for the 'rel' operator, in order to allow e.g. matching senders based on their flows' formats
-        // rel(<relation-name>, <call-operator>) - Applies the provided call-operator against the linked data of the provided relation-name
-        web::json::value rel(const nmos::resources& resources, const rql::evaluator& eval, const web::json::value& args)
+        // Sub-query operators
+        // Form: relation(<relation-name>, <call-operator>) - Filters for objects where the value identified by the specified relation (i.e. a property) satisfies the specified sub-query
+
+        // Array-friendly sub-query operators
+        // Filters for objects as above or where the specified property's value is an array and the value identified by any element of the array satisfies the specified sub-query
+        template <typename ResolveRelation>
+        web::json::value relation_query(const rql::evaluator& eval, const web::json::value& args, ResolveRelation resolve)
         {
             const auto relation_name = eval(args.at(0)).as_string();
             const auto relation_value = eval(args.at(0), true);
             const auto query = args.at(1);
 
             const auto& operators = eval.operators;
-            const auto rel = [&resources, &relation_name, &query, &operators](const web::json::value& relation_value)
+            const auto rel = [&resolve, &relation_name, &operators, &query](const web::json::value& relation_value)
             {
-                if (relation_value.is_string())
-                {
-                    // filters for objects where the relation identifies a linked object that satisfies the specified query
-
-                    // initially support relation-names that are the '<type>_id' properties, such as a sender's flow_id
-                    // and the 'subscription.sender_id' property of receivers (and vice-versa of senders)
-                    // other candidates are more complicated for various reasons...
-                    // for the 'parents' properties of sources and flows, the resource type is also needed
-                    // for 'interface_bindings' and 'clock_name', device_id and node_id are also needed to identify the node resource
-                    // some 'href' properties like the 'manifest_href' of a sender could be interesting
-                    nmos::type relation_type{ erase_tail_copy(relation_name.substr(relation_name.find_last_of(U('.')) + 1), U("_id")) };
-                    nmos::id relation_id{ relation_value.as_string() };
-
-                    auto found = find_resource(resources, { relation_id, relation_type });
-                    if (resources.end() == found) return rql::value_indeterminate;
-
-                    // evaluate the call-operator against the linked data
-                    return rql::evaluator{ make_extractor(found->data), operators }(query);
-                }
-                else if (relation_value.is_object())
-                {
-                    // filters for objects where the extracted value is an object that satisfies the specified query
-
-                    // effectively just changes the extractor context to a sub-object
-                    return rql::evaluator{ make_extractor(relation_value), operators }(query);
-                }
-                return rql::value_indeterminate;
+                // evaluate the call-operator against the specified data
+                return rql::evaluator{ make_extractor(resolve(relation_name, relation_value)), operators }(query);
             };
 
-            // array-friendly 'rel'
-            // filters for objects where the extracted value is an array and any element of the array satisfies the specified query
             // cf. rql::details::logical_or
             if (!relation_value.is_array())
             {
@@ -310,6 +287,48 @@ namespace nmos
             }
             return indeterminate ? rql::value_indeterminate : rql::value_false;
         }
+
+        // Experimental support for the 'rel' operator, in order to allow e.g. matching senders based on their flows' formats
+        // rel(<relation-name>, <call-operator>) - Applies the provided call-operator against the linked data of the provided relation-name
+        web::json::value rel(const nmos::resources& resources, const rql::evaluator& eval, const web::json::value& args)
+        {
+            return relation_query(eval, args, [&resources](const utility::string_t& relation_name, const web::json::value& relation_value)
+            {
+                if (relation_value.is_string())
+                {
+                    // initially support relation-names that are the '<type>_id' properties, such as a sender's flow_id
+                    // and the 'subscription.sender_id' property of receivers (and vice-versa of senders)
+                    // other candidates are more complicated for various reasons...
+                    // for the 'parents' properties of sources and flows, the resource type is also needed
+                    // for 'interface_bindings' and 'clock_name', device_id and node_id are also needed to identify the node resource
+                    // some 'href' properties like the 'manifest_href' of a sender could be interesting
+                    nmos::type relation_type{ erase_tail_copy(relation_name.substr(relation_name.find_last_of(U('.')) + 1), U("_id")) };
+                    nmos::id relation_id{ relation_value.as_string() };
+
+                    auto found = find_resource(resources, { relation_id, relation_type });
+                    if (resources.end() == found) return rql::value_indeterminate;
+
+                    // return the linked value
+                    return found->data;
+                }
+                return web::json::value::object();
+            });
+        }
+
+        // Experimental support for a 'sub' operator, in order to allow e.g. matching on multiple properties of objects in arrays
+        // sub(<property>, <call-operator>) - Applies the provided call-operator against the provided property
+        web::json::value sub(const rql::evaluator& eval, const web::json::value& args)
+        {
+            return relation_query(eval, args, [](const utility::string_t& relation_name, const web::json::value& relation_value)
+            {
+                if (relation_value.is_object())
+                {
+                    // effectively just changes the extractor context to a sub-object
+                    return relation_value;
+                }
+                return web::json::value::object();
+            });
+        }
     }
 
     bool match_rql(const web::json::value& value, const web::json::value& query, const nmos::resources& resources)
@@ -317,6 +336,7 @@ namespace nmos
         auto operators = rql::default_any_operators(equal_to, less);
 
         operators[U("rel")] = std::bind(experimental::rel, std::cref(resources), std::placeholders::_1, std::placeholders::_2);
+        operators[U("sub")] = experimental::sub;
 
         return query.is_null() || rql::evaluator{ make_extractor(value), operators }(query) == rql::value_true;
     }
