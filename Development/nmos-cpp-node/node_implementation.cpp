@@ -54,13 +54,19 @@ namespace impl
     {
         // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
+
         // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
+        // and the equivalent parameter constraint on video receivers
         // the value must be an object like { "numerator": 25, "denominator": 1 }
         // hm, unfortunately can't use nmos::make_rational(nmos::rates::rate25) during static initialization
         const web::json::field_as_value_or frame_rate{ U("frame_rate"), web::json::value_of({
             { nmos::fields::numerator, 25 },
             { nmos::fields::denominator, 1 }
         }) };
+
+        // hm, could add custom settings for e.g. frame_width, frame_height to allow 720p and UHD,
+        // and interlace_mode to allow 1080p25 and 1080p29.97 as well as 1080i50 and 1080i59.94?
+
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
     }
@@ -244,9 +250,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource flow;
             if (impl::ports::video == port)
             {
-                // hm, could add another custom setting for interlace_mode?
+                // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
+                // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
+                // like-numbered sample rows of the temporally first field."
                 const auto interlace_mode = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
-                    ? nmos::interlace_modes::interlaced_bff
+                    ? nmos::interlace_modes::interlaced_tff
                     : nmos::interlace_modes::progressive;
                 flow = nmos::make_raw_video_flow(
                     flow_id, source_id, device_id,

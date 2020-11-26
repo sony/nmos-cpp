@@ -8,6 +8,7 @@
     //"how_many" : 7,
 
     // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
+    // and the equivalent parameter constraint on video receivers
     // the value must be an object like { "numerator": 25, "denominator": 1 }
     //"frame_rate": { "numerator": 60000, "denominator": 1001 },
 
