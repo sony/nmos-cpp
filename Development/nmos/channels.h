@@ -32,9 +32,9 @@ namespace nmos
         const channel_symbol Ls{ U("Ls") };
         // Right Surround
         const channel_symbol Rs{ U("Rs") };
-        // Left Surround Sound
+        // Left Side Surround 
         const channel_symbol Lss{ U("Lss") };
-        // Right Surround Sound
+        // Right Side Surround
         const channel_symbol Rss{ U("Rss") };
         // Left Rear Surround
         const channel_symbol Lrs{ U("Lrs") };
