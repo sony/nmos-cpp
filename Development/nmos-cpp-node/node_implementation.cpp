@@ -67,6 +67,9 @@ namespace impl
         // hm, could add custom settings for e.g. frame_width, frame_height to allow 720p and UHD,
         // and interlace_mode to allow 1080p25 and 1080p29.97 as well as 1080i50 and 1080i59.94?
 
+        // channel_count: controls the number of channels in audio sources
+        const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
+
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
     }
@@ -96,6 +99,13 @@ namespace impl
         const std::vector<port> ws{ temperature, burn, nonsense, catcall };
         const std::vector<port> all{ video, audio, data, temperature, burn, nonsense, catcall };
     }
+
+    const std::vector<nmos::channel> channels_repeat{
+        { U("Left Channel"), nmos::channel_symbols::L },
+        { U("Right Channel"), nmos::channel_symbols::R },
+        { U("Center Channel"), nmos::channel_symbols::C },
+        { U("Low Frequency Effects Channel"), nmos::channel_symbols::LFE }
+    };
 
     // generate repeatable ids for the example node's resources
     nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const port& port = {}, int index = 0);
@@ -136,6 +146,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
+    const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
     // any delay between updates to the model resources is unnecessary
@@ -232,14 +243,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::audio == port)
             {
-                const std::vector<nmos::channel> channels3_1{
-                    { U("Left Channel"), nmos::channel_symbols::L },
-                    { U("Right Channel"), nmos::channel_symbols::R },
-                    { U("Center Channel"), nmos::channel_symbols::C },
-                    { U("Low Frequency Effects Channel"), nmos::channel_symbols::LFE }
-                };
+                const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
+                {
+                    return impl::channels_repeat[index % (int)impl::channels_repeat.size()];
+                }));
                     
-                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels3_1, model.settings);
+                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
             }
             else if (impl::ports::data == port)
             {
@@ -515,12 +524,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         // no parent
         const auto parent = std::pair<nmos::id, nmos::type>();
 
-        const auto channel_labels = std::vector<utility::string_t>({
-            U("Left Channel"),
-            U("Right Channel"),
-            U("Center Channel"),
-            U("Low Frequency Effects Channel")
-        });
+        const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
+        {
+            return impl::channels_repeat[index % (int)impl::channels_repeat.size()].label;
+        }));
 
         // for now, use default input capabilities
         auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
@@ -540,12 +547,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, index);
 
-        const auto channel_labels = std::vector<utility::string_t>({
-            U("Left Channel"),
-            U("Right Channel"),
-            U("Center Channel"),
-            U("Low Frequency Effects Channel")
-        });
+        const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
+        {
+            return impl::channels_repeat[index % (int)impl::channels_repeat.size()].label;
+        }));
 
         // for a weird example, allow all inputs up to the same-numbered one to be routed
         auto routable_inputs = boost::copy_range<std::vector<nmos::channelmapping_id>>(

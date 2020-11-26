@@ -12,6 +12,9 @@
     // the value must be an object like { "numerator": 25, "denominator": 1 }
     //"frame_rate": { "numerator": 60000, "denominator": 1001 },
 
+    // channel_count: controls the number of channels in audio sources
+    //"channel_count": 8,
+
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
 
