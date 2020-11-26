@@ -6,6 +6,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
+#include "nmos/capabilities.h"
 #include "nmos/clock_ref_type.h"
 #include "nmos/channels.h"
 #include "nmos/format.h"
@@ -1170,6 +1171,61 @@ namespace nmos
         return{ get_session_description_sdp_parameters(session_description), get_session_description_transport_params(session_description) };
     }
 
+    bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint_set)
+    {
+        if (!interlace) return nmos::match_string_constraint(nmos::interlace_modes::progressive.name, constraint_set);
+        if (segmented) return nmos::match_string_constraint(nmos::interlace_modes::interlaced_psf.name, constraint_set);
+        // hmm, don't think we can be more precise than this, see comment regarding RFC 4175 top-field-first in make_video_sdp_parameters
+        return nmos::match_string_constraint(nmos::interlace_modes::interlaced_tff.name, constraint_set)
+            || nmos::match_string_constraint(nmos::interlace_modes::interlaced_bff.name, constraint_set);
+    }
+
+    bool match_sdp_parameters_constraint_set(const sdp_parameters& sdp_params, const web::json::value& constraint_set)
+    {
+        using web::json::value;
+
+        if (!nmos::caps::meta::enabled(constraint_set)) return false;
+
+        // NMOS Parameter Registers - Capabilities register
+        // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/capabilities/capabilities/README.md
+        static const std::map<utility::string_t, std::function<bool(const sdp_parameters& sdp, const value& con)>> match_constraints
+        {
+            // General Constraints
+
+            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
+            { nmos::caps::format::grain_rate, [](const sdp_parameters& sdp, const value& con) { return nmos::rational{} == sdp.video.exactframerate || nmos::match_rational_constraint(sdp.video.exactframerate, con); } },
+
+            // Video Constraints
+
+            { nmos::caps::format::frame_height, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.video.height, con); } },
+            { nmos::caps::format::frame_width, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.video.width, con); } },
+            { nmos::caps::format::color_sampling, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.sampling.name, con); } },
+            { nmos::caps::format::interlace_mode, [](const sdp_parameters& sdp, const value& con) { return nmos::match_interlace_mode_constraint(sdp.video.interlace, sdp.video.segmented, con); } },
+            { nmos::caps::format::colorspace, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.colorimetry.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.tcs.name, con); } },
+            { nmos::caps::format::component_depth, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.video.depth, con); } },
+
+            // Audio Constraints
+
+            { nmos::caps::format::channel_count, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.audio.channel_count, con); } },
+            { nmos::caps::format::sample_rate, [](const sdp_parameters& sdp, const value& con) { return nmos::match_rational_constraint(sdp.audio.sample_rate, con); } },
+            { nmos::caps::format::sample_depth, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.audio.bit_depth, con); } },
+
+            // Transport Constraints
+
+            { nmos::caps::transport::packet_time, [](const sdp_parameters& sdp, const value& con) { return nmos::match_number_constraint(sdp.audio.packet_time, con); } },
+            // hm, nmos::caps::transport::max_packet_time
+            { nmos::caps::transport::st2110_21_sender_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.tp.name, con); } }
+        };
+
+        const auto& constraints = constraint_set.as_object();
+        return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
+        {
+            const auto& found = match_constraints.find(constraint.first);
+            return match_constraints.end() != found && !found->second(sdp_params, constraint.second);
+        });
+    }
+
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params)
     {
         const auto format = details::get_format(sdp_params);
@@ -1177,12 +1233,20 @@ namespace nmos
 
         if (nmos::format{ nmos::fields::format(receiver) } != format) throw details::sdp_processing_error("unexpected media type/encoding name");
 
-        const auto& caps = receiver.at(U("caps"));
-        if (caps.has_field(U("media_types")))
+        const auto& caps = nmos::fields::caps(receiver);
+        const auto& media_types_or_null = nmos::fields::media_types(caps);
+        if (!media_types_or_null.is_null())
         {
-            const auto& media_types = caps.at(U("media_types")).as_array();
+            const auto& media_types = media_types_or_null.as_array();
             const auto found = std::find(media_types.begin(), media_types.end(), web::json::value::string(media_type.name));
             if (media_types.end() == found) throw details::sdp_processing_error("unsupported encoding name");
+        }
+        const auto& constraint_sets_or_null = nmos::fields::constraint_sets(caps);
+        if (!constraint_sets_or_null.is_null())
+        {
+            const auto& constraint_sets = constraint_sets_or_null.as_array();
+            const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), std::bind(match_sdp_parameters_constraint_set, std::ref(sdp_params), std::placeholders::_1));
+            if (constraint_sets.end() == found) throw details::sdp_processing_error("unsupported transport or format-specific parameters");
         }
     }
 }

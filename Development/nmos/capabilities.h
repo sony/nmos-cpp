@@ -10,7 +10,7 @@ namespace nmos
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md
     namespace fields
     {
-        const web::json::field_as_value_or constraint_sets{ U("constraint_sets"), web::json::value::array() };
+        const web::json::field_as_value_or constraint_sets{ U("constraint_sets"), {} };
     }
 
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#string-constraint-keywords
@@ -27,6 +27,12 @@ namespace nmos
 
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#rational-constraint-keywords
     web::json::value make_caps_rational_constraint(const std::vector<nmos::rational>& enum_values = {}, const nmos::rational& minimum = (std::numeric_limits<int64_t>::max)(), const nmos::rational& maximum = 0);
+
+    bool match_string_constraint(const utility::string_t& value, const web::json::value& constraint);
+    bool match_integer_constraint(int64_t value, const web::json::value& constraint);
+    bool match_number_constraint(double value, const web::json::value& constraint);
+    bool match_boolean_constraint(bool value, const web::json::value& constraint);
+    bool match_rational_constraint(const nmos::rational& value, const web::json::value& constraint);
 
     // NMOS Parameter Registers - Capabilities register
     // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/capabilities/capabilities/README.md
@@ -58,6 +64,7 @@ namespace nmos
         {
             const web::json::field_as_value_or packet_time{ U("urn:x-nmos:cap:transport:packet_time"), {} }; // number
             const web::json::field_as_value_or max_packet_time{ U("urn:x-nmos:cap:transport:max_packet_time"), {} }; // number
+            const web::json::field_as_value_or st2110_21_sender_type{ U("urn:x-nmos:cap:transport:st2110_21_sender_type"), {} }; // string
         }
     }
 }

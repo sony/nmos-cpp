@@ -93,12 +93,16 @@ namespace nmos
 
                         // subscription-specific behaviour
 
-                        const auto& event_type_caps = nmos::fields::event_types(nmos::fields::caps(receiver->data)).as_array();
+                        const auto& event_type_caps_or_null = nmos::fields::event_types(nmos::fields::caps(receiver->data));
 
-                        const bool match = 0 == event_type_caps.size() || event_type_caps.end() != std::find_if(event_type_caps.begin(), event_type_caps.end(), [event_type](const web::json::value& event_type_cap)
+                        const bool match = event_type_caps_or_null.is_null() || [&]
                         {
-                            return nmos::is_matching_event_type(nmos::event_type(event_type_cap.as_string()), event_type);
-                        });
+                            const auto& event_type_caps = event_type_caps_or_null.as_array();
+                            return event_type_caps.end() != std::find_if(event_type_caps.begin(), event_type_caps.end(), [event_type](const web::json::value& event_type_cap)
+                            {
+                                return nmos::is_matching_event_type(nmos::event_type(event_type_cap.as_string()), event_type);
+                            });
+                        }();
 
                         slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Received " << (match ? "" : "unexpected ") << "state message (" << event_type.name << ") for " << id_type;
 

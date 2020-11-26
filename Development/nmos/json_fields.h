@@ -99,8 +99,10 @@ namespace nmos
         const web::json::field_as_bool active{ U("active") }; // used in sender subscription; also used in receiver subscription from v1.2
         // receiver_core
         const web::json::field_as_value sender_id{ U("sender_id") }; // used in receiver subscription
+        // receiver_audio, receiver_data, receiver_mux, receiver_video
+        const web::json::field_as_value_or media_types{ U("media_types"), {} }; // array of string; used in receiver caps
         // receiver_data
-        const web::json::field_as_value_or event_types{ U("event_types"), web::json::value::array() }; // used in receiver caps
+        const web::json::field_as_value_or event_types{ U("event_types"), {} }; // array of string; used in receiver caps
 
         // (mostly) for query_api
         const web::json::field_as_bool persist{ U("persist") };
