@@ -17,8 +17,7 @@ namespace nmos
             auto resource = nmos::make_node(id, {}, nmos::make_node_interfaces(nmos::experimental::node_interfaces()), settings);
             auto& data = resource.data;
 
-            const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
-            const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+            const auto hosts = nmos::get_hosts(settings);
 
             // This is the experimental REST API for DNS Service Discovery (DNS-SD)
 
@@ -28,17 +27,10 @@ namespace nmos
                 .set_path(U("/x-dns-sd/v1.0"));
             auto type = U("urn:x-dns-sd/v1.0");
 
-            if (nmos::experimental::fields::client_secure(settings))
+            for (const auto& host : hosts)
             {
                 web::json::push_back(data[U("services")], value_of({
-                    { U("href"), mdns_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                    { U("type"), type }
-                }));
-            }
-            else for (const auto& host_address : host_addresses)
-            {
-                web::json::push_back(data[U("services")], value_of({
-                    { U("href"), mdns_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                    { U("href"), mdns_uri.set_host(host).to_uri().to_string() },
                     { U("type"), type }
                 }));
             }

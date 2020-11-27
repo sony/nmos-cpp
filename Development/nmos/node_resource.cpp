@@ -28,21 +28,12 @@ namespace nmos
         data[U("hostname")] = value::string(nmos::get_host_name(settings));
         data[U("api")][U("versions")] = value_from_elements(nmos::is04_versions::from_settings(settings) | boost::adaptors::transformed(make_api_version));
 
-        const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
-        const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+        const auto hosts = nmos::get_hosts(settings);
 
-        if (nmos::experimental::fields::client_secure(settings))
+        for (const auto& host : hosts)
         {
             web::json::push_back(data[U("api")][U("endpoints")], value_of({
-                { U("host"), uri.host() },
-                { U("port"), uri.port() },
-                { U("protocol"), uri.scheme() }
-            }));
-        }
-        else for (const auto& host_address : host_addresses)
-        {
-            web::json::push_back(data[U("api")][U("endpoints")], value_of({
-                { U("host"), host_address },
+                { U("host"), host },
                 { U("port"), uri.port() },
                 { U("protocol"), uri.scheme() }
             }));

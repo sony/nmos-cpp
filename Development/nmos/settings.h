@@ -23,6 +23,9 @@ namespace nmos
     // when a request URL is not available
     utility::string_t get_host(const settings& settings);
 
+    // Get host name and/or addresses to be used to construct host and URL fields in the data model
+    std::vector<utility::string_t> get_hosts(const settings& settings);
+
     // Get a summary of the build configuration, including versions of dependencies
     utility::string_t get_build_settings_info();
 
@@ -234,6 +237,9 @@ namespace nmos
 
             // proxy_port [registry, node]: forward proxy port
             const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
+
+            // href_mode [registry, node]: whether the host name (1), addresses (2) or both (3) are used to construct response headers, and host and URL fields in the data model
+            const web::json::field_as_integer_or href_mode{ U("href_mode"), 0 }; // when omitted, a default heuristic is used
 
             // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
             // when true, CA root certificates must also be configured

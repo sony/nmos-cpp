@@ -107,15 +107,59 @@ namespace nmos
             : details::default_host_name(get_domain(settings));
     }
 
+    namespace experimental
+    {
+        enum href_mode
+        {
+            href_mode_default = 0,
+            href_mode_name = 1,
+            href_mode_addresses = 2,
+            href_mode_both = 3 // name + addresses
+        };
+
+        href_mode get_href_mode(const settings& settings)
+        {
+            const auto mode = href_mode(nmos::experimental::fields::href_mode(settings));
+            // unless a mode is specified, use the host name if secure communications are in use
+            // otherwise, the host address(es)
+            return mode == href_mode_default
+                ? nmos::experimental::fields::client_secure(settings) ? href_mode_name : href_mode_addresses
+                : mode;
+        }
+    }
+
     // Get host name or address to be used to construct response headers (e.g. 'Link' or 'Location')
     // when a request URL is not available
     utility::string_t get_host(const settings& settings)
     {
-        // if secure communications are in use, return a host name
-        // otherwise, the preferred host address
-        return nmos::experimental::fields::client_secure(settings)
+        const auto mode = nmos::experimental::get_href_mode(settings);
+        return 0 != (mode & nmos::experimental::href_mode_name)
             ? get_host_name(settings)
             : nmos::fields::host_address(settings);
+    }
+
+    // Get host name and/or addresses to be used to construct host and URL fields in the data model
+    std::vector<utility::string_t> get_hosts(const settings& settings)
+    {
+        const auto mode = nmos::experimental::get_href_mode(settings);
+        std::vector<utility::string_t> hosts;
+        if (0 != (mode & nmos::experimental::href_mode_name))
+        {
+            hosts.push_back(get_host_name(settings));
+        }
+        if (0 != (mode & nmos::experimental::href_mode_addresses))
+        {
+            const auto& addresses = nmos::fields::host_addresses(settings);
+            if (0 == addresses.size())
+            {
+                hosts.push_back(nmos::fields::host_address(settings));
+            }
+            else for (const auto& address : addresses)
+            {
+                hosts.push_back(address.as_string());
+            }
+        }
+        return hosts;
     }
 
     // Get a summary of the build configuration, including versions of dependencies

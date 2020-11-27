@@ -38,8 +38,7 @@ namespace nmos
         data[U("senders")] = value_from_elements(senders);
         data[U("receivers")] = value_from_elements(receivers);
 
-        const auto at_least_one_host_address = value_of({ value::string(nmos::fields::host_address(settings)) });
-        const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+        const auto hosts = nmos::get_hosts(settings);
 
         if (0 <= nmos::fields::connection_port(settings))
         {
@@ -51,17 +50,10 @@ namespace nmos
                     .set_path(U("/x-nmos/connection/") + make_api_version(version));
                 auto type = U("urn:x-nmos:control:sr-ctrl/") + make_api_version(version);
 
-                if (nmos::experimental::fields::client_secure(settings))
+                for (const auto& host : hosts)
                 {
                     web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), connection_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                        { U("type"), type }
-                    }));
-                }
-                else for (const auto& host_address : host_addresses)
-                {
-                    web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), connection_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("href"), connection_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type }
                     }));
                 }
@@ -78,17 +70,10 @@ namespace nmos
                     .set_path(U("/x-nmos/events/") + make_api_version(version));
                 auto type = U("urn:x-nmos:control:events/") + make_api_version(version);
 
-                if (nmos::experimental::fields::client_secure(settings))
+                for (const auto& host : hosts)
                 {
                     web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), events_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                        { U("type"), type }
-                    }));
-                }
-                else for (const auto& host_address : host_addresses)
-                {
-                    web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), events_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("href"), events_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type }
                     }));
                 }
@@ -110,17 +95,10 @@ namespace nmos
                     .set_path(U("/x-nmos/channelmapping/") + make_api_version(version));
                 auto type = U("urn:x-nmos:control:cm-ctrl/") + make_api_version(version);
 
-                if (nmos::experimental::fields::client_secure(settings))
+                for (const auto& host : hosts)
                 {
                     web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), channelmapping_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                        { U("type"), type }
-                    }));
-                }
-                else for (const auto& host_address : host_addresses)
-                {
-                    web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), channelmapping_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                        { U("href"), channelmapping_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type }
                     }));
                 }
@@ -137,17 +115,10 @@ namespace nmos
                 .set_path(U("/x-manifest/"));
             auto type = U("urn:x-nmos:control:manifest-base/v1.0");
 
-            if (nmos::experimental::fields::client_secure(settings))
+            for (const auto& host : hosts)
             {
                 web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), manifest_uri.set_host(nmos::get_host(settings)).to_uri().to_string() },
-                    { U("type"), type }
-                }));
-            }
-            else for (const auto& host_address : host_addresses)
-            {
-                web::json::push_back(data[U("controls")], value_of({
-                    { U("href"), manifest_uri.set_host(host_address.as_string()).to_uri().to_string() },
+                    { U("href"), manifest_uri.set_host(host).to_uri().to_string() },
                     { U("type"), type }
                 }));
             }
