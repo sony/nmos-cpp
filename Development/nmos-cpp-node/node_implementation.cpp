@@ -348,16 +348,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 // add some example constraint sets; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
-                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ 2, 4, 8, 16 }) },
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, channel_count) },
                         { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
-                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({}, 8, 24) },
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
                         { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125 }) }
                     }),
                     value_of({
                         { nmos::caps::meta::preference, -1 },
-                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ 2, 4, 8 }) },
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, (std::min)(8, channel_count)) },
                         { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
-                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({}, 8, 24) },
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
                         { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 1 }) }
                     })
                 });
@@ -366,6 +366,13 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             else if (impl::ports::data == port)
             {
                 receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                // add an example constraint set; these should be completed fully!
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) }
+                    })
+                });
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             impl::set_label(receiver, port, index);
             impl::insert_group_hint(receiver, port, index);
@@ -776,6 +783,11 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
             }
 
             auto sdp_params = nmos::make_sdp_parameters(node->data, source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+            if (sdp_params.audio.channel_count != 0)
+            {
+                sdp_params.audio.packet_time = sdp_params.audio.channel_count > 8 ? 0.125 : 1;
+            }
+
             auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
             auto session_description = nmos::make_session_description(sdp_params, transport_params);
             auto sdp = utility::s2us(sdp::make_session_description(session_description));

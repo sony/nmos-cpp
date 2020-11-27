@@ -13,20 +13,26 @@ namespace nmos
         const web::json::field_as_value_or constraint_sets{ U("constraint_sets"), {} };
     }
 
+    template <typename T> inline std::vector<T> no_enum() { return std::vector<T>(); }
+    template <typename T> inline T no_minimum() { return (std::numeric_limits<T>::max)(); }
+    template <typename T> inline T no_maximum() { return (std::numeric_limits<T>::min)(); }
+    template <> nmos::rational inline no_minimum() { return (std::numeric_limits<int64_t>::max)(); }
+    template <> nmos::rational inline no_maximum() { return 0; }
+
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#string-constraint-keywords
     web::json::value make_caps_string_constraint(const std::vector<utility::string_t>& enum_values = {});
 
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#integer-and-number-constraint-keywords
-    web::json::value make_caps_integer_constraint(const std::vector<int64_t>& enum_values = {}, int64_t minimum = (std::numeric_limits<int64_t>::max)(), int64_t maximum = (std::numeric_limits<int64_t>::min)());
+    web::json::value make_caps_integer_constraint(const std::vector<int64_t>& enum_values = {}, int64_t minimum = no_minimum<int64_t>(), int64_t maximum = no_maximum<int64_t>());
 
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#integer-and-number-constraint-keywords
-    web::json::value make_caps_number_constraint(const std::vector<double>& enum_values = {}, double minimum = (std::numeric_limits<double>::max)(), double maximum = (std::numeric_limits<double>::min)());
+    web::json::value make_caps_number_constraint(const std::vector<double>& enum_values = {}, double minimum = no_minimum<double>(), double maximum = no_maximum<double>());
 
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#boolean-constraint-keywords
     web::json::value make_caps_boolean_constraint(const std::vector<bool>& enum_values = {});
 
     // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#rational-constraint-keywords
-    web::json::value make_caps_rational_constraint(const std::vector<nmos::rational>& enum_values = {}, const nmos::rational& minimum = (std::numeric_limits<int64_t>::max)(), const nmos::rational& maximum = 0);
+    web::json::value make_caps_rational_constraint(const std::vector<nmos::rational>& enum_values = {}, const nmos::rational& minimum = no_minimum<nmos::rational>(), const nmos::rational& maximum = no_maximum<nmos::rational>());
 
     bool match_string_constraint(const utility::string_t& value, const web::json::value& constraint);
     bool match_integer_constraint(int64_t value, const web::json::value& constraint);

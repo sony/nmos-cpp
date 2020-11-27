@@ -20,8 +20,8 @@ namespace nmos
         using web::json::value_from_elements;
         return value_of({
             { !enum_values.empty() ? nmos::fields::constraint_enum.key : U(""), value_from_elements(enum_values) },
-            { minimum != (std::numeric_limits<int64_t>::max)() ? nmos::fields::constraint_minimum.key : U(""), minimum },
-            { maximum != (std::numeric_limits<int64_t>::min)() ? nmos::fields::constraint_maximum.key : U(""), maximum }
+            { minimum != no_minimum<int64_t>() ? nmos::fields::constraint_minimum.key : U(""), minimum },
+            { maximum != no_maximum<int64_t>() ? nmos::fields::constraint_maximum.key : U(""), maximum }
         });
     }
 
@@ -31,8 +31,8 @@ namespace nmos
         using web::json::value_from_elements;
         return value_of({
             { !enum_values.empty() ? nmos::fields::constraint_enum.key : U(""), value_from_elements(enum_values) },
-            { minimum != (std::numeric_limits<double>::max)() ? nmos::fields::constraint_minimum.key : U(""), minimum },
-            { maximum != (std::numeric_limits<double>::min)() ? nmos::fields::constraint_maximum.key : U(""), maximum }
+            { minimum != no_minimum<double>() ? nmos::fields::constraint_minimum.key : U(""), minimum },
+            { maximum != no_maximum<double>() ? nmos::fields::constraint_maximum.key : U(""), maximum }
         });
     }
 
@@ -51,8 +51,8 @@ namespace nmos
         using web::json::value_from_elements;
         return value_of({
             { !enum_values.empty() ? nmos::fields::constraint_enum.key : U(""), value_from_elements(enum_values | boost::adaptors::transformed([](const nmos::rational& r) { return make_rational(r); })) },
-            { minimum != (std::numeric_limits<int64_t>::max)() ? nmos::fields::constraint_minimum.key : U(""), make_rational(minimum) },
-            { maximum != 0 ? nmos::fields::constraint_maximum.key : U(""), make_rational(maximum) }
+            { minimum != no_minimum<nmos::rational>() ? nmos::fields::constraint_minimum.key : U(""), make_rational(minimum) },
+            { maximum != no_maximum<nmos::rational>() ? nmos::fields::constraint_maximum.key : U(""), make_rational(maximum) }
         });
     }
 
