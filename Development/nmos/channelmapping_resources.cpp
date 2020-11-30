@@ -161,11 +161,10 @@ namespace nmos
         using web::json::value_from_elements;
         using web::json::value_of;
 
-        if (routable_inputs.empty()) return value::null();
-
         return value_of({
             {
-                nmos::fields::routable_inputs, value_from_elements(routable_inputs | boost::adaptors::transformed([](const nmos::channelmapping_id& channelmapping_id)
+                nmos::fields::routable_inputs,
+                routable_inputs.empty() ? value::null() : value_from_elements(routable_inputs | boost::adaptors::transformed([](const nmos::channelmapping_id& channelmapping_id)
                 {
                     return channelmapping_id.empty() ? value::null() : value::string(channelmapping_id);
                 }))
