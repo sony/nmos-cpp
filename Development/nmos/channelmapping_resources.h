@@ -40,8 +40,11 @@ namespace nmos
     // hm, be very careful with the order of the arguments!
     nmos::resource make_channelmapping_input(const nmos::channelmapping_id& channelmapping_id, web::json::value properties, web::json::value parent, web::json::value channels, web::json::value caps);
 
-    // construct output resource
+    // construct output resource with entirely unrouted /map/active output endpoint map value
     nmos::resource make_channelmapping_output(const nmos::channelmapping_id& channelmapping_id, const utility::string_t& name, const utility::string_t& description, const nmos::id& source_id, const std::vector<utility::string_t>& channel_labels, const std::vector<nmos::channelmapping_id>& routable_inputs = {});
+
+    // construct output resource
+    nmos::resource make_channelmapping_output(const nmos::channelmapping_id& channelmapping_id, const utility::string_t& name, const utility::string_t& description, const nmos::id& source_id, const std::vector<utility::string_t>& channel_labels, const std::vector<nmos::channelmapping_id>& routable_inputs, const std::vector<std::pair<nmos::channelmapping_id, uint32_t>>& active_map);
 
     // construct output resource
     // hm, be very careful with the order of the arguments!

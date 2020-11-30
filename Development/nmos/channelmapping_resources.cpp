@@ -51,8 +51,21 @@ namespace nmos
         return{ is08_versions::v1_0, types::input, std::move(data), nmos::make_channelmapping_resource_id({ channelmapping_id, types::input }), true };
     }
 
-    // construct output resource
+    // construct output resource with entirely unrouted /map/active output endpoint map value
     nmos::resource make_channelmapping_output(const nmos::channelmapping_id& channelmapping_id, const utility::string_t& name, const utility::string_t& description, const nmos::id& source_id, const std::vector<utility::string_t>& channel_labels, const std::vector<nmos::channelmapping_id>& routable_inputs)
+    {
+        return make_channelmapping_output(
+            channelmapping_id,
+            name,
+            description,
+            source_id,
+            channel_labels,
+            routable_inputs,
+            std::vector<std::pair<nmos::channelmapping_id, uint32_t>>(channel_labels.size()));
+    }
+
+    // construct output resource
+    nmos::resource make_channelmapping_output(const nmos::channelmapping_id& channelmapping_id, const utility::string_t& name, const utility::string_t& description, const nmos::id& source_id, const std::vector<utility::string_t>& channel_labels, const std::vector<nmos::channelmapping_id>& routable_inputs, const std::vector<std::pair<nmos::channelmapping_id, uint32_t>>& active_map)
     {
         return make_channelmapping_output(
             channelmapping_id,
@@ -60,7 +73,7 @@ namespace nmos
             make_channelmapping_output_source_id(source_id),
             make_channelmapping_channels(channel_labels),
             make_channelmapping_output_caps(routable_inputs),
-            make_channelmapping_active_map(std::vector<std::pair<nmos::channelmapping_id, uint32_t>>(channel_labels.size())));
+            make_channelmapping_active_map(active_map));
     }
 
     // construct output resource
