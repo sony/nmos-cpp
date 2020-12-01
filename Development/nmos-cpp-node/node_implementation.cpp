@@ -522,22 +522,19 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         const auto id = U("input") + stri;
 
-        const auto name = U("AES-") + stri;
-        const auto description = U("AES digital audio input ") + stri;
+        const auto name = U("IP Input ") + stri;
+        const auto description = U("SMPTE 2110-30 IP Input ") + stri;
 
-        const bool reordering = index % 2 != 0;
-        const unsigned int block_size = index < 2 ? 1 : 2; // block sizes 1 for first two inputs and 2 for the others
-
-        // no parent
-        const auto parent = std::pair<nmos::id, nmos::type>();
+        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::audio, index);
+        const auto parent = std::pair<nmos::id, nmos::type>(receiver_id, nmos::types::receiver);
 
         const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
         {
             return impl::channels_repeat[index % (int)impl::channels_repeat.size()].label;
         }));
 
-        // for now, use default input capabilities
-        auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
+        // use default input capabilities to indicate no constraints
+        auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels);
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
     }
 
@@ -559,13 +556,124 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             return impl::channels_repeat[index % (int)impl::channels_repeat.size()].label;
         }));
 
-        // for a weird example, allow all inputs up to the same-numbered one to be routed
-        auto routable_inputs = boost::copy_range<std::vector<nmos::channelmapping_id>>(
-            boost::irange(0, index + 1) | boost::adaptors::transformed([&](const int& input_index)
-            {
-                return U("input") + utility::conversions::details::to_string_t(input_index);
-            })
-        );
+        // omit routable inputs to indicate no restrictions
+        auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels);
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
+    }
+
+    // example non-IP audio input
+    const int input_block_size = 8;
+    const int input_block_count = 8;
+    {
+        const auto id = U("inputA");
+
+        const auto name = U("MADI Input A");
+        const auto description = U("MADI Input A");
+
+        // non-IP audio inputs have no parent
+        const auto parent = std::pair<nmos::id, nmos::type>();
+
+        const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(boost::irange(0, input_block_size * input_block_count) | boost::adaptors::transformed([](const int& index)
+        {
+            return nmos::channel_symbols::Undefined(1 + index).name;
+        }));
+
+        // some example constraints; this input's channels can only be used in blocks and the channels cannot be reordered within each block
+        const auto reordering = false;
+        const auto block_size = input_block_size;
+
+        auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
+    }
+
+    // example outputs to some audio gizmo
+
+    {
+        const auto id = U("outputX");
+
+        const auto name = U("Gizmo Output X");
+        const auto description = U("Gizmo Output X");
+
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, how_many);
+
+        const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(boost::irange(0, input_block_size) | boost::adaptors::transformed([](const int& index)
+        {
+            return nmos::channel_symbols::Undefined(1 + index).name;
+        }));
+
+        // some example constraints; only allow inputs from the example non-IP audio input
+        auto routable_inputs = std::vector<nmos::channelmapping_id>{ U("inputA") };
+        // do not allow unrouted channels
+
+        // start with a valid active map
+        auto active_map = boost::copy_range<std::vector<std::pair<nmos::channelmapping_id, uint32_t>>>(boost::irange(0, input_block_size) | boost::adaptors::transformed([](const int& index)
+        {
+            return std::pair<nmos::channelmapping_id, uint32_t>{ U("inputA"), index };
+        }));
+
+        auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels, routable_inputs, active_map);
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
+    }
+
+    // example source for some audio gizmo
+
+    {
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, how_many);
+
+        const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, input_block_size) | boost::adaptors::transformed([](const int& index)
+        {
+            return nmos::channel{ {}, nmos::channel_symbols::Undefined(1 + index) };
+        }));
+
+        auto source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
+        impl::set_label(source, impl::ports::audio, how_many);
+
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+    }
+
+    // example inputs from some audio gizmo
+
+    {
+        const auto id = U("inputX");
+
+        const auto name = U("Gizmo Input X");
+        const auto description = U("Gizmo Input X");
+
+        // the audio gizmo is re-entrant
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, how_many);
+        const auto parent = std::pair<nmos::id, nmos::type>(source_id, nmos::types::source);
+
+        const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(boost::irange(0, input_block_size) | boost::adaptors::transformed([](const int& index)
+        {
+            return nmos::channel_symbols::Undefined(1 + index).name;
+        }));
+
+        // this input is weird, it is block-based but allows reordering of channels within a block
+        const auto reordering = true;
+        const auto block_size = input_block_size;
+
+        auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
+    }
+
+    // example non-ST 2110-30 audio output
+
+    {
+        const auto id = U("outputB");
+
+        const auto name = U("AES Output B");
+        const auto description = U("AES Output B");
+
+        // non-IP audio outputs have no sourceid
+        const auto source_id = nmos::id();
+
+        const auto channel_labels = boost::copy_range<std::vector<utility::string_t>>(nmos::channel_symbols::ST | boost::adaptors::transformed([](const nmos::channel_symbol& symbol)
+        {
+            return symbol.name;
+        }));
+
+        // allow inputs from the audio gizmo
+        auto routable_inputs = std::vector<nmos::channelmapping_id>{ U("inputX") };
         // allow unrouted channels
         routable_inputs.push_back({});
 
