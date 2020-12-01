@@ -650,7 +650,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         // this input is weird, it is block-based but allows reordering of channels within a block
         const auto reordering = true;
-        const auto block_size = input_block_size;
+        const auto block_size = 2;
 
         auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
