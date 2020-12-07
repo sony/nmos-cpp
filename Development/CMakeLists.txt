@@ -47,6 +47,15 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     )
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    # Conan packages usually don't include PDB files so suppress the resulting warning
+    set_target_properties(
+        nmos-cpp-node
+        PROPERTIES
+        LINK_FLAGS "/ignore:4099"
+        )
+endif()
+
 # nmos-cpp-registry executable
 
 set(NMOS_CPP_REGISTRY_SOURCES
@@ -72,6 +81,15 @@ target_link_libraries(
     ${PLATFORM_LIBS}
     ${Boost_LIBRARIES}
     )
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    # Conan packages usually don't include PDB files so suppress the resulting warning
+    set_target_properties(
+        nmos-cpp-registry
+        PROPERTIES
+        LINK_FLAGS "/ignore:4099"
+        )
+endif()
 
 # nmos-cpp-test executable
 include (${NMOS_CPP_DIR}/cmake/NmosCppTest.cmake)
