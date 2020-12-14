@@ -14,8 +14,16 @@ namespace nmos
     {
         web::http::experimental::listener::api_router make_mdns_api(nmos::base_model& model, slog::base_gate& gate);
 
+        // Patterns allow access to variable parts of the route path, both to allow common implementation
+        // for similar endpoints, and to simplify consistent logging of values from URLs
         namespace patterns
         {
+            // DNS-SD API
+            const route_pattern mdns_api = make_route_pattern(U("api"), U("x-dns-sd"));
+
+            // A domain name (regex could be better!)
+            const nmos::route_pattern mdnsBrowseDomain = make_route_pattern(U("mdnsBrowseDomain"), U("[^_/][^/]+"));
+
             // A service type combines a registered service identifier (name) and the protocol, each prepended by an underscore ('_') and separated by a dot ('.')
             // For example, the IS-04 service types are "_nmos-query._tcp", "_nmos-registration._tcp" and "_nmos-node._tcp".
             // SRVNAME = *(1*DIGIT [HYPHEN]) ALPHA *([HYPHEN] ALNUM)
@@ -25,7 +33,7 @@ namespace nmos
             const nmos::route_pattern mdnsServiceType = make_route_pattern(U("mdnsServiceType"), U("_([0-9]{1,}-?)*[A-Za-z](-?[A-Za-z0-9])*\\._(tcp|udp|sctp|dccp)"));
 
             // A service (instance) name (regex could be better!)
-            const nmos::route_pattern mdnsServiceName = make_route_pattern(U("mdnsServiceName"), U(".{1,63}"));
+            const nmos::route_pattern mdnsServiceName = make_route_pattern(U("mdnsServiceName"), U("[^/]{1,63}"));
         }
     }
 }

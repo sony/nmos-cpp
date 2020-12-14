@@ -19,7 +19,7 @@ namespace nmos
                 if (!interface.domain.empty())
                     return interface.domain;
             }
-            return U("local");
+            return U("local.");
         }
 
         // Get default (system) host name as an FQDN (fully qualified domain name)

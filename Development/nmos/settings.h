@@ -51,7 +51,7 @@ namespace nmos
         // host_name [registry, node]: the fully-qualified host name for which to advertise services, also used to construct response headers and fields in the data model
         const web::json::field_as_string_or host_name{ U("host_name"), U("") }; // when omitted or an empty string, the default is used
 
-        // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (specify "local" to explictly select mDNS)
+        // domain [registry, node]: the domain on which to browse for services or an empty string to use the default domain (specify "local." to explictly select mDNS)
         const web::json::field_as_string_or domain{ U("domain"), U("") };
 
         // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model
