@@ -113,12 +113,19 @@ namespace web
                 // "The recommended method of calling the GetAdaptersAddresses function is to pre-allocate a 15KB working buffer
                 // pointed to by the AdapterAddresses parameter."
                 // See https://docs.microsoft.com/en-gb/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses
-                std::array<unsigned char, 15000> working_buffer; // default-initialized
-                PIP_ADAPTER_ADDRESSES adapter_addresses = (PIP_ADAPTER_ADDRESSES)&working_buffer[0];
+                std::vector<unsigned char> working_buffer(15000); // default-initialized
+                PIP_ADAPTER_ADDRESSES adapter_addresses = (PIP_ADAPTER_ADDRESSES)working_buffer.data();
                 ULONG size = (ULONG)working_buffer.size();
 
                 auto family = ipv6 ? AF_UNSPEC : AF_INET;
                 ULONG rv = ::GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+                if (rv == ERROR_BUFFER_OVERFLOW)
+                {
+                    // the buffer was not big enough. Make the buffer bigger and try again
+                    working_buffer.resize(size);
+                    adapter_addresses = (PIP_ADAPTER_ADDRESSES)working_buffer.data();
+                    rv = ::GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+                }
                 if (rv != ERROR_SUCCESS) return interfaces;
 
                 for (PIP_ADAPTER_ADDRESSES adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next)
