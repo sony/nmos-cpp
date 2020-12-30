@@ -1,5 +1,7 @@
 #include "nmos/settings.h"
 
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/algorithm/find_first_of.hpp>
 #include <boost/version.hpp>
 #include "cpprest/host_utils.h"
 #include "cpprest/version.h"
@@ -32,6 +34,7 @@ namespace nmos
         // if not already present in the specified settings
         void insert_default_settings(settings& settings, bool registry)
         {
+            // note that web::json::insert won't overwrite an existing entry, just like std::map::insert, etc.
             web::json::insert(settings, std::make_pair(nmos::experimental::fields::seed_id, web::json::value::string(nmos::make_id())));
 
             // if the "host_addresses" setting was omitted, add all the interface addresses
@@ -149,17 +152,29 @@ namespace nmos
         }
         if (0 != (mode & nmos::experimental::href_mode_addresses))
         {
-            const auto& addresses = nmos::fields::host_addresses(settings);
-            if (0 == addresses.size())
+            const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
+            const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+            for (const auto& host_address : host_addresses)
             {
-                hosts.push_back(nmos::fields::host_address(settings));
-            }
-            else for (const auto& address : addresses)
-            {
-                hosts.push_back(address.as_string());
+                hosts.push_back(host_address.as_string());
             }
         }
         return hosts;
+    }
+
+    // Get interfaces corresponding to the host addresses in the settings
+    std::vector<web::hosts::experimental::host_interface> get_host_interfaces(const settings& settings)
+    {
+        // filter network interfaces to those that correspond to the specified host_addresses
+        const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
+        const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
+        return boost::copy_range<std::vector<web::hosts::experimental::host_interface>>(web::hosts::experimental::host_interfaces() | boost::adaptors::filtered([&](const web::hosts::experimental::host_interface& interface)
+        {
+            return interface.addresses.end() != boost::range::find_first_of(interface.addresses, host_addresses, [](const utility::string_t& interface_address, const web::json::value& host_address)
+            {
+                return interface_address == host_address.as_string();
+            });
+        }));
     }
 
     // Get a summary of the build configuration, including versions of dependencies

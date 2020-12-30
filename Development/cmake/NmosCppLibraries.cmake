@@ -8,6 +8,7 @@ endif()
 # detail headers
 
 set(DETAIL_HEADERS
+    ${NMOS_CPP_DIR}/detail/default_init_allocator.h
     ${NMOS_CPP_DIR}/detail/for_each_reversed.h
     ${NMOS_CPP_DIR}/detail/pragma_warnings.h
     ${NMOS_CPP_DIR}/detail/private_access.h

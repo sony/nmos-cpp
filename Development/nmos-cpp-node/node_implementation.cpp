@@ -1,6 +1,5 @@
 #include "node_implementation.h"
 
-#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
@@ -178,13 +177,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     const auto clocks = web::json::value_of({ nmos::make_internal_clock(nmos::clock_names::clk0) });
     // filter network interfaces to those that correspond to the specified host_addresses
-    const auto host_interfaces = boost::copy_range<std::vector<web::hosts::experimental::host_interface>>(web::hosts::experimental::host_interfaces() | boost::adaptors::filtered([&](const web::hosts::experimental::host_interface& interface)
-    {
-        return interface.addresses.end() != boost::range::find_first_of(interface.addresses, nmos::fields::host_addresses(model.settings), [](const utility::string_t& interface_address, const web::json::value& host_address)
-        {
-            return interface_address == host_address.as_string();
-        });
-    }));
+    const auto host_interfaces = nmos::get_host_interfaces(model.settings);
     const auto interfaces = nmos::experimental::node_interfaces(host_interfaces);
 
     // example node

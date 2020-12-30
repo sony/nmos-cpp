@@ -13,6 +13,7 @@
 #endif
 #ifdef HOST_UTILS_USE_GETADAPTERSADDRESSES
 #include <iphlpapi.h>
+#include "detail/default_init_allocator.h"
 
 #pragma comment(lib, "IPHLPAPI.lib")
 #endif
@@ -113,13 +114,28 @@ namespace web
                 // "The recommended method of calling the GetAdaptersAddresses function is to pre-allocate a 15KB working buffer
                 // pointed to by the AdapterAddresses parameter."
                 // See https://docs.microsoft.com/en-gb/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses
-                std::array<unsigned char, 15000> working_buffer; // default-initialized
-                PIP_ADAPTER_ADDRESSES adapter_addresses = (PIP_ADAPTER_ADDRESSES)&working_buffer[0];
+                const auto initial_buffer_size = 15000;
+                const auto max_tries = 3;
+
+                std::vector<unsigned char, detail::default_init_allocator<unsigned char>> working_buffer(initial_buffer_size); // default-initialized
+                PIP_ADAPTER_ADDRESSES adapter_addresses = (PIP_ADAPTER_ADDRESSES)working_buffer.data();
                 ULONG size = (ULONG)working_buffer.size();
 
-                auto family = ipv6 ? AF_UNSPEC : AF_INET;
-                ULONG rv = ::GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
-                if (rv != ERROR_SUCCESS) return interfaces;
+                const auto family = ipv6 ? AF_UNSPEC : AF_INET;
+
+                for (auto tries = 0;;)
+                {
+                    ULONG rv = ::GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+                    ++tries;
+                    if (rv == ERROR_SUCCESS) break;
+                    else if (rv == ERROR_BUFFER_OVERFLOW && tries < max_tries)
+                    {
+                        // the buffer was not big enough; make it bigger and try again
+                        working_buffer.resize(size);
+                        adapter_addresses = (PIP_ADAPTER_ADDRESSES)working_buffer.data();
+                    }
+                    else return interfaces; // empty
+                }
 
                 for (PIP_ADAPTER_ADDRESSES adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next)
                 {

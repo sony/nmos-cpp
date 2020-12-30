@@ -3,6 +3,17 @@
 
 #include "cpprest/json_utils.h"
 
+namespace web
+{
+    namespace hosts
+    {
+        namespace experimental
+        {
+            struct host_interface;
+        }
+    }
+}
+
 // Configuration settings and defaults
 namespace nmos
 {
@@ -25,6 +36,9 @@ namespace nmos
 
     // Get host name and/or addresses to be used to construct host and URL fields in the data model
     std::vector<utility::string_t> get_hosts(const settings& settings);
+
+    // Get interfaces corresponding to the host addresses in the settings
+    std::vector<web::hosts::experimental::host_interface> get_host_interfaces(const settings& settings);
 
     // Get a summary of the build configuration, including versions of dependencies
     utility::string_t get_build_settings_info();
