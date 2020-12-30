@@ -158,7 +158,6 @@ jobs:
         echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
         echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH" >> $GITHUB_ENV
     
-    
     - name: ubuntu setup
       if: runner.os == 'Linux'
       run: |
@@ -168,6 +167,8 @@ jobs:
         ip address
         # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+        # re-synchronize the package index
+        sudo apt-get update -q
     
     - name: ubuntu mdns install
       if: runner.os == 'Linux' && matrix.install_mdns == true
@@ -519,7 +520,6 @@ jobs:
         echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
         echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH" >> $GITHUB_ENV
     
-    
     - name: ubuntu setup
       if: runner.os == 'Linux'
       run: |
@@ -529,6 +529,8 @@ jobs:
         ip address
         # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
         echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+        # re-synchronize the package index
+        sudo apt-get update -q
     
     - name: ubuntu mdns install
       if: runner.os == 'Linux' && matrix.install_mdns == true
