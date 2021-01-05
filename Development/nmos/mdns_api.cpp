@@ -5,20 +5,13 @@
 #include "mdns/service_discovery.h"
 #include "nmos/api_utils.h"
 #include "nmos/mdns.h"
+#include "nmos/mdns_versions.h"
 #include "nmos/model.h"
 
 namespace nmos
 {
     namespace experimental
     {
-        namespace mdns_versions
-        {
-            const api_version v1_0{ 1, 0 };
-            const api_version v1_1{ 1, 1 };
-
-            const std::set<api_version> all{ nmos::experimental::mdns_versions::v1_0, nmos::experimental::mdns_versions::v1_1 };
-        }
-
         web::http::experimental::listener::api_router make_unmounted_mdns_api(nmos::base_model& model, slog::base_gate& gate);
 
         web::http::experimental::listener::api_router make_mdns_api(nmos::base_model& model, slog::base_gate& gate)

@@ -2,6 +2,7 @@
 
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
+#include "nmos/mdns_versions.h"
 #include "nmos/node_interfaces.h"
 #include "nmos/node_resource.h"
 
@@ -21,18 +22,24 @@ namespace nmos
 
             // This is the experimental REST API for DNS Service Discovery (DNS-SD)
 
-            auto mdns_uri = web::uri_builder()
-                .set_scheme(nmos::http_scheme(settings))
-                .set_port(nmos::experimental::fields::mdns_port(settings))
-                .set_path(U("/x-dns-sd/v1.0"));
-            auto type = U("urn:x-dns-sd/v1.0");
-
-            for (const auto& host : hosts)
+            if (0 <= nmos::experimental::fields::mdns_port(settings))
             {
-                web::json::push_back(data[U("services")], value_of({
-                    { U("href"), mdns_uri.set_host(host).to_uri().to_string() },
-                    { U("type"), type }
-                }));
+                for (const auto& version : nmos::experimental::mdns_versions::all)
+                {
+                    auto mdns_uri = web::uri_builder()
+                        .set_scheme(nmos::http_scheme(settings))
+                        .set_port(nmos::experimental::fields::mdns_port(settings))
+                        .set_path(U("/x-dns-sd/") + make_api_version(version));
+                    auto type = U("urn:x-dns-sd/") + make_api_version(version);
+
+                    for (const auto& host : hosts)
+                    {
+                        web::json::push_back(data[U("services")], value_of({
+                            { U("href"), mdns_uri.set_host(host).to_uri().to_string() },
+                            { U("type"), type }
+                        }));
+                    }
+                }
             }
 
             resource.health = health_forever;
