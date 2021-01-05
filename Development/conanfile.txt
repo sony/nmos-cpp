@@ -12,3 +12,8 @@ lib, *.dylib* -> ./lib
 
 [options]
 boost:shared=False
+# see FIND_BOOST_COMPONENTS in cmake/NmosCppCommon.cmake for the short list of Boost components that are required
+# however since it's hard to specify a platform/compiler-specific list to install/build with the Conan recipe
+# instead exclude those that cause problems, e.g. since https://github.com/conan-io/conan-center-index/pull/3999
+# first up, Boost.Fiber on macOS; see https://stackoverflow.com/a/62445652
+boost:without_fiber=True
