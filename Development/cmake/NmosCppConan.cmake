@@ -7,11 +7,7 @@ endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 set (NMOS_CPP_CONAN_BUILD_LIBS "missing" CACHE STRING "Semicolon separated list of libraries to build rather than download")
-set (NMOS_CPP_CONAN_CPPREST_FORCE_ASIO OFF CACHE BOOL "Force C++ REST SDK to use ASIO on Windows")
-set (NMOS_CPP_CONAN_OPTIONS "")
-if (NMOS_CPP_CONAN_CPPREST_FORCE_ASIO)
-    set (NMOS_CPP_CONAN_OPTIONS "${NMOS_CPP_CONAN_OPTIONS};cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio")
-endif()
+set (NMOS_CPP_CONAN_OPTIONS "" CACHE STRING "Semicolon separated list of Conan options")
 
 if(CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     # e.g. Visual Studio

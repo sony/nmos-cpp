@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio:${{ matrix.force_cpprest_asio }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -48,7 +48,7 @@ jobs:
             echo "BUILD_NAME=${{ matrix.os }}_avahi" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "::set-env name=BUILD_NAME::${{ matrix.os }}_asio"
+          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
         else
           echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
         fi

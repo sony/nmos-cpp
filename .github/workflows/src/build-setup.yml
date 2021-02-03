@@ -166,5 +166,6 @@
 
 - name: force cpprest asio
   if: matrix.force_cpprest_asio == true
+  shell: bash
   run: |
-    echo "::set-env name=CMAKE_EXTRA_ARGS::${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_CPPREST_FORCE_ASIO:BOOL=\"1\""
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
