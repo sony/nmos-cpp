@@ -164,3 +164,8 @@
     # install Name Service Cache Daemon to speed up repeated mDNS name discovery
     sudo apt-get install -f nscd
 
+- name: force cpprest asio
+  if: matrix.force_cpprest_asio == true
+  shell: bash
+  run: |
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV

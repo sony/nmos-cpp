@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -20,13 +20,20 @@ jobs:
         os: [ubuntu-18.04, macos-latest, windows-latest]
         install_mdns: [false]
         use_conan: [true]
+        force_cpprest_asio: [false]
         include:
           - install_mdns: true
             use_conan: true
+            force_cpprest_asio: false
             os: ubuntu-18.04
           - install_mdns: true
             use_conan: true
+            force_cpprest_asio: false
             os: ubuntu-20.04
+          - install_mdns: false
+            use_conan: true
+            force_cpprest_asio: true
+            os: windows-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -40,6 +47,8 @@ jobs:
           else
             echo "BUILD_NAME=${{ matrix.os }}_avahi" >> $GITHUB_ENV
           fi
+        elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
+          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
         else
           echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
         fi
