@@ -2,7 +2,7 @@
 
 The following instructions describe how to set up and build this software.
 
-The test platforms are Windows with Visual Studio 2017 and 2019, and Linux with GCC 4.8 and GCC 7.4.
+The test platforms include Windows with Visual Studio 2017 and 2019, and Linux with GCC 4.8 and GCC 7.5.
 Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) are also provided.
 
 Notes:
@@ -25,8 +25,8 @@ Notes:
         - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If not using Conan
      - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-       - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_72_0`` to match the suggested ``b2`` command
-       - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_72_0/x64/lib`` to match the suggested ``b2`` command
+       - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0`` to match the suggested ``b2`` command
+       - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0/x64/lib`` to match the suggested ``b2`` command
      - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
        - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed cpprestsdk-config.cmake
        - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
@@ -57,8 +57,8 @@ cmake .. ^
   -G "Visual Studio 15 2017 Win64" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_72_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_72_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_75_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_75_0/x64/lib" ^
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
 ```
 
