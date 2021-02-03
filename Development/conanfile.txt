@@ -1,7 +1,7 @@
 [requires]
-boost/1.72.0#a3d1b595a0cd14c72650a096f6dfa8c3
-openssl/1.1.1g
-cpprestsdk/2.10.16#3361bd7f24f63474b688d217da6687ac
+boost/1.75.0
+openssl/1.1.1i
+cpprestsdk/2.10.17
 websocketpp/0.8.2
 zlib/1.2.11
 
