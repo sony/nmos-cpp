@@ -213,7 +213,7 @@ namespace nmos
     {
         sdp_parameters::mux_t params;
         // "Senders shall comply with either the Narrow Linear Senders (Type NL) requirements, or the Wide Senders (Type W) requirements."
-        // See SMPTE 2022-8:2019 Section 6 Network Compatibility and Transmission Traffic Shape Models
+        // See SMPTE ST 2022-8:2019 Section 6 Network Compatibility and Transmission Traffic Shape Models
         params.tp = sdp::type_parameters::type_NL;
 
         // Payload type 98 is "High bit rate media transport / 27-MHz Clock"
@@ -620,7 +620,7 @@ namespace nmos
         }, keep_order);
 
         auto format_specific_parameters = value_of({});
-        if (!sdp_params.video.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.video.tp.name));
+        if (!sdp_params.mux.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.mux.tp.name));
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -1156,9 +1156,9 @@ namespace nmos
             const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
             if (format_specific_parameters.end() != tp)
             {
-                sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
+                sdp_params.mux.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
             }
-            // else sdp_params.video.tp = {};
+            // else sdp_params.mux.tp = {};
 
             // don't examine optional parameter "TROFF"
         }
@@ -1215,7 +1215,7 @@ namespace nmos
 
             { nmos::caps::transport::packet_time, [](const sdp_parameters& sdp, const value& con) { return nmos::match_number_constraint(sdp.audio.packet_time, con); } },
             // hm, nmos::caps::transport::max_packet_time
-            { nmos::caps::transport::st2110_21_sender_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.tp.name, con); } }
+            { nmos::caps::transport::st2110_21_sender_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.tp.name, con) || nmos::match_string_constraint(sdp.mux.tp.name, con); } }
         };
 
         const auto& constraints = constraint_set.as_object();
