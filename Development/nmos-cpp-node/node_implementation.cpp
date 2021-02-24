@@ -6,6 +6,7 @@
 #include <boost/range/algorithm/find_if.hpp>
 #include <boost/range/algorithm_ext/push_back.hpp>
 #include <boost/range/irange.hpp>
+#include <boost/range/join.hpp>
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "cpprest/host_utils.h"
 #ifdef HAVE_LLDP
@@ -84,6 +85,8 @@ namespace impl
         const port audio{ U("a") };
         // video/smpte291
         const port data{ U("d") };
+        // video/SMPTE2022-6
+        const port mux{ U("m") };
 
         // example measurement event
         const port temperature{ U("t") };
@@ -94,9 +97,9 @@ namespace impl
         // example number/enum event
         const port catcall{ U("c") };
 
-        const std::vector<port> rtp{ video, audio, data };
+        const std::vector<port> rtp{ video, audio, data, mux };
         const std::vector<port> ws{ temperature, burn, nonsense, catcall };
-        const std::vector<port> all{ video, audio, data, temperature, burn, nonsense, catcall };
+        const std::vector<port> all{ boost::copy_range<std::vector<port>>(boost::range::join(rtp, ws)) };
     }
 
     const std::vector<nmos::channel> channels_repeat{
@@ -247,6 +250,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
             }
+            else if (impl::ports::mux == port)
+            {
+                source = nmos::make_mux_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+            }
             impl::set_label(source, port, index);
 
             nmos::resource flow;
@@ -276,6 +283,12 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 nmos::did_sdid timecode{ 0x60, 0x60 };
                 flow = nmos::make_sdianc_data_flow(flow_id, source_id, device_id, { timecode }, model.settings);
+                // add optional grain_rate
+                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
+            }
+            else if (impl::ports::mux == port)
+            {
+                flow = nmos::make_mux_flow(flow_id, source_id, device_id, model.settings);
                 // add optional grain_rate
                 flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
             }
@@ -359,6 +372,17 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             else if (impl::ports::data == port)
             {
                 receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                // add an example constraint set; these should be completed fully!
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                    value_of({
+                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) }
+                    })
+                });
+                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+            }
+            else if (impl::ports::mux == port)
+            {
+                receiver = nmos::make_mux_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
