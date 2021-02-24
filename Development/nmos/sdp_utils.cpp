@@ -619,7 +619,7 @@ namespace nmos
             }, keep_order) }
         }, keep_order);
 
-        auto format_specific_parameters = value_of({});
+        auto format_specific_parameters = value::array();
         if (!sdp_params.mux.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.mux.tp.name));
 
         // a=fmtp:<format> <format specific parameters>
