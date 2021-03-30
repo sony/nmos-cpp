@@ -103,7 +103,7 @@ namespace nmos
         const web::json::field_as_string registry_address{ U("registry_address") };
 
         // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
-        const web::json::field_as_string_or registry_version{ U("registry_version"), U("v1.2") };
+        const web::json::field_as_string_or registry_version{ U("registry_version"), U("v1.3") };
 
         // port numbers [registry, node]: ports to which clients should connect for each API
 
