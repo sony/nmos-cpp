@@ -308,7 +308,19 @@ namespace web
 
                             try
                             {
-                                server.init_asio();
+                                // either initialise or restart the io_service
+                                if (0 == &server.get_io_service())
+                                {
+                                    server.init_asio();
+                                }
+                                else
+                                {
+#if BOOST_VERSION >= 106600
+                                    server.get_io_service().restart();
+#else
+                                    server.get_io_service().reset();
+#endif
+                                }
                                 server.start_perpetual();
                                 // hmm, is one thread enough?
                                 thread = std::thread(&server_t::run, &server);

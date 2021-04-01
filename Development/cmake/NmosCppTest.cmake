@@ -25,6 +25,7 @@ set(NMOS_CPP_TEST_CPPREST_TEST_SOURCES
     ${NMOS_CPP_DIR}/cpprest/test/json_utils_test.cpp
     ${NMOS_CPP_DIR}/cpprest/test/json_visit_test.cpp
     ${NMOS_CPP_DIR}/cpprest/test/regex_utils_test.cpp
+    ${NMOS_CPP_DIR}/cpprest/test/ws_listener_test.cpp
     )
 set(NMOS_CPP_TEST_CPPREST_TEST_HEADERS
     )
