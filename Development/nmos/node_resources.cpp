@@ -107,7 +107,7 @@ namespace nmos
 
         if (0 <= nmos::experimental::fields::manifest_port(settings))
         {
-            // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/master/device-control-types/manifest-base.md
+            // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/device-control-types/manifest-base.md
             // and nmos::experimental::make_manifest_api_manifest
             auto manifest_uri = web::uri_builder()
                 .set_scheme(nmos::http_scheme(settings))

@@ -775,7 +775,7 @@ namespace nmos
 
         // "The 'receiver_id' key MUST be set to `null` in all cases except where a unicast push-based Sender is configured to transmit to an NMOS Receiver, and the 'active' key is set to 'true'."
         // "The 'sender_id' key MUST be set to `null` in all cases except where the Receiver is currently configured to receive from an NMOS Sender, and the 'active' key is set to 'true'.
-        // See https://github.com/amwa-tv/nmos-discovery-registration/blob/v1.2.2/docs/4.3.%20Behaviour%20-%20Nodes.md#api-resources
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.2/docs/4.3.%20Behaviour%20-%20Nodes.md#api-resources
         const auto ci = active && !connected_id.empty() ? value::string(connected_id) : value::null();
 
         // "When the 'active' parameters of a Sender or Receiver are modified, or when a re-activation of the same parameters

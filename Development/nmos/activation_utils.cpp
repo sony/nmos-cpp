@@ -93,8 +93,8 @@ namespace nmos
                 activation[nmos::fields::mode] = value::null();
 
                 // Each of these fields "returns to null [...] when the resource is unlocked by setting the activation mode to null."
-                // See https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
-                // and https://github.com/amwa-tv/nmos-device-connection-management/blob/v1.1/APIs/schemas/activation-response-schema.json
+                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
+                // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/activation-response-schema.json
                 activation[nmos::fields::requested_time] = value::null();
                 activation[nmos::fields::activation_time] = value::null();
 
