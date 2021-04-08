@@ -1187,7 +1187,7 @@ namespace nmos
         if (!nmos::caps::meta::enabled(constraint_set)) return false;
 
         // NMOS Parameter Registers - Capabilities register
-        // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/capabilities/capabilities/README.md
+        // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md
         static const std::map<utility::string_t, std::function<bool(const sdp_parameters& sdp, const value& con)>> match_constraints
         {
             // General Constraints

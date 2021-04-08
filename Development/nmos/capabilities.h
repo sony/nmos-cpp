@@ -41,7 +41,7 @@ namespace nmos
     bool match_rational_constraint(const nmos::rational& value, const web::json::value& constraint);
 
     // NMOS Parameter Registers - Capabilities register
-    // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/capabilities/capabilities/README.md
+    // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md
     namespace caps
     {
         namespace meta
