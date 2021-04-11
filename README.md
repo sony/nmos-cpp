@@ -12,6 +12,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
+- [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
 
 For more information about AMWA, NMOS and the Networked Media Incubator, please refer to <http://amwa.tv/>.
 
@@ -105,6 +106,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for BCP-004-01 Receiver Capabilities
 - Switched CI testing to run the nmos-cpp applications and the AMWA NMOS Testing Tool with secure communication (TLS) enabled, as per BCP-003-01
 - Added support for the IS-08 Channel Mapping API
 - JT-NM Tested 03/20 badge
