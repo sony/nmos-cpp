@@ -289,6 +289,7 @@ namespace web
                     public:
                         explicit websocket_listener_wspp(web::uri address, websocket_listener_config config)
                             : websocket_listener_impl(std::move(address), std::move(config))
+                            , init(false)
                         {
                             // since we cannot set the callback function before the server constructor we can't get log message from that
                             server.get_alog().set_log_handler(configuration().get_log_callback());
@@ -309,9 +310,10 @@ namespace web
                             try
                             {
                                 // either initialise or restart the io_service
-                                if (0 == &server.get_io_service())
+                                if (!init)
                                 {
                                     server.init_asio();
+                                    init = true;
                                 }
                                 else
                                 {
@@ -635,6 +637,7 @@ namespace web
                         server_t server;
                         connections_t connections;
                         std::mutex mutex;
+                        bool init; // flag to identify whether to initialise or restart the io_service
                     };
 
                     std::unique_ptr<websocket_listener_impl> make_websocket_listener_impl(web::uri&& address, websocket_listener_config&& config)
