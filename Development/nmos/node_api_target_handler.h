@@ -1,6 +1,7 @@
 #ifndef NMOS_NODE_API_TARGET_HANDLER_H
 #define NMOS_NODE_API_TARGET_HANDLER_H
 
+#include "nmos/certificate_handlers.h"
 #include "nmos/connection_api.h"
 
 namespace web
@@ -25,18 +26,18 @@ namespace nmos
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser and the specified validator
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged);
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_cacert_handler load_cacert, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged);
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    inline node_api_target_handler make_node_api_target_handler(nmos::node_model& model, transport_file_parser parse_transport_file)
+    inline node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_cacert_handler load_cacert, transport_file_parser parse_transport_file)
     {
-        return make_node_api_target_handler(model, parse_transport_file, {});
+        return make_node_api_target_handler(model, load_cacert, parse_transport_file, {});
     }
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the default transport file parser
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model);
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_cacert_handler load_cacert);
 }
 
 #endif

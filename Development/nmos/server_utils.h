@@ -3,16 +3,17 @@
 
 #include "cpprest/http_listener.h" // forward declaration of web::http::experimental::listener::http_listener_config
 #include "cpprest/ws_listener.h" // forward declaration of web::websockets::experimental::listener::websocket_listener_config
+#include "nmos/certificate_handlers.h"
 #include "nmos/settings.h"
 
 // Utility types, constants and functions for implementing NMOS REST API servers
 namespace nmos
 {
     // construct listener config based on settings
-    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings);
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, load_cert_handler load_rsa, load_cert_handler load_ecdsa, load_dh_param_handler load_dh_param);
 
     // construct listener config based on settings
-    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings);
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, load_cert_handler load_rsa, load_cert_handler load_ecdsa, load_dh_param_handler load_dh_param);
 
     namespace experimental
     {

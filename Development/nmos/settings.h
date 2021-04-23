@@ -259,7 +259,7 @@ namespace nmos
             // when true, CA root certificates must also be configured
             const web::json::field_as_bool_or client_secure{ U("client_secure"), false };
 
-            // ca_certificate_file [registry, node]: full path of certification authorities file in PEM format
+            // (deprecated) ca_certificate_file [registry, node]: full path of certification authorities file in PEM format
             // on Windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
             // the trusted root CA certificates must also be imported into the certificate store
             const web::json::field_as_string_or ca_certificate_file{ U("ca_certificate_file"), U("") };
@@ -269,10 +269,10 @@ namespace nmos
             // when true, server certificates etc. must also be configured
             const web::json::field_as_bool_or server_secure{ U("server_secure"), false };
 
-            // private_key_files [registry, node]: full paths of private key files in PEM format
+            // (deprecated) private_key_files [registry, node]: full paths of private key files in PEM format
             const web::json::field_as_value_or private_key_files{ U("private_key_files"), web::json::value::array() };
 
-            // certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
+            // (deprecated) certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
             // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
             // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
             // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
@@ -281,7 +281,7 @@ namespace nmos
             // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)
             const web::json::field_as_bool_or validate_certificates{ U("validate_certificates"), true };
 
-            // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
+            // (deprecated) dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
             const web::json::field_as_string_or dh_param_file{ U("dh_param_file"), U("") };
 
             // system_interval_min/system_interval_max [node]: used to poll for System API changes; default is about one hour

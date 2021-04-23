@@ -5,6 +5,7 @@
 #include "nmos/process_utils.h"
 #include "nmos/registry_server.h"
 #include "nmos/server.h"
+#include "registry_implementation.h"
 
 int main(int argc, char* argv[])
 {
@@ -89,9 +90,13 @@ int main(int argc, char* argv[])
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Build settings: " << nmos::get_build_settings_info();
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Initial settings: " << registry_model.settings.serialize();
 
+        // Set up the callbacks between the registry server and the underlying implementation
+
+        auto registry_implementation = make_registry_implementation(registry_model, gate);
+
         // Set up the registry server
 
-        auto registry_server = nmos::experimental::make_registry_server(registry_model, log_model, gate);
+        auto registry_server = nmos::experimental::make_registry_server(registry_model, registry_implementation, log_model, gate);
 
         if (!nmos::experimental::fields::http_trace(registry_model.settings))
         {

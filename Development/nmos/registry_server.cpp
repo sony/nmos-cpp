@@ -29,7 +29,7 @@ namespace nmos
     {
         // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-09 System API
         // and the experimental DNS-SD Browsing API, Logging API and Settings API, according to the specified data models
-        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::registry_implementation registry_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using
 
@@ -105,7 +105,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(registry_model.settings);
+            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_implementation.load_rsa, registry_implementation.load_ecdsa, registry_implementation.load_dh_param);
 
             for (auto& api_router : registry_server.api_routers)
             {
@@ -118,7 +118,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings);
+            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_implementation.load_rsa, registry_implementation.load_ecdsa, registry_implementation.load_dh_param);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : registry_server.ws_handlers)
@@ -141,6 +141,11 @@ namespace nmos
             });
 
             return registry_server;
+        }
+
+        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::load_cert_handler load_rsa, nmos::load_cert_handler load_ecdsa, nmos::load_dh_param_handler load_dh_param, nmos::load_cacert_handler load_cacert, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        {
+            return make_registry_server(registry_model, registry_implementation().on_load_rsa(std::move(load_rsa)).on_load_ecdsa(std::move(load_ecdsa)).on_load_dh_param(std::move(load_dh_param)).on_load_cacert(std::move(load_cacert)), log_model, gate);
         }
     }
 

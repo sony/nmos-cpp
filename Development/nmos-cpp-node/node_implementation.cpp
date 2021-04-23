@@ -72,6 +72,14 @@ namespace impl
 
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+
+        // rsa: full path of private key file in PEM format and full path of server chain certificate in PEM format and must be sorted
+        // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+        const web::json::field_as_value_or rsa{ U("rsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
+
+        // ecdsa: full path of private key file in PEM format and full path of server chain certificate file in PEM format and must be sorted
+        // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+        const web::json::field_as_value_or ecdsa{ U("ecdsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
     }
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
@@ -243,7 +251,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 {
                     return impl::channels_repeat[index % (int)impl::channels_repeat.size()];
                 }));
-                    
+
                 source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
             }
             else if (impl::ports::data == port)
@@ -766,6 +774,116 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     events.wait();
 }
 
+// Example callback to load RSA key and chain certificate
+nmos::load_cert_handler make_node_implementation_load_rsa_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example load the RSA key and chain certificate from files for the caller
+    if (model.settings.has_field(impl::fields::rsa))
+    {
+        const auto& rsa = impl::fields::rsa(model.settings);
+        const auto private_key_file = utility::us2s(rsa.at(U("private_key_file")).as_string());
+        const auto certificate_chain_file = utility::us2s(rsa.at(U("certificate_chain_file")).as_string());
+
+        return[&, private_key_file, certificate_chain_file]()
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load RSA key and chain certificate";
+
+            std::ifstream pkey_file(private_key_file);
+            std::stringstream pkey;
+            pkey << pkey_file.rdbuf();
+
+            std::ifstream cert_chain_file(certificate_chain_file);
+            std::stringstream cert;
+            cert << cert_chain_file.rdbuf();
+
+            return std::pair<utility::string_t, utility::string_t>(utility::s2us(pkey.str()), utility::s2us(cert.str()));
+        };
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+// Example callback to load ECDSA key and chain certificate
+nmos::load_cert_handler make_node_implementation_load_ecdsa_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example load the ECDSA key and chain certificate from files for the caller
+    if (model.settings.has_field(impl::fields::ecdsa))
+    {
+        const auto& ecdsa = impl::fields::ecdsa(model.settings);
+        const auto private_key_file = utility::us2s(ecdsa.at(U("private_key_file")).as_string());
+        const auto certificate_chain_file = utility::us2s(ecdsa.at(U("certificate_chain_file")).as_string());
+
+        return[&, private_key_file, certificate_chain_file]()
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load ECDSA key and chain certificate";
+
+            std::ifstream pkey_file(private_key_file);
+            std::stringstream pkey;
+            pkey << pkey_file.rdbuf();
+
+            std::ifstream cert_chain_file(certificate_chain_file);
+            std::stringstream cert;
+            cert << cert_chain_file.rdbuf();
+
+            return std::pair<utility::string_t, utility::string_t>(utility::s2us(pkey.str()), utility::s2us(cert.str()));
+        };
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+// Example callback to load dh parameters
+nmos::load_dh_param_handler make_node_implementation_load_dh_param_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example load the dh parameters from file for the caller
+    if (model.settings.has_field(nmos::experimental::fields::dh_param_file))
+    {
+        const auto dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(model.settings));
+
+        return[&, dh_param_file]()
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load dh parameters";
+
+            std::ifstream dh_file(dh_param_file);
+            std::stringstream dh_param;
+            dh_param << dh_file.rdbuf();
+            return utility::s2us(dh_param.str());
+        };
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+// Example callback to load Root CA certificate
+nmos::load_cacert_handler make_node_implementation_load_cacert_handler(nmos::node_model& model, slog::base_gate& gate)
+{
+    // this example load the Root CA certificate from file for the caller
+    if (model.settings.has_field(nmos::experimental::fields::ca_certificate_file))
+    {
+        const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(model.settings));
+
+        return [&, ca_certificate_file]()
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load root cacert";
+
+            std::ifstream ca_file(ca_certificate_file);
+            std::stringstream cacerts;
+            cacerts << ca_file.rdbuf();
+            return utility::s2us(cacerts.str());
+        };
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 // Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
 nmos::system_global_handler make_node_implementation_system_global_handler(nmos::node_model& model, slog::base_gate& gate)
 {
@@ -959,12 +1077,13 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
 // Example Connection API activation callback to perform application-specific operations to complete activation
 nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
 {
+    auto handle_load_caccert = make_node_implementation_load_cacert_handler(model, gate);
     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
     // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
     // connection errors are reflected into the /active endpoint by setting master_enable to false
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
-    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, handle_close, model.settings, gate);
+    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_caccert, handle_events_ws_message, handle_close, model.settings, gate);
 
     return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
@@ -1043,6 +1162,10 @@ namespace impl
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
     return nmos::experimental::node_implementation()
+        .on_load_rsa(make_node_implementation_load_rsa_handler(model, gate))
+        .on_load_ecdsa(make_node_implementation_load_ecdsa_handler(model, gate))
+        .on_load_dh_param(make_node_implementation_load_dh_param_handler(model, gate))
+        .on_load_cacert(make_node_implementation_load_cacert_handler(model, gate))
         .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
         .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
         .on_parse_transport_file(make_node_implementation_transport_file_parser()) // may be omitted if the default is sufficient

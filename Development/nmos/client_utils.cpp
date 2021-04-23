@@ -28,15 +28,29 @@ namespace nmos
     {
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
-        inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings)
+        inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings, load_cacert_handler load_cacert)
         {
+            // ca_certificate_file is deprecated
             const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(settings));
-            return [ca_certificate_file](boost::asio::ssl::context& ctx)
+
+            return [ca_certificate_file, load_cacert](boost::asio::ssl::context& ctx)
             {
                 try
                 {
                     ctx.set_options(nmos::details::ssl_context_options);
-                    ctx.load_verify_file(ca_certificate_file);
+
+                    if (load_cacert)
+                    {
+                        const auto cacert = utility::us2s(load_cacert());
+                        ctx.add_certificate_authority(boost::asio::buffer(cacert.data(), cacert.size()));
+                    }
+                    else
+                    {
+                        // deprecated
+
+                        ctx.load_verify_file(ca_certificate_file);
+                    }
+
                     set_cipher_list(ctx, nmos::details::ssl_cipher_list);
                 }
                 catch (const boost::system::system_error& e)
@@ -50,14 +64,14 @@ namespace nmos
 
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted, e.g. request timeout
-    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings)
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_cacert_handler load_cacert)
     {
         web::http::client::http_client_config config;
         const auto proxy = proxy_uri(settings);
         if (!proxy.is_empty()) config.set_proxy(proxy);
         config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) && !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings));
+        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings, load_cacert));
 #endif
 
         return config;
@@ -65,14 +79,14 @@ namespace nmos
 
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted
-    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings)
+    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_cacert_handler load_cacert)
     {
         web::websockets::client::websocket_client_config config;
         const auto proxy = proxy_uri(settings);
         if (!proxy.is_empty()) config.set_proxy(proxy);
         config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings));
+        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_cacert));
 #endif
 
         return config;
