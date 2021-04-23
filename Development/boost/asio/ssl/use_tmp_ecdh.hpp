@@ -117,7 +117,7 @@ BOOST_ASIO_SYNC_OP_VOID use_tmp_ecdh(boost::asio::ssl::context& ctx,
 {
     ::ERR_clear_error();
 
-    bio_cleanup bio = { ::BIO_new_mem_buf(const_cast<void*>(certificate.data()), static_cast<int>(certificate.size())) };
+    bio_cleanup bio = { ::BIO_new_mem_buf(static_cast<const void*>(boost::asio::buffer_cast<const unsigned char*>(certificate)), static_cast<int>(boost::asio::buffer_size(certificate))) };
     if (bio.p)
     {
         return do_use_tmp_ecdh(ctx, bio.p, ec);
