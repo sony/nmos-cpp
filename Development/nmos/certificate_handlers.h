@@ -14,7 +14,8 @@ namespace nmos
     // this callback should not throw exceptions
     typedef std::function<std::pair<utility::string_t, utility::string_t>()> load_cert_handler;
 
-    // callback when requesting dh parameters
+    // callback to supply Diffie-Hellman parameters for ephemeral key exchange support
+    // see e.g. https://wiki.openssl.org/index.php/Diffie-Hellman_parameters
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_dh_param_handler;
 }
