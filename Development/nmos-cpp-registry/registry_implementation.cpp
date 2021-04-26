@@ -16,13 +16,22 @@ namespace impl
     // custom settings for the example registry implementation
     namespace fields
     {
-        // rsa: full path of RSA private key file in PEM format and full path of server certificate chain in PEM format, which must be sorted
+        // private_key_file: full path of private key file in PEM format
+        const web::json::field_as_string_or private_key_file{ U("private_key_file"), U("") };
+
+        // certificate_chain_file: full path of server certificate chain file in PEM format, which must be sorted
         // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
-        const web::json::field_as_value_or rsa{ U("rsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
+        const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
+
+        // rsa: full path of RSA private key file in PEM format and full path of server certificate chain file in PEM format, which must be sorted
+        // The RSA object like { "private_key_file": "server-rsa-key.pem", "certificate_chain_file": "server-rsa-chain.pem"}
+        // See private_key_file and certificate_chain_file above
+        const web::json::field_as_value rsa{ U("rsa") };
 
         // ecdsa: full path of ECDSA private key file in PEM format and full path of server certificate chain file in PEM format, which must be sorted
-        // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
-        const web::json::field_as_value_or ecdsa{ U("ecdsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
+        // The ECDSA object like { "private_key_file": "server-ecdsa-key.pem, "certificate_chain_file": "server-ecdsa-chain.pem"}
+        // See private_key_file and certificate_chain_file above
+        const web::json::field_as_value ecdsa{ U("ecdsa") };
     }
 }
 
@@ -33,8 +42,8 @@ nmos::load_cert_handler make_registry_implementation_load_rsa_handler(nmos::regi
     if (model.settings.has_field(impl::fields::rsa))
     {
         const auto& rsa = impl::fields::rsa(model.settings);
-        const auto private_key_file = utility::us2s(rsa.at(U("private_key_file")).as_string());
-        const auto certificate_chain_file = utility::us2s(rsa.at(U("certificate_chain_file")).as_string());
+        const auto private_key_file = utility::us2s(impl::fields::private_key_file(rsa));
+        const auto certificate_chain_file = utility::us2s(impl::fields::certificate_chain_file(rsa));
 
         return[&, private_key_file, certificate_chain_file]()
         {
@@ -64,8 +73,8 @@ nmos::load_cert_handler make_registry_implementation_load_ecdsa_handler(nmos::re
     if (model.settings.has_field(impl::fields::ecdsa))
     {
         const auto& ecdsa = impl::fields::ecdsa(model.settings);
-        const auto private_key_file = utility::us2s(ecdsa.at(U("private_key_file")).as_string());
-        const auto certificate_chain_file = utility::us2s(ecdsa.at(U("certificate_chain_file")).as_string());
+        const auto private_key_file = utility::us2s(impl::fields::private_key_file(ecdsa));
+        const auto certificate_chain_file = utility::us2s(impl::fields::certificate_chain_file(ecdsa));
 
         return[&, private_key_file, certificate_chain_file]()
         {
