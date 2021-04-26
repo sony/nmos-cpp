@@ -4,7 +4,7 @@
 #include "nmos/registry_server.h"
 #include "nmos/slog.h"
 
-// example node implementation details
+// example registry implementation details
 namespace impl
 {
     // custom logging category for the example node implementation thread
