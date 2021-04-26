@@ -11,6 +11,9 @@ namespace nmos
     struct node_model;
 
     // this handler can be used to (un)subscribe IS-07 Events WebSocket receivers with the specified handlers, when they are activated
+    nmos::connection_activation_handler make_connection_events_websocket_activation_handler(events_ws_message_handler message_handler, events_ws_close_handler close_handler, const nmos::settings& settings, slog::base_gate& gate);
+
+    // this handler can be used to (un)subscribe IS-07 Events WebSocket receivers with the specified handlers, when they are activated
     nmos::connection_activation_handler make_connection_events_websocket_activation_handler(load_cacert_handler load_cacert, events_ws_message_handler message_handler, events_ws_close_handler close_handler, const nmos::settings& settings, slog::base_gate& gate);
 
     inline nmos::connection_activation_handler make_connection_events_websocket_activation_handler(load_cacert_handler load_cacert, events_ws_message_handler message_handler, const nmos::settings& settings, slog::base_gate& gate)
