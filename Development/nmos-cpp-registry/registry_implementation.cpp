@@ -13,7 +13,7 @@ namespace impl
         const nmos::category registry_implementation{ "registry_implementation" };
     }
 
-    // custom settings for the example node implementation
+    // custom settings for the example registry implementation
     namespace fields
     {
         // rsa: full path of private key file in PEM format and full path of server chain certificate in PEM format and must be sorted
