@@ -7,7 +7,7 @@
 // example registry implementation details
 namespace impl
 {
-    // custom logging category for the example node implementation thread
+    // custom logging category for the example registry implementation thread
     namespace categories
     {
         const nmos::category registry_implementation{ "registry_implementation" };
