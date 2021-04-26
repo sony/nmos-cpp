@@ -846,7 +846,7 @@ nmos::load_dh_param_handler make_node_implementation_load_dh_param_handler(nmos:
 
         return[&, dh_param_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load dh parameters";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load DH parameters";
 
             std::ifstream dh_file(dh_param_file);
             std::stringstream dh_param;

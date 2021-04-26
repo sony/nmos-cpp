@@ -98,7 +98,7 @@ nmos::load_dh_param_handler make_registry_implementation_load_dh_param_handler(n
 
         return[&, dh_param_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::registry_implementation) << "Load dh parameters";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::registry_implementation) << "Load DH parameters";
 
             std::ifstream dh_file(dh_param_file);
             std::stringstream dh_param;
