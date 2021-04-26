@@ -130,7 +130,7 @@ BOOST_ASIO_SYNC_OP_VOID use_tmp_ecdh(boost::asio::ssl::context& ctx,
 }
 
 inline
-void use_tmp_ecdh(boost::asio::ssl::context& ctx, const const_buffer& certificate)
+void use_tmp_ecdh(boost::asio::ssl::context& ctx, const boost::asio::const_buffer& certificate)
 {
     boost::system::error_code ec;
     use_tmp_ecdh(ctx, certificate, ec);
