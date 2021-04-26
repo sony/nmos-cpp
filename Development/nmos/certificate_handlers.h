@@ -6,7 +6,7 @@
 
 namespace nmos
 {
-    // callback when requesting root ca certificate
+    // callback to supply trusted root CA certificate
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_cacert_handler;
 
