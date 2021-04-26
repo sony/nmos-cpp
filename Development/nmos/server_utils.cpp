@@ -42,7 +42,7 @@ namespace nmos
                         const auto cert = utility::us2s(ecdsa.second);
                         if (0 == cert.size())
                         {
-                            throw ExceptionType({}, "Missing ECDSA chain certificate");
+                            throw ExceptionType({}, "Missing ECDSA certificate chain");
                         }
                         ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
                         ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
@@ -62,7 +62,7 @@ namespace nmos
                         const auto cert = utility::us2s(rsa.second);
                         if (0 == cert.size())
                         {
-                            throw ExceptionType({}, "Missing RSA chain certificate");
+                            throw ExceptionType({}, "Missing RSA certificate chain");
                         }
                         ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
                         ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));

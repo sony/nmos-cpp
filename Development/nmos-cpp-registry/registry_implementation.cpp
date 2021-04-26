@@ -16,20 +16,20 @@ namespace impl
     // custom settings for the example registry implementation
     namespace fields
     {
-        // rsa: full path of private key file in PEM format and full path of server chain certificate in PEM format and must be sorted
+        // rsa: full path of RSA private key file in PEM format and full path of server certificate chain in PEM format, which must be sorted
         // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         const web::json::field_as_value_or rsa{ U("rsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
 
-        // ecdsa: full path of private key file in PEM format and full path of server chain certificate file in PEM format and must be sorted
+        // ecdsa: full path of ECDSA private key file in PEM format and full path of server certificate chain file in PEM format, which must be sorted
         // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         const web::json::field_as_value_or ecdsa{ U("ecdsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
     }
 }
 
-// Example callback to load RSA key and chain certificate
+// Example callback to load RSA key and certificate chain
 nmos::load_cert_handler make_registry_implementation_load_rsa_handler(nmos::registry_model& model, slog::base_gate& gate)
 {
-    // this example load the RSA key and chain certificate from files for the caller
+    // this example loads the RSA key and certificate chain from files for the caller
     if (model.settings.has_field(impl::fields::rsa))
     {
         const auto& rsa = impl::fields::rsa(model.settings);
@@ -38,7 +38,7 @@ nmos::load_cert_handler make_registry_implementation_load_rsa_handler(nmos::regi
 
         return[&, private_key_file, certificate_chain_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::registry_implementation) << "Load RSA key and chain certificate";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::registry_implementation) << "Load RSA key and certificate chain";
 
             std::ifstream pkey_file(private_key_file);
             std::stringstream pkey;
@@ -57,10 +57,10 @@ nmos::load_cert_handler make_registry_implementation_load_rsa_handler(nmos::regi
     }
 }
 
-// Example callback to load ECDSA key and chain certificate
+// Example callback to load ECDSA key and certificate chain
 nmos::load_cert_handler make_registry_implementation_load_ecdsa_handler(nmos::registry_model& model, slog::base_gate& gate)
 {
-    // this example load the ECDSA key and chain certificate from files for the caller
+    // this example loads the ECDSA key and certificate chain from files for the caller
     if (model.settings.has_field(impl::fields::ecdsa))
     {
         const auto& ecdsa = impl::fields::ecdsa(model.settings);
@@ -69,7 +69,7 @@ nmos::load_cert_handler make_registry_implementation_load_ecdsa_handler(nmos::re
 
         return[&, private_key_file, certificate_chain_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::registry_implementation) << "Load ECDSA key and chain certificate";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::registry_implementation) << "Load ECDSA key and certificate chain";
 
             std::ifstream pkey_file(private_key_file);
             std::stringstream pkey;
@@ -88,10 +88,10 @@ nmos::load_cert_handler make_registry_implementation_load_ecdsa_handler(nmos::re
     }
 }
 
-// Example callback to load dh parameters
+// Example callback to load Diffie-Hellman parameters for ephemeral key exchange support
 nmos::load_dh_param_handler make_registry_implementation_load_dh_param_handler(nmos::registry_model& model, slog::base_gate& gate)
 {
-    // this example load the dh parameters from file for the caller
+    // this example loads the DH parameters from file for the caller
     if (model.settings.has_field(nmos::experimental::fields::dh_param_file))
     {
         const auto dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(model.settings));
@@ -115,7 +115,7 @@ nmos::load_dh_param_handler make_registry_implementation_load_dh_param_handler(n
 // Example callback to load Root CA certificate
 nmos::load_cacert_handler make_registry_implementation_load_cacert_handler(nmos::registry_model& model, slog::base_gate& gate)
 {
-    // this example load the Root CA certificate from file for the caller
+    // this example loads the Root CA certificate from file for the caller
     if (model.settings.has_field(nmos::experimental::fields::ca_certificate_file))
     {
         const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(model.settings));

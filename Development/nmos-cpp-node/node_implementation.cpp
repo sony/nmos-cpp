@@ -786,7 +786,7 @@ nmos::load_cert_handler make_node_implementation_load_rsa_handler(nmos::node_mod
 
         return[&, private_key_file, certificate_chain_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load RSA key and chain certificate";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load RSA key and certificate chain";
 
             std::ifstream pkey_file(private_key_file);
             std::stringstream pkey;
@@ -805,10 +805,10 @@ nmos::load_cert_handler make_node_implementation_load_rsa_handler(nmos::node_mod
     }
 }
 
-// Example callback to load ECDSA key and chain certificate
+// Example callback to load ECDSA key and certificate chain
 nmos::load_cert_handler make_node_implementation_load_ecdsa_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    // this example load the ECDSA key and chain certificate from files for the caller
+    // this example loads the ECDSA key and certificate chain from files for the caller
     if (model.settings.has_field(impl::fields::ecdsa))
     {
         const auto& ecdsa = impl::fields::ecdsa(model.settings);
@@ -817,7 +817,7 @@ nmos::load_cert_handler make_node_implementation_load_ecdsa_handler(nmos::node_m
 
         return[&, private_key_file, certificate_chain_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load ECDSA key and chain certificate";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load ECDSA key and certificate chain";
 
             std::ifstream pkey_file(private_key_file);
             std::stringstream pkey;
@@ -863,7 +863,7 @@ nmos::load_dh_param_handler make_node_implementation_load_dh_param_handler(nmos:
 // Example callback to load Root CA certificate
 nmos::load_cacert_handler make_node_implementation_load_cacert_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    // this example load the Root CA certificate from file for the caller
+    // this example loads the Root CA certificate from file for the caller
     if (model.settings.has_field(nmos::experimental::fields::ca_certificate_file))
     {
         const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(model.settings));
