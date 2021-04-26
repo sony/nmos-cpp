@@ -777,7 +777,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 // Example callback to load RSA key and certificate chain
 nmos::load_cert_handler make_node_implementation_load_rsa_handler(nmos::node_model& model, slog::base_gate& gate)
 {
-    // this example load the RSA key and chain certificate from files for the caller
+    // this example loads the RSA key and certificate chain from files for the caller
     if (model.settings.has_field(impl::fields::rsa))
     {
         const auto& rsa = impl::fields::rsa(model.settings);
