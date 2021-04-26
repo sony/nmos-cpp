@@ -836,7 +836,7 @@ nmos::load_cert_handler make_node_implementation_load_ecdsa_handler(nmos::node_m
     }
 }
 
-// Example callback to load dh parameters
+// Example callback to load Diffie-Hellman parameters for ephemeral key exchange support
 nmos::load_dh_param_handler make_node_implementation_load_dh_param_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example load the dh parameters from file for the caller
