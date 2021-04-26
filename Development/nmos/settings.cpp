@@ -168,7 +168,8 @@ namespace nmos
         // filter network interfaces to those that correspond to the specified host_addresses
         const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
         const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
-        return boost::copy_range<std::vector<web::hosts::experimental::host_interface>>(web::hosts::experimental::host_interfaces() | boost::adaptors::filtered([&](const web::hosts::experimental::host_interface& interface)
+        return boost::copy_range<std::vector<web::hosts::experimental::host_interface>>(web::hosts::experimental::host_interfaces()
+        | boost::adaptors::filtered([&](const web::hosts::experimental::host_interface& interface)
         {
             return interface.addresses.end() != boost::range::find_first_of(interface.addresses, host_addresses, [](const utility::string_t& interface_address, const web::json::value& host_address)
             {
@@ -176,6 +177,8 @@ namespace nmos
             });
         }));
     }
+
+
 
     // Get a summary of the build configuration, including versions of dependencies
     utility::string_t get_build_settings_info()

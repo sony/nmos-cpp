@@ -40,6 +40,8 @@ namespace nmos
     // Get interfaces corresponding to the host addresses in the settings
     std::vector<web::hosts::experimental::host_interface> get_host_interfaces(const settings& settings);
 
+
+
     // Get a summary of the build configuration, including versions of dependencies
     utility::string_t get_build_settings_info();
 
@@ -71,6 +73,21 @@ namespace nmos
         // host_address/host_addresses [registry, node]: IP addresses used to construct response headers (e.g. 'Link' or 'Location'), and host and URL fields in the data model
         const web::json::field_as_string_or host_address{ U("host_address"), U("127.0.0.1") };
         const web::json::field_as_array host_addresses{ U("host_addresses") };
+
+        //DPB mods for remote node in sdp creation and make receiver
+        const web::json::field_as_bool_or OGC_remote{ U("OGC_remote"), false };
+        const web::json::field_as_string_or remote_address{ U("remote_address"), U("10.0.0.1") };
+        const web::json::field_as_array remote_addresses{ U("remote_addresses") };
+        const web::json::field_as_string_or remote_int_name{ U("remote_int_name"), U("enp0s1") };
+        const web::json::field_as_string_or remote_mac{ U("remote_mac"), U("00-00-00-00-00-01") };
+        const web::json::field_as_string_or conf_label{ U("label"), U("") };
+        const web::json::field_as_string_or conf_transport{ U("transport"), U("") };
+        const web::json::field_as_string_or conf_payload{ U("payload"), U("") };
+        const web::json::field_as_string_or conf_format{ U("format"), U("") };
+        const web::json::field_as_string_or dst_ip{ U("dst_ip"), U("") };
+        const web::json::field_as_integer_or dst_port{ U("dst_port"), 5000 };
+        const web::json::field_as_array senders_list{ U("senders_list")};
+        const web::json::field_as_array receivers_list{ U("receivers_list")};
 
         // is04_versions [registry, node]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
         const web::json::field_as_array is04_versions{ U("is04_versions") }; // when omitted, nmos::is04_versions::all is used
@@ -191,6 +208,7 @@ namespace nmos
         // Field accessors simplify access to fields in the settings and provide the compile-time defaults
         namespace fields
         {
+
             // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
             const web::json::field_as_string seed_id{ U("seed_id") };
 

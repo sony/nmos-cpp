@@ -235,6 +235,23 @@ namespace nmos
             const web::json::field<nmos::api_version> api_version{ U("api_version") };
         }
     }
+
+    /* DPB
+    //Fields for individual sender & receiver config
+    namespace configs
+    {
+        // Field accessors simplify access to fields in json messages
+        namespace fields
+        {
+            // DPB experimental configs { "conf_label": "Camera 1", "conf_transport":"rtp_ucast", "conf_payload": "video", "conf_format": "coded" }, ....]}
+            //const web::json::field_as_array conf_senders{ U("conf_senders")};
+            const web::json::field_as_string_or conf_label{ U("conf_label"), U("") };
+            const web::json::field_as_string_or conf_transport{ U("conf_transport"), U("") };
+            const web::json::field_as_string_or conf_payload{ U("conf_payload"), U("") };
+            const web::json::field_as_string_or conf_format{ U("conf_format"), U("") };
+        }
+    }
+    */
 }
 
 #endif

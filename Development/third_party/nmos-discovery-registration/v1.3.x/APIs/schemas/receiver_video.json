@@ -35,7 +35,9 @@
                     "enum": [
                       "video/raw",
                       "video/H264",
-                      "video/vc2"
+                      "video/vc2",
+                      "video/H265",
+                      "video/jxsv"
                     ]
                   },
                   {

@@ -24,6 +24,8 @@ namespace nmos
     nmos::resource make_node(const nmos::id& id, const web::json::value& clocks, const web::json::value& interfaces, const nmos::settings& settings);
     nmos::resource make_node(const nmos::id& id, const nmos::settings& settings);
 
+    //DPB
+    nmos::resource make_node_proxy(const nmos::id& id, const web::json::value& clocks, const web::json::value& interfaces, const web::json::value& rem_interfaces, const nmos::settings& settings);
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
     web::json::value make_internal_clock(const nmos::clock_name& clock_name);
 

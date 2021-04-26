@@ -36,7 +36,9 @@
                       "audio/L24",
                       "audio/L20",
                       "audio/L16",
-                      "audio/L8"
+                      "audio/L8",
+                      "audio/AAC",
+                      "audio/MP3"
                     ]
                   },
                   {

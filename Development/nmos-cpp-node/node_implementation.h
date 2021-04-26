@@ -1,5 +1,7 @@
 #ifndef NMOS_CPP_NODE_NODE_IMPLEMENTATION_H
 #define NMOS_CPP_NODE_NODE_IMPLEMENTATION_H
+#define MAX_SENDERS 10
+#define MAX_RECEIVERS 10
 
 namespace slog
 {
@@ -15,6 +17,7 @@ namespace nmos
         struct node_implementation;
     }
 }
+
 
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,

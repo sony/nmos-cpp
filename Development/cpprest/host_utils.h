@@ -30,6 +30,7 @@ namespace web
 
             std::vector<utility::string_t> host_names(const utility::string_t& address);
             std::vector<utility::string_t> host_addresses(const utility::string_t& host_name);
+
         }
     }
 }

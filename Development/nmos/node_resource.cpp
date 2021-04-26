@@ -47,8 +47,55 @@ namespace nmos
 
         data[U("interfaces")] = !web::json::empty(interfaces) ? interfaces : value::array();
 
+
         return{ is04_versions::v1_3, types::node, std::move(data), false };
     }
+
+
+    nmos::resource make_node_proxy(const nmos::id& id, const web::json::value& clocks, const web::json::value& interfaces, const web::json::value& rem_interfaces, const nmos::settings& settings)
+    {
+        using web::json::value;
+        using web::json::value_from_elements;
+        using web::json::value_of;
+
+        auto data = details::make_resource_core(id, settings);
+
+        auto uri = web::uri_builder()
+            .set_scheme(nmos::http_scheme(settings))
+            .set_host(nmos::get_host(settings))
+            .set_port(nmos::fields::node_port(settings))
+            .to_uri();
+
+        data[U("href")] = value::string(uri.to_string());
+        data[U("hostname")] = value::string(nmos::get_host_name(settings));
+        data[U("api")][U("versions")] = value_from_elements(nmos::is04_versions::from_settings(settings) | boost::adaptors::transformed(make_api_version));
+
+        const auto hosts = nmos::get_hosts(settings);
+
+        for (const auto& host : hosts)
+        {
+            web::json::push_back(data[U("api")][U("endpoints")], value_of({
+                { U("host"), host },
+                { U("port"), uri.port() },
+                { U("protocol"), uri.scheme() }
+            }));
+        }
+
+        data[U("caps")] = value::object();
+
+        data[U("services")] = value::array();
+
+        data[U("clocks")] = !web::json::empty(clocks) ? clocks : value::array();
+
+        data[U("interfaces")] = !web::json::empty(interfaces) ? interfaces : value::array();
+
+        //DPB
+        data[U("remote host")] = value::string(nmos::fields::remote_address(settings));
+        data[U("remote interfaces")] = !web::json::empty(rem_interfaces) ? rem_interfaces : value::array();
+
+        return{ is04_versions::v1_3, types::node, std::move(data), false };
+    }
+
 
     nmos::resource make_node(const nmos::id& id, const nmos::settings& settings)
     {

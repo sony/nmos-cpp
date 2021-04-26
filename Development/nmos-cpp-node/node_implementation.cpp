@@ -6,6 +6,11 @@
 #include <boost/range/algorithm/find_if.hpp>
 #include <boost/range/algorithm_ext/push_back.hpp>
 #include <boost/range/irange.hpp>
+//DPB
+#include <iostream>
+#include <string>
+#include <boost/algorithm/string.hpp>
+
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "cpprest/host_utils.h"
 #ifdef HAVE_LLDP
@@ -42,6 +47,7 @@
 // example node implementation details
 namespace impl
 {
+
     // custom logging category for the example node implementation thread
     namespace categories
     {
@@ -52,8 +58,29 @@ namespace impl
     namespace fields
     {
         // how_many: provides for very basic testing of a node with many sub-resources of each type
-        const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
+        const web::json::field_as_integer_or how_many{ U("how_many"), 0 };
 
+        // DPB how_many_senders: mod to provide number of senders
+        const web::json::field_as_integer_or how_many_senders{ U("how_many_senders"), 2 };
+        const web::json::field_as_integer_or how_many_receivers{ U("how_many_receivers"), 2 };
+        // DPB settings for OGC and remote hosts
+        const web::json::field_as_bool_or OGC_remote{ U("OGC_remote"), false };
+        const web::json::field_as_bool_or interlace_mode{ U("interlace_mode"), false };
+        //const web::json::field_as_string_or remote_address{ U("remote_address"), U("10.0.0.1") }; // moved to nmos::fields in settings.h
+        // DPB experimental configs { "conf_label": "Camera 1", "conf_transport":"rtp_ucast", "conf_payload": "video", "conf_format": "coded" }, ....]}
+        //const web::json::field_as_array conf_senders{ U("conf_senders")};
+        const web::json::field_as_string_or conf_label{ U("label"), U("") };
+        const web::json::field_as_string_or conf_transport{ U("transport"), U("") };
+        const web::json::field_as_string_or conf_payload{ U("payload"), U("") };
+        const web::json::field_as_string_or conf_format{ U("format"), U("") };
+        const web::json::field_as_string_or dst_ip{ U("dst_ip"), U("") };
+        const web::json::field_as_integer_or dst_port{ U("dst_port"), 5000 };
+
+        const web::json::field_as_array senders_list{ U("senders_list")};
+        const web::json::field_as_array receivers_list{ U("receivers_list")};
+
+        //const web::json::field_as_array senders_list{ U("senders_list"), web::json::value::array() };
+        //const web::json::field_as_value_or senders_list{ U("senders_list"), web::json::value::array() };
         // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
         // and the equivalent parameter constraint on video receivers
         // the value must be an object like { "numerator": 25, "denominator": 1 }
@@ -147,6 +174,62 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
+    //DPB
+    const auto conf_interlace = impl::fields::interlace_mode(model.settings);
+    // DPB
+    const auto OGC_remote = impl::fields::OGC_remote(model.settings);
+    const auto how_many_senders = impl::fields::how_many_senders(model.settings);
+    const auto how_many_receivers = impl::fields::how_many_receivers(model.settings);
+    //const auto remote_address = nmos::fields::remote_address(model.settings);
+    const auto remote_int_name = nmos::fields::remote_int_name(model.settings);
+    const auto remote_mac = nmos::fields::remote_mac(model.settings);
+    const auto at_least_one_remote_address = web::json::value_of({ web::json::value::string(nmos::fields::remote_address(model.settings)) });
+    const auto& remote_addresses = model.settings.has_field(nmos::fields::remote_addresses) ? nmos::fields::remote_addresses(model.settings) : at_least_one_remote_address.as_array();
+
+    //DPB
+    std::cout << "\nInitial settings: " << model.settings.serialize();
+    //DPB get config for senders
+    printf("\nhow_many_senders: %d \n", how_many_senders);
+    std::string sender_conf_label[MAX_SENDERS];
+    std::string sender_conf_transport[MAX_SENDERS];
+    std::string sender_conf_payload[MAX_SENDERS];
+    std::string sender_conf_format[MAX_SENDERS];
+    std::string sender_dst_ip[MAX_SENDERS];
+    std::string sender_dst_port[MAX_SENDERS];
+    int i = 0;
+    const auto& conf_senders = impl::fields::senders_list(model.settings);
+    for (const auto& conf_sender : conf_senders)
+    {
+      sender_conf_label[i] = impl::fields::conf_label(conf_sender);
+      sender_conf_transport[i]  = impl::fields::conf_transport(conf_sender);
+      sender_conf_payload[i]  = impl::fields::conf_payload(conf_sender);
+      sender_conf_format[i]  = impl::fields::conf_format(conf_sender);
+      sender_dst_ip[i] = impl::fields::dst_ip(conf_sender);
+      sender_dst_port[i] = impl::fields::dst_port(conf_sender);
+      i++;
+    }
+    std::cout << sender_conf_label[0] << " " << sender_conf_transport[0] << " " << sender_conf_payload[0] << " " << sender_conf_format[0] << " " << sender_dst_ip[0] << " " << sender_dst_port[0] <<'\n';
+    std::cout << sender_conf_label[1] << " " << sender_conf_transport[1] << " " << sender_conf_payload[1] << " " << sender_conf_format[1] << " " << sender_dst_ip[1] << " " << sender_dst_port[1] <<'\n';
+
+    printf("\nhow_many_receivers: %d \n", how_many_receivers);
+    std::string receiver_conf_label[MAX_SENDERS];
+    std::string receiver_conf_transport[MAX_SENDERS];
+    std::string receiver_conf_payload[MAX_SENDERS];
+    std::string receiver_conf_format[MAX_SENDERS];
+    i = 0;
+    const auto& conf_receivers = impl::fields::receivers_list(model.settings);
+    for (const auto& conf_receiver : conf_receivers)
+    {
+      receiver_conf_label[i] = impl::fields::conf_label(conf_receiver);
+      receiver_conf_transport[i]  = impl::fields::conf_transport(conf_receiver);
+      receiver_conf_payload[i]  = impl::fields::conf_payload(conf_receiver);
+      receiver_conf_format[i]  = impl::fields::conf_format(conf_receiver);
+      i++;
+    }
+    std::cout << receiver_conf_label[0] << " " << receiver_conf_transport[0] << " " << receiver_conf_payload[0] << " " << receiver_conf_format[0] <<'\n';
+    std::cout << receiver_conf_label[1] << " " << receiver_conf_transport[1] << " " << receiver_conf_payload[1] << " " << receiver_conf_format[1] <<'\n';
+
+
 
     // any delay between updates to the model resources is unnecessary
     // this just serves as a slightly more realistic example!
@@ -177,12 +260,58 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     const auto clocks = web::json::value_of({ nmos::make_internal_clock(nmos::clock_names::clk0) });
     // filter network interfaces to those that correspond to the specified host_addresses
+
+
     const auto host_interfaces = nmos::get_host_interfaces(model.settings);
+
+    //DPB
+    std::cout << "\nhost_interfaces: ";
+    for ( const auto &e : host_interfaces)
+    {
+      std::cout << e.index << " " << e.name << " " << e.physical_address << " ";
+      for (const auto& a : e.addresses)
+      {
+          std::cout << (utility::us2s(a)) << " ";
+      }
+      std::cout << e.domain << " " << std::endl;
+    }
+    std::cout << "\n";
+
+    std::vector<web::hosts::experimental::host_interface> remote_interfaces;
+    remote_interfaces.push_back(web::hosts::experimental::host_interface());
+    remote_interfaces[0].index = 1;
+    remote_interfaces[0].name = remote_int_name;
+    remote_interfaces[0].physical_address = remote_mac;
+    remote_interfaces[0].domain = "remote";
+    //remote_interfaces[0].addresses = remote_addresses.as_string();
+    for (const auto& remote_address : remote_addresses)
+    {
+        remote_interfaces[0].addresses.push_back(remote_address.as_string());
+    }
+    std::cout << "\nremote_interfaces: ";
+    for ( const auto &e : remote_interfaces)
+    {
+      std::cout << e.index << " " << e.name << " " << e.physical_address << " ";
+      for (const auto& a : e.addresses)
+      {
+          std::cout << (utility::us2s(a)) << " ";
+      }
+      std::cout << e.domain << " " << std::endl;
+    }
+    std::cout << "\n";
+
+
     const auto interfaces = nmos::experimental::node_interfaces(host_interfaces);
+
+    //DPB
+    const auto rem_interfaces = nmos::experimental::node_interfaces(remote_interfaces);
+
 
     // example node
     {
-        auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
+        //auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
+        //DPB modified to allow interfaces from remote device separate from nmos node
+        auto node = nmos::make_node_proxy(node_id, clocks, nmos::make_node_interfaces(interfaces), nmos::make_node_interfaces(rem_interfaces), model.settings);
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) return;
     }
 
@@ -208,185 +337,288 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's senders and receivers
     const auto& primary_interface = host_interfaces.front();
     const auto& secondary_interface = host_interfaces.back();
-    const auto interface_names = smpte2022_7
-        ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
-        : std::vector<utility::string_t>{ primary_interface.name };
 
-    // example device
+    //DPB
+    const auto& remote_primary_interface = remote_interfaces.front();
+    const auto& remote_secondary_interface = remote_interfaces.back();
+
+
+    auto interface_names = smpte2022_7
+    ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
+    : std::vector<utility::string_t>{ primary_interface.name };
+
+    // example device,
+    //DPB changed to how many = how many senders and how many receivers
+
     {
-        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
-        if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many));
-        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::all, how_many);
+        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many_senders);
+        if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many_senders));
+
+        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::all, how_many_receivers);
         if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) return;
     }
 
+
+    std::cout << "\nCheck Sender: "<< sender_conf_label[0] << " " << sender_conf_transport[0] << " " << sender_conf_payload[0] << " " << sender_conf_format[0] <<'\n';
+
+    //if (sender_conf_payload[index] == "video")
+    //{
+      //  std::cout << "\nVideo Sender: "<< sender_conf_label[index] << " " << sender_conf_transport[index] << " " << sender_conf_payload[index] << " " << sender_conf_format[index] <<'\n';
+    //}
+
+
+    //DPB modify to create a number of senders based on config.json
     // example sources, flows and senders
-    for (int index = 0; index < how_many; ++index)
+    for (int index = 0; index < how_many_senders; ++index)
     {
-        for (const auto& port : impl::ports::rtp)
+
+        //DPB set RTP paylod type as vide, audio or data
+        auto port = impl::ports::data;
+        if (sender_conf_payload[index] == "video")
+            port = impl::ports::video;
+        else if(sender_conf_payload[index] == "audio")
+            port = impl::ports::audio;
+
+        //DPB set RTP tranport type as rtp_ucast or rtp_mcast
+        auto txcast_type = nmos::transports::rtp_ucast;
+        if (sender_conf_transport[index] == "rtp_mcast")
+            txcast_type = nmos::transports::rtp_mcast;
+
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
+        const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
+        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+
+        nmos::resource source;
+        if (impl::ports::video == port)
         {
-            const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
-            const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
-            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+        }
+        else if (impl::ports::audio == port)
+        {
+            const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
+            {
+                return impl::channels_repeat[index % (int)impl::channels_repeat.size()];
+            }));
 
-            nmos::resource source;
-            if (impl::ports::video == port)
-            {
-                source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
-            }
-            else if (impl::ports::audio == port)
-            {
-                const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
-                {
-                    return impl::channels_repeat[index % (int)impl::channels_repeat.size()];
-                }));
-                    
-                source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
-            }
-            else if (impl::ports::data == port)
-            {
-                source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
-            }
-            impl::set_label(source, port, index);
+            source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
+        }
+        else if (impl::ports::data == port)
+        {
+            source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+        }
+        impl::set_label(source, port, index);
 
-            nmos::resource flow;
-            if (impl::ports::video == port)
-            {
-                // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
-                // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
-                // like-numbered sample rows of the temporally first field."
-                const auto interlace_mode = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
-                    ? nmos::interlace_modes::interlaced_tff
-                    : nmos::interlace_modes::progressive;
-                flow = nmos::make_raw_video_flow(
-                    flow_id, source_id, device_id,
-                    frame_rate,
-                    1920, 1080, interlace_mode,
-                    nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
-                    model.settings
-                );
-            }
-            else if (impl::ports::audio == port)
-            {
-                flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 24, model.settings);
-                // add optional grain_rate
-                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
-            }
-            else if (impl::ports::data == port)
-            {
-                nmos::did_sdid timecode{ 0x60, 0x60 };
-                flow = nmos::make_sdianc_data_flow(flow_id, source_id, device_id, { timecode }, model.settings);
-                // add optional grain_rate
-                flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
-            }
-            impl::set_label(flow, port, index);
+        nmos::resource flow;
+        if (impl::ports::video == port)
+        {
+            // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
+            // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
+            // like-numbered sample rows of the temporally first field."
 
-            // set_transportfile needs to find the matching source and flow for the sender, so insert these first
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+            auto scan_type = nmos::interlace_modes::progressive;
+            if (conf_interlace == true)
+                scan_type = nmos::interlace_modes::interlaced_tff;
 
-            auto sender = nmos::make_sender(sender_id, flow_id, device_id, interface_names, model.settings);
-            impl::set_label(sender, port, index);
-            impl::insert_group_hint(sender, port, index);
+            const auto interlace_mode = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
+                //DPB //? nmos::interlace_modes::interlaced_tff
+                ? scan_type
+                : nmos::interlace_modes::progressive;
+            flow = nmos::make_raw_video_flow(
+                flow_id, source_id, device_id,
+                frame_rate,
+                1920, 1080, interlace_mode,
+                nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
+                model.settings
+            );
 
-            auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
+            std::cout << "\nInterlace: "<< scan_type.name << " " << interlace_mode.name <<'\n';
+
+            //DPB There is an error in the code, where make_coded_video_flow crashes the code. Error in orignal nmos-cpp code
+            /*flow = nmos::make_coded_video_flow(
+                flow_id, source_id, device_id,
+                frame_rate,
+                1920, 1080, interlace_mode,
+                nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::media_types::video_h264,
+                model.settings
+            );*/
+        }
+        else if (impl::ports::audio == port)
+        {
+            flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 24, model.settings);
+            // add optional grain_rate
+            flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
+        }
+        else if (impl::ports::data == port)
+        {
+            nmos::did_sdid timecode{ 0x60, 0x60 };
+            flow = nmos::make_sdianc_data_flow(flow_id, source_id, device_id, { timecode }, model.settings);
+            // add optional grain_rate
+            flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
+        }
+        impl::set_label(flow, port, index);
+
+        // set_transportfile needs to find the matching source and flow for the sender, so insert these first
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+
+        //DPB added selection of ucast or mcast
+        auto sender = nmos::make_sender(sender_id, flow_id, txcast_type, device_id, interface_names, model.settings);
+        impl::set_label(sender, port, index);
+        impl::insert_group_hint(sender, port, index);
+
+
+        auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
             // add some example constraints; these should be completed fully!
+
+        //DPB mods for SDP file remote sender??
+        if (OGC_remote == true)
+        {
             connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
+              { nmos::fields::constraint_enum, value_from_elements(remote_primary_interface.addresses) }
             });
             if (smpte2022_7) connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
+              { nmos::fields::constraint_enum, value_from_elements(remote_secondary_interface.addresses) }
             });
-
-            // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
-            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-            set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
-            nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
-
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
         }
+        else
+        {
+            connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
+              { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
+            });
+            if (smpte2022_7) connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
+              { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
+            });
+        }
+
+        // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
+        connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
+        resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
+        nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+
     }
 
     // example receivers
-    for (int index = 0; index < how_many; ++index)
+    for (int index = 0; index < how_many_receivers; ++index)
     {
-        for (const auto& port : impl::ports::rtp)
+
+        auto port = impl::ports::data;
+        if (receiver_conf_payload[index] == "video")
+            port = impl::ports::video;
+        else if(receiver_conf_payload[index] == "audio")
+            port = impl::ports::audio;
+
+        //DPB set RTP tranport type as rtp_ucast or rtp_mcast
+        auto rxcast_type = nmos::transports::rtp_ucast;
+        if (receiver_conf_transport[index] == "rtp_mcast")
+            rxcast_type = nmos::transports::rtp_mcast;
+
+        //DPB extract receiver coding type.
+        //std::string rx_coding = sender_conf_format[index];
+
+        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+
+        nmos::resource receiver;
+        if (impl::ports::video == port)
         {
-            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+            //DPB changed rtp_mcast to rtp_ucast
+            receiver = nmos::make_video_receiver(receiver_id, device_id, rxcast_type, interface_names, model.settings, index);
+            // add an example constraint set; these should be completed fully!
+            //DPB
+            auto scan_type_name = nmos::interlace_modes::progressive.name;
+            if (conf_interlace == true)
+                scan_type_name = nmos::interlace_modes::interlaced_tff.name;
 
-            nmos::resource receiver;
-            if (impl::ports::video == port)
-            {
-                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
-                // add an example constraint set; these should be completed fully!
-                const auto interlace_modes = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
-                    ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
-                    : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
-                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
-                    value_of({
-                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
-                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
-                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
-                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
-                    })
-                });
-                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
-            }
-            else if (impl::ports::audio == port)
-            {
-                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
-                // add some example constraint sets; these should be completed fully!
-                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
-                    value_of({
-                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, channel_count) },
-                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
-                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
-                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125 }) }
-                    }),
-                    value_of({
-                        { nmos::caps::meta::preference, -1 },
-                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, (std::min)(8, channel_count)) },
-                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
-                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
-                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 1 }) }
-                    })
-                });
-                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
-            }
-            else if (impl::ports::data == port)
-            {
-                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
-                // add an example constraint set; these should be completed fully!
-                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
-                    value_of({
-                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) }
-                    })
-                });
-                receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
-            }
-            impl::set_label(receiver, port, index);
-            impl::insert_group_hint(receiver, port, index);
+            const auto interlace_modes = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
+                //DPB //? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
+                ? std::vector<utility::string_t>{ scan_type_name }
+                : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
+            receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                value_of({
+                    { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
+                    { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+                    { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+                    { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
+                    { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
+                })
+            });
+            receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+        }
+        else if (impl::ports::audio == port)
+        {
+            //DPB changed rtp_mcast to rtp_ucast
+            receiver = nmos::make_audio_receiver(receiver_id, device_id, rxcast_type, interface_names, 24, model.settings, index);
+            // add some example constraint sets; these should be completed fully!
+            receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                value_of({
+                    { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, channel_count) },
+                    { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
+                    { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
+                    { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125 }) }
+                }),
+                value_of({
+                    { nmos::caps::meta::preference, -1 },
+                    { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, (std::min)(8, channel_count)) },
+                    { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
+                    { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
+                    { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 1 }) }
+                })
+            });
+            receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+        }
+        else if (impl::ports::data == port)
+        {
+            receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, rxcast_type, interface_names, model.settings);
+            // add an example constraint set; these should be completed fully!
+            receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                value_of({
+                    { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) }
+                })
+            });
+            receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+        }
+        impl::set_label(receiver, port, index);
+        impl::insert_group_hint(receiver, port, index);
 
-            auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
-            // add some example constraints; these should be completed fully!
+        auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
+        // add some example constraints; these should be completed fully!
+
+        //DPB mods for receiver connection IP
+        if (OGC_remote == true)
+        {
+            connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
+                { nmos::fields::constraint_enum, value_from_elements(remote_primary_interface.addresses) }
+            });
+            //DPB set dst port for receiver
+            //connection_receiver.data[nmos::fields::destination_port] = 6004; auto_rtp hard coded as 5004
+
+            if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
+                { nmos::fields::constraint_enum, value_from_elements(remote_secondary_interface.addresses) }
+            });
+        }
+        else
+        {
             connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
             });
             if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
-
-            resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
         }
+
+
+        resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+
     }
 
     // example event sources, senders, flows
+    //DPB changed back to how many
     for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
     {
         for (const auto& port : impl::ports::ws)
@@ -448,6 +680,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, event_type, model.settings);
             impl::set_label(flow, port, index);
 
+            //DPB added selection of ucast or mcast
             auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
             impl::set_label(sender, port, index);
             impl::insert_group_hint(sender, port, index);
@@ -681,6 +914,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     auto cancellation_source = pplx::cancellation_token_source();
     auto token = cancellation_source.get_token();
+
+    //DPB how_many
     auto events = pplx::do_while([&model, seed_id, how_many, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
@@ -802,14 +1037,16 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings)
 {
     using web::json::value;
-
+    //DPB how many senders
+    const auto how_many = impl::fields::how_many(settings);
+    const auto how_many_senders = impl::fields::how_many_senders(settings);
+    const auto how_many_receivers = impl::fields::how_many_receivers(settings);
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
-    const auto how_many = impl::fields::how_many(settings);
-    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
+    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many_senders);
     const auto ws_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many);
     const auto ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
-    const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::rtp, how_many);
+    const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::rtp, how_many_receivers);
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::ws, how_many);
 
     // although which properties may need to be defaulted depends on the resource type,
@@ -857,23 +1094,32 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
 {
     using web::json::value;
 
+    //DPB
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
-    const auto how_many = impl::fields::how_many(settings);
-    const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, impl::ports::rtp, how_many);
-    const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, impl::ports::rtp, how_many);
-    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
+    //const auto how_many = impl::fields::how_many(settings);
+    const auto how_many_senders = impl::fields::how_many_senders(settings);
+    const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, impl::ports::rtp, how_many_senders);
+    const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, impl::ports::rtp, how_many_senders);
+    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many_senders);
+
+    //DPB
+    int conf_index = 0;
 
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids, settings, conf_index](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile) mutable
     {
         const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
+
         if (rtp_sender_ids.end() != found)
         {
             const auto index = int(found - rtp_sender_ids.begin());
             const auto source_id = rtp_source_ids.at(index);
             const auto flow_id = rtp_flow_ids.at(index);
 
+            std::cout << "\nSenderID: "<< connection_sender.id << " CodeIndex:"  << index << " ConfIndex:" << conf_index<< '\n';
+
+            // DPB Mutex has changed as need an index to sender, model resouurces may not be locked
             // note, model mutex is already locked by the calling thread, so access to node_resources is OK...
             auto node = nmos::find_resource(node_resources, { node_id, nmos::types::node });
             auto source = nmos::find_resource(node_resources, { source_id, nmos::types::source });
@@ -884,16 +1130,32 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
             }
 
             auto sdp_params = nmos::make_sdp_parameters(node->data, source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+
+
             if (sdp_params.audio.channel_count != 0)
             {
                 sdp_params.audio.packet_time = sdp_params.audio.channel_count > 8 ? 0.125 : 1;
             }
 
             auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
-            auto session_description = nmos::make_session_description(sdp_params, transport_params);
+            //auto session_description = nmos::make_session_description(sdp_params, transport_params);
+
+
+            //DPB
+            //std::cout << "\nbefore make_session: "<< settings << "\n ";
+
+
+            //DPB
+            auto session_description = nmos::make_session_description(sdp_params, transport_params, settings, conf_index);
+
             auto sdp = utility::s2us(sdp::make_session_description(session_description));
+
             endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
+
+            conf_index++;
+
         }
+
     };
 }
 

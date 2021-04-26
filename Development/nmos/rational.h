@@ -34,4 +34,5 @@ namespace nmos
     rational parse_rational(const web::json::value& value);
 }
 
+
 #endif

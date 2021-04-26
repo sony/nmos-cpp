@@ -14,6 +14,10 @@
 #include "nmos/json_fields.h"
 #include "nmos/media_type.h"
 #include "nmos/transport.h"
+//DPB
+#include "nmos/model.h"
+#include "nmos-cpp-node/node_implementation.h"
+#include "cpprest/json_utils.h"
 
 namespace nmos
 {
@@ -76,13 +80,19 @@ namespace nmos
             else if (nmos::clock_ref_types::internal == ref_type)
             {
                 const auto& interfaces = nmos::fields::interfaces(node);
+
                 return boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(interface_bindings | boost::adaptors::transformed([&](const web::json::value& interface_binding)
                 {
-                    const auto& interface_name = interface_binding.as_string();
+                    //DPB
+                    //const auto& interface_name = interface_binding.as_string();
                     const auto interface = std::find_if(interfaces.begin(), interfaces.end(), [&](const web::json::value& interface)
                     {
+                        //DPB set to the real local interface bindings, rather than remote, as checked if exists later
+                        const auto& interface_name = nmos::fields::name(interface);
                         return nmos::fields::name(interface) == interface_name;
                     });
+
+                    //DPB removed next line if issues with remote interface or remote_int_name - did not fix problem
                     if (interfaces.end() == interface) throw sdp_creation_error("sender interface not found");
                     return sdp_parameters::ts_refclk_t::local_mac(boost::algorithm::to_upper_copy(nmos::fields::port_id(*interface)));
                 }));
@@ -243,11 +253,14 @@ namespace nmos
         return make_sdp_parameters(node, source, flow, sender, media_stream_ids, bst::nullopt);
     }
 
-    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp)
+    //DPB
+    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp)
     {
         using web::json::value;
         using web::json::value_of;
         using web::json::array;
+        //DPB
+        using web::json::value_from_elements;
 
         // check to ensure enough media_stream_ids for multi-leg transport_params
         if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())
@@ -263,6 +276,25 @@ namespace nmos
 
         const auto& destination_ip = nmos::fields::destination_ip(transport_params.at(0)).as_string();
         const auto address_type_multicast = details::get_address_type_multicast(destination_ip);
+
+
+        //DPB nmos::fields in settings.h
+        std::cout << "\nsettings: "<< settings << "\nConfIndex: " << conf_index << "\n ";
+        const auto sOGC_remote = nmos::fields::OGC_remote(settings);
+        const auto sremote_mac = nmos::fields::remote_mac(settings);
+        const auto& conf_senders = nmos::fields::senders_list(settings);
+        std::string sender_dst_ip = " ";
+        int sender_dst_port = 5000;
+        int i = 0;
+        for (const auto& conf_sender : conf_senders)
+        {
+            if (conf_index == i) {
+                sender_dst_ip  = nmos::fields::dst_ip(conf_sender);
+                sender_dst_port = nmos::fields::dst_port(conf_sender);
+            }
+            i++;
+        }
+        std::cout << "\ndestination: "<< sender_dst_ip << " " << sender_dst_port << "\n ";
 
         auto session_description = value_of({
             // Protocol Version
@@ -313,13 +345,28 @@ namespace nmos
                 ? sdp_params.ts_refclk[leg]
                 : ts_refclk_default;
 
+            //DPB
+            //Substitute a remote mac address and dst port from config.json if in OGC mode
+            auto slocal_mac = ts_refclk.mac_address;
+            auto slocal_port = transport_param.at(nmos::fields::destination_port);
+            auto slocal_ip = nmos::fields::destination_ip(transport_param).as_string();
+            if (sOGC_remote == true)
+            {
+                slocal_mac = sremote_mac;
+                slocal_port = sender_dst_port;
+                slocal_ip = sender_dst_ip;
+            }
+
+            std::cout << "\nConnectio_data: " << sdp::network_types::internet.name  << " " << address_type_multicast.first.name << " " << nmos::fields::destination_ip(transport_param).as_string() << "\n ";
+
             // build media_description
             auto media_description = value_of({
                 // Media
                 // See https://tools.ietf.org/html/rfc4566#section-5.14
                 { sdp::fields::media, value_of({
                     { sdp::fields::media_type, sdp_params.media_type.name },
-                    { sdp::fields::port, transport_param.at(nmos::fields::destination_port) },
+                    //{ sdp::fields::port, transport_param.at(nmos::fields::destination_port) },
+                    { sdp::fields::port, slocal_port },
                     { sdp::fields::protocol, sdp_params.protocol.name },
                     { sdp::fields::formats, value_of({ utility::ostringstreamed(sdp_params.rtpmap.payload_type) }) }
                 }, keep_order) },
@@ -331,13 +378,17 @@ namespace nmos
                         { sdp::fields::network_type, sdp::network_types::internet.name },
                         { sdp::fields::address_type, address_type_multicast.first.name },
                         { sdp::fields::connection_address, sdp::address_types::IP4 == address_type_multicast.first && address_type_multicast.second
-                            ? nmos::fields::destination_ip(transport_param).as_string() + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
-                            : nmos::fields::destination_ip(transport_param).as_string() }
+                            //? nmos::fields::destination_ip(transport_param).as_string() + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
+                            //: nmos::fields::destination_ip(transport_param).as_string() }
+                            ? sender_dst_ip + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
+                            : sender_dst_ip }
                     }, keep_order)
                 }) },
 
-                // Attributes
+                                // Attributes
                 // See https://tools.ietf.org/html/rfc4566#section-5.13
+                //DPB mods to allow remote MAC addresses
+
                 { sdp::fields::attributes, value_of({
                     // a=ts-refclk:ptp=<ptp version>:<ptp gmid>[:<ptp domain>]
                     // a=ts-refclk:ptp=<ptp version>:traceable
@@ -356,7 +407,9 @@ namespace nmos
                             { sdp::fields::ptp_server, ts_refclk.ptp_server }
                         }, keep_order) : sdp::ts_refclk_sources::local_mac == ts_refclk.clock_source ? value_of({
                             { sdp::fields::clock_source, sdp::ts_refclk_sources::local_mac.name },
-                            { sdp::fields::mac_address, ts_refclk.mac_address }
+                            //{ sdp::fields::mac_address, ts_refclk.mac_address }
+                            { sdp::fields::mac_address, slocal_mac}
+                            //{ sdp::fields::mac_address, "00-00-00-00-00-0F" }
                         }, keep_order) : value::null() }
                     }, keep_order),
 
@@ -384,7 +437,8 @@ namespace nmos
                             { sdp::fields::filter_mode, sdp::filter_modes::incl.name },
                             { sdp::fields::network_type, sdp::network_types::internet.name },
                             { sdp::fields::address_types, address_type_multicast.first.name },
-                            { sdp::fields::destination_address, transport_param.at(nmos::fields::destination_ip) },
+                            //DPB //{ sdp::fields::destination_address, transport_param.at(nmos::fields::destination_ip) },
+                            { sdp::fields::destination_address, sender_dst_ip },
                             { sdp::fields::source_addresses, value_of({ transport_param.at(nmos::fields::source_ip) }) }
                         }, keep_order) }
                     }, keep_order)
@@ -463,11 +517,27 @@ namespace nmos
         return session_description;
     }
 
-    static web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index)
     {
         using web::json::value_of;
 
         const bool keep_order = true;
+
+        //DPB Change format from defalt (raw) to the sender_conf_format value. Fualt in code means cannot be done earlier
+        int i = 0;
+        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        const auto& conf_senders = nmos::fields::senders_list(settings);
+        auto sender_conf_format = sdp_params.rtpmap.encoding_name;
+        if (OGC_remote == true)
+        {
+            for (const auto& conf_sender : conf_senders)
+            {
+                if (conf_index == i)
+                  sender_conf_format  = nmos::fields::conf_format(conf_sender);
+                i++;
+              }
+        }
+        std::cout << "Video rtpmap: "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
 
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -475,7 +545,8 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                //DPB //{ sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                { sdp::fields::encoding_name, sender_conf_format},
                 { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
             }, keep_order) }
         }, keep_order);
@@ -510,15 +581,31 @@ namespace nmos
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, settings, conf_index, {}, rtpmap, fmtp);
     }
 
-    static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index)
     {
         using web::json::value;
         using web::json::value_of;
 
         const bool keep_order = true;
+
+        //DPB Change format from defalt (raw) to the sender_conf_format value. Fualt in code means cannot be done earlier
+        int i = 0;
+        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        const auto& conf_senders = nmos::fields::senders_list(settings);
+        auto sender_conf_format = sdp_params.rtpmap.encoding_name;
+        if (OGC_remote == true)
+        {
+            for (const auto& conf_sender : conf_senders)
+            {
+                if (conf_index == i)
+                  sender_conf_format  = nmos::fields::conf_format(conf_sender);
+                i++;
+              }
+        }
+        std::cout << "Audio rtpmap: "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
 
         // a=ptime:<packet time>
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -533,7 +620,8 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                //DPB//{ sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                { sdp::fields::encoding_name, sender_conf_format },
                 { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate },
                 { sdp::fields::encoding_parameters, sdp_params.audio.channel_count }
             }, keep_order) }
@@ -552,7 +640,7 @@ namespace nmos
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, ptime, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, settings, conf_index, ptime, rtpmap, fmtp);
     }
 
     static web::json::value make_data_format_specific_parameters(const sdp_parameters::data_t& data_params)
@@ -570,12 +658,28 @@ namespace nmos
         return result;
     }
 
-    static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index)
     {
         using web::json::value;
         using web::json::value_of;
 
         const bool keep_order = true;
+
+        //DPB Change format from defalt (raw) to the sender_conf_format value. Fualt in code means cannot be done earlier
+        int i = 0;
+        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        const auto& conf_senders = nmos::fields::senders_list(settings);
+        auto sender_conf_format = sdp_params.rtpmap.encoding_name;
+        if (OGC_remote == true)
+        {
+            for (const auto& conf_sender : conf_senders)
+            {
+                if (conf_index == i)
+                  sender_conf_format  = nmos::fields::conf_format(conf_sender);
+                i++;
+              }
+        }
+        std::cout << "Data rtpmap: "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
 
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -583,7 +687,8 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                //DPB//{ sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                { sdp::fields::encoding_name, sender_conf_format },
                 { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
             }, keep_order) }
         }, keep_order);
@@ -598,10 +703,10 @@ namespace nmos
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, settings, conf_index, {}, rtpmap, fmtp);
     }
 
-    static web::json::value make_mux_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_mux_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index)
     {
         using web::json::value;
         using web::json::value_of;
@@ -632,7 +737,7 @@ namespace nmos
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, settings, conf_index, {}, rtpmap, fmtp);
     }
 
     namespace details
@@ -652,13 +757,13 @@ namespace nmos
         }
     }
 
-    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index)
     {
         const auto format = details::get_format(sdp_params);
-        if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params);
-        if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params);
-        if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params);
-        if (nmos::formats::mux == format)  return make_mux_session_description(sdp_params, transport_params);
+        if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params, settings, conf_index);
+        if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params, settings, conf_index);
+        if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params, settings, conf_index);
+        if (nmos::formats::mux == format)  return make_mux_session_description(sdp_params, transport_params, settings, conf_index);
         throw details::sdp_creation_error("unsupported ST2110 media");
     }
 

@@ -8,6 +8,8 @@
 #include "nmos/did_sdid.h"
 #include "nmos/rational.h"
 #include "nmos/vpid_code.h"
+//DPB
+#include "nmos/model.h"
 
 namespace nmos
 {
@@ -25,7 +27,9 @@ namespace nmos
     // deprecated, provided for backwards compatibility, because it may be necessary to also specify the PTP domain to generate an RFC 7273 'ts-refclk' attribute that meets the additional constraints of ST 2110-10
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids);
 
-    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params);
+    //DPB
+    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const nmos::settings& settings, int conf_index);
+
 
     // Receiver helper functions
 
