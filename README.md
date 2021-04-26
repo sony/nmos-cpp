@@ -3,17 +3,18 @@
 
 ## Introduction
 
-This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://amwa-tv.github.io/nmos) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
+This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://specs.amwa.tv/nmos/) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
 
-- [AMWA IS-04 NMOS Discovery and Registration Specification](https://amwa-tv.github.io/nmos-discovery-registration)
-- [AMWA IS-05 NMOS Device Connection Management Specification](https://amwa-tv.github.io/nmos-device-connection-management)
-- [AMWA IS-07 NMOS Event & Tally Specification](https://amwa-tv.github.io/nmos-event-tally)
-- [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://amwa-tv.github.io/nmos-audio-channel-mapping)
-- [AMWA IS-09 NMOS System Parameters Specification](https://amwa-tv.github.io/nmos-system) (originally defined in JT-NM TR-1001-1:2018 Annex A)
-- [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://amwa-tv.github.io/nmos-grouping)
-- [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://amwa-tv.github.io/nmos-secure-communication)
+- [AMWA IS-04 NMOS Discovery and Registration Specification](https://specs.amwa.tv/is-04/)
+- [AMWA IS-05 NMOS Device Connection Management Specification](https://specs.amwa.tv/is-05/)
+- [AMWA IS-07 NMOS Event & Tally Specification](https://specs.amwa.tv/is-07/)
+- [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://specs.amwa.tv/is-08/)
+- [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
+- [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
+- [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
+- [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
 
-For more information about AMWA, NMOS and the Networked Media Incubator, please refer to http://amwa.tv/.
+For more information about AMWA, NMOS and the Networked Media Incubator, please refer to <http://amwa.tv/>.
 
 - The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, the NMOS Connection API, and so on.
 - The [nmos-cpp-registry application](Development/nmos-cpp-registry) provides a simple but functional instance of an NMOS Registration & Discovery System (RDS), utilising the nmos module.
@@ -105,6 +106,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for BCP-004-01 Receiver Capabilities
 - Switched CI testing to run the nmos-cpp applications and the AMWA NMOS Testing Tool with secure communication (TLS) enabled, as per BCP-003-01
 - Added support for the IS-08 Channel Mapping API
 - JT-NM Tested 03/20 badge

@@ -37,9 +37,9 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
      Fetch, build and install a suitable version:  
      ```
-     wget "https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz"
-     tar -zxvf cmake-3.12.3.tar.gz
-     cd cmake-3.12.3
+     wget "https://cmake.org/files/v3.18/cmake-3.18.3.tar.gz"
+     tar -zxvf cmake-3.18.3.tar.gz
+     cd cmake-3.18.3
      ./bootstrap
      make
      sudo make install
@@ -53,7 +53,8 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 1. Install Python 3 if necessary  
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`
+2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`  
+   Note: Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan` regularly
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
@@ -66,9 +67,9 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
-   - Several Boost releases have been tested, including Version 1.72.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.75.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_72\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_75\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - chrono
    - date_time
@@ -112,7 +113,7 @@ sudo ./b2 \
 
 If using Conan, this section can be skipped.
 
-WebSocket++ v0.8.1 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
+WebSocket++ v0.8.2 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
 Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
 
 (The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
@@ -155,8 +156,8 @@ If using Conan, this section can be skipped.
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-     - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_72_0`` to match the suggested ``b2`` command
-     - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_72_0/x64/lib`` to match the suggested ``b2`` command
+     - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0`` to match the suggested ``b2`` command
+     - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0/x64/lib`` to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install  
@@ -175,8 +176,8 @@ cmake .. ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_72_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_72_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_75_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_75_0/x64/lib" ^
   -DWERROR:BOOL="0" ^
   -DBUILD_SAMPLES:BOOL="0" ^
   -DBUILD_TESTS:BOOL="0"

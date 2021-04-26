@@ -16,10 +16,16 @@ namespace nmos
     {
         // Video media types
 
+        // Uncompressed Video
+        // See https://tools.ietf.org/html/rfc4175#section-6
         const media_type video_raw{ U("video/raw") };
         const media_type video_h265{ U("video/H265") };
         const media_type video_h264{ U("video/H264") };
         const media_type video_vc2{ U("video/vc2") };
+        const media_type video_jxsv{ U("video/jxsv") };
+
+        // JPEG XS
+        // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6
         const media_type video_jxsv{ U("video/jxsv") };
 
         // Audio media types

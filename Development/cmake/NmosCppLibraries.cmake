@@ -5,6 +5,11 @@ if (NOT DEFINED NMOS_CPP_DIR)
     set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
+include(CMakeRegexEscape)
+
+string(REGEX REPLACE ${MATCH_MATCH} ${MATCH_REPLACE} NMOS_CPP_DIR_MATCH "${NMOS_CPP_DIR}")
+string(REGEX REPLACE ${REPLACE_MATCH} ${REPLACE_REPLACE} CMAKE_BINARY_DIR_REPLACE "${CMAKE_BINARY_DIR}")
+
 # detail headers
 
 set(DETAIL_HEADERS
@@ -286,8 +291,8 @@ set(NMOS_IS04_V1_0_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/${NMOS_IS04_V1_0_TAG}/APIs/schemas/sources.json
     )
 
-set(NMOS_IS04_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-discovery-registration/([^/]+)/APIs/schemas/([^;]+)\\.json")
-set(NMOS_IS04_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is04_schemas/\\1/\\2.cpp")
+set(NMOS_IS04_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR_MATCH}/third_party/nmos-discovery-registration/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS04_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR_REPLACE}/nmos/is04_schemas/\\1/\\2.cpp")
 string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_3_SCHEMAS_SOURCES "${NMOS_IS04_V1_3_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_2_SCHEMAS_SOURCES "${NMOS_IS04_V1_2_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS04_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS04_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS04_V1_1_SCHEMAS_SOURCES "${NMOS_IS04_V1_1_SCHEMAS_JSON}")
@@ -414,8 +419,8 @@ set(NMOS_IS05_V1_0_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/${NMOS_IS05_V1_0_TAG}/APIs/schemas/v1.0-sender-stage-schema.json
     )
 
-set(NMOS_IS05_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-device-connection-management/([^/]+)/APIs/schemas/([^;]+)\\.json")
-set(NMOS_IS05_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is05_schemas/\\1/\\2.cpp")
+set(NMOS_IS05_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR_MATCH}/third_party/nmos-device-connection-management/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS05_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR_REPLACE}/nmos/is05_schemas/\\1/\\2.cpp")
 string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_1_SCHEMAS_SOURCES "${NMOS_IS05_V1_1_SCHEMAS_JSON}")
 string(REGEX REPLACE "${NMOS_IS05_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS05_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS05_V1_0_SCHEMAS_SOURCES "${NMOS_IS05_V1_0_SCHEMAS_JSON}")
 
@@ -500,8 +505,8 @@ set(NMOS_IS08_V1_0_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-audio-channel-mapping/${NMOS_IS08_V1_0_TAG}/APIs/schemas/output-sourceid-response-schema.json
     )
 
-set(NMOS_IS08_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-audio-channel-mapping/([^/]+)/APIs/schemas/([^;]+)\\.json")
-set(NMOS_IS08_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is08_schemas/\\1/\\2.cpp")
+set(NMOS_IS08_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR_MATCH}/third_party/nmos-audio-channel-mapping/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS08_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR_REPLACE}/nmos/is08_schemas/\\1/\\2.cpp")
 string(REGEX REPLACE "${NMOS_IS08_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS08_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS08_V1_0_SCHEMAS_SOURCES "${NMOS_IS08_V1_0_SCHEMAS_JSON}")
 
 foreach(JSON ${NMOS_IS08_V1_0_SCHEMAS_JSON})
@@ -563,8 +568,8 @@ set(NMOS_IS09_V1_0_SCHEMAS_JSON
     ${NMOS_CPP_DIR}/third_party/nmos-system/${NMOS_IS09_V1_0_TAG}/APIs/schemas/resource_core.json
     )
 
-set(NMOS_IS09_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR}/third_party/nmos-system/([^/]+)/APIs/schemas/([^;]+)\\.json")
-set(NMOS_IS09_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR}/nmos/is09_schemas/\\1/\\2.cpp")
+set(NMOS_IS09_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR_MATCH}/third_party/nmos-system/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS09_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR_REPLACE}/nmos/is09_schemas/\\1/\\2.cpp")
 string(REGEX REPLACE "${NMOS_IS09_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS09_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS09_V1_0_SCHEMAS_SOURCES "${NMOS_IS09_V1_0_SCHEMAS_JSON}")
 
 foreach(JSON ${NMOS_IS09_V1_0_SCHEMAS_JSON})

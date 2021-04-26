@@ -7,7 +7,7 @@
 namespace nmos
 {
     // BCP-004-01 Receiver Capabilities
-    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md
+    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0.0/docs/1.0.%20Receiver%20Capabilities.md
     namespace fields
     {
         const web::json::field_as_value_or constraint_sets{ U("constraint_sets"), {} };
@@ -19,19 +19,19 @@ namespace nmos
     template <> nmos::rational inline no_minimum() { return (std::numeric_limits<int64_t>::max)(); }
     template <> nmos::rational inline no_maximum() { return 0; }
 
-    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#string-constraint-keywords
+    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0.0/docs/1.0.%20Receiver%20Capabilities.md#string-constraint-keywords
     web::json::value make_caps_string_constraint(const std::vector<utility::string_t>& enum_values = {});
 
-    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#integer-and-number-constraint-keywords
+    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0.0/docs/1.0.%20Receiver%20Capabilities.md#integer-and-number-constraint-keywords
     web::json::value make_caps_integer_constraint(const std::vector<int64_t>& enum_values = {}, int64_t minimum = no_minimum<int64_t>(), int64_t maximum = no_maximum<int64_t>());
 
-    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#integer-and-number-constraint-keywords
+    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0.0/docs/1.0.%20Receiver%20Capabilities.md#integer-and-number-constraint-keywords
     web::json::value make_caps_number_constraint(const std::vector<double>& enum_values = {}, double minimum = no_minimum<double>(), double maximum = no_maximum<double>());
 
-    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#boolean-constraint-keywords
+    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0.0/docs/1.0.%20Receiver%20Capabilities.md#boolean-constraint-keywords
     web::json::value make_caps_boolean_constraint(const std::vector<bool>& enum_values = {});
 
-    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0-dev/docs/1.0.%20Receiver%20Capabilities.md#rational-constraint-keywords
+    // See https://github.com/AMWA-TV/nmos-receiver-capabilities/blob/v1.0.0/docs/1.0.%20Receiver%20Capabilities.md#rational-constraint-keywords
     web::json::value make_caps_rational_constraint(const std::vector<nmos::rational>& enum_values = {}, const nmos::rational& minimum = no_minimum<nmos::rational>(), const nmos::rational& maximum = no_maximum<nmos::rational>());
 
     bool match_string_constraint(const utility::string_t& value, const web::json::value& constraint);
@@ -41,7 +41,7 @@ namespace nmos
     bool match_rational_constraint(const nmos::rational& value, const web::json::value& constraint);
 
     // NMOS Parameter Registers - Capabilities register
-    // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/capabilities/capabilities/README.md
+    // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md
     namespace caps
     {
         namespace meta
