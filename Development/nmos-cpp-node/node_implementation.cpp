@@ -774,7 +774,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     events.wait();
 }
 
-// Example callback to load RSA key and chain certificate
+// Example callback to load RSA key and certificate chain
 nmos::load_cert_handler make_node_implementation_load_rsa_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example load the RSA key and chain certificate from files for the caller
