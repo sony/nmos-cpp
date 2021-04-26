@@ -77,7 +77,7 @@ namespace impl
         // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         const web::json::field_as_value_or rsa{ U("rsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
 
-        // ecdsa: full path of private key file in PEM format and full path of server chain certificate file in PEM format and must be sorted
+        // ecdsa: full path of ECDSA private key file in PEM format and full path of server certificate chain file in PEM format, which must be sorted
         // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         const web::json::field_as_value_or ecdsa{ U("ecdsa"), web::json::value_of({ { U("private_key_file"), U("") }, { U("certificate_chain_file"), U("") } }) };
     }
