@@ -10,7 +10,7 @@ namespace nmos
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_cacert_handler;
 
-    // callback when requesting key and chain certificate
+    // callback to supply private key and certificate chain
     // this callback should not throw exceptions
     typedef std::function<std::pair<utility::string_t, utility::string_t>()> load_cert_handler;
 
