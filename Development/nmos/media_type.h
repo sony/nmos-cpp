@@ -26,7 +26,7 @@ namespace nmos
 
         // JPEG XS
         // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6
-        const media_type video_jxsv{ U("video/jxsv") };
+        //const media_type video_jxsv{ U("video/jxsv") };
 
         // Audio media types
 

@@ -594,6 +594,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             });
             //DPB set dst port for receiver
             //connection_receiver.data[nmos::fields::destination_port] = 6004; auto_rtp hard coded as 5004
+            //connection_receiver.data[nmos::fields::destination_port].as_integer() = 7004; //err
+            connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::destination_port] = 7004;
+            //Does not seem to update  http://<ip>:8080/x-nmos/connection/v1.1/single/receivers/<receiver id>/active
 
             if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, value_from_elements(remote_secondary_interface.addresses) }

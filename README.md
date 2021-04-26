@@ -1,151 +1,212 @@
-# An NMOS C++ Implementation [![Build Status](https://github.com/sony/nmos-cpp/workflows/build-test/badge.svg)][build-test]
-[build-test]: https://github.com/sony/nmos-cpp/actions?query=workflow%3Abuild-test
+20/4/2021 D Butler, BBC R&D
+
+## NMOS C++ Implementation for the 5G-Records Project
+--------------------------------------------------
+Work in progress
 
 ## Introduction
+------------
+The 5G-Records nmos-cpp software is modified version of the open source Sony nmos-cpp software available on the Sony git repository ( https://github.com/sony/nmos-cpp ) and is subject to the open source license agreement described in the repository. 
 
-This repository contains an implementation of the [AMWA Networked Media Open Specifications](https://specs.amwa.tv/nmos/) in C++, [licensed](LICENSE) under the terms of the Apache License 2.0.
+The original nmos-cpp software creates a nmos-node and nmos-registry software. The nmos-node runs on a local media device and registers the device with the nmos-registry software running on separate server. Register devices can then be controlled by the nmos-js Ctrl App ( https://github.com/sony/nmos-js ).
 
-- [AMWA IS-04 NMOS Discovery and Registration Specification](https://specs.amwa.tv/is-04/)
-- [AMWA IS-05 NMOS Device Connection Management Specification](https://specs.amwa.tv/is-05/)
-- [AMWA IS-07 NMOS Event & Tally Specification](https://specs.amwa.tv/is-07/)
-- [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://specs.amwa.tv/is-08/)
-- [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
-- [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
-- [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
-- [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
+The original nmos-node software employs IP addresses from the local media device for AMWA IS-04 NMOS Discovery and Registration Specification and AMWA IS-05 NMOS Device Connection Management Specification. The implementation creates identities and registers multicast audio, video, data and websocket streams employing hard coded parameters. The number of streams is set by a “how_many” json field in a config.json file.
 
-For more information about AMWA, NMOS and the Networked Media Incubator, please refer to <http://amwa.tv/>.
+The 5G-Records nmos-node software has been modified to allow registration and connection management of a remote media device. Relative to the original nmos-node software, the following changes have been made:
+1.	A programmable source remote IP Address, MAC Address, Interface name and label.
+2.	Creation of a programmable number of senders.
+    -	Each sender has programmable label, unicast/multicast mode, payload type, format, destination IP Address and destination port number.
+3.	Creation of a programmable number of receivers.
+    -	Each receiver has programmable label, unicast/multicast mode, payload type and format type.
 
-- The [nmos module](Development/nmos) includes implementations of the NMOS Node, Registration and Query APIs, the NMOS Connection API, and so on.
-- The [nmos-cpp-registry application](Development/nmos-cpp-registry) provides a simple but functional instance of an NMOS Registration & Discovery System (RDS), utilising the nmos module.
-- The [nmos-cpp-node application](Development/nmos-cpp-node) provides an example NMOS Node, also utilising the nmos module.
 
-The [repository structure](Documents/Repository-Structure.md), and the [external dependencies](Documents/Dependencies.md), are outlined in the documentation.
-Some information about the overall design of **nmos-cpp** is also included in the [architecture](Documents/Architecture.md) documentation.
+## Development Environment and Compiling
+-------------------------------------
+Original make and dependency info:
 
-### Getting Started With NMOS
+https://github.com/sony/nmos-cpp/blob/master/Development/CMakeLists.txt
 
-The [Easy-NMOS](https://github.com/rhastie/easy-nmos) starter kit allows the user to launch a simple NMOS setup with minimal installation steps.
-It relies on nmos-cpp to provide an NMOS Registry and a virtual NMOS Node in a Docker Compose network, along with the AMWA NMOS Testing Tool and supporting services.
+https://github.com/sony/nmos-cpp/blob/master/Documents/Dependencies.md
 
-### Getting Started For Developers
+The software can be compiled on Windows or Linux, the following are instructions for compiling on an Ubuntu 20.04 LTS virtual machine.
 
-Easy-NMOS is also a great first way to explore the relationship between NMOS services before building nmos-cpp for yourself.
 
-The codebase is intended to be portable, and the nmos-cpp [CMake project](Development/CMakeLists.txt) can be built on at least Linux, Windows and macOS.
+user@vm2:~$ sudo apt-get install cmake build-essential
 
-After setting up the dependencies, follow these [instructions](Documents/Getting-Started.md) to build nmos-cpp on your platform, and run the test suite.
+user@vm2:~$ cmake --version <br />
+    cmake version 3.16.3
 
-Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
+user@vm2:~$ make --version <br />
+    GNU Make 4.2.1
 
-## Agile Development
+user@vm2:~$ sudo apt install python3-pip
 
-[<img alt="JT-NM Tested 03/20 NMOS & TR-1001-1" src="Documents/images/jt-nm-tested-03-20-registry.png?raw=true" height="135" align="right"/>](https://jt-nm.org/jt-nm_tested/)
+user@vm2:~$ pip3 install conan
 
-The nmos-cpp applications, like the NMOS Specifications, are intended to be always ready, but steadily developing.
-They have been successfully tested in many AMWA Networked Media Incubator workshops, and are used as reference NMOS implementations in the [JT-NM Tested](https://jt-nm.org/jt-nm_tested/) programme.
-Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to their customers.
+user@vm2:~$ sudo cp -r .local/bin/* /usr/local/bin/
 
-### Build Status
+user@vm2:~$ ls /usr/local/bin/ <br />
+bottle.py  conan_build_info  cvlc      nvlc         qvlc       ristreceiver  rvlc  tqdm  vlc-wrapper
+conan      conan_server      firebase  __pycache__  rist2rist  ristsender    svlc  vlc
 
-The following configurations, defined by the [build-test](.github/workflows/src/build-test.yml) jobs, are built and unit tested automatically via continuous integration.
+user@vm2:~$ conan --version <br />
+Conan version 1.33.0
 
-| Platform | Version                  | Configuration Options                  |
-|----------|--------------------------|----------------------------------------|
-| Linux    | Ubuntu 20.04 (GCC 9.3.0) | mDNSResponder                          |
-| Linux    | Ubuntu 18.04 (GCC 7.5.0) | Avahi                                  |
-| Linux    | Ubuntu 18.04 (GCC 7.5.0) | mDNSResponder                          |
-| Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan         |
-| Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder)                |
-| macOS    | 10.15 (AppleClang 12.0)  | (Experimental)                         |
+For registration, a MDNS responder must be installed and configured
 
-The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
+user@vm2:~$ wget https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-878.270.2.tar.gz
 
-**Test Suite/Status:**
-[![BCP-003-01][BCP-003-01-badge]][BCP-003-01-sheet]
-[![IS-04-01][IS-04-01-badge]][IS-04-01-sheet]
-[![IS-04-02][IS-04-02-badge]][IS-04-02-sheet]
-[![IS-04-03][IS-04-03-badge]][IS-04-03-sheet]
-[![IS-05-01][IS-05-01-badge]][IS-05-01-sheet]
-[![IS-05-02][IS-05-02-badge]][IS-05-02-sheet]
-[![IS-07-01][IS-07-01-badge]][IS-07-01-sheet]
-[![IS-07-02][IS-07-02-badge]][IS-07-02-sheet]
-[![IS-08-01][IS-08-01-badge]][IS-08-01-sheet]
-[![IS-08-02][IS-08-02-badge]][IS-08-02-sheet]
-[![IS-09-01][IS-09-01-badge]][IS-09-01-sheet]
-[![IS-09-02][IS-09-02-badge]][IS-09-02-sheet]
+user@vm2:~$ tar -xzvf mDNSResponder-878.270.2.tar.gz
 
-[BCP-003-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/BCP-003-01.svg
-[IS-04-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-01.svg
-[IS-04-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-02.svg
-[IS-04-03-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-04-03.svg
-[IS-05-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-05-01.svg
-[IS-05-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-05-02.svg
-[IS-07-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-07-01.svg
-[IS-07-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-07-02.svg
-[IS-08-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-08-01.svg
-[IS-08-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-08-02.svg
-[IS-09-01-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-01.svg
-[IS-09-02-badge]: https://raw.githubusercontent.com/sony/nmos-cpp/badges/IS-09-02.svg
-[BCP-003-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=468090822
-[IS-04-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=0
-[IS-04-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1838684224
-[IS-04-03-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1174955447
-[IS-05-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=517163955
-[IS-05-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=205041321
-[IS-07-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=828991990
-[IS-07-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=367400040
-[IS-08-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=776923255
-[IS-08-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=1558470201
-[IS-09-01-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=919453974
-[IS-09-02-sheet]: https://docs.google.com/spreadsheets/d/1UgZoI0lGCMDn9-zssccf2Azil3WN6jogroMT8Wh6H64/edit#gid=2135469955
+user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ make os=linux
 
-### Recent Activity
+user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ sudo make os=linux install
 
-The implementation is designed to be extended. Development is ongoing, following the evolution of the NMOS specifications in the AMWA Networked Media Incubator.
+Check the nsswitch.conf file. <br />
+If 'mdns' does not already appear on the "hosts:" line, then add it right before 'dns' <br />
 
-Recent activity on the project (newest first):
+cp -f /etc/nsswitch.conf /etc/nsswitch.conf.pre-mdns <br />
+sed -e '/mdns/!s/^\(hosts:.*\)dns\(.*\)/\1mdns dns\2/' /etc/nsswitch.conf.pre-mdns > /etc/nsswitch.conf <br />
+cp nss_mdns.conf.5 /usr/share/man/man5/nss_mdns.conf.5 <br />
+chmod 444 /usr/share/man/man5/nss_mdns.conf.5 <br />
+cp libnss_mdns.8 /usr/share/man/man8/libnss_mdns.8 <br />
+chmod 444 /usr/share/man/man8/libnss_mdns.8 <br />
+/lib/libnss_mdns.so.2 /etc/nss_mdns.conf /usr/share/man/man5/nss_mdns.conf.5 /usr/share/man/man8/libnss_mdns.8 installed 
 
-- Added support for BCP-004-01 Receiver Capabilities
-- Switched CI testing to run the nmos-cpp applications and the AMWA NMOS Testing Tool with secure communication (TLS) enabled, as per BCP-003-01
-- Added support for the IS-08 Channel Mapping API
-- JT-NM Tested 03/20 badge
-- Switched Continous Integration to GitHub Actions and added Windows and macOS to the tested platforms
-- Extended the **nmos-cpp-node** to include mock senders/receivers of audio and ancillary data and offer some additional configuration settings
-- Simplified the build process to use Conan by default to download most of the dependencies
-- Added support in the Node implementation for discovery of, and interaction with, a System API, as required for compliance with TR-1001-1
-- Changed the implementation of `nmos::tai_clock` with the effect that it may no longer be monotonic
-- Added a minimum viable LLDP implementation (enabled by a CMake configuration option) to support sending and receiving the IS-04 v1.3 additional network data for Nodes required by IS-06
-- Update the IS-05 schemas to correct an unfortunate bug in the IS-05 v1.1 spec (see [AMWA-TV/nmos-device-connection-management#99](https://github.com/AMWA-TV/nmos-device-connection-management/pull/99))
-- Attempt to determine the DNS domain name automatically if not explicitly specified, for TR-1001-1
-- Travis CI integration
-- Updates for resolutions of specification issues in IS-04 v1.3 and IS-05 v1.1 final drafts
-- Experimental support for human-readable HTML rendering of NMOS responses
-- Experimental support for the rehomed (work in progress) IS-09 System API (originally defined in JT-NM TR-1001-1:2018 Annex A)
-- IS-07 Events API and Events WebSocket API implementation and updated nmos-cpp-node example
-- Experimental support for secure communications (HTTPS, WSS)
-- Bug fixes (with test cases added to the [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing))
-- Support for running nmos-cpp applications with forward/reverse proxies
-- Experimental support for JT-NM TR-1001-1 System API
-- Instructions for cross-compiling for the Raspberry Pi
-- Instructions for running the official AMWA NMOS API Testing Tool
-- Updates to build instructions and required dependencies
-- Simpler creation/processing of the types of SDP files required to support ST 2110 and ST 2022-7
-- Simpler run-time configuration of the **nmos-cpp-node** and **nmos-cpp-registry** settings
-- Some documentation about the overall design of **nmos-cpp** for developers
-- An implementation of the Connection API
-- A fix for a potential memory leak
-- An SDP parser/generator (to/from a JSON representation)
-- JSON Schema validation in the Registration API and the Query API
-- Cross-platform build support using CMake
-- An initial release of the **nmos-cpp-node** example application
-- Back-end enhancements as part of the NMOS Scalability Activity
+Add mdns4_minimal in .conf. if not present.
 
-## Contributing
+user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ pico /etc/nsswitch.conf
+ /etc/nsswitch.conf <br />
+ Example configuration of GNU Name Service Switch functionality. <br />
+ If you have the `glibc-doc-reference' and `info' packages installed, try: <br />
+ `info libc "Name Service Switch"' for information about this file. <br />
+passwd:         files systemd <br />
+group:          files systemd <br />
+shadow:         files <br />
+gshadow:        files <br />
+hosts:          files mdns4_minimal [NOTFOUND=return] dns <br />
+networks:       files <br />
+protocols:      db files <br />
+services:       db files <br />
+ethers:         db files <br />
+rpc:            db files <br />
+netgroup:       nis <br />
 
-We welcome bug reports, feature requests and contributions to the implementation and documentation.
-Please have a look at the simple [Contribution Guidelines](CONTRIBUTING.md).
 
-Thank you for your interest!
+user@vm2:~$ sudo apt-get install git <br />
+[Note: users will need git.ebu.io permissions, SSO and SSH-RSA credentials to be configured]
 
-![This project was formerly known as sea-lion.](Documents/images/sea-lion.png?raw=true)
+user@vm2:~$ git clone git@git.ebu.io:david.butler/nmos-js.git <br />
+user@vm2:~/nmos-cpp/Development$ mkdir build <br />
+user@vm2:~$ cd nmos-cpp/Development/build/ <br />
+user@vm2:~/nmos-cpp/Development/build$ cmake ..   -DCMAKE_BUILD_TYPE:STRING="Debug"   -DWERROR:BOOL="0"   -DBUILD_SAMPLES:BOOL="0"   -DBUILD_TESTS:BOOL="0"
+
+user@vm2:~/nmos-cpp/Development/build$ make <br />
+user@vm2:~/nmos-cpp/Development/build$ sudo make install <br />
+
+
+## Starting the nmos-registration service
+--------------------------------------
+The registration service is controlled by a .json config file that sets the ports for web and service access.
+
+user@vm2:~/nmos-dpb/Development/build$ more reg_config.json <br />
+{ <br />
+    "logging_level": 0, <br />
+    "domain": "local.", <br />
+    "http_port": 8000,
+    "events_ws_port": 8001, <br />
+    "label": "vm3-reg" <br />
+} <br />
+
+user@vm2:~/nmos-dpb/Development/build$ ./nmos-cpp-registry reg_config.json
+
+
+## Starting the nmos-node service
+------------------------------
+The node service is also controlled by a .json config file that sets the ports for web, service and details of the senders and receivers to be created.
+
+user@vm2:~/nmos-dpb/Development/build$ more config.json <br />
+{ <br />
+    "logging_level": 0, <br />
+    "domain": "local.", <br />
+    "http_port": 8080, <br />
+    "events_ws_port": 8081, <br />
+    "label": "vm2", <br />
+    "how_many": 0, <br />
+    "frame_rate": { "numerator": 25, "denominator": 1 }, <br />
+    "interlace_mode": false, <br />
+    "smpte2022_7": false, <br />
+    "OGC_remote": true, <br />
+    "remote_address": "192.168.10.160", <br />
+    "remote_int_name": "eno1",
+    "remote_mac": "00-00-00-00-00-16",
+    "how_many_senders": 2, <br />
+    "senders_list": [ <br />
+      { "label": "Camera31", "transport":"rtp_ucast", "payload": "video", "format": "raw", "dst_ip": "192.168.10.170", "dst_port": 5034 }, <br />
+      { "label": "Camera31", "transport":"rtp_ucast", "payload": "audio", "format": "L24", "dst_ip": "192.168.10.170", "dst_port": 5036 } <br />
+    ], <br />
+    "how_many_receivers": 2, <br />
+    "receivers_list": [ <br />
+      { "label": "Camera2", "transport":"rtp_ucast", "payload": "video", "format": "raw" }, <br />
+      { "label": "Camera2", "transport":"rtp_ucast", "payload": "audio", "format": "L24" } <br />
+    ] <br />
+}
+
+The remote_address fields set the IP, MAC and name of the remote media device. <br />
+The how_many_sender field sets the number of senders to be created. <br />
+The how_many_receivers field sets the number of receivers to be created. <br />
+The sender_list fields set the parameters for each sender. <br />
+The receivers_list fields set the parameters for each sender. <br />
+Note: For rtp_ucast, the sender dst_ip must match the receiver remote_address ip. <br />
+
+user@vm2:~/nmos-dpb/Development/build$ ./nmos-cpp-node config.json
+
+
+## Accessing the web interfaces
+----------------------------
+One nmos-cpp-registry service registers multiple nmos-cpp-node services. Using the above .json config files, the web interfaces can be accessed in a web browser at using:
+
+http://<vm2 ip address>:8000/		# Registration service <br />
+    Access-Control-Allow-Origin: * <br />
+    Access-Control-Expose-Headers: Content-Length, Server-Timing, Timing-Allow-Origin, Vary <br />
+    Content-Length: 219 <br />
+    Content-Type: application/json <br />
+    Server-Timing: proc;dur=3.693 <br />
+    Timing-Allow-Origin: * <br />
+    Vary: Accept <br />
+
+[<br />
+    "admin/",<br />
+    "log/",<br />
+    "schemas/",<br />
+    "settings/",<br />
+    "x-dns-sd/",<br />
+    "x-nmos/"<br />
+]<br />
+
+http://<vm2 ip address>:8080/		# Node service <br />
+    Access-Control-Allow-Origin: *b= <br />
+    Access-Control-Expose-Headers: Content-Length, Server-Timing, Timing-Allow-Origin, Vary <br />
+    Content-Length: 151 <br />
+    Content-Type: application/json <br />
+    Server-Timing: proc;dur=5.05 <br />
+    Timing-Allow-Origin: * <br />
+    Vary: Accept <br />
+
+[ <br />
+    "log/", <br />
+    "settings/", <br />
+    "x-manifest/", <br />
+    "x-nmos/" <br />
+] <br />
+
+## Current limitations
+-------------------
+The modified versions of nmos-cpp allows multiple types of sender and receiver parameters to be programmed. However:
+1.	The receiver destination port is still hard code (which can be ignored)
+
+2.	The registration service has been modified to register multiple format (encoding types) e.g.  <br />
+    Video, “format”: "raw",  "H264", "vc2", "H265", "jxsv" <br />
+    Audio, “format”: "L24",  "L20", "L16", "L8", "mp3", "aac" <br />
+
+    However the Ctrl App (nmos-js) will only allow the connection of "raw" video and "Lxx" types.
