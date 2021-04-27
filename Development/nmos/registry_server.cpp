@@ -143,9 +143,10 @@ namespace nmos
             return registry_server;
         }
 
-        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::load_cert_handler load_rsa, nmos::load_cert_handler load_ecdsa, nmos::load_dh_param_handler load_dh_param, nmos::load_cacert_handler load_cacert, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        // deprecated
+        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_registry_server(registry_model, registry_implementation().on_load_rsa(std::move(load_rsa)).on_load_ecdsa(std::move(load_ecdsa)).on_load_dh_param(std::move(load_dh_param)).on_load_cacert(std::move(load_cacert)), log_model, gate);
+            return make_registry_server(registry_model, registry_implementation(), log_model, gate);
         }
     }
 

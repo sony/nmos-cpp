@@ -55,7 +55,8 @@ namespace nmos
         // and the experimental DNS-SD Browsing API, Logging API and Settings API, according to the specified data models
         nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::registry_implementation registry_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate);
 
-        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::load_cert_handler load_rsa, nmos::load_cert_handler load_ecdsa_cert, nmos::load_dh_param_handler load_dh_param, nmos::load_cacert_handler load_cacert, nmos::experimental::log_model& log_model, slog::base_gate& gate);
+        // deprecated
+        nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::log_model& log_model, slog::base_gate& gate);
     }
 }
 
