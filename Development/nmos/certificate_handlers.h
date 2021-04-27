@@ -10,7 +10,9 @@ namespace nmos
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_cacert_handler;
 
-    // callback to supply private key and certificate chain
+    // callback to supply private key and certificate chain, in PEM format
+    // the chain should be sorted starting with the server's certificate, followed by
+    // any intermediate CA certificates, and ending with the highest level (root) CA
     // this callback should not throw exceptions
     typedef std::function<std::pair<utility::string_t, utility::string_t>()> load_cert_handler;
 
