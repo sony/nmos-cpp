@@ -6,7 +6,7 @@
 
 namespace nmos
 {
-    // callback to supply trusted root CA certificate
+    // callback to supply trusted root CA certificate(s), in PEM format
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_cacert_handler;
 
