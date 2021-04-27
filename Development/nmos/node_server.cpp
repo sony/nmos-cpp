@@ -116,19 +116,20 @@ namespace nmos
             return node_server;
         }
 
-        nmos::server make_node_server(nmos::node_model& node_model, nmos::load_cert_handler load_rsa, nmos::load_cert_handler load_ecdsa, nmos::load_dh_param_handler load_dh_param, nmos::load_cacert_handler load_cacert, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        // deprecated
+        nmos::server make_node_server(nmos::node_model& node_model, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_node_server(node_model, node_implementation().on_load_rsa(std::move(load_rsa)).on_load_ecdsa(std::move(load_ecdsa)).on_load_dh_param(std::move(load_dh_param)).on_load_cacert(std::move(load_cacert)).on_parse_transport_file(std::move(parse_transport_file)).on_validate_merged(std::move(validate_merged)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
+            return make_node_server(node_model, node_implementation().on_parse_transport_file(std::move(parse_transport_file)).on_validate_merged(std::move(validate_merged)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
-
-        nmos::server make_node_server(nmos::node_model& node_model, nmos::load_cert_handler load_rsa, nmos::load_cert_handler load_ecdsa, nmos::load_dh_param_handler load_dh_param, nmos::load_cacert_handler load_cacert, nmos::transport_file_parser parse_transport_file, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        // deprecated
+        nmos::server make_node_server(nmos::node_model& node_model, nmos::transport_file_parser parse_transport_file, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_node_server(node_model, node_implementation().on_load_rsa(std::move(load_rsa)).on_load_ecdsa(std::move(load_ecdsa)).on_load_dh_param(std::move(load_dh_param)).on_load_cacert(std::move(load_cacert)).on_parse_transport_file(std::move(parse_transport_file)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
+            return make_node_server(node_model, node_implementation().on_parse_transport_file(std::move(parse_transport_file)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
-
-        nmos::server make_node_server(nmos::node_model& node_model, nmos::load_cert_handler load_rsa, nmos::load_cert_handler load_ecdsa, nmos::load_dh_param_handler load_dh_param, nmos::load_cacert_handler load_cacert, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
+        // deprecated
+        nmos::server make_node_server(nmos::node_model& node_model, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
-            return make_node_server(node_model, node_implementation().on_load_rsa(std::move(load_rsa)).on_load_ecdsa(std::move(load_ecdsa)).on_load_dh_param(std::move(load_dh_param)).on_load_cacert(std::move(load_cacert)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
+            return make_node_server(node_model, node_implementation().on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
     }
 }
