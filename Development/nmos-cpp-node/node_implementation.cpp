@@ -73,21 +73,21 @@ namespace impl
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
 
-        // private_key_file: full path of private key file in PEM format
+        // private_key_file: (attribute of "rsa" or "ecdsa" object) full path of private key file in PEM format
         const web::json::field_as_string_or private_key_file{ U("private_key_file"), U("") };
 
-        // certificate_chain_file: full path of server certificate chain file in PEM format, which must be sorted
+        // certificate_chain_file: (attribute of "rsa" or "ecdsa" object) full path of server certificate chain file in PEM format, which must be sorted
         // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
 
-        // rsa: full path of RSA private key file in PEM format and full path of server certificate chain file in PEM format, which must be sorted
-        // The RSA object like { "private_key_file": "server-rsa-key.pem", "certificate_chain_file": "server-rsa-chain.pem"}
-        // See private_key_file and certificate_chain_file above
+        // rsa: full paths of RSA private key file and server certificate chain file
+        // the value must be an object like { "private_key_file": "server-rsa-key.pem", "certificate_chain_file": "server-rsa-chain.pem"}
+        // see private_key_file and certificate_chain_file above
         const web::json::field_as_value rsa{ U("rsa") };
 
-        // ecdsa: full path of ECDSA private key file in PEM format and full path of server certificate chain file in PEM format, which must be sorted
-        // The ECDSA object like { "private_key_file": "server-ecdsa-key.pem, "certificate_chain_file": "server-ecdsa-chain.pem"}
-        // See private_key_file and certificate_chain_file above
+        // ecdsa: full paths of ECDSA private key file and server certificate chain file
+        // the value must be an object like { "private_key_file": "server-ecdsa-key.pem, "certificate_chain_file": "server-ecdsa-chain.pem"}
+        // see private_key_file and certificate_chain_file above
         const web::json::field_as_value ecdsa{ U("ecdsa") };
     }
 
