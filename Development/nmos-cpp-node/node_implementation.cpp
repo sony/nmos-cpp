@@ -83,12 +83,12 @@ namespace impl
         // rsa: full paths of RSA private key file and server certificate chain file
         // the value must be an object like { "private_key_file": "server-rsa-key.pem", "certificate_chain_file": "server-rsa-chain.pem"}
         // see private_key_file and certificate_chain_file above
-        const web::json::field_as_value rsa{ U("rsa") };
+        const web::json::field_as_value_or rsa{ U("rsa"), web::json::value_of({ { private_key_file, U("") }, { certificate_chain_file, U("") } }) };
 
         // ecdsa: full paths of ECDSA private key file and server certificate chain file
         // the value must be an object like { "private_key_file": "server-ecdsa-key.pem, "certificate_chain_file": "server-ecdsa-chain.pem"}
         // see private_key_file and certificate_chain_file above
-        const web::json::field_as_value ecdsa{ U("ecdsa") };
+        const web::json::field_as_value_or ecdsa{ U("ecdsa"), web::json::value_of({ { private_key_file, U("") }, { certificate_chain_file, U("") } }) };
     }
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
@@ -787,110 +787,82 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 nmos::load_cert_handler make_node_implementation_load_rsa_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example loads the RSA key and certificate chain from files for the caller
-    if (model.settings.has_field(impl::fields::rsa))
+    const auto& rsa = impl::fields::rsa(model.settings);
+    const auto private_key_file = utility::us2s(impl::fields::private_key_file(rsa));
+    const auto certificate_chain_file = utility::us2s(impl::fields::certificate_chain_file(rsa));
+
+    return[&, private_key_file, certificate_chain_file]()
     {
-        const auto& rsa = impl::fields::rsa(model.settings);
-        const auto private_key_file = utility::us2s(impl::fields::private_key_file(rsa));
-        const auto certificate_chain_file = utility::us2s(impl::fields::certificate_chain_file(rsa));
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load RSA key and certificate chain";
 
-        return[&, private_key_file, certificate_chain_file]()
-        {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load RSA key and certificate chain";
+        std::ifstream pkey_file(private_key_file);
+        std::stringstream pkey;
+        pkey << pkey_file.rdbuf();
 
-            std::ifstream pkey_file(private_key_file);
-            std::stringstream pkey;
-            pkey << pkey_file.rdbuf();
+        std::ifstream cert_chain_file(certificate_chain_file);
+        std::stringstream cert;
+        cert << cert_chain_file.rdbuf();
 
-            std::ifstream cert_chain_file(certificate_chain_file);
-            std::stringstream cert;
-            cert << cert_chain_file.rdbuf();
-
-            return std::pair<utility::string_t, utility::string_t>(utility::s2us(pkey.str()), utility::s2us(cert.str()));
-        };
-    }
-    else
-    {
-        return nullptr;
-    }
+        return std::pair<utility::string_t, utility::string_t>(utility::s2us(pkey.str()), utility::s2us(cert.str()));
+    };
 }
 
 // Example callback to load ECDSA key and certificate chain
 nmos::load_cert_handler make_node_implementation_load_ecdsa_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example loads the ECDSA key and certificate chain from files for the caller
-    if (model.settings.has_field(impl::fields::ecdsa))
+    const auto& ecdsa = impl::fields::ecdsa(model.settings);
+    const auto private_key_file = utility::us2s(impl::fields::private_key_file(ecdsa));
+    const auto certificate_chain_file = utility::us2s(impl::fields::certificate_chain_file(ecdsa));
+
+    return[&, private_key_file, certificate_chain_file]()
     {
-        const auto& ecdsa = impl::fields::ecdsa(model.settings);
-        const auto private_key_file = utility::us2s(impl::fields::private_key_file(ecdsa));
-        const auto certificate_chain_file = utility::us2s(impl::fields::certificate_chain_file(ecdsa));
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load ECDSA key and certificate chain";
 
-        return[&, private_key_file, certificate_chain_file]()
-        {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load ECDSA key and certificate chain";
+        std::ifstream pkey_file(private_key_file);
+        std::stringstream pkey;
+        pkey << pkey_file.rdbuf();
 
-            std::ifstream pkey_file(private_key_file);
-            std::stringstream pkey;
-            pkey << pkey_file.rdbuf();
+        std::ifstream cert_chain_file(certificate_chain_file);
+        std::stringstream cert;
+        cert << cert_chain_file.rdbuf();
 
-            std::ifstream cert_chain_file(certificate_chain_file);
-            std::stringstream cert;
-            cert << cert_chain_file.rdbuf();
-
-            return std::pair<utility::string_t, utility::string_t>(utility::s2us(pkey.str()), utility::s2us(cert.str()));
-        };
-    }
-    else
-    {
-        return nullptr;
-    }
+        return std::pair<utility::string_t, utility::string_t>(utility::s2us(pkey.str()), utility::s2us(cert.str()));
+    };
 }
 
 // Example callback to load Diffie-Hellman parameters for ephemeral key exchange support
 nmos::load_dh_param_handler make_node_implementation_load_dh_param_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example loads the DH parameters from file for the caller
-    if (model.settings.has_field(nmos::experimental::fields::dh_param_file))
-    {
-        const auto dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(model.settings));
+    const auto dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(model.settings));
 
-        return[&, dh_param_file]()
-        {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load DH parameters";
-
-            std::ifstream dh_file(dh_param_file);
-            std::stringstream dh_param;
-            dh_param << dh_file.rdbuf();
-            return utility::s2us(dh_param.str());
-        };
-    }
-    else
+    return[&, dh_param_file]()
     {
-        return nullptr;
-    }
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load DH parameters";
+
+        std::ifstream dh_file(dh_param_file);
+        std::stringstream dh_param;
+        dh_param << dh_file.rdbuf();
+        return utility::s2us(dh_param.str());
+    };
 }
 
 // Example callback to load Root CA certificate
 nmos::load_cacert_handler make_node_implementation_load_cacert_handler(nmos::node_model& model, slog::base_gate& gate)
 {
     // this example loads the Root CA certificate from file for the caller
-    if (model.settings.has_field(nmos::experimental::fields::ca_certificate_file))
-    {
-        const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(model.settings));
+    const auto ca_certificate_file = utility::us2s(nmos::experimental::fields::ca_certificate_file(model.settings));
 
-        return [&, ca_certificate_file]()
-        {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load root cacert";
-
-            std::ifstream ca_file(ca_certificate_file);
-            std::stringstream cacerts;
-            cacerts << ca_file.rdbuf();
-            return utility::s2us(cacerts.str());
-        };
-    }
-    else
+    return [&, ca_certificate_file]()
     {
-        return nullptr;
-    }
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Load root cacert";
+
+        std::ifstream ca_file(ca_certificate_file);
+        std::stringstream cacerts;
+        cacerts << ca_file.rdbuf();
+        return utility::s2us(cacerts.str());
+    };
 }
 
 // Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
