@@ -6,6 +6,7 @@
 #include "boost/asio/ssl/use_tmp_ecdh.hpp"
 #endif
 #include "cpprest/basic_utils.h"
+#include "nmos/certificate_handlers.h"
 #include "cpprest/details/system_error.h"
 #include "cpprest/http_listener.h"
 #include "cpprest/ws_listener.h"
@@ -18,56 +19,53 @@ namespace nmos
     {
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
-        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_cert_handler load_rsa, load_cert_handler load_ecdsa, load_dh_param_handler load_dh_param)
+        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_tls_handler load_tls, load_dh_param_handler load_dh_param)
         {
             // private_key_files, certificate_chain_files and dh_param_file are deprecated
-            const auto& private_key_files = nmos::experimental::fields::private_key_files(settings);
-            const auto& certificate_chain_files = nmos::experimental::fields::certificate_chain_files(settings);
-            const auto& dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(settings));
+            const auto private_key_files = nmos::experimental::fields::private_key_files(settings);
+            const auto certificate_chain_files = nmos::experimental::fields::certificate_chain_files(settings);
+            const auto dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(settings));
 
-            return [private_key_files, certificate_chain_files, dh_param_file, load_rsa, load_ecdsa, load_dh_param](boost::asio::ssl::context& ctx)
+            return [private_key_files, certificate_chain_files, dh_param_file, load_tls, load_dh_param](boost::asio::ssl::context& ctx)
             {
                 try
                 {
                     ctx.set_options(nmos::details::ssl_context_options);
 
-                    if (load_ecdsa)
+                    if (load_tls)
                     {
-                        const auto ecdsa = load_ecdsa();
-                        const auto key = utility::us2s(ecdsa.first);
-                        if (0 == key.size())
-                        {
-                            throw ExceptionType({}, "Missing ECDSA private key");
-                        }
-                        const auto cert = utility::us2s(ecdsa.second);
-                        if (0 == cert.size())
-                        {
-                            throw ExceptionType({}, "Missing ECDSA certificate chain");
-                        }
-                        ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
-                        ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
+                        const auto& tls_list = load_tls();
 
-                        // certificates may have ECDH parameters, so ignore errors...
-                        boost::system::error_code ec;
-                        use_tmp_ecdh(ctx, boost::asio::buffer(cert.data(), cert.size()), ec);
-                    }
-                    if (load_rsa)
-                    {
-                        const auto rsa = load_rsa();
-                        const auto key = utility::us2s(rsa.first);
-                        if (0 == key.size())
+                        if (tls_list.empty())
                         {
-                            throw ExceptionType({}, "Missing RSA private key");
+                            throw ExceptionType({}, "Empty TLS data");
                         }
-                        const auto cert = utility::us2s(rsa.second);
-                        if (0 == cert.size())
+
+                        for(const auto& tls : tls_list)
                         {
-                            throw ExceptionType({}, "Missing RSA certificate chain");
+                            const auto key = utility::us2s(std::get < 1 >(tls));
+                            if (0 == key.size())
+                            {
+                                throw ExceptionType({}, "Missing private key");
+                            }
+                            const auto cert = utility::us2s(std::get < 2 >(tls));
+                            if (0 == cert.size())
+                            {
+                                throw ExceptionType({}, "Missing certificate chain");
+                            }
+                            ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
+                            ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
+
+                            const auto type = std::get < 0 >(tls);
+                            if (type == tls_types::ECDSA)
+                            {
+                                // certificates may have ECDH parameters, so ignore errors...
+                                boost::system::error_code ec;
+                                use_tmp_ecdh(ctx, boost::asio::buffer(cert.data(), cert.size()), ec);
+                            }
                         }
-                        ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
-                        ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
                     }
-                    if (!load_rsa && !load_ecdsa)
+                    else
                     {
                         // deprecated
 
@@ -124,7 +122,7 @@ namespace nmos
     }
 
     // construct listener config based on settings
-    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, load_cert_handler load_rsa, load_cert_handler load_ecdsa, load_dh_param_handler load_dh_param)
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, load_tls_handler load_tls, load_dh_param_handler load_dh_param)
     {
         web::http::experimental::listener::http_listener_config config;
         config.set_backlog(nmos::fields::listen_backlog(settings));
@@ -132,19 +130,19 @@ namespace nmos
         // hmm, hostport_listener::on_accept(...) in http_server_asio.cpp
         // only expects boost::system::system_error to be thrown, so for now
         // don't use web::http::http_exception
-        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<boost::system::system_error>(settings, load_rsa, load_ecdsa, load_dh_param));
+        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<boost::system::system_error>(settings, load_tls, load_dh_param));
 #endif
 
         return config;
     }
 
     // construct listener config based on settings
-    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, load_cert_handler load_rsa, load_cert_handler load_ecdsa, load_dh_param_handler load_dh_param)
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, load_tls_handler load_tls, load_dh_param_handler load_dh_param)
     {
         web::websockets::experimental::listener::websocket_listener_config config;
         config.set_backlog(nmos::fields::listen_backlog(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<web::websockets::websocket_exception>(settings, load_rsa, load_ecdsa, load_dh_param));
+        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<web::websockets::websocket_exception>(settings, load_tls, load_dh_param));
 #endif
 
         return config;
