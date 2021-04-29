@@ -12,11 +12,6 @@ namespace web
     }
 }
 
-namespace slog
-{
-    class base_gate;
-}
-
 namespace nmos
 {
     struct node_model;
@@ -26,11 +21,7 @@ namespace nmos
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser and the specified validator
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_cacert_handler load_cacert, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged);
-
-    // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the default transport file parser
-    // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_cacert_handler load_cacert);
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_cacerts_handler load_cacerts, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged);
 }
 
 #endif
