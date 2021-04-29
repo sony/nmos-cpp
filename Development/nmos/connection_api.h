@@ -86,7 +86,10 @@ namespace nmos
     // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
     // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
-    void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port = 5004);
+
+    //DPB problems trying to change this auto_rtp_port value using variable.
+    //void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port = 5004);
+    void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port);
 
     namespace details
     {

@@ -595,8 +595,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             //DPB set dst port for receiver
             //connection_receiver.data[nmos::fields::destination_port] = 6004; auto_rtp hard coded as 5004
             //connection_receiver.data[nmos::fields::destination_port].as_integer() = 7004; //err
-            connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::destination_port] = 7004;
+            //DPB dst_port should not be constrained
+            //connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::destination_port] = 7004;
             //Does not seem to update  http://<ip>:8080/x-nmos/connection/v1.1/single/receivers/<receiver id>/active
+            //auto_rtp_port is set in connect_api.h
 
             if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
                 { nmos::fields::constraint_enum, value_from_elements(remote_secondary_interface.addresses) }
@@ -1052,9 +1054,20 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::rtp, how_many_receivers);
     const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::ws, how_many);
 
+    //DPB get each receivert dst port
+    int receiver_dst_port[MAX_SENDERS];
+    int i = 0;
+    const auto& conf_receivers = impl::fields::receivers_list(settings);
+    for (const auto& conf_receiver : conf_receivers)
+    {
+      receiver_dst_port[i] = impl::fields::dst_port(conf_receiver);
+      i++;
+    }
+    int conf_index = 0;
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    //DPB had to change to mutable so the conf_index can be updated.
+    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, conf_index, receiver_dst_port](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params) mutable
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by nmos_implementation_thread
@@ -1070,7 +1083,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
             // lastly, apply the specification defaults for any properties not handled above
-            nmos::resolve_rtp_auto(id_type.second, transport_params);
+            nmos::resolve_rtp_auto(id_type.second, transport_params, 5004);
         }
         else if (rtp_receiver_ids.end() != boost::range::find(rtp_receiver_ids, id_type.first))
         {
@@ -1078,7 +1091,10 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
             // lastly, apply the specification defaults for any properties not handled above
-            nmos::resolve_rtp_auto(id_type.second, transport_params);
+            //DPB
+            int rx_dst_port = receiver_dst_port[conf_index];
+            nmos::resolve_rtp_auto(id_type.second, transport_params, rx_dst_port);
+            conf_index++;
         }
         else if (ws_sender_ids.end() != boost::range::find(ws_sender_ids, id_type.first))
         {

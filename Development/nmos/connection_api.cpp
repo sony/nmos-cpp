@@ -874,6 +874,8 @@ namespace nmos
             {
                 // nmos::fields::interface_ip
                 details::resolve_auto(params, nmos::fields::destination_port, [&] { return auto_rtp_port; });
+                //DPB tryin gto fix receiver rtp port, but dumps core
+                //details::resolve_auto(params, nmos::fields::destination_port, [&] { return params[nmos::fields::destination_port].as_integer(); });
                 details::resolve_auto(params, nmos::fields::fec_destination_ip, [&] { return !nmos::fields::multicast_ip(params).is_null() ? params[nmos::fields::multicast_ip] : params[nmos::fields::interface_ip]; });
                 // nmos::fields::fec_mode
                 details::resolve_auto(params, nmos::fields::fec1D_destination_port, [&] { return params[nmos::fields::destination_port].as_integer() + 2; });
