@@ -43,12 +43,12 @@ namespace nmos
             // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
             const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
 
-            // tls: an array of TLS objects, each has the full paths of private key file and server certificate chain file
+            // tls [registry, node]: an array of TLS objects, each has the full paths of private key file and server certificate chain file
             // each value must be an object like { "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
             // see private_key_file and certificate_chain_file above
             const web::json::field_as_value_or tls{ U("tls"), web::json::value::array() };
 
-            // dh_param_file: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
+            // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
             const web::json::field_as_string_or dh_param_file{ U("dh_param_file"), U("") };
         }
     }
