@@ -159,7 +159,7 @@
     // any intermediate CA certificates, and ending with the highest level (root) CA
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
-    // each tls value must be an object like { "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
+    // each tls value must be an object like { "type": "ECDSA/RSA", "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
     //"tls": array-of-tls,
 
     // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)

@@ -44,7 +44,7 @@ namespace nmos
             const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
 
             // tls [registry, node]: an array of TLS objects, each has the full paths of private key file and server certificate chain file
-            // each value must be an object like { "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
+            // each value must be an object like { "type": "ECDSA/RSA", "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
             // see private_key_file and certificate_chain_file above
             const web::json::field_as_value_or tls{ U("tls"), web::json::value::array() };
 
