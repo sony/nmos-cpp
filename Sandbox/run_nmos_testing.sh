@@ -44,12 +44,17 @@ if [[ "${config_secure}" == "True" ]]; then
   common_params=",\"client_secure\":true,\
   \"server_secure\":true,\
   \"ca_certificate_file\":\"test_data/BCP00301/ca/certs/ca.cert.pem\",\
-  \"rsa\":{\
-    \"private_key_file\":\"test_data/BCP00301/ca/intermediate/private/rsa.api.testsuite.nmos.tv.key.pem\",\
-    \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/rsa.api.testsuite.nmos.tv.cert.chain.pem\"},\
-  \"ecdsa\":{\
+  \"tls\":\
+  [{\
+    \"type\":\"ECDSA\",\
     \"private_key_file\":\"test_data/BCP00301/ca/intermediate/private/ecdsa.api.testsuite.nmos.tv.key.pem\",\
-    \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/ecdsa.api.testsuite.nmos.tv.cert.chain.pem\"},\
+    \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/ecdsa.api.testsuite.nmos.tv.cert.chain.pem\"\
+  },\
+  {\
+    \"type\":\"RSA\",\
+    \"private_key_file\":\"test_data/BCP00301/ca/intermediate/private/rsa.api.testsuite.nmos.tv.key.pem\",\
+    \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/rsa.api.testsuite.nmos.tv.cert.chain.pem\"\
+  }],\
   \"dh_param_file\":\"test_data/BCP00301/ca/intermediate/private/dhparam.pem\",\
   \"host_name\":\"${host}\",\
   \"host_address\":\"${host_ip}\"\
