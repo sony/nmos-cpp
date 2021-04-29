@@ -54,7 +54,7 @@ namespace nmos
                     cert << cert_chain_file.rdbuf();
                 }
 
-                tls_data.push_back({ type == nmos::tls_types::ECDSA.name ? nmos::tls_types::ECDSA : nmos::tls_types::RSA, utility::s2us(pkey.str()), utility::s2us(cert.str()) });
+                tls_data.push_back(nmos::tls(nmos::tls_types::ECDSA.name == type ? nmos::tls_types::ECDSA : nmos::tls_types::RSA, utility::s2us(pkey.str()), utility::s2us(cert.str())));
             }
             return tls_data;
         };
