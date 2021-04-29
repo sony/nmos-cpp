@@ -13,11 +13,11 @@ namespace nmos
 {
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted, e.g. request timeout
-    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_cacert_handler load_cacert);
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_cacerts_handler load_cacerts);
 
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted
-    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_cacert_handler load_cacert);
+    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_cacerts_handler load_cacerts);
 
     // make an API request with logging
     pplx::task<web::http::http_response> api_request(web::http::client::http_client client, web::http::http_request request, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none());
