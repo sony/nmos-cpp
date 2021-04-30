@@ -22,10 +22,10 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Registry
         struct registry_implementation
         {
-            registry_implementation(nmos::load_tls_handler load_tls, nmos::load_dh_param_handler load_dh_param, nmos::load_cacerts_handler load_cacerts)
-                : load_tls(std::move(load_tls))
+            registry_implementation(nmos::load_server_certificate_chains_handler load_server_certificate_chains, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates)
+                : load_server_certificate_chains(std::move(load_server_certificate_chains))
                 , load_dh_param(std::move(load_dh_param))
-                , load_cacerts(std::move(load_cacerts))
+                , load_ca_certificates(std::move(load_ca_certificates))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -33,9 +33,9 @@ namespace nmos
             registry_implementation()
             {}
 
-            registry_implementation& on_load_tls(nmos::load_tls_handler load_tls) { this->load_tls = std::move(load_tls); return *this; }
+            registry_implementation& on_load_server_certificate_chains(nmos::load_server_certificate_chains_handler load_server_certificate_chains) { this->load_server_certificate_chains = std::move(load_server_certificate_chains); return *this; }
             registry_implementation& on_load_dh_param(nmos::load_dh_param_handler load_dh_param) { this->load_dh_param = std::move(load_dh_param); return *this; }
-            registry_implementation& on_load_cacerts(nmos::load_cacerts_handler load_cacerts) { this->load_cacerts = std::move(load_cacerts); return *this; }
+            registry_implementation& on_load_ca_certificates(nmos::load_ca_certificates_handler load_ca_certificates) { this->load_ca_certificates = std::move(load_ca_certificates); return *this; }
 
             // determine if the required callbacks have been specified
             bool valid() const
@@ -43,9 +43,9 @@ namespace nmos
                 return true;
             }
 
-            nmos::load_tls_handler load_tls;
+            nmos::load_server_certificate_chains_handler load_server_certificate_chains;
             nmos::load_dh_param_handler load_dh_param;
-            nmos::load_cacerts_handler load_cacerts;
+            nmos::load_ca_certificates_handler load_ca_certificates;
         };
 
         // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-09 System API, the IS-10 Authorization API

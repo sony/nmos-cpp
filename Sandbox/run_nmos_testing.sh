@@ -44,14 +44,14 @@ if [[ "${config_secure}" == "True" ]]; then
   common_params=",\"client_secure\":true,\
   \"server_secure\":true,\
   \"ca_certificate_file\":\"test_data/BCP00301/ca/certs/ca.cert.pem\",\
-  \"tls\":\
+  \"server_certificate_chains\":\
   [{\
-    \"type\":\"ECDSA\",\
+    \"key_algorithm\":\"ECDSA\",\
     \"private_key_file\":\"test_data/BCP00301/ca/intermediate/private/ecdsa.api.testsuite.nmos.tv.key.pem\",\
     \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/ecdsa.api.testsuite.nmos.tv.cert.chain.pem\"\
   },\
   {\
-    \"type\":\"RSA\",\
+    \"key_algorithm\":\"RSA\",\
     \"private_key_file\":\"test_data/BCP00301/ca/intermediate/private/rsa.api.testsuite.nmos.tv.key.pem\",\
     \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/rsa.api.testsuite.nmos.tv.cert.chain.pem\"\
   }],\

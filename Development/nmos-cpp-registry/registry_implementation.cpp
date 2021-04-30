@@ -19,7 +19,7 @@ namespace impl
 nmos::experimental::registry_implementation make_registry_implementation(nmos::registry_model& model, slog::base_gate& gate)
 {
     return nmos::experimental::registry_implementation()
-        .on_load_tls(nmos::make_load_tls_handler(model.settings, gate))
+        .on_load_server_certificate_chains(nmos::make_load_server_certificate_chains_handler(model.settings, gate))
         .on_load_dh_param(nmos::make_load_dh_param_handler(model.settings, gate))
-        .on_load_cacerts(nmos::make_load_cacerts_handler(model.settings, gate));
+        .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate));
 }

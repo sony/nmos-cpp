@@ -23,10 +23,10 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_tls_handler load_tls, nmos::load_dh_param_handler load_dh_param, nmos::load_cacerts_handler load_cacerts, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated)
-                : load_tls(std::move(load_tls))
+            node_implementation(nmos::load_server_certificate_chains_handler load_server_certificate_chains, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated)
+                : load_server_certificate_chains(std::move(load_server_certificate_chains))
                 , load_dh_param(std::move(load_dh_param))
-                , load_cacerts(std::move(load_cacerts))
+                , load_ca_certificates(std::move(load_ca_certificates))
                 , system_changed(std::move(system_changed))
                 , registration_changed(std::move(registration_changed))
                 , parse_transport_file(std::move(parse_transport_file))
@@ -42,9 +42,9 @@ namespace nmos
                 : parse_transport_file(&nmos::parse_rtp_transport_file)
             {}
 
-            node_implementation& on_load_tls(nmos::load_tls_handler load_tls) { this->load_tls = std::move(load_tls); return *this; }
+            node_implementation& on_load_server_certificate_chains(nmos::load_server_certificate_chains_handler load_server_certificate_chains) { this->load_server_certificate_chains = std::move(load_server_certificate_chains); return *this; }
             node_implementation& on_load_dh_param(nmos::load_dh_param_handler load_dh_param) { this->load_dh_param = std::move(load_dh_param); return *this; }
-            node_implementation& on_load_cacerts(nmos::load_cacerts_handler load_cacerts) { this->load_cacerts = std::move(load_cacerts); return *this; }
+            node_implementation& on_load_ca_certificates(nmos::load_ca_certificates_handler load_ca_certificates) { this->load_ca_certificates = std::move(load_ca_certificates); return *this; }
             node_implementation& on_system_changed(nmos::system_global_handler system_changed) { this->system_changed = std::move(system_changed); return *this; }
             node_implementation& on_registration_changed(nmos::registration_handler registration_changed) { this->registration_changed = std::move(registration_changed); return *this; }
             node_implementation& on_parse_transport_file(nmos::transport_file_parser parse_transport_file) { this->parse_transport_file = std::move(parse_transport_file); return *this; }
@@ -64,9 +64,9 @@ namespace nmos
                 return parse_transport_file && resolve_auto && set_transportfile && connection_activated;
             }
 
-            nmos::load_tls_handler load_tls;
+            nmos::load_server_certificate_chains_handler load_server_certificate_chains;
             nmos::load_dh_param_handler load_dh_param;
-            nmos::load_cacerts_handler load_cacerts;
+            nmos::load_ca_certificates_handler load_ca_certificates;
 
             nmos::system_global_handler system_changed;
             nmos::registration_handler registration_changed;

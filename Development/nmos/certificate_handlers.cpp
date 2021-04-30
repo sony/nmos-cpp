@@ -1,41 +1,71 @@
 #include "nmos/certificate_handlers.h"
 
 #include "cpprest/basic_utils.h"
+#include "nmos/certificate_settings.h"
 #include "nmos/slog.h"
 
 namespace nmos
 {
-    // implement callback to load TLS keys and certificate chains
-    load_tls_handler make_load_tls_handler(const nmos::settings& settings, slog::base_gate& gate)
+    // implement callback to load certification authorities
+    load_ca_certificates_handler make_load_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
-        // load the TLS keys and certificate chains from files
-        const auto tls_list = nmos::experimental::fields::tls(settings);
+        // load the certification authorities from file for the caller
+        const auto ca_certificate_file = nmos::experimental::fields::ca_certificate_file(settings);
 
-        return[&, tls_list]()
+        return [&, ca_certificate_file]()
         {
-            auto tls_data = std::vector<nmos::tls>();
+            utility::string_t data;
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load TLS keys and certificate chains";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load certification authorities";
 
-            if (0 == tls_list.size())
+            if (ca_certificate_file.empty())
             {
-                throw std::runtime_error("Missing TLS settings");
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing certification authorities file";
+            }
+            else
+            {
+                std::ifstream ca_file(ca_certificate_file);
+                std::stringstream cacerts;
+                cacerts << ca_file.rdbuf();
+                data = utility::s2us(cacerts.str());
+            }
+            return data;
+        };
+    }
+
+    // implement callback to load server certificate keys and certificate chains
+    load_server_certificate_chains_handler make_load_server_certificate_chains_handler(const nmos::settings& settings, slog::base_gate& gate)
+    {
+        // load the server keys and certificate chains from files
+        const auto server_certificate_chains = nmos::experimental::fields::server_certificate_chains(settings);
+
+        return[&, server_certificate_chains]()
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server certificate keys and certificate chains";
+
+            auto data = std::vector<nmos::server_certificate_chain>();
+
+            if (0 == server_certificate_chains.size())
+            {
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificate chains settings";
             }
 
-            for (const auto& tls : tls_list.as_array())
+            for (const auto& server_certificate_chain : server_certificate_chains.as_array())
             {
-                if (!tls.has_field(nmos::experimental::fields::type) || !tls.has_field(nmos::experimental::fields::private_key_file) || !tls.has_field(nmos::experimental::fields::certificate_chain_file))
+                if (!server_certificate_chain.has_field(nmos::experimental::fields::key_algorithm)
+                    || !server_certificate_chain.has_field(nmos::experimental::fields::private_key_file)
+                    || !server_certificate_chain.has_field(nmos::experimental::fields::certificate_chain_file))
                 {
-                    throw std::runtime_error("Missing TLS type/private key file/certificate chain file");
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing TLS type/private key file/certificate chain file";
                 }
-                const auto type = nmos::experimental::fields::type(tls);
-                const auto private_key_file = nmos::experimental::fields::private_key_file(tls);
-                const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(tls);
+                const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate_chain);
+                const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate_chain);
+                const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate_chain);
 
                 std::stringstream pkey;
                 if (private_key_file.empty())
                 {
-                    throw std::runtime_error("Missing private key file");
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing private key file";
                 }
                 else
                 {
@@ -43,34 +73,34 @@ namespace nmos
                     pkey << pkey_file.rdbuf();
                 }
 
-                std::stringstream cert;
+                std::stringstream cert_chain;
                 if (certificate_chain_file.empty())
                 {
-                    throw std::runtime_error("Missing certificate chain file");
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing certificate chain file";
                 }
                 else
                 {
                     std::ifstream cert_chain_file(certificate_chain_file);
-                    cert << cert_chain_file.rdbuf();
+                    cert_chain << cert_chain_file.rdbuf();
                 }
 
-                tls_data.push_back(nmos::tls(nmos::tls_types::ECDSA.name == type ? nmos::tls_types::ECDSA : nmos::tls_types::RSA, utility::s2us(pkey.str()), utility::s2us(cert.str())));
+                data.push_back(nmos::server_certificate_chain(nmos::key_algorithms::ECDSA.name == key_algorithm ? nmos::key_algorithms::ECDSA : nmos::key_algorithms::RSA, utility::s2us(pkey.str()), utility::s2us(cert_chain.str())));
             }
-            return tls_data;
+            return data;
         };
     }
 
     // implement callback to load Diffie-Hellman parameters for ephemeral key exchange support
-    nmos::load_dh_param_handler make_load_dh_param_handler(const nmos::settings& settings, slog::base_gate& gate)
+    load_dh_param_handler make_load_dh_param_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
         // load the DH parameters from file for the caller
         const auto dh_param_file = nmos::experimental::fields::dh_param_file(settings);
 
         return[&, dh_param_file]()
         {
-            utility::string_t dh_param_data;
-
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load DH parameters";
+
+            utility::string_t data;
 
             if (dh_param_file.empty())
             {
@@ -81,36 +111,9 @@ namespace nmos
                 std::ifstream dh_file(dh_param_file);
                 std::stringstream dh_param;
                 dh_param << dh_file.rdbuf();
-                dh_param_data = utility::s2us(dh_param.str());
+                data = utility::s2us(dh_param.str());
             }
-            return dh_param_data;
-        };
-    }
-
-    // implement callback to load certification authorities
-    nmos::load_cacerts_handler make_load_cacerts_handler(const nmos::settings& settings, slog::base_gate& gate)
-    {
-        // load the certification authorities from file for the caller
-        const auto ca_certificate_file = nmos::experimental::fields::ca_certificate_file(settings);
-
-        return [&, ca_certificate_file]()
-        {
-            utility::string_t cacerts_data;
-
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load certification authorities";
-
-            if (ca_certificate_file.empty())
-            {
-                throw std::runtime_error("Missing certification authorities file");
-            }
-            else
-            {
-                std::ifstream ca_file(ca_certificate_file);
-                std::stringstream cacerts;
-                cacerts << ca_file.rdbuf();
-                cacerts_data = utility::s2us(cacerts.str());
-            }
-            return cacerts_data;
+            return data;
         };
     }
 }

@@ -766,6 +766,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/api_version.h
     ${NMOS_CPP_DIR}/nmos/capabilities.h
     ${NMOS_CPP_DIR}/nmos/certificate_handlers.h
+    ${NMOS_CPP_DIR}/nmos/certificate_settings.h
     ${NMOS_CPP_DIR}/nmos/channelmapping_activation.h
     ${NMOS_CPP_DIR}/nmos/channelmapping_api.h
     ${NMOS_CPP_DIR}/nmos/channelmapping_resources.h

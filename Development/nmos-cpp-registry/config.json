@@ -145,22 +145,22 @@
     // when true, server certificates etc. must also be configured
     //"server_secure": false,
 
-    // (deprecated, replaced by "tls") private_key_files [registry, node]: full paths of private key files in PEM format
+    // (deprecated, replaced by "server_certificate_chains") private_key_files [registry, node]: full paths of private key files in PEM format
     //"private_key_files": ["server-ecdsa-key.pem", "server-rsa-key.pem"],
 
-    // (deprecated, replaced by "tls") certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
+    // (deprecated, replaced by "server_certificate_chains") certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
     // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
     //"certificate_chain_files": ["server-ecdsa-chain.pem", "server-rsa-chain.pem"],
 
-    // tls [registry, node]: an array of TLS objects, each has the full paths of private key file and server certificate chain file
+    // server_certificate_chains [registry, node]: an array of server certificate chain objects, each has the name of the key algorithm, the full paths of private key file and  server certificate chain file
     // the certificate chain file which must be in PEM format and must be sorted starting with the server's certificate, followed by
     // any intermediate CA certificates, and ending with the highest level (root) CA
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
-    // each tls value must be an object like { "type": "ECDSA/RSA", "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
-    //"tls": array-of-tls,
+    // each server certificate chain value must be an object like { "key_algorithm": "ECDSA/RSA", "private_key_file": "server-key.pem, "certificate_chain_file": "server-chain.pem"}
+    //"server_certificate_chains": array-of-server-certificate-chain,
 
     // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)
     //"validate_certificates": true,
