@@ -22,8 +22,8 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Registry
         struct registry_implementation
         {
-            registry_implementation(nmos::load_server_certificate_chains_handler load_server_certificate_chains, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates)
-                : load_server_certificate_chains(std::move(load_server_certificate_chains))
+            registry_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates)
+                : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
             {}
@@ -33,7 +33,7 @@ namespace nmos
             registry_implementation()
             {}
 
-            registry_implementation& on_load_server_certificate_chains(nmos::load_server_certificate_chains_handler load_server_certificate_chains) { this->load_server_certificate_chains = std::move(load_server_certificate_chains); return *this; }
+            registry_implementation& on_load_server_certificates(nmos::load_server_certificates_handler load_server_certificates) { this->load_server_certificates = std::move(load_server_certificates); return *this; }
             registry_implementation& on_load_dh_param(nmos::load_dh_param_handler load_dh_param) { this->load_dh_param = std::move(load_dh_param); return *this; }
             registry_implementation& on_load_ca_certificates(nmos::load_ca_certificates_handler load_ca_certificates) { this->load_ca_certificates = std::move(load_ca_certificates); return *this; }
 
@@ -43,7 +43,7 @@ namespace nmos
                 return true;
             }
 
-            nmos::load_server_certificate_chains_handler load_server_certificate_chains;
+            nmos::load_server_certificates_handler load_server_certificates;
             nmos::load_dh_param_handler load_dh_param;
             nmos::load_ca_certificates_handler load_ca_certificates;
         };

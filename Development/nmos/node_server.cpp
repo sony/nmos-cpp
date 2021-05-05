@@ -64,7 +64,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(node_model.settings, node_implementation.load_server_certificate_chains, node_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
 
             for (auto& api_router : node_server.api_routers)
             {
@@ -77,7 +77,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, node_implementation.load_server_certificate_chains, node_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : node_server.ws_handlers)
