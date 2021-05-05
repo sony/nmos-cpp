@@ -20,11 +20,11 @@ namespace nmos
     {
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
-        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_server_certificate_chains_handler load_server_certificate_chains, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
         {
-            if (!load_server_certificate_chains)
+            if (!load_server_certificates)
             {
-                load_server_certificate_chains = make_load_server_certificate_chains_handler(settings, gate);
+                load_server_certificates = make_load_server_certificates_handler(settings, gate);
             }
 
             if (!load_dh_param)
@@ -32,35 +32,35 @@ namespace nmos
                 load_dh_param = make_load_dh_param_handler(settings, gate);
             }
 
-            return [load_server_certificate_chains, load_dh_param](boost::asio::ssl::context& ctx)
+            return [load_server_certificates, load_dh_param](boost::asio::ssl::context& ctx)
             {
                 try
                 {
                     ctx.set_options(nmos::details::ssl_context_options);
 
-                    const auto server_certificate_chains = load_server_certificate_chains();
+                    const auto server_certificates = load_server_certificates();
 
-                    if (server_certificate_chains.empty())
+                    if (server_certificates.empty())
                     {
-                        throw ExceptionType({}, "Missing server certificate chains");
+                        throw ExceptionType({}, "Missing server certificates");
                     }
 
-                    for (const auto& server_certificate_chain : server_certificate_chains)
+                    for (const auto& server_certificate : server_certificates)
                     {
-                        const auto key = utility::us2s(server_certificate_chain.private_key);
+                        const auto key = utility::us2s(server_certificate.private_key);
                         if (0 == key.size())
                         {
                             throw ExceptionType({}, "Missing private key");
                         }
-                        const auto cert_chain = utility::us2s(server_certificate_chain.certificate_chain);
+                        const auto cert_chain = utility::us2s(server_certificate.certificate_chain);
                         if (0 == cert_chain.size())
                         {
-                            throw ExceptionType({}, "Missing server certificate chain");
+                            throw ExceptionType({}, "Missing certificate chain");
                         }
                         ctx.use_private_key(boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context_base::pem);
                         ctx.use_certificate_chain(boost::asio::buffer(cert_chain.data(), cert_chain.size()));
 
-                        const auto key_algorithm = server_certificate_chain.key_algorithm;
+                        const auto key_algorithm = server_certificate.key_algorithm;
                         if (key_algorithm.name.empty() || key_algorithm == key_algorithms::ECDSA)
                         {
                             // certificates may not have ECDH parameters, so ignore errors...
@@ -87,7 +87,7 @@ namespace nmos
     }
 
     // construct listener config based on settings
-    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, load_server_certificate_chains_handler load_server_certificate_chains, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
     {
         web::http::experimental::listener::http_listener_config config;
         config.set_backlog(nmos::fields::listen_backlog(settings));
@@ -95,19 +95,19 @@ namespace nmos
         // hmm, hostport_listener::on_accept(...) in http_server_asio.cpp
         // only expects boost::system::system_error to be thrown, so for now
         // don't use web::http::http_exception
-        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<boost::system::system_error>(settings, load_server_certificate_chains, load_dh_param, gate));
+        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<boost::system::system_error>(settings, load_server_certificates, load_dh_param, gate));
 #endif
 
         return config;
     }
 
     // construct listener config based on settings
-    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, load_server_certificate_chains_handler load_server_certificate_chains, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
     {
         web::websockets::experimental::listener::websocket_listener_config config;
         config.set_backlog(nmos::fields::listen_backlog(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<web::websockets::websocket_exception>(settings, load_server_certificate_chains, load_dh_param, gate));
+        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<web::websockets::websocket_exception>(settings, load_server_certificates, load_dh_param, gate));
 #endif
 
         return config;

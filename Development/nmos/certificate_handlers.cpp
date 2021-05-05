@@ -32,21 +32,21 @@ namespace nmos
         };
     }
 
-    // construct callback to load server certificate chains from files based on settings, see nmos/certificate_settings.h
-    load_server_certificate_chains_handler make_load_server_certificate_chains_handler(const nmos::settings& settings, slog::base_gate& gate)
+    // construct callback to load server certificates from files based on settings, see nmos/certificate_settings.h
+    load_server_certificates_handler make_load_server_certificates_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
-        // load the server keys and certificate chains from files
-        auto server_certificate_chains = nmos::experimental::fields::server_certificate_chains(settings);
-        if (0 == server_certificate_chains.size())
+        // load the server private keys and certificate chains from files
+        auto server_certificates = nmos::experimental::fields::server_certificates(settings);
+        if (0 == server_certificates.size())
         {
-            // (deprecated, replaced by server_certificate_chains)
+            // (deprecated, replaced by server_certificates)
             const auto private_key_files = nmos::experimental::fields::private_key_files(settings);
             const auto certificate_chain_files = nmos::experimental::fields::certificate_chain_files(settings);
 
             const auto size = std::min(private_key_files.size(), certificate_chain_files.size());
             for (size_t i = 0; i < size; ++i)
             {
-                web::json::push_back(server_certificate_chains,
+                web::json::push_back(server_certificates,
                     web::json::value_of({
                         { nmos::experimental::fields::private_key_file, private_key_files.at(i) },
                         { nmos::experimental::fields::certificate_chain_file, certificate_chain_files.at(i) }
@@ -55,22 +55,22 @@ namespace nmos
             }
         }
 
-        return [&, server_certificate_chains]()
+        return [&, server_certificates]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server certificate keys and certificate chains";
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server private keys and certificate chains";
 
             auto data = std::vector<nmos::server_certificate>();
 
-            if (0 == server_certificate_chains.size())
+            if (0 == server_certificates.size())
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificate chains";
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificates";
             }
 
-            for (const auto& server_certificate_chain : server_certificate_chains.as_array())
+            for (const auto& server_certificate : server_certificates.as_array())
             {
-                const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate_chain);
-                const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate_chain);
-                const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate_chain);
+                const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate);
+                const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate);
+                const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate);
 
                 std::stringstream pkey;
                 if (private_key_file.empty())
