@@ -28,17 +28,12 @@ namespace nmos
     namespace details
     {
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        load_ca_certificates_handler make_default_load_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate)
-        {
-            return make_load_ca_certificates_handler(settings, gate);
-        }
-
         template <typename ExceptionType>
         inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
         {
             if (!load_ca_certificates)
             {
-                load_ca_certificates = make_default_load_ca_certificates_handler(settings, gate);
+                load_ca_certificates = make_load_ca_certificates_handler(settings, gate);
             }
 
             return [load_ca_certificates](boost::asio::ssl::context& ctx)

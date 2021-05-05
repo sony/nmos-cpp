@@ -1044,7 +1044,7 @@ namespace impl
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
     return nmos::experimental::node_implementation()
-        .on_load_server_certificate_chains(nmos::make_load_server_certificate_chains_handler(model.settings, gate))
+        .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
         .on_load_dh_param(nmos::make_load_dh_param_handler(model.settings, gate))
         .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
         .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
