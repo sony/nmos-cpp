@@ -61,7 +61,7 @@ namespace nmos
                         ctx.use_certificate_chain(boost::asio::buffer(cert_chain.data(), cert_chain.size()));
 
                         const auto key_algorithm = server_certificate_chain.key_algorithm;
-                        if (key_algorithm.name.empty() | key_algorithm == key_algorithms::ECDSA)
+                        if (key_algorithm.name.empty() || key_algorithm == key_algorithms::ECDSA)
                         {
                             // certificates may not have ECDH parameters, so ignore errors...
                             boost::system::error_code ec;
