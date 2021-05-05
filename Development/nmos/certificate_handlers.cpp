@@ -6,10 +6,9 @@
 
 namespace nmos
 {
-    // implement callback to load certification authorities
+    // construct callback to load certification authorities from file based on settings, see nmos/certificate_settings.h
     load_ca_certificates_handler make_load_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
-        // load the certification authorities from file for the caller
         const auto ca_certificate_file = nmos::experimental::fields::ca_certificate_file(settings);
 
         return [&, ca_certificate_file]()
@@ -33,31 +32,42 @@ namespace nmos
         };
     }
 
-    // implement callback to load server certificate keys and certificate chains
+    // construct callback to load server certificate chains from files based on settings, see nmos/certificate_settings.h
     load_server_certificate_chains_handler make_load_server_certificate_chains_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
         // load the server keys and certificate chains from files
-        const auto server_certificate_chains = nmos::experimental::fields::server_certificate_chains(settings);
+        auto server_certificate_chains = nmos::experimental::fields::server_certificate_chains(settings);
+        if (0 == server_certificate_chains.size())
+        {
+            // (deprecated, replaced by server_certificate_chains)
+            const auto private_key_files = nmos::experimental::fields::private_key_files(settings);
+            const auto certificate_chain_files = nmos::experimental::fields::certificate_chain_files(settings);
 
-        return[&, server_certificate_chains]()
+            const auto size = std::min(private_key_files.size(), certificate_chain_files.size());
+            for (size_t i = 0; i < size; ++i)
+            {
+                web::json::push_back(server_certificate_chains,
+                    web::json::value_of({
+                        { nmos::experimental::fields::private_key_file, private_key_files.at(i) },
+                        { nmos::experimental::fields::certificate_chain_file, certificate_chain_files.at(i) }
+                    })
+                );
+            }
+        }
+
+        return [&, server_certificate_chains]()
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server certificate keys and certificate chains";
 
-            auto data = std::vector<nmos::server_certificate_chain>();
+            auto data = std::vector<nmos::server_certificate>();
 
             if (0 == server_certificate_chains.size())
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificate chains settings";
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificate chains";
             }
 
             for (const auto& server_certificate_chain : server_certificate_chains.as_array())
             {
-                if (!server_certificate_chain.has_field(nmos::experimental::fields::key_algorithm)
-                    || !server_certificate_chain.has_field(nmos::experimental::fields::private_key_file)
-                    || !server_certificate_chain.has_field(nmos::experimental::fields::certificate_chain_file))
-                {
-                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing TLS type/private key file/certificate chain file";
-                }
                 const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate_chain);
                 const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate_chain);
                 const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate_chain);
@@ -84,16 +94,15 @@ namespace nmos
                     cert_chain << cert_chain_file.rdbuf();
                 }
 
-                data.push_back(nmos::server_certificate_chain(nmos::key_algorithms::ECDSA.name == key_algorithm ? nmos::key_algorithms::ECDSA : nmos::key_algorithms::RSA, utility::s2us(pkey.str()), utility::s2us(cert_chain.str())));
+                data.push_back(nmos::server_certificate(nmos::key_algorithm{ key_algorithm }, utility::s2us(pkey.str()), utility::s2us(cert_chain.str())));
             }
             return data;
         };
     }
 
-    // implement callback to load Diffie-Hellman parameters for ephemeral key exchange support
+    // construct callback to load Diffie-Hellman parameters for ephemeral key exchange support from file based on settings, see nmos/certificate_settings.h
     load_dh_param_handler make_load_dh_param_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
-        // load the DH parameters from file for the caller
         const auto dh_param_file = nmos::experimental::fields::dh_param_file(settings);
 
         return[&, dh_param_file]()

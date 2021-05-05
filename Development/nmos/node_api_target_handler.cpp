@@ -96,4 +96,9 @@ namespace nmos
             }
         };
     }
+
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model)
+    {
+        return make_node_api_target_handler(model, &nmos::parse_rtp_transport_file, {});
+    }
 }

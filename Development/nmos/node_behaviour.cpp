@@ -484,14 +484,14 @@ namespace nmos
 
         web::http::client::http_client_config make_registration_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
         {
-            auto config = nmos::make_http_client_config(settings, load_ca_certificates, gate);
+            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), gate);
             config.set_timeout(std::chrono::seconds(nmos::fields::registration_request_max(settings)));
             return config;
         }
 
         web::http::client::http_client_config make_heartbeat_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
         {
-            auto config = nmos::make_http_client_config(settings, load_ca_certificates, gate);
+            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), gate);
             config.set_timeout(std::chrono::seconds(nmos::fields::registration_heartbeat_max(settings)));
             return config;
         }

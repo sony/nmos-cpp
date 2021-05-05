@@ -256,12 +256,12 @@ namespace nmos
             const web::json::field_as_integer_or href_mode{ U("href_mode"), 0 }; // when omitted, a default heuristic is used
 
             // client_secure [registry, node]: whether clients should use a secure connection for communication (https and wss)
-            // when true, CA root certificates must also be configured
+            // when true, CA root certificates must also be configured, see nmos/certificate_settings.h
             const web::json::field_as_bool_or client_secure{ U("client_secure"), false };
 
             // server_secure [registry, node]: whether server should listen for secure connection for communication (https and wss)
             // e.g. typically false when using a reverse proxy, or the same as client_secure otherwise
-            // when true, server certificates etc. must also be configured
+            // when true, server certificates etc. must also be configured, see nmos/certificate_settings.h
             const web::json::field_as_bool_or server_secure{ U("server_secure"), false };
 
             // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)

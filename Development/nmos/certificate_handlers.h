@@ -14,28 +14,50 @@ namespace slog
 
 namespace nmos
 {
-    // callback to supply trusted root CA certificate(s), in PEM format
-    // on Windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
-    // the trusted root CA certificates must also be imported into the certificate store
+    // callback to supply trusted root CA certificate(s) in PEM format
     // this callback is executed when opening the HTTP or WebSocket client
     // this callback should not throw exceptions
+    // on Windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
+    // the trusted root CA certificates must also be imported into the certificate store
     typedef std::function<utility::string_t()> load_ca_certificates_handler;
 
-    // callback to supply a list of server certificate chains, which containing the server key algorithm, the private key and the server certificate chain, in PEM format
-    // the chain should be sorted starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
-    // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
-    // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
-    // this callback is executed when opening the HTTP or WebSocket listener
-    // this callback should not throw exceptions
+    // common key algorithms
     DEFINE_STRING_ENUM(key_algorithm)
     namespace key_algorithms
     {
-        const key_algorithm unspecified{ U("unspecified") };
         const key_algorithm ECDSA{ U("ECDSA") };
         const key_algorithm RSA{ U("RSA") };
     }
-    typedef std::tuple<key_algorithm, utility::string_t, utility::string_t> server_certificate_chain;
-    typedef std::function<std::vector<server_certificate_chain>()> load_server_certificate_chains_handler;
+
+    // server certificate details including the private key and the server certificate chain in PEM format
+    // the key algorithm may also be specified
+    struct server_certificate
+    {
+        server_certificate() {}
+
+        server_certificate(utility::string_t private_key, utility::string_t certificate_chain)
+            : private_key(std::move(private_key))
+            , certificate_chain(std::move(certificate_chain))
+        {}
+
+        server_certificate(nmos::key_algorithm key_algorithm, utility::string_t private_key, utility::string_t certificate_chain)
+            : key_algorithm(std::move(key_algorithm))
+            , private_key(std::move(private_key))
+            , certificate_chain(std::move(certificate_chain))
+        {}
+
+        nmos::key_algorithm key_algorithm;
+        utility::string_t private_key;
+        // the chain should be sorted starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+        utility::string_t certificate_chain;
+    };
+
+    // callback to supply a list of server certificate chains
+    // this callback is executed when opening the HTTP or WebSocket listener
+    // this callback should not throw exceptions
+    // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
+    // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
+    typedef std::function<std::vector<server_certificate>()> load_server_certificate_chains_handler;
 
     // callback to supply Diffie-Hellman parameters for ephemeral key exchange support, in PEM format or empty string for no support
     // see e.g. https://wiki.openssl.org/index.php/Diffie-Hellman_parameters
@@ -43,13 +65,13 @@ namespace nmos
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_dh_param_handler;
 
-    // implement callback to load certification authorities
+    // construct callback to load certification authorities from file based on settings, see nmos/certificate_settings.h
     load_ca_certificates_handler make_load_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate);
 
-    // implement callback to load server certificate keys and certificate chains
+    // construct callback to load server certificate chains from files based on settings, see nmos/certificate_settings.h
     load_server_certificate_chains_handler make_load_server_certificate_chains_handler(const nmos::settings& settings, slog::base_gate& gate);
 
-    // implement callback to load Diffie-Hellman parameters for ephemeral key exchange support
+    // construct callback to load Diffie-Hellman parameters for ephemeral key exchange support from file based on settings, see nmos/certificate_settings.h
     load_dh_param_handler make_load_dh_param_handler(const nmos::settings& settings, slog::base_gate& gate);
 }
 
