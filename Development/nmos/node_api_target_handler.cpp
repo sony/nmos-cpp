@@ -13,9 +13,9 @@ namespace nmos
 {
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser and the specified validator
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged)
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_ca_certificates_handler load_ca_certificates, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged)
     {
-        return [&model, parse_transport_file, validate_merged](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
+        return [&model, load_ca_certificates, parse_transport_file, validate_merged](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
         {
             using web::json::value;
             using web::json::value_of;
@@ -28,7 +28,7 @@ namespace nmos
                 // if manifest_href is null, this will throw json_exception which will be reported appropriately as 400 Bad Request
                 const auto manifest_href = nmos::fields::manifest_href(sender_data).as_string();
 
-                web::http::client::http_client client(manifest_href, nmos::with_read_lock(model.mutex, [&model] { return nmos::make_http_client_config(model.settings); }));
+                web::http::client::http_client client(manifest_href, nmos::with_read_lock(model.mutex, [&, load_ca_certificates] { return nmos::make_http_client_config(model.settings, load_ca_certificates, gate); }));
                 return api_request(client, web::http::methods::GET, gate).then([manifest_href, &gate](web::http::http_response res)
                 {
                     if (res.status_code() != web::http::status_codes::OK)
@@ -97,8 +97,6 @@ namespace nmos
         };
     }
 
-    // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the default transport file parser
-    // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
     node_api_target_handler make_node_api_target_handler(nmos::node_model& model)
     {
         return make_node_api_target_handler(model, &nmos::parse_rtp_transport_file, {});

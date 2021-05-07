@@ -18,9 +18,9 @@ namespace nmos
 {
     namespace details
     {
-        void node_system_behaviour_thread(nmos::model& model, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate);
+        void node_system_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate);
 
-        void node_system_behaviour(nmos::model& model, system_global_handler system_changed, slog::base_gate& gate);
+        void node_system_behaviour(nmos::model& model, load_ca_certificates_handler load_ca_certificates, system_global_handler system_changed, slog::base_gate& gate);
 
         // background service discovery
         void system_services_background_discovery(nmos::model& model, mdns::service_discovery& discovery, slog::base_gate& gate);
@@ -32,25 +32,25 @@ namespace nmos
 
     // uses the default DNS-SD implementation
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void node_system_behaviour_thread(nmos::model& model, system_global_handler system_changed, slog::base_gate& gate_)
+    void node_system_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, system_global_handler system_changed, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_system_behaviour));
 
         mdns::service_discovery discovery(gate);
 
-        details::node_system_behaviour_thread(model, std::move(system_changed), discovery, gate);
+        details::node_system_behaviour_thread(model, std::move(load_ca_certificates), std::move(system_changed), discovery, gate);
     }
 
     // uses the specified DNS-SD implementation
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void node_system_behaviour_thread(nmos::model& model, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate_)
+    void node_system_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_system_behaviour));
 
-        details::node_system_behaviour_thread(model, std::move(system_changed), discovery, gate);
+        details::node_system_behaviour_thread(model, std::move(load_ca_certificates), std::move(system_changed), discovery, gate);
     }
 
-    void details::node_system_behaviour_thread(nmos::model& model, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate)
+    void details::node_system_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, system_global_handler system_changed, mdns::service_discovery& discovery, slog::base_gate& gate)
     {
         enum
         {
@@ -103,7 +103,7 @@ namespace nmos
                 break;
 
             case node_system_behaviour:
-                details::node_system_behaviour(model, system_changed, gate);
+                details::node_system_behaviour(model, load_ca_certificates, system_changed, gate);
 
                 // Should no further System APIs be available or TTLs on advertised services expired, a re-query may be performed.
                 mode = rediscovery;
@@ -229,9 +229,9 @@ namespace nmos
 
     namespace details
     {
-        web::http::client::http_client_config make_system_client_config(const nmos::settings& settings)
+        web::http::client::http_client_config make_system_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
         {
-            auto config = nmos::make_http_client_config(settings);
+            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), gate);
             config.set_timeout(std::chrono::seconds(nmos::fields::system_request_max(settings)));
             return config;
         }
@@ -368,7 +368,7 @@ namespace nmos
             });
         }
 
-        void node_system_behaviour(nmos::model& model, system_global_handler system_changed, slog::base_gate& gate)
+        void node_system_behaviour(nmos::model& model, load_ca_certificates_handler load_ca_certificates, system_global_handler system_changed, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting System API node behaviour";
 
@@ -407,7 +407,7 @@ namespace nmos
                 if (!state.client)
                 {
                     const auto base_uri = top_system_service(model.settings);
-                    state.client.reset(new web::http::client::http_client(base_uri, make_system_client_config(model.settings)));
+                    state.client.reset(new web::http::client::http_client(base_uri, make_system_client_config(model.settings, load_ca_certificates, gate)));
                 }
 
                 auto token = cancellation_source.get_token();

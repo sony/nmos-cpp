@@ -187,14 +187,15 @@
     // when true, server certificates etc. must also be configured
     //"server_secure": false,
 
-    // private_key_files [registry, node]: full paths of private key files in PEM format
-    //"private_key_files": ["server-ecdsa-key.pem", "server-rsa-key.pem"],
-
-    // certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
+    // server_certificates [registry, node]: an array of server certificate objects, each has the name of the key algorithm, the full paths of private key file and certificate chain file
+    // each value must be an object like { "key_algorithm": "ECDSA", "private_key_file": "server-ecdsa-key.pem", "certificate_chain_file": "server-ecdsa-chain.pem" }
+    // key_algorithm (attribute of server_certificates objects): name of the key algorithm for the certificate, see nmos::key_algorithm
+    // private_key_file (attribute of server_certificates objects): full path of private key file in PEM format
+    // certificate_chain_file (attribute of server_certificates object): full path of certificate chain file in PEM format, which must be sorted
     // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
-    //"certificate_chain_files": ["server-ecdsa-chain.pem", "server-rsa-chain.pem"],
+    //"server_certificates": [{"key_algorithm": "ECDSA", "private_key_file": "server-ecdsa-key.pem", "certificate_chain_file": "server-ecdsa-chain.pem"}, {"key_algorithm": "RSA", "private_key_file": "server-rsa-key.pem", "certificate_chain_file": "server-rsa-chain.pem"}],
 
     // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)
     //"validate_certificates": true,

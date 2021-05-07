@@ -60,8 +60,10 @@ endif()
 
 set(NMOS_CPP_REGISTRY_SOURCES
     ${NMOS_CPP_DIR}/nmos-cpp-registry/main.cpp
+    ${NMOS_CPP_DIR}/nmos-cpp-registry/registry_implementation.cpp
     )
 set(NMOS_CPP_REGISTRY_HEADERS
+    ${NMOS_CPP_DIR}/nmos-cpp-registry/registry_implementation.h
     )
 
 add_executable(

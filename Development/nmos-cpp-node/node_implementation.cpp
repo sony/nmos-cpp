@@ -243,7 +243,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 {
                     return impl::channels_repeat[index % (int)impl::channels_repeat.size()];
                 }));
-                    
+
                 source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
             }
             else if (impl::ports::data == port)
@@ -959,12 +959,13 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
 // Example Connection API activation callback to perform application-specific operations to complete activation
 nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
 {
+    auto handle_load_ca_certificates = nmos::make_load_ca_certificates_handler(model.settings, gate);
     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
     // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
     // connection errors are reflected into the /active endpoint by setting master_enable to false
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
-    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, handle_close, model.settings, gate);
+    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
 
     return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
@@ -1043,6 +1044,9 @@ namespace impl
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
     return nmos::experimental::node_implementation()
+        .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
+        .on_load_dh_param(nmos::make_load_dh_param_handler(model.settings, gate))
+        .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
         .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
         .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
         .on_parse_transport_file(make_node_implementation_transport_file_parser()) // may be omitted if the default is sufficient
