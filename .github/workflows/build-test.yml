@@ -17,19 +17,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [windows-latest]
         install_mdns: [false]
         use_conan: [true]
         force_cpprest_asio: [false]
         include:
-          - install_mdns: true
-            use_conan: true
-            force_cpprest_asio: false
-            os: ubuntu-18.04
-          - install_mdns: true
-            use_conan: true
-            force_cpprest_asio: false
-            os: ubuntu-20.04
           - install_mdns: false
             use_conan: true
             force_cpprest_asio: true
