@@ -109,8 +109,7 @@ function do_run_test() {
     echo "Using additional options: $suite_options"
   fi
   output_file=${results_dir}/${build_prefix}${suite}.json
-  #result=$(${run_python} nmos-test.py suite ${suite} --selection all "$@" --output "${output_file}" $suite_options >> ${results_dir}/testoutput 2>&1; echo $?)
-  result=$(${run_python} nmos-test.py suite ${suite} --selection all "$@" --output "${output_file}" $suite_options; echo $?)
+  result=$(${run_python} nmos-test.py suite ${suite} --selection all "$@" --output "${output_file}" $suite_options >> ${results_dir}/testoutput 2>&1; echo $?)  
   if [ ! -e ${output_file} ]; then
     echo "No output produced"
     result=2
