@@ -13,11 +13,14 @@
 #include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
 
+#include "nmos/certificate_settings.h"
+
 // Utility types, constants and functions for implementing NMOS REST API servers
 namespace nmos
 {
     namespace details
     {
+/*
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
         inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
@@ -76,6 +79,67 @@ namespace nmos
                     {
                         ctx.use_tmp_dh(boost::asio::buffer(dh_param.data(), dh_param.size()));
                     }
+                }
+                catch (const boost::system::system_error& e)
+                {
+                    throw web::details::from_boost_system_system_error<ExceptionType>(e);
+                }
+            };
+        }
+#endif
+*/
+
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+        template <typename ExceptionType>
+        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+        {
+            //const auto& private_key_files = nmos::experimental::fields::private_key_files(settings);
+            //const auto& certificate_chain_files = nmos::experimental::fields::certificate_chain_files(settings);
+
+            auto private_key_files = web::json::value::array();
+            auto certificate_chain_files = web::json::value::array();
+            auto server_certificates = nmos::experimental::fields::server_certificates(settings);
+            for (const auto& server_certificate : server_certificates.as_array())
+            {
+                const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate);
+                const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate);
+                const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate);
+
+                push_back(private_key_files, private_key_file);
+                push_back(certificate_chain_files, certificate_chain_file);
+            }
+
+            const auto& dh_param_file = utility::us2s(nmos::experimental::fields::dh_param_file(settings));
+            return [private_key_files, certificate_chain_files, dh_param_file](boost::asio::ssl::context& ctx)
+            {
+                try
+                {
+                    ctx.set_options(nmos::details::ssl_context_options);
+
+                    if (private_key_files.size() == 0)
+                    {
+                        throw ExceptionType({}, "Missing private key file");
+                    }
+                    for (const auto& private_key_file : private_key_files.as_array())
+                    {
+                        ctx.use_private_key_file(utility::us2s(private_key_file.as_string()), boost::asio::ssl::context::pem);
+                    }
+
+                    if (certificate_chain_files.size() == 0)
+                    {
+                        throw ExceptionType({}, "Missing certificate chain file");
+                    }
+                    for (const auto& certificate_chain_file : certificate_chain_files.as_array())
+                    {
+                        ctx.use_certificate_chain_file(utility::us2s(certificate_chain_file.as_string()));
+                        // any one of the certificates may have ECDH parameters, so ignore errors...
+                        boost::system::error_code ec;
+                        use_tmp_ecdh_file(ctx, utility::us2s(certificate_chain_file.as_string()), ec);
+                    }
+
+                    set_cipher_list(ctx, nmos::details::ssl_cipher_list);
+
+                    if (!dh_param_file.empty()) ctx.use_tmp_dh_file(dh_param_file);
                 }
                 catch (const boost::system::system_error& e)
                 {
