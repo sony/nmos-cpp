@@ -270,11 +270,11 @@ jobs:
 #        Expand-Archive .\ubuntu204.zip .\ubuntu204
 #        cd ubuntu204
 #        .\ubuntu2004.exe install --root
-        & curl -L https://aka.ms/wslubuntu1804 -o ubuntu104.appx
-        Rename-Item .\ubuntu104.appx .\ubuntu104.zip
-        Expand-Archive .\ubuntu104.zip .\ubuntu104
-        cd ubuntu104
-        .\ubuntu1804.exe install --root
+        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
+        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
+        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
+        cd ubuntu-1804
+        .\ubuntu-1804.exe install --root
     
     - name: AMWA test suite
       shell: bash
