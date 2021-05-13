@@ -20,7 +20,7 @@ namespace nmos
 {
     namespace details
     {
-/*
+///*
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
         inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
@@ -87,8 +87,9 @@ namespace nmos
             };
         }
 #endif
-*/
+//*/
 
+/*
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
         inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
@@ -148,6 +149,7 @@ namespace nmos
             };
         }
 #endif
+*/
     }
 
     // construct listener config based on settings
