@@ -269,7 +269,7 @@ jobs:
         Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
         Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
         cd ubuntu-1804
-        .\ubuntu-1804.exe install --root
+        .\ubuntu1804.exe install --root
     
     - name: AMWA test suite
       shell: bash
