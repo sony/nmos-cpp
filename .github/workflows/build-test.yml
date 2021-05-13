@@ -265,11 +265,6 @@ jobs:
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-#        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
-#        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
-#        Expand-Archive .\ubuntu204.zip .\ubuntu204
-#        cd ubuntu204
-#        .\ubuntu2004.exe install --root
         & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
         Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
         Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
