@@ -265,11 +265,16 @@ jobs:
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
-        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
-        Expand-Archive .\ubuntu204.zip .\ubuntu204
-        cd ubuntu204
-        .\ubuntu2004.exe install --root
+#        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+#        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+#        Expand-Archive .\ubuntu204.zip .\ubuntu204
+#        cd ubuntu204
+#        .\ubuntu2004.exe install --root
+        & curl -L https://aka.ms/wslubuntu1804 -o ubuntu104.appx
+        Rename-Item .\ubuntu104.appx .\ubuntu104.zip
+        Expand-Archive .\ubuntu104.zip .\ubuntu104
+        cd ubuntu104
+        .\ubuntu1804.exe install --root
     
     - name: AMWA test suite
       shell: bash
