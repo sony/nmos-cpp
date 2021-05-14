@@ -13,8 +13,6 @@
 #include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
 
-#include "nmos/certificate_settings.h"
-
 // Utility types, constants and functions for implementing NMOS REST API servers
 namespace nmos
 {
