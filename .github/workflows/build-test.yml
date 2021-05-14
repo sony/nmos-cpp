@@ -273,11 +273,11 @@ jobs:
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
-        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
-        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
-        cd ubuntu-1804
-        .\ubuntu1804.exe install --root
+        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
+        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
+        Expand-Archive .\ubuntu204.zip .\ubuntu204
+        cd ubuntu204
+        .\ubuntu2004.exe install --root
     
     - name: AMWA test suite
       shell: bash
@@ -292,7 +292,8 @@ jobs:
         cd nmos-testing
     
         # Configure the Testing Tool so all APIs are tested with TLS
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        #printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.HTTP_TIMEOUT = 1200\n" > nmostesting/UserConfig.py
     
         # Download testssl
         cd testssl
