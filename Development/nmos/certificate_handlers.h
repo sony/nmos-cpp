@@ -29,18 +29,18 @@ namespace nmos
         const key_algorithm RSA{ U("RSA") };
     }
 
-    // server certificate details including the private key and the certificate chain in PEM format
+    // certificate details including the private key and the certificate chain in PEM format
     // the key algorithm may also be specified
-    struct server_certificate
+    struct certificate
     {
-        server_certificate() {}
+        certificate() {}
 
-        server_certificate(utility::string_t private_key, utility::string_t certificate_chain)
+        certificate(utility::string_t private_key, utility::string_t certificate_chain)
             : private_key(std::move(private_key))
             , certificate_chain(std::move(certificate_chain))
         {}
 
-        server_certificate(nmos::key_algorithm key_algorithm, utility::string_t private_key, utility::string_t certificate_chain)
+        certificate(nmos::key_algorithm key_algorithm, utility::string_t private_key, utility::string_t certificate_chain)
             : key_algorithm(std::move(key_algorithm))
             , private_key(std::move(private_key))
             , certificate_chain(std::move(certificate_chain))
@@ -48,7 +48,7 @@ namespace nmos
 
         nmos::key_algorithm key_algorithm;
         utility::string_t private_key;
-        // the chain should be sorted starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+        // the chain should be sorted starting with the sender's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         utility::string_t certificate_chain;
     };
 
@@ -57,7 +57,7 @@ namespace nmos
     // this callback should not throw exceptions
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
-    typedef std::function<std::vector<server_certificate>()> load_server_certificates_handler;
+    typedef std::function<std::vector<certificate>()> load_server_certificates_handler;
 
     // callback to supply Diffie-Hellman parameters for ephemeral key exchange support, in PEM format or empty string for no support
     // see e.g. https://wiki.openssl.org/index.php/Diffie-Hellman_parameters

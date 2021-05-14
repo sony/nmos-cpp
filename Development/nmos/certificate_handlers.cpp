@@ -57,7 +57,7 @@ namespace nmos
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server private keys and certificate chains";
 
-            auto data = std::vector<nmos::server_certificate>();
+            auto data = std::vector<nmos::certificate>();
 
             if (0 == server_certificates.size())
             {
@@ -92,7 +92,7 @@ namespace nmos
                     cert_chain << cert_chain_file.rdbuf();
                 }
 
-                data.push_back(nmos::server_certificate(nmos::key_algorithm{ key_algorithm }, pkey.str(), cert_chain.str()));
+                data.push_back(nmos::certificate(nmos::key_algorithm{ key_algorithm }, pkey.str(), cert_chain.str()));
             }
             return data;
         };
