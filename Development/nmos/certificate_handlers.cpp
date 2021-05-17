@@ -48,7 +48,7 @@ namespace nmos
                     web::json::value_of({
                         { nmos::experimental::fields::private_key_file, private_key_files.at(i) },
                         { nmos::experimental::fields::certificate_chain_file, certificate_chain_files.at(i) }
-                        })
+                    })
                 );
             }
         }
