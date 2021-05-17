@@ -48,7 +48,7 @@ namespace nmos
 
         nmos::key_algorithm key_algorithm;
         utility::string_t private_key;
-        // the chain should be sorted starting with the sender's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
+        // the chain should be sorted starting with the end entity's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
         utility::string_t certificate_chain;
     };
 
