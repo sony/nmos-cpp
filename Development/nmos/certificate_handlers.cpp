@@ -13,8 +13,6 @@ namespace nmos
 
         return [&, ca_certificate_file]()
         {
-            utility::string_t data;
-
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load certification authorities";
 
             if (ca_certificate_file.empty())
@@ -23,12 +21,12 @@ namespace nmos
             }
             else
             {
-                std::ifstream ca_file(ca_certificate_file);
-                std::stringstream cacerts;
+                utility::ifstream_t ca_file(ca_certificate_file);
+                utility::stringstream_t cacerts;
                 cacerts << ca_file.rdbuf();
-                data = utility::s2us(cacerts.str());
+                return cacerts.str();
             }
-            return data;
+            return utility::string_t{};
         };
     }
 
@@ -59,7 +57,7 @@ namespace nmos
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server private keys and certificate chains";
 
-            auto data = std::vector<nmos::server_certificate>();
+            auto data = std::vector<nmos::certificate>();
 
             if (0 == server_certificates.size())
             {
@@ -72,29 +70,29 @@ namespace nmos
                 const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate);
                 const auto certificate_chain_file = nmos::experimental::fields::certificate_chain_file(server_certificate);
 
-                std::stringstream pkey;
+                utility::stringstream_t pkey;
                 if (private_key_file.empty())
                 {
-                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing private key file";
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server private key file";
                 }
                 else
                 {
-                    std::ifstream pkey_file(private_key_file);
+                    utility::ifstream_t pkey_file(private_key_file);
                     pkey << pkey_file.rdbuf();
                 }
 
-                std::stringstream cert_chain;
+                utility::stringstream_t cert_chain;
                 if (certificate_chain_file.empty())
                 {
-                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing certificate chain file";
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificate chain file";
                 }
                 else
                 {
-                    std::ifstream cert_chain_file(certificate_chain_file);
+                    utility::ifstream_t cert_chain_file(certificate_chain_file);
                     cert_chain << cert_chain_file.rdbuf();
                 }
 
-                data.push_back(nmos::server_certificate(nmos::key_algorithm{ key_algorithm }, utility::s2us(pkey.str()), utility::s2us(cert_chain.str())));
+                data.push_back(nmos::certificate(nmos::key_algorithm{ key_algorithm }, pkey.str(), cert_chain.str()));
             }
             return data;
         };
@@ -109,20 +107,18 @@ namespace nmos
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load DH parameters";
 
-            utility::string_t data;
-
             if (dh_param_file.empty())
             {
                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing DH parameters file";
             }
             else
             {
-                std::ifstream dh_file(dh_param_file);
-                std::stringstream dh_param;
+                utility::ifstream_t dh_file(dh_param_file);
+                utility::stringstream_t dh_param;
                 dh_param << dh_file.rdbuf();
-                data = utility::s2us(dh_param.str());
+                return dh_param.str();
             }
-            return data;
+            return utility::string_t{};
         };
     }
 }
