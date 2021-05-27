@@ -50,6 +50,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     ${NMOS_CPP_DIR}/nmos/test/channels_test.cpp
     ${NMOS_CPP_DIR}/nmos/test/did_sdid_test.cpp
     ${NMOS_CPP_DIR}/nmos/test/event_type_test.cpp
+    ${NMOS_CPP_DIR}/nmos/test/json_validator_test.cpp
     ${NMOS_CPP_DIR}/nmos/test/paging_utils_test.cpp
     )
 set(NMOS_CPP_TEST_NMOS_TEST_HEADERS

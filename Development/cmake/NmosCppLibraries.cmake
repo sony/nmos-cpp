@@ -619,12 +619,14 @@ install(TARGETS nmos_is09_schemas_static DESTINATION lib)
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
+    ${NMOS_CPP_DIR}/third_party/nlohmann/json-patch.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-schema-draft7.json.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-validator.cpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-uri.cpp
     )
 
 set(JSON_SCHEMA_VALIDATOR_HEADERS
+    ${NMOS_CPP_DIR}/third_party/nlohmann/json-patch.hpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json-schema.hpp
     ${NMOS_CPP_DIR}/third_party/nlohmann/json.hpp
     )
