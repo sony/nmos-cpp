@@ -6,6 +6,5 @@
   "items": {
     "$ref": "device.json"
   },
-  "minItems": 0,
   "uniqueItems": true
 }

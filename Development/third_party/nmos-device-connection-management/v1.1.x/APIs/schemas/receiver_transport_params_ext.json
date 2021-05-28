@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "Describes external Receiver transport parameters defined in other AMWA IS specifications. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
+  "description": "Describes external Receiver transport parameters defined in other AMWA specifications. The constraints in this schema are minimum constraints, but may be further constrained at the constraints endpoint.",
   "title": "External Receiver Transport Parameters",
   "type":[
     "string",

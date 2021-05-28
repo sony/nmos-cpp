@@ -6,6 +6,5 @@
   "items": {
     "$ref": "sender.json"
   },
-  "minItems": 0,
   "uniqueItems": true
 }

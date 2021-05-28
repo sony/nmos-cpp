@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "Describes a data Grain sent via the a Query API websocket subscription",
+  "description": "Describes a data Grain sent via the a Query API WebSocket subscription",
   "title": "Query API data Grain",
   "required": [
     "grain_type",
@@ -105,10 +105,9 @@
           ]
         },
         "topic": {
-          "description": "Query API topic which has been subscribed to using this websocket",
+          "description": "Query API topic which has been subscribed to using this WebSocket",
           "type": "string",
           "enum": [
-            "/",
             "/nodes/",
             "/devices/",
             "/sources/",
@@ -130,7 +129,7 @@
               "path": {
                 "description": "ID of the resource which has undergone a change (may be a Node ID, Device ID etc.)",
                 "type": "string",
-                "pattern": "^((nodes|devices|sources|flows|senders|receivers)/)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
               },
               "pre": {
                 "description": "Representation of the resource undergoing a change prior to the change occurring. Omitted if the resource didn't previously exist.",
