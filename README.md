@@ -1,11 +1,11 @@
-20/4/2021 D Butler, BBC R&D
+2/6/2021 D Butler, BBC R&D
 
 ## NMOS C++ Implementation for the 5G-Records Project
---------------------------------------------------
-Work in progress
+
+Work in progress for remote proxy nmos node.
 
 ## Introduction
-------------
+
 The 5G-Records nmos-cpp software is modified version of the open source Sony nmos-cpp software available on the Sony git repository ( https://github.com/sony/nmos-cpp ) and is subject to the open source license agreement described in the repository. 
 
 The original nmos-cpp software creates a nmos-node and nmos-registry software. The nmos-node runs on a local media device and registers the device with the nmos-registry software running on separate server. Register devices can then be controlled by the nmos-js Ctrl App ( https://github.com/sony/nmos-js ).
@@ -21,7 +21,7 @@ The 5G-Records nmos-node software has been modified to allow registration and co
 
 
 ## Development Environment and Compiling
--------------------------------------
+
 Original make and dependency info:
 
 https://github.com/sony/nmos-cpp/blob/master/Development/CMakeLists.txt
@@ -41,13 +41,14 @@ user@vm2:~$ make --version <br />
 
 user@vm2:~$ sudo apt install python3-pip
 
+user@vm2:~$ sudo apt-get install -y python-markupsafe	#May or may not be needed depending on app versions
+
 user@vm2:~$ pip3 install conan
 
 user@vm2:~$ sudo cp -r .local/bin/* /usr/local/bin/
 
 user@vm2:~$ ls /usr/local/bin/ <br />
-bottle.py  conan_build_info  cvlc      nvlc         qvlc       ristreceiver  rvlc  tqdm  vlc-wrapper
-conan      conan_server      firebase  __pycache__  rist2rist  ristsender    svlc  vlc
+bottle.py  conan_build_info  tqdm  conan  conan_server __pycache__  
 
 user@vm2:~$ conan --version <br />
 Conan version 1.33.0
@@ -65,21 +66,24 @@ user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ sudo make os=linux install
 Check the nsswitch.conf file. <br />
 If 'mdns' does not already appear on the "hosts:" line, then add it right before 'dns' <br />
 
-cp -f /etc/nsswitch.conf /etc/nsswitch.conf.pre-mdns <br />
-sed -e '/mdns/!s/^\(hosts:.*\)dns\(.*\)/\1mdns dns\2/' /etc/nsswitch.conf.pre-mdns > /etc/nsswitch.conf <br />
-cp nss_mdns.conf.5 /usr/share/man/man5/nss_mdns.conf.5 <br />
-chmod 444 /usr/share/man/man5/nss_mdns.conf.5 <br />
-cp libnss_mdns.8 /usr/share/man/man8/libnss_mdns.8 <br />
-chmod 444 /usr/share/man/man8/libnss_mdns.8 <br />
-/lib/libnss_mdns.so.2 /etc/nss_mdns.conf /usr/share/man/man5/nss_mdns.conf.5 /usr/share/man/man8/libnss_mdns.8 installed 
+user@vm2:~$ cp -f /etc/nsswitch.conf /etc/nsswitch.conf.pre-mdns
+```
+user@vm2:~$ sed -e '/mdns/!s/^\(hosts:.*\)dns\(.*\)/\1mdns dns\2/' /etc/nsswitch.conf.pre-mdns > /etc/nsswitch.conf
+```
+user@vm2:~$ cp nss_mdns.conf.5 /usr/share/man/man5/nss_mdns.conf.5
 
-Add mdns4_minimal in .conf. if not present.
+user@vm2:~$ chmod 444 /usr/share/man/man5/nss_mdns.conf.5
 
-user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ pico /etc/nsswitch.conf
- /etc/nsswitch.conf <br />
- Example configuration of GNU Name Service Switch functionality. <br />
- If you have the `glibc-doc-reference' and `info' packages installed, try: <br />
- `info libc "Name Service Switch"' for information about this file. <br />
+user@vm2:~$ cp libnss_mdns.8 /usr/share/man/man8/libnss_mdns.8
+
+user@vm2:~$ chmod 444 /usr/share/man/man8/libnss_mdns.8
+/lib/libnss_mdns.so.2 /etc/nss_mdns.conf /usr/share/man/man5/nss_mdns.conf.5 /usr/share/man/man8/libnss_mdns.8  installed
+
+user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ more /etc/nsswitch.conf <br />
+&#35; /etc/nsswitch.conf <br />
+&#35; Example configuration of GNU Name Service Switch functionality. <br />
+&#35; If you have the `glibc-doc-reference' and `info' packages installed, try: <br />
+&#35; `info libc "Name Service Switch"' for information about this file. <br />
 passwd:         files systemd <br />
 group:          files systemd <br />
 shadow:         files <br />
@@ -91,7 +95,6 @@ services:       db files <br />
 ethers:         db files <br />
 rpc:            db files <br />
 netgroup:       nis <br />
-
 
 user@vm2:~$ sudo apt-get install git <br />
 [Note: users will need git.ebu.io permissions, SSO and SSH-RSA credentials to be configured]
@@ -106,64 +109,106 @@ user@vm2:~/nmos-cpp/Development/build$ sudo make install <br />
 
 
 ## Starting the nmos-registration service
---------------------------------------
+
 The registration service is controlled by a .json config file that sets the ports for web and service access.
 
-user@vm2:~/nmos-dpb/Development/build$ more reg_config.json <br />
-{ <br />
-    "logging_level": 0, <br />
-    "domain": "local.", <br />
+user@vm3:~/nmos-dpb/Development/build$ more reg_config.json <br />
+```json
+{ 
+    "logging_level": 0,
+    "domain": "local.",
     "http_port": 8000,
-    "events_ws_port": 8001, <br />
-    "label": "vm3-reg" <br />
-} <br />
-
-user@vm2:~/nmos-dpb/Development/build$ ./nmos-cpp-registry reg_config.json
+    "events_ws_port": 8001, 
+    "label": "vm3-reg"
+} 
+```
+user@vm3:~/nmos-dpb/Development/build$ ./nmos-cpp-registry reg_config.json
 
 
 ## Starting the nmos-node service
-------------------------------
+
 The node service is also controlled by a .json config file that sets the ports for web, service and details of the senders and receivers to be created.
 
 user@vm2:~/nmos-dpb/Development/build$ more config.json <br />
-{ <br />
-    "logging_level": 0, <br />
-    "domain": "local.", <br />
-    "http_port": 8080, <br />
-    "events_ws_port": 8081, <br />
-    "label": "vm2", <br />
-    "how_many": 0, <br />
-    "frame_rate": { "numerator": 25, "denominator": 1 }, <br />
-    "interlace_mode": false, <br />
-    "smpte2022_7": false, <br />
-    "OGC_remote": true, <br />
-    "remote_address": "192.168.10.160", <br />
+```json
+{
+    "logging_level": 0,
+    "domain": "local.",
+    "http_port": 8080,
+    "events_ws_port": 8081,
+    "label": "vm2", 
+    "how_many": 0, 
+    "frame_rate": { "numerator": 25, "denominator": 1 }, 
+    "interlace_mode": false, 
+    "smpte2022_7": false, 
+    "OGC_remote": true, 
+    "remote_address": "192.168.10.160",
     "remote_int_name": "eno1",
     "remote_mac": "00-00-00-00-00-16",
-    "how_many_senders": 2, <br />
-    "senders_list": [ <br />
-      { "label": "Camera31", "transport":"rtp_ucast", "payload": "video", "format": "raw", "dst_ip": "192.168.10.170", "dst_port": 5034 }, <br />
-      { "label": "Camera31", "transport":"rtp_ucast", "payload": "audio", "format": "L24", "dst_ip": "192.168.10.170", "dst_port": 5036 } <br />
-    ], <br />
-    "how_many_receivers": 2, <br />
-    "receivers_list": [ <br />
-      { "label": "Camera2", "transport":"rtp_ucast", "payload": "video", "format": "raw" }, <br />
-      { "label": "Camera2", "transport":"rtp_ucast", "payload": "audio", "format": "L24" } <br />
-    ] <br />
+    "how_many_senders": 4, 
+    "senders_list": [ 
+      { "label": "Camera1", "transport":"rtp_ucast", "payload": "video", "format": "raw", "dst_ip": "192.168.10.170", "dst_port": 7004 }, 
+      { "label": "Camera1", "transport":"rtp_ucast", "payload": "audio", "format": "L16", "dst_ip": "192.168.10.170", "dst_port": 7006 }, 
+	  { "label": "Camera2", "transport":"rtp_ucast", "payload": "video", "format": "H264", "dst_ip": "192.168.10.170", "dst_port": 7008 }, 
+	  { "label": "Camera2", "transport":"rtp_ucast", "payload": "audio", "format": "aac", "dst_ip": "192.168.10.170", "dst_port": 7010 } 
+    ], 
+    "how_many_receivers": 4, 
+    "receivers_list": [ 
+      { "label": "Camera3", "transport":"rtp_ucast", "payload": "video", "format": "raw", "dst_port": 6004 }, 
+      { "label": "Camera3", "transport":"rtp_ucast", "payload": "audio", "format": "L24", "dst_port": 6006 }, 
+	  { "label": "Camera3", "transport":"rtp_ucast", "payload": "video", "format": "vc2", "dst_port": 6008 }, 
+	  { "label": "Camera3", "transport":"rtp_ucast", "payload": "audio", "format": "aac", "dst_port": 6010 } 
+    ] 
 }
+```
+user@vm3:~/nmos-dpb/Development/build$ more config.json
+```json
+{ 
+    "logging_level": 0, 
+    "domain": "local.", 
+    "http_port": 8080, 
+    "events_ws_port": 8081,
+    "label": "vm3", 
+    "how_many": 0, 
+    "frame_rate": { "numerator": 25, "denominator": 1 }, 
+    "interlace_mode": false, 
+    "smpte2022_7": false,
+    "OGC_remote": true, 
+    "remote_address": "192.168.10.170", 
+    "remote_int_name": "eno1",
+    "remote_mac": "00-00-00-00-00-17",
+    "how_many_senders": 4, 
+    "senders_list": [ 
+      { "label": "Camera3", "transport":"rtp_ucast", "payload": "video", "format": "raw", "dst_ip": "192.168.10.160", "dst_port": 6004 }, 
+      { "label": "Camera3", "transport":"rtp_ucast", "payload": "audio", "format": "L24", "dst_ip": "192.168.10.160", "dst_port": 6006 }, 
+	  { "label": "Camera4", "transport":"rtp_ucast", "payload": "video", "format": "vc2", "dst_ip": "192.168.10.160", "dst_port": 6008 }, 
+	  { "label": "Camera4", "transport":"rtp_ucast", "payload": "audio", "format": "aac", "dst_ip": "192.168.10.160", "dst_port": 6010 } 
+    ], 
+    "how_many_receivers": 4, 
+    "receivers_list": [ 
+      { "label": "Camera1", "transport":"rtp_ucast", "payload": "video", "format": "raw", "dst_port": 7004 }, 
+      { "label": "Camera1", "transport":"rtp_ucast", "payload": "audio", "format": "L16", "dst_port": 7006 }, <
+	  { "label": "Camera2", "transport":"rtp_ucast", "payload": "video", "format": "H264", "dst_port": 7008 }, 
+	  { "label": "Camera2", "transport":"rtp_ucast", "payload": "audio", "format": "aac", "dst_port": 7010 } <
+    ] 
+}
+```
+
 
 The remote_address fields set the IP, MAC and name of the remote media device. <br />
 The how_many_sender field sets the number of senders to be created. <br />
 The how_many_receivers field sets the number of receivers to be created. <br />
 The sender_list fields set the parameters for each sender. <br />
-The receivers_list fields set the parameters for each sender. <br />
-Note: For rtp_ucast, the sender dst_ip must match the receiver remote_address ip. <br />
+The receivers_list fields set the parameters for each receiver. <br />
+Note: <br />
+For rtp_ucast, the sender dst_ip and dst_port must match the receiver remote_address ip and dst_port. <br />
+For all senders and receivers that connect the payload and format must match. <br />
 
 user@vm2:~/nmos-dpb/Development/build$ ./nmos-cpp-node config.json
 
 
 ## Accessing the web interfaces
-----------------------------
+
 One nmos-cpp-registry service registers multiple nmos-cpp-node services. Using the above .json config files, the web interfaces can be accessed in a web browser at using:
 
 http://<vm2 ip address>:8000/		# Registration service <br />
@@ -201,12 +246,14 @@ http://<vm2 ip address>:8080/		# Node service <br />
 ] <br />
 
 ## Current limitations
--------------------
+
 The modified versions of nmos-cpp allows multiple types of sender and receiver parameters to be programmed. However:
-1.	The receiver destination port is still hard code (which can be ignored)
+1.	The video resolution is hard code to HD (1920x1080), scan can be set to interlaced/progressive and frame rate can be programmed.
 
 2.	The registration service has been modified to register multiple format (encoding types) e.g.  <br />
     Video, “format”: "raw",  "H264", "vc2", "H265", "jxsv" <br />
-    Audio, “format”: "L24",  "L20", "L16", "L8", "mp3", "aac" <br />
+    Audio, “format”: "L24",  "L20", "L16", "L8", "aac", "mp2", "mp3", "m4a"  <br />
+<br />
+    The registration service and Ctrl App (nmos-js) will only allow the connection of each media types, but lower level details are hard coded. <br />
 
-    However the Ctrl App (nmos-js) will only allow the connection of "raw" video and "Lxx" types.
+

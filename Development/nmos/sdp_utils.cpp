@@ -353,9 +353,9 @@ namespace nmos
             if (sOGC_remote == true)
             {
                 slocal_mac = sremote_mac;
-                slocal_port = sender_dst_port;
-                slocal_ip = sender_dst_ip;
             }
+            slocal_port = sender_dst_port;
+            //slocal_ip = sender_dst_ip; //Now nmos::fields::destination_port is already set in nmos_implementation.cpp, ~Line 1098
 
             std::cout << "\nConnectio_data: " << sdp::network_types::internet.name  << " " << address_type_multicast.first.name << " " << nmos::fields::destination_ip(transport_param).as_string() << "\n ";
 
@@ -525,19 +525,27 @@ namespace nmos
 
         //DPB Change format from defalt (raw) to the sender_conf_format value. Fualt in code means cannot be done earlier
         int i = 0;
-        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        //const auto OGC_remote = nmos::fields::OGC_remote(settings);
         const auto& conf_senders = nmos::fields::senders_list(settings);
-        auto sender_conf_format = sdp_params.rtpmap.encoding_name;
-        if (OGC_remote == true)
+        //auto sender_conf_format = sdp_params.rtpmap.encoding_name;
+        //auto conf_format = sdp_params.rtpmap.encoding_name;
+        std::string conf_format = "";
+        std::string sender_conf_format = "";
+
+        for (const auto& conf_sender : conf_senders)
         {
-            for (const auto& conf_sender : conf_senders)
-            {
-                if (conf_index == i)
-                  sender_conf_format  = nmos::fields::conf_format(conf_sender);
-                i++;
-              }
+              if (conf_index == i)
+                  conf_format  = boost::algorithm::to_upper_copy(nmos::fields::conf_format(conf_sender));
+              i++;
         }
-        std::cout << "Video rtpmap: "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
+        //DPB fix any upper / lower case spelling error
+        if (conf_format == "H264" || conf_format == "H.264") sender_conf_format = "H264";
+        else if (conf_format == "H265" || conf_format == "H.265") sender_conf_format = "H265";
+        else if (conf_format == "VC2") sender_conf_format = "vc2";
+        else if (conf_format == "JXSV") sender_conf_format = "jxsv";
+        else sender_conf_format = "raw";
+
+        std::cout << "Video rtpmap : "<< sdp_params.rtpmap.encoding_name << " " << " ConfForm: "  << sender_conf_format << '\n';
 
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -545,7 +553,7 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::rtpmap },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                //DPB //{ sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
+                //DPB still need to change here as well as flows etc { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
                 { sdp::fields::encoding_name, sender_conf_format},
                 { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
             }, keep_order) }
@@ -593,19 +601,26 @@ namespace nmos
 
         //DPB Change format from defalt (raw) to the sender_conf_format value. Fualt in code means cannot be done earlier
         int i = 0;
-        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        //const auto OGC_remote = nmos::fields::OGC_remote(settings);
         const auto& conf_senders = nmos::fields::senders_list(settings);
         auto sender_conf_format = sdp_params.rtpmap.encoding_name;
-        if (OGC_remote == true)
+        auto conf_format = sdp_params.rtpmap.encoding_name;
+
+        for (const auto& conf_sender : conf_senders)
         {
-            for (const auto& conf_sender : conf_senders)
-            {
-                if (conf_index == i)
-                  sender_conf_format  = nmos::fields::conf_format(conf_sender);
-                i++;
-              }
+              if (conf_index == i)
+                  conf_format  = boost::algorithm::to_upper_copy(nmos::fields::conf_format(conf_sender));
+              i++;
         }
-        std::cout << "Audio rtpmap: "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
+        //DPB fix any upper / lower case spelling error
+        if (conf_format == "L8" || conf_format == "L16" || conf_format == "L20" || conf_format == "L24")  sender_conf_format = conf_format;
+        else if (conf_format == "AAC") sender_conf_format = "aac";
+        else if (conf_format == "MP2") sender_conf_format = "mp2";
+        else if (conf_format == "MP3") sender_conf_format = "mp3";
+        else if (conf_format == "M4A") sender_conf_format = "m4a";
+        else sender_conf_format = "L24";
+
+        std::cout << "Audio rtpmap : "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
 
         // a=ptime:<packet time>
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -745,7 +760,19 @@ namespace nmos
         nmos::format get_format(const sdp_parameters& sdp_params)
         {
             if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            //DPB
+            if (sdp::media_types::video == sdp_params.media_type && U("H264") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::video == sdp_params.media_type && U("H265") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::video == sdp_params.media_type && U("vc2") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::video == sdp_params.media_type && U("jxsv") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+
             if (sdp::media_types::audio == sdp_params.media_type) return nmos::formats::audio;
+            //DPB
+            if (sdp::media_types::audio == sdp_params.media_type && U("aac") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
+            if (sdp::media_types::audio == sdp_params.media_type && U("mp2") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
+            if (sdp::media_types::audio == sdp_params.media_type && U("mp3") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
+            if (sdp::media_types::audio == sdp_params.media_type && U("m4a") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
+
             if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
             if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
             return{};

@@ -21,6 +21,9 @@
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
 #include "nmos/version.h"
+//DPB case conversion
+#include <boost/algorithm/string/case_conv.hpp>
+
 
 namespace nmos
 {
@@ -271,23 +274,33 @@ namespace nmos
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_raw.json
-    nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, chroma_subsampling chroma_subsampling, unsigned int bit_depth, const nmos::settings& settings)
+    //DPB
+    nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode,
+      const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, chroma_subsampling chroma_subsampling, unsigned int bit_depth, const nmos::settings& settings, std::string txmedia_type)
     {
         using web::json::value;
 
         auto resource = make_video_flow(id, source_id, device_id, grain_rate, frame_width, frame_height, interlace_mode, colorspace, transfer_characteristic, settings);
         auto& data = resource.data;
 
-        data[U("media_type")] = value::string(nmos::media_types::video_raw.name);
+        //DPB fix for coded video typoe, due to error in make_coded_video_flow()
+        auto media_type = boost::algorithm::to_upper_copy(txmedia_type);
+        if (media_type == "H264" || media_type == "H.264") { data[U("media_type")] = value::string(nmos::media_types::video_h264.name); }
+        else if (media_type == "H265" || media_type == "H.265") { data[U("media_type")] = value::string(nmos::media_types::video_h265.name); }
+        else if (media_type == "VC2") { data[U("media_type")] = value::string(nmos::media_types::video_vc2.name); }
+        else if (media_type == "JXSV") { data[U("media_type")] = value::string(nmos::media_types::video_jxsv.name); }
+        else { data[U("media_type")] = value::string(nmos::media_types::video_raw.name); }
 
+        //data[U("media_type")] = value::string(nmos::media_types::video_raw.name);
+        //data[U("media_type")] = value::string(nmos::media_types::video_h264.name);
         data[U("components")] = make_components(chroma_subsampling, frame_width, frame_height, bit_depth);
 
         return resource;
     }
 
-    nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
+    nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings, std::string txmedia_type)
     {
-        return make_raw_video_flow(id, source_id, device_id, {}, 1920, 1080, nmos::interlace_modes::interlaced_bff, nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, YCbCr422, 10, settings);
+        return make_raw_video_flow(id, source_id, device_id, {}, 1920, 1080, nmos::interlace_modes::interlaced_bff, nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, YCbCr422, 10, settings, txmedia_type);
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_coded.json
@@ -319,34 +332,51 @@ namespace nmos
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio_raw.json
-    nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, unsigned int bit_depth, const nmos::settings& settings)
+    //DPB
+    nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, unsigned int bit_depth, const nmos::settings& settings, std::string txmedia_type)
+    //nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, std::string txmedia_type, const nmos::settings& settings)
     {
         using web::json::value;
 
         auto resource = make_audio_flow(id, source_id, device_id, sample_rate, settings);
         auto& data = resource.data;
-
-        data[U("media_type")] = value::string(nmos::media_types::audio_L(bit_depth).name);
-        data[U("bit_depth")] = bit_depth;
+        //DPB changed audio format form fixed to programmable
+        //Coded format
+        auto media_type = boost::algorithm::to_upper_copy(txmedia_type);
+        if (media_type == "AAC") { data[U("media_type")] = value::string(nmos::media_types::audio_aac.name); data[U("bit_depth")] = bit_depth; }
+        else if (media_type == "MP2") { data[U("media_type")] = value::string(nmos::media_types::audio_mp2.name); data[U("bit_depth")] = bit_depth; }
+        else if (media_type == "MP3") { data[U("media_type")] = value::string(nmos::media_types::audio_mp3.name); data[U("bit_depth")] = bit_depth; }
+        else if (media_type == "M4A") { data[U("media_type")] = value::string(nmos::media_types::audio_m4a.name); data[U("bit_depth")] = bit_depth; }
+        //Uncoded format
+        //Defaults to L24, bit depth set ny bit_depth=24 in called function
+        else if (media_type == "L8") { data[U("media_type")] = value::string(nmos::media_types::audio_L(8).name); data[U("bit_depth")] = 8; }
+        else if (media_type == "L16") { data[U("media_type")] = value::string(nmos::media_types::audio_L(16).name); data[U("bit_depth")] = 16; }
+        else if (media_type == "L20") { data[U("media_type")] = value::string(nmos::media_types::audio_L(20).name); data[U("bit_depth")] = 20; }
+        else { data[U("media_type")] = value::string(nmos::media_types::audio_L(bit_depth).name); data[U("bit_depth")] = bit_depth; }
 
         return resource;
     }
 
-    nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
+    nmos::resource make_raw_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, unsigned int bit_depth, const nmos::settings& settings, std::string txmedia_type)
     {
-        return make_raw_audio_flow(id, source_id, device_id, 48000, 24, settings);
+        return make_raw_audio_flow(id, source_id, device_id, 48000, 24, settings, txmedia_type);
+
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio_coded.json
     // (media_type must *not* be nmos::media_types::audio_L(bit_depth); cf. nmos::make_raw_audio_flow)
-    nmos::resource make_coded_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, const nmos::media_type& media_type, const nmos::settings& settings)
+
+    //DPB //nmos::resource make_coded_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, const nmos::media_type& media_type, const nmos::settings& settings);
+    nmos::resource make_coded_audio_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& sample_rate, std::string txmedia_type, const nmos::settings& settings)
     {
         using web::json::value;
 
         auto resource = make_audio_flow(id, source_id, device_id, sample_rate, settings);
         auto& data = resource.data;
 
-        data[U("media_type")] = value::string(media_type.name);
+        //data[U("media_type")] = value::string(media_type.name);
+        if (txmedia_type == "aac") { data[U("media_type")] = value::string(nmos::media_types::audio_aac.name); }
+        else { data[U("media_type")] = value::string(nmos::media_types::audio_m4a.name); }
 
         return resource;
     }
@@ -562,18 +592,24 @@ namespace nmos
 
         //DPB Change format from defalt (raw) to value in receiver conf
         int i = 0;
-        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        //const auto OGC_remote = nmos::fields::OGC_remote(settings);
         const auto& conf_receivers = nmos::fields::receivers_list(settings);
+        auto rxmedia_type = nmos::media_types::video_raw.name;
         auto receiver_conf_format = nmos::media_types::video_raw.name;
-        if (OGC_remote == true)
+
+        for (const auto& conf_receiver : conf_receivers)
         {
-            for (const auto& conf_receiver : conf_receivers)
-            {
-                if (index == i)
-                  receiver_conf_format  = "video/" + nmos::fields::conf_format(conf_receiver);
-                i++;
-              }
+            if (index == i)
+                rxmedia_type  = boost::algorithm::to_upper_copy(nmos::fields::conf_format(conf_receiver));
+            i++;
         }
+        //DPB fix for case sensitive names
+        if (rxmedia_type == "H264"  || rxmedia_type == "H.264") {  receiver_conf_format = nmos::media_types::video_h264.name; }
+        else if (rxmedia_type == "H265"  || rxmedia_type == "H.265") { receiver_conf_format = nmos::media_types::video_h265.name; }
+        else if (rxmedia_type == "VC2") { receiver_conf_format = nmos::media_types::video_vc2.name; }
+        else if (rxmedia_type == "JXSV") { receiver_conf_format = nmos::media_types::video_jxsv.name; }
+        else { receiver_conf_format = nmos::media_types::video_raw.name; }
+
         std::cout << "Video format: " << nmos::formats::video.name << " " << nmos::media_types::video_raw.name << " ConfForm: "  << receiver_conf_format << '\n';
 
         data[U("format")] = value::string(nmos::formats::video.name);
@@ -594,31 +630,31 @@ namespace nmos
 
         //DPB Change format from defalt (raw) to value in receiver conf
         int i = 0;
-        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+        //const auto OGC_remote = nmos::fields::OGC_remote(settings);
         const auto& conf_receivers = nmos::fields::receivers_list(settings);
-        std::string receiver_conf_format = " ";
-        if (OGC_remote == true)
+        std::string rxmedia_type = " ";
+
+        for (const auto& conf_receiver : conf_receivers)
         {
-            for (const auto& conf_receiver : conf_receivers)
-            {
-                if (index == i)
-                  receiver_conf_format  = "audio/" + nmos::fields::conf_format(conf_receiver);
-                i++;
-            }
+            if (index == i)
+                rxmedia_type  = boost::algorithm::to_upper_copy(nmos::fields::conf_format(conf_receiver));
+            i++;
         }
-        std::cout << "Audio format: " << nmos::formats::audio.name << " " << " ConfForm: "  << receiver_conf_format << '\n';
+        //DPB fix for case sensitive names
+        if (rxmedia_type == "AAC") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_aac.name); }
+        else if (rxmedia_type == "MP2") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_mp2.name); }
+        else if (rxmedia_type == "MP3") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_mp3.name); }
+        else if (rxmedia_type == "M4A") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_m4a.name); }
+
+        else if (rxmedia_type == "L8") { web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(8).name)); }
+        else if (rxmedia_type == "L16") { web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(16).name)); }
+        else if (rxmedia_type == "L20") { web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(20).name)); }
+        else { web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(24).name)); }  //L24, bit_depths = 24
 
         data[U("format")] = value::string(nmos::formats::audio.name);
-        for (const auto& bit_depth : bit_depths)
-        {
-            if (OGC_remote == true) {
-                web::json::push_back(data[U("caps")][U("media_types")], receiver_conf_format);
-            }
-            else {
-                web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(bit_depth).name));
-            }
-            //DPB experiment// - DOES NOT REGISTER web::json::push_back(data[U("caps")][U("media_types")], "aac");
-            //registers but nmos-js does not match web::json::push_back(data[U("caps")][U("media_types")], "audio/aac");
+
+        for (const auto& bit_depth : bit_depths) {
+            std::cout << "Paylaod: " << nmos::formats::audio.name  <<  " ConfForm: "  << rxmedia_type << " " << bit_depth << '\n';
         }
 
         return resource;

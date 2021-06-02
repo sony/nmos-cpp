@@ -37,8 +37,10 @@
                       "audio/L20",
                       "audio/L16",
                       "audio/L8",
-                      "audio/AAC",
-                      "audio/MP3"
+                      "audio/aac",
+                      "audio/mp2",
+                      "audio/mp3",
+                      "audio/m4a"
                     ]
                   },
                   {
