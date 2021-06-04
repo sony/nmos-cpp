@@ -66,18 +66,17 @@ user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ sudo make os=linux install
 Check the nsswitch.conf file. <br />
 If 'mdns' does not already appear on the "hosts:" line, then add it right before 'dns' <br />
 
-user@vm2:~$ cp -f /etc/nsswitch.conf /etc/nsswitch.conf.pre-mdns
+root@vm2:~$ cp -f /etc/nsswitch.conf /etc/nsswitch.conf.pre-mdns
 ```
-user@vm2:~$ sed -e '/mdns/!s/^\(hosts:.*\)dns\(.*\)/\1mdns dns\2/' /etc/nsswitch.conf.pre-mdns > /etc/nsswitch.conf
+root@vm2:~$ sed -e '/mdns/!s/^\(hosts:.*\)dns\(.*\)/\1mdns dns\2/' /etc/nsswitch.conf.pre-mdns > /etc/nsswitch.conf
 ```
-user@vm2:~$ cp nss_mdns.conf.5 /usr/share/man/man5/nss_mdns.conf.5
+root@vm2:~$ cp nss_mdns.conf.5 /usr/share/man/man5/nss_mdns.conf.5
 
-user@vm2:~$ chmod 444 /usr/share/man/man5/nss_mdns.conf.5
+root@vm2:~$ chmod 444 /usr/share/man/man5/nss_mdns.conf.5
 
-user@vm2:~$ cp libnss_mdns.8 /usr/share/man/man8/libnss_mdns.8
+root@vm2:~$ cp libnss_mdns.8 /usr/share/man/man8/libnss_mdns.8
 
-user@vm2:~$ chmod 444 /usr/share/man/man8/libnss_mdns.8
-/lib/libnss_mdns.so.2 /etc/nss_mdns.conf /usr/share/man/man5/nss_mdns.conf.5 /usr/share/man/man8/libnss_mdns.8  installed
+root@vm2:~$ chmod 444 /usr/share/man/man8/libnss_mdns.8 /lib/libnss_mdns.so.2 /etc/nss_mdns.conf /usr/share/man/man5/nss_mdns.conf.5 /usr/share/man/man8/libnss_mdns.8
 
 user@vm2:~/mDNSResponder-878.270.2/mDNSPosix$ more /etc/nsswitch.conf <br />
 &#35; /etc/nsswitch.conf <br />
@@ -88,7 +87,7 @@ passwd:         files systemd <br />
 group:          files systemd <br />
 shadow:         files <br />
 gshadow:        files <br />
-hosts:          files mdns4_minimal [NOTFOUND=return] dns <br />
+hosts:          files mdns4_minimal [NOTFOUND=return] mdns dns <br />
 networks:       files <br />
 protocols:      db files <br />
 services:       db files <br />
