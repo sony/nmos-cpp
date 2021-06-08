@@ -36,10 +36,11 @@ BST_TEST_CASE(testInvalidTypeSchema)
                         { U("type"), U("string") },
                         { U("pattern"), U("^auto$") }
                     }, keep_order),
-                    U("bad") })
-                }})
+                    U("bad")
+                })
             }})
-        }});
+        }})
+    }});
 
    // invalid JSON-type for schema
    BST_REQUIRE_THROW(make_validator(schema, id), std::invalid_argument);
@@ -65,12 +66,12 @@ BST_TEST_CASE(testEnumSchema)
                     value_of({
                         { U("enum"), value_of({
                             { U("good") }
-                            })
-                        }})
-                    })
-                }})
+                        })
+                    }})
+                })
             }})
-        }});
+        }})
+    }});
 
     auto validator = make_validator(schema, id);
 
