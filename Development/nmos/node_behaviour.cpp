@@ -231,11 +231,6 @@ namespace nmos
         {
             std::list<web::uri> registration_services;
 
-            if (!preferred_registration_service.is_empty())
-            {
-                registration_services.push_back(preferred_registration_service);
-            }
-
             if (nmos::service_priorities::no_priority != priorities.first)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API in domain: " << browse_domain;
@@ -250,6 +245,11 @@ namespace nmos
                 {
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via DNS-SD";
                 }
+            }
+
+            if (!preferred_registration_service.is_empty())
+            {
+                registration_services.push_front(preferred_registration_service);
             }
 
             if (registration_services.empty())
