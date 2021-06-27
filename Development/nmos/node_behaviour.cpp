@@ -227,9 +227,14 @@ namespace nmos
 
         // query DNS Service Discovery for any Registration API in the specified browse domain, having priority in the specified range
         // otherwise, after timeout or cancellation, returning the fallback registration service
-        web::json::value discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& protocols, const std::set<bool>& authorization, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        web::json::value discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& protocols, const std::set<bool>& authorization, const web::uri& fallback_registration_service, const web::uri& preferred_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             std::list<web::uri> registration_services;
+
+            if (!preferred_registration_service.is_empty())
+            {
+                registration_services.push_back(preferred_registration_service);
+            }
 
             if (nmos::service_priorities::no_priority != priorities.first)
             {
@@ -271,6 +276,20 @@ namespace nmos
                 : web::uri();
         }
 
+        // get the preferred registration service from settings (if present)
+        web::uri get_preferred_registration_service(const nmos::settings& settings)
+        {
+            return settings.has_field(nmos::fields::preferred_registry_address)
+                ? web::uri_builder()
+                .set_scheme(nmos::http_scheme(settings))
+                .set_host(nmos::fields::preferred_registry_address(settings))
+                .set_port(nmos::fields::preferred_registration_port(settings))
+                .set_path(U("/x-nmos/registration/") + nmos::fields::preferred_registry_version(settings))
+                .to_uri()
+                : web::uri();
+        }
+
+
         // query DNS Service Discovery for any Registration API based on settings
         bool discover_registration_services(nmos::base_model& model, mdns::service_discovery& discovery, slog::base_gate& gate, const pplx::cancellation_token& token)
         {
@@ -280,6 +299,7 @@ namespace nmos
             std::set<nmos::service_protocol> protocols;
             std::set<bool> authorization; // yes, this is almost equivalent to a tribool
             web::uri fallback_registration_service;
+            web::uri preferred_registration_service;
             int timeout;
             with_read_lock(model.mutex, [&]
             {
@@ -290,6 +310,7 @@ namespace nmos
                 protocols = { nmos::get_service_protocol(settings) };
                 authorization = { nmos::get_service_authorization(settings) };
                 fallback_registration_service = get_registration_service(settings);
+                preferred_registration_service = get_preferred_registration_service(settings);
 
                 // use a short timeout that's long enough to ensure the daemon's cache is exhausted
                 // when no cancellation token is specified
@@ -297,7 +318,7 @@ namespace nmos
             });
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Trying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)timeout << " seconds";
-            auto registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, protocols, authorization, fallback_registration_service, gate, std::chrono::seconds(timeout), token);
+            auto registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, protocols, authorization, fallback_registration_service, preferred_registration_service, gate, std::chrono::seconds(timeout), token);
             with_write_lock(model.mutex, [&] { model.settings[nmos::fields::registration_services] = registration_services; });
             model.notify();
 
