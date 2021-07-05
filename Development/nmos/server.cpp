@@ -58,6 +58,12 @@ namespace nmos
         {
             // Open the API ports
 
+            // reset API routers termination flag
+            for (auto& router : api_routers)
+            {
+                router.second.set_canceled(false);
+            }
+
             std::vector<pplx::task<void>> tasks;
 
             for (auto& http_listener : http_listeners)
@@ -83,6 +89,12 @@ namespace nmos
         return pplx::create_task([&]
         {
             // Close the API ports
+
+            // terminate API routers
+            for (auto& router : api_routers)
+            {
+                router.second.set_canceled(true);
+            }
 
             std::vector<pplx::task<void>> tasks;
 

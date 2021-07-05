@@ -52,6 +52,9 @@ namespace web
                     // provide an exception handler for this route and sub-routes (using std::current_exception, etc.)
                     void set_exception_handler(route_handler handler);
 
+                    // flag to indicate whether the router has been canceled, this flag is used to terminate the routers iteraton loop
+                    void set_canceled(bool canceled);
+
                 private:
                     enum match_flag_type { match_entire = 0, match_prefix = 1 };
                     typedef std::pair<utility::regex_t, utility::named_sub_matches_t> regex_named_sub_matches_type;
@@ -73,6 +76,8 @@ namespace web
 
                     route_handlers routes;
                     route_handler exception_handler;
+
+                    bool canceled;
                 };
 
                 // convenient using declarations to make defining routers less verbose

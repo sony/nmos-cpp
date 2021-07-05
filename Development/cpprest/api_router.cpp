@@ -31,14 +31,14 @@ namespace web
                     }
                 }
 
-                api_router::api_router()
+                api_router::api_router() : canceled(false)
                 {}
 
                 void api_router::operator()(web::http::http_request req)
                 {
                     web::http::http_response res;
 
-                    (*this)(req, res, {}, route_parameters()).then([req, res](bool continue_matching)
+                    auto request = (*this)(req, res, {}, route_parameters()).then([req, res](bool continue_matching)
                     {
                         if (continue_matching)
                         {
@@ -54,6 +54,7 @@ namespace web
                             req.reply(res);
                         }
                     });
+                    request.wait();
                 }
 
                 static const web::http::method any_method{};
@@ -68,6 +69,12 @@ namespace web
                     const utility::string_t path = get_route_relative_path(req, route_path); // required, as must live longer than the match results
                     for (; routes.end() != route; ++route)
                     {
+                        // terminate routers iternation if it has already marked as canceled
+                        if (canceled)
+                        {
+                            pplx::cancel_current_task();
+                        }
+
                         utility::smatch_t route_match;
                         if (route_regex_match(path, route_match, route->route_pattern.first, route->flags))
                         {
@@ -203,6 +210,11 @@ namespace web
                     return match_prefix == flags
                         ? bst::regex_search(path, route_match, route_regex, bst::regex_constants::match_continuous)
                         : bst::regex_match(path, route_match, route_regex);
+                }
+
+                void api_router::set_canceled(bool canceled_)
+                {
+                    canceled = canceled_;
                 }
             }
         }
