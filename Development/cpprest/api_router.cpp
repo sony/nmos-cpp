@@ -9,7 +9,32 @@ namespace web
         {
             namespace listener
             {
-                utility::string_t api_router::get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path)
+                // api router implementation
+                namespace details
+                {
+                    class api_router_impl
+                    {
+                    public:
+                        typedef std::pair<utility::regex_t, utility::named_sub_matches_t> regex_named_sub_matches_type;
+                        struct route { match_flag_type flags; regex_named_sub_matches_type route_pattern; web::http::method method; route_handler handler; };
+                        typedef std::list<route> route_handlers;
+                        typedef route_handlers::iterator iterator;
+
+                        static pplx::task<bool> call(const route_handler& handler, const route_handler& exception_handler, web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters);
+                        static void handle_method_not_allowed(const route& route, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters);
+                        static route_parameters insert(route_parameters&& into, const route_parameters& range);
+
+                        pplx::task<bool> operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters, iterator route);
+
+                        // to allow routes to be added out-of-order, support() and mount() could easily be given overloads that accept and return an iterator (const_iterator in C++11)
+                        iterator insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler);
+
+                        route_handlers routes;
+                        route_handler exception_handler;
+                    };
+                }
+
+                utility::string_t details::get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path)
                 {
                     // If the route path is empty, then just return the listener-relative URI.
                     if (route_path.empty() || route_path == _XPLATSTR("/"))
@@ -32,6 +57,7 @@ namespace web
                 }
 
                 api_router::api_router()
+                    : impl(new details::api_router_impl())
                 {}
 
                 void api_router::operator()(web::http::http_request req)
@@ -60,10 +86,10 @@ namespace web
 
                 pplx::task<bool> api_router::operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters)
                 {
-                    return (*this)(req, res, route_path, parameters, routes.begin());
+                    return (*impl)(req, res, route_path, parameters, impl->routes.begin());
                 }
 
-                pplx::task<bool> api_router::operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters, iterator route)
+                pplx::task<bool> details::api_router_impl::operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters, iterator route)
                 {
                     const utility::string_t path = get_route_relative_path(req, route_path); // required, as must live longer than the match results
                     for (; routes.end() != route; ++route)
@@ -99,7 +125,7 @@ namespace web
                     return pplx::task_from_result(true);
                 }
 
-                pplx::task<bool> api_router::call(const route_handler& handler, const route_handler& exception_handler, web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters)
+                pplx::task<bool> details::api_router_impl::call(const route_handler& handler, const route_handler& exception_handler, web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters)
                 {
                     if (!exception_handler)
                     {
@@ -131,7 +157,7 @@ namespace web
                     }
                 }
 
-                void api_router::handle_method_not_allowed(const route& route, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters)
+                void details::api_router_impl::handle_method_not_allowed(const route& route, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters)
                 {
                     // a preceding route handler may have already set a status code, but if not, this is worth reporting as a "near miss"
                     if (empty_status_code == res.status_code())
@@ -148,36 +174,36 @@ namespace web
 
                 void api_router::support(const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
                 {
-                    insert(routes.end(), match_entire, route_pattern, method, handler);
+                    impl->insert(impl->routes.end(), details::match_entire, route_pattern, method, handler);
                 }
 
                 void api_router::support(const utility::string_t& route_pattern, route_handler all_handler)
                 {
-                    insert(routes.end(), match_entire, route_pattern, any_method, all_handler);
+                    impl->insert(impl->routes.end(), details::match_entire, route_pattern, any_method, all_handler);
                 }
 
                 void api_router::mount(const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
                 {
-                    insert(routes.end(), match_prefix, route_pattern, method, handler);
+                    impl->insert(impl->routes.end(), details::match_prefix, route_pattern, method, handler);
                 }
 
                 void api_router::mount(const utility::string_t& route_pattern, route_handler all_handler)
                 {
-                    insert(routes.end(), match_prefix, route_pattern, any_method, all_handler);
+                    impl->insert(impl->routes.end(), details::match_prefix, route_pattern, any_method, all_handler);
                 }
 
                 void api_router::set_exception_handler(route_handler handler)
                 {
-                    exception_handler = handler;
+                    impl->exception_handler = handler;
                 }
 
-                api_router::iterator api_router::insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
+                details::api_router_impl::iterator details::api_router_impl::insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler)
                 {
                     auto parsed = utility::parse_regex_named_sub_matches(route_pattern);
                     return routes.insert(where, { flags, { utility::regex_t(parsed.first), parsed.second }, method, handler });
                 }
 
-                route_parameters api_router::get_parameters(const utility::named_sub_matches_t& parameter_sub_matches, const utility::smatch_t& route_match)
+                route_parameters details::get_parameters(const utility::named_sub_matches_t& parameter_sub_matches, const utility::smatch_t& route_match)
                 {
                     route_parameters parameters;
                     for (auto& named_sub_match : parameter_sub_matches)
@@ -191,14 +217,14 @@ namespace web
                     return parameters;
                 }
 
-                route_parameters api_router::insert(route_parameters&& into, const route_parameters& range)
+                route_parameters details::api_router_impl::insert(route_parameters&& into, const route_parameters& range)
                 {
                     // unorderd_map::insert only inserts elements if the container doesn't already contain an element with an equivalent key
                     into.insert(range.begin(), range.end());
                     return std::move(into);
                 }
 
-                bool api_router::route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags)
+                bool details::route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags)
                 {
                     return match_prefix == flags
                         ? bst::regex_search(path, route_match, route_regex, bst::regex_constants::match_continuous)

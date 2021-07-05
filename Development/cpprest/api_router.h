@@ -6,8 +6,7 @@
 #include <unordered_map>
 #include "cpprest/http_utils.h"
 #include "cpprest/json_ops.h" // hmm, only for names used in using declarations
-#include "cpprest/regex_utils.h" // hmm, only for types used in private static functions
-#include "detail/private_access.h"
+#include "cpprest/regex_utils.h" // hmm, only for types used in details functions
 
 // api_router is an extension to http_listener that uses regexes to define route patterns
 namespace web
@@ -28,9 +27,20 @@ namespace web
                 // a handler may e.g. reply to the request or initiate asynchronous processing, and returns a flag indicating whether to continue matching routes or not
                 typedef std::function<pplx::task<bool>(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters)> route_handler;
 
+                // api router implementation
+                namespace details
+                {
+                    class api_router_impl;
+
+                    enum match_flag_type { match_entire = 0, match_prefix = 1 };
+
+                    utility::string_t get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path);
+                    route_parameters get_parameters(const utility::named_sub_matches_t& parameter_sub_matches, const utility::smatch_t& route_match);
+                    bool route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags);
+                }
+
                 class api_router
                 {
-                    DETAIL_PRIVATE_ACCESS_DECLARATION
                 public:
                     api_router();
 
@@ -53,26 +63,7 @@ namespace web
                     void set_exception_handler(route_handler handler);
 
                 private:
-                    enum match_flag_type { match_entire = 0, match_prefix = 1 };
-                    typedef std::pair<utility::regex_t, utility::named_sub_matches_t> regex_named_sub_matches_type;
-                    struct route { match_flag_type flags; regex_named_sub_matches_type route_pattern; web::http::method method; route_handler handler; };
-                    typedef std::list<route> route_handlers;
-                    typedef route_handlers::iterator iterator;
-
-                    static utility::string_t get_route_relative_path(const web::http::http_request& req, const utility::string_t& route_path);
-                    static pplx::task<bool> call(const route_handler& handler, const route_handler& exception_handler, web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters);
-                    static void handle_method_not_allowed(const route& route, web::http::http_response& res, const utility::string_t& route_path, const route_parameters& parameters);
-                    static route_parameters get_parameters(const utility::named_sub_matches_t& parameter_sub_matches, const utility::smatch_t& route_match);
-                    static route_parameters insert(route_parameters&& into, const route_parameters& range);
-                    static bool route_regex_match(const utility::string_t& path, utility::smatch_t& route_match, const utility::regex_t& route_regex, match_flag_type flags);
-
-                    pplx::task<bool> operator()(web::http::http_request req, web::http::http_response res, const utility::string_t& route_path, const route_parameters& parameters, iterator route);
-
-                    // to allow routes to be added out-of-order, support() and mount() could easily be given overloads that accept and return an iterator (const_iterator in C++11)
-                    iterator insert(iterator where, match_flag_type flags, const utility::string_t& route_pattern, const web::http::method& method, route_handler handler);
-
-                    route_handlers routes;
-                    route_handler exception_handler;
+                    std::shared_ptr<details::api_router_impl> impl;
                 };
 
                 // convenient using declarations to make defining routers less verbose
