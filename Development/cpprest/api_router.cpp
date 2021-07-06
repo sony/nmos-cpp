@@ -12,7 +12,7 @@ namespace web
                 // api router implementation
                 namespace details
                 {
-                    class api_router_impl
+                    class api_router_impl : public std::enable_shared_from_this<api_router_impl>
                     {
                     public:
                         typedef std::pair<utility::regex_t, utility::named_sub_matches_t> regex_named_sub_matches_type;
@@ -104,11 +104,14 @@ namespace web
 
                             if (route->method == req.method() || any_method == route->method)
                             {
-                                return call(route->handler, exception_handler, req, res, merged_path, merged_parameters).then([=](bool continue_matching)
+                                // capture shared_this to extend lifetime into the continuation
+                                auto shared_this = shared_from_this();
+                                return call(route->handler, exception_handler, req, res, merged_path, merged_parameters)
+                                    .then([shared_this, this, req, res, route_path, parameters, route](bool continue_matching)
                                 {
                                     if (!continue_matching)
                                     {
-                                        // short-circuit other routes, e.g. if the hander actually sent a reply rather than just modifying the response object
+                                        // short-circuit other routes, e.g. if the handler actually sent a reply rather than just modifying the response object
                                         return pplx::task_from_result(false);
                                     }
 
