@@ -568,6 +568,8 @@ namespace nmos
 
                 slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response after " << processing_dur << "ms";
 
+                // the task returned by reply() silently 'observes' any exception thrown from the underlying server
+                // reply() itself can throw http_exception if a response has already been sent, but that would indicate a programming error
                 req.reply(res);
                 return pplx::task_from_result(false); // don't continue matching routes
             };

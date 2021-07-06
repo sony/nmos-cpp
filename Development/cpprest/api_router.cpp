@@ -77,6 +77,9 @@ namespace web
                                 res.set_status_code(status_codes::NotFound);
                             }
 
+                            // the task returned by reply() silently 'observes' any exception thrown from the underlying server
+                            // reply() itself can throw http_exception if a response has already been sent, but that would indicate a programming error
+                            // so don't handle exceptions with the specified exception handler here
                             req.reply(res);
                         }
                     });
