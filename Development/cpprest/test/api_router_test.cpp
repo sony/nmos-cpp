@@ -19,10 +19,10 @@ BST_TEST_CASE(testMakeListenerUri)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE_PRIVATE(testGetRouteRelativePath)
+BST_TEST_CASE(testGetRouteRelativePath)
 {
     using utility::us2s;
-    using web::http::experimental::listener::api_router;
+    using web::http::experimental::listener::details::get_route_relative_path;
     using web::http::http_exception;
 
     web::http::http_request req;
@@ -30,47 +30,49 @@ BST_TEST_CASE_PRIVATE(testGetRouteRelativePath)
 
     // clear specification
 
-    BST_REQUIRE_STRING_EQUAL("/foo/bar/baz", us2s(api_router::get_route_relative_path(req, U(""))));
-    BST_REQUIRE_STRING_EQUAL("/bar/baz", us2s(api_router::get_route_relative_path(req, U("/foo"))));
-    BST_REQUIRE_STRING_EQUAL("", us2s(api_router::get_route_relative_path(req, U("/foo/bar/baz"))));
-    BST_REQUIRE_THROW(api_router::get_route_relative_path(req, U("/qux")), http_exception);
+    BST_REQUIRE_STRING_EQUAL("/foo/bar/baz", us2s(get_route_relative_path(req, U(""))));
+    BST_REQUIRE_STRING_EQUAL("/bar/baz", us2s(get_route_relative_path(req, U("/foo"))));
+    BST_REQUIRE_STRING_EQUAL("", us2s(get_route_relative_path(req, U("/foo/bar/baz"))));
+    BST_REQUIRE_THROW(get_route_relative_path(req, U("/qux")), http_exception);
 
     // less clear specification
 
     // compatible with http_request::relative_uri(), but should it be "foo/bar/baz"?
-    BST_CHECK_STRING_EQUAL("/foo/bar/baz", us2s(api_router::get_route_relative_path(req, U("/"))));
+    BST_CHECK_STRING_EQUAL("/foo/bar/baz", us2s(get_route_relative_path(req, U("/"))));
 
     // should it be "/bar/baz"?
-    BST_CHECK_STRING_EQUAL("bar/baz", us2s(api_router::get_route_relative_path(req, U("/foo/"))));
+    BST_CHECK_STRING_EQUAL("bar/baz", us2s(get_route_relative_path(req, U("/foo/"))));
 
     // should it throw, no match?
-    BST_CHECK_STRING_EQUAL("ar/baz", us2s(api_router::get_route_relative_path(req, U("/foo/b"))));
+    BST_CHECK_STRING_EQUAL("ar/baz", us2s(get_route_relative_path(req, U("/foo/b"))));
 
     // should it be ""?
-    BST_CHECK_THROW(api_router::get_route_relative_path(req, U("/foo/bar/baz/")), http_exception);
+    BST_CHECK_THROW(get_route_relative_path(req, U("/foo/bar/baz/")), http_exception);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE_PRIVATE(testRouteRegexMatch)
+BST_TEST_CASE(testRouteRegexMatch)
 {
-    using web::http::experimental::listener::api_router;
+    using web::http::experimental::listener::details::match_entire;
+    using web::http::experimental::listener::details::match_prefix;
+    using web::http::experimental::listener::details::route_regex_match;
 
     utility::smatch_t route_match;
 
-    BST_REQUIRE(api_router::route_regex_match(U("/foo/bar/baz"), route_match, utility::regex_t(U("/f../b../b..")), api_router::match_entire));
-    BST_REQUIRE(api_router::route_regex_match(U("/foo/bar/baz"), route_match, utility::regex_t(U("/f../b../b..")), api_router::match_prefix));
+    BST_REQUIRE(route_regex_match(U("/foo/bar/baz"), route_match, utility::regex_t(U("/f../b../b..")), match_entire));
+    BST_REQUIRE(route_regex_match(U("/foo/bar/baz"), route_match, utility::regex_t(U("/f../b../b..")), match_prefix));
 
-    BST_REQUIRE(!api_router::route_regex_match(U("/foo/bar/baz/qux"), route_match, utility::regex_t(U("/f../b../b..")), api_router::match_entire));
-    BST_REQUIRE(api_router::route_regex_match(U("/foo/bar/baz/qux"), route_match, utility::regex_t(U("/f../b../b..")), api_router::match_prefix));
+    BST_REQUIRE(!route_regex_match(U("/foo/bar/baz/qux"), route_match, utility::regex_t(U("/f../b../b..")), match_entire));
+    BST_REQUIRE(route_regex_match(U("/foo/bar/baz/qux"), route_match, utility::regex_t(U("/f../b../b..")), match_prefix));
 
-    BST_REQUIRE(!api_router::route_regex_match(U("/foo/bar/qux"), route_match, utility::regex_t(U("/f../b../b..")), api_router::match_prefix));
-    BST_REQUIRE(!api_router::route_regex_match(U("/qux/foo/bar/baz"), route_match, utility::regex_t(U("/f../b../b..")), api_router::match_prefix));
+    BST_REQUIRE(!route_regex_match(U("/foo/bar/qux"), route_match, utility::regex_t(U("/f../b../b..")), match_prefix));
+    BST_REQUIRE(!route_regex_match(U("/qux/foo/bar/baz"), route_match, utility::regex_t(U("/f../b../b..")), match_prefix));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE_PRIVATE(testGetParameters)
+BST_TEST_CASE(testGetParameters)
 {
-    using web::http::experimental::listener::api_router;
+    using web::http::experimental::listener::details::get_parameters;
     using web::http::experimental::listener::route_parameters;
 
     const utility::string_t path{ U("ABCD") };
@@ -86,5 +88,5 @@ BST_TEST_CASE_PRIVATE(testGetParameters)
 
     utility::smatch_t route_match;
     BST_REQUIRE(bst::regex_match(path, route_match, route_regex));
-    BST_REQUIRE(expected == api_router::get_parameters(parameter_sub_matches, route_match));
+    BST_REQUIRE(expected == get_parameters(parameter_sub_matches, route_match));
 }
