@@ -781,7 +781,11 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
             // in either Registration API behaviour or the senders' /transportfile endpoints until
             // an update to these is forced by other circumstances
 
-            web::json::merge_patch(model.settings, nmos::parse_system_global_data(system_global).second, true);
+            // tags is too common using in the model.settings, rename tags to system_tags for the system global's tags
+            auto system_global_data = nmos::parse_system_global_data(system_global).second;
+            system_global_data[nmos::experimental::fields::system_tags] = !nmos::fields::tags(system_global_data).empty() ? system_global_data.at(nmos::fields::tags) : web::json::value::object();
+            system_global_data.erase(nmos::fields::tags);
+            web::json::merge_patch(model.settings, system_global_data, true);
         }
         else
         {

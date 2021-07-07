@@ -129,14 +129,19 @@ namespace nmos
         // this list is created and maintained by nmos::node_behaviour_thread; each entry is a uri like http://api.example.com/x-nmos/registration/{version}
         const web::json::field_as_value registration_services{ U("registration_services") };
 
-        // registration_heartbeat_interval [node]:
-        // "Nodes are expected to peform a heartbeat every 5 seconds by default."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // registration_heartbeat_interval [registry, node]:
+        // [registry]: used in System API resource is04 object's heartbeat_interval field
+        // "Constants related to the AMWA IS-04 Discovery and Registration Specification are contained in the is04 object.
+        // heartbeat_interval defines how often Nodes should perform a heartbeat to maintain their resources in the Registration API."
+        // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#amwa-is-04-nmos-discovery-and-registration-parameters
+        // [node]:
+        // "Nodes SHOULD perform a heartbeat every 5 seconds by default, by making HTTP POST requests to the /health/nodes/{nodeId} endpoint."
+        // See https://specs.amwa.tv/is-04/releases/v1.3.1/docs/4.1._Behaviour_-_Registration.html#heartbeating
         const web::json::field_as_integer_or registration_heartbeat_interval{ U("registration_heartbeat_interval"), 5 };
 
         // registration_expiry_interval [registry]:
         // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // See https://specs.amwa.tv/is-04/releases/v1.3.1/docs/4.1._Behaviour_-_Registration.html#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
 
         // registration_request_max [node]: timeout for interactions with the Registration API /resource endpoint
@@ -161,8 +166,8 @@ namespace nmos
         const web::json::field_as_integer_or immediate_activation_max{ U("immediate_activation_max"), 30 };
 
         // events_heartbeat_interval [node, client]:
-        // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its connection and subscription."
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
         const web::json::field_as_integer_or events_heartbeat_interval{ U("events_heartbeat_interval"), 5 };
 
         // events_expiry_interval [node]:
@@ -194,8 +199,11 @@ namespace nmos
             // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
             const web::json::field_as_string seed_id{ U("seed_id") };
 
-            // label [registry, node]: used in resource description/label fields
+            // label [registry, node]: used in resource label field
             const web::json::field_as_string_or label{ U("label"), U("") };
+
+            // description [registry, node]: used in resource description field
+            const web::json::field_as_string_or description{ U("description"), U("") };
 
             // registration_available [registry]: used to flag the Registration API as temporarily unavailable
             const web::json::field_as_bool_or registration_available{ U("registration_available"), true };
@@ -270,6 +278,40 @@ namespace nmos
             // system_interval_min/system_interval_max [node]: used to poll for System API changes; default is about one hour
             const web::json::field_as_integer_or system_interval_min{ U("system_interval_min"), 3600 };
             const web::json::field_as_integer_or system_interval_max{ U("system_interval_max"), 3660 };
+
+            // system_label [registry]: used in System API resource label field
+            const web::json::field_as_string_or system_label{ U("system_label"), U("") };
+
+            // system_description [registry]: used in System API resource description field
+            const web::json::field_as_string_or system_description{ U("system_description"), U("") };
+
+            // system_tags [registry]: used in System API resource tags field
+            // "Each tag has a single key, but MAY have multiple values. Each tags SHOULD be interpreted using the comparison of a single key value pair,
+            // with the comparison being case-insensitive following the Unicode Simple Case Folding specification."
+            // {
+            //     "tag_1": [ "tag_1_value_1", "tag_1_value_2" ],
+            //     "tag_2": [ "tag_2_value_1" ]
+            // }
+            // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/2.1._APIs_-_Common_Keys.html#tags
+            const web::json::field_as_value_or system_tags{ U("system_tags"), web::json::value::object() };
+
+            // "syslog contains hostname and port for the system’s syslog “version 1” server using the UDP transport (IETF RFC 5246)"
+            // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
+
+            // system_syslog_host_name [registry]: the fully-qualified host name or the IP address of the system's syslog "version 1" server
+            const web::json::field_as_string_or system_syslog_host_name{ U("system_syslog_host_name"), U("") };
+
+            // system_syslog_port [registry]: the port number for the system's syslog "version 1" server
+            const web::json::field_as_integer_or system_syslog_port{ U("system_syslog_port"), 514 };
+
+            // "syslogv2 contains hostname and port for the system’s syslog “version 2” server using the TLS transport (IETF RFC 5245)"
+            // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
+
+            // system_syslogv2_host_name [registry]: the fully-qualified host name or the IP address of the system's syslog "version 2" server
+            const web::json::field_as_string_or system_syslogv2_host_name{ U("system_syslogv2_host_name"), U("") };
+
+            // system_syslogv2_port [registry]: the port number for the system's syslog "version 2" server
+            const web::json::field_as_integer_or system_syslogv2_port{ U("system_syslogv2_port"), 6514 };
         }
     }
 }
