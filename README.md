@@ -1,4 +1,4 @@
-2/6/2021 D Butler, BBC R&D
+8/7/2021 D Butler, BBC R&D
 
 ## NMOS C++ Implementation for the 5G-Records Project
 
@@ -126,7 +126,7 @@ user@vm3:~/nmos-dpb/Development/build$ ./nmos-cpp-registry reg_config.json
 
 ## Starting the nmos-node service
 
-The node service is also controlled by a .json config file that sets the ports for web, service and details of the senders and receivers to be created.
+The node service is also controlled by a .json config file that sets the ports for web, service and details of the senders and receivers to be created. For websockets, both a sender and receiver are created for each specified websocket.
 
 user@vm2:~/nmos-dpb/Development/build$ more config.json <br />
 ```json
@@ -157,6 +157,13 @@ user@vm2:~/nmos-dpb/Development/build$ more config.json <br />
       { "label": "Camera3", "transport":"rtp_ucast", "payload": "audio", "format": "L24", "dst_port": 6006 }, 
 	  { "label": "Camera3", "transport":"rtp_ucast", "payload": "video", "format": "vc2", "dst_port": 6008 }, 
 	  { "label": "Camera3", "transport":"rtp_ucast", "payload": "audio", "format": "aac", "dst_port": 6010 } 
+    ],
+    "how_many_wsocket": 4,
+    "wsocket_list": [
+      { "label": "Coder1-temp", "ws_type":"temperature"},
+      { "label": "Camera1-tally", "ws_type":"boolean"},
+      { "label": "ParamLabel", "ws_type":"param_string"},
+      { "label": "ParamValues", "ws_type":"param_values"}
     ] 
 }
 ```
@@ -189,16 +196,38 @@ user@vm3:~/nmos-dpb/Development/build$ more config.json
       { "label": "Camera1", "transport":"rtp_ucast", "payload": "audio", "format": "L16", "dst_port": 7006 }, <
 	  { "label": "Camera2", "transport":"rtp_ucast", "payload": "video", "format": "H264", "dst_port": 7008 }, 
 	  { "label": "Camera2", "transport":"rtp_ucast", "payload": "audio", "format": "aac", "dst_port": 7010 } <
-    ] 
+    ],
+        "how_many_wsocket": 4,
+    "wsocket_list": [
+      { "label": "Coder1-temp", "ws_type":"temperature"},
+      { "label": "Camera1-tally", "ws_type":"boolean"},
+      { "label": "ParamLabel", "ws_type":"param_string"},
+      { "label": "ParamValues", "ws_type":"param_values"}
+    ]
 }
 ```
-
+Due to the json array implementation in the nmos-cpp code, if no senders, receivers or websockets are needed, this lists needed to contain at least 1 item. The item can be empty. e.g.
+```json
+    "how_many_senders": 0,
+    "senders_list": [
+      { "label": "", "":"rtp_ucast", "payload": "", "format": "", "dst_ip": "", "dst_port": 0 }
+    ],
+    "how_many_receivers": 0,
+    "receivers_list": [
+      { "label": "", "transport":"", "payload": "", "format": "", "dst_port": 0 }
+    ],
+    "how_many_wsocket": 0,
+    "wsocket_list": [
+      { "label": "", "ws_type":""}
+    ]
+```
 
 The remote_address fields set the IP, MAC and name of the remote media device. <br />
 The how_many_sender field sets the number of senders to be created. <br />
 The how_many_receivers field sets the number of receivers to be created. <br />
 The sender_list fields set the parameters for each sender. <br />
 The receivers_list fields set the parameters for each receiver. <br />
+The how_many_wsocket field sets the number of both web spockets senders and receivers to be created. <br />
 Note: <br />
 For rtp_ucast, the sender dst_ip and dst_port must match the receiver remote_address ip and dst_port. <br />
 For all senders and receivers that connect the payload and format must match. <br />
@@ -247,12 +276,13 @@ http://<vm2 ip address>:8080/		# Node service <br />
 ## Current limitations
 
 The modified versions of nmos-cpp allows multiple types of sender and receiver parameters to be programmed. However:
-1.	The video resolution is hard code to HD (1920x1080), scan can be set to interlaced/progressive and frame rate can be programmed.
+1.	The video resolution is hard coded to HD (1920x1080), scan can be set to interlaced/progressive and frame rate can be programmed.
 
 2.	The registration service has been modified to register multiple format (encoding types) e.g.  <br />
     Video, “format”: "raw",  "H264", "vc2", "H265", "jxsv" <br />
-    Audio, “format”: "L24",  "L20", "L16", "L8", "aac", "mp2", "mp3", "m4a"  <br />
+    Audio, “format”: "L24",  "L20", "L16", "L8", "aac", "mp2", "mp3", "m4a", "opus"  <br />
 <br />
     The registration service and Ctrl App (nmos-js) will only allow the connection of each media types, but lower level details are hard coded. <br />
+
 
 

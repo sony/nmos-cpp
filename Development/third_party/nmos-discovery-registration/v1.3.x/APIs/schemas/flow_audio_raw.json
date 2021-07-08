@@ -25,7 +25,8 @@
                 "audio/aac",
                 "audio/mp2",
                 "audio/mp3",
-                "audio/m4a"
+                "audio/m4a",
+                "audio/opus"
               ]
             },
             {

@@ -59,24 +59,27 @@ namespace impl
     {
         // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 0 };
+        const web::json::field_as_integer_or how_many_wsocket{ U("how_many_wsocket"), 0 };
 
         // DPB how_many_senders: mod to provide number of senders
-        const web::json::field_as_integer_or how_many_senders{ U("how_many_senders"), 2 };
-        const web::json::field_as_integer_or how_many_receivers{ U("how_many_receivers"), 2 };
+        const web::json::field_as_integer_or how_many_senders{ U("how_many_senders"), 0 };
+        const web::json::field_as_integer_or how_many_receivers{ U("how_many_receivers"), 0 };
         // DPB settings for OGC and remote hosts
         const web::json::field_as_bool_or OGC_remote{ U("OGC_remote"), false };
         const web::json::field_as_bool_or interlace_mode{ U("interlace_mode"), false };
         //const web::json::field_as_string_or remote_address{ U("remote_address"), U("10.0.0.1") }; // moved to nmos::fields in settings.h
         // DPB experimental configs
-        const web::json::field_as_string_or conf_label{ U("label"), U("") };
-        const web::json::field_as_string_or conf_transport{ U("transport"), U("") };
-        const web::json::field_as_string_or conf_payload{ U("payload"), U("") };
-        const web::json::field_as_string_or conf_format{ U("format"), U("") };
-        const web::json::field_as_string_or dst_ip{ U("dst_ip"), U("") };
+        const web::json::field_as_string_or conf_label{ U("label"), U("Camera") };
+        const web::json::field_as_string_or conf_transport{ U("transport"), U("rtp_ucast") };
+        const web::json::field_as_string_or conf_payload{ U("payload"), U("video") };
+        const web::json::field_as_string_or conf_format{ U("format"), U("raw") };
+        const web::json::field_as_string_or dst_ip{ U("dst_ip"), U("192.168.1.1") };
         const web::json::field_as_integer_or dst_port{ U("dst_port"), 5000 };
 
         const web::json::field_as_array senders_list{ U("senders_list")};
         const web::json::field_as_array receivers_list{ U("receivers_list")};
+        const web::json::field_as_array wsocket_list{ U("wsocket_list")};
+        const web::json::field_as_string_or ws_type{ U("ws_type"), U("") };
 
         //const web::json::field_as_array senders_list{ U("senders_list"), web::json::value::array() };
         //const web::json::field_as_value_or senders_list{ U("senders_list"), web::json::value::array() };
@@ -179,6 +182,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto OGC_remote = impl::fields::OGC_remote(model.settings);
     auto how_many_senders = impl::fields::how_many_senders(model.settings);
     auto how_many_receivers = impl::fields::how_many_receivers(model.settings);
+    auto how_many_wsocket = impl::fields::how_many_wsocket(model.settings);
     //const auto remote_address = nmos::fields::remote_address(model.settings);
     const auto remote_int_name = nmos::fields::remote_int_name(model.settings);
     const auto remote_mac = nmos::fields::remote_mac(model.settings);
@@ -195,16 +199,19 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     std::string sender_dst_ip[MAX_SENDERS];
     int sender_dst_port[MAX_SENDERS];
     int i = 0;
-    const auto& conf_senders = impl::fields::senders_list(model.settings);
-    for (const auto& conf_sender : conf_senders)
-    {
-      sender_conf_label[i] = impl::fields::conf_label(conf_sender);
-      sender_conf_transport[i]  = impl::fields::conf_transport(conf_sender);
-      sender_conf_payload[i]  = impl::fields::conf_payload(conf_sender);
-      sender_conf_format[i]  = impl::fields::conf_format(conf_sender);
-      sender_dst_ip[i] = impl::fields::dst_ip(conf_sender);
-      sender_dst_port[i] = impl::fields::dst_port(conf_sender);
-      i++;
+    printf("\nhow_many_senders: %d ", how_many_senders);
+    if (how_many_senders != 0) {
+        const auto& conf_senders = impl::fields::senders_list(model.settings);
+        for (const auto& conf_sender : conf_senders)
+        {
+            sender_conf_label[i] = impl::fields::conf_label(conf_sender);
+            sender_conf_transport[i]  = impl::fields::conf_transport(conf_sender);
+            sender_conf_payload[i]  = impl::fields::conf_payload(conf_sender);
+            sender_conf_format[i]  = impl::fields::conf_format(conf_sender);
+            sender_dst_ip[i] = impl::fields::dst_ip(conf_sender);
+            sender_dst_port[i] = impl::fields::dst_port(conf_sender);
+            i++;
+        }
     }
     // DPB Test for correct numebr of senders
     printf("\nhow_many_senders: %d ", how_many_senders);
@@ -220,14 +227,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     std::string receiver_conf_payload[MAX_SENDERS];
     std::string receiver_conf_format[MAX_SENDERS];
     i = 0;
-    const auto& conf_receivers = impl::fields::receivers_list(model.settings);
-    for (const auto& conf_receiver : conf_receivers)
-    {
-      receiver_conf_label[i] = impl::fields::conf_label(conf_receiver);
-      receiver_conf_transport[i]  = impl::fields::conf_transport(conf_receiver);
-      receiver_conf_payload[i]  = impl::fields::conf_payload(conf_receiver);
-      receiver_conf_format[i]  = impl::fields::conf_format(conf_receiver);
-      i++;
+    if (how_many_receivers != 0) {
+        const auto& conf_receivers = impl::fields::receivers_list(model.settings);
+        for (const auto& conf_receiver : conf_receivers)
+        {
+            receiver_conf_label[i] = impl::fields::conf_label(conf_receiver);
+            receiver_conf_transport[i]  = impl::fields::conf_transport(conf_receiver);
+            receiver_conf_payload[i]  = impl::fields::conf_payload(conf_receiver);
+            receiver_conf_format[i]  = impl::fields::conf_format(conf_receiver);
+            i++;
+        }
     }
     //DPB Test for correct number of recdeivers
     printf("\nhow_many_receivers: %d ", how_many_receivers);
@@ -237,6 +246,26 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     std::cout << receiver_conf_label[0] << " " << receiver_conf_transport[0] << " " << receiver_conf_payload[0] << " " << receiver_conf_format[0] <<'\n';
     std::cout << receiver_conf_label[1] << " " << receiver_conf_transport[1] << " " << receiver_conf_payload[1] << " " << receiver_conf_format[1] <<'\n';
 
+    //DPB test for web socket connections
+    std::string wsocket_label[MAX_SENDERS];
+    std::string wsocket_type[MAX_SENDERS];
+    i = 0;
+    if (how_many_wsocket != 0) {
+        const auto& conf_wsockets = impl::fields::wsocket_list(model.settings);
+        for (const auto& conf_wsocket : conf_wsockets)
+        {
+            wsocket_label[i] = impl::fields::conf_label(conf_wsocket);
+            wsocket_type[i]  = impl::fields::ws_type(conf_wsocket);
+            i++;
+        }
+    }
+    //DPB Test for correct number of recdeivers
+    printf("\nhow_many_wsocket: %d ", how_many_wsocket);
+    printf("Number of web socket in list: %d \n", i);
+    if (how_many_wsocket > i)
+        how_many_wsocket = i;
+    std::cout << wsocket_label[0] << " " << wsocket_type[0] <<'\n';
+    std::cout << wsocket_label[1] << " " << wsocket_type[1] <<'\n';
 
 
     // any delay between updates to the model resources is unnecessary
@@ -359,10 +388,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     //DPB changed to how many = how many senders and how many receivers
 
     {
-        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many_senders);
+        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, (how_many_senders + how_many_wsocket));
         if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many_senders));
 
-        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::all, how_many_receivers);
+        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::all, (how_many_receivers + how_many_wsocket));
         if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) return;
     }
 
@@ -639,125 +668,144 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     // example event sources, senders, flows
     //DPB changed back to how many
-    for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
+    for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many_wsocket; ++index)
     {
-        for (const auto& port : impl::ports::ws)
+
+        //DPB set wscoket type for senders
+        auto port = impl::ports::temperature;
+        if (wsocket_type[index] == "boolean")
+            port = impl::ports::burn;
+        else if(wsocket_type[index] == "param_string")
+            port = impl::ports::nonsense;
+        else if(wsocket_type[index] == "param_values")
+            port = impl::ports::catcall;
+
+        const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
+        const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
+        const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+
+        //DPB allow selection of wsocket type
+        nmos::event_type event_type;
+        web::json::value events_type;
+        web::json::value events_state;
+
+
+        if (impl::ports::temperature == port)
         {
-            const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
-            const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
-            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            event_type = impl::temperature_Celsius;
 
-            nmos::event_type event_type;
-            web::json::value events_type;
-            web::json::value events_state;
-            if (impl::ports::temperature == port)
-            {
-                event_type = impl::temperature_Celsius;
-
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#231-measurements
-                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-type-number-measurement-get-200.json
-                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-state-number-measurement-get-200.json
-                events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
-                events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 }, event_type);
-            }
-            else if (impl::ports::burn == port)
-            {
-                event_type = nmos::event_types::boolean;
-
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#21-boolean
-                events_type = nmos::make_events_boolean_type();
-                events_state = nmos::make_events_boolean_state({ source_id, flow_id }, false);
-            }
-            else if (impl::ports::nonsense == port)
-            {
-                event_type = nmos::event_types::string;
-
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#22-string
-                // and of course, https://en.wikipedia.org/wiki/Metasyntactic_variable
-                events_type = nmos::make_events_string_type(0, 0, U("^foo|bar|baz|qu+x$"));
-                events_state = nmos::make_events_string_state({ source_id, flow_id }, U("foo"));
-            }
-            else if (impl::ports::catcall == port)
-            {
-                event_type = impl::catcall;
-
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#3-enum
-                events_type = nmos::make_events_number_enum_type({
-                    { 1, { U("meow"), U("chatty") } },
-                    { 2, { U("purr"), U("happy") } },
-                    { 4, { U("hiss"), U("afraid") } },
-                    { 8, { U("yowl"), U("sonorous") } }
-                });
-                events_state = nmos::make_events_number_state({ source_id, flow_id }, 1, event_type);
-            }
-
-            // grain_rate is not set because these events are aperiodic
-            auto source = nmos::make_data_source(source_id, device_id, {}, event_type, model.settings);
-            impl::set_label(source, port, index);
-
-            auto events_source = nmos::make_events_source(source_id, events_state, events_type);
-
-            auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, event_type, model.settings);
-            impl::set_label(flow, port, index);
-
-            //DPB added selection of ucast or mcast
-            auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
-            impl::set_label(sender, port, index);
-            impl::insert_group_hint(sender, port, index);
-
-            // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
-            auto connection_sender = nmos::make_connection_events_websocket_sender(sender_id, device_id, source_id, model.settings);
-            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-            nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
-
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) return;
+            // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#231-measurements
+            // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-type-number-measurement-get-200.json
+            // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-state-number-measurement-get-200.json
+            events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
+            events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 }, event_type);
         }
+        else if (impl::ports::burn == port)
+        {
+            event_type = nmos::event_types::boolean;
+
+            // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#21-boolean
+            events_type = nmos::make_events_boolean_type();
+            events_state = nmos::make_events_boolean_state({ source_id, flow_id }, false);
+        }
+        else if (impl::ports::nonsense == port)
+        {
+            event_type = nmos::event_types::string;
+
+            // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#22-string
+            // and of course, https://en.wikipedia.org/wiki/Metasyntactic_variable
+            events_type = nmos::make_events_string_type(0, 0, U("^foo|bar|baz|qu+x$"));
+            events_state = nmos::make_events_string_state({ source_id, flow_id }, U("foo"));
+        }
+        else if (impl::ports::catcall == port)
+        {
+            event_type = impl::catcall;
+
+            // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#3-enum
+            events_type = nmos::make_events_number_enum_type({
+                { 1, { U("meow"), U("chatty") } },
+                { 2, { U("purr"), U("happy") } },
+                { 4, { U("hiss"), U("afraid") } },
+                { 8, { U("yowl"), U("sonorous") } }
+            });
+            events_state = nmos::make_events_number_state({ source_id, flow_id }, 1, event_type);
+        }
+
+        // grain_rate is not set because these events are aperiodic
+        auto source = nmos::make_data_source(source_id, device_id, {}, event_type, model.settings);
+        impl::set_label(source, port, index);
+
+        auto events_source = nmos::make_events_source(source_id, events_state, events_type);
+
+        auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, event_type, model.settings);
+        impl::set_label(flow, port, index);
+
+        //DPB added selection of ucast or mcast
+        auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
+        impl::set_label(sender, port, index);
+        impl::insert_group_hint(sender, port, index);
+
+        // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
+        auto connection_sender = nmos::make_connection_events_websocket_sender(sender_id, device_id, source_id, model.settings);
+        connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
+        resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+        nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+        if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) return;
+
     }
 
     // example event receivers
-    for (int index = 0; index < how_many; ++index)
+    for (int index = 0; index < how_many_wsocket; ++index)
     {
-        for (const auto& port : impl::ports::ws)
+
+        //DPB set wscoket type for receivers
+        auto port = impl::ports::temperature;
+        if (wsocket_type[index] == "boolean")
+            port = impl::ports::burn;
+        else if(wsocket_type[index] == "param_string")
+            port = impl::ports::nonsense;
+        else if(wsocket_type[index] == "param_values")
+            port = impl::ports::catcall;
+
+        const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+
+        nmos::event_type event_type;
+        if (impl::ports::temperature == port)
         {
-            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
-
-            nmos::event_type event_type;
-            if (impl::ports::temperature == port)
-            {
-                // accept e.g. "number/temperature/F" or "number/temperature/K" as well as "number/temperature/C"
-                event_type = impl::temperature_wildcard;
-            }
-            else if (impl::ports::burn == port)
-            {
-                // accept any boolean
-                event_type = nmos::event_types::wildcard(nmos::event_types::boolean);
-            }
-            else if (impl::ports::nonsense == port)
-            {
-                // accept any string
-                event_type = nmos::event_types::wildcard(nmos::event_types::string);
-            }
-            else if (impl::ports::catcall == port)
-            {
-                // accept only a catcall
-                event_type = impl::catcall;
-            }
-
-            auto receiver = nmos::make_data_receiver(receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { event_type }, model.settings);
-            impl::set_label(receiver, port, index);
-            impl::insert_group_hint(receiver, port, index);
-
-            auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
-            resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+            // accept e.g. "number/temperature/F" or "number/temperature/K" as well as "number/temperature/C"
+            event_type = impl::temperature_wildcard;
         }
+        else if (impl::ports::burn == port)
+        {
+            // accept any boolean
+            event_type = nmos::event_types::wildcard(nmos::event_types::boolean);
+        }
+        else if (impl::ports::nonsense == port)
+        {
+            // accept any string
+            event_type = nmos::event_types::wildcard(nmos::event_types::string);
+        }
+        else if (impl::ports::catcall == port)
+        {
+            // accept only a catcall
+            event_type = impl::catcall;
+        }
+
+        auto receiver = nmos::make_data_receiver(receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { event_type }, model.settings);
+        impl::set_label(receiver, port, index);
+        impl::insert_group_hint(receiver, port, index);
+
+        auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
+        resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
+
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
+        if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+
     }
 
     // example audio inputs

@@ -2,11 +2,14 @@
 
 #include <boost/logic/tribool.hpp>
 #include "cpprest/host_utils.h"
+//#include "cpprest/basic_utils.h" //DPB
 #include "cpprest/uri_builder.h"
 #include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
 #include "nmos/resource.h"
+
+
 
 namespace nmos
 {
@@ -566,30 +569,56 @@ namespace nmos
     {
         const auto version = *nmos::is07_versions::from_settings(settings).rbegin();
 
+        //DPB mod for remote address pof connection uri
+        const auto OGC_remote = nmos::fields::OGC_remote(settings);
+
         // hmm, since only one WebSocket server is used for all devices, there's no real reason
         // that the connection_uri shouldn't just finish with the API version?
         // see https://github.com/AMWA-TV/nmos-event-tally/issues/33
-        return web::uri_builder()
+        if (OGC_remote == true)         {
+          return web::uri_builder()
             .set_scheme(nmos::ws_scheme(settings))
-            .set_host(nmos::get_host(settings))
+            .set_host(nmos::fields::remote_address(settings))
             .set_port(nmos::fields::events_ws_port(settings))
             .set_path(U("/x-nmos/events/") + make_api_version(version) + U("/devices/") + device_id)
             .to_uri();
+        }
+        else {
+          return web::uri_builder()
+              .set_scheme(nmos::ws_scheme(settings))
+              .set_host(nmos::get_host(settings))
+              .set_port(nmos::fields::events_ws_port(settings))
+              .set_path(U("/x-nmos/events/") + make_api_version(version) + U("/devices/") + device_id)
+              .to_uri();
+        }
+
     }
 
     web::uri make_events_api_ext_is_07_rest_api_url(const nmos::id& source_id, const nmos::settings& settings)
     {
         const auto version = *nmos::is07_versions::from_settings(settings).rbegin();
+        //DPB
+        const auto OGC_remote = nmos::fields::OGC_remote(settings);
 
         // "The sender should append the relative path sources/{source_id}/"
         // I'd rather be consistent with the general guidance regarding trailing slashes
         // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/4.0.%20Core%20models.md#ext_is_07_rest_api_url
-        return web::uri_builder()
+        if (OGC_remote == true)         {
+          return web::uri_builder()
             .set_scheme(nmos::http_scheme(settings))
-            .set_host(nmos::get_host(settings))
+            .set_host(nmos::fields::remote_address(settings))
             .set_port(nmos::fields::events_port(settings))
             .set_path(U("/x-nmos/events/") + make_api_version(version) + U("/sources/") + source_id)
             .to_uri();
+        }
+        else {
+          return web::uri_builder()
+              .set_scheme(nmos::http_scheme(settings))
+              .set_host(nmos::get_host(settings))
+              .set_port(nmos::fields::events_port(settings))
+              .set_path(U("/x-nmos/events/") + make_api_version(version) + U("/sources/") + source_id)
+              .to_uri();
+        }
     }
 
     utility::string_t make_events_mqtt_broker_topic(const nmos::id& source_id, const nmos::settings& settings)

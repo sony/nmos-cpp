@@ -33,6 +33,7 @@ namespace nmos
         const media_type audio_mp2{ U("audio/mp2") };
         const media_type audio_mp3{ U("audio/mp3") };
         const media_type audio_m4a{ U("audio/m4a") };
+        const media_type audio_opus{ U("audio/opus") };
 
         inline media_type audio_L(unsigned int bit_depth)
         {

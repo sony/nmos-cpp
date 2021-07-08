@@ -347,6 +347,7 @@ namespace nmos
         else if (media_type == "MP2") { data[U("media_type")] = value::string(nmos::media_types::audio_mp2.name); data[U("bit_depth")] = bit_depth; }
         else if (media_type == "MP3") { data[U("media_type")] = value::string(nmos::media_types::audio_mp3.name); data[U("bit_depth")] = bit_depth; }
         else if (media_type == "M4A") { data[U("media_type")] = value::string(nmos::media_types::audio_m4a.name); data[U("bit_depth")] = bit_depth; }
+        else if (media_type == "OPUS") { data[U("media_type")] = value::string(nmos::media_types::audio_opus.name); data[U("bit_depth")] = bit_depth; }
         //Uncoded format
         //Defaults to L24, bit depth set ny bit_depth=24 in called function
         else if (media_type == "L8") { data[U("media_type")] = value::string(nmos::media_types::audio_L(8).name); data[U("bit_depth")] = 8; }
@@ -645,6 +646,7 @@ namespace nmos
         else if (rxmedia_type == "MP2") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_mp2.name); }
         else if (rxmedia_type == "MP3") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_mp3.name); }
         else if (rxmedia_type == "M4A") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_m4a.name); }
+        else if (rxmedia_type == "OPUS") {  web::json::push_back(data[U("caps")][U("media_types")], nmos::media_types::audio_opus.name); }
 
         else if (rxmedia_type == "L8") { web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(8).name)); }
         else if (rxmedia_type == "L16") { web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(16).name)); }

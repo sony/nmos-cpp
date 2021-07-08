@@ -618,6 +618,7 @@ namespace nmos
         else if (conf_format == "MP2") sender_conf_format = "mp2";
         else if (conf_format == "MP3") sender_conf_format = "mp3";
         else if (conf_format == "M4A") sender_conf_format = "m4a";
+        else if (conf_format == "OPUS") sender_conf_format = "opus";
         else sender_conf_format = "L24";
 
         std::cout << "Audio rtpmap : "<< sdp_params.rtpmap.encoding_name << " ConfForm: "  << sender_conf_format << '\n';
@@ -772,6 +773,7 @@ namespace nmos
             if (sdp::media_types::audio == sdp_params.media_type && U("mp2") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
             if (sdp::media_types::audio == sdp_params.media_type && U("mp3") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
             if (sdp::media_types::audio == sdp_params.media_type && U("m4a") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
+            if (sdp::media_types::audio == sdp_params.media_type && U("opus") == sdp_params.rtpmap.encoding_name) return nmos::formats::audio;
 
             if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
             if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
