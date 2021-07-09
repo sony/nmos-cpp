@@ -105,6 +105,15 @@ namespace nmos
         // registry_version [node]: used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string_or registry_version{ U("registry_version"), U("v1.3") };
 
+        // preferred_registry_address [node]: used to construct request URLs for preferred registry API (tried before discovery phase)
+        const web::json::field_as_string preferred_registry_address{ U("preferred_registry_address") };
+
+        // preferred_registration_port [node]: used to construct request URLs for preferred registry API (tried before discovery phase)
+        const web::json::field_as_integer_or preferred_registration_port{ U("preferred_registration_port"), 3210 };
+
+        // preferred_registry_version [node]: used to construct request URLs for preferred registry API (tried before discovery phase)
+        const web::json::field_as_string_or preferred_registry_version{ U("preferred_registry_version"), U("v1.3") };
+
         // port numbers [registry, node]: ports to which clients should connect for each API
 
         // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
