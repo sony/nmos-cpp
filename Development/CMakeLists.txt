@@ -7,16 +7,10 @@ project(nmos-cpp)
 # The default nmos-cpp root directory
 set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 
-set (USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
-
-if (${USE_CONAN})
-    include (${NMOS_CPP_DIR}/cmake/NmosCppConan.cmake)
-endif()
-
 # Common setup and dependency checking
 include (${NMOS_CPP_DIR}/cmake/NmosCppCommon.cmake)
 
-# Setup for the libraries
+# nmos-cpp libraries
 include (${NMOS_CPP_DIR}/cmake/NmosCppLibraries.cmake)
 
 # nmos-cpp-node executable
