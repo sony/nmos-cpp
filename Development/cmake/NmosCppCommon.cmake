@@ -32,7 +32,7 @@ enable_testing()
 # location of additional CMake modules
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
-    ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${NMOS_CPP_DIR}/third_party/cmake
     ${NMOS_CPP_DIR}/cmake
     )
@@ -40,7 +40,7 @@ set(CMAKE_MODULE_PATH
 # location of <PackageName>Config.cmake files created by Conan
 set(CMAKE_PREFIX_PATH
     ${CMAKE_PREFIX_PATH}
-    ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
     )
 
 if(${USE_CONAN} AND CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
