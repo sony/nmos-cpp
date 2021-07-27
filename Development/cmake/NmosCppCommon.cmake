@@ -202,11 +202,23 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # notes:
     #   cpprestsdk adds /D_WIN32_WINNT=0x0600 (Windows Vista) explicitly...
     #   calculating the value from CMAKE_SYSTEM_VERSION might be better?
-    #   adding a force include for <ssdkddkver.h> could be another option
+    #   adding a force include for <sdkddkver.h> could be another option
     # see:
     #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
     #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
-    add_definitions(/D_WIN32_WINNT=0x0600)
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 10) # Windows 10
+        add_definitions(/D_WIN32_WINNT=0x0A00)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.3) # Windows 8.1
+        add_definitions(/D_WIN32_WINNT=0x0603)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.2) # Windows 8
+        add_definitions(/D_WIN32_WINNT=0x0602)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.1) # Windows 7
+        add_definitions(/D_WIN32_WINNT=0x0601)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.0) # Windows Vista
+        add_definitions(/D_WIN32_WINNT=0x0600)
+    else() # Windows XP (5.1)
+        add_definitions(/D_WIN32_WINNT=0x0501)
+    endif()
 
     if(BUILD_LLDP)
         # find WinPcap for the LLDP support library (lldp_static)
@@ -307,6 +319,7 @@ link_directories(
 
 # cpprestsdk
 if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
+    # required for mdns_static and nmos-cpp_static
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h\"")
 endif()
 
