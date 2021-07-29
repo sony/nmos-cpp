@@ -109,6 +109,7 @@ endif()
 # boost
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
+# adding the "headers" component seems to be unnecessary (and the target alias "boost" doesn't work at all)
 list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 
 # openssl
@@ -259,8 +260,14 @@ elseif(Boost_VERSION_COMPONENTS VERSION_GREATER BOOST_VERSION_CUR)
 else()
     message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS})
 endif()
+message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
 if (DEFINED Boost_INCLUDE_DIRS)
     message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
+endif()
+# Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0 but provides this definition to force that behaviour
+# since if find_package(Boost) found BoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    add_definitions(/DBOOST_UUID_FORCE_AUTO_LINK)
 endif()
 
 # set common C++ compiler flags
