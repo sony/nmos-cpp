@@ -87,9 +87,12 @@ source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
 
 # ensure e.g. target_compile_definitions for cppprestsdk are applied when building this target
 target_link_libraries(
-    mdns_static
+    mdns_static PUBLIC
     nmos-cpp::slog
     nmos-cpp::cpprestsdk
+    )
+target_link_libraries(
+    mdns_static PRIVATE
     nmos-cpp::DNSSD
     )
 
@@ -120,9 +123,13 @@ if(BUILD_LLDP)
 
     # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
     target_link_libraries(
-        lldp_static
+        lldp_static PUBLIC
         nmos-cpp::slog
         nmos-cpp::cpprestsdk
+        )
+    # hmm, want a PRIVATE dependency on PCAP, but need its target_link_directories for wpcap on Windows
+    target_link_libraries(
+        lldp_static PUBLIC
         nmos-cpp::PCAP
         )
 
@@ -950,12 +957,10 @@ source_group("rql\\Header Files" FILES ${NMOS_CPP_RQL_HEADERS})
 source_group("sdp\\Header Files" FILES ${NMOS_CPP_SDP_HEADERS})
 
 target_link_libraries(
-    nmos-cpp_static
+    nmos-cpp_static PUBLIC
     mdns_static
     nmos-cpp::slog
     nmos-cpp::cpprestsdk
-    nmos-cpp::websocketpp
-    json_schema_validator_static
     nmos_is04_schemas_static
     nmos_is05_schemas_static
     nmos_is08_schemas_static
@@ -964,9 +969,14 @@ target_link_libraries(
     nmos-cpp::OpenSSL
     ${PLATFORM_LIBS}
     )
+target_link_libraries(
+    nmos-cpp_static PRIVATE
+    nmos-cpp::websocketpp
+    json_schema_validator_static
+    )
 if(BUILD_LLDP)
     target_link_libraries(
-        nmos-cpp_static
+        nmos-cpp_static PUBLIC
         lldp_static
         )
 endif()
