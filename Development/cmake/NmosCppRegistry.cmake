@@ -1,6 +1,6 @@
 # caller can set NMOS_CPP_DIR if the project is different
-if (NOT DEFINED NMOS_CPP_DIR)
-    set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
+if(NOT DEFINED NMOS_CPP_DIR)
+    set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
 # nmos-cpp-registry executable

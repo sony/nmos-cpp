@@ -6,8 +6,8 @@ endif()
 
 include(${CMAKE_CURRENT_BINARY_DIR}/conan.cmake)
 
-set (NMOS_CPP_CONAN_BUILD_LIBS "missing" CACHE STRING "Semicolon separated list of libraries to build rather than download")
-set (NMOS_CPP_CONAN_OPTIONS "" CACHE STRING "Semicolon separated list of Conan options")
+set(NMOS_CPP_CONAN_BUILD_LIBS "missing" CACHE STRING "Semicolon separated list of libraries to build rather than download")
+set(NMOS_CPP_CONAN_OPTIONS "" CACHE STRING "Semicolon separated list of Conan options")
 
 if(CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     # e.g. Visual Studio

@@ -8,16 +8,16 @@ project(nmos-cpp)
 set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 
 # Common setup and dependency checking
-include (${NMOS_CPP_DIR}/cmake/NmosCppCommon.cmake)
+include(${NMOS_CPP_DIR}/cmake/NmosCppCommon.cmake)
 
 # nmos-cpp libraries
-include (${NMOS_CPP_DIR}/cmake/NmosCppLibraries.cmake)
+include(${NMOS_CPP_DIR}/cmake/NmosCppLibraries.cmake)
 
 # nmos-cpp-node executable
-include (${NMOS_CPP_DIR}/cmake/NmosCppNode.cmake)
+include(${NMOS_CPP_DIR}/cmake/NmosCppNode.cmake)
 
 # nmos-cpp-registry executable
-include (${NMOS_CPP_DIR}/cmake/NmosCppRegistry.cmake)
+include(${NMOS_CPP_DIR}/cmake/NmosCppRegistry.cmake)
 
 # nmos-cpp-test executable
-include (${NMOS_CPP_DIR}/cmake/NmosCppTest.cmake)
+include(${NMOS_CPP_DIR}/cmake/NmosCppTest.cmake)

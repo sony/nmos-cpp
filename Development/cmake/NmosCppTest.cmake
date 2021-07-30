@@ -1,8 +1,8 @@
 # CMake instructions for making the nmos-cpp test program
 
 # caller can set NMOS_CPP_DIR if the project is different
-if (NOT DEFINED NMOS_CPP_DIR)
-    set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
+if(NOT DEFINED NMOS_CPP_DIR)
+    set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
 # nmos-cpp-test
@@ -30,7 +30,7 @@ set(NMOS_CPP_TEST_CPPREST_TEST_SOURCES
 set(NMOS_CPP_TEST_CPPREST_TEST_HEADERS
     )
 
-if (BUILD_LLDP)
+if(BUILD_LLDP)
     set(NMOS_CPP_TEST_LLDP_TEST_SOURCES
         ${NMOS_CPP_DIR}/lldp/test/lldp_test.cpp
         )
@@ -105,7 +105,7 @@ target_link_libraries(
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
     )
-if (BUILD_LLDP)
+if(BUILD_LLDP)
     target_link_libraries(
         nmos-cpp-test
         lldp_static

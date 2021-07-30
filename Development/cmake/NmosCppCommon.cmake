@@ -1,19 +1,19 @@
 # nmos-cpp Common CMake setup and dependency checking
 
 # caller can set NMOS_CPP_DIR if the project is different
-if (NOT DEFINED NMOS_CPP_DIR)
-    set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
+if(NOT DEFINED NMOS_CPP_DIR)
+    set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
-set (USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
+set(USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
 
-if (${USE_CONAN})
-    include (${NMOS_CPP_DIR}/cmake/NmosCppConan.cmake)
+if(${USE_CONAN})
+    include(${NMOS_CPP_DIR}/cmake/NmosCppConan.cmake)
 endif()
 
 # compile-time control of logging loquacity
 # use slog::never_log_severity to strip all logging at compile-time, or slog::max_verbosity for full control at run-time
-set (SLOG_LOGGING_SEVERITY slog::max_verbosity CACHE STRING "Compile-time logging level, e.g. between 40 (least verbose, only fatal messages) and -40 (most verbose)")
+set(SLOG_LOGGING_SEVERITY slog::max_verbosity CACHE STRING "Compile-time logging level, e.g. between 40 (least verbose, only fatal messages) and -40 (most verbose)")
 
 # enable C++11
 enable_language(CXX)
@@ -56,18 +56,18 @@ endif()
 include(safeguards)
 
 # enable or disable the LLDP support library (lldp_static)
-set (BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
+set(BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
 
 # find dependencies
 
 # cpprestsdk
 # note: 2.10.16 or higher is recommended (which is the first version with cpprestsdk-configVersion.cmake)
-set (CPPRESTSDK_VERSION_MIN "2.10.11")
-set (CPPRESTSDK_VERSION_CUR "2.10.17")
+set(CPPRESTSDK_VERSION_MIN "2.10.11")
+set(CPPRESTSDK_VERSION_CUR "2.10.17")
 find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_USE_CONFIG})
-if (NOT cpprestsdk_VERSION)
+if(NOT cpprestsdk_VERSION)
     message(STATUS "Found cpprestsdk unknown version; minimum version: " ${CPPRESTSDK_VERSION_MIN})
-elseif (cpprestsdk_VERSION VERSION_LESS CPPRESTSDK_VERSION_MIN)
+elseif(cpprestsdk_VERSION VERSION_LESS CPPRESTSDK_VERSION_MIN)
     message(FATAL_ERROR "Found cpprestsdk version " ${cpprestsdk_VERSION} " that is lower than the minimum version: " ${CPPRESTSDK_VERSION_MIN})
 elseif(cpprestsdk_VERSION VERSION_GREATER CPPRESTSDK_VERSION_CUR)
     message(STATUS "Found cpprestsdk version " ${cpprestsdk_VERSION} " that is higher than the current tested version: " ${CPPRESTSDK_VERSION_CUR})
@@ -76,7 +76,7 @@ else()
 endif()
 
 add_library(cpprestsdk INTERFACE)
-if (TARGET cpprestsdk::cpprest)
+if(TARGET cpprestsdk::cpprest)
     target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprest)
 else()
     # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
@@ -89,12 +89,12 @@ add_library(nmos-cpp::cpprestsdk ALIAS cpprestsdk)
 if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
     message(STATUS "Using configured websocketpp include directory at " ${WEBSOCKETPP_INCLUDE_DIR})
 else()
-    set (WEBSOCKETPP_VERSION_MIN "0.5.1")
-    set (WEBSOCKETPP_VERSION_CUR "0.8.2")
+    set(WEBSOCKETPP_VERSION_MIN "0.5.1")
+    set(WEBSOCKETPP_VERSION_CUR "0.8.2")
     find_package(websocketpp REQUIRED ${FIND_PACKAGE_USE_CONFIG})
-    if (NOT websocketpp_VERSION)
+    if(NOT websocketpp_VERSION)
         message(STATUS "Found websocketpp unknown version; minimum version: " ${WEBSOCKETPP_VERSION_MIN})
-    elseif (websocketpp_VERSION VERSION_LESS WEBSOCKETPP_VERSION_MIN)
+    elseif(websocketpp_VERSION VERSION_LESS WEBSOCKETPP_VERSION_MIN)
         message(FATAL_ERROR "Found websocketpp version " ${websocketpp_VERSION} " that is lower than the minimum version: " ${WEBSOCKETPP_VERSION_MIN})
     elseif(websocketpp_VERSION VERSION_GREATER WEBSOCKETPP_VERSION_CUR)
         message(STATUS "Found websocketpp version " ${websocketpp_VERSION} " that is higher than the current tested version: " ${WEBSOCKETPP_VERSION_CUR})
@@ -105,7 +105,7 @@ else()
 endif()
 
 add_library(websocketpp INTERFACE)
-if (TARGET websocketpp::websocketpp)
+if(TARGET websocketpp::websocketpp)
     target_link_libraries(websocketpp INTERFACE websocketpp::websocketpp)
 else()
     target_include_directories(websocketpp INTERFACE "${WEBSOCKETPP_INCLUDE_DIR}")
@@ -124,7 +124,7 @@ find_package(OpenSSL REQUIRED ${FIND_PACKAGE_USE_CONFIG})
 message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
 
 add_library(OpenSSL INTERFACE)
-if (TARGET OpenSSL::SSL)
+if(TARGET OpenSSL::SSL)
     target_link_libraries(OpenSSL INTERFACE OpenSSL::Crypto OpenSSL::SSL)
 else()
     # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
@@ -137,7 +137,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns_static)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
-    set (BONJOUR_LIB -ldns_sd)
+    set(BONJOUR_LIB -ldns_sd)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
@@ -160,41 +160,41 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
 
     if(BUILD_LLDP)
         # find libpcap for the LLDP support library (lldp_static)
-        set (PCAP_LIB -lpcap)
+        set(PCAP_LIB -lpcap)
     endif()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns_static)
-    set (MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
+    set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
     if(MDNS_SYSTEM_BONJOUR)
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
-        set (BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
-        set (BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
-        set (BONJOUR_LIB dnssd)
+        set(BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
+        set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
+        set(BONJOUR_LIB dnssd)
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
         if(CMAKE_VERSION VERSION_LESS 3.15)
             foreach(Config ${CMAKE_CONFIGURATION_TYPES})
                 string(TOUPPER ${Config} CONFIG)
                 # default is /MD or /MDd
-                if(NOT("${CMAKE_CXX_FLAGS_${CONFIG}}" MATCHES "/MT"))
+                if(NOT ("${CMAKE_CXX_FLAGS_${CONFIG}}" MATCHES "/MT"))
                     message(STATUS "Excluding libcmt for ${Config} because CMAKE_CXX_FLAGS_${CONFIG} is: ${CMAKE_CXX_FLAGS_${CONFIG}}")
-                    set (CMAKE_EXE_LINKER_FLAGS_${CONFIG} "${CMAKE_EXE_LINKER_FLAGS_${CONFIG}} /NODEFAULTLIB:libcmt")
+                    set(CMAKE_EXE_LINKER_FLAGS_${CONFIG} "${CMAKE_EXE_LINKER_FLAGS_${CONFIG}} /NODEFAULTLIB:libcmt")
                 endif()
             endforeach()
         else()
             # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
             if((NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY) OR (${CMAKE_MSVC_RUNTIME_LIBRARY} MATCHES "DLL"))
                 message(STATUS "Excluding libcmt because CMAKE_MSVC_RUNTIME_LIBRARY is: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
-                set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
             endif()
         endif()
     else()
         # note: use the patched files rather than the system installed version
-        set (BONJOUR_INCLUDE "${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSShared")
-        unset (BONJOUR_LIB_DIR)
-        unset (BONJOUR_LIB)
-        set (BONJOUR_SOURCES
+        set(BONJOUR_INCLUDE "${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSShared")
+        unset(BONJOUR_LIB_DIR)
+        unset(BONJOUR_LIB)
+        set(BONJOUR_SOURCES
             ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
             )
         set_property(
@@ -202,7 +202,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             PROPERTY COMPILE_DEFINITIONS
                 WIN32_LEAN_AND_MEAN
             )
-        set (BONJOUR_HEADERS
+        set(BONJOUR_HEADERS
             ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
             )
     endif()
@@ -231,9 +231,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
     if(BUILD_LLDP)
         # find WinPcap for the LLDP support library (lldp_static)
-        set (PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
-        set (PCAP_LIB_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
-        set (PCAP_LIB wpcap)
+        set(PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
+        set(PCAP_LIB_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
+        set(PCAP_LIB wpcap)
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
         add_definitions(/DHAVE_REMOTE)
@@ -245,23 +245,23 @@ list(APPEND FIND_BOOST_COMPONENTS thread)
 add_definitions(/DBST_SHARED_MUTEX_BOOST)
 
 # find boost
-set (BOOST_VERSION_MIN "1.54.0")
-set (BOOST_VERSION_CUR "1.75.0")
+set(BOOST_VERSION_MIN "1.54.0")
+set(BOOST_VERSION_CUR "1.75.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} ${FIND_PACKAGE_USE_CONFIG})
 # cope with historical versions of FindBoost.cmake
-if (DEFINED Boost_VERSION_STRING)
+if(DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
-elseif (DEFINED Boost_VERSION_MAJOR)
+elseif(DEFINED Boost_VERSION_MAJOR)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_MAJOR}.${Boost_VERSION_MINOR}.${Boost_VERSION_PATCH}")
-elseif (DEFINED Boost_MAJOR_VERSION)
+elseif(DEFINED Boost_MAJOR_VERSION)
     set(Boost_VERSION_COMPONENTS "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
-elseif (DEFINED Boost_VERSION)
+elseif(DEFINED Boost_VERSION)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION}")
 else()
     message(FATAL_ERROR "Boost_VERSION_STRING is not defined")
 endif()
-if (Boost_VERSION_COMPONENTS VERSION_LESS BOOST_VERSION_MIN)
+if(Boost_VERSION_COMPONENTS VERSION_LESS BOOST_VERSION_MIN)
     message(FATAL_ERROR "Found Boost version " ${Boost_VERSION_COMPONENTS} " that is lower than the minimum version: " ${BOOST_VERSION_MIN})
 elseif(Boost_VERSION_COMPONENTS VERSION_GREATER BOOST_VERSION_CUR)
     message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS} " that is higher than the current tested version: " ${BOOST_VERSION_CUR})
@@ -307,7 +307,7 @@ elseif(MSVC)
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     endif()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/detail/vc_disable_warnings.h\"")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/detail/vc_disable_warnings.h\"")
 endif()
 
 # common location of header files (should be using specific target_include_directories?)
@@ -316,7 +316,7 @@ include_directories(
     ${NMOS_CPP_DIR}/third_party
     )
 
-if (BONJOUR_SOURCES)
+if(BONJOUR_SOURCES)
     add_library(
         Bonjour STATIC
         ${BONJOUR_SOURCES}
@@ -336,22 +336,22 @@ endif()
 if(BONJOUR_INCLUDE)
     target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
 endif()
-if (BONJOUR_LIB_DIR)
+if(BONJOUR_LIB_DIR)
     target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
 endif()
-if (BONJOUR_LIB)
+if(BONJOUR_LIB)
     target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB}")
 endif()
 add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 
 add_library(PCAP INTERFACE)
-if (PCAP_INCLUDE_DIR)
+if(PCAP_INCLUDE_DIR)
     target_include_directories(PCAP INTERFACE "${PCAP_INCLUDE_DIR}")
 endif()
-if (PCAP_LIB_DIR)
+if(PCAP_LIB_DIR)
     target_link_directories(PCAP INTERFACE "${PCAP_LIB_DIR}")
 endif()
-if (PCAP_LIB)
+if(PCAP_LIB)
     target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
 endif()
 add_library(nmos-cpp::PCAP ALIAS PCAP)
@@ -359,7 +359,7 @@ add_library(nmos-cpp::PCAP ALIAS PCAP)
 # additional configuration for common dependencies
 
 # cpprestsdk
-if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
+if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
     # required for mdns_static and nmos-cpp_static
     target_compile_options(cpprestsdk INTERFACE "/FI${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h")
     # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers

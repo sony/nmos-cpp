@@ -1,8 +1,8 @@
 # CMake instructions for making all the nmos-cpp libraries
 
 # caller can set NMOS_CPP_DIR if the project is different
-if (NOT DEFINED NMOS_CPP_DIR)
-    set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
+if(NOT DEFINED NMOS_CPP_DIR)
+    set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 endif()
 
 include(CMakeRegexEscape)
@@ -65,7 +65,7 @@ install(TARGETS mdns_static DESTINATION lib)
 install(FILES ${MDNS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/mdns)
 
 # LLDP support library
-if (BUILD_LLDP)
+if(BUILD_LLDP)
     set(LLDP_SOURCES
         ${NMOS_CPP_DIR}/lldp/lldp.cpp
         ${NMOS_CPP_DIR}/lldp/lldp_frame.cpp
@@ -927,7 +927,7 @@ target_link_libraries(
     nmos-cpp::OpenSSL
     ${PLATFORM_LIBS}
     )
-if (BUILD_LLDP)
+if(BUILD_LLDP)
     target_link_libraries(
         nmos-cpp_static
         lldp_static
