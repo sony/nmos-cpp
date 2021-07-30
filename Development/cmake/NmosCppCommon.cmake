@@ -97,7 +97,9 @@ else()
     else()
         message(STATUS "Found websocketpp version " ${websocketpp_VERSION})
     endif()
-    message(STATUS "Using websocketpp include directory at ${WEBSOCKETPP_INCLUDE_DIR}")
+    if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
+        message(STATUS "Using websocketpp include directory at ${WEBSOCKETPP_INCLUDE_DIR}")
+    endif()
 endif()
 
 add_library(websocketpp INTERFACE)
@@ -117,7 +119,9 @@ list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 # openssl
 # note: good idea to use same version as cpprestsk was built with!
 find_package(OpenSSL REQUIRED ${FIND_PACKAGE_USE_CONFIG})
-message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
+if(DEFINED OPENSSL_INCLUDE_DIR)
+    message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
+endif()
 
 add_library(OpenSSL INTERFACE)
 if(TARGET OpenSSL::SSL)
@@ -264,7 +268,16 @@ elseif(Boost_VERSION_COMPONENTS VERSION_GREATER BOOST_VERSION_CUR)
 else()
     message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS})
 endif()
-message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
+if(DEFINED Boost_INCLUDE_DIRS)
+    message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
+endif()
+# Boost_LIBRARIES is provided by the CMake FindBoost.cmake module and recently also by Conan for most generators
+# but with cmake_find_package_multi it isn't, so map the required components to targets instead
+if(NOT DEFINED Boost_LIBRARIES)
+    # doesn't seem necessary to add "headers" or "boost"
+    string(REGEX REPLACE "([^;]+)" "Boost::\\1" Boost_LIBRARIES "${FIND_BOOST_COMPONENTS}")
+endif()
+message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
 
 add_library(Boost INTERFACE)
 target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
