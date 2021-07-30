@@ -26,9 +26,8 @@ source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
 target_link_libraries(
     nmos-cpp-registry
     nmos-cpp_static
-    ${CPPRESTSDK_TARGET}
-    ${PLATFORM_LIBS}
-    ${Boost_LIBRARIES}
+    nmos-cpp::cpprestsdk
+    nmos-cpp::Boost
     )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

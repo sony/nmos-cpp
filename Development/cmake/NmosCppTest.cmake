@@ -102,9 +102,8 @@ target_link_libraries(
     nmos-cpp-test
     nmos-cpp_static
     mdns_static
-    ${CPPRESTSDK_TARGET}
-    ${PLATFORM_LIBS}
-    ${Boost_LIBRARIES}
+    nmos-cpp::cpprestsdk
+    nmos-cpp::Boost
     )
 if (BUILD_LLDP)
     target_link_libraries(

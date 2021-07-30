@@ -49,20 +49,16 @@ add_library(
     mdns_static STATIC
     ${MDNS_SOURCES}
     ${MDNS_HEADERS}
-    ${BONJOUR_SOURCES}
-    ${BONJOUR_HEADERS}
     )
 
 source_group("mdns\\Source Files" FILES ${MDNS_SOURCES})
 source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
-source_group("Source Files" FILES ${BONJOUR_SOURCES})
-source_group("Header Files" FILES ${BONJOUR_HEADERS})
 
 # ensure e.g. target_compile_definitions for cppprestsdk are applied when building this target
 target_link_libraries(
     mdns_static
-    ${CPPRESTSDK_TARGET}
-    ${BONJOUR_LIB}
+    nmos-cpp::cpprestsdk
+    nmos-cpp::DNSSD
     )
 
 install(TARGETS mdns_static DESTINATION lib)
@@ -93,8 +89,8 @@ if (BUILD_LLDP)
     # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
     target_link_libraries(
         lldp_static
-        ${CPPRESTSDK_TARGET}
-        ${PCAP_LIB}
+        nmos-cpp::cpprestsdk
+        nmos-cpp::PCAP
         )
 
     target_compile_definitions(
@@ -920,14 +916,15 @@ source_group("slog\\Header Files" FILES ${NMOS_CPP_SLOG_HEADERS})
 target_link_libraries(
     nmos-cpp_static
     mdns_static
-    ${CPPRESTSDK_TARGET}
+    nmos-cpp::cpprestsdk
+    nmos-cpp::websocketpp
     json_schema_validator_static
     nmos_is04_schemas_static
     nmos_is05_schemas_static
     nmos_is08_schemas_static
     nmos_is09_schemas_static
-    ${Boost_LIBRARIES}
-    ${OPENSSL_TARGETS}
+    nmos-cpp::Boost
+    nmos-cpp::OpenSSL
     ${PLATFORM_LIBS}
     )
 if (BUILD_LLDP)

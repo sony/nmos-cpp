@@ -74,15 +74,15 @@ elseif(cpprestsdk_VERSION VERSION_GREATER CPPRESTSDK_VERSION_CUR)
 else()
     message(STATUS "Found cpprestsdk version " ${cpprestsdk_VERSION})
 endif()
+
+add_library(cpprestsdk INTERFACE)
 if (TARGET cpprestsdk::cpprest)
-    set(CPPRESTSDK_TARGET cpprestsdk::cpprest)
+    target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprest)
 else()
-    set(CPPRESTSDK_TARGET cpprestsdk::cpprestsdk)
+    # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
+    target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprestsdk)
 endif()
-message(STATUS "Using cpprestsdk target ${CPPRESTSDK_TARGET}")
-if (DEFINED CPPREST_INCLUDE_DIR)
-    message(STATUS "Using cpprestsdk include directory at ${CPPREST_INCLUDE_DIR}")
-endif()
+add_library(nmos-cpp::cpprestsdk ALIAS cpprestsdk)
 
 # websocketpp
 # note: good idea to use same version as cpprestsdk was built with!
@@ -101,10 +101,16 @@ else()
     else()
         message(STATUS "Found websocketpp version " ${websocketpp_VERSION})
     endif()
-    if (DEFINED WEBSOCKETPP_INCLUDE_DIR)
-        message(STATUS "Using websocketpp include directory at ${WEBSOCKETPP_INCLUDE_DIR}")
-    endif()
+    message(STATUS "Using websocketpp include directory at ${WEBSOCKETPP_INCLUDE_DIR}")
 endif()
+
+add_library(websocketpp INTERFACE)
+if (TARGET websocketpp::websocketpp)
+    target_link_libraries(websocketpp INTERFACE websocketpp::websocketpp)
+else()
+    target_include_directories(websocketpp INTERFACE "${WEBSOCKETPP_INCLUDE_DIR}")
+endif()
+add_library(nmos-cpp::websocketpp ALIAS websocketpp)
 
 # boost
 # note: some components are only required for one platform or other
@@ -115,15 +121,16 @@ list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 # openssl
 # note: good idea to use same version as cpprestsk was built with!
 find_package(OpenSSL REQUIRED ${FIND_PACKAGE_USE_CONFIG})
+message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
+
+add_library(OpenSSL INTERFACE)
 if (TARGET OpenSSL::SSL)
-    set(OPENSSL_TARGETS OpenSSL::Crypto OpenSSL::SSL)
+    target_link_libraries(OpenSSL INTERFACE OpenSSL::Crypto OpenSSL::SSL)
 else()
-    set(OPENSSL_TARGETS OpenSSL::OpenSSL)
+    # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
+    target_link_libraries(cpprestsdk INTERFACE OpenSSL::OpenSSL)
 endif()
-message(STATUS "Using OpenSSL target(s) ${OPENSSL_TARGETS}")
-if (DEFINED OPENSSL_INCLUDE_DIR)
-    message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
-endif()
+add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 # platform-specific dependencies
 
@@ -135,6 +142,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # find resolver (for cpprest/host_utils.cpp)
+    # note: this is no longer required on all platforms
     list(APPEND PLATFORM_LIBS -lresolv)
 
     # define __STDC_LIMIT_MACROS to work around C99 vs. C++11 bug in glibc 2.17
@@ -260,10 +268,12 @@ elseif(Boost_VERSION_COMPONENTS VERSION_GREATER BOOST_VERSION_CUR)
 else()
     message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS})
 endif()
-message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
-if (DEFINED Boost_INCLUDE_DIRS)
-    message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
-endif()
+message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
+
+add_library(Boost INTERFACE)
+target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
+add_library(nmos-cpp::Boost ALIAS Boost)
+
 # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0 but provides this definition to force that behaviour
 # since if find_package(Boost) found BoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -300,34 +310,61 @@ elseif(MSVC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/detail/vc_disable_warnings.h\"")
 endif()
 
-# location of header files (should be using specific target_include_directories?)
-# though these will be determined from INTERFACE_INCLUDE_DIRECTORIES for targets
-# mentioned in target_link_libraries
+# common location of header files (should be using specific target_include_directories?)
 include_directories(
     ${NMOS_CPP_DIR}
     ${NMOS_CPP_DIR}/third_party
-    ${NMOS_CPP_DIR}/third_party/nlohmann
-    ${CPPREST_INCLUDE_DIR}
-    ${WEBSOCKETPP_INCLUDE_DIR}
-    ${Boost_INCLUDE_DIRS}
-    ${OPENSSL_INCLUDE_DIR}
-    ${BONJOUR_INCLUDE}
-    ${PCAP_INCLUDE_DIR}
     )
 
-# location of libraries
-link_directories(
-    ${Boost_LIBRARY_DIRS}
-    ${BONJOUR_LIB_DIR}
-    ${PCAP_LIB_DIR}
-    )
+if (BONJOUR_SOURCES)
+    add_library(
+        Bonjour STATIC
+        ${BONJOUR_SOURCES}
+        ${BONJOUR_HEADERS}
+        )
+
+    source_group("Source Files" FILES ${BONJOUR_SOURCES})
+    source_group("Header Files" FILES ${BONJOUR_HEADERS})
+
+    target_include_directories(Bonjour PUBLIC "${BONJOUR_INCLUDE}")
+endif()
+
+add_library(DNSSD INTERFACE)
+if(BONJOUR_SOURCES)
+    target_link_libraries(DNSSD INTERFACE Bonjour)
+endif()
+if(BONJOUR_INCLUDE)
+    target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
+endif()
+if (BONJOUR_LIB_DIR)
+    target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
+endif()
+if (BONJOUR_LIB)
+    target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB}")
+endif()
+add_library(nmos-cpp::DNSSD ALIAS DNSSD)
+
+add_library(PCAP INTERFACE)
+if (PCAP_INCLUDE_DIR)
+    target_include_directories(PCAP INTERFACE "${PCAP_INCLUDE_DIR}")
+endif()
+if (PCAP_LIB_DIR)
+    target_link_directories(PCAP INTERFACE "${PCAP_LIB_DIR}")
+endif()
+if (PCAP_LIB)
+    target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
+endif()
+add_library(nmos-cpp::PCAP ALIAS PCAP)
 
 # additional configuration for common dependencies
 
 # cpprestsdk
 if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
     # required for mdns_static and nmos-cpp_static
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h\"")
+    target_compile_options(cpprestsdk INTERFACE "/FI${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h")
+    # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
+    # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
+    target_link_libraries(cpprestsdk INTERFACE Boost::boost)
 endif()
 
 # slog
