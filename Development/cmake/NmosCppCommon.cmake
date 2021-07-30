@@ -51,7 +51,7 @@ endif()
 # guard against in-source builds and bad build-type strings
 include(safeguards)
 
-# enable or disable the LLDP support library (lldp_static)
+# enable or disable the LLDP support library (lldp)
 set(BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
 
 # find dependencies
@@ -135,7 +135,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 # platform-specific dependencies
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # find Bonjour or Avahi compatibility library for the mDNS support library (mdns_static)
+    # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
     set(BONJOUR_LIB -ldns_sd)
 endif()
@@ -159,13 +159,13 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
     endif()
 
     if(BUILD_LLDP)
-        # find libpcap for the LLDP support library (lldp_static)
+        # find libpcap for the LLDP support library (lldp)
         set(PCAP_LIB -lpcap)
     endif()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # find Bonjour for the mDNS support library (mdns_static)
+    # find Bonjour for the mDNS support library (mdns)
     set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
     if(MDNS_SYSTEM_BONJOUR)
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
@@ -230,7 +230,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     endif()
 
     if(BUILD_LLDP)
-        # find WinPcap for the LLDP support library (lldp_static)
+        # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
         set(PCAP_LIB_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
         set(PCAP_LIB wpcap)
@@ -385,7 +385,7 @@ add_library(nmos-cpp::PCAP ALIAS PCAP)
 
 # cpprestsdk
 if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
-    # required for mdns_static and nmos-cpp_static
+    # required for mdns and nmos-cpp
     target_compile_options(cpprestsdk INTERFACE "/FI${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h")
     # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
     # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
