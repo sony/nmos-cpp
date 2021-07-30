@@ -100,15 +100,15 @@ source_group("sdp\\test\\Header Files" FILES ${NMOS_CPP_TEST_SDP_TEST_HEADERS})
 
 target_link_libraries(
     nmos-cpp-test
-    nmos-cpp_static
-    mdns_static
+    nmos-cpp::nmos-cpp
+    nmos-cpp::mdns
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
     )
 if(BUILD_LLDP)
     target_link_libraries(
         nmos-cpp-test
-        lldp_static
+        nmos-cpp::lldp
         )
 endif()
 

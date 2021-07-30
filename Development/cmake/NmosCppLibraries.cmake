@@ -99,6 +99,8 @@ target_link_libraries(
 install(TARGETS mdns_static DESTINATION lib)
 install(FILES ${MDNS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/mdns)
 
+add_library(nmos-cpp::mdns ALIAS mdns_static)
+
 # LLDP support library
 if(BUILD_LLDP)
     set(LLDP_SOURCES
@@ -140,6 +142,8 @@ if(BUILD_LLDP)
 
     install(TARGETS lldp_static DESTINATION lib)
     install(FILES ${LLDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/lldp)
+
+    add_library(nmos-cpp::lldp ALIAS lldp_static)
 endif()
 
 # nmos_is04_schemas library
@@ -384,6 +388,8 @@ target_link_libraries(
 
 install(TARGETS nmos_is04_schemas_static DESTINATION lib)
 
+add_library(nmos-cpp::nmos_is04_schemas ALIAS nmos_is04_schemas_static)
+
 # nmos_is05_schemas library
 
 set(NMOS_IS05_SCHEMAS_HEADERS
@@ -506,6 +512,8 @@ target_link_libraries(
 
 install(TARGETS nmos_is05_schemas_static DESTINATION lib)
 
+add_library(nmos-cpp::nmos_is05_schemas ALIAS nmos_is05_schemas_static)
+
 # nmos_is08_schemas library
 
 set(NMOS_IS08_SCHEMAS_HEADERS
@@ -589,6 +597,8 @@ target_link_libraries(
 
 install(TARGETS nmos_is08_schemas_static DESTINATION lib)
 
+add_library(nmos-cpp::nmos_is08_schemas ALIAS nmos_is08_schemas_static)
+
 # nmos_is09_schemas library
 
 set(NMOS_IS09_SCHEMAS_HEADERS
@@ -652,6 +662,8 @@ target_link_libraries(
 
 install(TARGETS nmos_is09_schemas_static DESTINATION lib)
 
+add_library(nmos-cpp::nmos_is09_schemas ALIAS nmos_is09_schemas_static)
+
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
@@ -690,6 +702,8 @@ target_link_libraries(
     )
 
 install(TARGETS json_schema_validator_static DESTINATION lib)
+
+add_library(nmos-cpp::json_schema_validator ALIAS json_schema_validator_static)
 
 # nmos-cpp library
 
@@ -958,13 +972,13 @@ source_group("sdp\\Header Files" FILES ${NMOS_CPP_SDP_HEADERS})
 
 target_link_libraries(
     nmos-cpp_static PUBLIC
-    mdns_static
+    nmos-cpp::mdns
     nmos-cpp::slog
     nmos-cpp::cpprestsdk
-    nmos_is04_schemas_static
-    nmos_is05_schemas_static
-    nmos_is08_schemas_static
-    nmos_is09_schemas_static
+    nmos-cpp::nmos_is04_schemas
+    nmos-cpp::nmos_is05_schemas
+    nmos-cpp::nmos_is08_schemas
+    nmos-cpp::nmos_is09_schemas
     nmos-cpp::Boost
     nmos-cpp::OpenSSL
     ${PLATFORM_LIBS}
@@ -972,12 +986,12 @@ target_link_libraries(
 target_link_libraries(
     nmos-cpp_static PRIVATE
     nmos-cpp::websocketpp
-    json_schema_validator_static
+    nmos-cpp::json_schema_validator
     )
 if(BUILD_LLDP)
     target_link_libraries(
         nmos-cpp_static PUBLIC
-        lldp_static
+        nmos-cpp::lldp
         )
 endif()
 
@@ -990,3 +1004,5 @@ install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PRE
 install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/pplx)
 install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/rql)
 install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/sdp)
+
+add_library(nmos-cpp::nmos-cpp ALIAS nmos-cpp_static)

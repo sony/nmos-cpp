@@ -25,7 +25,7 @@ source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
 
 target_link_libraries(
     nmos-cpp-registry
-    nmos-cpp_static
+    nmos-cpp::nmos-cpp
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
     )
