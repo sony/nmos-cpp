@@ -232,7 +232,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(PCAP_LIB wpcap)
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
-        add_definitions(/DHAVE_REMOTE)
+        set(PCAP_COMPILE_DEFINITIONS HAVE_REMOTE)
     endif()
 endif()
 
@@ -268,18 +268,33 @@ message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
 
 add_library(Boost INTERFACE)
 target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
-add_library(nmos-cpp::Boost ALIAS Boost)
-
 # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0 but provides this definition to force that behaviour
 # since if find_package(Boost) found BoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    add_definitions(/DBOOST_UUID_FORCE_AUTO_LINK)
+    target_compile_definitions(
+        Boost INTERFACE
+        BOOST_UUID_FORCE_AUTO_LINK
+        )
 endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+        target_compile_definitions(
+            Boost INTERFACE
+            BOOST_RESULT_OF_USE_DECLTYPE
+            )
+    endif()
+endif()
+add_library(nmos-cpp::Boost ALIAS Boost)
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+    add_compile_options("$<$<CONFIG:Debug>:-O0;-g3>")
+    add_compile_options("$<$<CONFIG:Release>:-O3>")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+        # required for std::this_thread::sleep_for in e.g. mdns/test/mdns_test.cpp
+        # see https://stackoverflow.com/questions/12523122/what-is-glibcxx-use-nanosleep-all-about
+        add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
+    endif()
 elseif(MSVC)
     # set CharacterSet to Unicode rather than MultiByte
     add_definitions(/DUNICODE /D_UNICODE)
@@ -287,23 +302,21 @@ endif()
 
 # set most compiler warnings on
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wstrict-aliasing -fstrict-aliasing -Wextra -Wno-unused-parameter -pedantic -Wno-long-long")
+    add_compile_options(-Wall -Wstrict-aliasing -fstrict-aliasing -Wextra -Wno-unused-parameter -pedantic -Wno-long-long)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DJSON_SCHEMA_BOOST_REGEX")
+        add_compile_options(-Wno-missing-field-initializers)
     endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -D_GLIBCXX_USE_NANOSLEEP -DBOOST_RESULT_OF_USE_DECLTYPE -DSLOG_DETAIL_NO_REF_QUALIFIERS")
+        add_compile_options(-fpermissive)
     endif()
 elseif(MSVC)
+    # see https://cmake.org/cmake/help/latest/policy/CMP0092.html
     if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
         string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI\"${NMOS_CPP_DIR}/detail/vc_disable_warnings.h\"")
+    add_compile_options("/FI${NMOS_CPP_DIR}/detail/vc_disable_warnings.h")
 endif()
 
 # common location of header files (should be using specific target_include_directories?)
@@ -349,6 +362,9 @@ if(PCAP_LIB_DIR)
 endif()
 if(PCAP_LIB)
     target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
+endif()
+if(PCAP_COMPILE_DEFINITIONS)
+    target_compile_definitions(PCAP INTERFACE "${PCAP_COMPILE_DEFINITIONS}")
 endif()
 add_library(nmos-cpp::PCAP ALIAS PCAP)
 

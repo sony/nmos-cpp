@@ -46,6 +46,15 @@ target_compile_definitions(
     SLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY}
     )
 
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+        target_compile_definitions(
+            slog INTERFACE
+            SLOG_DETAIL_NO_REF_QUALIFIERS
+            )
+    endif()
+endif()
+
 install(FILES ${SLOG_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/slog)
 
 add_library(nmos-cpp::slog ALIAS slog)
@@ -659,6 +668,15 @@ add_library(
 
 source_group("Source Files" FILES ${JSON_SCHEMA_VALIDATOR_SOURCES})
 source_group("Header Files" FILES ${JSON_SCHEMA_VALIDATOR_HEADERS})
+
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+        target_compile_definitions(
+            json_schema_validator_static PRIVATE
+            JSON_SCHEMA_BOOST_REGEX
+            )
+    endif()
+endif()
 
 target_link_libraries(
     json_schema_validator_static
