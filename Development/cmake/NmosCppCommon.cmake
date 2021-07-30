@@ -11,10 +11,6 @@ if(${USE_CONAN})
     include(${NMOS_CPP_DIR}/cmake/NmosCppConan.cmake)
 endif()
 
-# compile-time control of logging loquacity
-# use slog::never_log_severity to strip all logging at compile-time, or slog::max_verbosity for full control at run-time
-set(SLOG_LOGGING_SEVERITY slog::max_verbosity CACHE STRING "Compile-time logging level, e.g. between 40 (least verbose, only fatal messages) and -40 (most verbose)")
-
 # enable C++11
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 11 CACHE STRING "Default value for CXX_STANDARD property of targets")
@@ -366,6 +362,3 @@ if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VER
     # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
     target_link_libraries(cpprestsdk INTERFACE Boost::boost)
 endif()
-
-# slog
-add_definitions(/DSLOG_STATIC /DSLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY})

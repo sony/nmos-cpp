@@ -28,6 +28,28 @@ endif()
 
 install(FILES ${DETAIL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/detail)
 
+# slog library
+
+# compile-time control of logging loquacity
+# use slog::never_log_severity to strip all logging at compile-time, or slog::max_verbosity for full control at run-time
+set(SLOG_LOGGING_SEVERITY slog::max_verbosity CACHE STRING "Compile-time logging level, e.g. between 40 (least verbose, only fatal messages) and -40 (most verbose)")
+
+set(SLOG_HEADERS
+    ${NMOS_CPP_DIR}/slog/all_in_one.h
+    )
+
+add_library(slog INTERFACE)
+
+target_compile_definitions(
+    slog INTERFACE
+    SLOG_STATIC
+    SLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY}
+    )
+
+install(FILES ${SLOG_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/slog)
+
+add_library(nmos-cpp::slog ALIAS slog)
+
 # mDNS support library
 
 set(MDNS_SOURCES
@@ -57,6 +79,7 @@ source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
 # ensure e.g. target_compile_definitions for cppprestsdk are applied when building this target
 target_link_libraries(
     mdns_static
+    nmos-cpp::slog
     nmos-cpp::cpprestsdk
     nmos-cpp::DNSSD
     )
@@ -89,6 +112,7 @@ if(BUILD_LLDP)
     # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
     target_link_libraries(
         lldp_static
+        nmos-cpp::slog
         nmos-cpp::cpprestsdk
         nmos-cpp::PCAP
         )
@@ -877,10 +901,6 @@ set(NMOS_CPP_SDP_HEADERS
     ${NMOS_CPP_DIR}/sdp/sdp_grammar.h
     )
 
-set(NMOS_CPP_SLOG_HEADERS
-    ${NMOS_CPP_DIR}/slog/all_in_one.h
-    )
-
 add_library(
     nmos-cpp_static STATIC
     ${NMOS_CPP_BST_SOURCES}
@@ -895,7 +915,6 @@ add_library(
     ${NMOS_CPP_RQL_HEADERS}
     ${NMOS_CPP_SDP_SOURCES}
     ${NMOS_CPP_SDP_HEADERS}
-    ${NMOS_CPP_SLOG_HEADERS}
     )
 
 source_group("bst\\Source Files" FILES ${NMOS_CPP_BST_SOURCES})
@@ -911,11 +930,11 @@ source_group("nmos\\Header Files" FILES ${NMOS_CPP_NMOS_HEADERS})
 source_group("pplx\\Header Files" FILES ${NMOS_CPP_PPLX_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_RQL_HEADERS})
 source_group("sdp\\Header Files" FILES ${NMOS_CPP_SDP_HEADERS})
-source_group("slog\\Header Files" FILES ${NMOS_CPP_SLOG_HEADERS})
 
 target_link_libraries(
     nmos-cpp_static
     mdns_static
+    nmos-cpp::slog
     nmos-cpp::cpprestsdk
     nmos-cpp::websocketpp
     json_schema_validator_static
@@ -943,4 +962,3 @@ install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PRE
 install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/pplx)
 install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/rql)
 install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/sdp)
-install(FILES ${NMOS_CPP_SLOG_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/slog)
