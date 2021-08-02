@@ -20,10 +20,12 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# note: to see the output of any failed tests, set CTEST_OUTPUT_ON_FAILURE=1 in the environment
-# and also remember that CMake doesn't add dependencies to the "test" (or "RUN_TESTS") target
-# so after changing code under test, it is important to "make all" (or build "ALL_BUILD")
-enable_testing()
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    # note: to see the output of any failed tests, set CTEST_OUTPUT_ON_FAILURE=1 in the environment
+    # and also remember that CMake doesn't add dependencies to the "test" (or "RUN_TESTS") target
+    # so after changing code under test, it is important to "make all" (or build "ALL_BUILD")
+    enable_testing()
+endif()
 
 # location of additional CMake modules
 set(CMAKE_MODULE_PATH
