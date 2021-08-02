@@ -112,15 +112,6 @@ if(BUILD_LLDP)
         )
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # Conan packages usually don't include PDB files so suppress the resulting warning
-    set_target_properties(
-        nmos-cpp-test
-        PROPERTIES
-        LINK_FLAGS "/ignore:4099"
-        )
-endif()
-
 include(Catch)
 
 catch_discover_tests(nmos-cpp-test EXTRA_ARGS -r compact)

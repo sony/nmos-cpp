@@ -26,15 +26,4 @@ source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
 target_link_libraries(
     nmos-cpp-registry
     nmos-cpp::nmos-cpp
-    nmos-cpp::cpprestsdk
-    nmos-cpp::Boost
     )
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # Conan packages usually don't include PDB files so suppress the resulting warning
-    set_target_properties(
-        nmos-cpp-registry
-        PROPERTIES
-        LINK_FLAGS "/ignore:4099"
-        )
-endif()
