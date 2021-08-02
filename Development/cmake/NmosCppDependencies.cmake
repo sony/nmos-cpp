@@ -1,8 +1,3 @@
-# caller can set NMOS_CPP_DIR if the project is different
-if(NOT DEFINED NMOS_CPP_DIR)
-    set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
-endif()
-
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
@@ -120,7 +115,7 @@ else()
     target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprestsdk)
 endif()
 if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
-    target_compile_options(cpprestsdk INTERFACE "/FI${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h")
+    target_compile_options(cpprestsdk INTERFACE "/FI${CMAKE_CURRENT_SOURCE_DIR}/cpprest/details/boost_u_workaround.h")
     # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
     # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
     target_link_libraries(cpprestsdk INTERFACE Boost::boost)
@@ -219,19 +214,19 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         endif()
     else()
         # note: use the patched files rather than the system installed version
-        set(BONJOUR_INCLUDE "${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSShared")
+        set(BONJOUR_INCLUDE third_party/mDNSResponder/mDNSShared)
         unset(BONJOUR_LIB_DIR)
         unset(BONJOUR_LIB)
         set(BONJOUR_SOURCES
-            ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
+            third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
             )
         set_property(
-            SOURCE ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
+            SOURCE third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
             PROPERTY COMPILE_DEFINITIONS
                 WIN32_LEAN_AND_MEAN
             )
         set(BONJOUR_HEADERS
-            ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
+            third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
             )
 
         add_library(
@@ -247,7 +242,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             ${BONJOUR_INCLUDE}
             )
         target_include_directories(Bonjour PRIVATE
-            ${NMOS_CPP_DIR}/third_party
+            third_party
             )
         add_library(nmos-cpp::Bonjour ALIAS Bonjour)
     endif()
@@ -278,8 +273,8 @@ if(BUILD_LLDP)
         set(PCAP_LIB pcap)
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # find WinPcap for the LLDP support library (lldp)
-        set(PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
-        set(PCAP_LIB_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
+        set(PCAP_INCLUDE_DIR "third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
+        set(PCAP_LIB_DIR "third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
         set(PCAP_LIB wpcap)
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex

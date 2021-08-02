@@ -1,12 +1,7 @@
-# caller can set NMOS_CPP_DIR if the project is different
-if(NOT DEFINED NMOS_CPP_DIR)
-    set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
-endif()
-
 set(USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
 
 if(${USE_CONAN})
-    include(${NMOS_CPP_DIR}/cmake/NmosCppConan.cmake)
+    include(cmake/NmosCppConan.cmake)
 endif()
 
 # enable C++11
@@ -29,8 +24,8 @@ endif()
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${NMOS_CPP_DIR}/third_party/cmake
-    ${NMOS_CPP_DIR}/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
     )
 
 # location of <PackageName>Config.cmake files created by Conan
@@ -81,5 +76,5 @@ elseif(MSVC)
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     endif()
-    add_compile_options("/FI${NMOS_CPP_DIR}/detail/vc_disable_warnings.h")
+    add_compile_options("/FI${CMAKE_CURRENT_SOURCE_DIR}/detail/vc_disable_warnings.h")
 endif()
