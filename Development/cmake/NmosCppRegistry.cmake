@@ -27,3 +27,7 @@ target_link_libraries(
     nmos-cpp-registry
     nmos-cpp::nmos-cpp
     )
+# root directory to find e.g. nmos-cpp-registry/registry_implementation.h
+target_include_directories(nmos-cpp-registry PRIVATE
+    ${NMOS_CPP_DIR}
+    )

@@ -111,6 +111,12 @@ if(BUILD_LLDP)
         nmos-cpp::lldp
         )
 endif()
+# root directory to find e.g. bst/test/test.h
+# third_party to find e.g. catch/catch.hpp
+target_include_directories(nmos-cpp-test PRIVATE
+    ${NMOS_CPP_DIR}
+    ${NMOS_CPP_DIR}/third_party
+    )
 
 include(Catch)
 

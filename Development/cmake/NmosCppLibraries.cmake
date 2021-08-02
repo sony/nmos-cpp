@@ -95,6 +95,9 @@ target_link_libraries(
     mdns PRIVATE
     nmos-cpp::DNSSD
     )
+target_include_directories(mdns PUBLIC
+    ${NMOS_CPP_DIR}
+    )
 
 install(TARGETS mdns DESTINATION lib)
 install(FILES ${MDNS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/mdns)
@@ -137,7 +140,9 @@ if(BUILD_LLDP)
         lldp PRIVATE
         nmos-cpp::Boost
         )
-
+    target_include_directories(lldp PUBLIC
+        ${NMOS_CPP_DIR}
+        )
     target_compile_definitions(
         lldp INTERFACE
         HAVE_LLDP
@@ -388,6 +393,9 @@ source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_0_TAG}\\Source Files" FILES ${N
 target_link_libraries(
     nmos_is04_schemas
     )
+target_include_directories(nmos_is04_schemas PUBLIC
+    ${NMOS_CPP_DIR}
+    )
 
 install(TARGETS nmos_is04_schemas DESTINATION lib)
 
@@ -511,6 +519,9 @@ source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_0_TAG}\\Source Files" FILES ${N
 
 target_link_libraries(
     nmos_is05_schemas
+    )
+target_include_directories(nmos_is05_schemas PUBLIC
+    ${NMOS_CPP_DIR}
     )
 
 install(TARGETS nmos_is05_schemas DESTINATION lib)
@@ -662,6 +673,9 @@ source_group("nmos\\is09_schemas\\${NMOS_IS09_V1_0_TAG}\\Source Files" FILES ${N
 target_link_libraries(
     nmos_is09_schemas
     )
+target_include_directories(nmos_is09_schemas PUBLIC
+    ${NMOS_CPP_DIR}
+    )
 
 install(TARGETS nmos_is09_schemas DESTINATION lib)
 
@@ -702,6 +716,9 @@ endif()
 
 target_link_libraries(
     json_schema_validator
+    )
+target_include_directories(json_schema_validator PUBLIC
+    ${NMOS_CPP_DIR}/third_party
     )
 
 install(TARGETS json_schema_validator DESTINATION lib)
@@ -997,6 +1014,9 @@ if(BUILD_LLDP)
         nmos-cpp::lldp
         )
 endif()
+target_include_directories(nmos-cpp PUBLIC
+    ${NMOS_CPP_DIR}
+    )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13.0")
     # Conan packages usually don't include PDB files so suppress the resulting warning

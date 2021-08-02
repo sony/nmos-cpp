@@ -335,12 +335,6 @@ elseif(MSVC)
     add_compile_options("/FI${NMOS_CPP_DIR}/detail/vc_disable_warnings.h")
 endif()
 
-# common location of header files (should be using specific target_include_directories?)
-include_directories(
-    ${NMOS_CPP_DIR}
-    ${NMOS_CPP_DIR}/third_party
-    )
-
 if(BONJOUR_SOURCES)
     add_library(
         Bonjour STATIC
@@ -351,7 +345,12 @@ if(BONJOUR_SOURCES)
     source_group("Source Files" FILES ${BONJOUR_SOURCES})
     source_group("Header Files" FILES ${BONJOUR_HEADERS})
 
-    target_include_directories(Bonjour PUBLIC "${BONJOUR_INCLUDE}")
+    target_include_directories(Bonjour PUBLIC
+        ${BONJOUR_INCLUDE}
+        )
+    target_include_directories(Bonjour PRIVATE
+        ${NMOS_CPP_DIR}/third_party
+        )
 endif()
 
 add_library(DNSSD INTERFACE)

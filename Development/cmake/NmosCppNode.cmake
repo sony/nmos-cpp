@@ -27,3 +27,7 @@ target_link_libraries(
     nmos-cpp-node
     nmos-cpp::nmos-cpp
     )
+# root directory to find e.g. nmos-cpp-node/node_implementation.h
+target_include_directories(nmos-cpp-node PRIVATE
+    ${NMOS_CPP_DIR}
+    )
