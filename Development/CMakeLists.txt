@@ -24,3 +24,6 @@ include(cmake/NmosCppRegistry.cmake)
 
 # nmos-cpp-test executable
 include(cmake/NmosCppTest.cmake)
+
+# export the config-file package
+include(cmake/NmosCppExports.cmake)

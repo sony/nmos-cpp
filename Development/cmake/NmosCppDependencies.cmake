@@ -89,6 +89,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
             )
     endif()
 endif()
+
+list(APPEND NMOS_CPP_TARGETS Boost)
 add_library(nmos-cpp::Boost ALIAS Boost)
 
 # cpprestsdk
@@ -115,11 +117,16 @@ else()
     target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprestsdk)
 endif()
 if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
-    target_compile_options(cpprestsdk INTERFACE "/FI${CMAKE_CURRENT_SOURCE_DIR}/cpprest/details/boost_u_workaround.h")
+    target_compile_options(cpprestsdk INTERFACE
+        "$<BUILD_INTERFACE:/FI${CMAKE_CURRENT_SOURCE_DIR}/cpprest/details/boost_u_workaround.h>"
+        "$<INSTALL_INTERFACE:/FIcpprest/details/boost_u_workaround.h>"
+        )
     # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
     # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
     target_link_libraries(cpprestsdk INTERFACE Boost::boost)
 endif()
+
+list(APPEND NMOS_CPP_TARGETS cpprestsdk)
 add_library(nmos-cpp::cpprestsdk ALIAS cpprestsdk)
 
 # websocketpp
@@ -161,6 +168,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
         __STDC_LIMIT_MACROS
         )
 endif()
+
+list(APPEND NMOS_CPP_TARGETS websocketpp)
 add_library(nmos-cpp::websocketpp ALIAS websocketpp)
 
 # OpenSSL
@@ -178,6 +187,8 @@ else()
     # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
     target_link_libraries(cpprestsdk INTERFACE OpenSSL::OpenSSL)
 endif()
+
+list(APPEND NMOS_CPP_TARGETS OpenSSL)
 add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 # DNS-SD library
@@ -255,11 +266,15 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             )
 
         install(FILES ${BONJOUR_HEADERS_INSTALL} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/.")
+
+        list(APPEND NMOS_CPP_TARGETS Bonjour)
         add_library(nmos-cpp::Bonjour ALIAS Bonjour)
 
         target_link_libraries(DNSSD INTERFACE nmos-cpp::Bonjour)
     endif()
 endif()
+
+list(APPEND NMOS_CPP_TARGETS DNSSD)
 add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 
 # PCAP library
@@ -284,5 +299,6 @@ if(BUILD_LLDP)
         target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
     endif()
 
+    list(APPEND NMOS_CPP_TARGETS PCAP)
     add_library(nmos-cpp::PCAP ALIAS PCAP)
 endif()

@@ -4,6 +4,8 @@ if(${USE_CONAN})
     include(cmake/NmosCppConan.cmake)
 endif()
 
+include(GNUInstallDirs)
+
 # enable C++11
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 11 CACHE STRING "Default value for CXX_STANDARD property of targets")

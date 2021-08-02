@@ -18,7 +18,7 @@ if(MSVC)
         )
 endif()
 
-install(FILES ${DETAIL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/detail)
+install(FILES ${DETAIL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/detail)
 
 # slog library
 
@@ -47,7 +47,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     endif()
 endif()
 
-install(FILES ${SLOG_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/slog)
+list(APPEND NMOS_CPP_TARGETS slog)
+install(FILES ${SLOG_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/slog)
 
 add_library(nmos-cpp::slog ALIAS slog)
 
@@ -88,11 +89,12 @@ target_link_libraries(
     nmos-cpp::DNSSD
     )
 target_include_directories(mdns PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
     )
 
-install(TARGETS mdns DESTINATION lib)
-install(FILES ${MDNS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/mdns)
+list(APPEND NMOS_CPP_TARGETS mdns)
+install(FILES ${MDNS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/mdns)
 
 add_library(nmos-cpp::mdns ALIAS mdns)
 
@@ -133,15 +135,16 @@ if(BUILD_LLDP)
         nmos-cpp::Boost
         )
     target_include_directories(lldp PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
         )
     target_compile_definitions(
         lldp INTERFACE
         HAVE_LLDP
         )
 
-    install(TARGETS lldp DESTINATION lib)
-    install(FILES ${LLDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/lldp)
+    list(APPEND NMOS_CPP_TARGETS lldp)
+    install(FILES ${LLDP_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/lldp)
 
     add_library(nmos-cpp::lldp ALIAS lldp)
 endif()
@@ -386,10 +389,11 @@ target_link_libraries(
     nmos_is04_schemas
     )
 target_include_directories(nmos_is04_schemas PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
     )
 
-install(TARGETS nmos_is04_schemas DESTINATION lib)
+list(APPEND NMOS_CPP_TARGETS nmos_is04_schemas)
 
 add_library(nmos-cpp::nmos_is04_schemas ALIAS nmos_is04_schemas)
 
@@ -513,10 +517,11 @@ target_link_libraries(
     nmos_is05_schemas
     )
 target_include_directories(nmos_is05_schemas PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
     )
 
-install(TARGETS nmos_is05_schemas DESTINATION lib)
+list(APPEND NMOS_CPP_TARGETS nmos_is05_schemas)
 
 add_library(nmos-cpp::nmos_is05_schemas ALIAS nmos_is05_schemas)
 
@@ -600,8 +605,12 @@ source_group("nmos\\is08_schemas\\${NMOS_IS08_V1_0_TAG}\\Source Files" FILES ${N
 target_link_libraries(
     nmos_is08_schemas
     )
+target_include_directories(nmos_is08_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
+    )
 
-install(TARGETS nmos_is08_schemas DESTINATION lib)
+list(APPEND NMOS_CPP_TARGETS nmos_is08_schemas)
 
 add_library(nmos-cpp::nmos_is08_schemas ALIAS nmos_is08_schemas)
 
@@ -666,10 +675,11 @@ target_link_libraries(
     nmos_is09_schemas
     )
 target_include_directories(nmos_is09_schemas PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
     )
 
-install(TARGETS nmos_is09_schemas DESTINATION lib)
+list(APPEND NMOS_CPP_TARGETS nmos_is09_schemas)
 
 add_library(nmos-cpp::nmos_is09_schemas ALIAS nmos_is09_schemas)
 
@@ -710,10 +720,11 @@ target_link_libraries(
     json_schema_validator
     )
 target_include_directories(json_schema_validator PUBLIC
-    third_party
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/third_party>
     )
 
-install(TARGETS json_schema_validator DESTINATION lib)
+list(APPEND NMOS_CPP_TARGETS json_schema_validator)
 
 add_library(nmos-cpp::json_schema_validator ALIAS json_schema_validator)
 
@@ -1021,7 +1032,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
     endif()
 endif()
 target_include_directories(nmos-cpp PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>
     )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -1036,14 +1048,13 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         )
 endif()
 
-install(TARGETS nmos-cpp DESTINATION lib)
-
-install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/bst)
-install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/cpprest)
-install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/cpprest/details)
-install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/nmos)
-install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/pplx)
-install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/rql)
-install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/sdp)
+list(APPEND NMOS_CPP_TARGETS nmos-cpp)
+install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/bst)
+install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/cpprest)
+install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/cpprest/details)
+install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/nmos)
+install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/pplx)
+install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/rql)
+install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/sdp)
 
 add_library(nmos-cpp::nmos-cpp ALIAS nmos-cpp)
