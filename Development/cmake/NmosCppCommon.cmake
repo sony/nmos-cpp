@@ -221,8 +221,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 
 # since std::shared_mutex is not available until C++17
+# see bst/shared_mutex.h
 list(APPEND FIND_BOOST_COMPONENTS thread)
-add_definitions(/DBST_SHARED_MUTEX_BOOST)
 
 # find boost
 set(BOOST_VERSION_MIN "1.54.0")
