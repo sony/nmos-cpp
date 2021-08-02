@@ -6,6 +6,12 @@ endif()
 
 include(${CMAKE_CURRENT_BINARY_DIR}/conan.cmake)
 
+# checking the Conan version produces a more helpful message than the confusing errors
+# that are reported when some dependency's recipe uses new features; Conan moves fast!
+set(CONAN_VERSION_MIN "1.33.0")
+set(CONAN_VERSION_CUR "1.39.0")
+conan_check(VERSION ${CONAN_VERSION_MIN} REQUIRED)
+
 set(NMOS_CPP_CONAN_BUILD_LIBS "missing" CACHE STRING "Semicolon separated list of libraries to build rather than download")
 set(NMOS_CPP_CONAN_OPTIONS "" CACHE STRING "Semicolon separated list of Conan options")
 
