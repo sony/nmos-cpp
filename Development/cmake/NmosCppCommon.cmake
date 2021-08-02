@@ -58,6 +58,98 @@ set(BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
 
 # add targets for common dependencies
 
+# Boost
+set(BOOST_VERSION_MIN "1.54.0")
+set(BOOST_VERSION_CUR "1.75.0")
+# note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
+# note: some components are only required for one platform or other
+# so find_package(Boost) is called after adding those components
+# adding the "headers" component seems to be unnecessary (and the target alias "boost" doesn't work at all)
+list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
+    else()
+        # add filesystem (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
+        list(APPEND FIND_BOOST_COMPONENTS filesystem)
+    endif()
+endif()
+# since std::shared_mutex is not available until C++17
+# see bst/shared_mutex.h
+list(APPEND FIND_BOOST_COMPONENTS thread)
+find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} ${FIND_PACKAGE_USE_CONFIG})
+# cope with historical versions of FindBoost.cmake
+if(DEFINED Boost_VERSION_STRING)
+    set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
+elseif(DEFINED Boost_VERSION_MAJOR)
+    set(Boost_VERSION_COMPONENTS "${Boost_VERSION_MAJOR}.${Boost_VERSION_MINOR}.${Boost_VERSION_PATCH}")
+elseif(DEFINED Boost_MAJOR_VERSION)
+    set(Boost_VERSION_COMPONENTS "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+elseif(DEFINED Boost_VERSION)
+    set(Boost_VERSION_COMPONENTS "${Boost_VERSION}")
+else()
+    message(FATAL_ERROR "Boost_VERSION_STRING is not defined")
+endif()
+if(Boost_VERSION_COMPONENTS VERSION_LESS BOOST_VERSION_MIN)
+    message(FATAL_ERROR "Found Boost version " ${Boost_VERSION_COMPONENTS} " that is lower than the minimum version: " ${BOOST_VERSION_MIN})
+elseif(Boost_VERSION_COMPONENTS VERSION_GREATER BOOST_VERSION_CUR)
+    message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS} " that is higher than the current tested version: " ${BOOST_VERSION_CUR})
+else()
+    message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS})
+endif()
+if(DEFINED Boost_INCLUDE_DIRS)
+    message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
+endif()
+# Boost_LIBRARIES is provided by the CMake FindBoost.cmake module and recently also by Conan for most generators
+# but with cmake_find_package_multi it isn't, so map the required components to targets instead
+if(NOT DEFINED Boost_LIBRARIES)
+    # doesn't seem necessary to add "headers" or "boost"
+    string(REGEX REPLACE "([^;]+)" "Boost::\\1" Boost_LIBRARIES "${FIND_BOOST_COMPONENTS}")
+endif()
+message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
+
+add_library(Boost INTERFACE)
+target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0
+    # but provides this definition to force that behaviour because if find_package(Boost)
+    # foundBoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
+    target_compile_definitions(
+        Boost INTERFACE
+        BOOST_UUID_FORCE_AUTO_LINK
+        )
+    # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
+    # note: adding a force include for <sdkddkver.h> could be another option
+    # see:
+    #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
+    #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 10) # Windows 10
+        set(_WIN32_WINNT 0x0A00)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.3) # Windows 8.1
+        set(_WIN32_WINNT 0x0603)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.2) # Windows 8
+        set(_WIN32_WINNT 0x0602)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.1) # Windows 7
+        set(_WIN32_WINNT 0x0601)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.0) # Windows Vista
+        set(_WIN32_WINNT 0x0600)
+    else() # Windows XP (5.1)
+        set(_WIN32_WINNT 0x0501)
+    endif()
+    target_compile_definitions(
+        Boost INTERFACE
+        _WIN32_WINNT=${_WIN32_WINNT}
+        )
+endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+        target_compile_definitions(
+            Boost INTERFACE
+            BOOST_RESULT_OF_USE_DECLTYPE
+            )
+    endif()
+endif()
+add_library(nmos-cpp::Boost ALIAS Boost)
+
 # cpprestsdk
 # note: 2.10.16 or higher is recommended (which is the first version with cpprestsdk-configVersion.cmake)
 set(CPPRESTSDK_VERSION_MIN "2.10.11")
@@ -257,98 +349,6 @@ if(PCAP_COMPILE_DEFINITIONS)
     target_compile_definitions(PCAP INTERFACE "${PCAP_COMPILE_DEFINITIONS}")
 endif()
 add_library(nmos-cpp::PCAP ALIAS PCAP)
-
-# Boost
-set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.75.0")
-# note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
-# note: some components are only required for one platform or other
-# so find_package(Boost) is called after adding those components
-# adding the "headers" component seems to be unnecessary (and the target alias "boost" doesn't work at all)
-list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
-    else()
-        # add filesystem (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
-        list(APPEND FIND_BOOST_COMPONENTS filesystem)
-    endif()
-endif()
-# since std::shared_mutex is not available until C++17
-# see bst/shared_mutex.h
-list(APPEND FIND_BOOST_COMPONENTS thread)
-find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} ${FIND_PACKAGE_USE_CONFIG})
-# cope with historical versions of FindBoost.cmake
-if(DEFINED Boost_VERSION_STRING)
-    set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
-elseif(DEFINED Boost_VERSION_MAJOR)
-    set(Boost_VERSION_COMPONENTS "${Boost_VERSION_MAJOR}.${Boost_VERSION_MINOR}.${Boost_VERSION_PATCH}")
-elseif(DEFINED Boost_MAJOR_VERSION)
-    set(Boost_VERSION_COMPONENTS "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
-elseif(DEFINED Boost_VERSION)
-    set(Boost_VERSION_COMPONENTS "${Boost_VERSION}")
-else()
-    message(FATAL_ERROR "Boost_VERSION_STRING is not defined")
-endif()
-if(Boost_VERSION_COMPONENTS VERSION_LESS BOOST_VERSION_MIN)
-    message(FATAL_ERROR "Found Boost version " ${Boost_VERSION_COMPONENTS} " that is lower than the minimum version: " ${BOOST_VERSION_MIN})
-elseif(Boost_VERSION_COMPONENTS VERSION_GREATER BOOST_VERSION_CUR)
-    message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS} " that is higher than the current tested version: " ${BOOST_VERSION_CUR})
-else()
-    message(STATUS "Found Boost version " ${Boost_VERSION_COMPONENTS})
-endif()
-if(DEFINED Boost_INCLUDE_DIRS)
-    message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
-endif()
-# Boost_LIBRARIES is provided by the CMake FindBoost.cmake module and recently also by Conan for most generators
-# but with cmake_find_package_multi it isn't, so map the required components to targets instead
-if(NOT DEFINED Boost_LIBRARIES)
-    # doesn't seem necessary to add "headers" or "boost"
-    string(REGEX REPLACE "([^;]+)" "Boost::\\1" Boost_LIBRARIES "${FIND_BOOST_COMPONENTS}")
-endif()
-message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
-
-add_library(Boost INTERFACE)
-target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0
-    # but provides this definition to force that behaviour because if find_package(Boost)
-    # foundBoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
-    target_compile_definitions(
-        Boost INTERFACE
-        BOOST_UUID_FORCE_AUTO_LINK
-        )
-    # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
-    # note: adding a force include for <sdkddkver.h> could be another option
-    # see:
-    #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
-    #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 10) # Windows 10
-        set(_WIN32_WINNT 0x0A00)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.3) # Windows 8.1
-        set(_WIN32_WINNT 0x0603)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.2) # Windows 8
-        set(_WIN32_WINNT 0x0602)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.1) # Windows 7
-        set(_WIN32_WINNT 0x0601)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.0) # Windows Vista
-        set(_WIN32_WINNT 0x0600)
-    else() # Windows XP (5.1)
-        set(_WIN32_WINNT 0x0501)
-    endif()
-    target_compile_definitions(
-        Boost INTERFACE
-        _WIN32_WINNT=${_WIN32_WINNT}
-        )
-endif()
-if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        target_compile_definitions(
-            Boost INTERFACE
-            BOOST_RESULT_OF_USE_DECLTYPE
-            )
-    endif()
-endif()
-add_library(nmos-cpp::Boost ALIAS Boost)
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
