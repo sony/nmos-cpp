@@ -110,6 +110,16 @@ if(TARGET websocketpp::websocketpp)
 else()
     target_include_directories(websocketpp INTERFACE "${WEBSOCKETPP_INCLUDE_DIR}")
 endif()
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    # define __STDC_LIMIT_MACROS to work around C99 vs. C++11 bug in glibc 2.17
+    # should be harmless with newer glibc or in other scenarios
+    # see https://sourceware.org/bugzilla/show_bug.cgi?id=15366
+    # and https://sourceware.org/ml/libc-alpha/2013-04/msg00598.html
+    target_compile_definitions(
+        websocketpp INTERFACE
+        __STDC_LIMIT_MACROS
+        )
+endif()
 add_library(nmos-cpp::websocketpp ALIAS websocketpp)
 
 # boost
@@ -140,33 +150,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
     set(BONJOUR_LIB -ldns_sd)
-endif()
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    # find resolver (for cpprest/host_utils.cpp)
-    # note: this is no longer required on all platforms
-    list(APPEND PLATFORM_LIBS -lresolv)
-
-    # define __STDC_LIMIT_MACROS to work around C99 vs. C++11 bug in glibc 2.17
-    # should be harmless with newer glibc or in other scenarios
-    # see https://sourceware.org/bugzilla/show_bug.cgi?id=15366
-    # and https://sourceware.org/ml/libc-alpha/2013-04/msg00598.html
-    add_definitions(/D__STDC_LIMIT_MACROS)
-
-    # add dependency required by nmos/filesystem_route.cpp
-    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
-        list(APPEND PLATFORM_LIBS -lstdc++fs)
-    else()
-        list(APPEND FIND_BOOST_COMPONENTS filesystem)
-    endif()
-
-    if(BUILD_LLDP)
-        # find libpcap for the LLDP support library (lldp)
-        set(PCAP_LIB -lpcap)
-    endif()
-endif()
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns)
     set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
     if(MDNS_SYSTEM_BONJOUR)
@@ -208,8 +192,13 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
             )
     endif()
+endif()
 
-    if(BUILD_LLDP)
+if(BUILD_LLDP)
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        # find libpcap for the LLDP support library (lldp)
+        set(PCAP_LIB pcap)
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
         set(PCAP_LIB_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
@@ -217,6 +206,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
         set(PCAP_COMPILE_DEFINITIONS HAVE_REMOTE)
+    endif()
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
+    else()
+        # add filesystem (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
+        list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
 endif()
 

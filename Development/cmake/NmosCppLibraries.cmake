@@ -1001,7 +1001,6 @@ target_link_libraries(
     nmos-cpp::nmos_is09_schemas
     nmos-cpp::Boost
     nmos-cpp::OpenSSL
-    ${PLATFORM_LIBS}
     )
 target_link_libraries(
     nmos-cpp PRIVATE
@@ -1013,6 +1012,21 @@ if(BUILD_LLDP)
         nmos-cpp PUBLIC
         nmos-cpp::lldp
         )
+endif()
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    # link to resolver functions (for cpprest/host_utils.cpp)
+    # note: this is no longer required on all platforms
+    target_link_libraries(
+        nmos-cpp PUBLIC
+        resolv
+        )
+    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
+        # link to std::filesystem functions (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
+        target_link_libraries(
+            nmos-cpp PUBLIC
+            stdc++fs
+            )
+    endif()
 endif()
 target_include_directories(nmos-cpp PUBLIC
     ${NMOS_CPP_DIR}
