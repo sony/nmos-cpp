@@ -7,8 +7,15 @@ project(nmos-cpp)
 # The default nmos-cpp root directory
 set(NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
 
-# Common setup and dependency checking
+# common config
 include(${NMOS_CPP_DIR}/cmake/NmosCppCommon.cmake)
+
+# enable or disable the LLDP support library (lldp)
+# and its additional dependencies
+set(BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
+
+# nmos-cpp dependencies
+include(${NMOS_CPP_DIR}/cmake/NmosCppDependencies.cmake)
 
 # nmos-cpp libraries
 include(${NMOS_CPP_DIR}/cmake/NmosCppLibraries.cmake)
