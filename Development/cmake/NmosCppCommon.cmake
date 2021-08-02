@@ -207,28 +207,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             )
     endif()
 
-    # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
-    # notes:
-    #   cpprestsdk adds /D_WIN32_WINNT=0x0600 (Windows Vista) explicitly...
-    #   calculating the value from CMAKE_SYSTEM_VERSION might be better?
-    #   adding a force include for <sdkddkver.h> could be another option
-    # see:
-    #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
-    #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
-    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 10) # Windows 10
-        add_definitions(/D_WIN32_WINNT=0x0A00)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.3) # Windows 8.1
-        add_definitions(/D_WIN32_WINNT=0x0603)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.2) # Windows 8
-        add_definitions(/D_WIN32_WINNT=0x0602)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.1) # Windows 7
-        add_definitions(/D_WIN32_WINNT=0x0601)
-    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.0) # Windows Vista
-        add_definitions(/D_WIN32_WINNT=0x0600)
-    else() # Windows XP (5.1)
-        add_definitions(/D_WIN32_WINNT=0x0501)
-    endif()
-
     if(BUILD_LLDP)
         # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "${NMOS_CPP_DIR}/third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
@@ -281,12 +259,35 @@ message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
 
 add_library(Boost INTERFACE)
 target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
-# Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0 but provides this definition to force that behaviour
-# since if find_package(Boost) found BoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0
+    # but provides this definition to force that behaviour because if find_package(Boost)
+    # foundBoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
     target_compile_definitions(
         Boost INTERFACE
         BOOST_UUID_FORCE_AUTO_LINK
+        )
+    # define _WIN32_WINNT because Boost.Asio gets terribly noisy otherwise
+    # note: adding a force include for <sdkddkver.h> could be another option
+    # see:
+    #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
+    #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 10) # Windows 10
+        set(_WIN32_WINNT 0x0A00)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.3) # Windows 8.1
+        set(_WIN32_WINNT 0x0603)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.2) # Windows 8
+        set(_WIN32_WINNT 0x0602)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.1) # Windows 7
+        set(_WIN32_WINNT 0x0601)
+    elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.0) # Windows Vista
+        set(_WIN32_WINNT 0x0600)
+    else() # Windows XP (5.1)
+        set(_WIN32_WINNT 0x0501)
+    endif()
+    target_compile_definitions(
+        Boost INTERFACE
+        _WIN32_WINNT=${_WIN32_WINNT}
         )
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)

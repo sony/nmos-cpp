@@ -85,11 +85,11 @@ add_library(
 source_group("mdns\\Source Files" FILES ${MDNS_SOURCES})
 source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
 
-# ensure e.g. target_compile_definitions for cppprestsdk are applied when building this target
 target_link_libraries(
     mdns PUBLIC
     nmos-cpp::slog
     nmos-cpp::cpprestsdk
+    nmos-cpp::Boost
     )
 target_link_libraries(
     mdns PRIVATE
@@ -123,7 +123,6 @@ if(BUILD_LLDP)
     source_group("lldp\\Source Files" FILES ${LLDP_SOURCES})
     source_group("lldp\\Header Files" FILES ${LLDP_HEADERS})
 
-    # ensure e.g. target_compile_definitions for cppprestsdk::cpprest are applied when building this target
     target_link_libraries(
         lldp PUBLIC
         nmos-cpp::slog
@@ -133,6 +132,10 @@ if(BUILD_LLDP)
     target_link_libraries(
         lldp PUBLIC
         nmos-cpp::PCAP
+        )
+    target_link_libraries(
+        lldp PRIVATE
+        nmos-cpp::Boost
         )
 
     target_compile_definitions(
