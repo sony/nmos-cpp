@@ -56,7 +56,7 @@ include(safeguards)
 # enable or disable the LLDP support library (lldp)
 set(BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
 
-# find dependencies
+# add targets for common dependencies
 
 # cpprestsdk
 # note: 2.10.16 or higher is recommended (which is the first version with cpprestsdk-configVersion.cmake)
@@ -79,6 +79,12 @@ if(TARGET cpprestsdk::cpprest)
 else()
     # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
     target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprestsdk)
+endif()
+if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
+    target_compile_options(cpprestsdk INTERFACE "/FI${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h")
+    # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
+    # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
+    target_link_libraries(cpprestsdk INTERFACE Boost::boost)
 endif()
 add_library(nmos-cpp::cpprestsdk ALIAS cpprestsdk)
 
@@ -122,13 +128,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
 endif()
 add_library(nmos-cpp::websocketpp ALIAS websocketpp)
 
-# boost
-# note: some components are only required for one platform or other
-# so find_package(Boost) is called after adding those components
-# adding the "headers" component seems to be unnecessary (and the target alias "boost" doesn't work at all)
-list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
-
-# openssl
+# OpenSSL
 # note: good idea to use same version as cpprestsk was built with!
 find_package(OpenSSL REQUIRED ${FIND_PACKAGE_USE_CONFIG})
 if(DEFINED OPENSSL_INCLUDE_DIR)
@@ -144,12 +144,11 @@ else()
 endif()
 add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
-# platform-specific dependencies
-
+# Bonjour
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
     # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
-    set(BONJOUR_LIB -ldns_sd)
+    set(BONJOUR_LIB dns_sd)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns)
     set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
@@ -159,6 +158,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
         set(BONJOUR_LIB dnssd)
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
+        # hmm, this needs reimplementing with target_link_options
         if(CMAKE_VERSION VERSION_LESS 3.15)
             foreach(Config ${CMAKE_CONFIGURATION_TYPES})
                 string(TOUPPER ${Config} CONFIG)
@@ -191,9 +191,43 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(BONJOUR_HEADERS
             ${NMOS_CPP_DIR}/third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
             )
+
+        add_library(
+            Bonjour STATIC
+            ${BONJOUR_SOURCES}
+            ${BONJOUR_HEADERS}
+            )
+
+        source_group("Source Files" FILES ${BONJOUR_SOURCES})
+        source_group("Header Files" FILES ${BONJOUR_HEADERS})
+
+        target_include_directories(Bonjour PUBLIC
+            ${BONJOUR_INCLUDE}
+            )
+        target_include_directories(Bonjour PRIVATE
+            ${NMOS_CPP_DIR}/third_party
+            )
+        add_library(nmos-cpp::Bonjour ALIAS Bonjour)
     endif()
 endif()
 
+# DNS-SD library
+add_library(DNSSD INTERFACE)
+if(TARGET nmos-cpp::Bonjour)
+    target_link_libraries(DNSSD INTERFACE nmos-cpp::Bonjour)
+endif()
+if(BONJOUR_INCLUDE)
+    target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
+endif()
+if(BONJOUR_LIB_DIR)
+    target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
+endif()
+if(BONJOUR_LIB)
+    target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB}")
+endif()
+add_library(nmos-cpp::DNSSD ALIAS DNSSD)
+
+# PCAP library
 if(BUILD_LLDP)
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         # find libpcap for the LLDP support library (lldp)
@@ -209,6 +243,29 @@ if(BUILD_LLDP)
     endif()
 endif()
 
+add_library(PCAP INTERFACE)
+if(PCAP_INCLUDE_DIR)
+    target_include_directories(PCAP INTERFACE "${PCAP_INCLUDE_DIR}")
+endif()
+if(PCAP_LIB_DIR)
+    target_link_directories(PCAP INTERFACE "${PCAP_LIB_DIR}")
+endif()
+if(PCAP_LIB)
+    target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
+endif()
+if(PCAP_COMPILE_DEFINITIONS)
+    target_compile_definitions(PCAP INTERFACE "${PCAP_COMPILE_DEFINITIONS}")
+endif()
+add_library(nmos-cpp::PCAP ALIAS PCAP)
+
+# Boost
+set(BOOST_VERSION_MIN "1.54.0")
+set(BOOST_VERSION_CUR "1.75.0")
+# note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
+# note: some components are only required for one platform or other
+# so find_package(Boost) is called after adding those components
+# adding the "headers" component seems to be unnecessary (and the target alias "boost" doesn't work at all)
+list(APPEND FIND_BOOST_COMPONENTS system date_time regex)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
     else()
@@ -216,15 +273,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
         list(APPEND FIND_BOOST_COMPONENTS filesystem)
     endif()
 endif()
-
 # since std::shared_mutex is not available until C++17
 # see bst/shared_mutex.h
 list(APPEND FIND_BOOST_COMPONENTS thread)
-
-# find boost
-set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.75.0")
-# note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} ${FIND_PACKAGE_USE_CONFIG})
 # cope with historical versions of FindBoost.cmake
 if(DEFINED Boost_VERSION_STRING)
@@ -330,63 +381,4 @@ elseif(MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     endif()
     add_compile_options("/FI${NMOS_CPP_DIR}/detail/vc_disable_warnings.h")
-endif()
-
-if(BONJOUR_SOURCES)
-    add_library(
-        Bonjour STATIC
-        ${BONJOUR_SOURCES}
-        ${BONJOUR_HEADERS}
-        )
-
-    source_group("Source Files" FILES ${BONJOUR_SOURCES})
-    source_group("Header Files" FILES ${BONJOUR_HEADERS})
-
-    target_include_directories(Bonjour PUBLIC
-        ${BONJOUR_INCLUDE}
-        )
-    target_include_directories(Bonjour PRIVATE
-        ${NMOS_CPP_DIR}/third_party
-        )
-endif()
-
-add_library(DNSSD INTERFACE)
-if(BONJOUR_SOURCES)
-    target_link_libraries(DNSSD INTERFACE Bonjour)
-endif()
-if(BONJOUR_INCLUDE)
-    target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
-endif()
-if(BONJOUR_LIB_DIR)
-    target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
-endif()
-if(BONJOUR_LIB)
-    target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB}")
-endif()
-add_library(nmos-cpp::DNSSD ALIAS DNSSD)
-
-add_library(PCAP INTERFACE)
-if(PCAP_INCLUDE_DIR)
-    target_include_directories(PCAP INTERFACE "${PCAP_INCLUDE_DIR}")
-endif()
-if(PCAP_LIB_DIR)
-    target_link_directories(PCAP INTERFACE "${PCAP_LIB_DIR}")
-endif()
-if(PCAP_LIB)
-    target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
-endif()
-if(PCAP_COMPILE_DEFINITIONS)
-    target_compile_definitions(PCAP INTERFACE "${PCAP_COMPILE_DEFINITIONS}")
-endif()
-add_library(nmos-cpp::PCAP ALIAS PCAP)
-
-# additional configuration for common dependencies
-
-# cpprestsdk
-if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
-    # required for mdns and nmos-cpp
-    target_compile_options(cpprestsdk INTERFACE "/FI${NMOS_CPP_DIR}/cpprest/details/boost_u_workaround.h")
-    # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
-    # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
-    target_link_libraries(cpprestsdk INTERFACE Boost::boost)
 endif()
