@@ -254,7 +254,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             third_party
             )
 
-        install(FILES ${BONJOUR_HEADERS_INSTALL} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}")
+        install(FILES ${BONJOUR_HEADERS_INSTALL} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/.")
         add_library(nmos-cpp::Bonjour ALIAS Bonjour)
 
         target_link_libraries(DNSSD INTERFACE nmos-cpp::Bonjour)
