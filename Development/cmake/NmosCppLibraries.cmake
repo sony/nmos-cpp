@@ -125,10 +125,11 @@ if(BUILD_LLDP)
         nmos-cpp::slog
         nmos-cpp::cpprestsdk
         )
-    # hmm, want a PRIVATE dependency on PCAP, but need its target_link_directories for wpcap on Windows
+    # hm, having to define and refer to two PCAP targets seems awkward but I didn't find a better way
     target_link_libraries(
         lldp PUBLIC
-        nmos-cpp::PCAP
+        $<BUILD_INTERFACE:nmos-cpp::PCAP>
+        $<INSTALL_INTERFACE:nmos-cpp::PCAP-installed>
         )
     target_link_libraries(
         lldp PRIVATE
