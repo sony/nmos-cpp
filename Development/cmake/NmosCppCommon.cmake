@@ -4,6 +4,20 @@ if(${USE_CONAN})
     include(cmake/NmosCppConan.cmake)
 endif()
 
+include(GNUInstallDirs)
+
+set(NMOS_CPP_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
+if(NMOS_CPP_INCLUDE_PREFIX)
+    string(APPEND NMOS_CPP_INSTALL_INCLUDEDIR "${NMOS_CPP_INCLUDE_PREFIX}")
+endif()
+
+set(NMOS_CPP_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+set(NMOS_CPP_INSTALL_BINDIR "${CMAKE_INSTALL_LIBDIR}")
+if(WIN32)
+    string(APPEND NMOS_CPP_INSTALL_LIBDIR "/$<IF:$<CONFIG:Debug>,Debug,Release>")
+    string(APPEND NMOS_CPP_INSTALL_BINDIR "/$<IF:$<CONFIG:Debug>,Debug,Release>")
+endif()
+
 # enable C++11
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 11 CACHE STRING "Default value for CXX_STANDARD property of targets")
@@ -48,8 +62,8 @@ include(safeguards)
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    add_compile_options("$<$<CONFIG:Debug>:-O0;-g3>")
-    add_compile_options("$<$<CONFIG:Release>:-O3>")
+    # default to -O3
+    add_compile_options("$<IF:$<CONFIG:Debug>,-O0;-g3,-O3>")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
         # required for std::this_thread::sleep_for in e.g. mdns/test/mdns_test.cpp
         # see https://stackoverflow.com/questions/12523122/what-is-glibcxx-use-nanosleep-all-about

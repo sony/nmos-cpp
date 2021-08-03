@@ -26,3 +26,5 @@ target_link_libraries(
 target_include_directories(nmos-cpp-node PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
+
+list(APPEND NMOS_CPP_TARGETS nmos-cpp-node)
