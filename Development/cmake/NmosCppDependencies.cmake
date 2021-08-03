@@ -231,7 +231,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # hm, where best to install dns_sd.h?
         set(BONJOUR_INCLUDE
             "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/mDNSResponder/mDNSShared>"
-            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>"
+            "$<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>"
             )
         set(BONJOUR_SOURCES
             third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
@@ -265,7 +265,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             third_party
             )
 
-        install(FILES ${BONJOUR_HEADERS_INSTALL} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}/.")
+        install(FILES ${BONJOUR_HEADERS_INSTALL} DESTINATION "${NMOS_CPP_INSTALL_INCLUDEDIR}/.")
 
         list(APPEND NMOS_CPP_TARGETS Bonjour)
         add_library(nmos-cpp::Bonjour ALIAS Bonjour)
