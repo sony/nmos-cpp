@@ -1024,7 +1024,7 @@ target_include_directories(nmos-cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13.0")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # Conan packages usually don't include PDB files so suppress the resulting warning
     # which is otherwise reported more than 500 times (across cpprest.pdb, ossl_static.pdb and zlibstatic.pdb)
     # when linking to nmos-cpp and its dependencies
