@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.75.0")
+set(BOOST_VERSION_CUR "1.76.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
@@ -97,7 +97,7 @@ add_library(nmos-cpp::Boost ALIAS Boost)
 
 # note: 2.10.16 or higher is recommended (which is the first version with cpprestsdk-configVersion.cmake)
 set(CPPRESTSDK_VERSION_MIN "2.10.11")
-set(CPPRESTSDK_VERSION_CUR "2.10.17")
+set(CPPRESTSDK_VERSION_CUR "2.10.18")
 find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_MODE})
 if(NOT cpprestsdk_VERSION)
     message(STATUS "Found cpprestsdk unknown version; minimum version: " ${CPPRESTSDK_VERSION_MIN})

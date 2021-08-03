@@ -25,24 +25,25 @@ Notes:
         - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If not using Conan
      - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-       - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0`` to match the suggested ``b2`` command
-       - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0/x64/lib`` to match the suggested ``b2`` command
+       - *Either* set ``Boost_DIR`` (PATH) to the location of the installed BoostConfig.cmake (since Boost 1.70.0)
+       - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_76_0``
+         and *``<home-dir>``*``/boost_1_76_0/x64/lib`` respectively to match the suggested ``b2`` command
      - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
-       - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed cpprestsdk-config.cmake
-       - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
+       - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed ``cpprestsdk-config.cmake``
+       - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed ``websocketpp-config.cmake``
        - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. *``<home-dir>``*``/cpprestsdk/Release/libs/websocketpp`` to use the copy within the C++ REST SDK source tree
-3. Use CMake to generate build/project files, and then build
+3. Use CMake to generate build/project files, and then build  
    "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
 
 **Windows**
 
-For example, for Visual Studio 2017:
+For example, for Visual Studio 2019:
 ```
 cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 15 2017 Win64" ^
+  -G "Visual Studio 16 2019" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release"
 ```
 
@@ -54,11 +55,11 @@ cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 15 2017 Win64" ^
+  -G "Visual Studio 16 2019" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_75_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_75_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_76_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_76_0/x64/lib" ^
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
 ```
 
