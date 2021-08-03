@@ -265,9 +265,11 @@ add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 # PCAP library
 
 if(BUILD_LLDP)
+    add_library(PCAP INTERFACE)
+
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         # find libpcap for the LLDP support library (lldp)
-        set(PCAP_LIB pcap)
+        target_link_libraries(PCAP INTERFACE pcap)
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
@@ -275,21 +277,12 @@ if(BUILD_LLDP)
         set(PCAP_LIB wpcap)
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
-        set(PCAP_COMPILE_DEFINITIONS HAVE_REMOTE)
-    endif()
+        target_compile_definitions(PCAP INTERFACE HAVE_REMOTE)
 
-    add_library(PCAP INTERFACE)
-    if(PCAP_INCLUDE_DIR)
         target_include_directories(PCAP INTERFACE "${PCAP_INCLUDE_DIR}")
-    endif()
-    if(PCAP_LIB_DIR)
         target_link_directories(PCAP INTERFACE "${PCAP_LIB_DIR}")
-    endif()
-    if(PCAP_LIB)
         target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
     endif()
-    if(PCAP_COMPILE_DEFINITIONS)
-        target_compile_definitions(PCAP INTERFACE "${PCAP_COMPILE_DEFINITIONS}")
-    endif()
+
     add_library(nmos-cpp::PCAP ALIAS PCAP)
 endif()
