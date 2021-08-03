@@ -124,12 +124,7 @@ if(BUILD_LLDP)
         lldp PUBLIC
         nmos-cpp::slog
         nmos-cpp::cpprestsdk
-        )
-    # hm, having to define and refer to two PCAP targets seems awkward but I didn't find a better way
-    target_link_libraries(
-        lldp PUBLIC
-        $<BUILD_INTERFACE:nmos-cpp::PCAP>
-        $<INSTALL_INTERFACE:nmos-cpp::PCAP-installed>
+        nmos-cpp::PCAP
         )
     target_link_libraries(
         lldp PRIVATE

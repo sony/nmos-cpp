@@ -280,14 +280,11 @@ add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 # PCAP library
 
 if(BUILD_LLDP)
-    # hm, having to define and refer to two targets seems awkward but I didn't find a better way
     add_library(PCAP INTERFACE)
-    add_library(PCAP-installed INTERFACE)
 
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         # find libpcap for the LLDP support library (lldp)
         target_link_libraries(PCAP INTERFACE pcap)
-        target_link_libraries(PCAP-installed INTERFACE nmos-cpp::PCAP)
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
@@ -295,24 +292,23 @@ if(BUILD_LLDP)
         set(PCAP_LIB wpcap.lib)
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
-        target_compile_definitions(PCAP INTERFACE HAVE_REMOTE)
+        target_compile_definitions(PCAP INTERFACE "$<BUILD_INTERFACE:HAVE_REMOTE>")
 
         get_filename_component(PCAP_INCLUDE_DIR_ABSOLUTE ${PCAP_INCLUDE_DIR} ABSOLUTE)
         get_filename_component(PCAP_LIB_DIR_ABSOLUTE ${PCAP_LIB_DIR} ABSOLUTE)
-        target_include_directories(PCAP INTERFACE "${PCAP_INCLUDE_DIR_ABSOLUTE}")
-        target_link_directories(PCAP INTERFACE "${PCAP_LIB_DIR_ABSOLUTE}")
+
+        target_include_directories(PCAP INTERFACE "$<BUILD_INTERFACE:${PCAP_INCLUDE_DIR_ABSOLUTE}>")
+        target_link_directories(PCAP INTERFACE "$<BUILD_INTERFACE:${PCAP_LIB_DIR_ABSOLUTE}>")
         target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
 
         if (IS_ABSOLUTE ${PCAP_LIB_DIR})
-            target_link_libraries(PCAP-installed INTERFACE nmos-cpp::PCAP)
+            target_link_directories(PCAP INTERFACE "$<INSTALL_INTERFACE:${PCAP_LIB_DIR}>")
         else()
             install(FILES "${PCAP_LIB_DIR}/${PCAP_LIB}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-            target_link_directories(PCAP-installed INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>")
-            target_link_libraries(PCAP-installed INTERFACE "$<INSTALL_INTERFACE:${PCAP_LIB}>")
+            target_link_directories(PCAP INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>")
         endif()
     endif()
 
+    list(APPEND NMOS_CPP_TARGETS PCAP)
     add_library(nmos-cpp::PCAP ALIAS PCAP)
-    list(APPEND NMOS_CPP_TARGETS PCAP-installed)
-    add_library(nmos-cpp::PCAP-installed ALIAS PCAP-installed)
 endif()
