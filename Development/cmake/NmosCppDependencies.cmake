@@ -180,12 +180,14 @@ else()
 endif()
 add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
-# Bonjour
+# DNS-SD library
+
+add_library(DNSSD INTERFACE)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
-    # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR aren't set, the headers and library are assumed to be installed in the system paths
-    set(BONJOUR_LIB dns_sd)
+    # note: target_include_directories and target_link_directories aren't set, the headers and library are assumed to be installed in the system paths
+    target_link_libraries(DNSSD INTERFACE dns_sd)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns)
     set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
@@ -193,7 +195,9 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
         set(BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
         set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
-        set(BONJOUR_LIB dnssd)
+        target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
+        target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
+        target_link_libraries(DNSSD INTERFACE dnssd)
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
         # hmm, this needs reimplementing with target_link_options
         if(CMAKE_VERSION VERSION_LESS 3.15)
@@ -213,10 +217,11 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
             endif()
         endif()
     else()
-        # note: use the patched files rather than the system installed version
-        set(BONJOUR_INCLUDE third_party/mDNSResponder/mDNSShared)
-        unset(BONJOUR_LIB_DIR)
-        unset(BONJOUR_LIB)
+        # hm, where best to install dns_sd.h?
+        set(BONJOUR_INCLUDE
+            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/mDNSResponder/mDNSShared>"
+            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}>"
+            )
         set(BONJOUR_SOURCES
             third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.cpp
             )
@@ -228,12 +233,16 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(BONJOUR_HEADERS
             third_party/mDNSResponder/mDNSWindows/DLLStub/DLLStub.h
             )
+        set(BONJOUR_HEADERS_INSTALL
+            third_party/mDNSResponder/mDNSShared/dns_sd.h
+            )
 
         add_library(
             Bonjour STATIC
             ${BONJOUR_SOURCES}
             ${BONJOUR_HEADERS}
             )
+        set_property(TARGET Bonjour PROPERTY OUTPUT_NAME dnssd)
 
         source_group("Source Files" FILES ${BONJOUR_SOURCES})
         source_group("Header Files" FILES ${BONJOUR_HEADERS})
@@ -244,24 +253,12 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         target_include_directories(Bonjour PRIVATE
             third_party
             )
+
+        install(FILES ${BONJOUR_HEADERS_INSTALL} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}${NMOS_CPP_INCLUDE_PREFIX}")
         add_library(nmos-cpp::Bonjour ALIAS Bonjour)
+
+        target_link_libraries(DNSSD INTERFACE nmos-cpp::Bonjour)
     endif()
-endif()
-
-# DNS-SD library
-
-add_library(DNSSD INTERFACE)
-if(TARGET nmos-cpp::Bonjour)
-    target_link_libraries(DNSSD INTERFACE nmos-cpp::Bonjour)
-endif()
-if(BONJOUR_INCLUDE)
-    target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
-endif()
-if(BONJOUR_LIB_DIR)
-    target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
-endif()
-if(BONJOUR_LIB)
-    target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB}")
 endif()
 add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 
