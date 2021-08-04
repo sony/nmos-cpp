@@ -32,7 +32,7 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
    Notes:
-   - Currently, CMake 3.13 or higher is required; version 3.21.1 (latest release at the time) has been tested
+   - Currently, CMake 3.15 or higher is required; version 3.21.1 (latest release at the time) has been tested
    - Pre-built binary distributions are available for many platforms
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
      Fetch, build and install a suitable version:  

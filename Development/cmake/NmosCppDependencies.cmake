@@ -17,7 +17,7 @@ endif()
 # since std::shared_mutex is not available until C++17
 # see bst/shared_mutex.h
 list(APPEND FIND_BOOST_COMPONENTS thread)
-find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS} ${FIND_PACKAGE_MODE})
+find_package(Boost ${BOOST_VERSION_MIN} REQUIRED COMPONENTS ${FIND_BOOST_COMPONENTS})
 # cope with historical versions of FindBoost.cmake
 if(DEFINED Boost_VERSION_STRING)
     set(Boost_VERSION_COMPONENTS "${Boost_VERSION_STRING}")
@@ -98,7 +98,7 @@ add_library(nmos-cpp::Boost ALIAS Boost)
 # note: 2.10.16 or higher is recommended (which is the first version with cpprestsdk-configVersion.cmake)
 set(CPPRESTSDK_VERSION_MIN "2.10.11")
 set(CPPRESTSDK_VERSION_CUR "2.10.18")
-find_package(cpprestsdk REQUIRED ${FIND_PACKAGE_MODE})
+find_package(cpprestsdk REQUIRED)
 if(NOT cpprestsdk_VERSION)
     message(STATUS "Found cpprestsdk unknown version; minimum version: " ${CPPRESTSDK_VERSION_MIN})
 elseif(cpprestsdk_VERSION VERSION_LESS CPPRESTSDK_VERSION_MIN)
@@ -137,7 +137,7 @@ if(DEFINED WEBSOCKETPP_INCLUDE_DIR)
 else()
     set(WEBSOCKETPP_VERSION_MIN "0.5.1")
     set(WEBSOCKETPP_VERSION_CUR "0.8.2")
-    find_package(websocketpp REQUIRED ${FIND_PACKAGE_MODE})
+    find_package(websocketpp REQUIRED)
     if(NOT websocketpp_VERSION)
         message(STATUS "Found websocketpp unknown version; minimum version: " ${WEBSOCKETPP_VERSION_MIN})
     elseif(websocketpp_VERSION VERSION_LESS WEBSOCKETPP_VERSION_MIN)
@@ -175,7 +175,7 @@ add_library(nmos-cpp::websocketpp ALIAS websocketpp)
 # OpenSSL
 
 # note: good idea to use same version as cpprestsk was built with!
-find_package(OpenSSL REQUIRED ${FIND_PACKAGE_MODE})
+find_package(OpenSSL REQUIRED)
 if(DEFINED OPENSSL_INCLUDE_DIR)
     message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
 endif()
@@ -212,21 +212,10 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         target_link_libraries(DNSSD INTERFACE dnssd)
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
         # hmm, this needs reimplementing with target_link_options
-        if(CMAKE_VERSION VERSION_LESS 3.15)
-            foreach(Config ${CMAKE_CONFIGURATION_TYPES})
-                string(TOUPPER ${Config} CONFIG)
-                # default is /MD or /MDd
-                if(NOT ("${CMAKE_CXX_FLAGS_${CONFIG}}" MATCHES "/MT"))
-                    message(STATUS "Excluding libcmt for ${Config} because CMAKE_CXX_FLAGS_${CONFIG} is: ${CMAKE_CXX_FLAGS_${CONFIG}}")
-                    set(CMAKE_EXE_LINKER_FLAGS_${CONFIG} "${CMAKE_EXE_LINKER_FLAGS_${CONFIG}} /NODEFAULTLIB:libcmt")
-                endif()
-            endforeach()
-        else()
-            # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-            if((NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY) OR (${CMAKE_MSVC_RUNTIME_LIBRARY} MATCHES "DLL"))
-                message(STATUS "Excluding libcmt because CMAKE_MSVC_RUNTIME_LIBRARY is: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
-                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
-            endif()
+        # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        if((NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY) OR (${CMAKE_MSVC_RUNTIME_LIBRARY} MATCHES "DLL"))
+            message(STATUS "Excluding libcmt because CMAKE_MSVC_RUNTIME_LIBRARY is: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
         endif()
     else()
         # hm, where best to install dns_sd.h?
