@@ -1020,7 +1020,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwi
         nmos-cpp PUBLIC
         resolv
         )
-    if((CMAKE_CXX_COMPILER_ID MATCHES GNU) AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3))
+    if(CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.3)
         # link to std::filesystem functions (for bst/filesystem.h, used by nmos/filesystem_route.cpp)
         target_link_libraries(
             nmos-cpp PUBLIC

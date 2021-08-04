@@ -23,7 +23,7 @@ include(cmake/NmosCppDependencies.cmake)
 # nmos-cpp libraries
 include(cmake/NmosCppLibraries.cmake)
 
-if (BUILD_EXAMPLES)
+if(BUILD_EXAMPLES)
     # nmos-cpp-node executable
     include(cmake/NmosCppNode.cmake)
 
@@ -31,7 +31,7 @@ if (BUILD_EXAMPLES)
     include(cmake/NmosCppRegistry.cmake)
 endif()
 
-if (BUILD_TESTS)
+if(BUILD_TESTS)
     # nmos-cpp-test executable
     include(cmake/NmosCppTest.cmake)
 endif()

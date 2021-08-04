@@ -36,8 +36,7 @@ if(BUILD_TESTS AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 # location of additional CMake modules
-set(CMAKE_MODULE_PATH
-    ${CMAKE_MODULE_PATH}
+list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake
     )
