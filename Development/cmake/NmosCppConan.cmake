@@ -13,7 +13,9 @@ set(CONAN_VERSION_CUR "1.39.0")
 conan_check(VERSION ${CONAN_VERSION_MIN} REQUIRED)
 
 set(NMOS_CPP_CONAN_BUILD_LIBS "missing" CACHE STRING "Semicolon separated list of libraries to build rather than download")
+mark_as_advanced(FORCE NMOS_CPP_CONAN_BUILD_LIBS)
 set(NMOS_CPP_CONAN_OPTIONS "" CACHE STRING "Semicolon separated list of Conan options")
+mark_as_advanced(FORCE NMOS_CPP_CONAN_OPTIONS)
 
 if(CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     # e.g. Visual Studio
