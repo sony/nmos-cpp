@@ -200,11 +200,11 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
         target_link_libraries(DNSSD INTERFACE dnssd)
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
-        # hmm, this needs reimplementing with target_link_options
         # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        # see https://cmake.org/cmake/help/latest/policy/CMP0091.html
         if((NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY) OR (${CMAKE_MSVC_RUNTIME_LIBRARY} MATCHES "DLL"))
             message(STATUS "Excluding libcmt because CMAKE_MSVC_RUNTIME_LIBRARY is: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
+            target_link_options(DNSSD INTERFACE /NODEFAULTLIB:libcmt)
         endif()
     else()
         # hm, where best to install dns_sd.h?
