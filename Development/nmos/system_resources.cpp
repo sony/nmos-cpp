@@ -78,7 +78,7 @@ namespace nmos
         const auto& is04 = nmos::fields::is04(data);
         const auto& ptp = nmos::fields::ptp(data);
 
-        auto global_data = value_of({
+        auto settings = value_of({
             { nmos::experimental::fields::system_label, nmos::fields::label(data) },
             { nmos::experimental::fields::system_description, nmos::fields::description(data) },
             { nmos::fields::registration_heartbeat_interval, nmos::fields::heartbeat_interval(is04) },
@@ -90,18 +90,18 @@ namespace nmos
         const auto& syslog = nmos::fields::syslog(data);
         if (!syslog.is_null())
         {
-            global_data[nmos::experimental::fields::system_syslog_host_name] = value::string(nmos::fields::hostname(syslog));
-            global_data[nmos::experimental::fields::system_syslog_port] = nmos::fields::port(syslog);
+            settings[nmos::experimental::fields::system_syslog_host_name] = value::string(nmos::fields::hostname(syslog));
+            settings[nmos::experimental::fields::system_syslog_port] = nmos::fields::port(syslog);
         }
 
         const auto& syslogv2 = nmos::fields::syslogv2(data);
         if (!syslogv2.is_null())
         {
-            global_data[nmos::experimental::fields::system_syslogv2_host_name] = value::string(nmos::fields::hostname(syslogv2));
-            global_data[nmos::experimental::fields::system_syslogv2_port] = nmos::fields::port(syslogv2);
+            settings[nmos::experimental::fields::system_syslogv2_host_name] = value::string(nmos::fields::hostname(syslogv2));
+            settings[nmos::experimental::fields::system_syslogv2_port] = nmos::fields::port(syslogv2);
         }
 
-        return{ nmos::fields::id(data), std::move(global_data) };
+        return{ nmos::fields::id(data), std::move(settings) };
     }
 
     namespace experimental
