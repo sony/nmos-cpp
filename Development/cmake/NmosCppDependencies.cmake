@@ -109,12 +109,7 @@ else()
 endif()
 
 add_library(cpprestsdk INTERFACE)
-if(TARGET cpprestsdk::cpprest)
-    target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprest)
-else()
-    # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
-    target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprestsdk)
-endif()
+target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprest)
 if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
     target_compile_options(cpprestsdk INTERFACE
         "$<BUILD_INTERFACE:/FI${CMAKE_CURRENT_SOURCE_DIR}/cpprest/details/boost_u_workaround.h>"
@@ -180,12 +175,7 @@ if(DEFINED OPENSSL_INCLUDE_DIR)
 endif()
 
 add_library(OpenSSL INTERFACE)
-if(TARGET OpenSSL::SSL)
-    target_link_libraries(OpenSSL INTERFACE OpenSSL::Crypto OpenSSL::SSL)
-else()
-    # this was required for the Conan recipe before Conan 1.25 components (which produce the fine-grained targets) were added to its package info
-    target_link_libraries(cpprestsdk INTERFACE OpenSSL::OpenSSL)
-endif()
+target_link_libraries(OpenSSL INTERFACE OpenSSL::Crypto OpenSSL::SSL)
 
 list(APPEND NMOS_CPP_TARGETS OpenSSL)
 add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
