@@ -25,12 +25,12 @@ Notes:
         - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If not using Conan
      - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-       - *Either* set ``Boost_DIR`` (PATH) to the location of the installed BoostConfig.cmake (since Boost 1.70.0)
+       - *Either* set ``Boost_DIR`` (PATH) to the location of the installed *BoostConfig.cmake* (since Boost 1.70.0)
        - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_76_0``
          and *``<home-dir>``*``/boost_1_76_0/x64/lib`` respectively to match the suggested ``b2`` command
      - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
-       - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed ``cpprestsdk-config.cmake``
-       - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed ``websocketpp-config.cmake``
+       - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed *cpprestsdk-config.cmake*
+       - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed *websocketpp-config.cmake*
        - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. *``<home-dir>``*``/cpprestsdk/Release/libs/websocketpp`` to use the copy within the C++ REST SDK source tree
 3. Use CMake to generate build/project files, and then build  
    "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
@@ -65,11 +65,10 @@ cmake .. ^
 
 </details>
 
-Then, open and build the generated nmos-cpp Visual Studio Solution.
+Then, open and build the generated nmos-cpp Visual Studio Solution, or use CMake's build tool mode:
 
-Or on the Developer command line:
 ```
-msbuild nmos-cpp.sln /p:Configuration=<Debug-or-Release>
+cmake --build . --config <Debug-or-Release>
 ```
 
 **Linux**
@@ -171,6 +170,42 @@ nmos-cpp-registry "{\"http_port\":1080}"
 Check it is running by opening http://localhost:1080/ in a browser.
 
 Then try running the "IS-04 Registry APIs" test suites from the web service.
+
+## Installing nmos-cpp
+
+Note: Depending on the current user permissions, installing nmos-cpp may need administrator privileges.
+
+**Windows**
+
+Build the INSTALL project in the generated nmos-cpp Visual Studio Solution, or use CMake's build tool mode:
+
+```
+cd <home-dir>/nmos-cpp/Development/build
+cmake --build . --target INSTALL --config <Debug-or-Release>
+```
+
+**Linux**
+
+Use the generated `install` rule:
+
+```
+cd <home-dir>/nmos-cpp/Development/build
+make install
+```
+
+Using installed nmos-cpp in another CMake project is now simple:
+
+```cmake
+cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
+project(my-nmos-node)
+
+find_package(nmos-cpp REQUIRED)
+
+add_executable(my-nmos-node main.cpp)
+target_link_libraries(my-nmos-node nmos-cpp::nmos-cpp)
+```
+
+For a complete example, see [Sandbox/my-nmos-node](../Sandbox/my-nmos-node).
 
 ## What Next?
 

@@ -233,11 +233,11 @@ On Windows:
 1. Download the [Bonjour SDK for Windows v3.0](https://developer.apple.com/download/more/?=Bonjour%20SDK%20for%20Windows) from Apple Developer Downloads
 2. Run bonjoursdksetup.exe, which will install the necessary files in e.g. *C:\Program Files\Bonjour SDK*
 3. The critical files for building this software are:
-   - Bonjour SDK\Include\dns_sd.h
-   - Bonjour SDK\Lib\x64\dnssd.lib
+   - *Bonjour SDK\Include\dns_sd.h*
+   - *Bonjour SDK\Lib\x64\dnssd.lib*
 4. The Bonjour service itself needs to be installed on the system where this software is run  
    The installer is included in the SDK:
-   - Bonjour SDK\Installer\Bonjour64.msi
+   - *Bonjour SDK\Installer\Bonjour64.msi*
 
 **Linux**
 

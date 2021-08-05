@@ -52,7 +52,7 @@ target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0
     # but provides this definition to force that behaviour because if find_package(Boost)
-    # foundBoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
+    # found BoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
     target_compile_definitions(
         Boost INTERFACE
         BOOST_UUID_FORCE_AUTO_LINK

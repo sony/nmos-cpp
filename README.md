@@ -34,7 +34,7 @@ Easy-NMOS is also a great first way to explore the relationship between NMOS ser
 
 The codebase is intended to be portable, and the nmos-cpp [CMake project](Development/CMakeLists.txt) can be built on at least Linux, Windows and macOS.
 
-After setting up the dependencies, follow these [instructions](Documents/Getting-Started.md) to build nmos-cpp on your platform, and run the test suite.
+After setting up the dependencies, follow these [instructions](Documents/Getting-Started.md) to build and install nmos-cpp on your platform, and run the test suite.
 
 Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
@@ -106,6 +106,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Refactored the CMake build to make it easier to use nmos-cpp from another project, demonstrated by [Sandbox/my-nmos-node](Sandbox/my-nmos-node)
 - Added support for BCP-004-01 Receiver Capabilities
 - Switched CI testing to run the nmos-cpp applications and the AMWA NMOS Testing Tool with secure communication (TLS) enabled, as per BCP-003-01
 - Added support for the IS-08 Channel Mapping API
@@ -132,7 +133,7 @@ Recent activity on the project (newest first):
 - Updates to build instructions and required dependencies
 - Simpler creation/processing of the types of SDP files required to support ST 2110 and ST 2022-7
 - Simpler run-time configuration of the **nmos-cpp-node** and **nmos-cpp-registry** settings
-- Some documentation about the overall design of **nmos-cpp** for developers
+- Some documentation about the overall design of nmos-cpp for developers
 - An implementation of the Connection API
 - A fix for a potential memory leak
 - An SDP parser/generator (to/from a JSON representation)
