@@ -63,21 +63,21 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     #   https://docs.microsoft.com/en-gb/cpp/porting/modifying-winver-and-win32-winnt
     #   https://stackoverflow.com/questions/9742003/platform-detection-in-cmake
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 10) # Windows 10
-        set(_WIN32_WINNT 0x0A00)
+        set(WIN32_WINNT 0x0A00)
     elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.3) # Windows 8.1
-        set(_WIN32_WINNT 0x0603)
+        set(WIN32_WINNT 0x0603)
     elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.2) # Windows 8
-        set(_WIN32_WINNT 0x0602)
+        set(WIN32_WINNT 0x0602)
     elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.1) # Windows 7
-        set(_WIN32_WINNT 0x0601)
+        set(WIN32_WINNT 0x0601)
     elseif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER_EQUAL 6.0) # Windows Vista
-        set(_WIN32_WINNT 0x0600)
+        set(WIN32_WINNT 0x0600)
     else() # Windows XP (5.1)
-        set(_WIN32_WINNT 0x0501)
+        set(WIN32_WINNT 0x0501)
     endif()
     target_compile_definitions(
         Boost INTERFACE
-        _WIN32_WINNT=${_WIN32_WINNT}
+        _WIN32_WINNT=${WIN32_WINNT}
         )
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
