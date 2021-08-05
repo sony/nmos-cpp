@@ -85,6 +85,8 @@ target_link_libraries(
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
     )
+# CMake 3.17 is required in order to get the INTERFACE_LINK_OPTIONS
+# see https://cmake.org/cmake/help/latest/policy/CMP0099.html
 target_link_libraries(
     mdns PRIVATE
     nmos-cpp::DNSSD
@@ -125,10 +127,10 @@ if(BUILD_LLDP)
         lldp PUBLIC
         nmos-cpp::slog
         nmos-cpp::cpprestsdk
-        nmos-cpp::PCAP
         )
     target_link_libraries(
         lldp PRIVATE
+        nmos-cpp::PCAP
         nmos-cpp::Boost
         )
     target_include_directories(lldp PUBLIC

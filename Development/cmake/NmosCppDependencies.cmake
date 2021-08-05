@@ -196,9 +196,14 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
         set(BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
         set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
+        set(BONJOUR_LIB dnssd.lib)
+
         target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
-        target_link_directories(DNSSD INTERFACE "${BONJOUR_LIB_DIR}")
-        target_link_libraries(DNSSD INTERFACE dnssd)
+
+        # using absolute paths to libraries seems more robust in the long term than separately specifying target_link_directories
+        get_filename_component(BONJOUR_LIB_ABSOLUTE "${BONJOUR_LIB}" ABSOLUTE BASE_DIR "${BONJOUR_LIB_DIR}")
+        target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB_ABSOLUTE}")
+
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
         # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
         # see https://cmake.org/cmake/help/latest/policy/CMP0091.html
@@ -271,20 +276,26 @@ if(BUILD_LLDP)
         set(PCAP_LIB wpcap.lib)
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
-        target_compile_definitions(PCAP INTERFACE "$<BUILD_INTERFACE:HAVE_REMOTE>")
+        target_compile_definitions(PCAP INTERFACE HAVE_REMOTE)
 
-        get_filename_component(PCAP_INCLUDE_DIR_ABSOLUTE ${PCAP_INCLUDE_DIR} ABSOLUTE)
-        get_filename_component(PCAP_LIB_DIR_ABSOLUTE ${PCAP_LIB_DIR} ABSOLUTE)
-
+        get_filename_component(PCAP_INCLUDE_DIR_ABSOLUTE "${PCAP_INCLUDE_DIR}" ABSOLUTE)
         target_include_directories(PCAP INTERFACE "$<BUILD_INTERFACE:${PCAP_INCLUDE_DIR_ABSOLUTE}>")
-        target_link_directories(PCAP INTERFACE "$<BUILD_INTERFACE:${PCAP_LIB_DIR_ABSOLUTE}>")
-        target_link_libraries(PCAP INTERFACE "${PCAP_LIB}")
+        if(IS_ABSOLUTE ${PCAP_INCLUDE_DIR})
+            target_include_directories(PCAP INTERFACE "$<INSTALL_INTERFACE:${PCAP_INCLUDE_DIR}>")
+        else()
+            # hmm, for now, not installing the headers so nothing for the INSTALL_INTERFACE
+        endif()
 
+        # using absolute paths to libraries seems more robust in the long term than separately specifying target_link_directories
+        get_filename_component(PCAP_LIB_DIR_ABSOLUTE "${PCAP_LIB_DIR}" ABSOLUTE)
+        get_filename_component(PCAP_LIB_ABSOLUTE "${PCAP_LIB}" ABSOLUTE BASE_DIR "${PCAP_LIB_DIR_ABSOLUTE}")
+        target_link_libraries(PCAP INTERFACE "$<BUILD_INTERFACE:${PCAP_LIB_ABSOLUTE}>")
         if(IS_ABSOLUTE ${PCAP_LIB_DIR})
-            target_link_directories(PCAP INTERFACE "$<INSTALL_INTERFACE:${PCAP_LIB_DIR}>")
+            target_link_libraries(PCAP INTERFACE "$<INSTALL_INTERFACE:${PCAP_LIB_ABSOLUTE}>")
         else()
             install(FILES "${PCAP_LIB_DIR}/${PCAP_LIB}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-            target_link_directories(PCAP INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>")
+            get_filename_component(PCAP_LIB_INSTALL_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}/${PCAP_LIB}" ABSOLUTE BASE_DIR "${CMAKE_INSTALL_PREFIX}")
+            target_link_libraries(PCAP INTERFACE "$<INSTALL_INTERFACE:${PCAP_LIB_INSTALL_ABSOLUTE}>")
         endif()
     endif()
 
