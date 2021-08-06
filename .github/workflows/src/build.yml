@@ -5,5 +5,5 @@
     cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
     cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
     buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
 

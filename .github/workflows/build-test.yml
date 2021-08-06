@@ -214,7 +214,7 @@ jobs:
           libssl-dev
     
         cd ${{ env.RUNNER_WORKSPACE }}
-        git clone --recurse-submodules --branch v2.10.16 https://github.com/Microsoft/cpprestsdk
+        git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
         cd cpprestsdk/Release
         mkdir build
         cd build
@@ -254,7 +254,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: unit test
@@ -285,7 +285,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: install wsl
@@ -600,7 +600,7 @@ jobs:
           libssl-dev
     
         cd ${{ env.RUNNER_WORKSPACE }}
-        git clone --recurse-submodules --branch v2.10.16 https://github.com/Microsoft/cpprestsdk
+        git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
         cd cpprestsdk/Release
         mkdir build
         cd build
@@ -640,7 +640,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: unit test
@@ -671,7 +671,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: install wsl
