@@ -1040,18 +1040,6 @@ target_include_directories(nmos-cpp PUBLIC
     $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
     )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # Conan packages usually don't include PDB files so suppress the resulting warning
-    # which is otherwise reported more than 500 times (across cpprest.pdb, ossl_static.pdb and zlibstatic.pdb)
-    # when linking to nmos-cpp and its dependencies
-    # see https://github.com/conan-io/conan-center-index/blob/master/docs/faqs.md#why-pdb-files-are-not-allowed
-    # and https://github.com/conan-io/conan-center-index/issues/1982
-    target_link_options(
-        nmos-cpp INTERFACE
-        /ignore:4099
-        )
-endif()
-
 install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/bst)
 install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest)
 install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest/details)

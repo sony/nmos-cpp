@@ -48,6 +48,16 @@ elseif(MSVC)
         detail/vc_disable_warnings.h
         )
     install(FILES ${COMPILE_SETTINGS_DETAIL_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/detail)
+
+    # Conan packages usually don't include PDB files so suppress the resulting warning
+    # which is otherwise reported more than 500 times (across cpprest.pdb, ossl_static.pdb and zlibstatic.pdb)
+    # when linking to nmos-cpp and its dependencies
+    # see https://github.com/conan-io/conan-center-index/blob/master/docs/faqs.md#why-pdb-files-are-not-allowed
+    # and https://github.com/conan-io/conan-center-index/issues/1982
+    target_link_options(
+        compile-settings INTERFACE
+        /ignore:4099
+        )
 endif()
 
 list(APPEND NMOS_CPP_TARGETS compile-settings)
