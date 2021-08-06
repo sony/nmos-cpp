@@ -276,7 +276,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        buildWithCMakeArgs: '--target INSTALL'
+        buildWithCMakeArgs: '--target install'
     
     
     - name: install test
@@ -662,7 +662,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        buildWithCMakeArgs: '--target INSTALL'
+        buildWithCMakeArgs: '--target install'
     
     
     - name: install test

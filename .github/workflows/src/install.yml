@@ -4,5 +4,5 @@
     cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
     cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
     buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-    buildWithCMakeArgs: '--target INSTALL'
+    buildWithCMakeArgs: '--target install'
 
