@@ -1,0 +1,8 @@
+- name: install
+  uses: lukka/run-cmake@v2.0
+  with:
+    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+    cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
+    buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
+    buildWithCMakeArgs: '--target INSTALL'
+

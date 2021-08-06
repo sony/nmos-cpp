@@ -270,6 +270,24 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install
+      uses: lukka/run-cmake@v2.0
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
+        buildWithCMakeArgs: '--target INSTALL'
+    
+    
+    - name: install test
+      uses: lukka/run-cmake@v2.0
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+    
+    
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
@@ -636,6 +654,24 @@ jobs:
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
+    
+    
+    - name: install
+      uses: lukka/run-cmake@v2.0
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
+        buildWithCMakeArgs: '--target INSTALL'
+    
+    
+    - name: install test
+      uses: lukka/run-cmake@v2.0
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: install wsl

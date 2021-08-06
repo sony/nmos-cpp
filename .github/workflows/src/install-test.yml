@@ -1,0 +1,8 @@
+- name: install test
+  uses: lukka/run-cmake@v2.0
+  with:
+    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+    cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
+    buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
+    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
+
