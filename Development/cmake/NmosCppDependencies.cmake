@@ -111,10 +111,9 @@ endif()
 add_library(cpprestsdk INTERFACE)
 target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprest)
 if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
-    target_compile_options(cpprestsdk INTERFACE
-        "$<BUILD_INTERFACE:/FI${CMAKE_CURRENT_SOURCE_DIR}/cpprest/details/boost_u_workaround.h>"
-        "$<INSTALL_INTERFACE:/FIcpprest/details/boost_u_workaround.h>"
-        )
+    target_compile_options(cpprestsdk INTERFACE "$<BUILD_INTERFACE:/FI${CMAKE_CURRENT_SOURCE_DIR}/cpprest/details/boost_u_workaround.h>")
+    get_filename_component(NMOS_CPP_INSTALL_INCLUDEDIR_ABSOLUTE "${NMOS_CPP_INSTALL_INCLUDEDIR}" ABSOLUTE BASE_DIR "${CMAKE_INSTALL_PREFIX}")
+    target_compile_options(cpprestsdk INTERFACE "$<INSTALL_INTERFACE:/FI${NMOS_CPP_INSTALL_INCLUDEDIR_ABSOLUTE}/cpprest/details/boost_u_workaround.h>")
     # note: the Boost::boost target has been around longer but these days is an alias for Boost::headers
     # when using either BoostConfig.cmake from installed boost or FindBoost.cmake from CMake
     target_link_libraries(cpprestsdk INTERFACE Boost::boost)

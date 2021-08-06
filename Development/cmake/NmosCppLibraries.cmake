@@ -31,7 +31,6 @@ target_compile_definitions(
     SLOG_STATIC
     SLOG_LOGGING_SEVERITY=${SLOG_LOGGING_SEVERITY}
     )
-
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
         target_compile_definitions(
@@ -40,6 +39,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
             )
     endif()
 endif()
+target_include_directories(slog INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
 
 install(FILES ${SLOG_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/slog)
 
