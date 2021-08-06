@@ -20,6 +20,7 @@ source_group("Header Files" FILES ${NMOS_CPP_NODE_HEADERS})
 
 target_link_libraries(
     nmos-cpp-node
+    nmos-cpp::compile-settings
     nmos-cpp::nmos-cpp
     )
 # root directory to find e.g. nmos-cpp-node/node_implementation.h

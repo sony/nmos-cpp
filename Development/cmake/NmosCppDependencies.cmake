@@ -242,6 +242,10 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         source_group("Source Files" FILES ${BONJOUR_SOURCES})
         source_group("Header Files" FILES ${BONJOUR_HEADERS})
 
+        target_link_libraries(
+            Bonjour PRIVATE
+            nmos-cpp::compile-settings
+            )
         target_include_directories(Bonjour PUBLIC
             ${BONJOUR_INCLUDE}
             )

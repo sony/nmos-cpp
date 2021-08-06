@@ -93,6 +93,7 @@ source_group("sdp\\test\\Header Files" FILES ${NMOS_CPP_TEST_SDP_TEST_HEADERS})
 
 target_link_libraries(
     nmos-cpp-test
+    nmos-cpp::compile-settings
     nmos-cpp::nmos-cpp
     nmos-cpp::mdns
     nmos-cpp::cpprestsdk

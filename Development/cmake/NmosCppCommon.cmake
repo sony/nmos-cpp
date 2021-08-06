@@ -44,31 +44,5 @@ list(APPEND CMAKE_MODULE_PATH
 # guard against in-source builds and bad build-type strings
 include(safeguards)
 
-# set common C++ compiler flags
-if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    # default to -O3
-    add_compile_options("$<IF:$<CONFIG:Debug>,-O0;-g3,-O3>")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        # required for std::this_thread::sleep_for in e.g. mdns/test/mdns_test.cpp
-        # see https://stackoverflow.com/questions/12523122/what-is-glibcxx-use-nanosleep-all-about
-        add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
-    endif()
-elseif(MSVC)
-    # set CharacterSet to Unicode rather than MultiByte
-    add_definitions(/DUNICODE /D_UNICODE)
-endif()
-
-# set most compiler warnings on
-if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    add_compile_options(-Wall -Wstrict-aliasing -fstrict-aliasing -Wextra -Wno-unused-parameter -pedantic -Wno-long-long)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
-        add_compile_options(-Wno-missing-field-initializers)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        add_compile_options(-fpermissive)
-    endif()
-elseif(MSVC)
-    # see https://cmake.org/cmake/help/latest/policy/CMP0092.html
-    add_compile_options(/W4)
-    add_compile_options("/FI${CMAKE_CURRENT_SOURCE_DIR}/detail/vc_disable_warnings.h")
-endif()
+# common compiler flags and warnings
+include(cmake/NmosCppCompileSettings.cmake)

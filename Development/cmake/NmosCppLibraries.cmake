@@ -11,13 +11,6 @@ set(DETAIL_HEADERS
     detail/private_access.h
     )
 
-if(MSVC)
-    list(APPEND DETAIL_HEADERS
-        detail/vc_disable_dll_warnings.h
-        detail/vc_disable_warnings.h
-        )
-endif()
-
 install(FILES ${DETAIL_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/detail)
 
 # slog library
@@ -48,9 +41,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     endif()
 endif()
 
-list(APPEND NMOS_CPP_TARGETS slog)
 install(FILES ${SLOG_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/slog)
 
+list(APPEND NMOS_CPP_TARGETS slog)
 add_library(nmos-cpp::slog ALIAS slog)
 
 # mDNS support library
@@ -80,6 +73,10 @@ source_group("mdns\\Source Files" FILES ${MDNS_SOURCES})
 source_group("mdns\\Header Files" FILES ${MDNS_HEADERS})
 
 target_link_libraries(
+    mdns PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_link_libraries(
     mdns PUBLIC
     nmos-cpp::slog
     nmos-cpp::cpprestsdk
@@ -96,9 +93,9 @@ target_include_directories(mdns PUBLIC
     $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
     )
 
-list(APPEND NMOS_CPP_TARGETS mdns)
 install(FILES ${MDNS_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/mdns)
 
+list(APPEND NMOS_CPP_TARGETS mdns)
 add_library(nmos-cpp::mdns ALIAS mdns)
 
 # LLDP support library
@@ -124,6 +121,10 @@ if(BUILD_LLDP)
     source_group("lldp\\Header Files" FILES ${LLDP_HEADERS})
 
     target_link_libraries(
+        lldp PRIVATE
+        nmos-cpp::compile-settings
+        )
+    target_link_libraries(
         lldp PUBLIC
         nmos-cpp::slog
         nmos-cpp::cpprestsdk
@@ -142,9 +143,9 @@ if(BUILD_LLDP)
         HAVE_LLDP
         )
 
-    list(APPEND NMOS_CPP_TARGETS lldp)
     install(FILES ${LLDP_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/lldp)
 
+    list(APPEND NMOS_CPP_TARGETS lldp)
     add_library(nmos-cpp::lldp ALIAS lldp)
 endif()
 
@@ -385,7 +386,8 @@ source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_1_TAG}\\Source Files" FILES ${N
 source_group("nmos\\is04_schemas\\${NMOS_IS04_V1_0_TAG}\\Source Files" FILES ${NMOS_IS04_V1_0_SCHEMAS_SOURCES})
 
 target_link_libraries(
-    nmos_is04_schemas
+    nmos_is04_schemas PRIVATE
+    nmos-cpp::compile-settings
     )
 target_include_directories(nmos_is04_schemas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -393,7 +395,6 @@ target_include_directories(nmos_is04_schemas PUBLIC
     )
 
 list(APPEND NMOS_CPP_TARGETS nmos_is04_schemas)
-
 add_library(nmos-cpp::nmos_is04_schemas ALIAS nmos_is04_schemas)
 
 # nmos_is05_schemas library
@@ -513,7 +514,8 @@ source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_1_TAG}\\Source Files" FILES ${N
 source_group("nmos\\is05_schemas\\${NMOS_IS05_V1_0_TAG}\\Source Files" FILES ${NMOS_IS05_V1_0_SCHEMAS_SOURCES})
 
 target_link_libraries(
-    nmos_is05_schemas
+    nmos_is05_schemas PRIVATE
+    nmos-cpp::compile-settings
     )
 target_include_directories(nmos_is05_schemas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -521,7 +523,6 @@ target_include_directories(nmos_is05_schemas PUBLIC
     )
 
 list(APPEND NMOS_CPP_TARGETS nmos_is05_schemas)
-
 add_library(nmos-cpp::nmos_is05_schemas ALIAS nmos_is05_schemas)
 
 # nmos_is08_schemas library
@@ -602,7 +603,8 @@ source_group("nmos\\is08_schemas\\Header Files" FILES ${NMOS_IS08_SCHEMAS_HEADER
 source_group("nmos\\is08_schemas\\${NMOS_IS08_V1_0_TAG}\\Source Files" FILES ${NMOS_IS08_V1_0_SCHEMAS_SOURCES})
 
 target_link_libraries(
-    nmos_is08_schemas
+    nmos_is08_schemas PRIVATE
+    nmos-cpp::compile-settings
     )
 target_include_directories(nmos_is08_schemas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -610,7 +612,6 @@ target_include_directories(nmos_is08_schemas PUBLIC
     )
 
 list(APPEND NMOS_CPP_TARGETS nmos_is08_schemas)
-
 add_library(nmos-cpp::nmos_is08_schemas ALIAS nmos_is08_schemas)
 
 # nmos_is09_schemas library
@@ -671,7 +672,8 @@ source_group("nmos\\is09_schemas\\Header Files" FILES ${NMOS_IS09_SCHEMAS_HEADER
 source_group("nmos\\is09_schemas\\${NMOS_IS09_V1_0_TAG}\\Source Files" FILES ${NMOS_IS09_V1_0_SCHEMAS_SOURCES})
 
 target_link_libraries(
-    nmos_is09_schemas
+    nmos_is09_schemas PRIVATE
+    nmos-cpp::compile-settings
     )
 target_include_directories(nmos_is09_schemas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -679,7 +681,6 @@ target_include_directories(nmos_is09_schemas PUBLIC
     )
 
 list(APPEND NMOS_CPP_TARGETS nmos_is09_schemas)
-
 add_library(nmos-cpp::nmos_is09_schemas ALIAS nmos_is09_schemas)
 
 # json schema validator library
@@ -716,7 +717,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
 endif()
 
 target_link_libraries(
-    json_schema_validator
+    json_schema_validator PRIVATE
+    nmos-cpp::compile-settings
     )
 target_include_directories(json_schema_validator PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party>
@@ -724,7 +726,6 @@ target_include_directories(json_schema_validator PUBLIC
     )
 
 list(APPEND NMOS_CPP_TARGETS json_schema_validator)
-
 add_library(nmos-cpp::json_schema_validator ALIAS json_schema_validator)
 
 # nmos-cpp library
@@ -993,6 +994,10 @@ source_group("rql\\Header Files" FILES ${NMOS_CPP_RQL_HEADERS})
 source_group("sdp\\Header Files" FILES ${NMOS_CPP_SDP_HEADERS})
 
 target_link_libraries(
+    nmos-cpp PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_link_libraries(
     nmos-cpp PUBLIC
     nmos-cpp::mdns
     nmos-cpp::slog
@@ -1047,7 +1052,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         )
 endif()
 
-list(APPEND NMOS_CPP_TARGETS nmos-cpp)
 install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/bst)
 install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest)
 install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/cpprest/details)
@@ -1056,4 +1060,5 @@ install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR
 install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/rql)
 install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/sdp)
 
+list(APPEND NMOS_CPP_TARGETS nmos-cpp)
 add_library(nmos-cpp::nmos-cpp ALIAS nmos-cpp)

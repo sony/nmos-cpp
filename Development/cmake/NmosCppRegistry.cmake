@@ -20,6 +20,7 @@ source_group("Header Files" FILES ${NMOS_CPP_REGISTRY_HEADERS})
 
 target_link_libraries(
     nmos-cpp-registry
+    nmos-cpp::compile-settings
     nmos-cpp::nmos-cpp
     )
 # root directory to find e.g. nmos-cpp-registry/registry_implementation.h

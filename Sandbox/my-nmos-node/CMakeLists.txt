@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
 project(my-nmos-node)
 
-# This example actually uses the source files of nmos-cpp-node
+# This project actually uses the source files of nmos-cpp-node
 set(NMOS_CPP_DIRECTORY "../../Development" CACHE STRING "Path to nmos-cpp/Development directory")
 
 # By default use Conan to acquire dependencies
@@ -11,6 +11,7 @@ if (USE_CONAN)
     include(${NMOS_CPP_DIRECTORY}/cmake/NmosCppConan.cmake)
 endif()
 
+# Find and use nmos-cpp from its installed location or as a subdirectory
 set(USE_ADD_SUBDIRECTORY OFF CACHE BOOL "Use add_subdirectory() rather than find_package()")
 if (NOT USE_ADD_SUBDIRECTORY)
     find_package(nmos-cpp REQUIRED)
@@ -40,5 +41,6 @@ source_group("Header Files" FILES ${MY_NMOS_NODE_HEADERS})
 
 target_link_libraries(
     my-nmos-node
+    nmos-cpp::compile-settings
     nmos-cpp::nmos-cpp
     )

@@ -37,7 +37,7 @@ Notes:
 
 **Windows**
 
-For example, for Visual Studio 2019:
+For example, using the Visual Studio 2019 Developer Command Prompt:
 ```
 cd <home-dir>\nmos-cpp\Development
 mkdir build
