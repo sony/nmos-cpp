@@ -1,10 +1,9 @@
 @PACKAGE_INIT@
 
-# find dependencies cf. find_package calls in NmosCppDependencies.cmake
+# find install dependencies cf. find_package calls in NmosCppDependencies.cmake
 include(CMakeFindDependencyMacro)
 find_dependency(Boost COMPONENTS @FIND_BOOST_COMPONENTS@)
 find_dependency(cpprestsdk)
-find_dependency(websocketpp)
 find_dependency(OpenSSL)
 
 # generate import targets cf. install(EXPORT) call in NmosCppExports.cmake
