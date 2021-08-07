@@ -1,6 +1,13 @@
+# see https://github.com/conan-io/cmake-conan#creating-packages
+if(CONAN_EXPORTED)
+    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+    conan_basic_setup()
+    return()
+endif()
+
 if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/conan.cmake")
     message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-    file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
+    file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.16.1/conan.cmake"
                   "${CMAKE_CURRENT_BINARY_DIR}/conan.cmake")
 endif()
 
