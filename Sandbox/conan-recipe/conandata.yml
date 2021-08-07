@@ -1,0 +1,4 @@
+sources:
+  # versioning discussion required
+  "0.0":
+    url: https://github.com/garethsb/nmos-cpp/archive/conan-recipe.tar.gz
