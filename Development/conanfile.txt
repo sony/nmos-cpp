@@ -12,3 +12,7 @@ lib, *.dylib* -> ./lib
 
 [options]
 boost:shared=False
+
+[generators]
+cmake_find_package_multi
+cmake_find_package
