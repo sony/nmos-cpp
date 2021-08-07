@@ -40,15 +40,12 @@ if(DEFINED Boost_INCLUDE_DIRS)
     message(STATUS "Using Boost include directories at ${Boost_INCLUDE_DIRS}")
 endif()
 # Boost_LIBRARIES is provided by the CMake FindBoost.cmake module and recently also by Conan for most generators
-# but with cmake_find_package_multi it isn't, so map the required components to targets instead
-if(NOT DEFINED Boost_LIBRARIES)
-    # doesn't seem necessary to add "headers" or "boost"
-    string(REGEX REPLACE "([^;]+)" "Boost::\\1" Boost_LIBRARIES "${FIND_BOOST_COMPONENTS}")
-endif()
-message(STATUS "Using Boost libraries ${Boost_LIBRARIES}")
+# but with cmake_find_package_multi it isn't, and mapping the required components to targets seems robust anyway
+string(REGEX REPLACE "([^;]+)" "Boost::\\1" BOOST_TARGETS "${FIND_BOOST_COMPONENTS}")
+message(STATUS "Using Boost targets ${BOOST_TARGETS}, not Boost libraries ${Boost_LIBRARIES}")
 
 add_library(Boost INTERFACE)
-target_link_libraries(Boost INTERFACE "${Boost_LIBRARIES}")
+target_link_libraries(Boost INTERFACE "${BOOST_TARGETS}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0
     # but provides this definition to force that behaviour because if find_package(Boost)
