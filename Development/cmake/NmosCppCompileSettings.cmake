@@ -3,8 +3,6 @@ target_compile_features(compile-settings INTERFACE cxx_std_11)
 
 # set common C++ compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    # default to -O3
-    target_compile_options(compile-settings INTERFACE "$<IF:$<CONFIG:Debug>,-O0;-g3,-O3>")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
         # required for std::this_thread::sleep_for in e.g. mdns/test/mdns_test.cpp
         # see https://stackoverflow.com/questions/12523122/what-is-glibcxx-use-nanosleep-all-about
