@@ -24,18 +24,16 @@ class NmosCppConan(ConanFile):
     generators = "cmake", "cmake_find_package"
     _cmake = None
 
-    # auto-generate from conanfile.txt?
-    requires = [
-        "boost/1.76.0",
-        "openssl/1.1.1k",
-        "cpprestsdk/2.10.18",
-        "websocketpp/0.8.2",
-        ("zlib/1.2.11", "private")
-    ]
-
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
+
+    def requirements(self):
+        # for now, consistent with project's conanfile.txt
+        self.requires("boost/1.76.0")
+        self.requires("openssl/1.1.1k")
+        self.requires("cpprestsdk/2.10.18")
+        self.requires("websocketpp/0.8.2")
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
