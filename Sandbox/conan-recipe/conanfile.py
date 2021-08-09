@@ -19,9 +19,9 @@ class NmosCppConan(ConanFile):
     # "fPIC" is handled automatically by Conan, injecting CMAKE_POSITION_INDEPENDENT_CODE
     default_options = {"fPIC": True}
 
-    exports_sources = ["CMakeLists.txt"]
     # use cmake_find_package_multi and prefer config-file packages
     generators = "cmake", "cmake_find_package_multi"
+
     _cmake = None
 
     _source_subfolder = "source_subfolder"
@@ -53,7 +53,7 @@ class NmosCppConan(ConanFile):
         # the examples (nmos-cpp-registry and nmos-cpp-node) are useful utilities for users
         self._cmake.definitions["BUILD_EXAMPLES"] = True
         # 'root' CMakeLists.txt is in Development
-        self._cmake.configure()
+        self._cmake.configure(source_folder=os.path.join(self._source_subfolder, "Development"))
         return self._cmake
 
     def build(self):
