@@ -3,7 +3,6 @@ boost/1.76.0
 openssl/1.1.1k
 cpprestsdk/2.10.18
 websocketpp/0.8.2
-zlib/1.2.11
 
 [imports]
 bin, *.dll -> ./bin
