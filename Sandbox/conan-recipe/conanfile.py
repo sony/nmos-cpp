@@ -42,9 +42,14 @@ class NmosCppConan(ConanFile):
                   destination=self._source_subfolder, strip_root=True)
 
     def _configure_cmake(self):
-        if not self._cmake:
-            self._cmake = CMake(self)
-            self._cmake.configure()
+        if self._cmake:
+            return self._cmake
+        self._cmake = CMake(self)
+        self._cmake.definitions["BUILD_TESTS"] = False
+        # the examples (nmos-cpp-registry and nmos-cpp-node) are useful utilities for users
+        self._cmake.definitions["BUILD_EXAMPLES"] = True
+        # 'root' CMakeLists.txt is in Development
+        self._cmake.configure()
         return self._cmake
 
     def build(self):
@@ -121,7 +126,7 @@ class NmosCppConan(ConanFile):
                         for property_value in property_values:
                             # workaround required because otherwise "/ignore:4099" gets converted to "\ignore:4099.obj"
                             # thankfully the MSVC linker accepts both '/' and '-' for the option specifier and Visual Studio
-                            # handles link options appearing in Link/AdditionalDependencies rather than  Link/AdditionalOptions
+                            # handles link options appearing in Link/AdditionalDependencies rather than Link/AdditionalOptions
                             # because the CMake generators put them in INTERFACE_LINK_LIBRARIES rather than INTERFACE_LINK_OPTIONS
                             # see https://github.com/conan-io/conan/pull/8812
                             # and https://docs.microsoft.com/en-us/cpp/build/reference/linking?view=msvc-160#command-line
