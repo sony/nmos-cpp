@@ -15,6 +15,8 @@ include(${CMAKE_CURRENT_BINARY_DIR}/conan.cmake)
 
 # checking the Conan version produces a more helpful message than the confusing errors
 # that are reported when some dependency's recipe uses new features; Conan moves fast!
+# it would be nice to output a message if its a more recent version than tested, like:
+# "Found Conan version 99.99 that is higher than the current tested version: " ${CONAN_VERSION_CUR})
 set(CONAN_VERSION_MIN "1.33.0")
 set(CONAN_VERSION_CUR "1.39.0")
 conan_check(VERSION ${CONAN_VERSION_MIN} REQUIRED)
