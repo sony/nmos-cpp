@@ -14,9 +14,9 @@ class NmosCppConan(ConanFile):
     topics = ("NMOS")
 
     settings = "os", "compiler", "build_type", "arch"
-    # no "shared" option support
-    # is anything else required to support "fPIC"?
+    # for now, no "shared" option support
     options = {"fPIC": [True, False]}
+    # "fPIC" is handled automatically by Conan, injecting CMAKE_POSITION_INDEPENDENT_CODE
     default_options = {"fPIC": True}
 
     exports_sources = ["CMakeLists.txt"]
