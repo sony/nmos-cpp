@@ -20,8 +20,8 @@ class NmosCppConan(ConanFile):
     default_options = {"fPIC": True}
 
     exports_sources = ["CMakeLists.txt"]
-    # is this the right choice of generators?
-    generators = "cmake", "cmake_find_package"
+    # use cmake_find_package_multi and prefer config-file packages
+    generators = "cmake", "cmake_find_package_multi"
     _cmake = None
 
     _source_subfolder = "source_subfolder"
@@ -45,6 +45,10 @@ class NmosCppConan(ConanFile):
         if self._cmake:
             return self._cmake
         self._cmake = CMake(self)
+        # prefer config-file packages created by cmake_find_package_multi
+        # over any system-installed find-module packages
+        self._cmake.definitions["CMAKE_FIND_PACKAGE_PREFER_CONFIG"] = True
+        # no need to build unit tests
         self._cmake.definitions["BUILD_TESTS"] = False
         # the examples (nmos-cpp-registry and nmos-cpp-node) are useful utilities for users
         self._cmake.definitions["BUILD_EXAMPLES"] = True
