@@ -146,6 +146,14 @@ class NmosCppConan(ConanFile):
         return os.path.join(self.package_folder, "lib", "components.json")
 
     def package_info(self):
+        bindir = "bin"
+        libdir = "lib"
+        # on Windows, cmake_install() puts the binaries in a config-specific sub-folder
+        if self.settings.os == "Windows":
+            config_install_dir = "Debug" if self.settings.build_type == "Debug" else "Release"
+            bindir = os.path.join(bindir, config_install_dir)
+            libdir = os.path.join(libdir, config_install_dir)
+
         def _register_components():
             components_json_file = tools.load(self._components_helper_filepath)
             components = json.loads(components_json_file)
@@ -154,6 +162,7 @@ class NmosCppConan(ConanFile):
                 self.cpp_info.components[component_name].names["cmake_find_package"] = cmake_target
                 self.cpp_info.components[component_name].names["cmake_find_package_multi"] = cmake_target
                 self.cpp_info.components[component_name].libs = values.get("libs", [])
+                self.cpp_info.components[component_name].libdirs = [libdir]
                 self.cpp_info.components[component_name].defines = values.get("defines", [])
                 self.cpp_info.components[component_name].cxxflags = values.get("cxxflags", [])
                 linkflags = values.get("linkflags", [])
@@ -168,9 +177,6 @@ class NmosCppConan(ConanFile):
         _register_components()
 
         # add nmos-cpp-registry and nmos-cpp-node to the path
-        bin_path = os.path.join(self.package_folder, "bin")
-        if self.settings.os == "Windows":
-            config_install_dir = "Debug" if self.settings.build_type == "Debug" else "Release"
-            bin_path = os.path.join(bin_path, config_install_dir)
+        bin_path = os.path.join(self.package_folder, bindir)
         self.output.info("Appending PATH environment variable: {}".format(bin_path))
         self.env_info.PATH.append(bin_path)

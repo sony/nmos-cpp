@@ -11,8 +11,6 @@ class NmosCppTestPackageConan(ConanFile):
     def build(self):
         cmake = CMake(self)
         cmake.configure()
-        # hmm, on Windows why does CMake report e.g. "Library nmos-cpp not found in package, might be system one"?
-        # yet it still works...
         cmake.build()
 
     def test(self):
