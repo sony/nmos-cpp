@@ -24,6 +24,8 @@ class NmosCppConan(ConanFile):
     generators = "cmake", "cmake_find_package"
     _cmake = None
 
+    _source_subfolder = "source_subfolder"
+
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
@@ -37,7 +39,7 @@ class NmosCppConan(ConanFile):
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
-            destination="nmos-cpp", strip_root=True)
+                  destination=self._source_subfolder, strip_root=True)
 
     def _configure_cmake(self):
         if not self._cmake:
@@ -50,7 +52,7 @@ class NmosCppConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("nmos-cpp/LICENSE", dst="licenses")
+        self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
         cmake = self._configure_cmake()
         cmake.install()
         cmake_folder = os.path.join(self.package_folder, "lib", "cmake")
