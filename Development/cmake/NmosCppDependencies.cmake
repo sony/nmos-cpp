@@ -44,6 +44,8 @@ endif()
 string(REGEX REPLACE "([^;]+)" "Boost::\\1" BOOST_TARGETS "${FIND_BOOST_COMPONENTS}")
 message(STATUS "Using Boost targets ${BOOST_TARGETS}, not Boost libraries ${Boost_LIBRARIES}")
 
+# this target means the nmos-cpp libraries can just link a single Boost dependency
+# and also provides a common location to inject some additional compile definitions
 add_library(Boost INTERFACE)
 target_link_libraries(Boost INTERFACE "${BOOST_TARGETS}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -105,6 +107,7 @@ else()
     message(STATUS "Found cpprestsdk version " ${cpprestsdk_VERSION})
 endif()
 
+# this target provides a common location to inject additional compile options
 add_library(cpprestsdk INTERFACE)
 target_link_libraries(cpprestsdk INTERFACE cpprestsdk::cpprest)
 if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10 AND Boost_VERSION_COMPONENTS VERSION_GREATER_EQUAL 1.58.0)
@@ -142,6 +145,7 @@ else()
     endif()
 endif()
 
+# this target provides a common location to inject additional compile definitions
 add_library(websocketpp INTERFACE)
 if(TARGET websocketpp::websocketpp)
     target_link_libraries(websocketpp INTERFACE websocketpp::websocketpp)
@@ -170,6 +174,7 @@ if(DEFINED OPENSSL_INCLUDE_DIR)
     message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
 endif()
 
+# this target means the nmos-cpp libraries can just link a single OpenSSL dependency
 add_library(OpenSSL INTERFACE)
 target_link_libraries(OpenSSL INTERFACE OpenSSL::Crypto OpenSSL::SSL)
 
@@ -178,6 +183,9 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 # DNS-SD library
 
+# this target means the nmos-cpp libraries can link the same dependency
+# whether it's being picked up as a system library or being built from
+# the patched mDNSResponder sources on Windows
 add_library(DNSSD INTERFACE)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -186,7 +194,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     target_link_libraries(DNSSD INTERFACE dns_sd)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns)
-    set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use installed Bonjour SDK")
+    set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
     mark_as_advanced(FORCE MDNS_SYSTEM_BONJOUR)
     if(MDNS_SYSTEM_BONJOUR)
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
@@ -264,6 +272,8 @@ add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 # PCAP library
 
 if(BUILD_LLDP)
+    # this target means the nmos-cpp libraries can link the same dependency
+    # whether it's based on libpcap or winpcap
     add_library(PCAP INTERFACE)
 
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
