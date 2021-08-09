@@ -166,3 +166,11 @@ class NmosCppConan(ConanFile):
                 #self.cpp_info.components[component_name].requires.extend([(r, "private") for r in values.get("requires_private", [])])
                 self.cpp_info.components[component_name].requires.extend(values.get("requires_private", []))
         _register_components()
+
+        # add nmos-cpp-registry and nmos-cpp-node to the path
+        bin_path = os.path.join(self.package_folder, "bin")
+        if self.settings.os == "Windows":
+            config_install_dir = "Debug" if self.settings.build_type == "Debug" else "Release"
+            bin_path = os.path.join(bin_path, config_install_dir)
+        self.output.info("Appending PATH environment variable: {}".format(bin_path))
+        self.env_info.PATH.append(bin_path)
