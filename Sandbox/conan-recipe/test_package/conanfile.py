@@ -17,5 +17,5 @@ class NmosCppTestPackageConan(ConanFile):
 
     def test(self):
         if not tools.cross_building(self):
-            os.chdir("bin")
-            self.run(".%snmos-cpp-package-test" % os.sep)
+            bin_path = os.path.join("bin", "test_package")
+            self.run(bin_path, run_environment=True)
