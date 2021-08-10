@@ -291,7 +291,20 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release --debug-find -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1" -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build" -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install" -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build" ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja
+            -DCMAKE_BUILD_TYPE=Release
+            --debug-find
+            -DCMAKE_FIND_USE_PACKAGE_ROOT_PATH="0"
+            -DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH="0"
+            -DCMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH="0"
+            -DCMAKE_FIND_USE_PACKAGE_REGISTRY="0"
+            -DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH="0"
+            -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY="0"
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
+            ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: install wsl
@@ -683,7 +696,20 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release --debug-find -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1" -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build" -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install" -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build" ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja
+            -DCMAKE_BUILD_TYPE=Release
+            --debug-find
+            -DCMAKE_FIND_USE_PACKAGE_ROOT_PATH="0"
+            -DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH="0"
+            -DCMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH="0"
+            -DCMAKE_FIND_USE_PACKAGE_REGISTRY="0"
+            -DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH="0"
+            -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY="0"
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
+            ${{ env.CMAKE_EXTRA_ARGS }}'
     
     
     - name: install wsl
