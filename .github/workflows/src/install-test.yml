@@ -10,5 +10,5 @@
     cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
     cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
     buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
-    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1" -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build" "-DCMAKE_PREFIX_PATH=\"${{ env.CMAKE_WORKSPACE }}/install;${{ env.CMAKE_WORKSPACE }}/build\"" ${{ env.CMAKE_EXTRA_ARGS }}'
+    cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1" -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build" -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install" -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build" ${{ env.CMAKE_EXTRA_ARGS }}'
 
