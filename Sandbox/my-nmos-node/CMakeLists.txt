@@ -5,12 +5,6 @@ project(my-nmos-node)
 # This project actually uses the source files of nmos-cpp-node
 set(NMOS_CPP_DIRECTORY "../../Development" CACHE STRING "Path to nmos-cpp/Development directory")
 
-# By default use Conan to acquire dependencies
-set(USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
-if (USE_CONAN)
-    include(${NMOS_CPP_DIRECTORY}/cmake/NmosCppConan.cmake)
-endif()
-
 # Find and use nmos-cpp from its installed location or as a subdirectory
 set(USE_ADD_SUBDIRECTORY OFF CACHE BOOL "Use add_subdirectory() rather than find_package()")
 if (NOT USE_ADD_SUBDIRECTORY)
