@@ -249,7 +249,7 @@ jobs:
     
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
@@ -271,7 +271,7 @@ jobs:
     
     
     - name: install
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
@@ -286,7 +286,7 @@ jobs:
         echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
     
     - name: install test
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
@@ -641,7 +641,7 @@ jobs:
     
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
@@ -663,7 +663,7 @@ jobs:
     
     
     - name: install
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
@@ -678,7 +678,7 @@ jobs:
         echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
     
     - name: install test
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
