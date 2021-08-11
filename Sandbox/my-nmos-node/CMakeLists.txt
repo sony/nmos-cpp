@@ -13,6 +13,12 @@ else()
     add_subdirectory(${NMOS_CPP_DIRECTORY} build-nmos-cpp EXCLUDE_FROM_ALL)
 endif()
 
+# Generate a log file for each configuration of where the most important dependencies have been found
+get_target_property(nmos-cpp_INCLUDE nmos-cpp::nmos-cpp INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(Boost_INCLUDE Boost::boost INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(cpprestsdk_INCLUDE cpprestsdk::cpprest INTERFACE_INCLUDE_DIRECTORIES)
+file(GENERATE OUTPUT my-nmos-node_include-$<LOWER_CASE:$<CONFIG>>.txt CONTENT "${nmos-cpp_INCLUDE};${Boost_INCLUDE};${cpprestsdk_INCLUDE}\n")
+
 # my-nmos-node executable
 
 set(MY_NMOS_NODE_SOURCES

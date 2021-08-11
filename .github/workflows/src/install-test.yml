@@ -18,3 +18,7 @@
         -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
         ${{ env.CMAKE_EXTRA_ARGS }}'
 
+- name: install test log
+  run: |
+    # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
+    cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt

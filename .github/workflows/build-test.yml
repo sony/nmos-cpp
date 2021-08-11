@@ -256,7 +256,6 @@ jobs:
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
-    
     - name: unit test
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
@@ -278,7 +277,6 @@ jobs:
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
         buildWithCMakeArgs: '--target install'
     
-    
     - name: set install test environment variable
       shell: bash
       run: |
@@ -299,6 +297,10 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
             ${{ env.CMAKE_EXTRA_ARGS }}'
     
+    - name: install test log
+      run: |
+        # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
+        cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt
     
     - name: install wsl
       if: runner.os == 'Windows'
@@ -424,7 +426,6 @@ jobs:
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
-    
 
 
   build_and_test_ubuntu_14:
@@ -654,7 +655,6 @@ jobs:
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
-    
     - name: unit test
       run: |
         cd ${{ env.RUNNER_WORKSPACE }}/build/
@@ -676,7 +676,6 @@ jobs:
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
         buildWithCMakeArgs: '--target install'
     
-    
     - name: set install test environment variable
       shell: bash
       run: |
@@ -697,15 +696,19 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
             ${{ env.CMAKE_EXTRA_ARGS }}'
     
+    - name: install test log
+      run: |
+        # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
+        cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt
     
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
-        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
-        Expand-Archive .\ubuntu204.zip .\ubuntu204
-        cd ubuntu204
-        .\ubuntu2004.exe install --root
+        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
+        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
+        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
+        cd ubuntu-1804
+        .\ubuntu1804.exe install --root
     
     - name: AMWA test suite
       shell: bash
@@ -822,7 +825,6 @@ jobs:
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
-    
 
 
   make_badges:
