@@ -7,17 +7,11 @@ set(NMOS_CPP_DIRECTORY "../../Development" CACHE STRING "Path to nmos-cpp/Develo
 
 # Find and use nmos-cpp from its installed location or as a subdirectory
 set(USE_ADD_SUBDIRECTORY OFF CACHE BOOL "Use add_subdirectory() rather than find_package()")
-if (NOT USE_ADD_SUBDIRECTORY)
+if(NOT USE_ADD_SUBDIRECTORY)
     find_package(nmos-cpp REQUIRED)
 else()
     add_subdirectory(${NMOS_CPP_DIRECTORY} build-nmos-cpp EXCLUDE_FROM_ALL)
 endif()
-
-# Generate a log file for each configuration of where the most important dependencies have been found
-get_target_property(nmos-cpp_INCLUDE nmos-cpp::nmos-cpp INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(Boost_INCLUDE Boost::boost INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(cpprestsdk_INCLUDE cpprestsdk::cpprest INTERFACE_INCLUDE_DIRECTORIES)
-file(GENERATE OUTPUT my-nmos-node_include-$<LOWER_CASE:$<CONFIG>>.txt CONTENT "${nmos-cpp_INCLUDE};${Boost_INCLUDE};${cpprestsdk_INCLUDE}\n")
 
 # my-nmos-node executable
 
@@ -44,3 +38,6 @@ target_link_libraries(
     nmos-cpp::compile-settings
     nmos-cpp::nmos-cpp
     )
+
+# Generate a log file for each configuration of where the dependencies have been found
+file(GENERATE OUTPUT my-nmos-node_include-$<LOWER_CASE:$<CONFIG>>.txt CONTENT "$<JOIN:$<REMOVE_DUPLICATES:$<TARGET_PROPERTY:my-nmos-node,INCLUDE_DIRECTORIES>>,\n>")
