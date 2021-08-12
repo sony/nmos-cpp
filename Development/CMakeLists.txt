@@ -4,15 +4,15 @@ cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 project(nmos-cpp)
 
 # enable or disable the example applications
-set(BUILD_EXAMPLES ON CACHE BOOL "Build example applications")
+set(NMOS_CPP_BUILD_EXAMPLES ON CACHE BOOL "Build example applications")
 
 # enable or disable the unit test suite
-set(BUILD_TESTS ON CACHE BOOL "Build test suite application")
+set(NMOS_CPP_BUILD_TESTS ON CACHE BOOL "Build test suite application")
 
 # enable or disable the LLDP support library (lldp)
 # and its additional dependencies
-set(BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
-mark_as_advanced(FORCE BUILD_LLDP)
+set(NMOS_CPP_BUILD_LLDP OFF CACHE BOOL "Build LLDP support library")
+mark_as_advanced(FORCE NMOS_CPP_BUILD_LLDP)
 
 # common config
 include(cmake/NmosCppCommon.cmake)
@@ -23,7 +23,7 @@ include(cmake/NmosCppDependencies.cmake)
 # nmos-cpp libraries
 include(cmake/NmosCppLibraries.cmake)
 
-if(BUILD_EXAMPLES)
+if(NMOS_CPP_BUILD_EXAMPLES)
     # nmos-cpp-node executable
     include(cmake/NmosCppNode.cmake)
 
@@ -31,7 +31,7 @@ if(BUILD_EXAMPLES)
     include(cmake/NmosCppRegistry.cmake)
 endif()
 
-if(BUILD_TESTS)
+if(NMOS_CPP_BUILD_TESTS)
     # nmos-cpp-test executable
     include(cmake/NmosCppTest.cmake)
 endif()

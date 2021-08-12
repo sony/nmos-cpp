@@ -49,9 +49,9 @@ class NmosCppConan(ConanFile):
         # over any system-installed find-module packages
         self._cmake.definitions["CMAKE_FIND_PACKAGE_PREFER_CONFIG"] = True
         # no need to build unit tests
-        self._cmake.definitions["BUILD_TESTS"] = False
+        self._cmake.definitions["NMOS_CPP_BUILD_TESTS"] = False
         # the examples (nmos-cpp-registry and nmos-cpp-node) are useful utilities for users
-        self._cmake.definitions["BUILD_EXAMPLES"] = True
+        self._cmake.definitions["NMOS_CPP_BUILD_EXAMPLES"] = True
         # 'root' CMakeLists.txt is in Development
         self._cmake.configure(source_folder=os.path.join(self._source_subfolder, "Development"))
         return self._cmake

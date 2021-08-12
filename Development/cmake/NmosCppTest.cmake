@@ -23,7 +23,7 @@ set(NMOS_CPP_TEST_CPPREST_TEST_SOURCES
 set(NMOS_CPP_TEST_CPPREST_TEST_HEADERS
     )
 
-if(BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     set(NMOS_CPP_TEST_LLDP_TEST_SOURCES
         lldp/test/lldp_test.cpp
         )
@@ -99,7 +99,7 @@ target_link_libraries(
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
     )
-if(BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     target_link_libraries(
         nmos-cpp-test
         nmos-cpp::lldp

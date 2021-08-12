@@ -102,7 +102,7 @@ list(APPEND NMOS_CPP_TARGETS mdns)
 add_library(nmos-cpp::mdns ALIAS mdns)
 
 # LLDP support library
-if(BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     set(LLDP_SOURCES
         lldp/lldp.cpp
         lldp/lldp_frame.cpp
@@ -1017,7 +1017,7 @@ target_link_libraries(
     nmos-cpp::websocketpp
     nmos-cpp::json_schema_validator
     )
-if(BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     target_link_libraries(
         nmos-cpp PUBLIC
         nmos-cpp::lldp
