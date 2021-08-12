@@ -227,7 +227,7 @@ jobs:
       if: matrix.use_conan == false
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -626,7 +626,7 @@ jobs:
       if: matrix.use_conan == false
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false

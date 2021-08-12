@@ -1,7 +1,7 @@
-set(USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
-mark_as_advanced(FORCE USE_CONAN)
+set(NMOS_CPP_USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
+mark_as_advanced(FORCE NMOS_CPP_USE_CONAN)
 
-if(USE_CONAN)
+if(NMOS_CPP_USE_CONAN)
     include(cmake/NmosCppConan.cmake)
 endif()
 
@@ -28,7 +28,7 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(BUILD_TESTS AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+if(NMOS_CPP_BUILD_TESTS AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # note: to see the output of any failed tests, set CTEST_OUTPUT_ON_FAILURE=1 in the environment
     # and also remember that CMake doesn't add dependencies to the "test" (or "RUN_TESTS") target
     # so after changing code under test, it is important to "make all" (or build "ALL_BUILD")

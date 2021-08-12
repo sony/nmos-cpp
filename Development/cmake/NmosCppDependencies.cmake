@@ -194,9 +194,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     target_link_libraries(DNSSD INTERFACE dns_sd)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns)
-    set(MDNS_SYSTEM_BONJOUR OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
-    mark_as_advanced(FORCE MDNS_SYSTEM_BONJOUR)
-    if(MDNS_SYSTEM_BONJOUR)
+    set(NMOS_CPP_USE_SYSTEM_BONJOUR OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
+    mark_as_advanced(FORCE NMOS_CPP_USE_SYSTEM_BONJOUR)
+    if(NMOS_CPP_USE_SYSTEM_BONJOUR)
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
         set(BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
         set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
@@ -271,7 +271,7 @@ add_library(nmos-cpp::DNSSD ALIAS DNSSD)
 
 # PCAP library
 
-if(BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     # this target means the nmos-cpp libraries can link the same dependency
     # whether it's based on libpcap or winpcap
     add_library(PCAP INTERFACE)
