@@ -18,12 +18,18 @@ Notes:
    - If you're not familiar with CMake, the CMake GUI may be helpful
    - Set the CMake source directory to the [Development](../Development) directory in the nmos-cpp source tree
    - Set the CMake build directory to an appropriate location, e.g. *``<home-dir>``*``/nmos-cpp/Development/build``
-   - Set CMake variables to control building nmos-cpp
+   - Set CMake variables to control building nmos-cpp (some specific options are listed in the table below)
    - On Windows:
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
-     - If not using Conan
-        - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
-   - If not using Conan
+     - <details>
+       <summary>If not using Conan...</summary>
+
+       - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
+
+       </details>
+   - <details>
+     <summary>If not using Conan...</summary>
+
      - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
        - *Either* set ``Boost_DIR`` (PATH) to the location of the installed *BoostConfig.cmake* (since Boost 1.70.0)
        - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_76_0``
@@ -32,8 +38,18 @@ Notes:
        - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed *cpprestsdk-config.cmake*
        - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed *websocketpp-config.cmake*
        - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. *``<home-dir>``*``/cpprestsdk/Release/libs/websocketpp`` to use the copy within the C++ REST SDK source tree
+
+     </details>
 3. Use CMake to generate build/project files, and then build  
    "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
+
+**CMake configuration options**
+
+Cache Variable | Default | Description
+-|-|-
+`NMOS_CPP_BUILD_EXAMPLES` | `ON` | Build example applications
+`NMOS_CPP_BUILD_TESTS` | `ON` | Build test suite application
+`NMOS_CPP_BUILD_USE_CONAN` | `ON` | Use Conan to acquire dependencies
 
 **Windows**
 

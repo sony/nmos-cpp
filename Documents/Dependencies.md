@@ -66,6 +66,8 @@ If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and
 ### Boost C++ Libraries
 
 If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
@@ -111,18 +113,26 @@ sudo ./b2 \
   stage
 ```
 
+</details>
+
 ### WebSocket++
 
 If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
 
 WebSocket++ v0.8.2 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
 Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
 
 (The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
 
+</details>
+
 ### OpenSSL
 
 If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
 It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
@@ -135,9 +145,13 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
    - On Linux distributions, an OpenSSL package may already be available  
      The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
 
+</details>
+
 ### C++ REST SDK
 
 If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
 
 1. Get the source code
    - Clone the [repo](https://github.com/Microsoft/cpprestsdk/) and its submodules, and check out the v2.10.18 tag  
@@ -218,6 +232,8 @@ sudo make install
 ```
 
 (To speed up the build, the make ``-j`` option can be used to utilise multiple processor cores, e.g. ``make -j 4``.)
+
+</details>
 
 ### Modern C++ JSON schema validator
 
