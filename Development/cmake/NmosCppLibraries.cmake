@@ -957,15 +957,15 @@ target_link_libraries(
     )
 target_link_libraries(
     nmos-cpp PUBLIC
-    nmos-cpp::mdns
-    nmos-cpp::slog
-    nmos-cpp::cpprestsdk
     nmos-cpp::nmos_is04_schemas
     nmos-cpp::nmos_is05_schemas
     nmos-cpp::nmos_is08_schemas
     nmos-cpp::nmos_is09_schemas
-    nmos-cpp::Boost
+    nmos-cpp::mdns
+    nmos-cpp::slog
     nmos-cpp::OpenSSL
+    nmos-cpp::cpprestsdk
+    nmos-cpp::Boost
     )
 target_link_libraries(
     nmos-cpp PRIVATE

@@ -115,38 +115,6 @@ sudo ./b2 \
 
 </details>
 
-### WebSocket++
-
-If using Conan, this section can be skipped.
-<details>
-<summary>If not using Conan...</summary>
-
-WebSocket++ v0.8.2 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
-Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
-
-(The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
-
-</details>
-
-### OpenSSL
-
-If using Conan, this section can be skipped.
-<details>
-<summary>If not using Conan...</summary>
-
-The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
-It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
-It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [users of that release are strongly advised to upgrade to OpenSSL 1.1.1](https://www.openssl.org/blog/blog/2018/09/11/release111/).
-
-1. Download and install a recent release
-   Notes:
-   - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.1.1k installer (latest release at the time) has been tested
-   - On Linux distributions, an OpenSSL package may already be available  
-     The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
-
-</details>
-
 ### C++ REST SDK
 
 If using Conan, this section can be skipped.
@@ -235,10 +203,48 @@ sudo make install
 
 </details>
 
+### WebSocket++
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
+
+WebSocket++ v0.8.2 (latest release at the time) is included as a submodule within the C++ REST SDK source tree, so a separate installation is not necessary.
+Note: WebSocket++ v0.5.1 and v0.7.0 have also been tested.
+
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``WEBSOCKETPP_INCLUDE_DIR`` in order to use the included version when building nmos-cpp.)
+
+</details>
+
+### OpenSSL
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
+
+The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
+It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
+It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [users of that release are strongly advised to upgrade to OpenSSL 1.1.1](https://www.openssl.org/blog/blog/2018/09/11/release111/).
+
+1. Download and install a recent release
+   Notes:
+   - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
+     The Win64 OpenSSL v1.1.1k installer (latest release at the time) has been tested
+   - On Linux distributions, an OpenSSL package may already be available  
+     The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
+
+</details>
+
 ### Modern C++ JSON schema validator
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
 
 A copy of the source code necessary to use this library is included in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
 No installation is necessary.
+
+</details>
 
 ### DNS Service Discovery
 
