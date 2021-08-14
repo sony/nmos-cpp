@@ -181,6 +181,51 @@ target_link_libraries(OpenSSL INTERFACE OpenSSL::Crypto OpenSSL::SSL)
 list(APPEND NMOS_CPP_TARGETS OpenSSL)
 add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
+# json schema validator library
+
+set(JSON_SCHEMA_VALIDATOR_SOURCES
+    third_party/nlohmann/json-patch.cpp
+    third_party/nlohmann/json-schema-draft7.json.cpp
+    third_party/nlohmann/json-validator.cpp
+    third_party/nlohmann/json-uri.cpp
+    )
+
+set(JSON_SCHEMA_VALIDATOR_HEADERS
+    third_party/nlohmann/json-patch.hpp
+    third_party/nlohmann/json-schema.hpp
+    third_party/nlohmann/json.hpp
+    )
+
+add_library(
+    json_schema_validator STATIC
+    ${JSON_SCHEMA_VALIDATOR_SOURCES}
+    ${JSON_SCHEMA_VALIDATOR_HEADERS}
+    )
+
+source_group("Source Files" FILES ${JSON_SCHEMA_VALIDATOR_SOURCES})
+source_group("Header Files" FILES ${JSON_SCHEMA_VALIDATOR_HEADERS})
+
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+        target_compile_definitions(
+            json_schema_validator PRIVATE
+            JSON_SCHEMA_BOOST_REGEX
+            )
+    endif()
+endif()
+
+target_link_libraries(
+    json_schema_validator PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(json_schema_validator PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}/third_party>
+    )
+
+list(APPEND NMOS_CPP_TARGETS json_schema_validator)
+add_library(nmos-cpp::json_schema_validator ALIAS json_schema_validator)
+
 # DNS-SD library
 
 # this target means the nmos-cpp libraries can link the same dependency
