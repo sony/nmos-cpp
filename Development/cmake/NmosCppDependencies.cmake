@@ -247,8 +247,7 @@ add_library(nmos-cpp::json_schema_validator ALIAS json_schema_validator)
 # DNS-SD library
 
 # this target means the nmos-cpp libraries can link the same dependency
-# whether it's being picked up as a system library or being built from
-# the patched mDNSResponder sources on Windows
+# even if the DLL stub library is built from the patched sources on Windows
 add_library(DNSSD INTERFACE)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -257,9 +256,15 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     target_link_libraries(DNSSD INTERFACE dns_sd)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # find Bonjour for the mDNS support library (mdns)
-    set(NMOS_CPP_USE_SYSTEM_BONJOUR OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
-    mark_as_advanced(FORCE NMOS_CPP_USE_SYSTEM_BONJOUR)
-    if(NMOS_CPP_USE_SYSTEM_BONJOUR)
+    # on Windows, there are three components involved - the Bonjour service, the client DLL (dnssd.dll), and the DLL stub library (dnssd.lib)
+    # the first two are installed by Bonjour64.msi, which is part of the Bonjour SDK or can be extracted from BonjourPSSetup.exe (print service installer)
+    # the DLL is commonly installed in C:\Windows\System32
+    # the DLL stub library is provided by Bonjour SDK instead of a straightforward import library, and uses LoadLibrary and GetProcAddress to load the DLL
+    # however, the DLL stub library is built with /MT and has a bug which affects DNSServiceRegisterRecord, hence we default to building a patched version
+    # either way, the Bonjour service and the client DLL (dnssd.dll) still need to be installed on the target system
+    set(NMOS_CPP_USE_BONJOUR_SDK OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
+    mark_as_advanced(FORCE NMOS_CPP_USE_BONJOUR_SDK)
+    if(NMOS_CPP_USE_BONJOUR_SDK)
         # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
         set(BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
         set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
