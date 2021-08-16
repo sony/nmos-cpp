@@ -48,7 +48,7 @@ message(STATUS "Using Boost targets ${BOOST_TARGETS}, not Boost libraries ${Boos
 # and also provides a common location to inject some additional compile definitions
 add_library(Boost INTERFACE)
 target_link_libraries(Boost INTERFACE "${BOOST_TARGETS}")
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     # Boost.Uuid needs and therefore auto-links bcrypt by default on Windows since 1.67.0
     # but provides this definition to force that behaviour because if find_package(Boost)
     # found BoostConfig.cmake, the Boost:: targets all define BOOST_ALL_NO_LIB
@@ -254,7 +254,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
     # note: target_include_directories and target_link_directories aren't set, the headers and library are assumed to be installed in the system paths
     target_link_libraries(DNSSD INTERFACE dns_sd)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     # find Bonjour for the mDNS support library (mdns)
     # on Windows, there are three components involved - the Bonjour service, the client DLL (dnssd.dll), and the DLL stub library (dnssd.lib)
     # the first two are installed by Bonjour64.msi, which is part of the Bonjour SDK or can be extracted from BonjourPSSetup.exe (print service installer)
@@ -347,7 +347,7 @@ if(NMOS_CPP_BUILD_LLDP)
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         # find libpcap for the LLDP support library (lldp)
         target_link_libraries(PCAP INTERFACE pcap)
-    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
         # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
         set(PCAP_LIB_DIR "third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
