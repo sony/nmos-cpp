@@ -112,12 +112,15 @@ class NmosCppConan(ConanFile):
                             match_private = re.fullmatch(r"\$<LINK_ONLY:(.+)>", dependency)
                             if match_private:
                                 dependency = match_private.group(1)
-                            # nmos-cpp::, Boost::, cpprestsdk::, websocketpp:: and OpenSSL::
                             if "::" in dependency:
                                 dependency = dependency.replace("nmos-cpp::", "")
                                 # Conan component name cannot be the same as the package name
                                 if dependency == "nmos-cpp":
                                     dependency = "nmos-cpp-lib"
+                                # Conan packages for Boost, cpprestsdk, websocketpp and OpenSSL have component names that match the CMake targets
+                                # json-schema-validator overrides cmake_find_package[_multi] names
+                                elif dependency == "nlohmann_json_schema_validator::nlohmann_json_schema_validator":
+                                    dependency = "json-schema-validator::json-schema-validator"
                                 components[component_name].setdefault("requires" if not match_private else "requires_private", []).append(dependency.lower())
                             else:
                                 components[component_name].setdefault("system_libs", []).append(dependency)
