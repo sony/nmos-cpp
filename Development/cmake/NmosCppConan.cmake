@@ -1,7 +1,6 @@
+# the Conan recipe should use its own wrapper CMakeLists.txt to call include(conanbuildinfo.cmake) and conan_basic_setup()
 # see https://github.com/conan-io/cmake-conan#creating-packages
 if(CONAN_EXPORTED)
-    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    conan_basic_setup()
     return()
 endif()
 

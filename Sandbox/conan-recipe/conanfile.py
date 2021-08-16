@@ -19,12 +19,16 @@ class NmosCppConan(ConanFile):
     # "fPIC" is handled automatically by Conan, injecting CMAKE_POSITION_INDEPENDENT_CODE
     default_options = {"fPIC": True}
 
+    # wrapper CMakeLists.txt to call conan_basic_setup()
+    exports_sources = ["CMakeLists.txt"]
     # use cmake_find_package_multi and prefer config-file packages
     generators = "cmake", "cmake_find_package_multi"
 
     _cmake = None
 
+    # for out-of-source build, cf. wrapper CMakeLists.txt
     _source_subfolder = "source_subfolder"
+    _build_subfolder = "build_subfolder"
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -53,8 +57,8 @@ class NmosCppConan(ConanFile):
         self._cmake.definitions["NMOS_CPP_BUILD_TESTS"] = False
         # the examples (nmos-cpp-registry and nmos-cpp-node) are useful utilities for users
         self._cmake.definitions["NMOS_CPP_BUILD_EXAMPLES"] = True
-        # 'root' CMakeLists.txt is in Development
-        self._cmake.configure(source_folder=os.path.join(self._source_subfolder, "Development"))
+        # out-of-source build
+        self._cmake.configure(build_folder=self._build_subfolder)
         return self._cmake
 
     def build(self):
@@ -67,6 +71,7 @@ class NmosCppConan(ConanFile):
         cmake.install()
         cmake_folder = os.path.join(self.package_folder, "lib", "cmake")
         self._create_components_file_from_cmake_target_file(os.path.join(cmake_folder, "nmos-cpp", "nmos-cpp-targets.cmake"))
+        # remove the project's own generated config-file package
         tools.rmdir(cmake_folder)
 
     # based on abseil recipe
