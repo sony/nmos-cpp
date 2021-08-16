@@ -10,7 +10,7 @@ class NmosCppConan(ConanFile):
     description = "An NMOS C++ Implementation"
     license = "Apache-2.0"
     url = "https://github.com/conan-io/conan-center-index"
-    homepage = "https://github.com/garethsb/nmos-cpp"
+    homepage = "https://github.com/sony/nmos-cpp"
     topics = ("NMOS")
 
     settings = "os", "compiler", "build_type", "arch"

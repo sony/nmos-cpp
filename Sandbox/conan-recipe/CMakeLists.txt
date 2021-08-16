@@ -10,5 +10,6 @@ else()
 endif()
 conan_basic_setup()
 
+# conanfile.py source() method extracts to source_subfolder
 # nmos-cpp top-level CMakeLists.txt is in Development
 add_subdirectory("source_subfolder/Development")
