@@ -163,6 +163,8 @@
     sudo systemctl restart avahi-daemon
     # install Name Service Cache Daemon to speed up repeated mDNS name discovery
     sudo apt-get install -f nscd
+    # force dependency on avahi
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
 - name: force cpprest asio
   if: matrix.force_cpprest_asio == true

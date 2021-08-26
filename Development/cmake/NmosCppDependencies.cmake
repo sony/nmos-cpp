@@ -252,8 +252,27 @@ add_library(DNSSD INTERFACE)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
-    # note: target_include_directories and target_link_directories aren't set, the headers and library are assumed to be installed in the system paths
-    target_link_libraries(DNSSD INTERFACE dns_sd)
+    set(NMOS_CPP_USE_AVAHI OFF CACHE BOOL "Use Avahi compatibility library rather than mDNSResponder")
+    mark_as_advanced(FORCE NMOS_CPP_USE_AVAHI)
+    if(NMOS_CPP_USE_AVAHI)
+        find_package(Avahi REQUIRED)
+        if(NOT Avahi_VERSION)
+            message(STATUS "Found Avahi unknown version")
+        else()
+            message(STATUS "Found Avahi version " ${Avahi_VERSION})
+        endif()
+
+        target_link_libraries(DNSSD INTERFACE Avahi::compat-libdns_sd)
+    else()
+        find_package(DNSSD REQUIRED)
+        if(NOT DNSSD_VERSION)
+            message(STATUS "Found DNSSD unknown version")
+        else()
+            message(STATUS "Found DNSSD version " ${DNSSD_VERSION})
+        endif()
+
+        target_link_libraries(DNSSD INTERFACE DNSSD::DNSSD)
+    endif()
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     # find Bonjour for the mDNS support library (mdns)
     # on Windows, there are three components involved - the Bonjour service, the client DLL (dnssd.dll), and the DLL stub library (dnssd.lib)
@@ -265,16 +284,14 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     set(NMOS_CPP_USE_BONJOUR_SDK OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
     mark_as_advanced(FORCE NMOS_CPP_USE_BONJOUR_SDK)
     if(NMOS_CPP_USE_BONJOUR_SDK)
-        # note: BONJOUR_INCLUDE and BONJOUR_LIB_DIR are now set by default to the location used by the Bonjour SDK Installer (bonjoursdksetup.exe) 3.0.0
-        set(BONJOUR_INCLUDE "$ENV{PROGRAMFILES}/Bonjour SDK/Include" CACHE PATH "Bonjour SDK include directory")
-        set(BONJOUR_LIB_DIR "$ENV{PROGRAMFILES}/Bonjour SDK/Lib/x64" CACHE PATH "Bonjour SDK library directory")
-        set(BONJOUR_LIB dnssd.lib)
+        find_package(DNSSD REQUIRED)
+        if(NOT DNSSD_VERSION)
+            message(STATUS "Found DNSSD unknown version")
+        else()
+            message(STATUS "Found DNSSD version " ${DNSSD_VERSION})
+        endif()
 
-        target_include_directories(DNSSD INTERFACE "${BONJOUR_INCLUDE}")
-
-        # using absolute paths to libraries seems more robust in the long term than separately specifying target_link_directories
-        get_filename_component(BONJOUR_LIB_ABSOLUTE "${BONJOUR_LIB}" ABSOLUTE BASE_DIR "${BONJOUR_LIB_DIR}")
-        target_link_libraries(DNSSD INTERFACE "${BONJOUR_LIB_ABSOLUTE}")
+        target_link_libraries(DNSSD INTERFACE DNSSD::DNSSD)
 
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
         # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
