@@ -266,6 +266,11 @@ On Windows:
 
 The [Avahi](https://www.avahi.org/) project provides a DNS-SD daemon for Linux, and the *avahi-compat-libdns_sd* library which enables applications to use the original Bonjour *dns_sd.h* API to communicate with the Avahi daemon.
 
+For example, to install the Bonjour compatibility library, Name Service Switch module, and Avahi tools on Ubuntu:
+```
+sudo apt-get install -f libavahi-compat-libdnssd-dev libnss-mdns avahi-utils
+```
+
 Alternatively, [Apple's mDNSResponder (also known as ``mdnsd``)](https://opensource.apple.com/tarballs/mDNSResponder/) can itself be built from source for Linux. Version 878.200.35 (latest release at the time) has been tested.
 
 The ``mDNSResponder`` build instructions are quite straightforward. For example, to build and install:
