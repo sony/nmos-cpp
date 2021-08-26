@@ -54,7 +54,7 @@ Cache Variable | Default | Description
 **Windows**
 
 For example, using the Visual Studio 2019 Developer Command Prompt:
-```
+```sh
 cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
@@ -66,7 +66,7 @@ cmake .. ^
 <details>
 <summary>Or if not using Conan...</summary>
 
-```
+```sh
 cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
@@ -83,7 +83,7 @@ cmake .. ^
 
 Then, open and build the generated nmos-cpp Visual Studio Solution, or use CMake's build tool mode:
 
-```
+```sh
 cmake --build . --config <Debug-or-Release>
 ```
 
@@ -91,7 +91,7 @@ cmake --build . --config <Debug-or-Release>
 
 For example, using the default toolchain and dependencies:
 
-```
+```sh
 cd <home-dir>/nmos-cpp/Development
 mkdir build
 cd build
@@ -103,7 +103,7 @@ make
 <details>
 <summary>Or if not using Conan...</summary>
 
-```
+```sh
 cd <home-dir>/nmos-cpp/Development
 mkdir build
 cd build
@@ -148,14 +148,14 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is a P
 
 Having cloned the GitHub repository, install required dependencies with pip:
 
-```
+```sh
 cd nmos-testing
 python3 -m pip install -r requirements.txt
 ```
 
 Then, launch the web service:
 
-```
+```sh
 python3 nmos-test.py
 ```
 
@@ -167,7 +167,7 @@ There are several test suites for NMOS Nodes which can be run from the web servi
 
 For example, to test **nmos-cpp-node**, try:
 
-```
+```sh
 nmos-cpp-node "{\"http_port\":8080}"
 ```
 
@@ -179,7 +179,7 @@ There are also test suites for NMOS Registries.
 
 For example, to test **nmos-cpp-registry**, try:
 
-```
+```sh
 nmos-cpp-registry "{\"http_port\":1080}"
 ```
 
@@ -195,7 +195,7 @@ Note: Depending on the current user permissions, installing nmos-cpp may need ad
 
 Build the INSTALL project in the generated nmos-cpp Visual Studio Solution, or use CMake's build tool mode:
 
-```
+```sh
 cd <home-dir>/nmos-cpp/Development/build
 cmake --build . --target INSTALL --config <Debug-or-Release>
 ```
@@ -204,7 +204,7 @@ cmake --build . --target INSTALL --config <Debug-or-Release>
 
 Use the generated `install` rule:
 
-```
+```sh
 cd <home-dir>/nmos-cpp/Development/build
 make install
 ```

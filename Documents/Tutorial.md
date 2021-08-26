@@ -194,7 +194,7 @@ A few settings may be changed dynamically by PATCH to **/settings/all** on the e
 
 For example:
 
-```
+```sh
 curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
 curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -T config.json
 ```
