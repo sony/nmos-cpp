@@ -198,6 +198,8 @@ jobs:
           mkdir -p /var/run/nscd
           nscd
         fi
+        # force dependency on mDNSResponder
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu non-conan setup
       if: runner.os == 'Linux' && matrix.use_conan == false
@@ -599,6 +601,8 @@ jobs:
           mkdir -p /var/run/nscd
           nscd
         fi
+        # force dependency on mDNSResponder
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu non-conan setup
       if: runner.os == 'Linux' && matrix.use_conan == false

@@ -280,6 +280,8 @@ make os=linux
 sudo make os=linux install
 ```
 
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``NMOS_CPP_USE_AVAHI`` (BOOL) to ``0`` (false) in order to use ``mDNSResponder`` when building nmos-cpp.)
+
 Notes:
 - The [unicast](../Development/third_party/mDNSResponder/unicast.patch) and [permit-over-long-service-types](../Development/third_party/mDNSResponder/permit-over-long-service-types.patch) patches found in this repository is recommended to build the ``mdnsd`` daemon on Linux in order to support unicast DNS-SD.
   ```sh

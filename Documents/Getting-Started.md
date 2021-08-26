@@ -50,6 +50,7 @@ Cache Variable | Default | Description
 `NMOS_CPP_BUILD_EXAMPLES` | `ON` | Build example applications
 `NMOS_CPP_BUILD_TESTS` | `ON` | Build test suite application
 `NMOS_CPP_USE_CONAN` | `ON` | Use Conan to acquire dependencies
+`NMOS_CPP_USE_AVAHI` | `ON` | Use Avahi compatibility library rather than mDNSResponder
 
 **Windows**
 
