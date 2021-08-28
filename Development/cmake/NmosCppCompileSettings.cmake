@@ -38,8 +38,7 @@ elseif(MSVC)
     # see https://cmake.org/cmake/help/latest/policy/CMP0092.html
     target_compile_options(compile-settings INTERFACE /W4)
     target_compile_options(compile-settings INTERFACE "$<BUILD_INTERFACE:/FI${CMAKE_CURRENT_SOURCE_DIR}/detail/vc_disable_warnings.h>")
-    get_filename_component(NMOS_CPP_INSTALL_INCLUDEDIR_ABSOLUTE "${NMOS_CPP_INSTALL_INCLUDEDIR}" ABSOLUTE BASE_DIR "${CMAKE_INSTALL_PREFIX}")
-    target_compile_options(compile-settings INTERFACE "$<INSTALL_INTERFACE:/FI${NMOS_CPP_INSTALL_INCLUDEDIR_ABSOLUTE}/detail/vc_disable_warnings.h>")
+    target_compile_options(compile-settings INTERFACE "$<INSTALL_INTERFACE:/FI$<INSTALL_PREFIX>/${NMOS_CPP_INSTALL_INCLUDEDIR}/detail/vc_disable_warnings.h>")
 
     set(COMPILE_SETTINGS_DETAIL_HEADERS
         detail/vc_disable_dll_warnings.h
