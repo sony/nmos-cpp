@@ -46,6 +46,9 @@ class NmosCppConan(ConanFile):
         self.requires("openssl/1.1.1k")
         self.requires("json-schema-validator/2.1.0")
 
+    def build_requirements(self):
+        self.build_requires("cmake/[>3.17]")
+
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
                   destination=self._source_subfolder, strip_root=True)
@@ -97,17 +100,20 @@ class NmosCppConan(ConanFile):
             # Conan component name cannot be the same as the package name
             if component_name == "nmos-cpp":
                 component_name = "nmos-cpp-lib"
-            lib_name = cmake_target_nonamespace
-            # hmm, where is this info?
-            # set_property(TARGET Bonjour PROPERTY OUTPUT_NAME dnssd)
-            if lib_name == "Bonjour":
-                lib_name = "dnssd"
 
             components.setdefault(component_name, {"cmake_target": cmake_target_nonamespace})
 
             if cmake_function_name == "add_library":
                 cmake_imported_target_type = cmake_function_args[1]
                 if cmake_imported_target_type in ["STATIC", "SHARED"]:
+                    # library filenames are based on the target name by default
+                    lib_name = cmake_target_nonamespace
+                    # the filename may be changed by a straightforward command:
+                    # set_property(TARGET Bonjour PROPERTY OUTPUT_NAME dnssd)
+                    # but we'd have to read the nmos-cpp-targets-<config>.cmake files
+                    # and parse the IMPORTED_LOCATION_<CONFIG> values
+                    if lib_name == "Bonjour":
+                        lib_name = "dnssd"
                     components[component_name]["libs"] = [lib_name]
             elif cmake_function_name == "set_target_properties":
                 target_properties = re.findall(r"(?P<property>INTERFACE_[A-Z_]+)[\n|\s]+\"(?P<values>.+)\"", cmake_function_args[2])
@@ -126,7 +132,7 @@ class NmosCppConan(ConanFile):
                                 # Conan component name cannot be the same as the package name
                                 if dependency == "nmos-cpp":
                                     dependency = "nmos-cpp-lib"
-                                # Conan packages for Boost, cpprestsdk, websocketpp and OpenSSL have component names that match the CMake targets
+                                # Conan packages for Boost, cpprestsdk, websocketpp and OpenSSL have component names that (except for being lowercase) match the CMake targets
                                 # json-schema-validator overrides cmake_find_package[_multi] names
                                 elif dependency == "nlohmann_json_schema_validator::nlohmann_json_schema_validator":
                                     dependency = "json-schema-validator::json-schema-validator"
