@@ -49,6 +49,10 @@ class NmosCppConan(ConanFile):
     def build_requirements(self):
         self.build_requires("cmake/[>3.17]")
 
+    def validate(self):
+        if self.settings.compiler.get_safe("cppstd"):
+            tools.check_min_cppstd(self, 11)
+
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
                   destination=self._source_subfolder, strip_root=True)
@@ -137,14 +141,26 @@ class NmosCppConan(ConanFile):
                                 elif dependency == "nlohmann_json_schema_validator::nlohmann_json_schema_validator":
                                     dependency = "json-schema-validator::json-schema-validator"
                                 components[component_name].setdefault("requires" if not match_private else "requires_private", []).append(dependency.lower())
+                            elif "${_IMPORT_PREFIX}/lib/" in dependency:
+                                self.output.warn("{} recipe does not handle {} {} (yet)".format(self.name, property_type, dependency))
                             else:
                                 components[component_name].setdefault("system_libs", []).append(dependency)
                     elif property_type == "INTERFACE_COMPILE_DEFINITIONS":
                         for property_value in property_values:
                             components[component_name].setdefault("defines", []).append(property_value)
+                    elif property_type == "INTERFACE_COMPILE_FEATURES":
+                        for property_value in property_values:
+                            if property_value not in ["cxx_std_11"]:
+                                self.output.warn("{} recipe does not handle {} {} (yet)".format(self.name, property_type, property_value))
                     elif property_type == "INTERFACE_COMPILE_OPTIONS":
                         for property_value in property_values:
+                            # handle forced include (Visual Studio /FI, gcc -include) by relying on includedirs containing "include"
+                            property_value = property_value.replace("${_IMPORT_PREFIX}/include/", "")
                             components[component_name].setdefault("cxxflags", []).append(property_value)
+                    elif property_type == "INTERFACE_INCLUDE_DIRECTORIES":
+                        for property_value in property_values:
+                            if property_value not in ["${_IMPORT_PREFIX}/include"]:
+                                self.output.warn("{} recipe does not handle {} {} (yet)".format(self.name, property_type, property_value))
                     elif property_type == "INTERFACE_LINK_OPTIONS":
                         for property_value in property_values:
                             # workaround required because otherwise "/ignore:4099" gets converted to "\ignore:4099.obj"
@@ -155,6 +171,8 @@ class NmosCppConan(ConanFile):
                             # and https://docs.microsoft.com/en-us/cpp/build/reference/linking?view=msvc-160#command-line
                             property_value = re.sub(r"^/", r"-", property_value)
                             components[component_name].setdefault("linkflags", []).append(property_value)
+                    else:
+                        self.output.warn("{} recipe does not handle {} (yet)".format(self.name, property_type))
 
         # Save components informations in json file
         with open(self._components_helper_filepath, "w") as json_file:
