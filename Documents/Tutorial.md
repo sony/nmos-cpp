@@ -18,7 +18,7 @@ Run the **nmos-cpp-registry** application. Configuration parameters may be passe
 The provided [nmos-cpp-registry/config.json](../Development/nmos-cpp-registry/config.json) may be used as a starting point, or refer directly to the source code in [nmos/settings.h](../Development/nmos/settings.h).
 Note: C++/JavaScript-style single and multi-line comments are permitted and ignored in nmos-cpp config files.
 
-For example, to launch the application without verbose logging, try ``nmos-cpp-registry config.json`` with a file config.json like:
+For example, to launch the application without verbose logging, try ``nmos-cpp-registry config.json`` with a file *config.json* like:
 
 ```json
 {
@@ -61,7 +61,7 @@ When running more than one nmos-cpp application on the same host, configuration 
 There are several APIs to consider, so for brevity, the default port for _all_ the APIs can be overridden by using the ``"http_port"`` parameter.
 (WebSocket APIs are served separately so ``"events_ws_port"`` must also be specified when running multiple nmos-cpp-node instances.)
 
-For example, for the first Node, try ``nmos-cpp-node config.json`` with a file config.json like:
+For example, for the first Node, try ``nmos-cpp-node config.json`` with a file *config.json* like:
 
 ```json
 {
@@ -194,7 +194,7 @@ A few settings may be changed dynamically by PATCH to **/settings/all** on the e
 
 For example:
 
-```
+```sh
 curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -d "{\"logging_level\":-40}"
 curl -X PATCH -H "Content-Type: application/json" http://localhost:3209/settings/all -T config.json
 ```

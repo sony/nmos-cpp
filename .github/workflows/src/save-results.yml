@@ -15,4 +15,3 @@
   with:
     name: ${{ env.BUILD_NAME }}_results
     path: ${{ runner.workspace }}/nmos-testing/results
-

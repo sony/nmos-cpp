@@ -5,7 +5,7 @@
     conan config set general.revisions_enabled=1
 
 - name: install cmake
-  uses: lukka/get-cmake@v3.18.3
+  uses: lukka/get-cmake@v3.21.1
 
 - name: setup bash path
   working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -121,6 +121,8 @@
       mkdir -p /var/run/nscd
       nscd
     fi
+    # force dependency on mDNSResponder
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"0\"" >> $GITHUB_ENV
 
 - name: ubuntu non-conan setup
   if: runner.os == 'Linux' && matrix.use_conan == false
@@ -137,7 +139,7 @@
       libssl-dev
 
     cd ${{ env.RUNNER_WORKSPACE }}
-    git clone --recurse-submodules --branch v2.10.16 https://github.com/Microsoft/cpprestsdk
+    git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
     cd cpprestsdk/Release
     mkdir build
     cd build
@@ -150,7 +152,7 @@
   if: matrix.use_conan == false
   shell: bash
   run: |
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
 
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -163,6 +165,8 @@
     sudo systemctl restart avahi-daemon
     # install Name Service Cache Daemon to speed up repeated mDNS name discovery
     sudo apt-get install -f nscd
+    # force dependency on avahi
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
 - name: force cpprest asio
   if: matrix.force_cpprest_asio == true
