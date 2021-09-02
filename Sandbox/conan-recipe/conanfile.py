@@ -11,7 +11,7 @@ class NmosCppConan(ConanFile):
     license = "Apache-2.0"
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://github.com/sony/nmos-cpp"
-    topics = ("NMOS")
+    topics = ("amwa", "nmos", "is-04", "is-05", "is-07", "is-08", "is-09", "broadcasting", "network", "media")
 
     settings = "os", "compiler", "build_type", "arch"
     # for now, no "shared" option support
@@ -31,8 +31,13 @@ class NmosCppConan(ConanFile):
     _cmake = None
 
     # for out-of-source build, cf. wrapper CMakeLists.txt
-    _source_subfolder = "source_subfolder"
-    _build_subfolder = "build_subfolder"
+    @property
+    def _source_subfolder(self):
+        return "source_subfolder"
+
+    @property
+    def _build_subfolder(self):
+        return "build_subfolder"
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -43,7 +48,7 @@ class NmosCppConan(ConanFile):
         self.requires("boost/1.76.0")
         self.requires("cpprestsdk/2.10.18")
         self.requires("websocketpp/0.8.2")
-        self.requires("openssl/1.1.1k")
+        self.requires("openssl/1.1.1l")
         self.requires("json-schema-validator/2.1.0")
 
     def build_requirements(self):
@@ -90,9 +95,7 @@ class NmosCppConan(ConanFile):
     def _create_components_file_from_cmake_target_file(self, target_file_path):
         components = {}
 
-        target_file = open(target_file_path, "r")
-        target_content = target_file.read()
-        target_file.close()
+        target_content = tools.load(target_file_path)
 
         cmake_functions = re.findall(r"(?P<func>add_library|set_target_properties)[\n|\s]*\([\n|\s]*(?P<args>[^)]*)\)", target_content)
         for (cmake_function_name, cmake_function_args) in cmake_functions:
