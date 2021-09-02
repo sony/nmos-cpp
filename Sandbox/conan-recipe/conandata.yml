@@ -4,5 +4,3 @@ sources:
     url: "https://github.com/sony/nmos-cpp/archive/<last-commit-id-on-YYYYMMDD>.tar.gz"
   "sony.master":
     url: "https://github.com/sony/nmos-cpp/archive/master.tar.gz"
-  "garethsb.library-cmake":
-    url: "https://github.com/garethsb/nmos-cpp/archive/library-cmake.tar.gz"
