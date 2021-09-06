@@ -115,7 +115,7 @@ namespace impl
     std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many);
 
     // add a helpful suffix to the label of a sub-resource for the example node
-    void set_label(nmos::resource& resource, const port& port, int index);
+    void set_label_description(nmos::resource& resource, const port& port, int index);
 
     // add an example "natural grouping" hint to a sender or receiver
     void insert_group_hint(nmos::resource& resource, const port& port, int index);
@@ -254,7 +254,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 source = nmos::make_mux_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
             }
-            impl::set_label(source, port, index);
+            impl::set_label_description(source, port, index);
 
             nmos::resource flow;
             if (impl::ports::video == port)
@@ -292,14 +292,14 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 // add optional grain_rate
                 flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
             }
-            impl::set_label(flow, port, index);
+            impl::set_label_description(flow, port, index);
 
             // set_transportfile needs to find the matching source and flow for the sender, so insert these first
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
             auto sender = nmos::make_sender(sender_id, flow_id, device_id, interface_names, model.settings);
-            impl::set_label(sender, port, index);
+            impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
             auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
@@ -391,7 +391,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
-            impl::set_label(receiver, port, index);
+            impl::set_label_description(receiver, port, index);
             impl::insert_group_hint(receiver, port, index);
 
             auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
@@ -465,15 +465,15 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
             // grain_rate is not set because these events are aperiodic
             auto source = nmos::make_data_source(source_id, device_id, {}, event_type, model.settings);
-            impl::set_label(source, port, index);
+            impl::set_label_description(source, port, index);
 
             auto events_source = nmos::make_events_source(source_id, events_state, events_type);
 
             auto flow = nmos::make_json_data_flow(flow_id, source_id, device_id, event_type, model.settings);
-            impl::set_label(flow, port, index);
+            impl::set_label_description(flow, port, index);
 
             auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::websocket, device_id, {}, { host_interface.name }, model.settings);
-            impl::set_label(sender, port, index);
+            impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
             // initialize this sender enabled, just to enable the IS-07-02 test suite to run immediately
@@ -520,7 +520,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
 
             auto receiver = nmos::make_data_receiver(receiver_id, device_id, nmos::transports::websocket, { host_interface.name }, nmos::media_types::application_json, { event_type }, model.settings);
-            impl::set_label(receiver, port, index);
+            impl::set_label_description(receiver, port, index);
             impl::insert_group_hint(receiver, port, index);
 
             auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
@@ -643,7 +643,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         }));
 
         auto source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
-        impl::set_label(source, impl::ports::audio, how_many);
+        impl::set_label_description(source, impl::ports::audio, how_many);
 
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
     }
@@ -781,11 +781,8 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
             // in either Registration API behaviour or the senders' /transportfile endpoints until
             // an update to these is forced by other circumstances
 
-            // tags is too common using in the model.settings, rename tags to system_tags for the system global's tags
-            auto system_global_data = nmos::parse_system_global_data(system_global).second;
-            system_global_data[nmos::experimental::fields::system_tags] = !nmos::fields::tags(system_global_data).empty() ? system_global_data.at(nmos::fields::tags) : web::json::value::object();
-            system_global_data.erase(nmos::fields::tags);
-            web::json::merge_patch(model.settings, system_global_data, true);
+            auto system_global_settings = nmos::parse_system_global_data(system_global).second;
+            web::json::merge_patch(model.settings, system_global_settings, true);
         }
         else
         {
@@ -1026,14 +1023,19 @@ namespace impl
     }
 
     // add a helpful suffix to the label of a sub-resource for the example node
-    void set_label(nmos::resource& resource, const impl::port& port, int index)
+    void set_label_description(nmos::resource& resource, const impl::port& port, int index)
     {
         using web::json::value;
 
         auto label = nmos::fields::label(resource.data);
         if (!label.empty()) label += U('/');
         label += resource.type.name + U('/') + port.name + utility::conversions::details::to_string_t(index);
-        resource.data[nmos::fields::label] = resource.data[nmos::fields::description] = value::string(label);
+        resource.data[nmos::fields::label] = value::string(label);
+
+        auto description = nmos::fields::description(resource.data);
+        if (!description.empty()) description += U('/');
+        description += resource.type.name + U('/') + port.name + utility::conversions::details::to_string_t(index);
+        resource.data[nmos::fields::description] = value::string(description);
     }
 
     // add an example "natural grouping" hint to a sender or receiver

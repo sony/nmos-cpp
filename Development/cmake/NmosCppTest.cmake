@@ -1,14 +1,7 @@
-# CMake instructions for making the nmos-cpp test program
-
-# caller can set NMOS_CPP_DIR if the project is different
-if (NOT DEFINED NMOS_CPP_DIR)
-    set (NMOS_CPP_DIR ${PROJECT_SOURCE_DIR})
-endif()
-
-# nmos-cpp-test
+# nmos-cpp-test executable
 
 set(NMOS_CPP_TEST_SOURCES
-    ${NMOS_CPP_DIR}/nmos-cpp-test/main.cpp
+    nmos-cpp-test/main.cpp
     )
 set(NMOS_CPP_TEST_HEADERS
     )
@@ -16,49 +9,50 @@ set(NMOS_CPP_TEST_HEADERS
 set(NMOS_CPP_TEST_BST_TEST_SOURCES
     )
 set(NMOS_CPP_TEST_BST_TEST_HEADERS
-    ${NMOS_CPP_DIR}/bst/test/test.h
+    bst/test/test.h
     )
 
 set(NMOS_CPP_TEST_CPPREST_TEST_SOURCES
-    ${NMOS_CPP_DIR}/cpprest/test/api_router_test.cpp
-    ${NMOS_CPP_DIR}/cpprest/test/http_utils_test.cpp
-    ${NMOS_CPP_DIR}/cpprest/test/json_utils_test.cpp
-    ${NMOS_CPP_DIR}/cpprest/test/json_visit_test.cpp
-    ${NMOS_CPP_DIR}/cpprest/test/regex_utils_test.cpp
-    ${NMOS_CPP_DIR}/cpprest/test/ws_listener_test.cpp
+    cpprest/test/api_router_test.cpp
+    cpprest/test/http_utils_test.cpp
+    cpprest/test/json_utils_test.cpp
+    cpprest/test/json_visit_test.cpp
+    cpprest/test/regex_utils_test.cpp
+    cpprest/test/ws_listener_test.cpp
     )
 set(NMOS_CPP_TEST_CPPREST_TEST_HEADERS
     )
 
-if (BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     set(NMOS_CPP_TEST_LLDP_TEST_SOURCES
-        ${NMOS_CPP_DIR}/lldp/test/lldp_test.cpp
+        lldp/test/lldp_test.cpp
         )
     set(NMOS_CPP_TEST_LLDP_TEST_HEADERS
         )
 endif()
 
 set(NMOS_CPP_TEST_MDNS_TEST_SOURCES
-    ${NMOS_CPP_DIR}/mdns/test/core_test.cpp
-    ${NMOS_CPP_DIR}/mdns/test/mdns_test.cpp
+    mdns/test/core_test.cpp
+    mdns/test/mdns_test.cpp
     )
 set(NMOS_CPP_TEST_MDNS_TEST_HEADERS
     )
 
 set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
-    ${NMOS_CPP_DIR}/nmos/test/api_utils_test.cpp
-    ${NMOS_CPP_DIR}/nmos/test/channels_test.cpp
-    ${NMOS_CPP_DIR}/nmos/test/did_sdid_test.cpp
-    ${NMOS_CPP_DIR}/nmos/test/event_type_test.cpp
-    ${NMOS_CPP_DIR}/nmos/test/json_validator_test.cpp
-    ${NMOS_CPP_DIR}/nmos/test/paging_utils_test.cpp
-    ${NMOS_CPP_DIR}/nmos/test/query_api_test.cpp
+    nmos/test/api_utils_test.cpp
+    nmos/test/channels_test.cpp
+    nmos/test/did_sdid_test.cpp
+    nmos/test/event_type_test.cpp
+    nmos/test/json_validator_test.cpp
+    nmos/test/paging_utils_test.cpp
+    nmos/test/query_api_test.cpp
+    nmos/test/system_resources_test.cpp
     )
 set(NMOS_CPP_TEST_NMOS_TEST_HEADERS
     )
 
 set(NMOS_CPP_TEST_SDP_TEST_SOURCES
-    ${NMOS_CPP_DIR}/sdp/test/sdp_test.cpp
+    sdp/test/sdp_test.cpp
     )
 set(NMOS_CPP_TEST_SDP_TEST_HEADERS
     )
@@ -99,27 +93,24 @@ source_group("sdp\\test\\Header Files" FILES ${NMOS_CPP_TEST_SDP_TEST_HEADERS})
 
 target_link_libraries(
     nmos-cpp-test
-    nmos-cpp_static
-    mdns_static
-    ${CPPRESTSDK_TARGET}
-    ${PLATFORM_LIBS}
-    ${Boost_LIBRARIES}
+    nmos-cpp::compile-settings
+    nmos-cpp::nmos-cpp
+    nmos-cpp::mdns
+    nmos-cpp::cpprestsdk
+    nmos-cpp::Boost
     )
-if (BUILD_LLDP)
+if(NMOS_CPP_BUILD_LLDP)
     target_link_libraries(
         nmos-cpp-test
-        lldp_static
+        nmos-cpp::lldp
         )
 endif()
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # Conan packages usually don't include PDB files so suppress the resulting warning
-    set_target_properties(
-        nmos-cpp-test
-        PROPERTIES
-        LINK_FLAGS "/ignore:4099"
-        )
-endif()
+# root directory to find e.g. bst/test/test.h
+# third_party to find e.g. catch/catch.hpp
+target_include_directories(nmos-cpp-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+    )
 
 include(Catch)
 

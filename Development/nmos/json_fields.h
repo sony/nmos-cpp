@@ -224,8 +224,8 @@ namespace nmos
         const web::json::field_as_value ptp{ U("ptp") };
         const web::json::field_as_integer announce_receipt_timeout{ U("announce_receipt_timeout") }; // 2..10, typically 3
         const web::json::field_as_integer domain_number{ U("domain_number") }; // 0..127
-        const web::json::field_as_value syslog{ U("syslog") };
-        const web::json::field_as_value syslogv2{ U("syslogv2") };
+        const web::json::field_as_value_or syslog{ U("syslog"), {} };
+        const web::json::field_as_value_or syslogv2{ U("syslogv2"), {} };
         const web::json::field_as_string hostname{ U("hostname") }; // hostname, ipv4 or ipv6
         const web::json::field_as_integer port{ U("port") }; // 1..65535
     }

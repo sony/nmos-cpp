@@ -18,64 +18,81 @@ Notes:
    - If you're not familiar with CMake, the CMake GUI may be helpful
    - Set the CMake source directory to the [Development](../Development) directory in the nmos-cpp source tree
    - Set the CMake build directory to an appropriate location, e.g. *``<home-dir>``*``/nmos-cpp/Development/build``
-   - Set CMake variables to control building nmos-cpp
+   - Set CMake variables to control building nmos-cpp (some specific options are listed in the table below)
    - On Windows:
      - Set ``CMAKE_CONFIGURATION_TYPES`` (STRING) to ``Debug;Release`` to build only those configurations
-     - If not using Conan
-        - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
-   - If not using Conan
+     - <details>
+       <summary>If not using Conan...</summary>
+
+       - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
+
+       </details>
+   - <details>
+     <summary>If not using Conan...</summary>
+
      - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
-       - Set ``BOOST_INCLUDEDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0`` to match the suggested ``b2`` command
-       - Set ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full path, e.g. *``<home-dir>``*``/boost_1_75_0/x64/lib`` to match the suggested ``b2`` command
+       - *Either* set ``Boost_DIR`` (PATH) to the location of the installed *BoostConfig.cmake* (since Boost 1.70.0)
+       - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_76_0``
+         and *``<home-dir>``*``/boost_1_76_0/x64/lib`` respectively to match the suggested ``b2`` command
      - If CMake cannot find them automatically, set hints for finding the C++ REST SDK and WebSocket++, for example:
-       - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed cpprestsdk-config.cmake
-       - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed websocketpp-config.cmake
+       - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed *cpprestsdk-config.cmake*
+       - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed *websocketpp-config.cmake*
        - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. *``<home-dir>``*``/cpprestsdk/Release/libs/websocketpp`` to use the copy within the C++ REST SDK source tree
-3. Use CMake to generate build/project files, and then build
+
+     </details>
+3. Use CMake to generate build/project files, and then build  
    "Visual Studio 14 2015 Win64" and more recent Visual Studio generators have been tested
+
+**CMake configuration options**
+
+Cache Variable | Default | Description
+-|-|-
+`NMOS_CPP_BUILD_EXAMPLES` | `ON` | Build example applications
+`NMOS_CPP_BUILD_TESTS` | `ON` | Build test suite application
+`NMOS_CPP_USE_CONAN` | `ON` | Use Conan to acquire dependencies
+`NMOS_CPP_USE_AVAHI` | `ON` | Use Avahi compatibility library rather than mDNSResponder
 
 **Windows**
 
-For example, for Visual Studio 2017:
-```
+For example, using the Visual Studio 2019 Developer Command Prompt:
+```sh
 cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 15 2017 Win64" ^
+  -G "Visual Studio 16 2019" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release"
 ```
 
 <details>
 <summary>Or if not using Conan...</summary>
 
-```
+```sh
 cd <home-dir>\nmos-cpp\Development
 mkdir build
 cd build
 cmake .. ^
-  -G "Visual Studio 15 2017 Win64" ^
+  -G "Visual Studio 16 2019" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_75_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_75_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_76_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_76_0/x64/lib" ^
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
 ```
 
 </details>
 
-Then, open and build the generated nmos-cpp Visual Studio Solution.
+Then, open and build the generated nmos-cpp Visual Studio Solution, or use CMake's build tool mode:
 
-Or on the Developer command line:
-```
-msbuild nmos-cpp.sln /p:Configuration=<Debug-or-Release>
+```sh
+cmake --build . --config <Debug-or-Release>
 ```
 
 **Linux**
 
 For example, using the default toolchain and dependencies:
 
-```
+```sh
 cd <home-dir>/nmos-cpp/Development
 mkdir build
 cd build
@@ -87,7 +104,7 @@ make
 <details>
 <summary>Or if not using Conan...</summary>
 
-```
+```sh
 cd <home-dir>/nmos-cpp/Development
 mkdir build
 cd build
@@ -132,14 +149,14 @@ The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is a P
 
 Having cloned the GitHub repository, install required dependencies with pip:
 
-```
+```sh
 cd nmos-testing
 python3 -m pip install -r requirements.txt
 ```
 
 Then, launch the web service:
 
-```
+```sh
 python3 nmos-test.py
 ```
 
@@ -151,7 +168,7 @@ There are several test suites for NMOS Nodes which can be run from the web servi
 
 For example, to test **nmos-cpp-node**, try:
 
-```
+```sh
 nmos-cpp-node "{\"http_port\":8080}"
 ```
 
@@ -163,13 +180,49 @@ There are also test suites for NMOS Registries.
 
 For example, to test **nmos-cpp-registry**, try:
 
-```
+```sh
 nmos-cpp-registry "{\"http_port\":1080}"
 ```
 
 Check it is running by opening http://localhost:1080/ in a browser.
 
 Then try running the "IS-04 Registry APIs" test suites from the web service.
+
+## Installing nmos-cpp
+
+Note: Depending on the current user permissions, installing nmos-cpp may need administrator privileges.
+
+**Windows**
+
+Build the INSTALL project in the generated nmos-cpp Visual Studio Solution, or use CMake's build tool mode:
+
+```sh
+cd <home-dir>/nmos-cpp/Development/build
+cmake --build . --target INSTALL --config <Debug-or-Release>
+```
+
+**Linux**
+
+Use the generated `install` rule:
+
+```sh
+cd <home-dir>/nmos-cpp/Development/build
+make install
+```
+
+Using installed nmos-cpp in another CMake project is now simple:
+
+```cmake
+cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
+project(my-nmos-node)
+
+find_package(nmos-cpp REQUIRED)
+
+add_executable(my-nmos-node main.cpp)
+target_link_libraries(my-nmos-node nmos-cpp::nmos-cpp)
+```
+
+For a complete example, see [Sandbox/my-nmos-node](../Sandbox/my-nmos-node).
 
 ## What Next?
 

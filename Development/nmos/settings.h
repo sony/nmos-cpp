@@ -295,7 +295,7 @@ namespace nmos
             // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/2.1._APIs_-_Common_Keys.html#tags
             const web::json::field_as_value_or system_tags{ U("system_tags"), web::json::value::object() };
 
-            // "syslog contains hostname and port for the system’s syslog “version 1” server using the UDP transport (IETF RFC 5246)"
+            // "syslog contains hostname and port for the system's syslog "version 1" server using the UDP transport (IETF RFC 5246)"
             // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
 
             // system_syslog_host_name [registry]: the fully-qualified host name or the IP address of the system's syslog "version 1" server
@@ -304,7 +304,7 @@ namespace nmos
             // system_syslog_port [registry]: the port number for the system's syslog "version 1" server
             const web::json::field_as_integer_or system_syslog_port{ U("system_syslog_port"), 514 };
 
-            // "syslogv2 contains hostname and port for the system’s syslog “version 2” server using the TLS transport (IETF RFC 5245)"
+            // "syslogv2 contains hostname and port for the system's syslog "version 2" server using the TLS transport (IETF RFC 5245)"
             // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
 
             // system_syslogv2_host_name [registry]: the fully-qualified host name or the IP address of the system's syslog "version 2" server

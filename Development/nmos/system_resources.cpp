@@ -4,24 +4,33 @@
 #include "nmos/is09_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/json_fields.h"
+#include "nmos/json_schema.h"
 #include "nmos/resource.h"
 
 namespace nmos
 {
+    namespace details
+    {
+        static const web::json::experimental::json_validator& system_validator()
+        {
+            // hmm, could be based on supported API versions from settings, like other APIs' validators?
+            static const web::json::experimental::json_validator validator
+            {
+                nmos::experimental::load_json_schema,
+                boost::copy_range<std::vector<web::uri>>(is09_versions::all | boost::adaptors::transformed(experimental::make_systemapi_global_schema_uri))
+            };
+            return validator;
+        }
+    }
+
     nmos::resource make_system_global(const nmos::id& id, const nmos::settings& settings)
     {
         const auto version = is09_versions::v1_0;
         const auto data = make_system_global_data(id, settings);
 
-        // ensure system global data is correctly formated
-        const web::json::experimental::json_validator validator
-        {
-            nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(is09_versions::all | boost::adaptors::transformed(experimental::make_systemapi_global_schema_uri))
-        };
-        validator.validate(data, experimental::make_systemapi_global_schema_uri(version));
+        details::system_validator().validate(data, experimental::make_systemapi_global_schema_uri(version));
 
-        return{ version, types::global, data, true };
+        return{ version, types::global, std::move(data), true };
     }
 
     web::json::value make_system_global_data(const nmos::id& id, const nmos::settings& settings)
@@ -64,38 +73,36 @@ namespace nmos
 
     std::pair<nmos::id, nmos::settings> parse_system_global_data(const web::json::value& data)
     {
+        using web::json::value;
         using web::json::value_of;
 
         const auto& is04 = nmos::fields::is04(data);
         const auto& ptp = nmos::fields::ptp(data);
 
-        auto global_data = value_of({
+        auto settings = value_of({
+            { nmos::experimental::fields::system_label, nmos::fields::label(data) },
+            { nmos::experimental::fields::system_description, nmos::fields::description(data) },
             { nmos::fields::registration_heartbeat_interval, nmos::fields::heartbeat_interval(is04) },
             { nmos::fields::ptp_announce_receipt_timeout, nmos::fields::announce_receipt_timeout(ptp) },
             { nmos::fields::ptp_domain_number, nmos::fields::domain_number(ptp) },
-            { nmos::fields::tags, data.at(nmos::fields::tags) }
+            { nmos::experimental::fields::system_tags, data.at(nmos::fields::tags) }
         });
 
-        if (data.has_field(nmos::fields::syslog))
+        const auto& syslog = nmos::fields::syslog(data);
+        if (!syslog.is_null())
         {
-            auto syslog = value_of({
-                { nmos::fields::syslog, nmos::fields::syslog(data) }
-            });
-            web::json::merge_patch(global_data, syslog, true);
+            settings[nmos::experimental::fields::system_syslog_host_name] = value::string(nmos::fields::hostname(syslog));
+            settings[nmos::experimental::fields::system_syslog_port] = nmos::fields::port(syslog);
         }
 
-        if (data.has_field(nmos::fields::syslogv2))
+        const auto& syslogv2 = nmos::fields::syslogv2(data);
+        if (!syslogv2.is_null())
         {
-            auto syslogv2 = value_of({
-                { nmos::fields::syslogv2, nmos::fields::syslogv2(data) }
-            });
-            web::json::merge_patch(global_data, syslogv2, true);
+            settings[nmos::experimental::fields::system_syslogv2_host_name] = value::string(nmos::fields::hostname(syslogv2));
+            settings[nmos::experimental::fields::system_syslogv2_port] = nmos::fields::port(syslogv2);
         }
 
-        return{
-            nmos::fields::id(data),
-            global_data
-        };
+        return{ nmos::fields::id(data), std::move(settings) };
     }
 
     namespace experimental
