@@ -16,11 +16,7 @@
           "description": "Subclassification of the format using IANA assigned media types",
           "type": "string",
           "enum": [
-            "video/raw",
-            "video/H264",
-            "video/vc2",
-            "video/H265",
-            "video/jxsv"
+            "video/raw"
           ]
         },
         "components" : {

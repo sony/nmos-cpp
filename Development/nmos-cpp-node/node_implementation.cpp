@@ -463,31 +463,38 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             // Complicated error in make_coded_video_flow() causes creash.
             // Bodged the third_party/nmos-discovery-registration/v1.3.x/APIs/schemas/flow_video_raw.json to allow other coding types.
             //std::cout << "\nInterlace: "<< scan_type.name << " " << interlace_mode.name <<'\n';
-
-            flow = nmos::make_raw_video_flow(
-                flow_id, source_id, device_id,
-                frame_rate,
-                1920, 1080, interlace_mode,
-                nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
-                model.settings, txmedia_type
-            );
-
+            auto media_type = boost::algorithm::to_upper_copy(txmedia_type);
+            if (media_type == "RAW") {
+              flow = nmos::make_raw_video_flow(
+                  flow_id, source_id, device_id,
+                  frame_rate,
+                  1920, 1080, interlace_mode,
+                  nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
+                  model.settings, txmedia_type
+                );
+            }
+            else {
             //DPB There is an error in the code, where make_coded_video_flow crashes + core dump. Error in orignal nmos-cpp code
-            //flow = nmos::make_coded_video_flow(
-            //    flow_id, source_id, device_id,
-            //    frame_rate,
-            //    1920, 1080, interlace_mode,
-            //    nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::media_types::video_h264,
-            //    model.settings
-            //);
-
+            // https://github.com/sony/nmos-cpp/issues/177
+              flow = nmos::make_coded_video_flow(
+                  flow_id, source_id, device_id,
+                  frame_rate,
+                  1920, 1080, interlace_mode,
+                  nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, txmedia_type,
+                  model.settings
+                );
+            }
         }
         else if (impl::ports::audio == port)
         {
-            // DPB added selection of coded audio
-            flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 24, model.settings, txmedia_type);
-            //DPB Error in original nmos-cpp code for make_coded_audio_flow
-            //flow = nmos::make_coded_audio_flow(flow_id, source_id, device_id, 48000, txmedia_type, model.settings);
+            //DPB Error in original nmos-cpp code for make_coded_audio_flow added sub elements based on raw audio
+            auto media_type = boost::algorithm::to_upper_copy(txmedia_type);
+            if (media_type == "L8" || media_type == "L16" || media_type == "L20" || media_type == "L24" ) {
+                flow = nmos::make_raw_audio_flow(flow_id, source_id, device_id, 48000, 24, model.settings, txmedia_type);
+            }
+            else {
+                flow = nmos::make_coded_audio_flow(flow_id, source_id, device_id, 48000, 24, txmedia_type, model.settings);
+            }
             // add optional grain_rate
             flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
         }
