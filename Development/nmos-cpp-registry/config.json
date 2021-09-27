@@ -29,7 +29,7 @@
     //"host_addresses": array-of-ip-address-strings,
 
     // is04_versions [registry, node]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
-    //"is04_versions": ["v1.1", "v1.2"],
+    //"is04_versions": ["v1.2", "v1.3"],
 
     // is09_versions [registry, node]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
     //"is09_versions": ["v1.0"],
@@ -51,6 +51,13 @@
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
     //"listen_backlog": 0,
 
+    // registration_heartbeat_interval [registry, node]:
+    // [registry]: used in System API resource is04 object's heartbeat_interval field
+    // "Constants related to the AMWA IS-04 Discovery and Registration Specification are contained in the is04 object.
+    // heartbeat_interval defines how often Nodes should perform a heartbeat to maintain their resources in the Registration API."
+    // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#amwa-is-04-nmos-discovery-and-registration-parameters
+    //"registration_heartbeat_interval": 5,
+
     // registration_expiry_interval [registry]:
     // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
@@ -71,8 +78,11 @@
     // seed id [registry, node]: optional, used to generate repeatable id values when running with the same configuration
     //"seed_id": uuid-string,
 
-    // label [registry, node]: used in resource description/label fields
+    // label [registry, node]: used in resource label field
     //"label": "",
+
+    // description [registry, node]: used in resource description field
+    //"description": "",
 
     // registration_available [registry]: used to flag the Registration API as temporarily unavailable
     //"registration_available": true,
@@ -145,20 +155,54 @@
     // when true, server certificates etc. must also be configured
     //"server_secure": false,
 
-    // private_key_files [registry, node]: full paths of private key files in PEM format
-    //"private_key_files": ["server-ecdsa-key.pem", "server-rsa-key.pem"],
-
-    // certificate_chain_files [registry, node]: full paths of server certificate chain files which must be in PEM format and must be sorted
+    // server_certificates [registry, node]: an array of server certificate objects, each has the name of the key algorithm, the full paths of private key file and certificate chain file
+    // each value must be an object like { "key_algorithm": "ECDSA", "private_key_file": "server-ecdsa-key.pem", "certificate_chain_file": "server-ecdsa-chain.pem" }
+    // key_algorithm (attribute of server_certificates objects): name of the key algorithm for the certificate, see nmos::key_algorithm
+    // private_key_file (attribute of server_certificates objects): full path of private key file in PEM format
+    // certificate_chain_file (attribute of server_certificates object): full path of certificate chain file in PEM format, which must be sorted
     // starting with the server's certificate, followed by any intermediate CA certificates, and ending with the highest level (root) CA
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
-    //"certificate_chain_files": ["server-ecdsa-chain.pem", "server-rsa-chain.pem"],
+    //"server_certificates": [{"key_algorithm": "ECDSA", "private_key_file": "server-ecdsa-key.pem", "certificate_chain_file": "server-ecdsa-chain.pem"}, {"key_algorithm": "RSA", "private_key_file": "server-rsa-key.pem", "certificate_chain_file": "server-rsa-chain.pem"}],
 
     // validate_certificates [registry, node]: boolean value, false (ignore all server certificate validation errors), or true (do not ignore, the default behaviour)
     //"validate_certificates": true,
 
     // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support
     //"dh_param_file": "dhparam.pem",
+
+    // system_label [registry]: used in System API resource label field
+    //"system_label": "",
+
+    // system_description [registry]: used in System API resource description field
+    //"system_description": "",
+
+    // system_tags [registry]: used in System API resource tags field
+    // "Each tag has a single key, but MAY have multiple values."
+    // {
+    //     "tag_1": [ "tag_1_value_1", "tag_1_value_2" ],
+    //     "tag_2": [ "tag_2_value_1" ]
+    // }
+    // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/2.1._APIs_-_Common_Keys.html#tags
+    //"system_tags": {},
+
+    // "syslog contains hostname and port for the system's syslog "version 1" server using the UDP transport (IETF RFC 5246)"
+    // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
+
+    // system_syslog_hostname [registry]: the fully-qualified host name or the IP address of the system's syslog "version 1" server
+    //"system_syslog_hostname": "",
+
+    // system_syslog_port [registry]: the port number for the system's syslog "version 1" server
+    //"system_syslog_port": 514,
+
+    // "syslogv2 contains hostname and port for the system's syslog "version 2" server using the TLS transport (IETF RFC 5245)"
+    // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
+
+    // system_syslogv2_hostname [registry]: the fully-qualified host name or the IP address of the system's syslog "version 2" server
+    //"system_syslogv2_hostname": "",
+
+    // system_syslogv2_port [registry]: the port number for the system's syslog "version 2" server
+    //"system_syslogv2_port": 6514,
 
     "don't worry": "about trailing commas"
 }

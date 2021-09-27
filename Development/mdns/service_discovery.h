@@ -40,7 +40,7 @@ namespace mdns
 
     struct resolve_result
     {
-        resolve_result() {}
+        resolve_result() : port(0), interface_id(0) {}
         resolve_result(const std::string& host_name, std::uint16_t port, const mdns::txt_records& txt_records, std::uint32_t interface_id = 0) : host_name(host_name), port(port), txt_records(txt_records), interface_id(interface_id) {}
 
         std::string host_name;

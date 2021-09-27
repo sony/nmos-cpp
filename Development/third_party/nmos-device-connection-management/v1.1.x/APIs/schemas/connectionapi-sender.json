@@ -11,9 +11,9 @@
       "active/",
       "transportfile/",
       "transporttype/"
-    ],
-    "minItems": 5,
-    "maxItems": 5,
-    "uniqueItems": true
-  }
+    ]
+  },
+  "minItems": 5,
+  "maxItems": 5,
+  "uniqueItems": true
 }

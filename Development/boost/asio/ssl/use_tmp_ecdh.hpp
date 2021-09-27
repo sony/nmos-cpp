@@ -47,7 +47,7 @@ struct ec_key_cleanup
 };
 
 inline
-BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh_file(boost::asio::ssl::context& ctx,
+BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh(boost::asio::ssl::context& ctx,
     BIO* bio, boost::system::error_code& ec)
 {
     ::ERR_clear_error();
@@ -94,7 +94,7 @@ BOOST_ASIO_SYNC_OP_VOID use_tmp_ecdh_file(boost::asio::ssl::context& ctx,
     bio_cleanup bio = { ::BIO_new_file(certificate.c_str(), "r") };
     if (bio.p)
     {
-        return do_use_tmp_ecdh_file(ctx, bio.p, ec);
+        return do_use_tmp_ecdh(ctx, bio.p, ec);
     }
 
     ec = boost::system::error_code(
@@ -111,9 +111,36 @@ void use_tmp_ecdh_file(boost::asio::ssl::context& ctx, const std::string& certif
     boost::asio::detail::throw_error(ec, "use_tmp_ecdh_file");
 }
 
+inline
+BOOST_ASIO_SYNC_OP_VOID use_tmp_ecdh(boost::asio::ssl::context& ctx,
+    const boost::asio::const_buffer& certificate, boost::system::error_code& ec)
+{
+    ::ERR_clear_error();
+
+    bio_cleanup bio = { ::BIO_new_mem_buf(const_cast<unsigned char*>(boost::asio::buffer_cast<const unsigned char*>(certificate)), static_cast<int>(boost::asio::buffer_size(certificate))) };
+    if (bio.p)
+    {
+        return do_use_tmp_ecdh(ctx, bio.p, ec);
+    }
+
+    ec = boost::system::error_code(
+        static_cast<int>(::ERR_get_error()),
+        boost::asio::error::get_ssl_category());
+    BOOST_ASIO_SYNC_OP_VOID_RETURN(ec);
+}
+
+inline
+void use_tmp_ecdh(boost::asio::ssl::context& ctx, const boost::asio::const_buffer& certificate)
+{
+    boost::system::error_code ec;
+    use_tmp_ecdh(ctx, certificate, ec);
+    boost::asio::detail::throw_error(ec, "use_tmp_ecdh");
+}
+
 } // namespace use_tmp_ecdh_details
 
 using use_tmp_ecdh_details::use_tmp_ecdh_file;
+using use_tmp_ecdh_details::use_tmp_ecdh;
 
 } // namespace ssl
 } // namespace asio

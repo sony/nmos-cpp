@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "Describes a data Grain sent via the a Query API websocket subscription",
+  "description": "Describes a data Grain sent via the a Query API WebSocket subscription",
   "title": "Query API data Grain",
   "required": [
     "grain_type",
@@ -105,7 +105,7 @@
           ]
         },
         "topic": {
-          "description": "Query API topic which has been subscribed to using this websocket",
+          "description": "Query API topic which has been subscribed to using this WebSocket",
           "type": "string",
           "enum": [
             "/",

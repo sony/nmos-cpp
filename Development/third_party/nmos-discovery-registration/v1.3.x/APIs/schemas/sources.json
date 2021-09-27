@@ -6,6 +6,5 @@
   "items": {
     "$ref": "source.json"
   },
-  "minItems": 0,
   "uniqueItems": true
 }

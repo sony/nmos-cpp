@@ -1,6 +1,7 @@
 #ifndef NMOS_CONNECTION_EVENTS_ACTIVATION_H
 #define NMOS_CONNECTION_EVENTS_ACTIVATION_H
 
+#include "nmos/certificate_handlers.h"
 #include "nmos/connection_activation.h"
 #include "nmos/events_ws_client.h" // for nmos::events_ws_message_handler, etc.
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
@@ -10,7 +11,12 @@ namespace nmos
     struct node_model;
 
     // this handler can be used to (un)subscribe IS-07 Events WebSocket receivers with the specified handlers, when they are activated
-    nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::events_ws_message_handler message_handler, nmos::events_ws_close_handler close_handler, const nmos::settings& settings, slog::base_gate& gate);
+    nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::load_ca_certificates_handler load_ca_certificates, nmos::events_ws_message_handler message_handler, nmos::events_ws_close_handler close_handler, const nmos::settings& settings, slog::base_gate& gate);
+
+    inline nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::events_ws_message_handler message_handler, nmos::events_ws_close_handler close_handler, const nmos::settings& settings, slog::base_gate& gate)
+    {
+        return make_connection_events_websocket_activation_handler({}, std::move(message_handler), std::move(close_handler), settings, gate);
+    }
 
     inline nmos::connection_activation_handler make_connection_events_websocket_activation_handler(nmos::events_ws_message_handler message_handler, const nmos::settings& settings, slog::base_gate& gate)
     {

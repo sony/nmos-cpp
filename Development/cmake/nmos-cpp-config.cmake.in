@@ -1,0 +1,34 @@
+@PACKAGE_INIT@
+
+# set custom find-module path
+set(_NMOS_CPP_MODULE_PATH_SAVE "${CMAKE_MODULE_PATH}")
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
+
+# find install dependencies cf. find_package calls in NmosCppDependencies.cmake
+include(CMakeFindDependencyMacro)
+find_dependency(Boost COMPONENTS @FIND_BOOST_COMPONENTS@)
+find_dependency(cpprestsdk)
+find_dependency(OpenSSL)
+if(@NMOS_CPP_USE_CONAN@)
+    find_dependency(nlohmann_json_schema_validator)
+endif()
+if(@CMAKE_SYSTEM_NAME@ STREQUAL "Linux")
+    if(@NMOS_CPP_USE_AVAHI@)
+        find_dependency(Avahi)
+    else()
+        find_dependency(DNSSD)
+    endif()
+elseif(@CMAKE_SYSTEM_NAME@ STREQUAL "Windows")
+    if(@NMOS_CPP_USE_BONJOUR_SDK@)
+        find_dependency(DNSSD)
+    endif()
+endif()
+
+# unset custom find-module path
+set(CMAKE_MODULE_PATH "${_NMOS_CPP_MODULE_PATH_SAVE}")
+unset(_NMOS_CPP_MODULE_PATH_SAVE)
+
+# generate import targets cf. install(EXPORT) call in NmosCppExports.cmake
+include("${CMAKE_CURRENT_LIST_DIR}/nmos-cpp-targets.cmake")
+
+check_required_components(nmos-cpp)

@@ -82,7 +82,7 @@ jobs:
         conan config set general.revisions_enabled=1
     
     - name: install cmake
-      uses: lukka/get-cmake@v3.18.3
+      uses: lukka/get-cmake@v3.21.1
     
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -198,6 +198,8 @@ jobs:
           mkdir -p /var/run/nscd
           nscd
         fi
+        # force dependency on mDNSResponder
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu non-conan setup
       if: runner.os == 'Linux' && matrix.use_conan == false
@@ -214,7 +216,7 @@ jobs:
           libssl-dev
     
         cd ${{ env.RUNNER_WORKSPACE }}
-        git clone --recurse-submodules --branch v2.10.16 https://github.com/Microsoft/cpprestsdk
+        git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
         cd cpprestsdk/Release
         mkdir build
         cd build
@@ -227,7 +229,7 @@ jobs:
       if: matrix.use_conan == false
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -240,6 +242,8 @@ jobs:
         sudo systemctl restart avahi-daemon
         # install Name Service Cache Daemon to speed up repeated mDNS name discovery
         sudo apt-get install -f nscd
+        # force dependency on avahi
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
     
     - name: force cpprest asio
       if: matrix.force_cpprest_asio == true
@@ -249,13 +253,12 @@ jobs:
     
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
-    
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
     - name: unit test
       run: |
@@ -270,14 +273,47 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install
+      uses: lukka/run-cmake@v3.4
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
+        buildWithCMakeArgs: '--target install'
+    
+    - name: set install test environment variable
+      shell: bash
+      run: |
+        # replace backslashes with forward slashes on Windows
+        echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
+    
+    - name: install test
+      uses: lukka/run-cmake@v3.4
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
+        cmakeAppendedArgs: '-GNinja
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
+            ${{ env.CMAKE_EXTRA_ARGS }}'
+    
+    - name: install test log
+      run: |
+        # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
+        cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt
+    
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
-        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
-        Expand-Archive .\ubuntu204.zip .\ubuntu204
-        cd ubuntu204
-        .\ubuntu2004.exe install --root
+        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
+        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
+        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
+        cd ubuntu-1804
+        .\ubuntu1804.exe install --root
     
     - name: AMWA test suite
       shell: bash
@@ -394,7 +430,6 @@ jobs:
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
-    
 
 
   build_and_test_ubuntu_14:
@@ -450,7 +485,7 @@ jobs:
         conan config set general.revisions_enabled=1
     
     - name: install cmake
-      uses: lukka/get-cmake@v3.18.3
+      uses: lukka/get-cmake@v3.21.1
     
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -566,6 +601,8 @@ jobs:
           mkdir -p /var/run/nscd
           nscd
         fi
+        # force dependency on mDNSResponder
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu non-conan setup
       if: runner.os == 'Linux' && matrix.use_conan == false
@@ -582,7 +619,7 @@ jobs:
           libssl-dev
     
         cd ${{ env.RUNNER_WORKSPACE }}
-        git clone --recurse-submodules --branch v2.10.16 https://github.com/Microsoft/cpprestsdk
+        git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
         cd cpprestsdk/Release
         mkdir build
         cd build
@@ -595,7 +632,7 @@ jobs:
       if: matrix.use_conan == false
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DUSE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
     
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -608,6 +645,8 @@ jobs:
         sudo systemctl restart avahi-daemon
         # install Name Service Cache Daemon to speed up repeated mDNS name discovery
         sudo apt-get install -f nscd
+        # force dependency on avahi
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
     
     - name: force cpprest asio
       if: matrix.force_cpprest_asio == true
@@ -617,13 +656,12 @@ jobs:
     
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build
-      uses: lukka/run-cmake@v2.0
+      uses: lukka/run-cmake@v3.4
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ env.CMAKE_EXTRA_ARGS }}'
-    
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
     
     - name: unit test
       run: |
@@ -638,14 +676,47 @@ jobs:
         ctest --output-on-failure ${{ env.CTEST_EXPECTED_FAILURES }}
     
     
+    - name: install
+      uses: lukka/run-cmake@v3.4
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
+        buildWithCMakeArgs: '--target install'
+    
+    - name: set install test environment variable
+      shell: bash
+      run: |
+        # replace backslashes with forward slashes on Windows
+        echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
+    
+    - name: install test
+      uses: lukka/run-cmake@v3.4
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
+        buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
+        cmakeAppendedArgs: '-GNinja
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
+            ${{ env.CMAKE_EXTRA_ARGS }}'
+    
+    - name: install test log
+      run: |
+        # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
+        cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt
+    
     - name: install wsl
       if: runner.os == 'Windows'
       run: |
-        & curl -L https://aka.ms/wslubuntu2004 -o ubuntu204.appx
-        Rename-Item .\ubuntu204.appx .\ubuntu204.zip
-        Expand-Archive .\ubuntu204.zip .\ubuntu204
-        cd ubuntu204
-        .\ubuntu2004.exe install --root
+        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
+        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
+        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
+        cd ubuntu-1804
+        .\ubuntu1804.exe install --root
     
     - name: AMWA test suite
       shell: bash
@@ -762,7 +833,6 @@ jobs:
       with:
         name: ${{ env.BUILD_NAME }}_results
         path: ${{ runner.workspace }}/nmos-testing/results
-    
 
 
   make_badges:

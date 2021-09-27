@@ -568,6 +568,8 @@ namespace nmos
 
                 slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response after " << processing_dur << "ms";
 
+                // the task returned by reply() silently 'observes' any exception thrown from the underlying server
+                // reply() itself can throw http_exception if a response has already been sent, but that would indicate a programming error
                 req.reply(res);
                 return pplx::task_from_result(false); // don't continue matching routes
             };
@@ -650,11 +652,11 @@ namespace nmos
         });
     }
 
-    // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener - captures api by reference!
-    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router& api_, slog::base_gate& gate)
+    // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api_, slog::base_gate& gate)
     {
         add_api_finally_handler(api_, gate);
-        auto api = [&api_, &gate](web::http::http_request req)
+        auto api = [api_, &gate](web::http::http_request req) mutable
         {
             req.headers().add(details::received_time, nmos::make_version());
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF)
@@ -667,7 +669,7 @@ namespace nmos
         };
         listener.support(api);
         listener.support(web::http::methods::OPTIONS, api); // to handle CORS preflight requests
-        listener.support(web::http::methods::HEAD, [api](web::http::http_request req) // to handle HEAD requests
+        listener.support(web::http::methods::HEAD, [api](web::http::http_request req) mutable // to handle HEAD requests
         {
             // this naive approach means that the API may well generate a response body
             req.headers().add(details::actual_method, web::http::methods::HEAD);
@@ -677,8 +679,8 @@ namespace nmos
     }
 
     // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
-    // (including CORS preflight requests via "OPTIONS") - captures api by reference!
-    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router& api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
+    // (including CORS preflight requests via "OPTIONS")
+    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
     {
         web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(secure, host_address, port), std::move(config));
         nmos::support_api(api_listener, api, gate);

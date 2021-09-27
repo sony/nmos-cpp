@@ -1,5 +1,3 @@
-8/7/2021 D Butler, BBC R&D
-
 ## NMOS C++ Implementation for the 5G-Records Project
 
 Work in progress for remote proxy nmos node.

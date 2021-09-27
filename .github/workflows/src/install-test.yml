@@ -1,0 +1,24 @@
+- name: set install test environment variable
+  shell: bash
+  run: |
+    # replace backslashes with forward slashes on Windows
+    echo "CMAKE_WORKSPACE=${RUNNER_WORKSPACE//\\/\/}" >> $GITHUB_ENV
+
+- name: install test
+  uses: lukka/run-cmake@v3.4
+  with:
+    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+    cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Sandbox/my-nmos-node/CMakeLists.txt'
+    buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/'
+    cmakeAppendedArgs: '-GNinja
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
+        -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+        -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
+        -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
+        ${{ env.CMAKE_EXTRA_ARGS }}'
+
+- name: install test log
+  run: |
+    # dump the log file created in Sandbox/my-nmos-node/CMakeLists.txt
+    cat ${{ env.RUNNER_WORKSPACE }}/build-my-nmos-node/my-nmos-node_include-release.txt

@@ -41,7 +41,7 @@
       "pattern": "^[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}$"
     },
     "locked": {
-      "description": "Lock state of this clock to the external reference. If true, this device is slaved, otherwise it has no defined relationship to the external reference",
+      "description": "Lock state of this clock to the external reference. If true, this device follows the external reference, otherwise it has no defined relationship to the external reference",
       "type": "boolean"
     }
   }

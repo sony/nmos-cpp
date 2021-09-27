@@ -141,7 +141,7 @@ namespace impl
     std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many);
 
     // add a helpful suffix to the label of a sub-resource for the example node
-    void set_label(nmos::resource& resource, const port& port, int index);
+    void set_label_description(nmos::resource& resource, const port& port, int index);
 
     // add an example "natural grouping" hint to a sender or receiver
     void insert_group_hint(nmos::resource& resource, const port& port, int index);
@@ -927,7 +927,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         }));
 
         auto source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
-        impl::set_label(source, impl::ports::audio, how_many);
+        impl::set_label_description(source, impl::ports::audio, how_many);
 
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
     }
@@ -1067,7 +1067,8 @@ nmos::system_global_handler make_node_implementation_system_global_handler(nmos:
             // in either Registration API behaviour or the senders' /transportfile endpoints until
             // an update to these is forced by other circumstances
 
-            web::json::merge_patch(model.settings, nmos::parse_system_global_data(system_global).second, true);
+            auto system_global_settings = nmos::parse_system_global_data(system_global).second;
+            web::json::merge_patch(model.settings, system_global_settings, true);
         }
         else
         {
@@ -1288,12 +1289,13 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
 // Example Connection API activation callback to perform application-specific operations to complete activation
 nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
 {
+    auto handle_load_ca_certificates = nmos::make_load_ca_certificates_handler(model.settings, gate);
     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
     // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
     // connection errors are reflected into the /active endpoint by setting master_enable to false
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
-    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_events_ws_message, handle_close, model.settings, gate);
+    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
 
     return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
@@ -1350,14 +1352,19 @@ namespace impl
     }
 
     // add a helpful suffix to the label of a sub-resource for the example node
-    void set_label(nmos::resource& resource, const impl::port& port, int index)
+    void set_label_description(nmos::resource& resource, const impl::port& port, int index)
     {
         using web::json::value;
 
         auto label = nmos::fields::label(resource.data);
         if (!label.empty()) label += U('/');
         label += resource.type.name + U('/') + port.name + utility::conversions::details::to_string_t(index);
-        resource.data[nmos::fields::label] = resource.data[nmos::fields::description] = value::string(label);
+        resource.data[nmos::fields::label] = value::string(label);
+
+        auto description = nmos::fields::description(resource.data);
+        if (!description.empty()) description += U('/');
+        description += resource.type.name + U('/') + port.name + utility::conversions::details::to_string_t(index);
+        resource.data[nmos::fields::description] = value::string(description);
     }
 
     // add an example "natural grouping" hint to a sender or receiver
@@ -1372,6 +1379,9 @@ namespace impl
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
     return nmos::experimental::node_implementation()
+        .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
+        .on_load_dh_param(nmos::make_load_dh_param_handler(model.settings, gate))
+        .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
         .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
         .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
         .on_parse_transport_file(make_node_implementation_transport_file_parser()) // may be omitted if the default is sufficient

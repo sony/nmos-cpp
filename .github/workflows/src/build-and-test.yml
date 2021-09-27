@@ -6,6 +6,10 @@
 
 @import unit-test
 
+@import install
+
+@import install-test
+
 @import amwa-test
 
 @import save-results

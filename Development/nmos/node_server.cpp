@@ -45,7 +45,7 @@ namespace nmos
 
             // Configure the Node API
 
-            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged);
+            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.load_ca_certificates, node_implementation.parse_transport_file, node_implementation.validate_staged);
             node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
             node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
 
@@ -64,7 +64,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(node_model.settings);
+            auto http_config = nmos::make_http_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
 
             for (auto& api_router : node_server.api_routers)
             {
@@ -77,7 +77,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings);
+            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : node_server.ws_handlers)
@@ -93,13 +93,14 @@ namespace nmos
 
             // Set up node operation (including the DNS-SD advertisements)
 
+            auto load_ca_certificates = node_implementation.load_ca_certificates;
             auto registration_changed = node_implementation.registration_changed;
             auto resolve_auto = node_implementation.resolve_auto;
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
             node_server.thread_functions.assign({
-                [&, registration_changed] { nmos::node_behaviour_thread(node_model, registration_changed, gate); },
+                [&, load_ca_certificates, registration_changed] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
@@ -109,22 +110,23 @@ namespace nmos
             auto system_changed = node_implementation.system_changed;
             if (system_changed)
             {
-                node_server.thread_functions.push_back([&, system_changed] { nmos::node_system_behaviour_thread(node_model, system_changed, gate); });
+                node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
             }
 
             return node_server;
         }
 
+        // deprecated
         nmos::server make_node_server(nmos::node_model& node_model, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_merged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             return make_node_server(node_model, node_implementation().on_parse_transport_file(std::move(parse_transport_file)).on_validate_merged(std::move(validate_merged)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
-
+        // deprecated
         nmos::server make_node_server(nmos::node_model& node_model, nmos::transport_file_parser parse_transport_file, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             return make_node_server(node_model, node_implementation().on_parse_transport_file(std::move(parse_transport_file)).on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);
         }
-
+        // deprecated
         nmos::server make_node_server(nmos::node_model& node_model, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             return make_node_server(node_model, node_implementation().on_resolve_auto(std::move(resolve_auto)).on_set_transportfile(std::move(set_transportfile)).on_connection_activated(std::move(connection_activated)), log_model, gate);

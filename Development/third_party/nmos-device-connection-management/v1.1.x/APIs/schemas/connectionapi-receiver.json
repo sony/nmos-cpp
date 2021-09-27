@@ -10,9 +10,9 @@
       "staged/",
       "active/",
       "transporttype/"
-    ],
-    "minItems": 4,
-    "maxItems": 4,
-    "uniqueItems": true
-  }
+    ]
+  },
+  "minItems": 4,
+  "maxItems": 4,
+  "uniqueItems": true
 }

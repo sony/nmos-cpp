@@ -12,6 +12,8 @@ C++ source code and build files for the software
   Extensions to the [C++ REST SDK](https://github.com/Microsoft/cpprestsdk)
 - [detail](detail)  
   Small general purpose utilties and header files to facilitate cross-platform development
+- [lldp](lldp)  
+  A simple API for LLDP and an implementation using the PCAP *pcap.h* API
 - [mdns](mdns)  
   A simple API for mDNS Service Discovery (DNS-SD) and an implementation using the original Bonjour *dns_sd.h* API
 - [nmos](nmos)  
