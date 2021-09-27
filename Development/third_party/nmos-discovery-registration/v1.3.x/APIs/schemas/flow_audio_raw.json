@@ -21,12 +21,7 @@
                 "audio/L24",
                 "audio/L20",
                 "audio/L16",
-                "audio/L8",
-                "audio/aac",
-                "audio/mp2",
-                "audio/mp3",
-                "audio/m4a",
-                "audio/opus"
+                "audio/L8"
               ]
             },
             {
