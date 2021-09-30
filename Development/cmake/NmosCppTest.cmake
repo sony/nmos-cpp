@@ -46,6 +46,7 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/json_validator_test.cpp
     nmos/test/paging_utils_test.cpp
     nmos/test/query_api_test.cpp
+    nmos/test/sdp_utils_test.cpp
     nmos/test/system_resources_test.cpp
     )
 set(NMOS_CPP_TEST_NMOS_TEST_HEADERS
