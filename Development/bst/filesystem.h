@@ -82,6 +82,7 @@ namespace bst
         using bst_filesystem::file_size;
         using bst_filesystem::create_directory;
         using bst_filesystem::remove_all;
+        using bst_filesystem::temp_directory_path;
     }
 }
 

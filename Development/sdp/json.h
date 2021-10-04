@@ -219,6 +219,13 @@ namespace sdp
             return sdp::fields::name(nv) == name;
         });
     }
+    inline web::json::array::iterator find_name(web::json::array& name_value_array, const utility::string_t& name)
+    {
+        return std::find_if(name_value_array.begin(), name_value_array.end(), [&](const web::json::value& nv)
+        {
+            return sdp::fields::name(nv) == name;
+        });
+    }
 
     // Time Units
     // See https://tools.ietf.org/html/rfc4566#section-5.10

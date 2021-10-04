@@ -243,11 +243,54 @@ namespace nmos
         return make_sdp_parameters(node, source, flow, sender, media_stream_ids, bst::nullopt);
     }
 
-    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp)
+    namespace details
+    {
+        // "<unicast-address> is the address of the machine from which the session was created."
+        // See https://tools.ietf.org/html/rfc4566#section-5.2
+        const utility::string_t& get_origin_address(const web::json::value& transport_params)
+        {
+            // this doesn't need to be the source address of the data stream
+            // e.g. a host_address which was a management interface would be OK
+            // however, by convention, use the source_ip of the first leg for
+            // an SDP file created at a Sender and the interface_ip of the
+            // first leg for an SDP created at a Receiver
+            const auto& transport_param = transport_params.at(0);
+            const auto& interface_ip = nmos::fields::interface_ip(transport_param);
+            // a Receiver always has an interface_ip
+            if (!interface_ip.is_null()) return interface_ip.as_string();
+            const auto& source_ip = nmos::fields::source_ip(transport_param);
+            // a Sender always has a source_ip
+            return source_ip.as_string();
+        }
+
+        // "If the session is multicast, the connection address will be an IP multicast group address.
+        // If the session is not multicast, then the connection address contains the unicast IP address of the
+        // expected [...] data sink."
+        // See https://tools.ietf.org/html/rfc4566#section-5.7
+        const utility::string_t& get_connection_address(const web::json::value& transport_param)
+        {
+            const auto& multicast_ip = nmos::fields::multicast_ip(transport_param);
+            // a Receiver has a multicast_ip for multicast but not unicast
+            if (!multicast_ip.is_null()) return multicast_ip.as_string();
+            const auto& interface_ip = nmos::fields::interface_ip(transport_param);
+            // a Receiver always has a (unicast) interface_ip
+            if (!interface_ip.is_null()) return interface_ip.as_string();
+            // a Sender always has a destination_ip which may be multicast or unicast
+            const auto& destination_ip = nmos::fields::destination_ip(transport_param);
+            return destination_ip.as_string();
+        }
+    }
+
+    // Make a json representation of an SDP file, e.g. for sdp::make_session_description, from the specified parameters; explicitly specify whether 'source-filter' attributes are included to override the default behaviour
+    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp, bst::optional<bool> source_filters)
     {
         using web::json::value;
         using web::json::value_of;
         using web::json::array;
+
+        // note that a media description is always created for each leg in the transport_params
+        // and the rtp_enabled status does not affect the leg's media description
+        // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/109#issuecomment-598721418
 
         // check to ensure enough media_stream_ids for multi-leg transport_params
         if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())
@@ -261,8 +304,7 @@ namespace nmos
 
         const bool keep_order = true;
 
-        const auto& destination_ip = nmos::fields::destination_ip(transport_params.at(0)).as_string();
-        const auto address_type_multicast = details::get_address_type_multicast(destination_ip);
+        const auto& origin_address = details::get_origin_address(transport_params);
 
         auto session_description = value_of({
             // Protocol Version
@@ -276,8 +318,8 @@ namespace nmos
                 { sdp::fields::session_id, sdp_params.origin.session_id },
                 { sdp::fields::session_version, sdp_params.origin.session_version },
                 { sdp::fields::network_type, sdp::network_types::internet.name },
-                { sdp::fields::address_type, address_type_multicast.first.name },
-                { sdp::fields::unicast_address, nmos::fields::source_ip(transport_params.at(0)) }
+                { sdp::fields::address_type, details::get_address_type_multicast(origin_address).first.name },
+                { sdp::fields::unicast_address, origin_address }
             }, keep_order) },
 
             // Session Name
@@ -293,27 +335,34 @@ namespace nmos
                         { sdp::fields::stop_time, sdp_params.timing.stop_time }
                     }) }
                 }, keep_order)
-            }) }
+            }) },
 
+            // Attributes
+            // See https://tools.ietf.org/html/rfc4566#section-5.13
+            { sdp::fields::attributes, value::array() },
+
+            // Media Descriptions
+            // See https://tools.ietf.org/html/rfc4566#section-5
+            { sdp::fields::media_descriptions, value::array() }
         }, keep_order);
 
+        auto& session_attributes = session_description.at(sdp::fields::attributes);
+        auto& media_descriptions = session_description.at(sdp::fields::media_descriptions);
 
         // group & mid attributes
         // see https://tools.ietf.org/html/rfc5888
         auto mids = value::array();
 
-        // build media_descriptions with given media_stream_ids
-        // Media Descriptions
-        // See https://tools.ietf.org/html/rfc4566#section-5
-        auto media_descriptions = value::array();
         size_t leg = 0;
         for (const auto& transport_param : transport_params.as_array())
         {
+            const auto& connection_address = details::get_connection_address(transport_param);
+            const auto& address_type_multicast = details::get_address_type_multicast(connection_address);
+
             const auto& ts_refclk = sdp_params.ts_refclk.size() > leg
                 ? sdp_params.ts_refclk[leg]
                 : ts_refclk_default;
 
-            // build media_description
             auto media_description = value_of({
                 // Media
                 // See https://tools.ietf.org/html/rfc4566#section-5.14
@@ -331,20 +380,29 @@ namespace nmos
                         { sdp::fields::network_type, sdp::network_types::internet.name },
                         { sdp::fields::address_type, address_type_multicast.first.name },
                         { sdp::fields::connection_address, sdp::address_types::IP4 == address_type_multicast.first && address_type_multicast.second
-                            ? nmos::fields::destination_ip(transport_param).as_string() + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
-                            : nmos::fields::destination_ip(transport_param).as_string() }
+                            ? connection_address + U("/") + utility::ostringstreamed(sdp_params.connection_data.ttl)
+                            : connection_address }
                     }, keep_order)
                 }) },
 
                 // Attributes
                 // See https://tools.ietf.org/html/rfc4566#section-5.13
-                { sdp::fields::attributes, value_of({
-                    // a=ts-refclk:ptp=<ptp version>:<ptp gmid>[:<ptp domain>]
-                    // a=ts-refclk:ptp=<ptp version>:traceable
-                    // See https://tools.ietf.org/html/rfc7273
-                    // a=ts-refclk:localmac=<mac-address-of-sender>
-                    // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
-                    value_of({
+                { sdp::fields::attributes, value::array() }
+
+            }, keep_order);
+
+            auto& media_attributes = media_description.at(sdp::fields::attributes);
+
+            // insert ts-refclk if specified
+            if (ts_refclk.clock_source != sdp::ts_refclk_source{})
+            {
+                // a=ts-refclk:ptp=<ptp version>:<ptp gmid>[:<ptp domain>]
+                // a=ts-refclk:ptp=<ptp version>:traceable
+                // See https://tools.ietf.org/html/rfc7273
+                // a=ts-refclk:localmac=<mac-address-of-sender>
+                // See SMPTE ST 2110-10:2017 Professional Media Over Managed IP Networks: System Timing and Definitions, Section 8.2 Reference Clock
+                web::json::push_back(
+                    media_attributes, value_of({
                         { sdp::fields::name, sdp::attributes::ts_refclk },
                         { sdp::fields::value, sdp::ts_refclk_sources::ptp == ts_refclk.clock_source ? ts_refclk.ptp_server.empty() ? value_of({
                             { sdp::fields::clock_source, sdp::ts_refclk_sources::ptp.name },
@@ -358,112 +416,114 @@ namespace nmos
                             { sdp::fields::clock_source, sdp::ts_refclk_sources::local_mac.name },
                             { sdp::fields::mac_address, ts_refclk.mac_address }
                         }, keep_order) : value::null() }
-                    }, keep_order),
-
-                    // a=mediaclk:[id=<clock id> ]<clock source>[=<clock parameters>]
-                    // See https://tools.ietf.org/html/rfc7273#section-5
-                    value_of({
-                        { sdp::fields::name, sdp::attributes::mediaclk },
-                        { sdp::fields::value, sdp_params.mediaclk.clock_source.name + U("=") + sdp_params.mediaclk.clock_parameters }
                     }, keep_order)
+                );
+            }
 
-                }) } //attribues
-
-            }, keep_order); //media_description
-
-            // insert source-filter if multicast
-            if (address_type_multicast.second)
+            // insert mediaclk if specified
+            if (sdp_params.mediaclk.clock_source != sdp::mediaclk_source{})
             {
-                auto& attributes = media_description.at(sdp::fields::attributes);
+                // a=mediaclk:[id=<clock id> ]<clock source>[=<clock parameters>]
+                // See https://tools.ietf.org/html/rfc7273#section-5
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::mediaclk },
+                        { sdp::fields::value, !sdp_params.mediaclk.clock_parameters.empty()
+                            ? sdp_params.mediaclk.clock_source.name + U("=") + sdp_params.mediaclk.clock_parameters
+                            : sdp_params.mediaclk.clock_source.name }
+                    }, keep_order)
+                );
+            }
+
+            // insert source-filter if source address is specified, depending on source_filters 
+            // for now, when source_filters does not contain an explicit value, the default is to include the source-filter attribute
+            // another choice would be to do so only for source-specific multicast addresses (232.0.0.0-232.255.255.255)
+            const auto& source_ip = nmos::fields::source_ip(transport_param);
+            if (!source_ip.is_null() && (!source_filters || *source_filters))
+            {
                 // a=source-filter: <filter-mode> <nettype> <address-types> <dest-address> <src-list>
                 // See https://tools.ietf.org/html/rfc4570
                 web::json::push_back(
-                    attributes, value_of({
+                    media_attributes, value_of({
                         { sdp::fields::name, sdp::attributes::source_filter },
                         { sdp::fields::value, value_of({
                             { sdp::fields::filter_mode, sdp::filter_modes::incl.name },
                             { sdp::fields::network_type, sdp::network_types::internet.name },
                             { sdp::fields::address_types, address_type_multicast.first.name },
-                            { sdp::fields::destination_address, transport_param.at(nmos::fields::destination_ip) },
-                            { sdp::fields::source_addresses, value_of({ transport_param.at(nmos::fields::source_ip) }) }
+                            { sdp::fields::destination_address, connection_address },
+                            { sdp::fields::source_addresses, value_of({ source_ip }) }
                         }, keep_order) }
                     }, keep_order)
                 );
             }
 
-            // insert ptime if set
-            // a=ptime:<packet time>
-            // See https://tools.ietf.org/html/rfc4566#section-6
+            // insert ptime if specified
             if (!ptime.is_null())
             {
-                auto& attributes = media_description.at(sdp::fields::attributes);
-                web::json::push_back(attributes, ptime);
+                // a=ptime:<packet time>
+                // See https://tools.ietf.org/html/rfc4566#section-6
+                web::json::push_back(media_attributes, ptime);
             }
 
-            // insert rtpmap if set
-            // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
-            // See https://tools.ietf.org/html/rfc4566#section-6
+            // insert rtpmap if specified
             if (!rtpmap.is_null())
             {
-                auto& attributes = media_description.at(sdp::fields::attributes);
-                web::json::push_back(attributes, rtpmap);
+                // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
+                // See https://tools.ietf.org/html/rfc4566#section-6
+                web::json::push_back(media_attributes, rtpmap);
             }
 
-            // insert fmtp if set
-            // a=fmtp:<format> <format specific parameters>
-            // See https://tools.ietf.org/html/rfc4566#section-6
+            // insert fmtp if specified
             if (!fmtp.is_null())
             {
-                auto& attributes = media_description.at(sdp::fields::attributes);
-                web::json::push_back(attributes, fmtp);
+                // a=fmtp:<format> <format specific parameters>
+                // See https://tools.ietf.org/html/rfc4566#section-6
+                web::json::push_back(media_attributes, fmtp);
             }
 
-            // insert "media stream identification" if there are more than 1 leg
-            // a=mid:<identification-tag>
-            // See https://tools.ietf.org/html/rfc5888
+            // insert "media stream identification" if there is more than 1 leg
             if (transport_params.size() > 1)
             {
+                // a=mid:<identification-tag>
+                // See https://tools.ietf.org/html/rfc5888
                 const auto& mid = sdp_params.group.media_stream_ids[leg];
 
                 // build up mids based on group::media_stream_ids
                 web::json::push_back(mids, mid);
 
-                auto& attributes = media_description.at(sdp::fields::attributes);
                 web::json::push_back(
-                    attributes, value_of({
+                    media_attributes, value_of({
                         { sdp::fields::name, sdp::attributes::mid },
                         { sdp::fields::value, mid }
                     }, keep_order)
                 );
             }
 
-            web::json::push_back(media_descriptions, media_description);
+            web::json::push_back(media_descriptions, std::move(media_description));
 
             ++leg;
         }
 
-        // add group attribute if there are more than 1 leg
-        // a=group:<semantics>[ <identification-tag>]*
-        // See https://tools.ietf.org/html/rfc5888
+        // add group attribute if there is more than 1 leg
         if (mids.size() > 1)
         {
-            session_description[sdp::fields::attributes] = value_of({
-                web::json::value_of({
+            // a=group:<semantics>[ <identification-tag>]*
+            // See https://tools.ietf.org/html/rfc5888
+            web::json::push_back(
+                session_attributes, value_of({
                     { sdp::fields::name, sdp::attributes::group },
                     { sdp::fields::value, web::json::value_of({
                         { sdp::fields::semantics, sdp_params.group.semantics.name },
-                        { sdp::fields::mids, mids }
+                        { sdp::fields::mids, std::move(mids) }
                     }, keep_order) },
                 }, keep_order)
-            });
+            );
         }
-
-        session_description[sdp::fields::media_descriptions] = media_descriptions;
 
         return session_description;
     }
 
-    static web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
     {
         using web::json::value_of;
 
@@ -506,14 +566,14 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::fmtp },
             { sdp::fields::value, web::json::value_of({
                 { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, format_specific_parameters }
+                { sdp::fields::format_specific_parameters, std::move(format_specific_parameters) }
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp, source_filters);
     }
 
-    static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
     {
         using web::json::value;
         using web::json::value_of;
@@ -548,11 +608,11 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::fmtp },
             { sdp::fields::value, value_of({
                 { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, format_specific_parameters }
+                { sdp::fields::format_specific_parameters, std::move(format_specific_parameters) }
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, ptime, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, ptime, rtpmap, fmtp, source_filters);
     }
 
     static web::json::value make_data_format_specific_parameters(const sdp_parameters::data_t& data_params)
@@ -570,7 +630,7 @@ namespace nmos
         return result;
     }
 
-    static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
     {
         using web::json::value;
         using web::json::value_of;
@@ -598,10 +658,10 @@ namespace nmos
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp, source_filters);
     }
 
-    static web::json::value make_mux_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    static web::json::value make_mux_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
     {
         using web::json::value;
         using web::json::value_of;
@@ -628,11 +688,11 @@ namespace nmos
             { sdp::fields::name, sdp::attributes::fmtp },
             { sdp::fields::value, value_of({
                 { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, format_specific_parameters }
+                { sdp::fields::format_specific_parameters, std::move(format_specific_parameters) }
             }, keep_order) }
         }, keep_order);
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp);
+        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp, source_filters);
     }
 
     namespace details
@@ -652,13 +712,13 @@ namespace nmos
         }
     }
 
-    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params)
+    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
     {
         const auto format = details::get_format(sdp_params);
-        if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params);
-        if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params);
-        if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params);
-        if (nmos::formats::mux == format)  return make_mux_session_description(sdp_params, transport_params);
+        if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params, source_filters);
+        if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params, source_filters);
+        if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params, source_filters);
+        if (nmos::formats::mux == format)  return make_mux_session_description(sdp_params, transport_params, source_filters);
         throw details::sdp_creation_error("unsupported ST2110 media");
     }
 
@@ -719,9 +779,6 @@ namespace nmos
 
             if (details::get_address_type_multicast(address).second)
             {
-                // any-source multicast, unless there's a source-filter
-                params[nmos::fields::source_ip] = value::null();
-
                 params[nmos::fields::multicast_ip] = value::string(address);
                 params[nmos::fields::interface_ip] = value::string(U("auto"));
             }
@@ -733,7 +790,7 @@ namespace nmos
         }
     }
 
-    // Get transport parameters from the parsed SDP file
+    // Get IS-05 transport parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     web::json::value get_session_description_transport_params(const web::json::value& session_description)
     {
         using web::json::value;
@@ -763,7 +820,10 @@ namespace nmos
         {
             web::json::value params;
 
-            params[nmos::fields::source_ip] = value::string(sdp::fields::unicast_address(sdp::fields::origin(session_description)));
+            // source_ip is null when there is no source-filter, indicating that "the source IP address
+            // has not been configured in unicast mode, or the Receiver is in any-source multicast mode"
+            // see https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_rtp.json
+            params[nmos::fields::source_ip] = value::null();
 
             // session connection data is the default for each media description
             auto& session_connection_data = sdp::fields::connection_data(session_description);
@@ -811,6 +871,9 @@ namespace nmos
                 {
                     auto& ma = media_attributes.as_array();
 
+                    // hmm, this code assumes that <filter-mode> is 'incl' and ought to check that <nettype>, <address-types> and <dest-address>
+                    // match the connection address, and fall back to any "session-level" source-filter values if they don't match
+
                     auto source_filter = sdp::find_name(ma, sdp::attributes::source_filter);
                     if (ma.end() != source_filter)
                     {
@@ -856,6 +919,7 @@ namespace nmos
         }
     }
 
+    // Get other SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& sdp)
     {
         using web::json::value;
@@ -907,19 +971,16 @@ namespace nmos
         // Group
         // a=group:<semantics>[ <identification-tag>]*
         // See https://tools.ietf.org/html/rfc5888
-        auto sdp_attributes = sdp::fields::attributes(sdp).as_array();
-        if (sdp_attributes.size())
+        auto& session_attributes = sdp::fields::attributes(sdp).as_array();
+        auto group = sdp::find_name(session_attributes, sdp::attributes::group);
+        if (session_attributes.end() != group)
         {
-            auto group = sdp::find_name(sdp_attributes, sdp::attributes::group);
-            if (sdp_attributes.end() != group)
-            {
-                const auto& value = sdp::fields::value(*group);
+            const auto& value = sdp::fields::value(*group);
 
-                sdp_params.group.semantics = sdp::group_semantics_type{ sdp::fields::semantics(value) };
-                for (const auto& mid : sdp::fields::mids(value))
-                {
-                    sdp_params.group.media_stream_ids.push_back(mid.as_string());
-                }
+            sdp_params.group.semantics = sdp::group_semantics_type{ sdp::fields::semantics(value) };
+            for (const auto& mid : sdp::fields::mids(value))
+            {
+                sdp_params.group.media_stream_ids.push_back(mid.as_string());
             }
         }
 
@@ -929,16 +990,21 @@ namespace nmos
 
         // ts-refclk attributes
         // See https://tools.ietf.org/html/rfc7273
-        sdp_params.ts_refclk = boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(media_descriptions.as_array() | boost::adaptors::filtered([](const value& media_description)
+        sdp_params.ts_refclk = boost::copy_range<std::vector<sdp_parameters::ts_refclk_t>>(media_descriptions.as_array() | boost::adaptors::transformed([&sdp](const value& media_description) -> sdp_parameters::ts_refclk_t
         {
-            auto& attributes = sdp::fields::attributes(media_description).as_array();
-            auto ts_refclk = sdp::find_name(attributes, sdp::attributes::ts_refclk);
-            return attributes.end() != ts_refclk;
-        }) | boost::adaptors::transformed([](const value& media_description)
-        {
-            auto& attributes = sdp::fields::attributes(media_description).as_array();
-            auto ts_refclk = sdp::find_name(attributes, sdp::attributes::ts_refclk);
-
+            auto& media_attributes = sdp::fields::attributes(media_description).as_array();
+            auto ts_refclk = sdp::find_name(media_attributes, sdp::attributes::ts_refclk);
+            // default to the "session-level" value if no "media-level" value
+            if (media_attributes.end() == ts_refclk)
+            {
+                auto& session_attributes = sdp::fields::attributes(sdp).as_array();
+                ts_refclk = sdp::find_name(session_attributes, sdp::attributes::ts_refclk);
+                if (session_attributes.end() == ts_refclk)
+                {
+                    // indicate not found by default-constructed value
+                    return{};
+                }
+            }
             const auto& value = sdp::fields::value(*ts_refclk);
             sdp::ts_refclk_source clock_source{ sdp::fields::clock_source(value) };
             if (sdp::ts_refclk_sources::ptp == clock_source)
@@ -979,22 +1045,34 @@ namespace nmos
         sdp_params.protocol = sdp::protocol{ sdp::fields::protocol(media) };
 
         // media description attributes
-        auto& attributes = sdp::fields::attributes(media_description).as_array();
+        const auto& media_attributes = sdp::fields::attributes(media_description).as_array();
 
         // mediaclk attribute
         // See https://tools.ietf.org/html/rfc7273
-        auto mediaclk = sdp::find_name(attributes, sdp::attributes::mediaclk);
-        if (attributes.end() != mediaclk)
+        sdp_params.mediaclk = [&sdp](const value& media_description) -> sdp_parameters::mediaclk_t
         {
+            auto& media_attributes = sdp::fields::attributes(media_description).as_array();
+            auto mediaclk = sdp::find_name(media_attributes, sdp::attributes::mediaclk);
+            // default to the "session-level" value if no "media-level" value
+            if (media_attributes.end() == mediaclk)
+            {
+                auto& session_attributes = sdp::fields::attributes(sdp).as_array();
+                mediaclk = sdp::find_name(session_attributes, sdp::attributes::mediaclk);
+                if (session_attributes.end() == mediaclk)
+                {
+                    // indicate not found by default-constructed value
+                    return{};
+                }
+            }
             const auto& value = sdp::fields::value(*mediaclk).as_string();
             const auto eq = value.find(U('='));
-            sdp_params.mediaclk = { sdp::media_clock_source{ value.substr(0, eq) }, utility::string_t::npos != eq ? value.substr(eq + 1) : utility::string_t{} };
-        }
+            return{ sdp::media_clock_source{ value.substr(0, eq) }, utility::string_t::npos != eq ? value.substr(eq + 1) : utility::string_t{} };
+        }(media_description);
 
         // rtpmap attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
-        auto rtpmap = sdp::find_name(attributes, sdp::attributes::rtpmap);
-        if (attributes.end() == rtpmap) throw details::sdp_processing_error("missing attribute: rtpmap");
+        auto rtpmap = sdp::find_name(media_attributes, sdp::attributes::rtpmap);
+        if (media_attributes.end() == rtpmap) throw details::sdp_processing_error("missing attribute: rtpmap");
         const auto& rtpmap_value = sdp::fields::value(*rtpmap);
 
         sdp_params.rtpmap.encoding_name = sdp::fields::encoding_name(rtpmap_value);
@@ -1019,20 +1097,20 @@ namespace nmos
         // ptime attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
         {
-            auto ptime = sdp::find_name(attributes, sdp::attributes::ptime);
+            auto ptime = sdp::find_name(media_attributes, sdp::attributes::ptime);
             if (is_audio_sdp)
             {
-                if (attributes.end() == ptime) throw details::sdp_processing_error("missing attribute: ptime");
+                if (media_attributes.end() == ptime) throw details::sdp_processing_error("missing attribute: ptime");
                 sdp_params.audio.packet_time = sdp::fields::value(*ptime).as_double();
             }
         }
 
         // fmtp attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
-        auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
+        auto fmtp = sdp::find_name(media_attributes, sdp::attributes::fmtp);
         if (is_video_sdp)
         {
-            if (attributes.end() == fmtp) throw details::sdp_processing_error("missing attribute: fmtp");
+            if (media_attributes.end() == fmtp) throw details::sdp_processing_error("missing attribute: fmtp");
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
 
@@ -1104,7 +1182,7 @@ namespace nmos
 
             // don't examine optional parameters "TROFF", "CMAX"
         }
-        else if (is_audio_sdp && attributes.end() != fmtp)
+        else if (is_audio_sdp && media_attributes.end() != fmtp)
         {
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
@@ -1116,7 +1194,7 @@ namespace nmos
                 sdp_params.audio.channel_order = sdp::fields::value(*channel_order).as_string();
             }
         }
-        else if (is_data_sdp && attributes.end() != fmtp)
+        else if (is_data_sdp && media_attributes.end() != fmtp)
         {
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
@@ -1141,7 +1219,7 @@ namespace nmos
                 sdp_params.data.vpid_code = (nmos::vpid_code)utility::istringstreamed<uint32_t>(sdp::fields::value(*vpid_code).as_string());
             }
         }
-        else if (is_mux_sdp && attributes.end() != fmtp)
+        else if (is_mux_sdp && media_attributes.end() != fmtp)
         {
             const auto& fmtp_value = sdp::fields::value(*fmtp);
             const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
@@ -1166,6 +1244,7 @@ namespace nmos
         return sdp_params;
     }
 
+    // Get SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     std::pair<sdp_parameters, web::json::value> parse_session_description(const web::json::value& session_description)
     {
         return{ get_session_description_sdp_parameters(session_description), get_session_description_transport_params(session_description) };
