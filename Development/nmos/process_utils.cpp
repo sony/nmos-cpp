@@ -39,7 +39,7 @@ namespace nmos
 #endif
                 SIGTERM);
             signals.async_wait([](const boost::system::error_code&, int){});
-            service.run_one();
+            service.run();
         }
     }
 }
