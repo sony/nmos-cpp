@@ -289,6 +289,36 @@ namespace web
         {
             return 0 == value.size();
         }
+
+        inline web::json::value& front(web::json::array& value)
+        {
+            return value.at(0);
+        }
+
+        inline const web::json::value& front(const web::json::array& value)
+        {
+            return value.at(0);
+        }
+
+        inline web::json::value& back(web::json::array& value)
+        {
+            return value.at(value.size() - 1);
+        }
+
+        inline const web::json::value& back(const web::json::array& value)
+        {
+            return value.at(value.size() - 1);
+        }
+
+        inline bool empty(const web::json::array& value)
+        {
+            return 0 == value.size();
+        }
+
+        inline bool empty(const web::json::object& value)
+        {
+            return value.empty();
+        }
     }
 }
 
