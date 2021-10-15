@@ -73,10 +73,8 @@ namespace impl
         const web::json::field_as_integer_or frame_height{ U("frame_height"), 1080 };
 
         // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
-        // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
-        // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
-        // like-numbered sample rows of the temporally first field."
-        const web::json::field_as_string_or interlace_mode{ U("interlace_mode"), U("interlaced_tff") };
+        // when omitted, a default is used based on the frame_rate, etc.
+        const web::json::field_as_string interlace_mode{ U("interlace_mode") };
 
         // channel_count: controls the number of channels in audio sources
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
@@ -84,6 +82,8 @@ namespace impl
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
     }
+
+    nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
     // each 'port' of the example node has a source, flow, sender and compatible receiver
@@ -168,7 +168,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
     const auto frame_width = impl::fields::frame_width(model.settings);
     const auto frame_height = impl::fields::frame_height(model.settings);
-    const auto interlace_mode = nmos::interlace_mode{ impl::fields::interlace_mode(model.settings) };
+    const auto interlace_mode = impl::get_interlace_mode(model.settings);
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
@@ -1026,6 +1026,23 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 
 namespace impl
 {
+    nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
+    {
+        if (settings.has_field(impl::fields::interlace_mode))
+        {
+            return nmos::interlace_mode{ impl::fields::interlace_mode(settings) };
+        }
+        // for the default, 1080i50 and 1080i59.94 are arbitrarily preferred to 1080p25 and 1080p29.97
+        // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
+        // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
+        // like-numbered sample rows of the temporally first field."
+        const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(settings));
+        const auto frame_height = impl::fields::frame_height(settings);
+        return (nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate) && 1080 == frame_height
+            ? nmos::interlace_modes::interlaced_tff
+            : nmos::interlace_modes::progressive;
+    }
+
     // find interface with the specified address
     std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address)
     {
