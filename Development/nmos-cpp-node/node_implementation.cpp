@@ -120,6 +120,9 @@ namespace impl
         { U("Low Frequency Effects Channel"), nmos::channel_symbols::LFE }
     };
 
+    // find interface with the specified address
+    std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address);
+
     // generate repeatable ids for the example node's resources
     nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const port& port = {}, int index = 0);
     std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const port& port, int how_many = 1);
@@ -215,19 +218,28 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 #endif
 
     // prepare interface bindings for all senders and receivers
-    const auto host_interface_ = boost::range::find_if(host_interfaces, [&](const web::hosts::experimental::host_interface& interface)
-    {
-        return interface.addresses.end() != boost::range::find(interface.addresses, nmos::fields::host_address(model.settings));
-    });
+    const auto& host_address = nmos::fields::host_address(model.settings);
+    // the interface corresponding to the host address is used for the example node's WebSocket senders and receivers
+    const auto host_interface_ = impl::find_interface(host_interfaces, host_address);
     if (host_interfaces.end() == host_interface_)
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to host_address?";
         return;
     }
     const auto& host_interface = *host_interface_;
-    // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's senders and receivers
-    const auto& primary_interface = host_interfaces.front();
-    const auto& secondary_interface = host_interfaces.back();
+    // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's RTP senders and receivers
+    // rather than just picking the one(s) corresponding to the first and last of the specified host addresses
+    const auto& primary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::front(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
+    const auto& secondary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::back(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
+    const auto primary_interface_ = impl::find_interface(host_interfaces, primary_address);
+    const auto secondary_interface_ = impl::find_interface(host_interfaces, secondary_address);
+    if (host_interfaces.end() == primary_interface_ || host_interfaces.end() == secondary_interface_)
+    {
+        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to one of the host_addresses?";
+        return;
+    }
+    const auto& primary_interface = *primary_interface_;
+    const auto& secondary_interface = *secondary_interface_;
     const auto interface_names = smpte2022_7
         ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
         : std::vector<utility::string_t>{ primary_interface.name };
@@ -1014,6 +1026,15 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 
 namespace impl
 {
+    // find interface with the specified address
+    std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address)
+    {
+        return boost::range::find_if(interfaces, [&](const web::hosts::experimental::host_interface& interface)
+        {
+            return interface.addresses.end() != boost::range::find(interface.addresses, address);
+        });
+    }
+
     // generate repeatable ids for the example node's resources
     nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const impl::port& port, int index)
     {
