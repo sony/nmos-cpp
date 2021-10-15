@@ -12,6 +12,7 @@
 #ifdef HAVE_LLDP
 #include "lldp/lldp_manager.h"
 #endif
+#include "nmos/activation_mode.h"
 #include "nmos/capabilities.h"
 #include "nmos/channels.h"
 #include "nmos/channelmapping_resources.h"
@@ -55,6 +56,9 @@ namespace impl
         // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
 
+        // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
+        const web::json::field_as_bool_or activate_senders{ U("activate_senders"), true };
+
         // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
         // and the equivalent parameter constraint on video receivers
         // the value must be an object like { "numerator": 25, "denominator": 1 }
@@ -64,8 +68,15 @@ namespace impl
             { nmos::fields::denominator, 1 }
         }) };
 
-        // hm, could add custom settings for e.g. frame_width, frame_height to allow 720p and UHD,
-        // and interlace_mode to allow 1080p25 and 1080p29.97 as well as 1080i50 and 1080i59.94?
+        // frame_width, frame_height: control the frame_width and frame_height of video flows
+        const web::json::field_as_integer_or frame_width{ U("frame_width"), 1920 };
+        const web::json::field_as_integer_or frame_height{ U("frame_height"), 1080 };
+
+        // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
+        // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
+        // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
+        // like-numbered sample rows of the temporally first field."
+        const web::json::field_as_string_or interlace_mode{ U("interlace_mode"), U("interlaced_tff") };
 
         // channel_count: controls the number of channels in audio sources
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
@@ -111,8 +122,12 @@ namespace impl
 
     // generate repeatable ids for the example node's resources
     nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const port& port = {}, int index = 0);
-    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const port& port, int how_many);
-    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const port& port, int how_many = 1);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many = 1);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const std::vector<nmos::type>& types, const std::vector<port>& ports, int how_many = 1);
+
+    // generate a repeatable source-specific multicast address for each leg of a sender
+    utility::string_t make_source_specific_multicast_address_v4(const nmos::id& id, int leg = 0);
 
     // add a helpful suffix to the label of a sub-resource for the example node
     void set_label_description(nmos::resource& resource, const port& port, int index);
@@ -148,12 +163,14 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
+    const auto frame_width = impl::fields::frame_width(model.settings);
+    const auto frame_height = impl::fields::frame_height(model.settings);
+    const auto interlace_mode = nmos::interlace_mode{ impl::fields::interlace_mode(model.settings) };
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
-    // any delay between updates to the model resources is unnecessary
-    // this just serves as a slightly more realistic example!
-    const unsigned int delay_millis{ 10 };
+    // any delay between updates to the model resources is unnecessary unless for debugging purposes
+    const unsigned int delay_millis{ 0 };
 
     // it is important that the model be locked before inserting, updating or deleting a resource
     // and that the the node behaviour thread be notified after doing so
@@ -259,16 +276,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource flow;
             if (impl::ports::video == port)
             {
-                // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
-                // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
-                // like-numbered sample rows of the temporally first field."
-                const auto interlace_mode = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
-                    ? nmos::interlace_modes::interlaced_tff
-                    : nmos::interlace_modes::progressive;
                 flow = nmos::make_raw_video_flow(
                     flow_id, source_id, device_id,
                     frame_rate,
-                    1920, 1080, interlace_mode,
+                    frame_width, frame_height, interlace_mode,
                     nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
                     model.settings
                 );
@@ -311,11 +322,17 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
 
-            // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
-            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-            set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
-            nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+            if (impl::fields::activate_senders(model.settings))
+            {
+                // initialize this sender with a scheduled activation, e.g. to enable the IS-05-01 test suite to run immediately
+                auto& staged = connection_sender.data[nmos::fields::endpoint_staged];
+                staged[nmos::fields::master_enable] = value::boolean(true);
+                staged[nmos::fields::activation] = value_of({
+                    { nmos::fields::mode, nmos::activation_modes::activate_scheduled_relative.name },
+                    { nmos::fields::requested_time, U("0:0") },
+                    { nmos::fields::activation_time, nmos::make_version() }
+                });
+            }
 
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
@@ -340,8 +357,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
                         { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
-                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
-                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
+                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
                         { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
                         { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
                     })
@@ -852,8 +869,8 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
+            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
@@ -1020,6 +1037,31 @@ namespace impl
             boost::range::push_back(ids, make_ids(seed_id, type, port, how_many));
         }
         return ids;
+    }
+
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const std::vector<nmos::type>& types, const std::vector<port>& ports, int how_many)
+    {
+        // hm, boost::range::combine arrived in Boost 1.56.0
+        std::vector<nmos::id> ids;
+        for (const auto& type : types)
+        {
+            boost::range::push_back(ids, make_ids(seed_id, type, ports, how_many));
+        }
+        return ids;
+    }
+
+    // generate a repeatable source-specific multicast address for each leg of a sender
+    utility::string_t make_source_specific_multicast_address_v4(const nmos::id& id, int leg)
+    {
+        // hash the pseudo-random id and leg to generate the address
+        const auto s = id + U('/') + utility::conversions::details::to_string_t(leg);
+        const auto h = std::hash<utility::string_t>{}(s);
+        auto a = boost::asio::ip::address_v4(boost::asio::ip::address_v4::uint_type(h)).to_bytes();
+        // ensure the address is in the source-specific multicast block reserved for local host allocation, 232.0.1.0-232.255.255.255
+        // see https://www.iana.org/assignments/multicast-addresses/multicast-addresses.xhtml#multicast-addresses-10
+        a[0] = 232;
+        a[2] |= 1;
+        return utility::s2us(boost::asio::ip::address_v4(a).to_string());
     }
 
     // add a helpful suffix to the label of a sub-resource for the example node
