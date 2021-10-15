@@ -1077,7 +1077,7 @@ namespace impl
         // hash the pseudo-random id and leg to generate the address
         const auto s = id + U('/') + utility::conversions::details::to_string_t(leg);
         const auto h = std::hash<utility::string_t>{}(s);
-        auto a = boost::asio::ip::address_v4(boost::asio::ip::address_v4::uint_type(h)).to_bytes();
+        auto a = boost::asio::ip::address_v4(uint32_t(h)).to_bytes();
         // ensure the address is in the source-specific multicast block reserved for local host allocation, 232.0.1.0-232.255.255.255
         // see https://www.iana.org/assignments/multicast-addresses/multicast-addresses.xhtml#multicast-addresses-10
         a[0] = 232;
