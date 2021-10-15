@@ -7,10 +7,21 @@
     // how_many: provides for very basic testing of a node with many sub-resources of each type
     //"how_many" : 7,
 
+    // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
+    //"activate_senders": false,
+
     // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
     // and the equivalent parameter constraint on video receivers
     // the value must be an object like { "numerator": 25, "denominator": 1 }
     //"frame_rate": { "numerator": 60000, "denominator": 1001 },
+
+    // frame_width, frame_height: control the frame_width and frame_height of video flows
+    //"frame_width": 3840,
+    //"frame_height": 2160,
+
+    // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
+    // when omitted, a default is used based on the frame_rate, etc.
+    //"interlace_mode": "progressive",
 
     // channel_count: controls the number of channels in audio sources
     //"channel_count": 8,
