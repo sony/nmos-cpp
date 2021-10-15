@@ -842,7 +842,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-        // this code relies on the specific constraints added by nmos_implementation_thread
+        // this code relies on the specific constraints added by node_implementation_thread
         const auto& constraints = nmos::fields::endpoint_constraints(connection_resource.data);
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
