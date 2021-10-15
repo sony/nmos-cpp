@@ -363,7 +363,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
-                const auto interlace_modes = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
+                const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
                     ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
                     : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
