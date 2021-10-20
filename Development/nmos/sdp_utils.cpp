@@ -136,7 +136,7 @@ namespace nmos
         }
     }
 
-    static sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         sdp_parameters::video_t params;
         params.tp = sdp::type_parameters::type_N;
@@ -167,7 +167,7 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, 96, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    static sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         sdp_parameters::audio_t params;
 
@@ -192,7 +192,7 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, 97, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    static sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         sdp_parameters::data_t params;
 
@@ -209,7 +209,7 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, 100, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    static sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         sdp_parameters::mux_t params;
         // "Senders shall comply with either the Narrow Linear Senders (Type NL) requirements, or the Wide Senders (Type W) requirements."
@@ -222,6 +222,7 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, 98, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
+    // Construct SDP parameters from the IS-04 resources
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         const auto& format = nmos::fields::format(flow);
