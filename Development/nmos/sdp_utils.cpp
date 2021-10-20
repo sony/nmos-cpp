@@ -136,10 +136,10 @@ namespace nmos
         }
     }
 
-    sdp_parameters make_video_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_video_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
     {
         sdp_parameters::video_t params;
-        params.tp = sdp::type_parameters::type_N;
+        params.tp = tp ? *tp : sdp::type_parameters::type_N;
 
         // colorimetry map directly to flow_video json "colorspace"
         params.colorimetry = sdp::colorimetry{ nmos::fields::colorspace(flow) };
@@ -167,7 +167,7 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : 96, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    sdp_parameters make_audio_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_audio_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time)
     {
         sdp_parameters::audio_t params;
 
@@ -187,12 +187,12 @@ namespace nmos
         params.channel_order = nmos::make_fmtp_channel_order(channel_symbols);
 
         // ptime
-        params.packet_time = 1;
+        params.packet_time = packet_time ? *packet_time : 1;
 
         return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : 97, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    sdp_parameters make_data_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_data_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code)
     {
         sdp_parameters::data_t params;
 
@@ -205,16 +205,17 @@ namespace nmos
         }));
 
         // hm, no vpid_code in the flow
+        params.vpid_code = vpid_code ? *vpid_code : 0;
 
         return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : 100, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    sdp_parameters make_mux_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
+    sdp_parameters make_mux_sdp_parameters(bst::optional<uint64_t> payload_type, const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
     {
         sdp_parameters::mux_t params;
         // "Senders shall comply with either the Narrow Linear Senders (Type NL) requirements, or the Wide Senders (Type W) requirements."
         // See SMPTE ST 2022-8:2019 Section 6 Network Compatibility and Transmission Traffic Shape Models
-        params.tp = sdp::type_parameters::type_NL;
+        params.tp = tp ? *tp : sdp::type_parameters::type_NL;
 
         // Payload type 98 is "High bit rate media transport / 27-MHz Clock"
         // Payload type 99 is "High bit rate media transport FEC / 27-MHz Clock"
@@ -222,20 +223,20 @@ namespace nmos
         return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : 98, media_stream_ids, details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    // Construct SDP parameters from the IS-04 resources, using a default payload type
+    // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         const auto& format = nmos::fields::format(flow);
         if (nmos::formats::video.name == format)
-            return make_video_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain);
+            return make_video_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain, {});
         else if (nmos::formats::audio.name == format)
-            return make_audio_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain);
+            return make_audio_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain, {});
         else if (nmos::formats::data.name == format)
-            return make_data_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain);
+            return make_data_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain, {});
         else if (nmos::formats::mux.name == format)
-            return make_mux_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain);
+            return make_mux_sdp_parameters({}, node, source, flow, sender, media_stream_ids, ptp_domain, {});
         else
-            throw details::sdp_creation_error("unsuported media format");
+            throw details::sdp_creation_error("unsupported media format");
     }
 
     // deprecated, provided for backwards compatibility, because it may be necessary to also specify the PTP domain to generate an RFC 7273 'ts-refclk' attribute that meets the additional constraints of ST 2110-10
