@@ -227,6 +227,10 @@ else()
                 json_schema_validator PRIVATE
                 JSON_SCHEMA_BOOST_REGEX
                 )
+            target_link_libraries(
+                json_schema_validator PRIVATE
+                Boost::regex
+                )
         endif()
     endif()
 
