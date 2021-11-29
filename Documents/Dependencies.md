@@ -54,10 +54,18 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 1. Install Python 3 if necessary  
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`  
+2. Install Conan using `pip install conan`  
    Notes:
-   - Currently, Conan 1.33 or higher is required; version 1.39 (latest release at the time) has been tested
+   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install conan`  
+   - Currently, Conan 1.33 or higher is required; version 1.42.1 (latest release at the time) has been tested
    - Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan` regularly
+   - By default [Conan assumes semver compatibility](https://docs.conan.io/en/1.42/creating_packages/define_abi_compatibility.html#versioning-schema).
+     Boost and other C++ libraries do not meet this expectation and break ABI compatibility between e.g. minor versions.
+     Unfortunately, the recipes in Conan Center Index do not generally customize their `package_id` method to take this into account.
+     Therefore it is strongly recommended to change Conan's default package id mode to `minor_mode` or a stricter mode such as `recipe_revision_mode`.
+     ```sh
+     conan config set general.default_package_id_mode=minor_mode
+     ```
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
