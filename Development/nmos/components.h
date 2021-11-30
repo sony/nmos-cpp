@@ -22,6 +22,13 @@ namespace nmos
         const component_name G{ U("G") };
         const component_name B{ U("B") };
         const component_name DepthMap{ U("DepthMap") };
+        // Experimental extension, to support CLYCbCr, XYZ, and KEY signal formats
+        const component_name Yc{ U("Yc") };
+        const component_name Cbc{ U("Cbc") };
+        const component_name Crc{ U("Crc") };
+        const component_name X{ U("X") };
+        const component_name Z{ U("Z") };
+        const component_name Key{ U("Key") };
     }
 
     web::json::value make_component(const nmos::component_name& name, unsigned int width, unsigned int height, unsigned int bit_depth);

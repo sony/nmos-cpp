@@ -13,12 +13,13 @@ namespace nmos
 {
     struct sdp_parameters;
 
-    // Sender helper functions
-
     namespace details
     {
         sdp::sampling make_sampling(const web::json::array& components);
+        web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth);
     }
+
+    // Sender helper functions
 
     // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain);

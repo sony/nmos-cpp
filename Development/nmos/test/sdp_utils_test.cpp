@@ -2,8 +2,17 @@
 #include "nmos/sdp_utils.h"
 
 #include "bst/test/test.h"
+#include "nmos/components.h"
 #include "nmos/json_fields.h"
 #include "sdp/sdp.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeComponents)
+{
+    // use the older function to test the newer function
+    BST_REQUIRE(nmos::make_components(nmos::YCbCr422, 1920, 1080, 10) == nmos::details::make_components(sdp::samplings::YCbCr_4_2_2, 1920, 1080, 10));
+    BST_REQUIRE(nmos::make_components(nmos::RGB444, 3840, 2160, 12) == nmos::details::make_components(sdp::samplings::RGB, 3840, 2160, 12));
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testInterpretationOfSdpFilesUnicast)

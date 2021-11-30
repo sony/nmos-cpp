@@ -468,7 +468,9 @@ namespace sdp
     DEFINE_STRING_ENUM(sampling)
     namespace samplings
     {
+        // Red-Green-Blue-Alpha
         const sampling RGBA{ U("RGBA") };
+        // Red-Green-Blue
         const sampling RGB{ U("RGB") };
         // Non-constant luminance YCbCr
         const sampling YCbCr_4_4_4{ U("YCbCr-4:4:4") };
