@@ -76,6 +76,7 @@ If using Conan, this section can be skipped.
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
 2. Expand the archive so that, for example, the boost\_1\_77\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
+   - atomic
    - chrono
    - date_time
    - regex
@@ -87,6 +88,7 @@ For example, on Windows, for Visual Studio 2019:
 bootstrap
 b2 toolset=msvc-14.2 ^
   --prefix=. ^
+  --with-atomic ^
   --with-chrono ^
   --with-date_time ^
   --with-regex ^
