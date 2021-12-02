@@ -6,6 +6,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
+#include <boost/range/numeric.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/capabilities.h"
 #include "nmos/clock_ref_type.h"
@@ -92,152 +93,84 @@ namespace nmos
             else throw sdp_creation_error("unexpected clock ref_type");
         }
 
-        sdp::sampling make_sampling(const web::json::array& components)
+        // See sdp::samplings
+        typedef std::pair<uint32_t, uint32_t> width_height_t;
+        static const std::map<sdp::sampling, std::vector<std::pair<component_name, width_height_t>>> samplers
         {
-            using name = component_name;
-            namespace names = component_names;
-
-            // https://tools.ietf.org/html/rfc4175#section-6.1
-
-            // convert json to component name vs dimension lookup for easy access,
-            // as components can be in any order inside the json
-            struct dimension { int width; int height; };
-            const auto dimensions = boost::copy_range<std::map<name, dimension>>(components | boost::adaptors::transformed([](const web::json::value& component)
-            {
-                return std::map<name, dimension>::value_type{ name{ nmos::fields::name(component) }, dimension{ nmos::fields::width(component), nmos::fields::height(component) } };
-            }));
-            const auto de = dimensions.end();
-
-            // See sdp::samplings
-            if (4 == dimensions.size() && de != dimensions.find(names::R) && de != dimensions.find(names::G) && de != dimensions.find(names::B) && de != dimensions.find(names::A))
-            {
-                // Red-Green-Blue-Alpha
-                return sdp::samplings::RGBA;
-            }
-            else if (3 == dimensions.size() && de != dimensions.find(names::R) && de != dimensions.find(names::G) && de != dimensions.find(names::B))
-            {
-                // Red-Green-Blue
-                return sdp::samplings::RGB;
-            }
-            else if (3 == dimensions.size() && de != dimensions.find(names::Y) && de != dimensions.find(names::Cb) && de != dimensions.find(names::Cr))
-            {
-                // Non-constant luminance YCbCr
-                const auto& Y = dimensions.at(names::Y);
-                const auto& Cb = dimensions.at(names::Cb);
-                const auto& Cr = dimensions.at(names::Cr);
-                if (Cb.width != Cr.width || Cb.height != Cr.height) throw sdp_creation_error("unsupported YCbCr dimensions");
-                const auto& C = Cb;
-                if (Y.height == C.height)
-                {
-                    if (Y.width == C.width) return sdp::samplings::YCbCr_4_4_4;
-                    else if (Y.width / 2 == C.width) return sdp::samplings::YCbCr_4_2_2;
-                    else if (Y.width / 4 == C.width) return sdp::samplings::YCbCr_4_1_1;
-                    else throw sdp_creation_error("unsupported YCbCr dimensions");
-                }
-                else if (Y.height / 2 == C.height)
-                {
-                    if (Y.width / 2 == C.width) return sdp::samplings::YCbCr_4_2_0;
-                    else throw sdp_creation_error("unsupported YCbCr dimensions");
-                }
-                else throw sdp_creation_error("unsupported YCbCr dimensions");
-            }
-            else if (3 == dimensions.size() && de != dimensions.find(names::Yc) && de != dimensions.find(names::Cbc) && de != dimensions.find(names::Crc))
-            {
-                // Constant luminance YCbCr
-                const auto& Y = dimensions.at(names::Yc);
-                const auto& Cb = dimensions.at(names::Cbc);
-                const auto& Cr = dimensions.at(names::Crc);
-                if (Cb.width != Cr.width || Cb.height != Cr.height) throw sdp_creation_error("unsupported CLYCbCr dimensions");
-                const auto& C = Cb;
-                if (Y.height == C.height)
-                {
-                    if (Y.width == C.width) return sdp::samplings::CLYCbCr_4_4_4;
-                    else if (Y.width / 2 == C.width) return sdp::samplings::CLYCbCr_4_2_2;
-                    else throw sdp_creation_error("unsupported CLYCbCr dimensions");
-                }
-                else if (Y.height / 2 == C.height)
-                {
-                    if (Y.width / 2 == C.width) return sdp::samplings::CLYCbCr_4_2_0;
-                    else throw sdp_creation_error("unsupported CLYCbCr dimensions");
-                }
-                else throw sdp_creation_error("unsupported CLYCbCr dimensions");
-            }
-            else if (3 == dimensions.size() && de != dimensions.find(names::I) && de != dimensions.find(names::Ct) && de != dimensions.find(names::Cp))
-            {
-                // Constant intensity ICtCp
-                const auto& I = dimensions.at(names::I);
-                const auto& Ct = dimensions.at(names::Ct);
-                const auto& Cp = dimensions.at(names::Cp);
-                if (Ct.width != Cp.width || Ct.height != Cp.height) throw sdp_creation_error("unsupported ICtCp dimensions");
-                const auto& C = Ct;
-                if (I.height == C.height)
-                {
-                    if (I.width == C.width) return sdp::samplings::ICtCp_4_4_4;
-                    else if (I.width / 2 == C.width) return sdp::samplings::ICtCp_4_2_2;
-                    else throw sdp_creation_error("unsupported ICtCp dimensions");
-                }
-                else if (I.height / 2 == C.height)
-                {
-                    if (I.width / 2 == C.width) return sdp::samplings::ICtCp_4_2_0;
-                    else throw sdp_creation_error("unsupported ICtCp dimensions");
-                }
-                else throw sdp_creation_error("unsupported ICtCp dimensions");
-            }
-            else if (3 == dimensions.size() && de != dimensions.find(names::X) && de != dimensions.find(names::Y) && de != dimensions.find(names::Z))
-            {
-                // XYZ
-                return sdp::samplings::XYZ;
-            }
-            else if (1 == dimensions.size() && de != dimensions.find(names::Key))
-            {
-                // Key signal represented as a single component
-                return sdp::samplings::KEY;
-            }
-            else throw sdp_creation_error("unsupported components");
-        }
+            // Red-Green-Blue-Alpha
+            { sdp::samplings::RGBA, { { component_names::R, { 1, 1 } }, { component_names::G, { 1, 1 } }, { component_names::B, { 1, 1 } }, { component_names::A, { 1, 1 } } } },
+            // Red-Green-Blue
+            { sdp::samplings::RGB, { { component_names::R, { 1, 1 } }, { component_names::G, { 1, 1 } }, { component_names::B, { 1, 1 } } } },
+            // Non-constant luminance YCbCr
+            { sdp::samplings::YCbCr_4_4_4, { { component_names::Y, { 1, 1 } }, { component_names::Cb, { 1, 1 } }, { component_names::Cr, { 1, 1 } } } },
+            { sdp::samplings::YCbCr_4_2_2, { { component_names::Y, { 1, 1 } }, { component_names::Cb, { 2, 1 } }, { component_names::Cr, { 2, 1 } } } },
+            { sdp::samplings::YCbCr_4_2_0, { { component_names::Y, { 1, 1 } }, { component_names::Cb, { 2, 2 } }, { component_names::Cr, { 2, 2 } } } },
+            { sdp::samplings::YCbCr_4_1_1, { { component_names::Y, { 1, 1 } }, { component_names::Cb, { 4, 1 } }, { component_names::Cr, { 4, 1 } } } },
+            // Constant luminance YCbCr
+            { sdp::samplings::CLYCbCr_4_4_4, { { component_names::Yc, { 1, 1 } }, { component_names::Cbc, { 1, 1 } }, { component_names::Crc, { 1, 1 } } } },
+            { sdp::samplings::CLYCbCr_4_2_2, { { component_names::Yc, { 1, 1 } }, { component_names::Cbc, { 2, 1 } }, { component_names::Crc, { 2, 1 } } } },
+            { sdp::samplings::CLYCbCr_4_2_0, { { component_names::Yc, { 1, 1 } }, { component_names::Cbc, { 2, 2 } }, { component_names::Crc, { 2, 2 } } } },
+            // Constant intensity ICtCp
+            { sdp::samplings::ICtCp_4_4_4, { { component_names::I, { 1, 1 } }, { component_names::Ct, { 1, 1 } }, { component_names::Cp, { 1, 1 } } } },
+            { sdp::samplings::ICtCp_4_2_2, { { component_names::I, { 1, 1 } }, { component_names::Ct, { 2, 1 } }, { component_names::Cp, { 2, 1 } } } },
+            { sdp::samplings::ICtCp_4_2_0, { { component_names::I, { 1, 1 } }, { component_names::Ct, { 2, 2 } }, { component_names::Cp, { 2, 2 } } } },
+            // XYZ
+            { sdp::samplings::XYZ, { { component_names::X, { 1, 1 } }, { component_names::Y, { 1, 1 } }, { component_names::Z, { 1, 1 } } } },
+            // Key signal represented as a single component
+            { sdp::samplings::KEY, { { component_names::Key, { 1, 1 } } } },
+            // Sampling signaled by the payload
+            { sdp::samplings::UNSPECIFIED, {} }
+        };
 
         web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth)
         {
             using web::json::value;
             using web::json::value_from_elements;
-            using name = component_name;
-            namespace names = component_names;
-            struct component_sampler { name c; uint32_t dw; uint32_t dh; };
-            // See sdp::samplings
-            static const std::map<sdp::sampling, std::vector<component_sampler>> samplers
-            {
-                // Red-Green-Blue-Alpha
-                { sdp::samplings::RGBA, { { names::R, 1, 1 }, { names::G, 1, 1 }, { names::B, 1, 1 }, { names::A, 1, 1 } } },
-                // Red-Green-Blue
-                { sdp::samplings::RGB, { { names::R, 1, 1 }, { names::G, 1, 1 }, { names::B, 1, 1 } } },
-                // Non-constant luminance YCbCr
-                { sdp::samplings::YCbCr_4_4_4, { { names::Y, 1, 1 }, { names::Cb, 1, 1 }, { names::Cr, 1, 1 } } },
-                { sdp::samplings::YCbCr_4_2_2, { { names::Y, 1, 1 }, { names::Cb, 2, 1 }, { names::Cr, 2, 1 } } },
-                { sdp::samplings::YCbCr_4_2_0, { { names::Y, 1, 1 }, { names::Cb, 2, 2 }, { names::Cr, 2, 2 } } },
-                { sdp::samplings::YCbCr_4_1_1, { { names::Y, 1, 1 }, { names::Cb, 4, 1 }, { names::Cr, 4, 1 } } },
-                // Constant luminance YCbCr
-                { sdp::samplings::CLYCbCr_4_4_4, { { names::Yc, 1, 1 }, { names::Cbc, 1, 1 }, { names::Crc, 1, 1 } } },
-                { sdp::samplings::CLYCbCr_4_2_2, { { names::Yc, 1, 1 }, { names::Cbc, 2, 1 }, { names::Crc, 2, 1 } } },
-                { sdp::samplings::CLYCbCr_4_2_0, { { names::Yc, 1, 1 }, { names::Cbc, 2, 2 }, { names::Crc, 2, 2 } } },
-                // Constant intensity ICtCp
-                { sdp::samplings::ICtCp_4_4_4, { { names::I, 1, 1 }, { names::Ct, 1, 1 }, { names::Cp, 1, 1 } } },
-                { sdp::samplings::ICtCp_4_2_2, { { names::I, 1, 1 }, { names::Ct, 2, 1 }, { names::Cp, 2, 1 } } },
-                { sdp::samplings::ICtCp_4_2_0, { { names::I, 1, 1 }, { names::Ct, 2, 2 }, { names::Cp, 2, 2 } } },
-                // XYZ
-                { sdp::samplings::XYZ, { { names::X, 1, 1 }, { names::Y, 1, 1 }, { names::Z, 1, 1 } } },
-                // Key signal represented as a single component
-                { sdp::samplings::KEY, { { names::Key, 1, 1 } } },
-                // Sampling signaled by the payload
-                { sdp::samplings::UNSPECIFIED, {} },
-            };
 
             const auto sampler = samplers.find(sampling);
             if (samplers.end() == sampler) return value::null();
 
-            return value_from_elements(sampler->second | boost::adaptors::transformed([&](const component_sampler& sampler)
+            return value_from_elements(sampler->second | boost::adaptors::transformed([&](const std::pair<component_name, width_height_t>& component)
             {
-                return make_component(sampler.c, width / sampler.dw, height / sampler.dh, depth);
+                return make_component(component.first, width / component.second.first, height / component.second.second, depth);
             }));
+        }
+
+        sdp::sampling make_sampling(const web::json::array& components)
+        {
+            // https://tools.ietf.org/html/rfc4175#section-6.1
+
+            // each entry of the array indicates the number of samples in horizontal and vertical direction for the specified component
+            // which depends on the frame width and height, whereas the sampling values only indicate the relative (sub-)sampling frequency
+            // so to account for this and handle any order of the components in the array, convert into a map from component name to
+            // relative sampling period, i.e. Y@1920x1080, Cb@960x540, Cr@960x540 becomes Y@1:1, Cb@2:2, Cr@2:2 which is YCbCr_4_2_0
+
+            typedef std::map<component_name, width_height_t> components_t;
+            typedef std::map<components_t, sdp::sampling> samplers_t;
+
+            static const auto samplers = boost::copy_range<samplers_t>(nmos::details::samplers | boost::adaptors::transformed([](const std::pair<sdp::sampling, std::vector<std::pair<component_name, width_height_t>>>& sampler)
+            {
+                return samplers_t::value_type{ boost::copy_range<components_t>(sampler.second), sampler.first };
+            }));
+
+            const auto max_samples = boost::accumulate(components | boost::adaptors::transformed([](const web::json::value& component)
+            {
+                return width_height_t{ nmos::fields::width(component), nmos::fields::height(component) };
+            }), width_height_t{}, [](const width_height_t& lhs, const width_height_t& rhs)
+            {
+                return width_height_t{ (std::max)(lhs.first, rhs.first), (std::max)(lhs.second, rhs.second) };
+            });
+            const auto components_sampler = boost::copy_range<components_t>(components | boost::adaptors::transformed([&max_samples](const web::json::value& component)
+            {
+                const width_height_t samples{ nmos::fields::width(component), nmos::fields::height(component) };
+                if (0 != max_samples.first % samples.first || 0 != max_samples.second % samples.second) throw sdp_creation_error("unsupported components");
+                return components_t::value_type{ component_name{ nmos::fields::name(component) }, { max_samples.first / samples.first, max_samples.second / samples.second } };
+            }));
+
+            const auto sampler = samplers.find(components_sampler);
+            if (samplers.end() == sampler) throw sdp_creation_error("unsupported components");
+
+            return sampler->second;
         }
 
         // Payload identifiers 96-127 are used for payloads defined dynamically during a session

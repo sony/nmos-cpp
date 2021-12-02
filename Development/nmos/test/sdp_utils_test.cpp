@@ -4,14 +4,77 @@
 #include "bst/test/test.h"
 #include "nmos/components.h"
 #include "nmos/json_fields.h"
+#include "nmos/random.h"
 #include "sdp/sdp.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testMakeComponents)
+BST_TEST_CASE(testMakeComponentsMakeSampling)
 {
+    using web::json::value_of;
+
     // use the older function to test the newer function
-    BST_REQUIRE(nmos::make_components(nmos::YCbCr422, 1920, 1080, 10) == nmos::details::make_components(sdp::samplings::YCbCr_4_2_2, 1920, 1080, 10));
+    BST_REQUIRE(nmos::make_components(nmos::YCbCr422, 1920, 1080, 8) == nmos::details::make_components(sdp::samplings::YCbCr_4_2_2, 1920, 1080, 8));
     BST_REQUIRE(nmos::make_components(nmos::RGB444, 3840, 2160, 12) == nmos::details::make_components(sdp::samplings::RGB, 3840, 2160, 12));
+
+    const std::vector<sdp::sampling> samplings{
+        // Red-Green-Blue-Alpha
+        sdp::samplings::RGBA,
+        // Red-Green-Blue
+        sdp::samplings::RGB,
+        // Non-constant luminance YCbCr
+        sdp::samplings::YCbCr_4_4_4,
+        sdp::samplings::YCbCr_4_2_2,
+        sdp::samplings::YCbCr_4_2_0,
+        sdp::samplings::YCbCr_4_1_1,
+        // Constant luminance YCbCr
+        sdp::samplings::CLYCbCr_4_4_4,
+        sdp::samplings::CLYCbCr_4_2_2,
+        sdp::samplings::CLYCbCr_4_2_0,
+        // Constant intensity ICtCp
+        sdp::samplings::ICtCp_4_4_4,
+        sdp::samplings::ICtCp_4_2_2,
+        sdp::samplings::ICtCp_4_2_0,
+        // XYZ
+        sdp::samplings::XYZ,
+        // Key signal represented as a single component
+        sdp::samplings::KEY,
+        // Sampling signaled by the payload
+        sdp::samplings::UNSPECIFIED
+    };
+
+    const std::vector<std::pair<uint32_t, uint32_t>> dims{
+        { 3840, 2160 },
+        { 1920, 1080 },
+        { 1280,  720 }
+    };
+
+    nmos::details::seed_generator seeder;
+    std::default_random_engine gen(seeder);
+
+    for (const auto& sampling : samplings)
+    {
+        for (const auto& dim : dims)
+        {
+            auto components = nmos::details::make_components(sampling, dim.first, dim.second, 10);
+            BST_REQUIRE(sampling == nmos::details::make_sampling(components.as_array()));
+            std::shuffle(components.as_array().begin(), components.as_array().end(), gen);
+            BST_REQUIRE(sampling == nmos::details::make_sampling(components.as_array()));
+        }
+    }
+
+    const auto test_no_YCbCr_3_1_1 = value_of({
+        nmos::make_component(nmos::component_names::Y, 1440, 1080, 8),
+        nmos::make_component(nmos::component_names::Cb, 480, 1080, 8),
+        nmos::make_component(nmos::component_names::Cr, 480, 1080, 8)
+    });
+    BST_CHECK_THROW(nmos::details::make_sampling(test_no_YCbCr_3_1_1.as_array()), std::logic_error);
+
+    const auto test_no_integer_divisor = value_of({
+        nmos::make_component(nmos::component_names::Y, 100, 100, 8),
+        nmos::make_component(nmos::component_names::Cb, 40, 40, 8),
+        nmos::make_component(nmos::component_names::Cr, 40, 40, 8)
+    });
+    BST_REQUIRE_THROW(nmos::details::make_sampling(test_no_integer_divisor.as_array()), std::logic_error);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
