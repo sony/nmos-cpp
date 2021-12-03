@@ -8,6 +8,7 @@ namespace nmos
 {
     // Components (used in raw video flows)
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_raw.json
+    // and https://github.com/AMWA-TV/nmos-parameter-registers/tree/main/flow-attributes#components
     DEFINE_STRING_ENUM(component_name)
     namespace component_names
     {
