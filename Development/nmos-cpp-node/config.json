@@ -5,7 +5,7 @@
     // Custom settings for the example node implementation
 
     // how_many: provides for very basic testing of a node with many sub-resources of each type
-    //"how_many" : 7,
+    //"how_many": 4,
 
     // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
     //"activate_senders": false,
@@ -22,6 +22,18 @@
     // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
     // when omitted, a default is used based on the frame_rate, etc.
     //"interlace_mode": "progressive",
+
+    // colorspace: controls the colorspace of video flows, see nmos::colorspace
+    //"colorspace": "BT709",
+
+    // transfer_chacteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
+    //"transfer_chacteristic": "SDR",
+
+    // color_sampling: controls the color (sub-)sampling mode of video flows, see sdp::sampling
+    //"color_sampling": "YCbCr-4:2:2",
+
+    // component_depth: controls the bits per component sample of video flows
+    //"component_depth": 10,
 
     // channel_count: controls the number of channels in audio sources
     //"channel_count": 8,

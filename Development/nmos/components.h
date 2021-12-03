@@ -23,7 +23,9 @@ namespace nmos
         const component_name G{ U("G") };
         const component_name B{ U("B") };
         const component_name DepthMap{ U("DepthMap") };
+
         // Experimental extension, to support CLYCbCr, XYZ, and KEY signal formats
+
         const component_name Yc{ U("Yc") };
         const component_name Cbc{ U("Cbc") };
         const component_name Crc{ U("Crc") };
@@ -35,6 +37,7 @@ namespace nmos
     web::json::value make_component(const nmos::component_name& name, unsigned int width, unsigned int height, unsigned int bit_depth);
 
     enum chroma_subsampling : int { YCbCr422, RGB444 };
+    // deprecated, see overload with sdp::sampling in nmos/sdp_utils.h
     web::json::value make_components(chroma_subsampling chroma_subsampling = YCbCr422, unsigned int frame_width = 1920, unsigned int frame_height = 1080, unsigned int bit_depth = 10);
 }
 

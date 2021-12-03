@@ -121,21 +121,24 @@ namespace nmos
             // Sampling signaled by the payload
             { sdp::samplings::UNSPECIFIED, {} }
         };
+    }
 
-        web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth)
+    web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth)
+    {
+        using web::json::value;
+        using web::json::value_from_elements;
+
+        const auto sampler = nmos::details::samplers.find(sampling);
+        if (nmos::details::samplers.end() == sampler) return value::null();
+
+        return value_from_elements(sampler->second | boost::adaptors::transformed([&](const std::pair<component_name, nmos::details::width_height_t>& component)
         {
-            using web::json::value;
-            using web::json::value_from_elements;
+            return make_component(component.first, width / component.second.first, height / component.second.second, depth);
+        }));
+    }
 
-            const auto sampler = samplers.find(sampling);
-            if (samplers.end() == sampler) return value::null();
-
-            return value_from_elements(sampler->second | boost::adaptors::transformed([&](const std::pair<component_name, width_height_t>& component)
-            {
-                return make_component(component.first, width / component.second.first, height / component.second.second, depth);
-            }));
-        }
-
+    namespace details
+    {
         sdp::sampling make_sampling(const web::json::array& components)
         {
             // https://tools.ietf.org/html/rfc4175#section-6.1

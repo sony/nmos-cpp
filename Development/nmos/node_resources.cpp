@@ -18,6 +18,7 @@
 #include "nmos/is08_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/resource.h"
+#include "nmos/sdp_utils.h" // for nmos::make_components
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
 #include "nmos/version.h"
@@ -271,6 +272,21 @@ namespace nmos
     }
 
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_raw.json
+    nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const sdp::sampling& color_sampling, unsigned int bit_depth, const nmos::settings& settings)
+    {
+        using web::json::value;
+
+        auto resource = make_video_flow(id, source_id, device_id, grain_rate, frame_width, frame_height, interlace_mode, colorspace, transfer_characteristic, settings);
+        auto& data = resource.data;
+
+        data[U("media_type")] = value::string(nmos::media_types::video_raw.name);
+
+        data[U("components")] = make_components(color_sampling, frame_width, frame_height, bit_depth);
+
+        return resource;
+    }
+
+    // deprecated, see overload with sdp::sampling
     nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, chroma_subsampling chroma_subsampling, unsigned int bit_depth, const nmos::settings& settings)
     {
         using web::json::value;
@@ -285,6 +301,7 @@ namespace nmos
         return resource;
     }
 
+    // deprecated, constructs a 1920 x 1080, interlaced, BT709, SDR, YCbCr-4:2:2, 10 bit raw video Flow
     nmos::resource make_raw_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::settings& settings)
     {
         return make_raw_video_flow(id, source_id, device_id, {}, 1920, 1080, nmos::interlace_modes::interlaced_bff, nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, YCbCr422, 10, settings);

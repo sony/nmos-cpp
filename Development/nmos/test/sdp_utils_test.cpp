@@ -13,8 +13,8 @@ BST_TEST_CASE(testMakeComponentsMakeSampling)
     using web::json::value_of;
 
     // use the older function to test the newer function
-    BST_REQUIRE(nmos::make_components(nmos::YCbCr422, 1920, 1080, 8) == nmos::details::make_components(sdp::samplings::YCbCr_4_2_2, 1920, 1080, 8));
-    BST_REQUIRE(nmos::make_components(nmos::RGB444, 3840, 2160, 12) == nmos::details::make_components(sdp::samplings::RGB, 3840, 2160, 12));
+    BST_REQUIRE(nmos::make_components(nmos::YCbCr422, 1920, 1080, 8) == nmos::make_components(sdp::samplings::YCbCr_4_2_2, 1920, 1080, 8));
+    BST_REQUIRE(nmos::make_components(nmos::RGB444, 3840, 2160, 12) == nmos::make_components(sdp::samplings::RGB, 3840, 2160, 12));
 
     const std::vector<sdp::sampling> samplings{
         // Red-Green-Blue-Alpha
@@ -55,7 +55,7 @@ BST_TEST_CASE(testMakeComponentsMakeSampling)
     {
         for (const auto& dim : dims)
         {
-            auto components = nmos::details::make_components(sampling, dim.first, dim.second, 10);
+            auto components = nmos::make_components(sampling, dim.first, dim.second, 10);
             BST_REQUIRE(sampling == nmos::details::make_sampling(components.as_array()));
             std::shuffle(components.as_array().begin(), components.as_array().end(), gen);
             BST_REQUIRE(sampling == nmos::details::make_sampling(components.as_array()));
