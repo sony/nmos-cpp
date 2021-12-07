@@ -321,7 +321,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
 
-            auto sender = nmos::make_sender(sender_id, flow_id, device_id, interface_names, model.settings);
+            const auto manifest_href = nmos::experimental::make_manifest_api_manifest(sender_id, model.settings);
+            auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::rtp, device_id, manifest_href.to_string(), interface_names, model.settings);
             impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
@@ -361,7 +362,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource receiver;
             if (impl::ports::video == port)
             {
-                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
                 const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
                     ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
@@ -379,7 +380,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::audio == port)
             {
-                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
+                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, 24, model.settings);
                 // add some example constraint sets; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
@@ -400,7 +401,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::data == port)
             {
-                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
@@ -411,7 +412,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::mux == port)
             {
-                receiver = nmos::make_mux_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                receiver = nmos::make_mux_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
