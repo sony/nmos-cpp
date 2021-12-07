@@ -47,12 +47,10 @@ int main(int argc, char* argv[])
             if (error)
             {
                 std::ifstream file(argv[1]);
-                node_model.settings = web::json::value::parse(file, error);
-            }
-            if (error || !node_model.settings.is_object())
-            {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Bad command-line settings [" << error << "]";
-                return -1;
+                // check the file can be opened, and is parsed to an object
+                file.exceptions(std::ios_base::failbit);
+                node_model.settings = web::json::value::parse(file);
+                node_model.settings.as_object();
             }
         }
 
@@ -128,32 +126,50 @@ int main(int argc, char* argv[])
     }
     catch (const web::json::json_exception& e)
     {
-        // most likely from incorrect types in the command line settings
+        // most likely from incorrect syntax or incorrect value types in the command line settings
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what();
+        return 1;
     }
     catch (const web::http::http_exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "HTTP error: " << e.what() << " [" << e.error_code() << "]";
+        return 1;
     }
     catch (const web::websockets::websocket_exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "WebSocket error: " << e.what() << " [" << e.error_code() << "]";
+        return 1;
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        // most likely from failing to open the command line settings file
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "File error: " << e.what()
+#if !defined(__GNUC__) || __GNUC__ > 4
+            // std::ios_base::failure doesn't derive from std::system_error until GCC 5
+            << " [" << e.code() << "]"
+#endif
+            ;
+        return 1;
     }
     catch (const std::system_error& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "System error: " << e.what() << " [" << e.code() << "]";
+        return 1;
     }
     catch (const std::runtime_error& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
+        return 1;
     }
     catch (const std::exception& e)
     {
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
+        return 1;
     }
     catch (...)
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
+        return 1;
     }
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
