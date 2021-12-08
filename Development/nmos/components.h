@@ -6,7 +6,7 @@
 
 namespace nmos
 {
-    // Components (used in raw video flows)
+    // Components (for raw video flows since IS-04 v1.1, extended to coded video Flows since v1.3 by the entry in the Flow Attributes register)
     // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video_raw.json
     // and https://github.com/AMWA-TV/nmos-parameter-registers/tree/main/flow-attributes#components
     DEFINE_STRING_ENUM(component_name)
@@ -24,7 +24,8 @@ namespace nmos
         const component_name B{ U("B") };
         const component_name DepthMap{ U("DepthMap") };
 
-        // Experimental extension, to support CLYCbCr, XYZ, and KEY signal formats
+        // Since IS-04 v1.3, component names may be defined in the Flow Attributes register of the NMOS Parameter Registers
+        // The following values support CLYCbCr, XYZ, and KEY signal formats, see sdp::samplings
 
         const component_name Yc{ U("Yc") };
         const component_name Cbc{ U("Cbc") };
