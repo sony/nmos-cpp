@@ -268,7 +268,7 @@ namespace nmos
                     auto heartbeats = result.then([this, client, token]() mutable
                     {
                         // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
-                        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+                        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
 
                         return pplx::do_while([this, client, token]() mutable
                         {

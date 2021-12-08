@@ -6,7 +6,7 @@
 namespace nmos
 {
     // Transfer characteristic (used in video flows)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/flow_video.json
     // and https://github.com/AMWA-TV/nmos-parameter-registers/tree/main/flow-attributes#transfer-characteristic
     DEFINE_STRING_ENUM(transfer_characteristic)
     namespace transfer_characteristics

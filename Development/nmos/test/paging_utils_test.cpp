@@ -112,7 +112,7 @@ namespace
 BST_TEST_CASE(testCursorBasedPagingDocumentationExamples)
 {
     // Initial test cases based on the examples in NMOS documentation
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#examples
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.5.%20APIs%20-%20Query%20Parameters.md#examples
 
     const resources resources{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 

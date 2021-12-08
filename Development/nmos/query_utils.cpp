@@ -57,7 +57,7 @@ namespace nmos
                 }
                 // extract the experimental flag, used to override the default behaviour that resources
                 // "must have all [higher-versioned] keys stripped by the Query API before they are returned"
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
                 else if (field.first == U("strip"))
                 {
                     strip = field.second.as_bool();
@@ -69,7 +69,7 @@ namespace nmos
                 }
                 // taking query.ancestry_id as an example, an error should be reported for unimplemented parameters
                 // "A 501 HTTP status code should be returned where an ancestry query is attempted against a Query API which does not implement it."
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#ancestry-queries-optional
+                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.5.%20APIs%20-%20Query%20Parameters.md#ancestry-queries-optional
                 else
                 {
                     throw std::runtime_error("unimplemented parameter - query." + utility::us2s(field.first));
@@ -97,7 +97,7 @@ namespace nmos
                 if (field.first == U("order"))
                 {
                     // paging.order is "create" or "update"
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml#L40
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/QueryAPI.raml#L40
                     order_by_created = U("create") == field.second.as_string();
                 }
                 else if (field.first == U("until"))

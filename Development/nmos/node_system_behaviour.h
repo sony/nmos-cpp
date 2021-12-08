@@ -25,7 +25,7 @@ namespace mdns
 }
 
 // Node behaviour with the System API
-// See https://github.com/AMWA-TV/nmos-system/blob/v1.0/README.md
+// See https://github.com/AMWA-TV/nmos-system/blob/v1.0.0/README.md
 namespace nmos
 {
     struct model;

@@ -938,7 +938,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         const auto& constraints = nmos::fields::endpoint_constraints(connection_resource.data);
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
         if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
             const bool smpte2022_7 = 1 < transport_params.size();

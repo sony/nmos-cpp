@@ -12,7 +12,7 @@ namespace nmos
         // "Implementations SHALL NOT use TLS 1.0 or 1.1. These are deprecated."
         // "Implementations SHALL NOT use SSL. Although the SSL protocol has previously,
         // been used to secure HTTP traffic no version of SSL is now considered secure."
-        // See https://github.com/AMWA-TV/nmos-secure-communication/blob/v1.0.x/docs/1.0.%20Secure%20Communication.md#tls
+        // See https://github.com/AMWA-TV/nmos-secure-communication/blob/v1.0.0/docs/1.0.%20Secure%20Communication.md#tls
         const auto ssl_context_options =
             ( boost::asio::ssl::context::no_sslv2
             | boost::asio::ssl::context::no_sslv3

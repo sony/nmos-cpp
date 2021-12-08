@@ -79,7 +79,7 @@ namespace nmos
     {
         // The possible states of node behaviour represent the two primary modes (registered operation and peer-to-peer operation)
         // and a few hopefully ephemeral states as the node works through the "Standard Registration Sequences".
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md
         enum
         {
             initial_discovery,
@@ -97,7 +97,7 @@ namespace nmos
         details::advertise_node_service(model, advertiser);
 
         // "If the chosen Registration API does not respond correctly at any time, another Registration API should be selected from the discovered list."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
+        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
 
         // hmm, it seems inefficient to store the discovered list in settings, when it's currently only used by this thread, but TR-1001-1:2018 insists
         // "Media Nodes should, through product-specific means, provide a status parameter indicating which registration service is currently in use."
@@ -147,7 +147,7 @@ namespace nmos
 
                     // "Should a 5xx error be encountered when interacting with all discoverable Registration APIs it is recommended that clients
                     // implement an exponential backoff algorithm in their next attempts until a non-5xx response code is received."
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
                     auto lock = model.read_lock();
                     discovery_backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), discovery_backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
                 }
@@ -428,13 +428,13 @@ namespace nmos
             // "For HTTP codes 400 and upwards, a JSON format response MUST be returned [in which]
             // the 'code' should always match the HTTP status code. 'error' must always be present
             // and in string format. 'debug' may be null if no further debug information is available"
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#error-codes--responses
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.0.%20APIs.md#error-codes--responses
             // Especially in the case of client (4xx) errors, logging these would be a good idea, but
             // would necessitate blocking for the response body, and extracting them from the json
             // and dealing with potential errors along the way...
 
             // "A 500 [or other 5xx] error, inability to connect or a timeout indicates a server side or connectivity issue."
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-500-or-other-5xx-inability-to-connect-or-a-timeout-on-heartbeat
             if (handle_client_error_as_server_error ? web::http::is_error_status_code(response.status_code()) : web::http::is_server_error_status_code(response.status_code()))
             {
                 // this could be regarded as a 'severe' error - presumably it is for the registry
@@ -446,7 +446,7 @@ namespace nmos
             }
             // "A 400 [or other 4xx] error [in response to a POST] indicates a client error which is likely
             // to be the result of a validation failure identified by the Registration API."
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-400-or-other-4xx-on-registration
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-400-or-other-4xx-on-registration
             else if (web::http::is_client_error_status_code(response.status_code()))
             {
                 // the severity here is trickier, since if it truly indicated a validation failure, this is a 'severe' error
@@ -507,7 +507,7 @@ namespace nmos
             // A 'removed' event calls for registration deletion, i.e. a DELETE request with a 204 'No Content' response
             // A 'modified' event calls for a registration update, i.e. a POST request with a 200 'OK' response (201 'Created'is unexpected)
             // A 'sync' event is also an (unnecessary) registration update, i.e. a POST request with a 200 'OK' response
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml
+            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/RegistrationAPI.raml
 
             const bool creation = resource_added_event == event_type;
             const bool update = resource_modified_event == event_type || resource_unchanged_event == event_type;
@@ -526,7 +526,7 @@ namespace nmos
 
                     // "On first registration with a Registration API this should result in a '201 Created' HTTP response code.
                     // If a Node receives a 200 code in this case, a previous record of the Node can be assumed to still exist."
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-200-on-first-registration
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-200-on-first-registration
 
                     if (web::http::status_codes::Created == response.status_code())
                     {
@@ -654,7 +654,7 @@ namespace nmos
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration heartbeat error: " << response.status_code() << " " << response.reason_phrase();
 
                     // "On encountering this code, a Node must re-register each of its resources with the Registration API in order."
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-404-on-heartbeat
+                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#node-encounters-http-404-on-heartbeat
                     return false;
                 }
                 else
@@ -996,7 +996,7 @@ namespace nmos
                             }
 
                             // "Following deletion of all other resources, the Node resource may be deleted and heartbeating stopped."
-                            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
+                            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
                             if (self_id == id_type.first && resource_removed_event == event_type)
                             {
                                 node_unregistered = true;

@@ -9,7 +9,7 @@ namespace slog
 }
 
 // Events API implementation
-// See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/EventsAPI.raml
+// See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/APIs/EventsAPI.raml
 namespace nmos
 {
     struct node_model;

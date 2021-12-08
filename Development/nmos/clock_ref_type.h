@@ -6,8 +6,8 @@
 namespace nmos
 {
     // Clock reference type
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_ptp.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/clock_internal.json
+    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/clock_ptp.json
     DEFINE_STRING_ENUM(clock_ref_type)
     namespace clock_ref_types
     {

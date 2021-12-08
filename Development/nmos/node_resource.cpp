@@ -9,7 +9,7 @@
 
 namespace nmos
 {
-    // See  https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/schemas/node.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/node.json
     nmos::resource make_node(const nmos::id& id, const web::json::value& clocks, const web::json::value& interfaces, const nmos::settings& settings)
     {
         using web::json::value;
@@ -56,7 +56,7 @@ namespace nmos
         return make_node(id, {}, {}, settings);
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_internal.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/clock_internal.json
     web::json::value make_internal_clock(const nmos::clock_name& clk)
     {
         using web::json::value_of;
@@ -67,7 +67,7 @@ namespace nmos
         });
     }
 
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/clock_ptp.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/clock_ptp.json
     web::json::value make_ptp_clock(const nmos::clock_name& clk, bool traceable, const utility::string_t& gmid, bool locked)
     {
         using web::json::value_of;

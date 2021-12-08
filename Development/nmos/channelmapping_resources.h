@@ -11,7 +11,7 @@ namespace nmos
     struct resource;
 
     // IS-08 Channel Mapping API resources
-    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/docs/1.0.%20Overview.md#api-structure
+    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.1/docs/1.0.%20Overview.md#api-structure
     // Each IS-08 input and output's data are json objects with an identifier field 
     // and a field for the resource's view in the /io endpoint, also used for
     // the individual endpoints, "properties", "caps" and so on
@@ -27,7 +27,7 @@ namespace nmos
     // Note that the input/output identifiers used in the Channel Mapping API are not universally unique
     // and one input and one output in an API instance may even share the same identifier
     // so these need to be prefixed with the resource type to make the nmos::resource::id locally unique
-    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/docs/4.0.%20Behaviour.md#identifiers
+    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.1/docs/4.0.%20Behaviour.md#identifiers
     typedef utility::string_t channelmapping_id;
 
     nmos::id make_channelmapping_resource_id(const std::pair<nmos::channelmapping_id, nmos::type>& id_type);

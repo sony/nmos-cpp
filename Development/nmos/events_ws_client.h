@@ -18,7 +18,7 @@ namespace slog
 }
 
 // Events API websocket implementation
-// See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md
+// See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/5.2.%20Transport%20-%20Websocket.md
 namespace nmos
 {
     namespace details

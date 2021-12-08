@@ -6,7 +6,7 @@
 namespace nmos
 {
     // Interlace modes (used in video flows)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/flow_video.json
     DEFINE_STRING_ENUM(interlace_mode)
     namespace interlace_modes
     {

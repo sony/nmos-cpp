@@ -41,12 +41,12 @@ namespace nmos
     }
 
     // Data identification and Secondary data identification words
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_sdianc_data.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/flow_sdianc_data.json
     utility::string_t make_did_or_sdid(const uint8_t& did_or_sdid);
     uint8_t parse_did_or_sdid(const utility::string_t& did_or_sdid);
 
     // Data identification and Secondary data identification words
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_sdianc_data.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/flow_sdianc_data.json
     web::json::value make_did_sdid(const nmos::did_sdid& did_sdid);
     nmos::did_sdid parse_did_sdid(const web::json::value& did_sdid);
 

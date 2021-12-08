@@ -127,7 +127,7 @@ namespace nmos
     {
         // query DNS Service Discovery for any System API in the specified browse domain, having priority in the specified range
         // otherwise, after timeout or cancellation, returning the fallback system service
-        // see https://github.com/AMWA-TV/nmos-system/blob/v1.0/docs/3.0.%20Discovery.md
+        // see https://github.com/AMWA-TV/nmos-system/blob/v1.0.0/docs/3.0.%20Discovery.md
         web::json::value discover_system_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& protocols, const web::uri& fallback_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             std::list<web::uri> system_services;

@@ -6,9 +6,9 @@
 namespace nmos
 {
     // Transports (used in senders and receivers)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/sender.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_core.json
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.1.%20APIs%20-%20Common%20Keys.md#transport
+    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/sender.json
+    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/receiver_core.json
     // and experimentally, for IS-04 v1.3, IS-05 v1.1, IS-07 v1.0
     // also https://github.com/AMWA-TV/nmos-parameter-registers/pull/6
     DEFINE_STRING_ENUM(transport)

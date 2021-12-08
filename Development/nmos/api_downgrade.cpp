@@ -6,7 +6,7 @@
 
 namespace nmos
 {
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
+    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.5.%20APIs%20-%20Query%20Parameters.md#downgrade-queries
 
     bool is_permitted_downgrade(const nmos::resource& resource, const nmos::api_version& version)
     {

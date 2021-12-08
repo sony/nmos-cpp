@@ -10,7 +10,7 @@ namespace slog
 }
 
 // Events API websocket implementation
-// See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md
+// See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/5.2.%20Transport%20-%20Websocket.md
 namespace nmos
 {
     struct node_model;
@@ -42,7 +42,7 @@ namespace nmos
     web::json::value make_events_shutdown_message(const nmos::details::events_state_identity& identity, const nmos::details::events_state_timing& timing = {});
 
     // health message
-    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/2.0.%20Message%20types.md#15-the-health-message
+    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/2.0.%20Message%20types.md#15-the-health-message
     web::json::value make_events_health_message(const nmos::details::events_state_timing& timing);
 
     void send_events_ws_messages_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate);

@@ -213,7 +213,7 @@ namespace nmos
 
     // construct a standard NMOS "child resources" response, from the specified sub-routes
     // merging with ones from an existing response
-    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
+    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.0.%20APIs.md#api-paths
     web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, const web::http::http_request& req, web::http::http_response res)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;

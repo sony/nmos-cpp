@@ -9,7 +9,7 @@ namespace slog
 }
 
 // Query API websocket implementation
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.2.%20Behaviour%20-%20Querying.md
+// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.2.%20Behaviour%20-%20Querying.md
 namespace nmos
 {
     struct registry_model;
