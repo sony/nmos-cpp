@@ -1187,7 +1187,7 @@ namespace nmos
             sdp_params.video.colorimetry = sdp::colorimetry{ sdp::fields::value(*colorimetry).as_string() };
 
             // don't examine required parameters "PM" (packing mode), "SSN" (SMPTE standard number)
-            // don't examine optional parameters "segmented", "RANGE", "MAXUDP", "PAR"
+            // don't examine optional parameters "RANGE", "MAXUDP", "PAR"
 
             // "Senders and Receivers compliant to [ST 2110-20] shall comply with the provisions of SMPTE ST 2110-21."
             // See SMPTE ST 2110-20:2017 Section 6.1.1
