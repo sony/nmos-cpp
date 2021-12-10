@@ -468,7 +468,9 @@ namespace sdp
     DEFINE_STRING_ENUM(sampling)
     namespace samplings
     {
+        // Red-Green-Blue-Alpha
         const sampling RGBA{ U("RGBA") };
+        // Red-Green-Blue
         const sampling RGB{ U("RGB") };
         // Non-constant luminance YCbCr
         const sampling YCbCr_4_4_4{ U("YCbCr-4:4:4") };
@@ -476,16 +478,20 @@ namespace sdp
         const sampling YCbCr_4_2_0{ U("YCbCr-4:2:0") };
         const sampling YCbCr_4_1_1{ U("YCbCr-4:1:1") };
         // Constant luminance YCbCr
+        // e.g. as specified in Recommendation ITU-R BT.2020-2
         const sampling CLYCbCr_4_4_4{ U("CLYCbCr-4:4:4") };
         const sampling CLYCbCr_4_2_2{ U("CLYCbCr-4:2:2") };
         const sampling CLYCbCr_4_2_0{ U("CLYCbCr-4:2:0") };
         // Constant intensity ICtCp
+        // e.g. as specified in Recommendation ITU-R BT.2100
         const sampling ICtCp_4_4_4{ U("ICtCp-4:4:4") };
         const sampling ICtCp_4_2_2{ U("ICtCp-4:2:2") };
         const sampling ICtCp_4_2_0{ U("ICtCp-4:2:0") };
         // XYZ
+        // e.g. as specified in SMPTE ST 428-1
         const sampling XYZ{ U("XYZ") };
         // Key signal represented as a single component
+        // e.g. as specified in SMPTE RP 157
         const sampling KEY{ U("KEY") };
         // Hmm, only the JPEG XS payload mapping includes this value, for "sampling signaled by the payload"
         // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6

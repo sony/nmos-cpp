@@ -14,6 +14,7 @@ namespace nmos
         });
     }
 
+    // deprecated, see overload with sdp::sampling in nmos/sdp_utils.h
     web::json::value make_components(chroma_subsampling chroma_subsampling, unsigned int frame_width, unsigned int frame_height, unsigned int bit_depth)
     {
         using web::json::value;

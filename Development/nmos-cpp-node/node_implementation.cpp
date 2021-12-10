@@ -76,6 +76,18 @@ namespace impl
         // when omitted, a default is used based on the frame_rate, etc.
         const web::json::field_as_string interlace_mode{ U("interlace_mode") };
 
+        // colorspace: controls the colorspace of video flows, see nmos::colorspace
+        const web::json::field_as_string_or colorspace{ U("colorspace"), U("BT709") };
+
+        // transfer_chacteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
+        const web::json::field_as_string_or transfer_chacteristic{ U("transfer_chacteristic"), U("SDR") };
+
+        // color_sampling: controls the color (sub-)sampling mode of video flows, see sdp::sampling
+        const web::json::field_as_string_or color_sampling{ U("color_sampling"), U("YCbCr-4:2:2") };
+
+        // component_depth: controls the bits per component sample of video flows
+        const web::json::field_as_integer_or component_depth{ U("component_depth"), 10 };
+
         // channel_count: controls the number of channels in audio sources
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
 
@@ -207,6 +219,10 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     const auto frame_width = impl::fields::frame_width(model.settings);
     const auto frame_height = impl::fields::frame_height(model.settings);
     const auto interlace_mode = impl::get_interlace_mode(model.settings);
+    const auto colorspace = nmos::colorspace{ impl::fields::colorspace(model.settings) };
+    const auto transfer_characteristic = nmos::transfer_characteristic{ impl::fields::transfer_chacteristic(model.settings) };
+    const auto sampling = sdp::sampling{ impl::fields::color_sampling(model.settings) };
+    const auto bit_depth = impl::fields::component_depth(model.settings);
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
@@ -330,7 +346,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                     flow_id, source_id, device_id,
                     frame_rate,
                     frame_width, frame_height, interlace_mode,
-                    nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
+                    colorspace, transfer_characteristic, sampling, bit_depth,
                     model.settings
                 );
             }
@@ -411,7 +427,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                         { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
                         { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
                         { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
+                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
                     })
                 });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());

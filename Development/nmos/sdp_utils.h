@@ -15,6 +15,8 @@ namespace nmos
 
     // Sender helper functions
 
+    web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth);
+
     namespace details
     {
         sdp::sampling make_sampling(const web::json::array& components);
