@@ -6,6 +6,7 @@
 #include "nmos/api_utils.h" // for nmos::http_scheme
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
+#include "nmos/media_type.h" // for nmos::media_types::application_sdp
 #include "nmos/resource.h"
 
 namespace nmos
@@ -171,7 +172,7 @@ namespace nmos
 
         return value_of({
             { nmos::fields::transportfile_data, transportfile },
-            { nmos::fields::transportfile_type, U("application/sdp") }
+            { nmos::fields::transportfile_type, nmos::media_types::application_sdp.name }
         });
     }
 

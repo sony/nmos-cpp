@@ -43,6 +43,17 @@ namespace nmos
 
         // See SMPTE ST 2022-8:2019
         const media_type video_SMPTE2022_6{ U("video/SMPTE2022-6") };
+
+        // Additional media types for NMOS responses
+
+        const media_type application_sdp{ U("application/sdp") };
+
+        // experimental extension, to support HTML rendering of NMOS responses
+        const media_type text_html{ U("text/html") };
+
+        // experimental extension, to support JSON rendering in NMOS responses
+        const media_type application_schema_json{ U("application/schema+json") };
+        const media_type application_sdp_json{ U("application/sdp+json") };
     }
 }
 
