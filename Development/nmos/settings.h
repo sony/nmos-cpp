@@ -133,15 +133,15 @@ namespace nmos
         // [registry]: used in System API resource is04 object's heartbeat_interval field
         // "Constants related to the AMWA IS-04 Discovery and Registration Specification are contained in the is04 object.
         // heartbeat_interval defines how often Nodes should perform a heartbeat to maintain their resources in the Registration API."
-        // See https://github.com/AMWA-TV/nmos-system/blob/v1.0.0/docs/4.2.%20Behaviour%20-%20Global%20Configuration%20Parameters.md#amwa-is-04-nmos-discovery-and-registration-parameters
+        // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#amwa-is-04-nmos-discovery-and-registration-parameters
         // [node]:
         // "Nodes are expected to peform a heartbeat every 5 seconds by default."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
         const web::json::field_as_integer_or registration_heartbeat_interval{ U("registration_heartbeat_interval"), 5 };
 
         // registration_expiry_interval [registry]:
         // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
 
         // registration_request_max [node]: timeout for interactions with the Registration API /resource endpoint
@@ -167,13 +167,13 @@ namespace nmos
 
         // events_heartbeat_interval [node, client]:
         // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
         const web::json::field_as_integer_or events_heartbeat_interval{ U("events_heartbeat_interval"), 5 };
 
         // events_expiry_interval [node]:
         // "The server is expected to check health commands and after a 12 seconds timeout (2 consecutive missed health commands plus 2 seconds to allow for latencies)
         // it should clear the subscriptions for that particular client and close the websocket connection."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
         const web::json::field_as_integer_or events_expiry_interval{ U("events_expiry_interval"), 12 };
 
         // system_services [node]: the discovered list of System APIs, in the order they should be used
@@ -292,11 +292,11 @@ namespace nmos
             //     "tag_1": [ "tag_1_value_1", "tag_1_value_2" ],
             //     "tag_2": [ "tag_2_value_1" ]
             // }
-            // See https://github.com/AMWA-TV/nmos-system/blob/v1.0.0/docs/2.1.%20APIs%20-%20Common%20Keys.md#tags
+            // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/2.1._APIs_-_Common_Keys.html#tags
             const web::json::field_as_value_or system_tags{ U("system_tags"), web::json::value::object() };
 
             // "syslog contains hostname and port for the system's syslog "version 1" server using the UDP transport (IETF RFC 5246)"
-            // See https://github.com/AMWA-TV/nmos-system/blob/v1.0.0/docs/4.2.%20Behaviour%20-%20Global%20Configuration%20Parameters.md#syslog-parameters
+            // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
 
             // system_syslog_host_name [registry]: the fully-qualified host name or the IP address of the system's syslog "version 1" server
             const web::json::field_as_string_or system_syslog_host_name{ U("system_syslog_host_name"), U("") };
@@ -305,7 +305,7 @@ namespace nmos
             const web::json::field_as_integer_or system_syslog_port{ U("system_syslog_port"), 514 };
 
             // "syslogv2 contains hostname and port for the system's syslog "version 2" server using the TLS transport (IETF RFC 5245)"
-            // See https://github.com/AMWA-TV/nmos-system/blob/v1.0.0/docs/4.2.%20Behaviour%20-%20Global%20Configuration%20Parameters.md#syslog-parameters
+            // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#syslog-parameters
 
             // system_syslogv2_host_name [registry]: the fully-qualified host name or the IP address of the system's syslog "version 2" server
             const web::json::field_as_string_or system_syslogv2_host_name{ U("system_syslogv2_host_name"), U("") };

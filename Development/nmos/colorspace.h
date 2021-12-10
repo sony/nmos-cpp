@@ -6,8 +6,8 @@
 namespace nmos
 {
     // Colorspace (used in video flows)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/flow_video.json
-    // and https://github.com/AMWA-TV/nmos-parameter-registers/tree/main/flow-attributes#colorspace
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video.html
+    // and https://specs.amwa.tv/nmos-parameter-registers/branches/main/flow-attributes/#colorspace
     DEFINE_STRING_ENUM(colorspace)
     namespace colorspaces
     {

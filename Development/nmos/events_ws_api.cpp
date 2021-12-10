@@ -286,7 +286,7 @@ namespace nmos
     }
 
     // reboot message
-    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/2.0.%20Message%20types.md#12-the-reboot-message-type
+    // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/2.0._Message_types.html#12-the-reboot-message-type
     web::json::value make_events_reboot_message(const nmos::details::events_state_identity& identity, const nmos::details::events_state_timing& timing)
     {
         using web::json::value_of;
@@ -299,7 +299,7 @@ namespace nmos
     }
 
     // shutdown message
-    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/2.0.%20Message%20types.md#13-the-shutdown-message-type
+    // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/2.0._Message_types.html#13-the-shutdown-message-type
     web::json::value make_events_shutdown_message(const nmos::details::events_state_identity& identity, const nmos::details::events_state_timing& timing)
     {
         using web::json::value_of;
@@ -312,7 +312,7 @@ namespace nmos
     }
 
     // health message
-    // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/2.0.%20Message%20types.md#15-the-health-message
+    // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/2.0._Message_types.html#15-the-health-message-type
     web::json::value make_events_health_message(const nmos::details::events_state_timing& timing)
     {
         using web::json::value_of;
@@ -427,7 +427,7 @@ namespace nmos
                     else if (event.has_field(U("post")))
                     {
                         // state message
-                        // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.0/docs/2.0.%20Message%20types.md#11-the-state-message-type
+                        // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/2.0._Message_types.html#11-the-state-message-type
                         // and nmos::make_events_boolean_state, nmos::make_events_number_state, etc.
                         // and nmos::details::make_resource_event
                         const web::json::value& state = nmos::fields::endpoint_state(event.at(U("post")));

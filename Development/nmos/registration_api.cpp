@@ -309,7 +309,7 @@ namespace nmos
                 {
                     // "The 'senders' and 'receivers' arrays in a Device have been deprecated, but will continue to be present until v2.0."
                     // Therefore, issue warnings rather than errors here
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.2.%20Behaviour%20-%20Querying.md#referential-integrity
+                    // See https://specs.amwa.tv/is-04/releases/v1.2.1/docs/4.2._Behaviour_-_Querying.html#referential-integrity
 
                     for (auto& element : nmos::fields::senders(data))
                     {
@@ -339,7 +339,7 @@ namespace nmos
                 {
                     // v1.1 introduced device_id for flow, and uses it for referential integrity rather than source_id
                     // so if the source is not (yet) registered, issue a warning not an error, and don't treat this as invalid?
-                    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
+                    // see https://specs.amwa.tv/is-04/releases/v1.2.1/docs/4.1._Behaviour_-_Registration.html#referential-integrity
                     if (nmos::is04_versions::v1_1 <= version)
                     {
                         const auto& source_id = nmos::fields::source_id(data);
@@ -606,7 +606,7 @@ namespace nmos
 
                     // "If a Node unregisters a resource in the incorrect order, the Registration API MUST clean up related child resources
                     // on the Node's behalf in order to prevent stale entries remaining in the registry."
-                    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/4.1.%20Behaviour%20-%20Registration.md#controlled-unregistration
+                    // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#controlled-unregistration
                     erase_resource(resources, resource->id, false);
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...

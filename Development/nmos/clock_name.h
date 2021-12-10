@@ -7,9 +7,9 @@
 namespace nmos
 {
     // Clock name
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/clock_internal.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/clock_ptp.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/source_core.json
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/clock_internal.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/clock_ptp.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/source_core.html
     DEFINE_STRING_ENUM(clock_name)
     namespace clock_names
     {

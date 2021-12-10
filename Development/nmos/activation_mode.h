@@ -6,7 +6,7 @@
 namespace nmos
 {
     // Connection API activation mode
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.0/APIs/schemas/v1.0-activation-schema.json
+    // See https://specs.amwa.tv/is-05/releases/v1.0.0/APIs/schemas/with-refs/v1.0-activation-schema.html
     DEFINE_STRING_ENUM(activation_mode)
     namespace activation_modes
     {

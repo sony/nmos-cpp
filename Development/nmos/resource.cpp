@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace details
     {
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/resource_core.json
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/resource_core.html
         web::json::value make_resource_core(const nmos::id& id, const utility::string_t& label, const utility::string_t& description, const web::json::value& tags)
         {
             using web::json::value;

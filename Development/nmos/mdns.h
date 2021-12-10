@@ -16,7 +16,7 @@ namespace mdns
 namespace nmos
 {
     // "APIs MUST produce an mDNS advertisement [...] accompanied by DNS TXT records"
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/RegistrationAPI.raml#L17 etc.
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/RegistrationAPI.html#dns_sd_advertisement etc.
 
     typedef std::string service_type;
 
@@ -31,9 +31,9 @@ namespace nmos
         // IS-04 Registration API
         // "RFC6763 Section 7.2 specifies that the maximum service name length for an mDNS advertisement
         // is 16 characters when including the leading underscore, but "_nmos-registration" is 18 characters."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/APIs/RegistrationAPI.raml#L19
-        // This is to be addressed in v1.3, by specifying a shorter service type, "_nmos-register._tcp".
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/71
+        // See https://specs.amwa.tv/is-04/releases/v1.2.1/APIs/RegistrationAPI.html#dns_sd_advertisement
+        // This was addressed in v1.3, by specifying a shorter service type, "_nmos-register._tcp".
+        // See https://specs.amwa.tv/is-04/releases/v1.3.0/docs/3.1._Discovery_-_Registered_Operation.html#dns-sd-advertisement
         const service_type registration{ "_nmos-registration._tcp" };
 
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)

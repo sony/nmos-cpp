@@ -7,7 +7,7 @@
 namespace nmos
 {
     // "Each logical entity is identified by a UUID"
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/5.1.%20Data%20Model%20-%20Identifier%20Mapping.md
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/5.1._Data_Model_-_Identifier_Mapping.html
 
     // Since identifiers are passed as strings in the APIs, and the formatting of identifiers has been a little
     // inconsistent between implementations in the past, they are currently stored simply as strings...

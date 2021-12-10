@@ -40,7 +40,7 @@ namespace nmos
         typedef std::chrono::time_point<tai_clock, duration> time_point;
 
         // "It is important that there are no duplicate creation or update timestamps stored against resources."
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/docs/2.5.%20APIs%20-%20Query%20Parameters.md#pagination
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.5._APIs_-_Query_Parameters.html#pagination
         // Unfortunately, this clock is based on the system_clock, so may not produce monotonically increasing
         // time points; nmos::strictly_increasing_update is used to prevent duplicate values in nmos::resources
         static const bool is_steady = std::chrono::system_clock::is_steady;

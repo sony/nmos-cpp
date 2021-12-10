@@ -178,7 +178,7 @@ namespace nmos
                 // At the moment, it doesn't seem necessary to enable support multiple API instances via the API selector mechanism
                 // so therefore just a single Channel Mapping API instance is mounted directly at /x-nmos/channelmapping/{version}/
                 // If it becomes necessary, each device could associated with a specific API selector
-                // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.1/docs/2.0.%20APIs.md#api-paths
+                // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/2.0._APIs.html#api-paths
 
                 // hmm, should all devices get the same activation time or not?
                 const auto activation_time = nmos::tai_now();

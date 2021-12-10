@@ -5,7 +5,7 @@
 #include "nmos/string_enum.h"
 
 // Group Hint
-// See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/tags/grouphint.md
+// See https://specs.amwa.tv/nmos-parameter-registers/branches/main/tags/grouphint.html
 namespace nmos
 {
     namespace fields
@@ -38,4 +38,4 @@ namespace nmos
     group_hint parse_group_hint(const utility::string_t& group_hint);
 }
 
-#endif
+/#endif

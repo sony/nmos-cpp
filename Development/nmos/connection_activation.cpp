@@ -147,7 +147,7 @@ namespace nmos
                             // the resolve_auto callback may throw exceptions, which will prevent activation in order that
                             // "if there is an error condition that means `auto` cannot be resolved, the active transport parameters
                             // must not change, and the underlying sender [or receiver] must continue as before."
-                            // see https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.0/APIs/ConnectionAPI.raml#L308-L309
+                            // see https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/ConnectionAPI.html#single_senders__senderid__active_get
                             resolve_auto(*matching_resource, connection_resource, nmos::fields::transport_params(endpoint_active));
 
                             active = nmos::fields::master_enable(endpoint_active);

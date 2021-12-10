@@ -63,7 +63,7 @@ namespace nmos
             registry_server.api_routers[{ {}, nmos::fields::query_port(registry_model.settings) }].mount({}, nmos::make_query_api(registry_model, gate));
 
             // "Source ID of the Query API instance issuing the data Grain"
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/schemas/queryapi-subscriptions-websocket.json
+            // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/queryapi-subscriptions-websocket.html
             const nmos::id query_id = nmos::make_repeatable_id(nmos::experimental::fields::seed_id(registry_model.settings), U("/x-nmos/query"));
 
             auto& query_ws_api = registry_server.ws_handlers[{ {}, nmos::fields::query_ws_port(registry_model.settings) }];

@@ -10,7 +10,7 @@ namespace slog
 }
 
 // Query API implementation
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.0/APIs/QueryAPI.raml
+// See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/QueryAPI.html
 namespace nmos
 {
     struct registry_model;
