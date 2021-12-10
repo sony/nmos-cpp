@@ -11,6 +11,7 @@
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_schema.h"
+#include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -634,16 +635,22 @@ namespace nmos
                         {
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning transport file for " << id_type;
 
+                            const auto transportfile_type = nmos::fields::transportfile_type(transportfile);
+
                             // hmm, parsing of the Accept header could be much better and should take account of quality values
-                            if (!accept.empty() && web::http::details::mime_types::application_json == web::http::details::get_mime_type(accept) && U("application/sdp") == nmos::fields::transportfile_type(transportfile))
+                            const auto accept_type = web::http::details::get_mime_type(accept);
+                            // allow application/json as well as the more precise application/sdp+json
+                            const std::set<utility::string_t> sdp_json_types{ nmos::media_types::application_json.name, nmos::media_types::application_sdp_json.name };
+                            if (nmos::media_types::application_sdp.name == transportfile_type && 0 != sdp_json_types.count(accept_type))
                             {
                                 // Experimental extension - SDP as JSON
+                                res.headers().set_content_type(accept_type);
                                 set_reply(res, status_codes::OK, sdp::parse_session_description(utility::us2s(data.as_string())));
                             }
                             else
                             {
                                 // This automatically performs conversion to UTF-8 if required (i.e. on Windows)
-                                set_reply(res, status_codes::OK, data.as_string(), nmos::fields::transportfile_type(transportfile));
+                                set_reply(res, status_codes::OK, data.as_string(), transportfile_type);
                             }
 
                             // "It is strongly recommended that the following caching headers are included via the /transportfile endpoint (or whatever this endpoint redirects to).
@@ -803,7 +810,7 @@ namespace nmos
     // Validate and parse the specified transport file for the specified receiver
     web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
-        if (transport_file_type != U("application/sdp"))
+        if (transport_file_type != nmos::media_types::application_sdp.name)
         {
             throw std::runtime_error("unexpected type: " + utility::us2s(transport_file_type));
         }
@@ -1185,12 +1192,14 @@ namespace nmos
 
                     // hmm, parsing of the Accept header could be much better and should take account of quality values
                     const auto accept = req.headers().find(web::http::header_names::accept);
-                    if (req.headers().end() != accept && U("application/schema+json") == web::http::details::get_mime_type(accept->second))
+                    const auto accept_or_empty = req.headers().end() != accept ? accept->second : utility::string_t{};
+                    const auto accept_type = web::http::details::get_mime_type(accept_or_empty);
+                    if (nmos::media_types::application_schema_json.name == accept_type)
                     {
                         // Experimental extension - constraints as JSON Schema
 
                         const nmos::transport transport_subclassification(nmos::fields::transport(matching_resource->data));
-                        res.headers().set_content_type(U("application/schema+json"));
+                        res.headers().set_content_type(accept_type);
                         set_reply(res, status_codes::OK, nmos::details::make_constraints_schema(resource->type, nmos::fields::endpoint_constraints(resource->data), nmos::transport_base(transport_subclassification)));
                     }
                     else

@@ -6,6 +6,7 @@
 #include "nmos/client_utils.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_fields.h"
+#include "nmos/media_type.h" // for nmos::media_types::application_sdp
 #include "nmos/model.h"
 #include "nmos/slog.h"
 
@@ -47,9 +48,9 @@ namespace nmos
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing Content-Type: should be application/sdp";
                     }
-                    else if (U("application/sdp") != content_type)
+                    else if (nmos::media_types::application_sdp.name != content_type)
                     {
-                        throw web::http::http_exception(U("Incorrect Content-Type: ") + content_type + U(", should be application/sdp"));
+                        throw web::http::http_exception(U("Incorrect Content-Type: ") + content_type + U(", should be ") + nmos::media_types::application_sdp.name);
                     }
 
                     return res.extract_string(true);
@@ -66,7 +67,7 @@ namespace nmos
                         })},
                         { nmos::fields::transport_file, value_of({
                             { nmos::fields::data, sdp },
-                            { nmos::fields::type, U("application/sdp") }
+                            { nmos::fields::type, nmos::media_types::application_sdp.name }
                         })}
                     });
 
