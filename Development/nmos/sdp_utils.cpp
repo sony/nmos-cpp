@@ -146,7 +146,8 @@ namespace nmos
             // each entry of the array indicates the number of samples in horizontal and vertical direction for the specified component
             // which depends on the frame width and height, whereas the sampling values only indicate the relative (sub-)sampling frequency
             // so to account for this and handle any order of the components in the array, convert into a map from component name to
-            // relative sampling period, i.e. Y@1920x1080, Cb@960x540, Cr@960x540 becomes Y@1:1, Cb@2:2, Cr@2:2 which is YCbCr_4_2_0
+            // relative sampling period, i.e. components array of Y@1920x1080, Cb@960x540, Cr@960x540 is converted into the relative
+            // component sampler Y@1x1, Cb@2x2, Cr@2x2, which is YCbCr-4:2:0
 
             typedef std::map<component_name, width_height_t> components_t;
             typedef std::map<components_t, sdp::sampling> samplers_t;
