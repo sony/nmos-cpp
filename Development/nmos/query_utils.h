@@ -105,7 +105,7 @@ namespace nmos
     inline nmos::resources::index<tags::updated>::type::const_iterator lower_bound(const nmos::resources::index<tags::updated>::type& index, const nmos::tai& timestamp) { return index.lower_bound(timestamp); }
 
     // Helpers for constructing /subscriptions websocket grains
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.2.%20Behaviour%20-%20Querying.md
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.2._Behaviour_-_Querying.html
 
     // make the initial 'sync' resource events for a new grain, including all resources that match the specified version, resource path and flat query parameters
     // optionally, make 'added' resource events instead of 'sync' events

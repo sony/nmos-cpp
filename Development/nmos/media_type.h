@@ -7,9 +7,9 @@
 namespace nmos
 {
     // Media types (used in flows and receivers)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio_raw.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_video.json
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_audio_raw.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_video.html
     // etc.
     DEFINE_STRING_ENUM(media_type)
     namespace media_types

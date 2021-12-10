@@ -18,9 +18,9 @@
 namespace nmos
 {
     // "APIs MUST produce an mDNS advertisement [...] accompanied by DNS TXT records"
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L17
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/QueryAPI.raml#L122
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/NodeAPI.raml#L37
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/RegistrationAPI.html#dns_sd_advertisement
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/QueryAPI.html#dns_sd_advertisement
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/NodeAPI.html#dns_sd_advertisement
 
     // For now, the TXT record keys and the functions to make/parse the values are kept as implementation details
 
@@ -76,7 +76,7 @@ namespace nmos
         {
             // "The value of this TXT record is a comma separated list of API versions supported by the server. For example: 'v1.0,v1.1,v2.0'.
             // There should be no whitespace between commas, and versions should be listed in ascending order."
-            // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/RegistrationAPI.raml#L33
+            // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/RegistrationAPI.html#dns_sd_advertisement
             std::vector<std::string> api_vers;
             boost::algorithm::split(api_vers, api_ver, [](char c){ return ',' == c; });
             // Since ascending order is recommended, not required, convert straight to an ordered set without checking that.
@@ -296,7 +296,7 @@ namespace nmos
 
             // advertise "_nmos-register._tcp" for v1.3 (and as an experimental extension, for lower versions)
             // don't advertise "_nmos-registration._tcp" if only v1.3
-            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#dns-sd-advertisement
+            // see https://specs.amwa.tv/is-04/releases/v1.3.0/docs/3.1._Discovery_-_Registered_Operation.html#dns-sd-advertisement
             if (nmos::service_types::registration == service)
             {
                 if (*api_ver.begin() < nmos::is04_versions::v1_3)
@@ -306,7 +306,7 @@ namespace nmos
                 advertiser.register_service(instance_name, nmos::service_types::register_, instance_port, domain, host_name, txt_records).wait();
             }
             // don't advertise "_nmos-node._tcp" if only v1.3
-            // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/3.2.%20Discovery%20-%20Peer%20to%20Peer%20Operation.md#dns-sd-advertisement
+            // see https://specs.amwa.tv/is-04/releases/v1.3.0/docs/3.2._Discovery_-_Peer_to_Peer_Operation.html#dns-sd-advertisement
             else if (nmos::service_types::node == service)
             {
                 if (*api_ver.begin() < nmos::is04_versions::v1_3)
@@ -419,7 +419,7 @@ namespace nmos
                     const bool cancel = pplx::canceled == discovery.resolve([=](const mdns::resolve_result& resolved)
                     {
                         // "The Node [filters] out any APIs which do not support its required API version, protocol and authorization mode (TXT api_ver, api_proto and api_auth)."
-                        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3/docs/3.1.%20Discovery%20-%20Registered%20Operation.md#client-interaction-procedure
+                        // See https://specs.amwa.tv/is-04/releases/v1.3.0/docs/3.1._Discovery_-_Registered_Operation.html#client-interaction-procedure
 
                         // note, since we specified the interface_id, we expect only one result...
 

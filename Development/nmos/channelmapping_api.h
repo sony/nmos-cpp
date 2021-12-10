@@ -11,7 +11,7 @@ namespace slog
 }
 
 // Channel Mapping API implementation
-// See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/APIs/ChannelMappingAPI.raml
+// See https://specs.amwa.tv/is-08/releases/v1.0.1/APIs/ChannelMappingAPI.html
 namespace nmos
 {
     struct node_model;

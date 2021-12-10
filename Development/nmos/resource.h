@@ -63,17 +63,17 @@ namespace nmos
         // sub-resources are tracked in order to optimise resource expiry and deletion
         std::set<nmos::id> sub_resources;
 
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md#pagination
+        // see https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.5._APIs_-_Query_Parameters.html#pagination
         tai created;
         tai updated;
 
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+        // see https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
         mutable details::copyable_atomic<nmos::health> health;
     };
 
     namespace details
     {
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/resource_core.json
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/resource_core.html
         web::json::value make_resource_core(const nmos::id& id, const utility::string_t& label, const utility::string_t& description, const web::json::value& tags = web::json::value::object());
 
         web::json::value make_resource_core(const nmos::id& id, const nmos::settings& settings);

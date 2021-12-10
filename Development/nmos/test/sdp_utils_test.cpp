@@ -83,7 +83,7 @@ BST_TEST_CASE(testInterpretationOfSdpFilesUnicast)
     using web::json::value;
     using web::json::value_of;
 
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#unicast
+    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#unicast
 
     const std::string test_sdp = R"(v=0
 o=- 2890844526 2890842807 IN IP4 10.47.16.5
@@ -117,7 +117,7 @@ BST_TEST_CASE(testInterpretationOfSdpFilesSourceSpecificMulticast)
     using web::json::value;
     using web::json::value_of;
 
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#source-specific-multicast
+    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#source-specific-multicast
 
     const std::string test_sdp = R"(v=0
 o=- 1497010742 1497010742 IN IP4 172.29.26.24
@@ -151,7 +151,7 @@ BST_TEST_CASE(testInterpretationOfSdpFilesSeparateSourceAddresses)
     using web::json::value;
     using web::json::value_of;
 
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#separate-source-addresses
+    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#separate-source-addresses
 
     const std::string test_sdp = R"(v=0
 o=ali 1122334455 1122334466 IN IP4 dup.example.com
@@ -196,7 +196,7 @@ BST_TEST_CASE(testInterpretationOfSdpFilesSeparateDestinationAddresses)
     using web::json::value;
     using web::json::value_of;
 
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#separate-destination-addresses
+    // See https://specs.amwa.tv/is-05/releases/v1.1.1/docs/4.1._Behaviour_-_RTP_Transport_Type.html#separate-destination-addresses
 
     const std::string test_sdp = R"(v=0
 o=ali 1122334455 1122334466 IN IP4 dup.example.com

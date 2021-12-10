@@ -45,7 +45,7 @@ namespace nmos
         // so therefore just mount the Channel Mapping API instance directly at /x-nmos/channelmapping/{version}/
         // If it becomes necessary, nmos::node_mode::channelmapping_resources could become a map from {selector} to nmos::resources
         // and the 'unmounted' API instance handler also mounted after a "child resources" handler based on the API selectors
-        // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/docs/2.0.%20APIs.md#api-paths
+        // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/2.0._APIs.html#api-paths
         channelmapping_api.mount(U("/x-nmos/") + nmos::patterns::channelmapping_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_channelmapping_api(model, validate_merged, gate));
 
         return channelmapping_api;
@@ -154,14 +154,14 @@ namespace nmos
                 {
                     // When "one field of Output channel object is null but other is not", the entire request must be rejected
                     // with the 400 Bad Request response.
-                    // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#activation-responses
+                    // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#activation-responses
                     if (!input_channel_index_or_null.is_null())
                     {
                         throw web::json::json_exception("invalid channel_index when input is null");
                     }
 
                     // "If no [routing] restrictions exist, the routable_inputs field MUST be set to null."
-                    // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#output-routing-constraints
+                    // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#output-routing-constraints
                     if (!routable_inputs_or_null.is_null())
                     {
                         // "If the Device allows the Output to have unrouted channels, the list SHOULD also include null."
@@ -178,7 +178,7 @@ namespace nmos
 
                     // When "one field of Output channel object is null but other is not", the entire request must be rejected
                     // with the 400 Bad Request response.
-                    // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#activation-responses
+                    // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#activation-responses
                     if (input_channel_index_or_null.is_null())
                     {
                         throw web::json::json_exception("invalid channel_index when input is not null");
@@ -186,7 +186,7 @@ namespace nmos
                     const auto input_channel_index = input_channel_index_or_null.as_integer();
 
                     // "If no [routing] restrictions exist, the routable_inputs field MUST be set to null."
-                    // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#output-routing-constraints
+                    // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#output-routing-constraints
                     if (!routable_inputs_or_null.is_null())
                     {
                         // "If an Input is listed in an Output's routable input list then channels from that input can be routed
@@ -223,7 +223,7 @@ namespace nmos
 
             // When an "Output is modified by an already scheduled activation", the entire request must be rejected
             // with the 423 Locked response.
-            // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#activation-responses
+            // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#activation-responses
 
             const auto& mode = nmos::fields::mode(nmos::fields::activation(nmos::fields::endpoint_staged(output.data)));
 
@@ -245,13 +245,13 @@ namespace nmos
 
             // "If the Input [...] cannot perform re-ordering, [...] there MUST be a fixed offset
             // for all Input and Output channel indexes in the mapping."
-            // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#re-ordering
+            // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#re-ordering
             bool current_reorderable = false;
             std::map<nmos::channelmapping_id, int> channel_offsets;
 
             // "It MUST be that either all Input channels in a block are routed to an Output, or none are routed.
             // All Input channels in a block MUST be routed to the same Output when routed."
-            // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#channel-block-sizes
+            // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#channel-block-sizes
             unsigned int current_block_size = 0;
             std::set<int> channels_in_current_block;
 
@@ -312,7 +312,7 @@ namespace nmos
                         if (input_channel_index % current_block_size != 0)
                         {
                             // "All blocks MUST start with an input channel where channel_index is zero or a multiple of the block_size parameter."
-                            // See https://nmos.amwa.tv/nmos-audio-channel-mapping/branches/v1.0.x/docs/4.0._Behaviour.html#channel-block-sizes
+                            // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#channel-block-sizes
                             return make_channelmapping_activation_post_error_response(status_codes::BadRequest, U("Bad Request; ") + make_channelmapping_input_block_not_reorderable_error(input_id));
                         }
                     }

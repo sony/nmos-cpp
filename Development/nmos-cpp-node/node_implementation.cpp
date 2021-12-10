@@ -510,9 +510,9 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             {
                 event_type = impl::temperature_Celsius;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#231-measurements
-                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-type-number-measurement-get-200.json
-                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-state-number-measurement-get-200.json
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#231-measurements
+                // and https://specs.amwa.tv/is-07/releases/v1.0.1/examples/eventsapi-type-number-measurement-get-200.html
+                // and https://specs.amwa.tv/is-07/releases/v1.0.1/examples/eventsapi-state-number-measurement-get-200.html
                 events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
                 events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 }, event_type);
             }
@@ -520,7 +520,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             {
                 event_type = nmos::event_types::boolean;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#21-boolean
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#21-boolean
                 events_type = nmos::make_events_boolean_type();
                 events_state = nmos::make_events_boolean_state({ source_id, flow_id }, false);
             }
@@ -528,7 +528,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             {
                 event_type = nmos::event_types::string;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#22-string
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#22-string
                 // and of course, https://en.wikipedia.org/wiki/Metasyntactic_variable
                 events_type = nmos::make_events_string_type(0, 0, U("^foo|bar|baz|qu+x$"));
                 events_state = nmos::make_events_string_state({ source_id, flow_id }, U("foo"));
@@ -537,7 +537,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             {
                 event_type = impl::catcall;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#3-enum
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#3-enum
                 events_type = nmos::make_events_number_enum_type({
                     { 1, { U("meow"), U("chatty") } },
                     { 2, { U("purr"), U("happy") } },
@@ -938,7 +938,7 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
         const auto& constraints = nmos::fields::endpoint_constraints(connection_resource.data);
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/2.2._APIs_-_Server_Side_Implementation.html#use-of-auto
         if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
             const bool smpte2022_7 = 1 < transport_params.size();

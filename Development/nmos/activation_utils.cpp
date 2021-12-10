@@ -83,7 +83,7 @@ namespace nmos
                 activation[nmos::fields::requested_time] = value::null();
 
                 // "If no activation was requested in the PATCH `activation_time` will be set `null`."
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
+                // See https://specs.amwa.tv/is-05/releases/v1.0.0/APIs/ConnectionAPI.html
                 activation[nmos::fields::activation_time] = value::null();
 
                 break;
@@ -93,8 +93,8 @@ namespace nmos
                 activation[nmos::fields::mode] = value::null();
 
                 // Each of these fields "returns to null [...] when the resource is unlocked by setting the activation mode to null."
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
-                // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/activation-response-schema.json
+                // See https://specs.amwa.tv/is-05/releases/v1.0.0/APIs/schemas/with-refs/v1.0-activation-response-schema.html
+                // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/activation-response-schema.html
                 activation[nmos::fields::requested_time] = value::null();
                 activation[nmos::fields::activation_time] = value::null();
 
@@ -104,7 +104,7 @@ namespace nmos
 
                 // "For immediate activations, in the response to the PATCH request this field
                 // will be set to 'activate_immediate'"
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/schemas/v1.0-activation-response-schema.json
+                // See https://specs.amwa.tv/is-05/releases/v1.0.0/APIs/schemas/with-refs/v1.0-activation-response-schema.html
                 activation[nmos::fields::mode] = value::string(nmos::activation_modes::activate_immediate.name);
 
                 // "For an immediate activation this field will always be null on the staged endpoint,
@@ -125,7 +125,7 @@ namespace nmos
                 activation[nmos::fields::requested_time] = request_activation.at(nmos::fields::requested_time);
 
                 // "For scheduled activations `activation_time` should be the absolute TAI time the parameters will actually transition."
-                // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/APIs/ConnectionAPI.raml
+                // See https://specs.amwa.tv/is-05/releases/v1.0.0/APIs/ConnectionAPI.html
                 auto absolute_requested_time = get_absolute_requested_time(activation, request_time);
                 activation[nmos::fields::activation_time] = value::string(nmos::make_version(absolute_requested_time));
 

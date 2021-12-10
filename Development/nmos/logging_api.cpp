@@ -261,7 +261,7 @@ namespace nmos
 
                 // RFC 5988 allows relative URLs, but NMOS specification examples are all absolute URLs
                 // See https://tools.ietf.org/html/rfc5988#section-5
-                // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.5.%20APIs%20-%20Query%20Parameters.md
+                // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.5._APIs_-_Query_Parameters.html
 
                 // get the request host and port (or use the primary host address, and port, from settings)
                 auto req_host_port = web::http::get_host_port(req);

@@ -15,7 +15,7 @@ namespace web
 namespace nmos
 {
     // Audio channel symbols (used in audio sources) from VSF TR-03 Appendix A
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_audio.json
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/source_audio.html
     // and http://www.videoservicesforum.org/download/technical_recommendations/VSF_TR-03_2015-11-12.pdf
     DEFINE_STRING_ENUM(channel_symbol)
     namespace channel_symbols

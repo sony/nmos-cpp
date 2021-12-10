@@ -864,7 +864,7 @@ namespace nmos
 
         // There isn't much of a specification for interpreting SDP files and updating the
         // equivalent transport parameters, just some examples...
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#interpretation-of-sdp-files
+        // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#interpretation-of-sdp-files
 
         // For now, this function should handle the following cases identified in the documentation:
         // * Unicast
@@ -886,7 +886,7 @@ namespace nmos
 
             // source_ip is null when there is no source-filter, indicating that "the source IP address
             // has not been configured in unicast mode, or the Receiver is in any-source multicast mode"
-            // see https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_rtp.json
+            // see https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_rtp.html
             params[nmos::fields::source_ip] = value::null();
 
             // session connection data is the default for each media description
@@ -1330,7 +1330,7 @@ namespace nmos
         if (!nmos::caps::meta::enabled(constraint_set)) return false;
 
         // NMOS Parameter Registers - Capabilities register
-        // See https://github.com/AMWA-TV/nmos-parameter-registers/blob/main/capabilities/README.md
+        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
         static const std::map<utility::string_t, std::function<bool(const sdp_parameters& sdp, const value& con)>> match_constraints
         {
             // General Constraints

@@ -21,7 +21,7 @@ BST_TEST_CASE(testQueryAPISubscriptionsExtensionSchema)
     };
 
     // valid subscriptions post request data
-    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3.x/examples/queryapi-subscriptions-post-request.json
+    // see https://specs.amwa.tv/is-04/releases/v1.3.0/examples/queryapi-subscriptions-post-request.html
     auto data = value_of({
         { U("max_update_rate_ms"), 100 },
         { U("resource_path"), U("/nodes") },
@@ -33,7 +33,7 @@ BST_TEST_CASE(testQueryAPISubscriptionsExtensionSchema)
     });
 
     // validate successfully, i.e. no exception
-    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3.x/APIs/schemas/queryapi-subscriptions-post-request.json
+    // see https://specs.amwa.tv/is-04/releases/v1.3.0/APIs/schemas/with-refs/queryapi-subscriptions-post-request.html
     validator.validate(data, nmos::experimental::make_queryapi_subscriptions_post_request_schema_uri(nmos::is04_versions::v1_3));
 
     // empty path, for experimental extension

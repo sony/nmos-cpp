@@ -33,8 +33,8 @@ namespace nmos
             return redundant ? value_of({ value, value }) : value_of({ value });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender-response-schema.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver-response-schema.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender-response-schema.html
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver-response-schema.html
         web::json::value make_connection_resource_staging_core(bool redundant)
         {
             using web::json::value;
@@ -51,7 +51,7 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver-transport-file.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver-transport-file.html
         web::json::value make_connection_receiver_staging_transport_file()
         {
             using web::json::value;
@@ -77,8 +77,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema-rtp.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#sender-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-rtp.html
         web::json::value make_connection_rtp_sender_core_constraints()
         {
             using web::json::value;
@@ -94,8 +94,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#sender-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_rtp.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#sender-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_rtp.html
         web::json::value make_connection_rtp_sender_staged_core_parameter_set()
         {
             using web::json::value;
@@ -110,8 +110,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema-rtp.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#receiver-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-rtp.html
         web::json::value make_connection_rtp_receiver_core_constraints()
         {
             using web::json::value;
@@ -127,8 +127,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#receiver-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_rtp.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#receiver-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_rtp.html
         web::json::value make_connection_rtp_receiver_staged_core_parameter_set()
         {
             using web::json::value;
@@ -244,8 +244,8 @@ namespace nmos
             return indeterminate(v) ? web::json::value::string(U("auto")) : web::json::value::boolean(bool(v));
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema-websocket.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_websocket.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-websocket.html
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_websocket.html
         web::json::value make_connection_websocket_sender_core_constraints(const web::uri& connection_uri, boost::tribool connection_authorization)
         {
             using web::json::value;
@@ -263,8 +263,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.3.%20Behaviour%20-%20WebSocket%20Transport%20Type.md#sender-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_websocket.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.3._Behaviour_-_WebSocket_Transport_Type.html#sender-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_websocket.html
         web::json::value make_connection_websocket_sender_staged_core_parameter_set(const web::uri& connection_uri, boost::tribool connection_authorization)
         {
             using web::json::value;
@@ -276,8 +276,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema-websocket.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_websocket.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-websocket.html
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_websocket.html
         web::json::value make_connection_websocket_receiver_core_constraints(boost::tribool connection_authorization)
         {
             using web::json::value;
@@ -290,8 +290,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.3.%20Behaviour%20-%20WebSocket%20Transport%20Type.md#receiver-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_websocket.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.3._Behaviour_-_WebSocket_Transport_Type.html#receiver-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_websocket.html
         web::json::value make_connection_websocket_receiver_staged_core_parameter_set(boost::tribool connection_authorization)
         {
             using web::json::value;
@@ -303,8 +303,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema-mqtt.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_mqtt.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-mqtt.html
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_mqtt.html
         web::json::value make_connection_mqtt_sender_core_constraints(boost::tribool broker_secure, boost::tribool broker_authorization, const utility::string_t& broker_topic, const utility::string_t& connection_status_broker_topic)
         {
             using web::json::value;
@@ -333,8 +333,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.2.%20Behaviour%20-%20MQTT%20Transport%20Type.md#sender-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_mqtt.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.2._Behaviour_-_MQTT_Transport_Type.html#sender-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_mqtt.html
         web::json::value make_connection_mqtt_sender_staged_core_parameter_set(boost::tribool broker_secure, boost::tribool broker_authorization, const utility::string_t& broker_topic, const utility::string_t& connection_status_broker_topic)
         {
             using web::json::value;
@@ -350,8 +350,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema-mqtt.json
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_mqtt.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema-mqtt.html
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_mqtt.html
         web::json::value make_connection_mqtt_receiver_core_constraints(boost::tribool broker_secure, boost::tribool broker_authorization)
         {
             using web::json::value;
@@ -372,8 +372,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.2.%20Behaviour%20-%20MQTT%20Transport%20Type.md#receiver-parameter-sets
-        // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_mqtt.json
+        // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.2._Behaviour_-_MQTT_Transport_Type.html#receiver-parameter-sets
+        // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_mqtt.html
         web::json::value make_connection_mqtt_receiver_staged_core_parameter_set(boost::tribool broker_secure, boost::tribool broker_authorization)
         {
             using web::json::value;
@@ -389,8 +389,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/sender_transport_params_ext.html
         web::json::value make_connection_events_websocket_sender_ext_constraints(const nmos::id& source_id, const web::uri& rest_api_url)
         {
             using web::json::value;
@@ -410,8 +410,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/sender_transport_params_ext.html
         web::json::value make_connection_events_websocket_sender_staged_ext_parameter_set(const nmos::id& source_id, const web::uri& rest_api_url)
         {
             using web::json::value;
@@ -423,8 +423,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/receiver_transport_params_ext.html
         web::json::value make_connection_events_websocket_receiver_ext_constraints()
         {
             using web::json::value;
@@ -437,8 +437,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/receiver_transport_params_ext.html
         web::json::value make_connection_events_websocket_receiver_staged_ext_parameter_set()
         {
             using web::json::value;
@@ -450,8 +450,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/sender_transport_params_ext.html
         web::json::value make_connection_events_mqtt_sender_ext_constraints(const web::uri& rest_api_url)
         {
             using web::json::value;
@@ -466,8 +466,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/sender_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/sender_transport_params_ext.html
         web::json::value make_connection_events_mqtt_sender_staged_ext_parameter_set(const web::uri& rest_api_url)
         {
             using web::json::value;
@@ -478,8 +478,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/receiver_transport_params_ext.html
         web::json::value make_connection_events_mqtt_receiver_ext_constraints()
         {
             using web::json::value;
@@ -491,8 +491,8 @@ namespace nmos
             });
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.1.%20Transport%20-%20MQTT.md#3-connection-management
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/receiver_transport_params_ext.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#3-connection-management
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/receiver_transport_params_ext.html
         web::json::value make_connection_events_mqtt_receiver_staged_ext_parameter_set()
         {
             using web::json::value;
@@ -506,7 +506,7 @@ namespace nmos
 
     // Although these functions make "connection" (IS-05) resources, the details are defined by IS-07 Event & Tally
     // so maybe these belong in nmos/events_resources.h or their own file, e.g. nmos/connection_events_resources.h?
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#3-connection-management
     nmos::resource make_connection_events_websocket_sender(const nmos::id& id, const nmos::id& device_id, const nmos::id& source_id, const nmos::settings& settings)
     {
         using web::json::value;
@@ -584,7 +584,7 @@ namespace nmos
 
         // "The sender should append the relative path sources/{source_id}/"
         // I'd rather be consistent with the general guidance regarding trailing slashes
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/4.0.%20Core%20models.md#ext_is_07_rest_api_url
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/4.0._Core_models.html#ext_is_07_rest_api_url
         return web::uri_builder()
             .set_scheme(nmos::http_scheme(settings))
             .set_host(nmos::get_host(settings))
@@ -599,7 +599,7 @@ namespace nmos
 
         // "To facilitate filtering, the recommended format is x-nmos/events/{version}/sources/{sourceId},
         // where {version} is the version of this specification, e.g. v1.0, and {sourceId} is the associated source id."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/5.1.%20Transport%20-%20MQTT.md#32-broker_topic
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#32-broker_topic
         return U("x-nmos/events/") + make_api_version(version) + U("/sources/") + source_id;
     }
 
@@ -609,7 +609,7 @@ namespace nmos
 
         // "The connection_status_broker_topic parameter holds the sender's MQTT connection status topic.
         // The recommended format is x-nmos/events/{version}/connections/{connectionId}."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/5.1.%20Transport%20-%20MQTT.md#33-connection_status_broker_topic
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.1._Transport_-_MQTT.html#33-connection_status_broker_topic
         return U("x-nmos/events/") + make_api_version(version) + U("/connections/") + connection_id;
     }
 }

@@ -22,14 +22,14 @@ namespace nmos
 
     namespace details
     {
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_core.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_core.html
         // "The flow_id will NOT be included in the response to a [REST API query for the] state because the state is held by
         // the source which has no dependency on a flow. It will, however, appear when being sent through one of the two
         // specified transports because it will pass from the source through a flow and out on the network through the sender."
         // Therefore, since the stored data in the event resources is also used to generate the messages on the transport, it
         // *should* include the flow id. It will be removed to generate the Events API /state response.
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/2.0.%20Message%20types.md#11-the-state-message-type
-        // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/4.0.%20Core%20models.md#1-introduction
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/2.0._Message_types.html#11-the-state-message-type
+        // and https://specs.amwa.tv/is-07/releases/v1.0.1/docs/4.0._Core_models.html#1-introduction
         web::json::value make_events_state_identity(const nmos::details::events_state_identity& identity)
         {
             using web::json::value_of;
@@ -40,7 +40,7 @@ namespace nmos
             }, true);
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_core.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_core.html
         web::json::value make_events_state_timing(const nmos::details::events_state_timing& timing)
         {
             using web::json::value_of;
@@ -52,7 +52,7 @@ namespace nmos
             }, true);
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_core.json
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_core.html
         web::json::value make_events_state(const nmos::details::events_state_identity& identity, web::json::value payload, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
         {
             using web::json::value_of;
@@ -91,28 +91,28 @@ namespace nmos
         }
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_boolean.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_boolean.html
     web::json::value make_events_boolean_state(const nmos::details::events_state_identity& identity, bool payload_value, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
         // should check type is nmos::event_types::boolean or a derived type
         return details::make_events_state(identity, details::make_payload(payload_value), type, timing);
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_number.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_number.html
     web::json::value make_events_number_state(const nmos::details::events_state_identity& identity, const events_number& payload, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
         // should check type is nmos::event_types::number or a derived type
         return details::make_events_state(identity, details::make_payload(payload), type, timing);
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_string.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_string.html
     web::json::value make_events_string_state(const nmos::details::events_state_identity& identity, const utility::string_t& payload_value, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
         // should check type is nmos::event_types::string or a derived type
         return details::make_events_state(identity, details::make_payload(payload_value), type, timing);
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/event_object.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/event_object.html
     // (out of scope for version 1.0 of this specification)
     web::json::value make_events_object_state(const nmos::details::events_state_identity& identity, const web::json::value& payload, const nmos::event_type& type, const nmos::details::events_state_timing& timing)
     {
@@ -120,7 +120,7 @@ namespace nmos
         return details::make_events_state(identity, payload, type, timing);
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_boolean.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/type_boolean.html
     web::json::value make_events_boolean_type()
     {
         using web::json::value_of;
@@ -128,7 +128,7 @@ namespace nmos
         return value_of({ { U("type"), nmos::event_types::boolean.name } });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/type_number.html
     web::json::value make_events_number_type(const events_number& min, const events_number& max, const events_number& step, const utility::string_t& unit, int64_t scale)
     {
         using web::json::value_of;
@@ -143,7 +143,7 @@ namespace nmos
         });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/type_string.html
     web::json::value make_events_string_type(int64_t min_length, int64_t max_length, const utility::string_t& pattern)
     {
         using web::json::value_of;
@@ -172,7 +172,7 @@ namespace nmos
         }
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_boolean_enum.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/type_boolean_enum.html
     // hmm, map or vector-of-pair?
     web::json::value make_events_boolean_enum_type(const std::vector<std::pair<bool, events_enum_element_details>>& values)
     {
@@ -185,7 +185,7 @@ namespace nmos
         });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_number_enum.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/type_number_enum.html
     web::json::value make_events_number_enum_type(const std::vector<std::pair<double, events_enum_element_details>>& values)
     {
         // hmm, web::json::number rather than double?
@@ -199,7 +199,7 @@ namespace nmos
         });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/type_string_enum.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/type_string_enum.html
     web::json::value make_events_string_enum_type(const std::vector<std::pair<utility::string_t, events_enum_element_details>>& values)
     {
         using web::json::value_of;
@@ -219,7 +219,7 @@ namespace nmos
         return value_of({ { U("type"), nmos::event_types::object.name } });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/APIs/schemas/command_subscription.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/command_subscription.html
     web::json::value make_events_subscription_command(const std::vector<nmos::id>& sources)
     {
         using web::json::value_of;
@@ -231,7 +231,7 @@ namespace nmos
         });
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/APIs/schemas/command_health.json
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/APIs/schemas/with-refs/command_health.html
     web::json::value make_events_health_command(const nmos::tai& timestamp)
     {
         using web::json::value_of;
