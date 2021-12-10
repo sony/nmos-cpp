@@ -38,4 +38,4 @@ namespace nmos
     group_hint parse_group_hint(const utility::string_t& group_hint);
 }
 
-/#endif
+#endif
