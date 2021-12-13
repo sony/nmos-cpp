@@ -1,5 +1,5 @@
 [requires]
-boost/1.76.0
+boost/1.77.0
 cpprestsdk/2.10.18
 websocketpp/0.8.2
 openssl/1.1.1l

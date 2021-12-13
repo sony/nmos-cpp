@@ -27,6 +27,9 @@ namespace nmos
     };
 }
 
+#define DECLARE_STRING_ENUM(Type) \
+    struct Type;
+
 #define DEFINE_STRING_ENUM(Type) \
     struct Type : public nmos::string_enum<Type> \
     { \

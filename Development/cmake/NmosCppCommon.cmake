@@ -19,12 +19,18 @@ endif()
 
 # enable C++11
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD 11 CACHE STRING "Default value for CXX_STANDARD property of targets")
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 11)
+endif()
 if(CMAKE_CXX_STANDARD STREQUAL "98")
     message(FATAL_ERROR "CMAKE_CXX_STANDARD must be 11 or higher; C++98 is not supported")
 endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+if(NOT DEFINED CMAKE_CXX_STANDARD_REQUIRED)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+if(NOT DEFINED CMAKE_CXX_EXTENSIONS)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
 
 if(NMOS_CPP_BUILD_TESTS AND CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # note: to see the output of any failed tests, set CTEST_OUTPUT_ON_FAILURE=1 in the environment

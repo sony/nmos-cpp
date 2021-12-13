@@ -147,7 +147,7 @@ The initial output of each Node instance should appear something like this:
 
 This shows the nmos-cpp-node starting up and advertising its Node API via DNS Service Discovery.
 
-It selects an NMOS Registry to use, and registers itself, according to the NMOS [Discovery: Registered Operation](https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md) procedure.
+It selects an NMOS Registry to use, and registers itself, according to the IS-04 [Discovery: Registered Operation](https://specs.amwa.tv/is-04/releases/v1.2.0/docs/3.1._Discovery_-_Registered_Operation.html) procedure.
 
 On the other side, this operation should be reflected in the nmos-cpp-registry output something like this:
 

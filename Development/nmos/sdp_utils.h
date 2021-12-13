@@ -15,26 +15,39 @@ namespace nmos
 
     // Sender helper functions
 
+    web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth);
+
     namespace details
     {
         sdp::sampling make_sampling(const web::json::array& components);
     }
 
+    // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain);
 
     // deprecated, provided for backwards compatibility, because it may be necessary to also specify the PTP domain to generate an RFC 7273 'ts-refclk' attribute that meets the additional constraints of ST 2110-10
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids);
 
-    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params);
+    // Construct SDP parameters for the specified format from the IS-04 resources, using default values for unspecified items
+    sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp);
+    sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time);
+    sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code);
+    sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp);
+
+    // Sender/Receiver helper functions
+
+    // Make a json representation of an SDP file, e.g. for sdp::make_session_description, from the specified parameters; explicitly specify whether 'source-filter' attributes are included to override the default behaviour
+    web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters = bst::nullopt);
 
     // Receiver helper functions
 
-    // Get transport parameters from the parsed SDP file
+    // Get IS-05 transport parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     web::json::value get_session_description_transport_params(const web::json::value& session_description);
 
-    // Get other SDP parameters from the parsed SDP file
+    // Get other SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& session_description);
 
+    // Get SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     std::pair<sdp_parameters, web::json::value> parse_session_description(const web::json::value& session_description);
 
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params);
@@ -235,7 +248,7 @@ namespace nmos
             utility::string_t clock_parameters;
 
             mediaclk_t() {}
-            mediaclk_t(const sdp::mediaclk_source& clock_source, const utility::string_t& clock_parameters)
+            mediaclk_t(const sdp::mediaclk_source& clock_source, const utility::string_t& clock_parameters = {})
                 : clock_source(clock_source)
                 , clock_parameters(clock_parameters)
             {}

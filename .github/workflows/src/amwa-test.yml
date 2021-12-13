@@ -48,11 +48,7 @@
       pip install -r requirements.txt
 
       # Install SDPoker
-      if [[ "${{ matrix.os }}" == "windows-latest" || "$EUID" == "0" ]]; then
-        npm install -g AMWA-TV/sdpoker
-      else
-        sudo npm install -g AMWA-TV/sdpoker
-      fi
+      npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
       run_python="python"
     fi
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt

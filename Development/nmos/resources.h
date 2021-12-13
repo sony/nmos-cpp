@@ -96,7 +96,7 @@ namespace nmos
     // Other helper functions for resources
 
     // get the super-resource id and type, according to the guidelines on referential integrity
-    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
+    // see https://specs.amwa.tv/is-04/releases/v1.2.1/docs/4.1._Behaviour_-_Registration.html#referential-integrity
     std::pair<id, type> get_super_resource(const api_version& version, const type& type, const web::json::value& data);
 
     inline std::pair<id, type> get_super_resource(const resource& resource)

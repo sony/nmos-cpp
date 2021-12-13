@@ -6,21 +6,21 @@
 namespace nmos
 {
     // IS-07 Event & Tally event types
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html
     DEFINE_STRING_ENUM(event_type)
     namespace event_types
     {
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#21-boolean
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#21-boolean
         const event_type boolean{ U("boolean") };
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#22-string
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#22-string
         const event_type string{ U("string") };
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#23-number
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#23-number
         const event_type number{ U("number") };
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#4-object
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#4-object-out-of-scope-for-version-10-of-this-specification
         // "The usage of the object event type is out of scope of this specification for version 1.0"
         const event_type object{ U("object") };
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#231-measurements
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#231-measurements
         inline const event_type measurement(const utility::string_t& name, const utility::string_t& unit)
         {
             // specific measurement types are always "number/{Name}/{Unit}"
@@ -28,13 +28,13 @@ namespace nmos
             return event_type{ number.name + U('/') + name + U('/') + unit };
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#3-enum
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#3-enum
         inline const event_type named_enum(const event_type& base_type, const utility::string_t& name)
         {
             return event_type{ base_type.name + U("/enum/") + name };
         }
 
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#event-types-capability-management
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#event-types-capability-management
         // "A wildcard (*) must replace a whole word and can only be used at the end of an event_type definition."
         struct wildcard_type
         {
@@ -76,11 +76,11 @@ namespace nmos
         }
     }
 
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/3.0.%20Event%20types.md#event-types-capability-management
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#event-types-capability-management
     inline bool is_matching_event_type(const event_type& capability, const event_type& type)
     {
         // "Comparisons between event_type values must be case sensitive."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#1-introduction
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#1-introduction
         auto& c = capability.name;
         auto& t = type.name;
         // The wildcard in a partial event type matches zero or more 'levels', e.g. "number/*" matches both "number" and "number/temperature/C".

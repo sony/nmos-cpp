@@ -135,13 +135,13 @@ namespace nmos
         // heartbeat_interval defines how often Nodes should perform a heartbeat to maintain their resources in the Registration API."
         // See https://specs.amwa.tv/is-09/releases/v1.0.0/docs/4.2._Behaviour_-_Global_Configuration_Parameters.html#amwa-is-04-nmos-discovery-and-registration-parameters
         // [node]:
-        // "Nodes SHOULD perform a heartbeat every 5 seconds by default, by making HTTP POST requests to the /health/nodes/{nodeId} endpoint."
-        // See https://specs.amwa.tv/is-04/releases/v1.3.1/docs/4.1._Behaviour_-_Registration.html#heartbeating
+        // "Nodes are expected to peform a heartbeat every 5 seconds by default."
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
         const web::json::field_as_integer_or registration_heartbeat_interval{ U("registration_heartbeat_interval"), 5 };
 
         // registration_expiry_interval [registry]:
         // "Registration APIs should use a garbage collection interval of 12 seconds by default (triggered just after two failed heartbeats at the default 5 second interval)."
-        // See https://specs.amwa.tv/is-04/releases/v1.3.1/docs/4.1._Behaviour_-_Registration.html#heartbeating
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
         const web::json::field_as_integer_or registration_expiry_interval{ U("registration_expiry_interval"), 12 };
 
         // registration_request_max [node]: timeout for interactions with the Registration API /resource endpoint
@@ -166,14 +166,14 @@ namespace nmos
         const web::json::field_as_integer_or immediate_activation_max{ U("immediate_activation_max"), 30 };
 
         // events_heartbeat_interval [node, client]:
-        // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its connection and subscription."
+        // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
         // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
         const web::json::field_as_integer_or events_heartbeat_interval{ U("events_heartbeat_interval"), 5 };
 
         // events_expiry_interval [node]:
         // "The server is expected to check health commands and after a 12 seconds timeout (2 consecutive missed health commands plus 2 seconds to allow for latencies)
         // it should clear the subscriptions for that particular client and close the websocket connection."
-        // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+        // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
         const web::json::field_as_integer_or events_expiry_interval{ U("events_expiry_interval"), 12 };
 
         // system_services [node]: the discovered list of System APIs, in the order they should be used

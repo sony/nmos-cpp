@@ -6,10 +6,10 @@
 namespace nmos
 {
     // Formats (used in sources, flows and receivers)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.1.%20APIs%20-%20Common%20Keys.md#format
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_generic.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/source_audio.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.1._APIs_-_Common_Keys.html#format
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/source_generic.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/source_audio.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video.html
     // etc.
     DEFINE_STRING_ENUM(format)
     namespace formats

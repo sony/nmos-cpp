@@ -30,7 +30,7 @@ namespace nmos
 
         // all types ordered so that sub-resource types appear after super-resource types
         // according to the guidelines on referential integrity
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.1/docs/4.1.%20Behaviour%20-%20Registration.md#referential-integrity
+        // see https://specs.amwa.tv/is-04/releases/v1.2.1/docs/4.1._Behaviour_-_Registration.html#referential-integrity
         const std::vector<type> all{ nmos::types::node, nmos::types::device, nmos::types::source, nmos::types::flow, nmos::types::sender, nmos::types::receiver, nmos::types::subscription, nmos::types::grain };
 
         // the Channel Mapping API resource types, see nmos/channelmapping_resources.h

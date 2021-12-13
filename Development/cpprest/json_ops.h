@@ -260,6 +260,7 @@ namespace web
             value.erase(value.size() - 1);
         }
 
+        // deprecated, since pop_front is only found on std containers with fast deletion at the beginning
         inline void pop_front(web::json::value& value)
         {
             value.erase(0);
@@ -288,6 +289,66 @@ namespace web
         inline bool empty(const web::json::value& value)
         {
             return 0 == value.size();
+        }
+    }
+}
+
+// json::array accessors and operations
+namespace web
+{
+    namespace json
+    {
+        template <typename Value>
+        inline void push_back(web::json::array& value, const Value& element)
+        {
+            value[value.size()] = web::json::value{ element };
+        }
+
+        inline void push_back(web::json::array& value, web::json::value&& element)
+        {
+            value[value.size()] = std::move(element);
+        }
+
+        inline void pop_back(web::json::array& value)
+        {
+            value.erase(value.size() - 1);
+        }
+
+        inline web::json::value& front(web::json::array& value)
+        {
+            return value.at(0);
+        }
+
+        inline const web::json::value& front(const web::json::array& value)
+        {
+            return value.at(0);
+        }
+
+        inline web::json::value& back(web::json::array& value)
+        {
+            return value.at(value.size() - 1);
+        }
+
+        inline const web::json::value& back(const web::json::array& value)
+        {
+            return value.at(value.size() - 1);
+        }
+
+        inline bool empty(const web::json::array& value)
+        {
+            return 0 == value.size();
+        }
+    }
+}
+
+// json::object accessors and operations
+namespace web
+{
+    namespace json
+    {
+        inline bool empty(const web::json::object& value)
+        {
+            return value.empty();
         }
     }
 }

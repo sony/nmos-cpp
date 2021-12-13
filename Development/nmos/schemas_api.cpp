@@ -6,6 +6,7 @@
 #include "nmos/api_utils.h"
 #include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
+#include "nmos/media_type.h" // for nmos::media_types::application_schema_json
 
 namespace nmos
 {
@@ -185,10 +186,10 @@ namespace nmos
 
                 if (schemas.end() != found)
                 {
-                    res.headers().set_content_type(U("application/schema+json"));
+                    res.headers().set_content_type(nmos::media_types::application_schema_json.name);
 
                     // experimental extension, to support human-readable HTML rendering of NMOS responses
-                    if (experimental::details::is_html_response_preferred(req, U("application/schema+json")))
+                    if (experimental::details::is_html_response_preferred(req, nmos::media_types::application_schema_json.name))
                     {
                         const auto base_uri = web::uri_builder().set_path(U("/schemas/") + repository + U("/") + tag + U("/")).to_uri();
                         set_reply(res, status_codes::OK, details::make_json_schema_html_response_body(base_uri, found->second));

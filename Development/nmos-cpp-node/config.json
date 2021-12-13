@@ -5,12 +5,35 @@
     // Custom settings for the example node implementation
 
     // how_many: provides for very basic testing of a node with many sub-resources of each type
-    //"how_many" : 7,
+    //"how_many": 4,
+
+    // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
+    //"activate_senders": false,
 
     // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
     // and the equivalent parameter constraint on video receivers
     // the value must be an object like { "numerator": 25, "denominator": 1 }
     //"frame_rate": { "numerator": 60000, "denominator": 1001 },
+
+    // frame_width, frame_height: control the frame_width and frame_height of video flows
+    //"frame_width": 3840,
+    //"frame_height": 2160,
+
+    // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
+    // when omitted, a default is used based on the frame_rate, etc.
+    //"interlace_mode": "progressive",
+
+    // colorspace: controls the colorspace of video flows, see nmos::colorspace
+    //"colorspace": "BT709",
+
+    // transfer_characteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
+    //"transfer_characteristic": "SDR",
+
+    // color_sampling: controls the color (sub-)sampling mode of video flows, see sdp::sampling
+    //"color_sampling": "YCbCr-4:2:2",
+
+    // component_depth: controls the bits per component sample of video flows
+    //"component_depth": 10,
 
     // channel_count: controls the number of channels in audio sources
     //"channel_count": 8,
@@ -97,7 +120,7 @@
 
     // registration_heartbeat_interval [registry, node]:
     // "Nodes are expected to peform a heartbeat every 5 seconds by default."
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md#heartbeating
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
     //"registration_heartbeat_interval": 5,
 
     // registration_request_max [node]: timeout for interactions with the Registration API /resource endpoint
@@ -113,13 +136,13 @@
 
     // events_heartbeat_interval [node, client]:
     // "Upon connection, the client is required to report its health every 5 seconds in order to maintain its session and subscription."
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
     //"events_heartbeat_interval": 5,
 
     // events_expiry_interval [node]:
     // "The server is expected to check health commands and after a 12 seconds timeout (2 consecutive missed health commands plus 2 seconds to allow for latencies)
     // it should clear the subscriptions for that particular client and close the websocket connection."
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#41-heartbeats
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#41-heartbeats
     //"events_expiry_interval": 12,
 
     // system_address [node]: IP address or host name used to construct request URLs for the System API (if not discovered via DNS-SD)

@@ -8,6 +8,7 @@
 #include "cpprest/uri_schemes.h"
 #include "cpprest/ws_utils.h"
 #include "nmos/api_version.h"
+#include "nmos/media_type.h"
 #include "nmos/slog.h"
 #include "nmos/type.h"
 #include "nmos/version.h"
@@ -190,7 +191,7 @@ namespace nmos
                 const auto accept = req.headers().find(web::http::header_names::accept);
                 return req.headers().end() != accept
                     && !boost::algorithm::contains(accept->second, mime_type)
-                    && boost::algorithm::contains(accept->second, U("text/html"));
+                    && boost::algorithm::contains(accept->second, nmos::media_types::text_html.name);
             }
 
             web::json::value make_html_response_a_tag(const web::uri& href, const web::json::value& value)
@@ -213,7 +214,7 @@ namespace nmos
 
     // construct a standard NMOS "child resources" response, from the specified sub-routes
     // merging with ones from an existing response
-    // see https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/2.0.%20APIs.md#api-paths
+    // see https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.0._APIs.html#api-paths
     web::json::value make_sub_routes_body(std::set<utility::string_t> sub_routes, const web::http::http_request& req, web::http::http_response res)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -563,7 +564,7 @@ namespace nmos
                 if (web::http::details::is_mime_type_json(mime_type) && experimental::details::is_html_response_preferred(req, mime_type))
                 {
                     res.set_body(nmos::experimental::make_html_response_body(res, gate));
-                    res.headers().set_content_type(U("text/html; charset=utf-8"));
+                    res.headers().set_content_type(nmos::media_types::text_html.name + U("; charset=utf-8"));
                 }
 
                 slog::detail::logw<slog::log_statement, slog::base_gate>(gate, slog::severities::more_info, SLOG_FLF) << nmos::stash_categories({ nmos::categories::access }) << nmos::common_log_stash(req, res) << "Sending response after " << processing_dur << "ms";

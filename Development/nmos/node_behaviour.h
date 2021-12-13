@@ -21,8 +21,8 @@ namespace mdns
 }
 
 // Node behaviour including both registered operation and peer to peer operation
-// See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/4.1.%20Behaviour%20-%20Registration.md
-// and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/docs/3.1.%20Discovery%20-%20Registered%20Operation.md
+// See https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html
+// and https://specs.amwa.tv/is-04/releases/v1.2.0/docs/3.1._Discovery_-_Registered_Operation.html
 namespace nmos
 {
     struct model;

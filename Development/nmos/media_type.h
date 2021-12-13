@@ -7,9 +7,9 @@
 namespace nmos
 {
     // Media types (used in flows and receivers)
-    // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_video.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/flow_audio_raw.json
-    // and https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2/APIs/schemas/receiver_video.json
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_audio_raw.html
+    // and https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_video.html
     // etc.
     DEFINE_STRING_ENUM(media_type)
     namespace media_types
@@ -43,6 +43,17 @@ namespace nmos
 
         // See SMPTE ST 2022-8:2019
         const media_type video_SMPTE2022_6{ U("video/SMPTE2022-6") };
+
+        // Additional media types for NMOS responses
+
+        const media_type application_sdp{ U("application/sdp") };
+
+        // experimental extension, to support HTML rendering of NMOS responses
+        const media_type text_html{ U("text/html") };
+
+        // experimental extension, to support JSON rendering in NMOS responses
+        const media_type application_schema_json{ U("application/schema+json") };
+        const media_type application_sdp_json{ U("application/sdp+json") };
     }
 }
 

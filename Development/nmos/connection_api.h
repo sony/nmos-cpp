@@ -10,7 +10,7 @@ namespace slog
 }
 
 // Connection API implementation
-// See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml
+// See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/ConnectionAPI.html
 namespace nmos
 {
     struct api_version;
@@ -74,17 +74,17 @@ namespace nmos
     web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate);
 
     // "On activation all instances of "auto" must be resolved into the actual values that will be used by the sender, unless there is an error condition."
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/ConnectionAPI.raml#L300-L301
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender_transport_params_rtp.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver_transport_params_rtp.json
+    // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/ConnectionAPI.html#single_senders__senderid__active_get
+    // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender_transport_params_rtp.html
+    // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver_transport_params_rtp.html
     // "In many cases this is a simple operation, and the behaviour is very clearly defined in the relevant transport parameter schemas.
     // For example a port number may be offset from the RTP port number by a pre-determined value. The specification makes suggestions
     // of a sensible default value for "auto" to resolve to, but the Sender or Receiver may choose any value permitted by the schema
     // and constraints."
     // This function implements those sensible defaults for the RTP transport type.
     // "In some cases the behaviour is more complex, and may be determined by the vendor."
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/docs/4.1.%20Behaviour%20-%20RTP%20Transport%20Type.md#use-of-auto
+    // See https://specs.amwa.tv/is-05/releases/v1.1.0/docs/2.2._APIs_-_Server_Side_Implementation.html#use-of-auto
+    // and https://specs.amwa.tv/is-05/releases/v1.1.0/docs/4.1._Behaviour_-_RTP_Transport_Type.html#use-of-auto
     // This function therefore does not select a value for e.g. sender "source_ip" or receiver "interface_ip".
     void resolve_rtp_auto(const nmos::type& type, web::json::value& transport_params, int auto_rtp_port = 5004);
 

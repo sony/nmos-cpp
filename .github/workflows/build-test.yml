@@ -79,6 +79,8 @@ jobs:
       if: matrix.use_conan == true
       run: |
         pip install conan
+        # override default 'semver_direct_mode' due to boost
+        conan config set general.default_package_id_mode=minor_mode
         conan config set general.revisions_enabled=1
     
     - name: install cmake
@@ -356,11 +358,7 @@ jobs:
           pip install -r requirements.txt
     
           # Install SDPoker
-          if [[ "${{ matrix.os }}" == "windows-latest" || "$EUID" == "0" ]]; then
-            npm install -g AMWA-TV/sdpoker
-          else
-            sudo npm install -g AMWA-TV/sdpoker
-          fi
+          npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
           run_python="python"
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
@@ -482,6 +480,8 @@ jobs:
       if: matrix.use_conan == true
       run: |
         pip install conan
+        # override default 'semver_direct_mode' due to boost
+        conan config set general.default_package_id_mode=minor_mode
         conan config set general.revisions_enabled=1
     
     - name: install cmake
@@ -759,11 +759,7 @@ jobs:
           pip install -r requirements.txt
     
           # Install SDPoker
-          if [[ "${{ matrix.os }}" == "windows-latest" || "$EUID" == "0" ]]; then
-            npm install -g AMWA-TV/sdpoker
-          else
-            sudo npm install -g AMWA-TV/sdpoker
-          fi
+          npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
           run_python="python"
         fi
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt

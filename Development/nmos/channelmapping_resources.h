@@ -11,23 +11,23 @@ namespace nmos
     struct resource;
 
     // IS-08 Channel Mapping API resources
-    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/docs/1.0.%20Overview.md#api-structure
+    // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/1.0._Overview.html#api-structure
     // Each IS-08 input and output's data are json objects with an identifier field 
     // and a field for the resource's view in the /io endpoint, also used for
     // the individual endpoints, "properties", "caps" and so on
-    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/APIs/schemas/io-response-schema.json
+    // See https://specs.amwa.tv/is-08/releases/v1.0.1/APIs/schemas/with-refs/io-response-schema.html
     // The output resource type also has a field for that output's /map/active endpoint
     // and a field that represents a 'staged' endpoint which contains the output-specific
     // "action" when there is a scheduled or in-flight immediate activation for that
     // output (an "activation_id" and the "activation" object are also included so that
     // the /map/activations endpoints can be implemented similarly to the /io endpoint)
-    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/APIs/schemas/map-active-output-response-schema.json
-    // and https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/APIs/schemas/map-activations-activation-get-response-schema.json
+    // See https://specs.amwa.tv/is-08/releases/v1.0.1/APIs/schemas/with-refs/map-active-output-response-schema.html
+    // and https://specs.amwa.tv/is-08/releases/v1.0.1/APIs/schemas/with-refs/map-activations-activation-get-response-schema.html
 
     // Note that the input/output identifiers used in the Channel Mapping API are not universally unique
     // and one input and one output in an API instance may even share the same identifier
     // so these need to be prefixed with the resource type to make the nmos::resource::id locally unique
-    // See https://github.com/AMWA-TV/nmos-audio-channel-mapping/blob/v1.0.x/docs/4.0.%20Behaviour.md#identifiers
+    // See https://specs.amwa.tv/is-08/releases/v1.0.1/docs/4.0._Behaviour.html#identifiers
     typedef utility::string_t channelmapping_id;
 
     nmos::id make_channelmapping_resource_id(const std::pair<nmos::channelmapping_id, nmos::type>& id_type);

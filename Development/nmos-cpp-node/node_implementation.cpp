@@ -12,6 +12,7 @@
 #ifdef HAVE_LLDP
 #include "lldp/lldp_manager.h"
 #endif
+#include "nmos/activation_mode.h"
 #include "nmos/capabilities.h"
 #include "nmos/channels.h"
 #include "nmos/channelmapping_resources.h"
@@ -55,6 +56,9 @@ namespace impl
         // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
 
+        // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
+        const web::json::field_as_bool_or activate_senders{ U("activate_senders"), true };
+
         // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
         // and the equivalent parameter constraint on video receivers
         // the value must be an object like { "numerator": 25, "denominator": 1 }
@@ -64,8 +68,25 @@ namespace impl
             { nmos::fields::denominator, 1 }
         }) };
 
-        // hm, could add custom settings for e.g. frame_width, frame_height to allow 720p and UHD,
-        // and interlace_mode to allow 1080p25 and 1080p29.97 as well as 1080i50 and 1080i59.94?
+        // frame_width, frame_height: control the frame_width and frame_height of video flows
+        const web::json::field_as_integer_or frame_width{ U("frame_width"), 1920 };
+        const web::json::field_as_integer_or frame_height{ U("frame_height"), 1080 };
+
+        // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
+        // when omitted, a default is used based on the frame_rate, etc.
+        const web::json::field_as_string interlace_mode{ U("interlace_mode") };
+
+        // colorspace: controls the colorspace of video flows, see nmos::colorspace
+        const web::json::field_as_string_or colorspace{ U("colorspace"), U("BT709") };
+
+        // transfer_characteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
+        const web::json::field_as_string_or transfer_characteristic{ U("transfer_characteristic"), U("SDR") };
+
+        // color_sampling: controls the color (sub-)sampling mode of video flows, see sdp::sampling
+        const web::json::field_as_string_or color_sampling{ U("color_sampling"), U("YCbCr-4:2:2") };
+
+        // component_depth: controls the bits per component sample of video flows
+        const web::json::field_as_integer_or component_depth{ U("component_depth"), 10 };
 
         // channel_count: controls the number of channels in audio sources
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
@@ -73,6 +94,8 @@ namespace impl
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
     }
+
+    nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
 
     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
     // each 'port' of the example node has a source, flow, sender and compatible receiver
@@ -109,10 +132,17 @@ namespace impl
         { U("Low Frequency Effects Channel"), nmos::channel_symbols::LFE }
     };
 
+    // find interface with the specified address
+    std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address);
+
     // generate repeatable ids for the example node's resources
     nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const port& port = {}, int index = 0);
-    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const port& port, int how_many);
-    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const port& port, int how_many = 1);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const nmos::type& type, const std::vector<port>& ports, int how_many = 1);
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const std::vector<nmos::type>& types, const std::vector<port>& ports, int how_many = 1);
+
+    // generate a repeatable source-specific multicast address for each leg of a sender
+    utility::string_t make_source_specific_multicast_address_v4(const nmos::id& id, int leg = 0);
 
     // add a helpful suffix to the label of a sub-resource for the example node
     void set_label_description(nmos::resource& resource, const port& port, int index);
@@ -127,16 +157,54 @@ namespace impl
 }
 
 // forward declarations for node_implementation_thread
+void node_implementation_init(nmos::node_model& model, slog::base_gate& gate);
+void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
 
+struct node_implementation_init_exception {};
+
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
-// starts background tasks to emit regular events from the temperature event source and then waits for shutdown.
+// starts background tasks to emit regular events from the temperature event source, and then waits for shutdown.
 void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 {
     nmos::details::omanip_gate gate{ gate_, nmos::stash_category(impl::categories::node_implementation) };
 
+    try
+    {
+        node_implementation_init(model, gate);
+        node_implementation_run(model, gate);
+    }
+    catch (const node_implementation_init_exception&)
+    {
+        // node_implementation_init writes the log message
+    }
+    catch (const web::json::json_exception& e)
+    {
+        // most likely from incorrect syntax or incorrect value types in the command line settings
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what();
+    }
+    catch (const std::system_error& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "System error: " << e.what() << " [" << e.code() << "]";
+    }
+    catch (const std::runtime_error& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Implementation error: " << e.what();
+    }
+    catch (const std::exception& e)
+    {
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
+    }
+    catch (...)
+    {
+        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
+    }
+}
+
+void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
+{
     using web::json::value;
     using web::json::value_from_elements;
     using web::json::value_of;
@@ -148,12 +216,18 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
     const auto how_many = impl::fields::how_many(model.settings);
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
+    const auto frame_width = impl::fields::frame_width(model.settings);
+    const auto frame_height = impl::fields::frame_height(model.settings);
+    const auto interlace_mode = impl::get_interlace_mode(model.settings);
+    const auto colorspace = nmos::colorspace{ impl::fields::colorspace(model.settings) };
+    const auto transfer_characteristic = nmos::transfer_characteristic{ impl::fields::transfer_characteristic(model.settings) };
+    const auto sampling = sdp::sampling{ impl::fields::color_sampling(model.settings) };
+    const auto bit_depth = impl::fields::component_depth(model.settings);
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
 
-    // any delay between updates to the model resources is unnecessary
-    // this just serves as a slightly more realistic example!
-    const unsigned int delay_millis{ 10 };
+    // any delay between updates to the model resources is unnecessary unless for debugging purposes
+    const unsigned int delay_millis{ 0 };
 
     // it is important that the model be locked before inserting, updating or deleting a resource
     // and that the the node behaviour thread be notified after doing so
@@ -186,7 +260,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     // example node
     {
         auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) throw node_implementation_init_exception();
     }
 
 #ifdef HAVE_LLDP
@@ -198,19 +272,28 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 #endif
 
     // prepare interface bindings for all senders and receivers
-    const auto host_interface_ = boost::range::find_if(host_interfaces, [&](const web::hosts::experimental::host_interface& interface)
-    {
-        return interface.addresses.end() != boost::range::find(interface.addresses, nmos::fields::host_address(model.settings));
-    });
+    const auto& host_address = nmos::fields::host_address(model.settings);
+    // the interface corresponding to the host address is used for the example node's WebSocket senders and receivers
+    const auto host_interface_ = impl::find_interface(host_interfaces, host_address);
     if (host_interfaces.end() == host_interface_)
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to host_address?";
-        return;
+        throw node_implementation_init_exception();
     }
     const auto& host_interface = *host_interface_;
-    // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's senders and receivers
-    const auto& primary_interface = host_interfaces.front();
-    const auto& secondary_interface = host_interfaces.back();
+    // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's RTP senders and receivers
+    // rather than just picking the one(s) corresponding to the first and last of the specified host addresses
+    const auto& primary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::front(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
+    const auto& secondary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::back(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
+    const auto primary_interface_ = impl::find_interface(host_interfaces, primary_address);
+    const auto secondary_interface_ = impl::find_interface(host_interfaces, secondary_address);
+    if (host_interfaces.end() == primary_interface_ || host_interfaces.end() == secondary_interface_)
+    {
+        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to one of the host_addresses?";
+        throw node_implementation_init_exception();
+    }
+    const auto& primary_interface = *primary_interface_;
+    const auto& secondary_interface = *secondary_interface_;
     const auto interface_names = smpte2022_7
         ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
         : std::vector<utility::string_t>{ primary_interface.name };
@@ -220,7 +303,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::rtp, how_many);
         if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, impl::ports::ws, how_many));
         auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, impl::ports::all, how_many);
-        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) throw node_implementation_init_exception();
     }
 
     // example sources, flows and senders
@@ -259,17 +342,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource flow;
             if (impl::ports::video == port)
             {
-                // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
-                // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
-                // like-numbered sample rows of the temporally first field."
-                const auto interlace_mode = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
-                    ? nmos::interlace_modes::interlaced_tff
-                    : nmos::interlace_modes::progressive;
                 flow = nmos::make_raw_video_flow(
                     flow_id, source_id, device_id,
                     frame_rate,
-                    1920, 1080, interlace_mode,
-                    nmos::colorspaces::BT709, nmos::transfer_characteristics::SDR, nmos::chroma_subsampling::YCbCr422, 10,
+                    frame_width, frame_height, interlace_mode,
+                    colorspace, transfer_characteristic, sampling, bit_depth,
                     model.settings
                 );
             }
@@ -295,10 +372,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             impl::set_label_description(flow, port, index);
 
             // set_transportfile needs to find the matching source and flow for the sender, so insert these first
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) throw node_implementation_init_exception();
 
-            auto sender = nmos::make_sender(sender_id, flow_id, device_id, interface_names, model.settings);
+            const auto manifest_href = nmos::experimental::make_manifest_api_manifest(sender_id, model.settings);
+            auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::rtp, device_id, manifest_href.to_string(), interface_names, model.settings);
             impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
@@ -311,14 +389,20 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
             });
 
-            // initialize this sender enabled, just to enable the IS-05-01 test suite to run immediately
-            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::master_enable] = connection_sender.data[nmos::fields::endpoint_staged][nmos::fields::master_enable] = value::boolean(true);
-            resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
-            set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
-            nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
+            if (impl::fields::activate_senders(model.settings))
+            {
+                // initialize this sender with a scheduled activation, e.g. to enable the IS-05-01 test suite to run immediately
+                auto& staged = connection_sender.data[nmos::fields::endpoint_staged];
+                staged[nmos::fields::master_enable] = value::boolean(true);
+                staged[nmos::fields::activation] = value_of({
+                    { nmos::fields::mode, nmos::activation_modes::activate_scheduled_relative.name },
+                    { nmos::fields::requested_time, U("0:0") },
+                    { nmos::fields::activation_time, nmos::make_version() }
+                });
+            }
 
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) throw node_implementation_init_exception();
         }
     }
 
@@ -332,25 +416,25 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource receiver;
             if (impl::ports::video == port)
             {
-                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
-                const auto interlace_modes = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
+                const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
                     ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
                     : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
                         { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
-                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
-                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
+                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
                         { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
+                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
                     })
                 });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
             else if (impl::ports::audio == port)
             {
-                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
+                receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, 24, model.settings);
                 // add some example constraint sets; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
@@ -371,7 +455,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::data == port)
             {
-                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                receiver = nmos::make_sdianc_data_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
@@ -382,7 +466,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             }
             else if (impl::ports::mux == port)
             {
-                receiver = nmos::make_mux_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
+                receiver = nmos::make_mux_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
@@ -405,8 +489,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
         }
     }
 
@@ -426,9 +510,9 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 event_type = impl::temperature_Celsius;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#231-measurements
-                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-type-number-measurement-get-200.json
-                // and https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/examples/eventsapi-state-number-measurement-get-200.json
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#231-measurements
+                // and https://specs.amwa.tv/is-07/releases/v1.0.1/examples/eventsapi-type-number-measurement-get-200.html
+                // and https://specs.amwa.tv/is-07/releases/v1.0.1/examples/eventsapi-state-number-measurement-get-200.html
                 events_type = nmos::make_events_number_type({ -200, 10 }, { 1000, 10 }, { 1, 10 }, U("C"));
                 events_state = nmos::make_events_number_state({ source_id, flow_id }, { 201, 10 }, event_type);
             }
@@ -436,7 +520,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 event_type = nmos::event_types::boolean;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#21-boolean
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#21-boolean
                 events_type = nmos::make_events_boolean_type();
                 events_state = nmos::make_events_boolean_state({ source_id, flow_id }, false);
             }
@@ -444,7 +528,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 event_type = nmos::event_types::string;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#22-string
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#22-string
                 // and of course, https://en.wikipedia.org/wiki/Metasyntactic_variable
                 events_type = nmos::make_events_string_type(0, 0, U("^foo|bar|baz|qu+x$"));
                 events_state = nmos::make_events_string_state({ source_id, flow_id }, U("foo"));
@@ -453,7 +537,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             {
                 event_type = impl::catcall;
 
-                // see https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0.1/docs/3.0.%20Event%20types.md#3-enum
+                // see https://specs.amwa.tv/is-07/releases/v1.0.1/docs/3.0._Event_types.html#3-enum
                 events_type = nmos::make_events_number_enum_type({
                     { 1, { U("meow"), U("chatty") } },
                     { 2, { U("purr"), U("happy") } },
@@ -482,11 +566,11 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             resolve_auto(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
             nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
 
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) return;
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.events_resources, std::move(events_source), gate)) throw node_implementation_init_exception();
         }
     }
 
@@ -526,8 +610,8 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             auto connection_receiver = nmos::make_connection_events_websocket_receiver(receiver_id, model.settings);
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
-            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
-            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
+            if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
+            if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
         }
     }
 
@@ -552,7 +636,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         // use default input capabilities to indicate no constraints
         auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels);
-        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) throw node_implementation_init_exception();
     }
 
     // example audio outputs
@@ -575,7 +659,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         // omit routable inputs to indicate no restrictions
         auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels);
-        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
     // example non-IP audio input
@@ -600,7 +684,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         const auto block_size = input_block_size;
 
         auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
-        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) throw node_implementation_init_exception();
     }
 
     // example outputs to some audio gizmo
@@ -629,7 +713,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         }));
 
         auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels, routable_inputs, active_map);
-        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
     // example source for some audio gizmo
@@ -645,7 +729,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         auto source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
         impl::set_label_description(source, impl::ports::audio, how_many);
 
-        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) return;
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(source), gate)) throw node_implementation_init_exception();
     }
 
     // example inputs from some audio gizmo
@@ -670,7 +754,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         const auto block_size = 2;
 
         auto channelmapping_input = nmos::make_channelmapping_input(id, name, description, parent, channel_labels, reordering, block_size);
-        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) return;
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_input), gate)) throw node_implementation_init_exception();
     }
 
     // example non-ST 2110-30 audio output
@@ -695,8 +779,16 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         routable_inputs.push_back({});
 
         auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels, routable_inputs);
-        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
+        if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
+}
+
+void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
+{
+    auto lock = model.read_lock();
+
+    const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
+    const auto how_many = impl::fields::how_many(model.settings);
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
@@ -762,7 +854,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
     cancellation_source.cancel();
     // wait without the lock since it is also used by the background tasks
-    nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
+    nmos::details::reverse_lock_guard<nmos::read_lock> unlock{ lock };
     events.wait();
 }
 
@@ -842,18 +934,18 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-        // this code relies on the specific constraints added by nmos_implementation_thread
+        // this code relies on the specific constraints added by node_implementation_thread
         const auto& constraints = nmos::fields::endpoint_constraints(connection_resource.data);
 
         // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/2.2.%20APIs%20-%20Server%20Side%20Implementation.md#use-of-auto
+        // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/2.2._APIs_-_Server_Side_Implementation.html#use-of-auto
         if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
             const bool smpte2022_7 = 1 < transport_params.size();
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
             if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.0")); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [] { return value::string(U("239.255.255.1")); });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
+            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
@@ -997,6 +1089,32 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 
 namespace impl
 {
+    nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
+    {
+        if (settings.has_field(impl::fields::interlace_mode))
+        {
+            return nmos::interlace_mode{ impl::fields::interlace_mode(settings) };
+        }
+        // for the default, 1080i50 and 1080i59.94 are arbitrarily preferred to 1080p25 and 1080p29.97
+        // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
+        // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
+        // like-numbered sample rows of the temporally first field."
+        const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(settings));
+        const auto frame_height = impl::fields::frame_height(settings);
+        return (nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate) && 1080 == frame_height
+            ? nmos::interlace_modes::interlaced_tff
+            : nmos::interlace_modes::progressive;
+    }
+
+    // find interface with the specified address
+    std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address)
+    {
+        return boost::range::find_if(interfaces, [&](const web::hosts::experimental::host_interface& interface)
+        {
+            return interface.addresses.end() != boost::range::find(interface.addresses, address);
+        });
+    }
+
     // generate repeatable ids for the example node's resources
     nmos::id make_id(const nmos::id& seed_id, const nmos::type& type, const impl::port& port, int index)
     {
@@ -1020,6 +1138,31 @@ namespace impl
             boost::range::push_back(ids, make_ids(seed_id, type, port, how_many));
         }
         return ids;
+    }
+
+    std::vector<nmos::id> make_ids(const nmos::id& seed_id, const std::vector<nmos::type>& types, const std::vector<port>& ports, int how_many)
+    {
+        // hm, boost::range::combine arrived in Boost 1.56.0
+        std::vector<nmos::id> ids;
+        for (const auto& type : types)
+        {
+            boost::range::push_back(ids, make_ids(seed_id, type, ports, how_many));
+        }
+        return ids;
+    }
+
+    // generate a repeatable source-specific multicast address for each leg of a sender
+    utility::string_t make_source_specific_multicast_address_v4(const nmos::id& id, int leg)
+    {
+        // hash the pseudo-random id and leg to generate the address
+        const auto s = id + U('/') + utility::conversions::details::to_string_t(leg);
+        const auto h = std::hash<utility::string_t>{}(s);
+        auto a = boost::asio::ip::address_v4(uint32_t(h)).to_bytes();
+        // ensure the address is in the source-specific multicast block reserved for local host allocation, 232.0.1.0-232.255.255.255
+        // see https://www.iana.org/assignments/multicast-addresses/multicast-addresses.xhtml#multicast-addresses-10
+        a[0] = 232;
+        a[2] |= 1;
+        return utility::s2us(boost::asio::ip::address_v4(a).to_string());
     }
 
     // add a helpful suffix to the label of a sub-resource for the example node

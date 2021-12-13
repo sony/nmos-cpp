@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.76.0")
+set(BOOST_VERSION_CUR "1.77.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
@@ -226,6 +226,10 @@ else()
             target_compile_definitions(
                 json_schema_validator PRIVATE
                 JSON_SCHEMA_BOOST_REGEX
+                )
+            target_link_libraries(
+                json_schema_validator PRIVATE
+                Boost::regex
                 )
         endif()
     endif()

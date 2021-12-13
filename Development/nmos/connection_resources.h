@@ -20,7 +20,7 @@ namespace nmos
     // IS-05 Connection API resources
     // "The UUIDs used to advertise Senders and Receivers in the Connection Management API must match
     // those used in a corresponding IS-04 implementation."
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#sender--receiver-ids
+    // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/3.1._Interoperability_-_NMOS_IS-04.html#sender--receiver-ids
     // Whereas the data of the IS-04 resources corresponds to a particular Node API resource endpoint,
     // each IS-05 resource's data is a json object with an "id" field and a field for each Connection API
     // endpoint of that logical single resource
@@ -29,9 +29,9 @@ namespace nmos
     // "staged" and "active" fields, which must each have a value conforming to the sender-response-schema or receiver-response-schema,
     // and for senders, also a "transportfile" field, the value of which must be an object, with either
     // "data" and "type" fields, or an "href" field
-    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/constraints-schema.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/sender-response-schema.json
-    // and https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1/APIs/schemas/receiver-response-schema.json
+    // See https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/constraints-schema.html
+    // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/sender-response-schema.html
+    // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver-response-schema.html
 
     // The caller must resolve all instances of "auto" in the /active endpoint into the actual values that will be used!
     // See nmos::resolve_rtp_auto
@@ -51,7 +51,7 @@ namespace nmos
 
     // Although these functions make "connection" (IS-05) resources, the details are defined by IS-07 Event & Tally
     // so maybe these belong in nmos/events_resources.h or their own file, e.g. nmos/connection_events_resources.h?
-    // See https://github.com/AMWA-TV/nmos-event-tally/blob/v1.0/docs/5.2.%20Transport%20-%20Websocket.md#3-connection-management
+    // See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html#3-connection-management
     nmos::resource make_connection_events_websocket_sender(const nmos::id& id, const nmos::id& device_id, const nmos::id& source_id, const nmos::settings& settings);
     nmos::resource make_connection_events_websocket_receiver(const nmos::id& id, const nmos::settings& settings);
 

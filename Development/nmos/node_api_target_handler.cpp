@@ -6,6 +6,7 @@
 #include "nmos/client_utils.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_fields.h"
+#include "nmos/media_type.h" // for nmos::media_types::application_sdp
 #include "nmos/model.h"
 #include "nmos/slog.h"
 
@@ -47,16 +48,16 @@ namespace nmos
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing Content-Type: should be application/sdp";
                     }
-                    else if (U("application/sdp") != content_type)
+                    else if (nmos::media_types::application_sdp.name != content_type)
                     {
-                        throw web::http::http_exception(U("Incorrect Content-Type: ") + content_type + U(", should be application/sdp"));
+                        throw web::http::http_exception(U("Incorrect Content-Type: ") + content_type + U(", should be ") + nmos::media_types::application_sdp.name);
                     }
 
                     return res.extract_string(true);
                 }).then([&model, receiver_id, sender_id, parse_transport_file, validate_merged, &gate](const utility::string_t& sdp)
                 {
                     // "The Connection Management API supersedes the now deprecated method of updating the 'target' resource on Node API Receivers in order to establish connections."
-                    // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0/docs/3.1.%20Interoperability%20-%20NMOS%20IS-04.md#support-for-legacy-is-04-connection-management
+                    // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/3.1._Interoperability_-_NMOS_IS-04.html#support-for-legacy-is-04-connection-management
 
                     const auto patch = value_of({
                         { nmos::fields::sender_id, sender_id },
@@ -66,7 +67,7 @@ namespace nmos
                         })},
                         { nmos::fields::transport_file, value_of({
                             { nmos::fields::data, sdp },
-                            { nmos::fields::type, U("application/sdp") }
+                            { nmos::fields::type, nmos::media_types::application_sdp.name }
                         })}
                     });
 
