@@ -79,8 +79,8 @@ namespace impl
         // colorspace: controls the colorspace of video flows, see nmos::colorspace
         const web::json::field_as_string_or colorspace{ U("colorspace"), U("BT709") };
 
-        // transfer_chacteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
-        const web::json::field_as_string_or transfer_chacteristic{ U("transfer_chacteristic"), U("SDR") };
+        // transfer_characteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
+        const web::json::field_as_string_or transfer_characteristic{ U("transfer_characteristic"), U("SDR") };
 
         // color_sampling: controls the color (sub-)sampling mode of video flows, see sdp::sampling
         const web::json::field_as_string_or color_sampling{ U("color_sampling"), U("YCbCr-4:2:2") };
@@ -220,7 +220,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     const auto frame_height = impl::fields::frame_height(model.settings);
     const auto interlace_mode = impl::get_interlace_mode(model.settings);
     const auto colorspace = nmos::colorspace{ impl::fields::colorspace(model.settings) };
-    const auto transfer_characteristic = nmos::transfer_characteristic{ impl::fields::transfer_chacteristic(model.settings) };
+    const auto transfer_characteristic = nmos::transfer_characteristic{ impl::fields::transfer_characteristic(model.settings) };
     const auto sampling = sdp::sampling{ impl::fields::color_sampling(model.settings) };
     const auto bit_depth = impl::fields::component_depth(model.settings);
     const auto channel_count = impl::fields::channel_count(model.settings);

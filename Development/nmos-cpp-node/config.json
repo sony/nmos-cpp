@@ -26,8 +26,8 @@
     // colorspace: controls the colorspace of video flows, see nmos::colorspace
     //"colorspace": "BT709",
 
-    // transfer_chacteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
-    //"transfer_chacteristic": "SDR",
+    // transfer_characteristic: controls the transfer characteristic system of video flows, see nmos::transfer_characteristic
+    //"transfer_characteristic": "SDR",
 
     // color_sampling: controls the color (sub-)sampling mode of video flows, see sdp::sampling
     //"color_sampling": "YCbCr-4:2:2",
