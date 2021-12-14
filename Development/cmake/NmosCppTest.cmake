@@ -52,6 +52,12 @@ set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
 set(NMOS_CPP_TEST_NMOS_TEST_HEADERS
     )
 
+set(NMOS_CPP_TEST_RQL_TEST_SOURCES
+    rql/test/rql_test.cpp
+    )
+set(NMOS_CPP_TEST_RQL_TEST_HEADERS
+    )
+
 set(NMOS_CPP_TEST_SDP_TEST_SOURCES
     sdp/test/sdp_test.cpp
     )
@@ -72,6 +78,8 @@ add_executable(
     ${NMOS_CPP_TEST_MDNS_TEST_HEADERS}
     ${NMOS_CPP_TEST_NMOS_TEST_SOURCES}
     ${NMOS_CPP_TEST_NMOS_TEST_HEADERS}
+    ${NMOS_CPP_TEST_RQL_TEST_SOURCES}
+    ${NMOS_CPP_TEST_RQL_TEST_HEADERS}
     ${NMOS_CPP_TEST_SDP_TEST_SOURCES}
     ${NMOS_CPP_TEST_SDP_TEST_HEADERS}
     )
@@ -82,6 +90,7 @@ source_group("cpprest\\test\\Source Files" FILES ${NMOS_CPP_TEST_CPPREST_TEST_SO
 source_group("lldp\\test\\Source Files" FILES ${NMOS_CPP_TEST_LLDP_TEST_SOURCES})
 source_group("mdns\\test\\Source Files" FILES ${NMOS_CPP_TEST_MDNS_TEST_SOURCES})
 source_group("nmos\\test\\Source Files" FILES ${NMOS_CPP_TEST_NMOS_TEST_SOURCES})
+source_group("rql\\test\\Source Files" FILES ${NMOS_CPP_TEST_RQL_TEST_SOURCES})
 source_group("sdp\\test\\Source Files" FILES ${NMOS_CPP_TEST_SDP_TEST_SOURCES})
 
 source_group("Header Files" FILES ${NMOS_CPP_TEST_HEADERS})
@@ -90,6 +99,7 @@ source_group("cpprest\\test\\Header Files" FILES ${NMOS_CPP_TEST_CPPREST_TEST_HE
 source_group("lldp\\test\\Header Files" FILES ${NMOS_CPP_TEST_LLDP_TEST_HEADERS})
 source_group("mdns\\test\\Header Files" FILES ${NMOS_CPP_TEST_MDNS_TEST_HEADERS})
 source_group("nmos\\test\\Header Files" FILES ${NMOS_CPP_TEST_NMOS_TEST_HEADERS})
+source_group("rql\\test\\Header Files" FILES ${NMOS_CPP_TEST_RQL_TEST_HEADERS})
 source_group("sdp\\test\\Header Files" FILES ${NMOS_CPP_TEST_SDP_TEST_HEADERS})
 
 target_link_libraries(
