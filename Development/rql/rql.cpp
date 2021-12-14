@@ -52,6 +52,85 @@ namespace rql
             return{ U("rql evaluation error - unimplemented call-operator, ") + name };
         }
 
+        // decodes an URI encoded string with option to bypass certain escape sequences, e.g. using %2E to skip the dot escape sequence
+        // this function is based on the web::uri::decode()
+        inline utility::string_t decode_uri(const utility::string_t& encoded, const std::vector<utility::string_t>& skip_escape_sequences = {})
+        {
+            if (skip_escape_sequences.empty())
+            {
+                return web::uri::decode(encoded);
+            }
+            else
+            {
+                // convert a hex character digit to a decimal character value
+                // based on web::uri::hex_char_digit_to_decimal_char()
+                auto hex_char_digit_to_decimal_char = [](int hex)
+                {
+                    int decimal;
+                    if (hex >= '0' && hex <= '9')
+                    {
+                        decimal = hex - '0';
+                    }
+                    else if (hex >= 'A' && hex <= 'F')
+                    {
+                        decimal = 10 + (hex - 'A');
+                    }
+                    else if (hex >= 'a' && hex <= 'f')
+                    {
+                        decimal = 10 + (hex - 'a');
+                    }
+                    else
+                    {
+                        throw rql_exception(U("Invalid hexadecimal digit"));
+                    }
+                    return decimal;
+                };
+
+                utility::string_t raw;
+                for (auto iter = encoded.begin(); iter != encoded.end(); ++iter)
+                {
+                    int c = *iter;
+                    utility::string_t escape_sequence;
+                    if (c == U('%'))
+                    {
+                        escape_sequence += *iter;
+                        if (++iter == encoded.end())
+                        {
+                            throw rql_exception(U("Invalid URI string, two hexadecimal digits must follow '%'"));
+                        }
+                        int decimal_value = hex_char_digit_to_decimal_char(static_cast<int>(*iter)) << 4;
+                        escape_sequence += *iter;
+
+                        if (++iter == encoded.end())
+                        {
+                            throw rql_exception(U("Invalid URI string, two hexadecimal digits must follow '%'"));
+                        }
+                        decimal_value += hex_char_digit_to_decimal_char(static_cast<int>(*iter));
+                        escape_sequence += *iter;
+
+                        if (skip_escape_sequences.end() == std::find(skip_escape_sequences.begin(), skip_escape_sequences.end(), escape_sequence))
+                        {
+                            raw.push_back(static_cast<wchar_t>(decimal_value));
+                        }
+                        else
+                        {
+                            raw.insert(std::end(raw), std::begin(escape_sequence), std::end(escape_sequence));
+                        }
+                    }
+                    else if (c > 127 || c < 0)
+                    {
+                        throw rql_exception(U("Invalid encoded URI string, must be entirely ascii"));
+                    }
+                    else
+                    {
+                        // encoded string has to be ASCII.
+                        raw.push_back(static_cast<wchar_t>(*iter));
+                    }
+                }
+                return raw;
+            }
+        }
+
         web::json::value make_value(const utility::string_t& encoded_type, const utility::string_t& encoded_value)
         {
             using web::json::value;
@@ -60,7 +139,12 @@ namespace rql
             value result;
 
             auto decoded_type = web::uri::decode(encoded_type);
-            auto decoded_value = web::uri::decode(encoded_value);
+
+            // decode the URI string and leaving the dot escape sequence within
+            // as dot is represented the key separator for the key path, use of
+            // the dot escape sequence which allowing dot can be used inside the key
+            // see web::json::extract in cpprest/json_utils.cpp
+            auto decoded_value = decode_uri(encoded_value, { U("%2E") });
 
             if (decoded_type.empty())
             {

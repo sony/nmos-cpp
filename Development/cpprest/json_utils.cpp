@@ -83,7 +83,9 @@ namespace web
             do
             {
                 const utility::string_t::size_type key_last = key_path.find_first_of(_XPLATSTR("."), key_first);
-                const utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
+                utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
+                // key may still contain the dot escape sequences, must decode them before key matching
+                key = web::uri::decode(key);
                 if (utility::string_t::npos != key_last)
                 {
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
