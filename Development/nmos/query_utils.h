@@ -96,6 +96,9 @@ namespace nmos
         utility::string_t make_valid_paging_error(const nmos::resource_paging& paging);
     }
 
+    // Helper function to split the key path on '.', then follow by URI decode on each component
+    std::vector<utility::string_t> split_decode_key_path(const utility::string_t& key_path);
+
     // Cursor-based paging customisation points
 
     inline nmos::tai extract_cursor(const nmos::resources::index<tags::created>::type&, nmos::resources::index<tags::created>::type::const_iterator it) { return it->created; }

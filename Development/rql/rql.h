@@ -20,7 +20,7 @@ namespace rql
     // This implementation has one extension in that unrecognized RQL types are transformed to json objects with
     // "type" and (string) "value" fields. This allows typed values to be processed as appropriate by implementations.
 
-    web::json::value parse_query(const utility::string_t& query);
+    web::json::value parse_query(const utility::string_t& query, bool decode_key_path = true);
 
     bool is_call_operator(const web::json::value& arg);
     bool is_typed_value(const web::json::value& arg);

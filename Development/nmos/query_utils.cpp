@@ -5,6 +5,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::resourceType_from_type
@@ -53,7 +54,7 @@ namespace nmos
                 }
                 else if (field.first == U("rql"))
                 {
-                    rql_query = rql::parse_query(field.second.as_string());
+                    rql_query = rql::parse_query(field.second.as_string(), false);
                 }
                 // extract the experimental flag, used to override the default behaviour that resources
                 // "must have all [higher-versioned] keys stripped by the Query API before they are returned"
@@ -238,11 +239,23 @@ namespace nmos
             : input;
     }
 
+    // Helper function to split the key path on '.', then follow by URI decode on each component
+    std::vector<utility::string_t> split_decode_key_path(const utility::string_t& key_path)
+    {
+        std::vector<utility::string_t> split;
+        boost::algorithm::split(split, key_path, [](utility::char_t c) { return U('.') == c; });
+
+        return boost::copy_range<std::vector<utility::string_t>>(split | boost::adaptors::transformed([](const utility::string_t& s)
+        {
+            return web::uri::decode(s);
+        }));
+    }
+
     static inline rql::extractor make_extractor(const web::json::value& value)
     {
         return [&value](web::json::value& results, const web::json::value& key)
         {
-            return web::json::extract(value.as_object(), results, key.as_string());
+            return web::json::extract(value.as_object(), results, split_decode_key_path(key.as_string()));
         };
     }
 

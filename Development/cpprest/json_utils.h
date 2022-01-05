@@ -251,6 +251,11 @@ namespace web
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
         bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path);
 
+        // find the value of a field or fields from the specified object and searching key path arrays as necessary
+        // returns true if the value has at least one field matching the key path
+        // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
+        bool extract(const web::json::object& object, web::json::value& results, const std::vector<utility::string_t>& key_path);
+
         // match_flag_type is a bitmask
         enum match_flag_type
         {

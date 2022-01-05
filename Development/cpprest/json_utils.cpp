@@ -3,6 +3,7 @@
 #include <list>
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include "cpprest/base_uri.h" // for web::uri::decode
 #include "cpprest/regex_utils.h"
 
@@ -75,18 +76,24 @@ namespace web
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
         bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path)
         {
+            std::vector<utility::string_t> key_path_;
+            boost::algorithm::split(key_path_, key_path, [](utility::char_t c) { return U('.') == c; });
+
+            return extract(object, results, key_path_);
+        }
+
+        // find the value of a field or fields from the specified object and searching key path arrays as necessary
+        // returns true if the value has at least one field matching the key path
+        // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
+        bool extract(const web::json::object& object, web::json::value& results, const std::vector<utility::string_t>& key_path)
+        {
             bool match = false;
             results = web::json::value::null();
 
             std::list<const web::json::object*> pobjects(1, &object);
-            utility::string_t::size_type key_first = 0;
-            do
+            for (auto key : key_path)
             {
-                const utility::string_t::size_type key_last = key_path.find_first_of(_XPLATSTR("."), key_first);
-                utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
-                // key may still contain the dot escape sequences, must decode them before key matching
-                key = web::uri::decode(key);
-                if (utility::string_t::npos != key_last)
+                if (key != *(key_path.end() - 1))
                 {
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
                     for (auto it = pobjects.begin(); pobjects.end() != it; it = pobjects.erase(it))
@@ -155,8 +162,7 @@ namespace web
                         }
                     }
                 }
-                key_first = utility::string_t::npos != key_last ? key_last + 1 : key_last;
-            } while (utility::string_t::npos != key_first);
+            }
 
             return match;
         }
