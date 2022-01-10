@@ -206,9 +206,9 @@ namespace sdp
     }
 
     // make a named value (useful for format specific parameters)
-    inline web::json::value named_value(const utility::string_t& name, const utility::string_t& value)
+    inline web::json::value named_value(const utility::string_t& name, const utility::string_t& value, bool keep_order = true)
     {
-        return named_value(name, web::json::value::string(value));
+        return named_value(name, !value.empty() ? web::json::value::string(value) : web::json::value::null(), keep_order);
     }
 
     // find an array element with the specified name (useful with attributes and format specific parameters)
