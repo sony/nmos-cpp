@@ -77,7 +77,7 @@ namespace web
         bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path)
         {
             std::vector<utility::string_t> key_path_;
-            boost::algorithm::split(key_path_, key_path, [](utility::char_t c) { return U('.') == c; });
+            boost::algorithm::split(key_path_, key_path, [](utility::char_t c) { return _XPLATSTR('.') == c; });
 
             return extract(object, results, key_path_);
         }
@@ -91,9 +91,11 @@ namespace web
             results = web::json::value::null();
 
             std::list<const web::json::object*> pobjects(1, &object);
+
+            auto count = 0;
             for (auto key : key_path)
             {
-                if (key != *(key_path.end() - 1))
+                if (++count < key_path.size())
                 {
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
                     for (auto it = pobjects.begin(); pobjects.end() != it; it = pobjects.erase(it))
