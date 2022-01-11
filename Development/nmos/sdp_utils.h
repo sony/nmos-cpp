@@ -139,15 +139,8 @@ namespace nmos
 
         // Media ("m=")
         // See https://tools.ietf.org/html/rfc4566#section-5.14
-        struct media_t
-        {
-            sdp::media_type media_type;
-            sdp::protocol protocol;
-            // formats are specified by the RTP payload mapping
-
-            media_t() {}
-            media_t(const sdp::media_type& media_type, const sdp::protocol& protocol) : media_type(media_type), protocol(protocol) {}
-        } media;
+        sdp::media_type media_type;
+        sdp::protocol protocol;
 
         // Bandwidth ("b=") (e.g. for "video/jxsv")
         // See https://tools.ietf.org/html/rfc4566#section-5.8
@@ -266,7 +259,8 @@ namespace nmos
             , connection_data(32)
             , timing()
             , group(!media_stream_ids.empty() ? group_t{ sdp::group_semantics::duplication, media_stream_ids } : group_t{})
-            , media(media_type, sdp::protocols::RTP_AVP)
+            , media_type(media_type)
+            , protocol(sdp::protocols::RTP_AVP)
             , bandwidth(0 != bandwidth ? std::vector<bandwidth_t>{ bandwidth_t{ sdp::bandwidth_types::application_specific, bandwidth } } : std::vector<bandwidth_t>{})
             , packet_time(packet_time)
             , max_packet_time(max_packet_time)

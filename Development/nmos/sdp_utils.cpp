@@ -421,9 +421,9 @@ namespace nmos
                 // Media
                 // See https://tools.ietf.org/html/rfc4566#section-5.14
                 { sdp::fields::media, value_of({
-                    { sdp::fields::media_type, sdp_params.media.media_type.name },
+                    { sdp::fields::media_type, sdp_params.media_type.name },
                     { sdp::fields::port, transport_param.at(nmos::fields::destination_port) },
-                    { sdp::fields::protocol, sdp_params.media.protocol.name },
+                    { sdp::fields::protocol, sdp_params.protocol.name },
                     { sdp::fields::formats, value_of({ utility::ostringstreamed(sdp_params.rtpmap.payload_type) }) }
                 }, keep_order) },
 
@@ -738,16 +738,16 @@ namespace nmos
     {
         nmos::format get_format(const sdp_parameters& sdp_params)
         {
-            if (sdp::media_types::video == sdp_params.media.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
-            if (sdp::media_types::audio == sdp_params.media.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return nmos::formats::audio;
-            if (sdp::media_types::video == sdp_params.media.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
-            if (sdp::media_types::video == sdp_params.media.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
+            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return nmos::formats::audio;
+            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
+            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
             return {};
         }
 
         nmos::media_type get_media_type(const sdp_parameters& sdp_params)
         {
-            return nmos::media_type{ sdp_params.media.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
+            return nmos::media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
         }
     }
 
@@ -1085,8 +1085,8 @@ namespace nmos
         // Media
         // See https://tools.ietf.org/html/rfc4566#section-5.14
         const auto& media = sdp::fields::media(media_description);
-        sdp_params.media.media_type = sdp::media_type{ sdp::fields::media_type(media) };
-        sdp_params.media.protocol = sdp::protocol{ sdp::fields::protocol(media) };
+        sdp_params.media_type = sdp::media_type{ sdp::fields::media_type(media) };
+        sdp_params.protocol = sdp::protocol{ sdp::fields::protocol(media) };
 
         // media description attributes
         const auto& media_attributes = sdp::fields::attributes(media_description).as_array();
@@ -1358,10 +1358,10 @@ namespace nmos
 
         format_parameters get_format_parameters(const sdp_parameters& sdp_params)
         {
-            if (sdp::media_types::video == sdp_params.media.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return get_video_raw_parameters(sdp_params);
-            if (sdp::media_types::audio == sdp_params.media.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return get_audio_L_parameters(sdp_params);
-            if (sdp::media_types::video == sdp_params.media.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return get_video_smpte291_parameters(sdp_params);
-            if (sdp::media_types::video == sdp_params.media.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return get_video_SMPTE2022_6_parameters(sdp_params);
+            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return get_video_raw_parameters(sdp_params);
+            if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return get_audio_L_parameters(sdp_params);
+            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return get_video_smpte291_parameters(sdp_params);
+            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return get_video_SMPTE2022_6_parameters(sdp_params);
             throw sdp_processing_error("unsupported media type/encoding name");
         }
     }
@@ -1385,7 +1385,7 @@ namespace nmos
         {
             // General Constraints
 
-            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { return nmos::match_string_constraint(sdp.media.media_type.name, con); } },
+            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
             // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
             // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
             { nmos::caps::format::grain_rate, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
