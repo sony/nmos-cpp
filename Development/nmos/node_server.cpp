@@ -5,6 +5,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
+#include "nmos/flowcompatibility_api.h"
 #include "nmos/logging_api.h"
 #include "nmos/manifest_api.h"
 #include "nmos/model.h"
@@ -60,6 +61,9 @@ namespace nmos
 
             // Configure the Channel Mapping API
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
+
+            // Configure the Flow Compatibility API
+            node_server.api_routers[{ {}, nmos::fields::flowcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_flowcompatibility_api(node_model, gate));
 
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
             events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, gate);

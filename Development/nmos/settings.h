@@ -101,6 +101,9 @@ namespace nmos
         // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is09_versions{ U("is09_versions") }; // when omitted, nmos::is09_versions::all is used
 
+        // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is11_versions{ U("is11_versions") }; // when omitted, nmos::is11_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
@@ -134,6 +137,7 @@ namespace nmos
         const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
         const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
         const web::json::field_as_integer_or channelmapping_port{ U("channelmapping_port"), 3215 };
+        const web::json::field_as_integer_or flowcompatibility_port{ U("flowcompatibility_port"), 3218 };
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 

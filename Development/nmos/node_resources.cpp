@@ -16,6 +16,7 @@
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
 #include "nmos/is08_versions.h"
+#include "nmos/is11_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/resource.h"
 #include "nmos/sdp_utils.h" // for nmos::make_components
@@ -100,6 +101,26 @@ namespace nmos
                 {
                     web::json::push_back(data[U("controls")], value_of({
                         { U("href"), channelmapping_uri.set_host(host).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+            }
+        }
+
+        if (0 <= nmos::fields::flowcompatibility_port(settings))
+        {
+            for (const auto& version : nmos::is11_versions::from_settings(settings))
+            {
+                auto flowcompatibility_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::flowcompatibility_port(settings))
+                    .set_path(U("/x-nmos/flowcompatibility/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:fcm/") + make_api_version(version);
+
+                for (const auto& host : hosts)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), flowcompatibility_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type }
                     }));
                 }

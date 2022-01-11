@@ -763,6 +763,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/events_ws_api.cpp
     nmos/events_ws_client.cpp
     nmos/filesystem_route.cpp
+    nmos/flowcompatibility_api.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
     nmos/lldp_handler.cpp
@@ -836,6 +837,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/events_ws_api.h
     nmos/events_ws_client.h
     nmos/filesystem_route.h
+    nmos/flowcompatibility_api.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
