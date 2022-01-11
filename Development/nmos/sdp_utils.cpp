@@ -654,76 +654,84 @@ namespace nmos
         }, keep_order);
     }
 
-    void set_video_raw_parameters(sdp_parameters& sdp_params, const video_raw_parameters& params, uint64_t payload_type)
+    // Construct SDP parameters for "video/raw", with sensible defaults for unspecified fields
+    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.rtpmap = { payload_type, U("raw"), 90000 };
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("raw"), 90000 };
 
         // a=fmtp:<format> <format specific parameters>
         // for simplicity, following the order of parameters given in VSF TR-05:2017
         // See https://tools.ietf.org/html/rfc4566#section-6
         // and http://www.videoservicesforum.org/download/technical_recommendations/VSF_TR-05_2018-06-23.pdf
         // and comments regarding the fmtp attribute parameters in get_session_description_sdp_parameters
-        sdp_params.fmtp = {
+        sdp_parameters::fmtp_t fmtp = {
             { sdp::fields::width, utility::ostringstreamed(params.width) },
             { sdp::fields::height, utility::ostringstreamed(params.height) },
             { sdp::fields::exactframerate, params.exactframerate.denominator() != 1
                 ? utility::ostringstreamed(params.exactframerate.numerator()) + U("/") + utility::ostringstreamed(params.exactframerate.denominator())
                 : utility::ostringstreamed(params.exactframerate.numerator()) }
         };
-        if (params.interlace) sdp_params.fmtp.push_back({ sdp::fields::interlace, {} });
-        if (params.segmented) sdp_params.fmtp.push_back({ sdp::fields::segmented, {} });
-        sdp_params.fmtp.push_back({ sdp::fields::sampling, params.sampling.name });
-        sdp_params.fmtp.push_back({ sdp::fields::depth, utility::ostringstreamed(params.depth) });
-        sdp_params.fmtp.push_back({ sdp::fields::colorimetry, params.colorimetry.name });
-        if (!params.tcs.name.empty()) sdp_params.fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
-        sdp_params.fmtp.push_back({ sdp::fields::packing_mode, sdp::packing_modes::general.name }); // or block...
-        sdp_params.fmtp.push_back({ sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name });
-        if (!params.tp.name.empty()) sdp_params.fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+        if (params.interlace) fmtp.push_back({ sdp::fields::interlace, {} });
+        if (params.segmented) fmtp.push_back({ sdp::fields::segmented, {} });
+        fmtp.push_back({ sdp::fields::sampling, params.sampling.name });
+        fmtp.push_back({ sdp::fields::depth, utility::ostringstreamed(params.depth) });
+        fmtp.push_back({ sdp::fields::colorimetry, params.colorimetry.name });
+        if (!params.tcs.name.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
+        fmtp.push_back({ sdp::fields::packing_mode, sdp::packing_modes::general.name }); // or block...
+        fmtp.push_back({ sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name });
+        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+
+        return { session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    void set_audio_L_parameters(sdp_parameters& sdp_params, const audio_L_parameters& params, uint64_t payload_type)
-    {
-        // a=ptime:<packet time>
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.packet_time = params.packet_time;
-
-        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.rtpmap = { payload_type, U("L") + utility::ostringstreamed(params.bit_depth), params.sample_rate, params.channel_count };
-
-        // a=fmtp:<format> <format specific parameters>
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.fmtp = {};
-        if (!params.channel_order.empty()) sdp_params.fmtp.push_back({ sdp::fields::channel_order, params.channel_order });
-    }
-
-    void set_video_smpte291_parameters(sdp_parameters& sdp_params, const video_smpte291_parameters& params, uint64_t payload_type)
+    // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
+    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.rtpmap = { payload_type, U("smpte291"), 90000 };
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("L") + utility::ostringstreamed(params.bit_depth), params.sample_rate, params.channel_count };
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.fmtp = boost::copy_range<sdp_parameters::fmtp_t>(params.did_sdids | boost::adaptors::transformed([](const nmos::did_sdid& did_sdid)
+        sdp_parameters::fmtp_t fmtp = {};
+        if (!params.channel_order.empty()) fmtp.push_back({ sdp::fields::channel_order, params.channel_order });
+
+        return { session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
+    }
+
+    // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
+    sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
+    {
+        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("smpte291"), 90000 };
+
+        // a=fmtp:<format> <format specific parameters>
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        sdp_parameters::fmtp_t fmtp = boost::copy_range<sdp_parameters::fmtp_t>(params.did_sdids | boost::adaptors::transformed([](const nmos::did_sdid& did_sdid)
         {
             return sdp_parameters::fmtp_t::value_type{ sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid) };
         }));
-        if (0 != params.vpid_code) sdp_params.fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
+        if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
+
+        return { session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    void set_video_SMPTE2022_6_parameters(sdp_parameters& sdp_params, const video_SMPTE2022_6_parameters& params, uint64_t payload_type)
+    // Construct SDP parameters for "video/SMPTE2022-6", with sensible defaults for unspecified fields
+    sdp_parameters make_video_SMPTE2022_6_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.rtpmap = { payload_type, U("SMPTE2022-6"), 27000000 };
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("SMPTE2022-6"), 27000000 };
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
-        sdp_params.fmtp = {};
-        if (!params.tp.name.empty()) sdp_params.fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+        sdp_parameters::fmtp_t fmtp = {};
+        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+
+        return { session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
     namespace details
@@ -945,7 +953,7 @@ namespace nmos
         }
     }
 
-    // Get other SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
+    // Get the additional (non-transport) SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& sdp)
     {
         using web::json::value;
@@ -1173,6 +1181,7 @@ namespace nmos
         });
     }
 
+    // Get additional "video/raw" parameters from the SDP parameters
     video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params)
     {
         video_raw_parameters params;
@@ -1250,6 +1259,7 @@ namespace nmos
         return params;
     }
 
+    // Get additional "audio/L" parameters from the SDP parameters
     audio_L_parameters get_audio_L_parameters(const sdp_parameters& sdp_params)
     {
         audio_L_parameters params;
@@ -1270,6 +1280,7 @@ namespace nmos
         return params;
     }
 
+    // Get additional "video/smpte291" parameters from the SDP parameters
     video_smpte291_parameters get_video_smpte291_parameters(const sdp_parameters& sdp_params)
     {
         video_smpte291_parameters params;
@@ -1297,6 +1308,7 @@ namespace nmos
         return params;
     }
 
+    // Get additional "video/SMPTE2022-6" parameters from the SDP parameters
     video_SMPTE2022_6_parameters get_video_SMPTE2022_6_parameters(const sdp_parameters& sdp_params)
     {
         video_SMPTE2022_6_parameters params;
