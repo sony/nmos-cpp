@@ -52,7 +52,7 @@ namespace rql
             return{ U("rql evaluation error - unimplemented call-operator, ") + name };
         }
 
-        web::json::value make_value(const utility::string_t& encoded_type, const utility::string_t& encoded_value, bool decode_value = true)
+        web::json::value make_value(const utility::string_t& encoded_type, const utility::string_t& encoded_value)
         {
             using web::json::value;
             using web::json::value_of;
@@ -60,7 +60,7 @@ namespace rql
             value result;
 
             auto decoded_type = web::uri::decode(encoded_type);
-            const auto decoded_value = decode_value ? web::uri::decode(encoded_value) : encoded_value;
+            const auto decoded_value = web::uri::decode(encoded_value);
 
             if (decoded_type.empty())
             {
@@ -134,7 +134,7 @@ namespace rql
         static const utility::regex_t rql_name{ U("([A-Za-z0-9\\-\\._~]|[%][0-9A-Fa-f]{2}|[*+])*") };
     }
 
-    web::json::value parse_query(const utility::string_t& query, bool decode_key_path)
+    web::json::value parse_query(const utility::string_t& query)
     {
         using web::json::value;
         using web::json::value_of;
@@ -258,7 +258,7 @@ namespace rql
                     case U(','):
                         if (1 == nest.size()) throw details::unexpected_token(punct);
                         // (typed-)value
-                        web::json::push_back(args, details::make_value(type, token, decode_key_path));
+                        web::json::push_back(args, details::make_value(type, token));
                         type.clear();
                         break;
                     case U(')'):
@@ -632,7 +632,7 @@ namespace rql
             return details::matches(target, pattern, icase);
         }
 
-        // any_matches(<property>, <pattern>[, <options>]) - Filters for objects as above or where the specified property's value is an array and any element of the array is a string which contains a match for the specified regex pattern/options
+        // matches(<property>, <pattern>[, <options>]) - Filters for objects as above or where the specified property's value is an array and any element of the array is a string which contains a match for the specified regex pattern/options
         web::json::value any_matches(const evaluator& eval, const web::json::value& args)
         {
             auto target = eval(args.at(0), true);

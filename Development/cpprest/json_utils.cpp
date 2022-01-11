@@ -19,10 +19,10 @@ namespace web
             {
                 // regex pattern matches JSON strings, or single or multi-line comments
                 // only strings are captured
-                static const utility::regex_t string_or_comment(U(R"-regex-(("[^"\\]*(?:\\.[^"\\]*)*")|(?:\/\/[^\r\n]+)|(?:\/\*[\s\S]*?\*\/))-regex-"));
+                static const utility::regex_t string_or_comment(_XPLATSTR(R"-regex-(("[^"\\]*(?:\\.[^"\\]*)*")|(?:\/\/[^\r\n]+)|(?:\/\*[\s\S]*?\*\/))-regex-"));
                 // format pattern uses the first capture group to copy strings into the output
                 // having inserted a single space to ensure tokens are not coalesced
-                return bst::regex_replace(value, string_or_comment, U(" $1"));
+                return bst::regex_replace(value, string_or_comment, _XPLATSTR(" $1"));
             }
         }
     }
@@ -74,12 +74,12 @@ namespace web
         // find the value of a field or fields from the specified object, splitting the key path on '.' and searching arrays as necessary
         // returns true if the value has at least one field matching the key path
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
-        bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path)
+        bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path_)
         {
-            std::vector<utility::string_t> key_path_;
-            boost::algorithm::split(key_path_, key_path, [](utility::char_t c) { return _XPLATSTR('.') == c; });
+            std::vector<utility::string_t> key_path;
+            boost::algorithm::split(key_path, key_path_, [](utility::char_t c) { return _XPLATSTR('.') == c; });
 
-            return extract(object, results, key_path_);
+            return extract(object, results, key_path);
         }
 
         // find the value of a field or fields from the specified object and searching key path arrays as necessary
