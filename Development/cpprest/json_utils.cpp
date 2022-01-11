@@ -95,7 +95,7 @@ namespace web
             auto count = 0;
             for (auto key : key_path)
             {
-                if (++count < key_path.size())
+                if (++count < (int)key_path.size())
                 {
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
                     for (auto it = pobjects.begin(); pobjects.end() != it; it = pobjects.erase(it))

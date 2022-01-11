@@ -59,7 +59,7 @@ namespace rql
 
             value result;
 
-            auto decoded_type = web::uri::decode(encoded_type);
+            const auto decoded_type = web::uri::decode(encoded_type);
             const auto decoded_value = web::uri::decode(encoded_value);
 
             if (decoded_type.empty())
