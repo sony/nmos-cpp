@@ -39,6 +39,7 @@ namespace nmos
             return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
         }
 
+        // Construct ts-refclk attributes for each leg based on the IS-04 resources
         std::vector<sdp_parameters::ts_refclk_t> make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender, bst::optional<int> ptp_domain)
         {
             const auto& clock_name = nmos::fields::clock_name(source);
@@ -179,7 +180,7 @@ namespace nmos
             return sampler->second;
         }
 
-        // make simple media stream ids based on the sender's number of legs
+        // Construct simple media stream ids based on the sender's number of legs
         std::vector<utility::string_t> make_media_stream_ids(const web::json::value& sender)
         {
             const auto legs = nmos::fields::interface_bindings(sender).size();

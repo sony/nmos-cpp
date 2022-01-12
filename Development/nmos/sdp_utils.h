@@ -17,24 +17,6 @@ namespace nmos
 
     web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth);
 
-    namespace details
-    {
-        sdp::sampling make_sampling(const web::json::array& components);
-
-        // Payload identifiers 96-127 are used for payloads defined dynamically during a session
-        // 96 and 97 are suitable for video and audio encodings not covered by the IANA registry
-        // See https://tools.ietf.org/html/rfc3551#section-3
-        // and https://www.iana.org/assignments/rtp-parameters/rtp-parameters.xhtml#rtp-parameters-1
-        const uint64_t payload_type_video_default = 96;
-        const uint64_t payload_type_audio_default = 97;
-        const uint64_t payload_type_data_default = 100;
-        // Payload type 98 is recommended for "High bit rate media transport / 27-MHz Clock"
-        // Payload type 99 is recommended for "High bit rate media transport FEC / 27-MHz Clock"
-        // "Alternatively, payload types may be set by other means in accordance with RFC 3550."
-        // See SMPTE ST 2022-6:2012 Section 6.3 RTP/UDP/IP Header
-        const uint64_t payload_type_mux_default = 98;
-    }
-
     // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain);
 
@@ -451,6 +433,32 @@ namespace nmos
     inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
         : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk))
     {}
+
+    // Helper functions for implementing format-specific make_<media type/sub-type>_sdp_parameters functions
+    namespace details
+    {
+        // Construct ts-refclk attributes for each leg based on the IS-04 resources
+        std::vector<sdp_parameters::ts_refclk_t> make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender, bst::optional<int> ptp_domain);
+
+        // Construct simple media stream ids based on the sender's number of legs
+        std::vector<utility::string_t> make_media_stream_ids(const web::json::value& sender);
+
+        // cf. nmos::make_components
+        sdp::sampling make_sampling(const web::json::array& components);
+
+        // Payload identifiers 96-127 are used for payloads defined dynamically during a session
+        // 96 and 97 are suitable for video and audio encodings not covered by the IANA registry
+        // See https://tools.ietf.org/html/rfc3551#section-3
+        // and https://www.iana.org/assignments/rtp-parameters/rtp-parameters.xhtml#rtp-parameters-1
+        const uint64_t payload_type_video_default = 96;
+        const uint64_t payload_type_audio_default = 97;
+        const uint64_t payload_type_data_default = 100;
+        // Payload type 98 is recommended for "High bit rate media transport / 27-MHz Clock"
+        // Payload type 99 is recommended for "High bit rate media transport FEC / 27-MHz Clock"
+        // "Alternatively, payload types may be set by other means in accordance with RFC 3550."
+        // See SMPTE ST 2022-6:2012 Section 6.3 RTP/UDP/IP Header
+        const uint64_t payload_type_mux_default = 98;
+    }
 }
 
 #endif
