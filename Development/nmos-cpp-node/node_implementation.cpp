@@ -22,6 +22,7 @@
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
 #include "nmos/format.h"
+#include "nmos/flowcompatibility_resources.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
 #ifdef HAVE_LLDP
@@ -853,6 +854,79 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
 
         auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels, routable_inputs);
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
+    }
+
+    // example IS-11 input and senders
+    {
+        unsigned char edid_bytes[] = {
+            0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+            0x10, 0xac, 0x16, 0xd0, 0x48, 0x4c, 0x46, 0x34,
+            0x1a, 0x12, 0x01, 0x04, 0x6a, 0x25, 0x17, 0x78,
+            0xef, 0xb6, 0x90, 0xa6, 0x54, 0x51, 0x91, 0x25,
+            0x17, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x81, 0x80,
+            0x71, 0x4f, 0x95, 0x00, 0x01, 0x01, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xab, 0x22,
+            0xa0, 0xa0, 0x50, 0x84, 0x1a, 0x30, 0x30, 0x20,
+            0x36, 0x00, 0x72, 0xe6, 0x10, 0x00, 0x00, 0x1a,
+            0x00, 0x00, 0x00, 0xff, 0x00, 0x47, 0x33, 0x34,
+            0x30, 0x48, 0x38, 0x36, 0x50, 0x34, 0x46, 0x4c,
+            0x48, 0x0a, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x32,
+            0x4d, 0x1e, 0x53, 0x0e, 0x04, 0x11, 0xb2, 0x05,
+            0xf8, 0x58, 0xf0, 0x00, 0x00, 0x00, 0x00, 0xfc,
+            0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
+            0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
+        };
+        std::string edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
+        const auto input_id = impl::make_id(seed_id, nmos::types::input);
+        auto input = nmos::experimental::make_flowcompatibility_input(input_id, true, web::json::value::object(), edid, model.settings);
+        impl::set_label_description(input, impl::ports::mux, 0); // The single Input originates both video and audio signals
+        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(input), gate)) return;
+
+        int index = how_many - 1; // Make the last created Sender IS-11 compatible
+        for (const auto& port : { impl::ports::video, impl::ports::audio })
+        {
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            const std::vector<utility::string_t> supported_param_constraints{
+                nmos::caps::transport::packet_time.key
+            };
+            auto flowcompatibility_sender = nmos::experimental::make_flowcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
+            if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(flowcompatibility_sender), gate)) return;
+        }
+    }
+
+    // example IS-11 output and receivers
+    {
+        unsigned char edid_bytes[] = {
+            0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+            0x10, 0xac, 0x16, 0xd0, 0x48, 0x4c, 0x46, 0x34,
+            0x1a, 0x12, 0x01, 0x04, 0x6a, 0x25, 0x17, 0x78,
+            0xef, 0xb6, 0x90, 0xa6, 0x54, 0x51, 0x91, 0x25,
+            0x17, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x81, 0x80,
+            0x71, 0x4f, 0x95, 0x00, 0x01, 0x01, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xab, 0x22,
+            0xa0, 0xa0, 0x50, 0x84, 0x1a, 0x30, 0x30, 0x20,
+            0x36, 0x00, 0x72, 0xe6, 0x10, 0x00, 0x00, 0x1a,
+            0x00, 0x00, 0x00, 0xff, 0x00, 0x47, 0x33, 0x34,
+            0x30, 0x48, 0x38, 0x36, 0x50, 0x34, 0x46, 0x4c,
+            0x48, 0x0a, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x32,
+            0x4d, 0x1e, 0x53, 0x0e, 0x04, 0x11, 0xb2, 0x05,
+            0xf8, 0x58, 0xf0, 0x00, 0x00, 0x00, 0x00, 0xfc,
+            0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
+            0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
+        };
+        std::string edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
+        const auto output_id = impl::make_id(seed_id, nmos::types::output);
+        auto output = nmos::experimental::make_flowcompatibility_output(output_id, false, boost::none, edid, model.settings);
+        impl::set_label_description(output, impl::ports::mux, 0); // The single Output consumes both video and audio signals
+        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(output), gate)) return;
+
+        int index = how_many - 1; // Make the last created Receiver IS-11 compatible
+        for (const auto& port : { impl::ports::video, impl::ports::audio })
+        {
+            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+            auto flowcompatibility_receiver = nmos::experimental::make_flowcompatibility_receiver(receiver_id, { output_id });
+            if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(flowcompatibility_receiver), gate)) return;
+        }
     }
 }
 

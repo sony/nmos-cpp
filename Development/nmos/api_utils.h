@@ -84,6 +84,9 @@ namespace nmos
 
         // Flow Compatibility Management API
         const route_pattern flowCompatibilityResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|inputs|outputs"));
+        const route_pattern senderReceiverSubrouteType = make_route_pattern(U("senderReceiverSubroute"), U("inputs|outputs"));
+        const route_pattern constraintsType = make_route_pattern(U("constraintsType"), U("active|supported"));
+        const route_pattern edidType = make_route_pattern(U("edidType"), U("base|effective"));
 
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));

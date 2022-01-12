@@ -749,6 +749,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/certificate_handlers.cpp
     nmos/channelmapping_activation.cpp
     nmos/channelmapping_api.cpp
+    nmos/flowcompatibility_resources.cpp
     nmos/channelmapping_resources.cpp
     nmos/channels.cpp
     nmos/client_utils.cpp
@@ -838,6 +839,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/events_ws_client.h
     nmos/filesystem_route.h
     nmos/flowcompatibility_api.h
+    nmos/flowcompatibility_resources.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
