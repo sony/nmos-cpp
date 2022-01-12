@@ -190,9 +190,10 @@ namespace nmos
         }
     }
 
-    sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
+    // Construct additional "video/raw" parameters from the IS-04 resources, using default values for unspecified items
+    video_raw_parameters make_video_raw_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<sdp::type_parameter> tp)
     {
-        sdp_parameters::video_t params;
+        video_raw_parameters params;
         params.tp = tp ? *tp : sdp::type_parameters::type_N;
 
         // colorimetry map directly to flow_video json "colorspace"
@@ -218,12 +219,19 @@ namespace nmos
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
         params.exactframerate = nmos::rational(nmos::fields::numerator(grain_rate), nmos::fields::denominator(grain_rate));
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_video_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
     }
 
-    sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time)
+    sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
     {
-        sdp_parameters::audio_t params;
+        auto params = make_video_raw_parameters(node, source, flow, sender, tp);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_video_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+    }
+
+    // Construct additional "audio/L" parameters from the IS-04 resources, using default values for unspecified items
+    audio_L_parameters make_audio_L_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<double> packet_time)
+    {
+        audio_L_parameters params;
 
         // rtpmap
 
@@ -243,12 +251,19 @@ namespace nmos
         // ptime, e.g. 1 ms or 0.125 ms
         params.packet_time = packet_time ? *packet_time : 1;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_audio_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
     }
 
-    sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code)
+    sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time)
     {
-        sdp_parameters::data_t params;
+        auto params = make_audio_L_parameters(node, source, flow, sender, packet_time);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_audio_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+    }
+
+    // Construct additional "video/smpte291" parameters from the IS-04 resources, using default values for unspecified items
+    video_smpte291_parameters make_video_smpte291_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<nmos::vpid_code> vpid_code)
+    {
+        video_smpte291_parameters params;
 
         // format_specific_parameters
 
@@ -261,17 +276,30 @@ namespace nmos
         // hm, no vpid_code in the flow
         params.vpid_code = vpid_code ? *vpid_code : 0;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_data_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
     }
 
-    sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
+    sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code)
+    {
+        auto params = make_video_smpte291_parameters(node, source, flow, sender, vpid_code);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_data_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+    }
+
+    // Construct additional "video/SMPTE2022-6" parameters from the IS-04 resources, using default values for unspecified items
+    video_SMPTE2022_6_parameters make_video_SMPTE2022_6_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<sdp::type_parameter> tp)
     {
         sdp_parameters::mux_t params;
         // "Senders shall comply with either the Narrow Linear Senders (Type NL) requirements, or the Wide Senders (Type W) requirements."
         // See SMPTE ST 2022-8:2019 Section 6 Network Compatibility and Transmission Traffic Shape Models
         params.tp = tp ? *tp : sdp::type_parameters::type_NL;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_mux_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
+    }
+
+    sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
+    {
+        auto params = make_video_SMPTE2022_6_parameters(node, source, flow, sender, tp);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_mux_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
     // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
@@ -683,7 +711,7 @@ namespace nmos
         fmtp.push_back({ sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name });
         if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
-        return { session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
     // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
@@ -698,7 +726,7 @@ namespace nmos
         sdp_parameters::fmtp_t fmtp = {};
         if (!params.channel_order.empty()) fmtp.push_back({ sdp::fields::channel_order, params.channel_order });
 
-        return { session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
     }
 
     // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
@@ -716,7 +744,7 @@ namespace nmos
         }));
         if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
 
-        return { session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
     // Construct SDP parameters for "video/SMPTE2022-6", with sensible defaults for unspecified fields
@@ -731,7 +759,7 @@ namespace nmos
         sdp_parameters::fmtp_t fmtp = {};
         if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
-        return { session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
     namespace details
@@ -742,7 +770,7 @@ namespace nmos
             if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return nmos::formats::audio;
             if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
             if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
-            return {};
+            return{};
         }
 
         nmos::media_type get_media_type(const sdp_parameters& sdp_params)

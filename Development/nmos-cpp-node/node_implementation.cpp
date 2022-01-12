@@ -1001,7 +1001,13 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 throw std::logic_error("matching IS-04 node, source or flow not found");
             }
 
-            // cf. nmos::make_sdp_parameters
+            // the nmos::make_sdp_parameters overload from the IS-04 resources provides a high-level interface
+            // for common "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6" use cases
+            //auto sdp_params = nmos::make_sdp_parameters(node->data, source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+
+            // nmos::make_{video,audio,data,mux}_sdp_parameters provide a little more flexibility for those four media types
+            // and the combination of nmos::make_{video_raw,audio_L,video_smpte291,video_SMPTE2022_6}_parameters
+            // with the related make_sdp_parameters overloads provides the most flexible and extensible approach
             auto sdp_params = [&]
             {
                 const std::vector<utility::string_t> mids{ U("PRIMARY"), U("SECONDARY") };
@@ -1012,6 +1018,7 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 }
                 else if (nmos::formats::audio == format)
                 {
+                    // this example application doesn't actually stream, so just indicate a sensible value for packet time
                     const double packet_time = nmos::fields::channels(source->data).size() > 8 ? 0.125 : 1;
                     return nmos::make_audio_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_audio_default, mids, {}, packet_time);
                 }
