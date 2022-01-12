@@ -245,9 +245,9 @@ namespace nmos
         {
             if (key.is_array())
             {
-                auto key_path = boost::copy_range<std::vector<utility::string_t>>(key.as_array() | boost::adaptors::transformed([](const web::json::value& key_path_)
+                auto key_path = boost::copy_range<std::vector<utility::string_t>>(key.as_array() | boost::adaptors::transformed([](const web::json::value& key)
                 {
-                    return key_path_.as_string();
+                    return key.as_string();
                 }));
 
                 return web::json::extract(value.as_object(), results, key_path);

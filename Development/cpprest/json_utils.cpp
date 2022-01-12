@@ -82,7 +82,7 @@ namespace web
             return extract(object, results, key_path);
         }
 
-        // find the value of a field or fields from the specified object and searching key path arrays as necessary
+        // find the value of a field or fields from the specified object, searching arrays as necessary
         // returns true if the value has at least one field matching the key path
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
         bool extract(const web::json::object& object, web::json::value& results, const std::vector<utility::string_t>& key_path)
@@ -92,10 +92,10 @@ namespace web
 
             std::list<const web::json::object*> pobjects(1, &object);
 
-            auto count = 0;
+            size_t count = 0;
             for (auto key : key_path)
             {
-                if (++count < (int)key_path.size())
+                if (++count < key_path.size())
                 {
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
                     for (auto it = pobjects.begin(); pobjects.end() != it; it = pobjects.erase(it))
