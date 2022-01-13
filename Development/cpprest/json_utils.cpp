@@ -3,6 +3,7 @@
 #include <list>
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include "cpprest/base_uri.h" // for web::uri::decode
 #include "cpprest/regex_utils.h"
 
@@ -18,10 +19,10 @@ namespace web
             {
                 // regex pattern matches JSON strings, or single or multi-line comments
                 // only strings are captured
-                static const utility::regex_t string_or_comment(U(R"-regex-(("[^"\\]*(?:\\.[^"\\]*)*")|(?:\/\/[^\r\n]+)|(?:\/\*[\s\S]*?\*\/))-regex-"));
+                static const utility::regex_t string_or_comment(_XPLATSTR(R"-regex-(("[^"\\]*(?:\\.[^"\\]*)*")|(?:\/\/[^\r\n]+)|(?:\/\*[\s\S]*?\*\/))-regex-"));
                 // format pattern uses the first capture group to copy strings into the output
                 // having inserted a single space to ensure tokens are not coalesced
-                return bst::regex_replace(value, string_or_comment, U(" $1"));
+                return bst::regex_replace(value, string_or_comment, _XPLATSTR(" $1"));
             }
         }
     }
@@ -42,15 +43,24 @@ namespace web
 
         // insert a field into the specified object at the specified key path (splitting it on '.' and inserting sub-objects as necessary)
         // only if the value doesn't already contain a field matching that key path (except for the required sub-objects or null values)
-        bool insert(web::json::object& object, const utility::string_t& key_path, const web::json::value& field_value)
+        bool insert(web::json::object& object, const utility::string_t& key_path_, const web::json::value& field_value)
+        {
+            std::vector<utility::string_t> key_path;
+            boost::algorithm::split(key_path, key_path_, [](utility::char_t c) { return _XPLATSTR('.') == c; });
+
+            return insert(object, key_path, field_value);
+        }
+
+        // insert a field into the specified object at the specified key path
+        // only if the value doesn't already contain a field matching that key path (except for the required sub-objects or null values)
+        bool insert(web::json::object& object, const std::vector<utility::string_t>& key_path, const web::json::value& field_value)
         {
             web::json::object* pobject = &object;
-            utility::string_t::size_type key_first = 0;
-            do
+
+            size_t count = 0;
+            for (auto key : key_path)
             {
-                const utility::string_t::size_type key_last = key_path.find_first_of(_XPLATSTR("."), key_first);
-                const utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
-                if (utility::string_t::npos != key_last)
+                if (++count < key_path.size())
                 {
                     auto& field = (*pobject)[key];
                     // do not replace (non-null) values for duplicate keys; other policies (replace, promote to array, or throw) would be possible...
@@ -65,26 +75,36 @@ namespace web
                     if (field.is_null()) field = field_value;
                     else return false;
                 }
-                key_first = utility::string_t::npos != key_last ? key_last + 1 : key_last;
-            } while (utility::string_t::npos != key_first);
+            }
+
             return true;
         }
 
         // find the value of a field or fields from the specified object, splitting the key path on '.' and searching arrays as necessary
         // returns true if the value has at least one field matching the key path
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
-        bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path)
+        bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path_)
+        {
+            std::vector<utility::string_t> key_path;
+            boost::algorithm::split(key_path, key_path_, [](utility::char_t c) { return _XPLATSTR('.') == c; });
+
+            return extract(object, results, key_path);
+        }
+
+        // find the value of a field or fields from the specified object, searching arrays as necessary
+        // returns true if the value has at least one field matching the key path
+        // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
+        bool extract(const web::json::object& object, web::json::value& results, const std::vector<utility::string_t>& key_path)
         {
             bool match = false;
             results = web::json::value::null();
 
             std::list<const web::json::object*> pobjects(1, &object);
-            utility::string_t::size_type key_first = 0;
-            do
+
+            size_t count = 0;
+            for (auto key : key_path)
             {
-                const utility::string_t::size_type key_last = key_path.find_first_of(_XPLATSTR("."), key_first);
-                const utility::string_t key = key_path.substr(key_first, details::count(key_first, key_last));
-                if (utility::string_t::npos != key_last)
+                if (++count < key_path.size())
                 {
                     // not the leaf key, so map each object to the specified field, searching arrays and filtering out other types
                     for (auto it = pobjects.begin(); pobjects.end() != it; it = pobjects.erase(it))
@@ -153,8 +173,7 @@ namespace web
                         }
                     }
                 }
-                key_first = utility::string_t::npos != key_last ? key_last + 1 : key_last;
-            } while (utility::string_t::npos != key_first);
+            }
 
             return match;
         }

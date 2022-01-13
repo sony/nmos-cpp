@@ -5,6 +5,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/api_downgrade.h"
 #include "nmos/api_utils.h" // for nmos::resourceType_from_type
@@ -242,7 +243,19 @@ namespace nmos
     {
         return [&value](web::json::value& results, const web::json::value& key)
         {
-            return web::json::extract(value.as_object(), results, key.as_string());
+            if (key.is_array())
+            {
+                auto key_path = boost::copy_range<std::vector<utility::string_t>>(key.as_array() | boost::adaptors::transformed([](const web::json::value& key)
+                {
+                    return key.as_string();
+                }));
+
+                return web::json::extract(value.as_object(), results, key_path);
+            }
+            else
+            {
+                return web::json::extract(value.as_object(), results, key.as_string());
+            }
         };
     }
 

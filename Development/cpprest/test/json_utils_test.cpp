@@ -5,6 +5,63 @@
 #include "boost/range/adaptor/transformed.hpp"
 #include "bst/test/test.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testJsonInsertExtract)
+{
+    using web::json::value;
+    using web::json::value_of;
+
+    const auto foo_bar_baz = U("foo.bar.baz");
+    const auto foo_bardotbaz = std::vector<utility::string_t>{ U("foo"), U("bar.baz") };
+    const auto foodotbar_baz = std::vector<utility::string_t>{ U("foo.bar"), U("baz") };
+
+    value expected = value_of({
+        { U("foo"), value_of({
+            { U("bar"), value_of({
+                { U("baz"), U("meow") }
+            }) },
+            { U("bar.baz"), U("purr") }
+        }) }
+    });
+
+    auto actual = value::object();
+    BST_REQUIRE(web::json::insert(actual.as_object(), foo_bar_baz, value(U("meow"))));
+    BST_REQUIRE(web::json::insert(actual.as_object(), foo_bardotbaz, value(U("purr"))));
+
+    BST_REQUIRE(expected == actual);
+
+    value meow;
+    BST_REQUIRE(web::json::extract(actual.as_object(), meow, foo_bar_baz));
+    BST_REQUIRE_STRING_EQUAL(U("meow"), meow.as_string());
+    value purr;
+    BST_REQUIRE(web::json::extract(actual.as_object(), purr, foo_bardotbaz));
+    BST_REQUIRE_STRING_EQUAL(U("purr"), purr.as_string());
+    value none(U("hiss"));
+    BST_REQUIRE(!web::json::extract(actual.as_object(), none, foodotbar_baz));
+    BST_REQUIRE(none.is_null());
+
+    value actual2 = value_of({
+        { U("foo.bar"), value_of({
+            value_of({
+                { U("baz"), U("meow") }
+            }),
+            value_of({
+                { U("baz"), U("purr") }
+            }),
+            value_of({
+                { U("baz"), U("hiss") }
+            }),
+        }) }
+    });
+    value catcalls;
+    BST_REQUIRE(web::json::extract(actual2.as_object(), catcalls, foodotbar_baz));
+    BST_REQUIRE(catcalls.is_array());
+    BST_REQUIRE_STRING_EQUAL(U("meow"), catcalls.at(0).as_string());
+    BST_REQUIRE_STRING_EQUAL(U("purr"), catcalls.at(1).as_string());
+    BST_REQUIRE_STRING_EQUAL(U("hiss"), catcalls.at(2).as_string());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 namespace
 {
     web::json::value merged_original(web::json::value target, const web::json::value& source)

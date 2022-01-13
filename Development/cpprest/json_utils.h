@@ -246,10 +246,19 @@ namespace web
         // only if the object doesn't already contain a field matching that key path (except for the required sub-objects or null values)
         bool insert(web::json::object& object, const utility::string_t& key_path, const web::json::value& field_value);
 
+        // insert a field into the specified object at the specified key path (inserting sub-objects as necessary)
+        // only if the object doesn't already contain a field matching that key path (except for the required sub-objects or null values)
+        bool insert(web::json::object& object, const std::vector<utility::string_t>& key_path, const web::json::value& field_value);
+
         // find the value of a field or fields from the specified object, splitting the key path on '.' and searching arrays as necessary
         // returns true if the object has at least one field matching the key path
         // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
         bool extract(const web::json::object& object, web::json::value& results, const utility::string_t& key_path);
+
+        // find the value of a field or fields from the specified object, searching arrays as necessary
+        // returns true if the value has at least one field matching the key path
+        // if any arrays are encountered on the key path, results is an array, otherwise it's a non-array value
+        bool extract(const web::json::object& object, web::json::value& results, const std::vector<utility::string_t>& key_path);
 
         // match_flag_type is a bitmask
         enum match_flag_type

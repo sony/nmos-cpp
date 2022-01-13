@@ -59,8 +59,8 @@ namespace rql
 
             value result;
 
-            auto decoded_type = web::uri::decode(encoded_type);
-            auto decoded_value = web::uri::decode(encoded_value);
+            const auto decoded_type = web::uri::decode(encoded_type);
+            const auto decoded_value = web::uri::decode(encoded_value);
 
             if (decoded_type.empty())
             {
@@ -632,7 +632,7 @@ namespace rql
             return details::matches(target, pattern, icase);
         }
 
-        // any_matches(<property>, <pattern>[, <options>]) - Filters for objects as above or where the specified property's value is an array and any element of the array is a string which contains a match for the specified regex pattern/options
+        // matches(<property>, <pattern>[, <options>]) - Filters for objects as above or where the specified property's value is an array and any element of the array is a string which contains a match for the specified regex pattern/options
         web::json::value any_matches(const evaluator& eval, const web::json::value& args)
         {
             auto target = eval(args.at(0), true);
