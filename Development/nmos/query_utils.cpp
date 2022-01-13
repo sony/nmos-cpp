@@ -241,11 +241,11 @@ namespace nmos
 
     static inline rql::extractor make_extractor(const web::json::value& value)
     {
-        return [&value](web::json::value& results, const web::json::value& key)
+        return [&value](web::json::value& results, const web::json::value& key_path_)
         {
-            if (key.is_array())
+            if (key_path_.is_array())
             {
-                auto key_path = boost::copy_range<std::vector<utility::string_t>>(key.as_array() | boost::adaptors::transformed([](const web::json::value& key)
+                auto key_path = boost::copy_range<std::vector<utility::string_t>>(key_path_.as_array() | boost::adaptors::transformed([](const web::json::value& key)
                 {
                     return key.as_string();
                 }));
@@ -254,7 +254,7 @@ namespace nmos
             }
             else
             {
-                return web::json::extract(value.as_object(), results, key.as_string());
+                return web::json::extract(value.as_object(), results, key_path_.as_string());
             }
         };
     }
