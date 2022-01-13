@@ -1391,6 +1391,48 @@ namespace nmos
             if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return get_video_SMPTE2022_6_parameters(sdp_params);
             throw sdp_processing_error("unsupported media type/encoding name");
         }
+
+        // for a little brevity, cf. sdp_parameters member type names
+        const video_raw_parameters* get_video(const format_parameters* format) { return boost::get<video_raw_parameters>(format); }
+        const audio_L_parameters* get_audio(const format_parameters* format) { return boost::get<audio_L_parameters>(format); }
+        const video_smpte291_parameters* get_data(const format_parameters* format) { return boost::get<video_smpte291_parameters>(format); }
+        const video_SMPTE2022_6_parameters* get_mux(const format_parameters* format) { return boost::get<video_SMPTE2022_6_parameters>(format); }
+
+        // NMOS Parameter Registers - Capabilities register
+        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
+#define CAPS_ARGS const sdp_parameters& sdp, const format_parameters& format, const web::json::value& con
+        static const std::map<utility::string_t, std::function<bool(CAPS_ARGS)>> format_constraints
+        {
+            // General Constraints
+
+            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
+            // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
+            // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
+            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto video = get_video(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
+
+            // Video Constraints
+
+            { nmos::caps::format::frame_height, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->height, con); } },
+            { nmos::caps::format::frame_width, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->width, con); } },
+            { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
+            { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
+            { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->tcs.name, con); } },
+            { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
+
+            // Audio Constraints
+
+            { nmos::caps::format::channel_count, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_integer_constraint(audio->channel_count, con); } },
+            { nmos::caps::format::sample_rate, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_rational_constraint(audio->sample_rate, con); } },
+            { nmos::caps::format::sample_depth, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_integer_constraint(audio->bit_depth, con); } },
+
+            // Transport Constraints
+
+            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.packet_time, con); } },
+            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.max_packet_time, con); } },
+            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { if (auto video = get_video(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = get_mux(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
+        };
+#undef CAPS_ARGS
     }
 
     static bool match_sdp_parameters_constraint_set(const sdp_parameters& sdp_params, const details::format_parameters& format_params, const web::json::value& constraint_set)
@@ -1399,52 +1441,11 @@ namespace nmos
 
         if (!nmos::caps::meta::enabled(constraint_set)) return false;
 
-        // NMOS Parameter Registers - Capabilities register
-        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
-
-        // for a little brevity, cf. sdp_parameters member types
-        typedef video_raw_parameters video_t;
-        typedef audio_L_parameters audio_t;
-        typedef video_smpte291_parameters data_t;
-        typedef video_SMPTE2022_6_parameters mux_t;
-
-        static const std::map<utility::string_t, std::function<bool(const sdp_parameters& sdp, const details::format_parameters& format, const value& con)>> match_constraints
-        {
-            // General Constraints
-
-            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
-            // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
-            // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
-            { nmos::caps::format::grain_rate, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
-
-            // Video Constraints
-
-            { nmos::caps::format::frame_height, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_integer_constraint(video->height, con); } },
-            { nmos::caps::format::frame_width, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_integer_constraint(video->width, con); } },
-            { nmos::caps::format::color_sampling, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
-            { nmos::caps::format::interlace_mode, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
-            { nmos::caps::format::colorspace, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
-            { nmos::caps::format::transfer_characteristic, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_string_constraint(video->tcs.name, con); } },
-            { nmos::caps::format::component_depth, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto video = boost::get<video_t>(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
-
-            // Audio Constraints
-
-            { nmos::caps::format::channel_count, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto audio = boost::get<audio_t>(&format); return audio && nmos::match_integer_constraint(audio->channel_count, con); } },
-            { nmos::caps::format::sample_rate, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto audio = boost::get<audio_t>(&format); return audio && nmos::match_rational_constraint(audio->sample_rate, con); } },
-            { nmos::caps::format::sample_depth, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { auto audio = boost::get<audio_t>(&format); return audio && nmos::match_integer_constraint(audio->bit_depth, con); } },
-
-            // Transport Constraints
-
-            { nmos::caps::transport::packet_time, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { return nmos::match_number_constraint(sdp.packet_time, con); } },
-            { nmos::caps::transport::max_packet_time, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { return nmos::match_number_constraint(sdp.max_packet_time, con); } },
-            { nmos::caps::transport::st2110_21_sender_type, [](const sdp_parameters& sdp, const details::format_parameters& format, const value& con) { if (auto video = boost::get<video_t>(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = boost::get<mux_t>(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
-        };
-
         const auto& constraints = constraint_set.as_object();
         return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
         {
-            const auto& found = match_constraints.find(constraint.first);
-            return match_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
+            const auto& found = details::format_constraints.find(constraint.first);
+            return details::format_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
         });
     }
 
