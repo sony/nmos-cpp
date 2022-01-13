@@ -133,8 +133,7 @@ namespace nmos
 
             bandwidth_t() : bandwidth() {}
             bandwidth_t(const sdp::bandwidth_type& bandwidth_type, uint64_t bandwidth) : bandwidth_type(bandwidth_type), bandwidth(bandwidth) {}
-        };
-        std::vector<bandwidth_t> bandwidth;
+        } bandwidth;
 
         // Packet Time ("a=ptime:") (e.g. for "audio/L16")
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -243,7 +242,7 @@ namespace nmos
             , group(!media_stream_ids.empty() ? group_t{ sdp::group_semantics::duplication, media_stream_ids } : group_t{})
             , media_type(media_type)
             , protocol(sdp::protocols::RTP_AVP)
-            , bandwidth(0 != bandwidth ? std::vector<bandwidth_t>{ bandwidth_t{ sdp::bandwidth_types::application_specific, bandwidth } } : std::vector<bandwidth_t>{})
+            , bandwidth(0 != bandwidth ? bandwidth_t{ sdp::bandwidth_types::application_specific, bandwidth } : bandwidth_t{})
             , packet_time(packet_time)
             , max_packet_time(max_packet_time)
             , rtpmap(rtpmap)

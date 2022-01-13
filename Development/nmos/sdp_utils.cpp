@@ -367,9 +367,7 @@ namespace nmos
     static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& rtpmap, const web::json::value& fmtp, bst::optional<bool> source_filters)
     {
         using web::json::value;
-        using web::json::value_from_elements;
         using web::json::value_of;
-        using web::json::array;
 
         // note that a media description is always created for each leg in the transport_params
         // and the rtp_enabled status does not affect the leg's media description
@@ -470,14 +468,12 @@ namespace nmos
 
                 // Bandwidth
                 // See https://tools.ietf.org/html/rfc4566#section-5.8
-                { !sdp_params.bandwidth.empty() ? sdp::fields::bandwidth_information.key : U(""), value_from_elements(sdp_params.bandwidth | boost::adaptors::transformed([&](const sdp_parameters::bandwidth_t& bandwidth)
-                    {
-                        return value_of({
-                            { sdp::fields::bandwidth_type, bandwidth.bandwidth_type.name },
-                            { sdp::fields::bandwidth, bandwidth.bandwidth }
-                        }, keep_order);
-                    }))
-                },
+                { !sdp_params.bandwidth.bandwidth_type.name.empty() ? sdp::fields::bandwidth_information.key : U(""), value_of({
+                    value_of({
+                        { sdp::fields::bandwidth_type, sdp_params.bandwidth.bandwidth_type.name },
+                        { sdp::fields::bandwidth, sdp_params.bandwidth.bandwidth }
+                    }, keep_order)
+                }) },
 
                 // Attributes
                 // See https://tools.ietf.org/html/rfc4566#section-5.13
@@ -857,7 +853,6 @@ namespace nmos
     web::json::value get_session_description_transport_params(const web::json::value& session_description)
     {
         using web::json::value;
-        using web::json::value_of;
 
         web::json::value transport_params;
 
@@ -986,7 +981,6 @@ namespace nmos
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& sdp)
     {
         using web::json::value;
-        using web::json::value_of;
 
         sdp_parameters sdp_params;
 
@@ -1105,10 +1099,17 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4566#section-5.8
         {
             const auto& media_bandwidth_information = sdp::fields::bandwidth_information(media_description);
-            sdp_params.bandwidth = boost::copy_range<std::vector<sdp_parameters::bandwidth_t>>(media_bandwidth_information.as_array() | boost::adaptors::transformed([](const web::json::value& bandwidth)
+            auto bandwidths = boost::copy_range<std::vector<sdp_parameters::bandwidth_t>>(media_bandwidth_information.as_array() | boost::adaptors::transformed([](const web::json::value& bandwidth)
             {
                 return sdp_parameters::bandwidth_t{ sdp::bandwidth_type{ sdp::fields::bandwidth_type(bandwidth) }, sdp::fields::bandwidth(bandwidth) };
             }));
+            if (!bandwidths.empty())
+            {
+                // multiple "media-level" bandwidth lines seem to be rarely used
+                // e.g. RFC 3556 for RTP Control Protocol (RTCP) Bandwidth
+                // see https://tools.ietf.org/html/rfc3556
+                sdp_params.bandwidth = bandwidths.front();
+            }
         }
 
         // Media
