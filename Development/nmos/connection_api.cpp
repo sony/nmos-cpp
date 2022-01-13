@@ -800,8 +800,15 @@ namespace nmos
         }
     }
 
-    // Validate and parse the specified transport file for the specified receiver
+    // Parse and validate the specified transport file for the specified receiver using the default validator
+    // (this is the default transport file parser)
     web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
+    {
+        return details::parse_rtp_transport_file(&validate_sdp_parameters, receiver, connection_receiver, transport_file_type, transport_file_data, gate);
+    }
+
+    // Parse and validate the specified transport file for the specified receiver using the specified validator
+    web::json::value details::parse_rtp_transport_file(details::sdp_parameters_validator validate_sdp_parameters, const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
         if (transport_file_type != nmos::media_types::application_sdp.name)
         {
