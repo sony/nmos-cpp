@@ -438,7 +438,7 @@ namespace nmos
         : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk))
     {}
 
-    // Helper functions for implementing format-specific make_<media type/sub-type>_sdp_parameters functions
+    // Helper functions for implementing format-specific make_<media type/subtype>_sdp_parameters functions
     namespace details
     {
         // Construct ts-refclk attributes for each leg based on the IS-04 resources
