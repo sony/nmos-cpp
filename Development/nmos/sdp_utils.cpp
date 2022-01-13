@@ -759,21 +759,9 @@ namespace nmos
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    namespace details
+    media_type get_media_type(const sdp_parameters& sdp_params)
     {
-        nmos::format get_format(const sdp_parameters& sdp_params)
-        {
-            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
-            if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return nmos::formats::audio;
-            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
-            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
-            return{};
-        }
-
-        nmos::media_type get_media_type(const sdp_parameters& sdp_params)
-        {
-            return nmos::media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
-        }
+        return media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
     }
 
     web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
@@ -1379,6 +1367,15 @@ namespace nmos
 
     namespace details
     {
+        nmos::format get_format(const sdp_parameters& sdp_params)
+        {
+            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return nmos::formats::audio;
+            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
+            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
+            throw sdp_processing_error("unsupported media type/encoding name");
+        }
+
         typedef boost::variant<
             video_raw_parameters,
             audio_L_parameters,
@@ -1454,7 +1451,7 @@ namespace nmos
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params)
     {
         const auto format = details::get_format(sdp_params);
-        const auto media_type = details::get_media_type(sdp_params);
+        const auto media_type = get_media_type(sdp_params);
 
         if (nmos::format{ nmos::fields::format(receiver) } != format) throw details::sdp_processing_error("unexpected media type/encoding name");
 

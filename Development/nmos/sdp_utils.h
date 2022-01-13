@@ -11,7 +11,9 @@
 
 namespace nmos
 {
-    struct sdp_parameters;
+    struct media_type;
+
+    struct sdp_parameters; // defined below
 
     // Sender helper functions
 
@@ -270,6 +272,9 @@ namespace nmos
         // deprecated, use make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
         sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
     };
+
+    // "<sdp_params.media_type>/<sdp_params.rtpmap.encoding_name>"
+    media_type get_media_type(const sdp_parameters& sdp_params);
 
     // Format-specific types and functions
 
