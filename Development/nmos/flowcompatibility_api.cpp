@@ -43,6 +43,98 @@ namespace nmos
             return flowcompatibility_api;
         }
 
+        void set_edid_endpoint_as_reply(web::http::http_response& res, const std::pair<nmos::id, nmos::type>& id_type, const web::json::value& edid_endpoint, nmos::api_gate& gate)
+        {
+            if (!edid_endpoint.is_null())
+            {
+                // The base edid endpoint may be an empty object which signalizes that Base EDID is currently absent but it's allowed to be set
+                // The effective edid and edid endpoints should contain either edid_binary or edid_href
+                auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
+                auto& edid_href = nmos::fields::edid_href(edid_endpoint);
+
+                if (!edid_binary.is_null())
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning EDID binary for " << id_type;
+
+                    auto i_stream = concurrency::streams::bytestream::open_istream(edid_binary.as_string());
+                    set_reply(res, web::http::status_codes::OK, i_stream);
+                }
+                else if (!edid_href.is_null())
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to EDID file for " << id_type;
+
+                    set_reply(res, web::http::status_codes::TemporaryRedirect);
+                    res.headers().add(web::http::header_names::location, nmos::fields::edid_href(edid_endpoint));
+                }
+                else
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " does not exist";
+
+                    set_error_reply(res, web::http::status_codes::NoContent);
+                }
+            }
+            else
+            {
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " does not exist";
+
+                set_error_reply(res, web::http::status_codes::NoContent);
+            }
+        }
+
+        // it's expected that read lock is already catched for the model
+        bool all_resources_exist(nmos::resources& resources, const web::json::array& resource_ids, const nmos::type& type)
+        {
+            for (const auto& resource_id : resource_ids)
+            {
+                if (resources.end() == find_resource(resources, std::make_pair(resource_id.as_string(), type)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // it's expected that read lock is already catched for the model
+        void update_version(nmos::resources& resources, const web::json::array& resource_ids, const utility::string_t& new_version)
+        {
+            for (const auto& resource_id : resource_ids)
+            {
+                modify_resource(resources, resource_id.as_string(), [&new_version](nmos::resource& resource)
+                {
+                    resource.data[nmos::fields::version] = web::json::value::string(new_version);
+                });
+            }
+        }
+
+        // it's expected that write lock is already catched for the model and an input with the resource_id exists
+        void update_effective_edid(nmos::node_model& model, const details::flowcompatibility_effective_edid_setter& effective_edid_setter, const utility::string_t resource_id)
+        {
+            boost::variant<utility::string_t, web::uri> effective_edid;
+            bst::optional<web::json::value> effective_edid_properties = boost::none;
+
+            effective_edid_setter(resource_id, effective_edid, effective_edid_properties);
+
+            utility::string_t updated_timestamp;
+
+            modify_resource(model.flowcompatibility_resources, resource_id, [&effective_edid, &effective_edid_properties, &updated_timestamp](nmos::resource& input)
+            {
+                input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
+
+                if (effective_edid_properties.has_value())
+                {
+                    input.data[nmos::fields::effective_edid_properties] = effective_edid_properties.value();
+                }
+
+                updated_timestamp = nmos::make_version();
+                input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
+            });
+
+            const std::pair<nmos::id, nmos::type> id_type{ resource_id, nmos::types::input };
+            auto resource = find_resource(model.flowcompatibility_resources, id_type);
+
+            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
+        }
+
         web::http::experimental::listener::api_router make_unmounted_flowcompatibility_api(nmos::node_model& model, details::flowcompatibility_base_edid_put_handler base_edid_put_handler, details::flowcompatibility_base_edid_delete_handler base_edid_delete_handler, details::flowcompatibility_effective_edid_setter effective_edid_setter, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -378,32 +470,9 @@ namespace nmos
                     else if (nmos::types::output == nmos::type_from_resourceType(resourceType)) {
                         auto& edid_endpoint = nmos::fields::endpoint_edid(resource->data);
 
-                        if (!edid_endpoint.is_null())
-                        {
-                            // The edid endpoint data in the resource must have either "edid_binary" or "edid_href" for the redirect
-                            auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "EDID requested for " << id_type;
 
-                            if (!edid_binary.is_null())
-                            {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning EDID binary for " << id_type;
-
-                                auto i_stream = concurrency::streams::bytestream::open_istream(edid_binary.as_string());
-                                set_reply(res, status_codes::OK, i_stream);
-                            }
-                            else
-                            {
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to EDID file for " << id_type;
-
-                                set_reply(res, status_codes::TemporaryRedirect);
-                                res.headers().add(web::http::header_names::location, nmos::fields::edid_href(edid_endpoint));
-                            }
-                        }
-                        else
-                        {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " which does not have one";
-
-                            set_error_reply(res, status_codes::NoContent);
-                        }
+                        set_edid_endpoint_as_reply(res, id_type, edid_endpoint, gate);
                     }
                     else {
                         set_reply(res, status_codes::NotImplemented);
@@ -440,39 +509,9 @@ namespace nmos
 
                     auto& edid_endpoint = filter(resource->data);
 
-                    if (!edid_endpoint.is_null())
-                    {
-                        // The base edid endpoint may be an empty object which signalizes Base EDID changeability
-                        auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
-                        auto& edid_href = nmos::fields::edid_href(edid_endpoint);
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << edidType << " EDID requested for " << id_type;
 
-                        if (!edid_binary.is_null())
-                        {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning EDID binary for " << id_type;
-
-                            auto i_stream = concurrency::streams::bytestream::open_istream(edid_binary.as_string());
-                            set_reply(res, status_codes::OK, i_stream);
-                        }
-                        else if (!edid_href.is_null())
-                        {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to EDID file for " << id_type;
-
-                            set_reply(res, status_codes::TemporaryRedirect);
-                            res.headers().add(web::http::header_names::location, nmos::fields::edid_href(edid_endpoint));
-                        }
-                        else
-                        {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << edidType << " EDID requested for " << id_type << " which does not have one";
-
-                            set_error_reply(res, status_codes::NoContent);
-                        }
-                    }
-                    else
-                    {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << edidType << " EDID requested for " << id_type << " which does not have one";
-
-                        set_error_reply(res, status_codes::NoContent);
-                    }
+                    set_edid_endpoint_as_reply(res, id_type, edid_endpoint, gate);
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
@@ -517,16 +556,12 @@ namespace nmos
                             }
 
                             // Check senders exist before modifying the input and therefore versions of associated senders
-                            for (const auto& sender_id : nmos::fields::senders(resource->data))
+                            if (!all_resources_exist(model.node_resources, nmos::fields::senders(resource->data), nmos::types::sender))
                             {
-                                auto associated_sender = find_resource(model.node_resources, std::make_pair(sender_id.as_string(), nmos::types::sender));
-                                if (model.node_resources.end() == associated_sender)
-                                {
-                                    throw std::logic_error("associated IS-04 sender not found");
-                                }
+                                throw std::logic_error("associated IS-04 sender not found");
                             }
 
-                            web::json::value updated_timestamp = web::json::value::string(nmos::make_version());
+                            utility::string_t updated_timestamp;
 
                             // Update Base EDID in flowcompatibility_resources
                             modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp](nmos::resource& input)
@@ -538,43 +573,15 @@ namespace nmos
 
                                 input.data[nmos::fields::endpoint_base_edid] = make_flowcompatibility_edid_endpoint(base_edid);
 
-                                input.data[nmos::fields::version] = updated_timestamp;
+                                updated_timestamp = nmos::make_version();
+                                input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                             });
 
-                            for (const auto& sender_id : nmos::fields::senders(resource->data))
-                            {
-                                modify_resource(model.node_resources, sender_id.as_string(), [&updated_timestamp](nmos::resource& sender)
-                                {
-                                    sender.data[nmos::fields::version] = updated_timestamp;
-                                });
-                            }
+                            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
 
                             if (effective_edid_setter)
                             {
-                                boost::variant<utility::string_t, web::uri> effective_edid;
-                                bst::optional<web::json::value> effective_edid_properties = boost::none;
-
-                                effective_edid_setter(resourceId, effective_edid, effective_edid_properties);
-
-                                modify_resource(resources, resourceId, [&effective_edid, &effective_edid_properties, &updated_timestamp](nmos::resource& input)
-                                {
-                                    input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
-
-                                    if (effective_edid_properties.has_value())
-                                    {
-                                        input.data[nmos::fields::effective_edid_properties] = effective_edid_properties.value();
-                                    }
-
-                                    input.data[nmos::fields::version] = updated_timestamp = web::json::value::string(nmos::make_version());
-                                });
-
-                                for (const auto& sender_id : nmos::fields::senders(resource->data))
-                                {
-                                    modify_resource(model.node_resources, sender_id.as_string(), [&updated_timestamp](nmos::resource& sender)
-                                    {
-                                        sender.data[nmos::fields::version] = updated_timestamp;
-                                    });
-                                }
+                                update_effective_edid(model, effective_edid_setter, resourceId);
                             }
 
                             model.notify();
@@ -633,58 +640,26 @@ namespace nmos
                             }
 
                             // Check senders exist before modifying the input and therefore versions of associated senders
-                            for (const auto& sender_id : nmos::fields::senders(resource->data))
+                            if (!all_resources_exist(model.node_resources, nmos::fields::senders(resource->data), nmos::types::sender))
                             {
-                                auto associated_sender = find_resource(model.node_resources, std::make_pair(sender_id.as_string(), nmos::types::sender));
-                                if (model.node_resources.end() == associated_sender)
-                                {
-                                    throw std::logic_error("associated IS-04 sender not found");
-                                }
+                                throw std::logic_error("associated IS-04 sender not found");
                             }
 
-                            web::json::value updated_timestamp = web::json::value::string("");
+                            utility::string_t updated_timestamp;
 
                             modify_resource(resources, resourceId, [&effective_edid_setter, &updated_timestamp](nmos::resource& input)
                             {
                                 input.data[nmos::fields::endpoint_base_edid] = make_flowcompatibility_dummy_edid_endpoint();
 
-                                input.data[nmos::fields::version] = updated_timestamp = web::json::value::string(nmos::make_version());
+                                updated_timestamp = nmos::make_version();
+                                input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                             });
 
-                            for (const auto& sender_id : nmos::fields::senders(resource->data))
-                            {
-                                modify_resource(model.node_resources, sender_id.as_string(), [&updated_timestamp](nmos::resource& sender)
-                                {
-                                    sender.data[nmos::fields::version] = updated_timestamp;
-                                });
-                            }
+                            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
 
                             if (effective_edid_setter)
                             {
-                                boost::variant<utility::string_t, web::uri> effective_edid;
-                                bst::optional<web::json::value> effective_edid_properties = boost::none;
-
-                                effective_edid_setter(resourceId, effective_edid, effective_edid_properties);
-
-                                modify_resource(resources, resourceId, [&effective_edid, &effective_edid_properties, &updated_timestamp](nmos::resource& input)
-                                {
-                                    input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
-
-                                    if (effective_edid_properties.has_value())
-                                    {
-                                        input.data[nmos::fields::effective_edid_properties] = effective_edid_properties.value();
-                                    }
-
-                                    input.data[nmos::fields::version] = updated_timestamp = web::json::value::string(nmos::make_version());
-                                });
-
-                                for (const auto& sender_id : nmos::fields::senders(resource->data))
-                                {
-                                    modify_resource(model.node_resources, sender_id.as_string(), [&updated_timestamp](nmos::resource& sender)
-                                    {
-                                        sender.data[nmos::fields::version] = updated_timestamp;
-                                    });
-                                }
+                                update_effective_edid(model, effective_edid_setter, resourceId);
                             }
 
                             model.notify();
