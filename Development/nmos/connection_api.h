@@ -69,7 +69,19 @@ namespace nmos
 
     // Helper functions for the Connection API callbacks
 
-    // Validate and parse the specified transport file for the specified receiver
+    struct sdp_parameters;
+
+    namespace details
+    {
+        // an sdp_parameters_validator validates the specified SDP parameters for the specified IS-04 receiver
+        // it should throw std::runtime_error to indicate the parameters are not supported by the receiver
+        typedef std::function<void(const web::json::value& receiver, const sdp_parameters& sdp_params)> sdp_parameters_validator;
+
+        // Parse and validate the specified transport file for the specified receiver using the specified validator
+        web::json::value parse_rtp_transport_file(sdp_parameters_validator validate_sdp_parameters, const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate);
+    }
+
+    // Parse and validate the specified transport file for the specified receiver using the default validator
     // (this is the default transport file parser)
     web::json::value parse_rtp_transport_file(const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate);
 

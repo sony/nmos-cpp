@@ -22,6 +22,7 @@
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
+#include "nmos/format.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
 #ifdef HAVE_LLDP
@@ -1000,11 +1001,40 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 throw std::logic_error("matching IS-04 node, source or flow not found");
             }
 
-            auto sdp_params = nmos::make_sdp_parameters(node->data, source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
-            if (sdp_params.audio.channel_count != 0)
+            // the nmos::make_sdp_parameters overload from the IS-04 resources provides a high-level interface
+            // for common "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6" use cases
+            //auto sdp_params = nmos::make_sdp_parameters(node->data, source->data, flow->data, sender.data, { U("PRIMARY"), U("SECONDARY") });
+
+            // nmos::make_{video,audio,data,mux}_sdp_parameters provide a little more flexibility for those four media types
+            // and the combination of nmos::make_{video_raw,audio_L,video_smpte291,video_SMPTE2022_6}_parameters
+            // with the related make_sdp_parameters overloads provides the most flexible and extensible approach
+            auto sdp_params = [&]
             {
-                sdp_params.audio.packet_time = sdp_params.audio.channel_count > 8 ? 0.125 : 1;
-            }
+                const std::vector<utility::string_t> mids{ U("PRIMARY"), U("SECONDARY") };
+                const nmos::format format{ nmos::fields::format(flow->data) };
+                if (nmos::formats::video == format)
+                {
+                    return nmos::make_video_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_video_default, mids, {}, sdp::type_parameters::type_N);
+                }
+                else if (nmos::formats::audio == format)
+                {
+                    // this example application doesn't actually stream, so just indicate a sensible value for packet time
+                    const double packet_time = nmos::fields::channels(source->data).size() > 8 ? 0.125 : 1;
+                    return nmos::make_audio_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_audio_default, mids, {}, packet_time);
+                }
+                else if (nmos::formats::data == format)
+                {
+                    return nmos::make_data_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_data_default, mids, {}, {});
+                }
+                else if (nmos::formats::mux == format)
+                {
+                    return nmos::make_mux_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_mux_default, mids, {}, sdp::type_parameters::type_N);
+                }
+                else
+                {
+                    throw std::logic_error("unexpected flow format");
+                }
+            }();
 
             auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender.data));
             auto session_description = nmos::make_session_description(sdp_params, transport_params);

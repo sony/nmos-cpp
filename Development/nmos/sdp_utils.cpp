@@ -7,6 +7,8 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/numeric.hpp>
+#include <boost/variant/get.hpp>
+#include <boost/variant/variant.hpp>
 #include "cpprest/basic_utils.h"
 #include "nmos/capabilities.h"
 #include "nmos/clock_ref_type.h"
@@ -37,6 +39,7 @@ namespace nmos
             return{ ip_address.is_v4() ? sdp::address_types::IP4 : sdp::address_types::IP6, ip_address.is_multicast() };
         }
 
+        // Construct ts-refclk attributes for each leg based on the IS-04 resources
         std::vector<sdp_parameters::ts_refclk_t> make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender, bst::optional<int> ptp_domain)
         {
             const auto& clock_name = nmos::fields::clock_name(source);
@@ -177,20 +180,7 @@ namespace nmos
             return sampler->second;
         }
 
-        // Payload identifiers 96-127 are used for payloads defined dynamically during a session
-        // 96 and 97 are suitable for video and audio encodings not covered by the IANA registry
-        // See https://tools.ietf.org/html/rfc3551#section-3
-        // and https://www.iana.org/assignments/rtp-parameters/rtp-parameters.xhtml#rtp-parameters-1
-        const uint64_t payload_type_video_default = 96;
-        const uint64_t payload_type_audio_default = 97;
-        const uint64_t payload_type_data_default = 100;
-        // Payload type 98 is recommended for "High bit rate media transport / 27-MHz Clock"
-        // Payload type 99 is recommended for "High bit rate media transport FEC / 27-MHz Clock"
-        // "Alternatively, payload types may be set by other means in accordance with RFC 3550."
-        // See SMPTE ST 2022-6:2012 Section 6.3 RTP/UDP/IP Header
-        const uint64_t payload_type_mux_default = 98;
-
-        // make simple media stream ids based on the sender's number of legs
+        // Construct simple media stream ids based on the sender's number of legs
         std::vector<utility::string_t> make_media_stream_ids(const web::json::value& sender)
         {
             const auto legs = nmos::fields::interface_bindings(sender).size();
@@ -201,9 +191,10 @@ namespace nmos
         }
     }
 
-    sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
+    // Construct additional "video/raw" parameters from the IS-04 resources, using default values for unspecified items
+    video_raw_parameters make_video_raw_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<sdp::type_parameter> tp)
     {
-        sdp_parameters::video_t params;
+        video_raw_parameters params;
         params.tp = tp ? *tp : sdp::type_parameters::type_N;
 
         // colorimetry map directly to flow_video json "colorspace"
@@ -229,19 +220,26 @@ namespace nmos
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
         params.exactframerate = nmos::rational(nmos::fields::numerator(grain_rate), nmos::fields::denominator(grain_rate));
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_video_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
     }
 
-    sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time)
+    sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
     {
-        sdp_parameters::audio_t params;
+        auto params = make_video_raw_parameters(node, source, flow, sender, tp);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_video_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+    }
+
+    // Construct additional "audio/L" parameters from the IS-04 resources, using default values for unspecified items
+    audio_L_parameters make_audio_L_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<double> packet_time)
+    {
+        audio_L_parameters params;
 
         // rtpmap
 
         params.channel_count = (uint32_t)nmos::fields::channels(source).size();
         params.bit_depth = nmos::fields::bit_depth(flow);
         const auto& sample_rate(flow.at(nmos::fields::sample_rate));
-        params.sample_rate = nmos::rational(nmos::fields::numerator(sample_rate), nmos::fields::denominator(sample_rate));
+        params.sample_rate = uint64_t(double(nmos::fields::numerator(sample_rate)) / double(nmos::fields::denominator(sample_rate)) + 0.5);
 
         // format_specific_parameters
 
@@ -254,12 +252,19 @@ namespace nmos
         // ptime, e.g. 1 ms or 0.125 ms
         params.packet_time = packet_time ? *packet_time : 1;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_audio_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
     }
 
-    sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code)
+    sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time)
     {
-        sdp_parameters::data_t params;
+        auto params = make_audio_L_parameters(node, source, flow, sender, packet_time);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_audio_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+    }
+
+    // Construct additional "video/smpte291" parameters from the IS-04 resources, using default values for unspecified items
+    video_smpte291_parameters make_video_smpte291_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<nmos::vpid_code> vpid_code)
+    {
+        video_smpte291_parameters params;
 
         // format_specific_parameters
 
@@ -272,17 +277,30 @@ namespace nmos
         // hm, no vpid_code in the flow
         params.vpid_code = vpid_code ? *vpid_code : 0;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_data_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
     }
 
-    sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
+    sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code)
+    {
+        auto params = make_video_smpte291_parameters(node, source, flow, sender, vpid_code);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_data_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+    }
+
+    // Construct additional "video/SMPTE2022-6" parameters from the IS-04 resources, using default values for unspecified items
+    video_SMPTE2022_6_parameters make_video_SMPTE2022_6_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<sdp::type_parameter> tp)
     {
         sdp_parameters::mux_t params;
         // "Senders shall comply with either the Narrow Linear Senders (Type NL) requirements, or the Wide Senders (Type W) requirements."
         // See SMPTE ST 2022-8:2019 Section 6 Network Compatibility and Transmission Traffic Shape Models
         params.tp = tp ? *tp : sdp::type_parameters::type_NL;
 
-        return{ sender.at(nmos::fields::label).as_string(), params, payload_type ? *payload_type : details::payload_type_mux_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
+        return params;
+    }
+
+    sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
+    {
+        auto params = make_video_SMPTE2022_6_parameters(node, source, flow, sender, tp);
+        return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_mux_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
     // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
@@ -346,11 +364,10 @@ namespace nmos
     }
 
     // Make a json representation of an SDP file, e.g. for sdp::make_session_description, from the specified parameters; explicitly specify whether 'source-filter' attributes are included to override the default behaviour
-    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& ptime, const web::json::value& rtpmap, const web::json::value& fmtp, bst::optional<bool> source_filters)
+    static web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, const web::json::value& rtpmap, const web::json::value& fmtp, bst::optional<bool> source_filters)
     {
         using web::json::value;
         using web::json::value_of;
-        using web::json::array;
 
         // note that a media description is always created for each leg in the transport_params
         // and the rtp_enabled status does not affect the leg's media description
@@ -449,6 +466,15 @@ namespace nmos
                     }, keep_order)
                 }) },
 
+                // Bandwidth
+                // See https://tools.ietf.org/html/rfc4566#section-5.8
+                { !sdp_params.bandwidth.bandwidth_type.name.empty() ? sdp::fields::bandwidth_information.key : U(""), value_of({
+                    value_of({
+                        { sdp::fields::bandwidth_type, sdp_params.bandwidth.bandwidth_type.name },
+                        { sdp::fields::bandwidth, sdp_params.bandwidth.bandwidth }
+                    }, keep_order)
+                }) },
+
                 // Attributes
                 // See https://tools.ietf.org/html/rfc4566#section-5.13
                 { sdp::fields::attributes, value::array() }
@@ -521,12 +547,28 @@ namespace nmos
                 );
             }
 
-            // insert ptime if specified
-            if (!ptime.is_null())
+            if (0 != sdp_params.packet_time)
             {
                 // a=ptime:<packet time>
                 // See https://tools.ietf.org/html/rfc4566#section-6
-                web::json::push_back(media_attributes, ptime);
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::ptime },
+                        { sdp::fields::value, sdp_params.packet_time }
+                    }, keep_order)
+                );
+            }
+
+            if (0 != sdp_params.max_packet_time)
+            {
+                // a=maxptime:<packet time>
+                // See https://tools.ietf.org/html/rfc4566#section-6
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::maxptime },
+                        { sdp::fields::value, sdp_params.max_packet_time }
+                    }, keep_order)
+                );
             }
 
             // insert rtpmap if specified
@@ -535,6 +577,19 @@ namespace nmos
                 // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
                 // See https://tools.ietf.org/html/rfc4566#section-6
                 web::json::push_back(media_attributes, rtpmap);
+            }
+
+            // insert framerate if specified
+            if (0 != sdp_params.framerate)
+            {
+                // a=framerate:<frame rate>
+                // See https://tools.ietf.org/html/rfc4566#section-6
+                web::json::push_back(
+                    media_attributes, value_of({
+                        { sdp::fields::name, sdp::attributes::framerate },
+                        { sdp::fields::value, sdp_params.framerate }
+                    }, keep_order)
+                );
             }
 
             // insert fmtp if specified
@@ -587,203 +642,131 @@ namespace nmos
         return session_description;
     }
 
-    static web::json::value make_video_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
+    static web::json::value make_rtpmap(const sdp_parameters& sdp_params)
     {
         using web::json::value_of;
 
         const bool keep_order = true;
 
-        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto rtpmap = value_of({
+        return value_of({
             { sdp::fields::name, sdp::attributes::rtpmap },
-            { sdp::fields::value, web::json::value_of({
+            { sdp::fields::value, value_of({
                 { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
                 { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
-                { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
+                { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate },
+                { sdp_params.rtpmap.encoding_parameters > 0 ? sdp::fields::encoding_parameters.key : U(""), sdp_params.rtpmap.encoding_parameters }
             }, keep_order) }
         }, keep_order);
+    }
+
+    static web::json::value make_fmtp(const sdp_parameters& sdp_params)
+    {
+        using web::json::value;
+        using web::json::value_from_elements;
+        using web::json::value_of;
+
+        const bool keep_order = true;
+
+        return sdp_params.fmtp.empty() ? value::null() : value_of({
+            { sdp::fields::name, sdp::attributes::fmtp },
+            { sdp::fields::value, web::json::value_of({
+                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
+                { sdp::fields::format_specific_parameters, value_from_elements(sdp_params.fmtp | boost::adaptors::transformed([&](const sdp_parameters::fmtp_t::value_type& param)
+                    {
+                        return sdp::named_value(param.first, param.second, keep_order);
+                    })) }
+            }, keep_order) }
+        }, keep_order);
+    }
+
+    // Construct SDP parameters for "video/raw", with sensible defaults for unspecified fields
+    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
+    {
+        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("raw"), 90000 };
 
         // a=fmtp:<format> <format specific parameters>
         // for simplicity, following the order of parameters given in VSF TR-05:2017
         // See https://tools.ietf.org/html/rfc4566#section-6
         // and http://www.videoservicesforum.org/download/technical_recommendations/VSF_TR-05_2018-06-23.pdf
         // and comments regarding the fmtp attribute parameters in get_session_description_sdp_parameters
-        auto format_specific_parameters = value_of({
-            sdp::named_value(sdp::fields::width, utility::ostringstreamed(sdp_params.video.width)),
-            sdp::named_value(sdp::fields::height, utility::ostringstreamed(sdp_params.video.height)),
-            sdp::named_value(sdp::fields::exactframerate, sdp_params.video.exactframerate.denominator() != 1
-                ? utility::ostringstreamed(sdp_params.video.exactframerate.numerator()) + U("/") + utility::ostringstreamed(sdp_params.video.exactframerate.denominator())
-                : utility::ostringstreamed(sdp_params.video.exactframerate.numerator()))
-        });
-        if (sdp_params.video.interlace) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::interlace));
-        if (sdp_params.video.segmented) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::segmented));
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::sampling, sdp_params.video.sampling.name));
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::depth, utility::ostringstreamed(sdp_params.video.depth)));
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::colorimetry, sdp_params.video.colorimetry.name));
-        if (!sdp_params.video.tcs.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::transfer_characteristic_system, sdp_params.video.tcs.name));
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::packing_mode, sdp::packing_modes::general.name)); // or block...
-        web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name));
-        if (!sdp_params.video.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.video.tp.name));
+        sdp_parameters::fmtp_t fmtp = {
+            { sdp::fields::width, utility::ostringstreamed(params.width) },
+            { sdp::fields::height, utility::ostringstreamed(params.height) },
+            { sdp::fields::exactframerate, params.exactframerate.denominator() != 1
+                ? utility::ostringstreamed(params.exactframerate.numerator()) + U("/") + utility::ostringstreamed(params.exactframerate.denominator())
+                : utility::ostringstreamed(params.exactframerate.numerator()) }
+        };
+        if (params.interlace) fmtp.push_back({ sdp::fields::interlace, {} });
+        if (params.segmented) fmtp.push_back({ sdp::fields::segmented, {} });
+        fmtp.push_back({ sdp::fields::sampling, params.sampling.name });
+        fmtp.push_back({ sdp::fields::depth, utility::ostringstreamed(params.depth) });
+        fmtp.push_back({ sdp::fields::colorimetry, params.colorimetry.name });
+        if (!params.tcs.name.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
+        fmtp.push_back({ sdp::fields::packing_mode, sdp::packing_modes::general.name }); // or block...
+        fmtp.push_back({ sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name });
+        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
-        const auto fmtp = web::json::value_of({
-            { sdp::fields::name, sdp::attributes::fmtp },
-            { sdp::fields::value, web::json::value_of({
-                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, std::move(format_specific_parameters) }
-            }, keep_order) }
-        }, keep_order);
-
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp, source_filters);
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    static web::json::value make_audio_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
+    // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
+    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
     {
-        using web::json::value;
-        using web::json::value_of;
-
-        const bool keep_order = true;
-
-        // a=ptime:<packet time>
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto ptime = value_of({
-            { sdp::fields::name, sdp::attributes::ptime },
-            { sdp::fields::value, sdp_params.audio.packet_time }
-        }, keep_order);
-
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto rtpmap = value_of({
-            { sdp::fields::name, sdp::attributes::rtpmap },
-            { sdp::fields::value, value_of({
-                { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
-                { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate },
-                { sdp::fields::encoding_parameters, sdp_params.audio.channel_count }
-            }, keep_order) }
-        }, keep_order);
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("L") + utility::ostringstreamed(params.bit_depth), params.sample_rate, params.channel_count };
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto format_specific_parameters = sdp_params.audio.channel_order.empty() ? value::array() : value_of({
-            sdp::named_value(sdp::fields::channel_order, sdp_params.audio.channel_order)
-        });
-        const auto fmtp = value_of({
-            { sdp::fields::name, sdp::attributes::fmtp },
-            { sdp::fields::value, value_of({
-                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, std::move(format_specific_parameters) }
-            }, keep_order) }
-        }, keep_order);
+        sdp_parameters::fmtp_t fmtp = {};
+        if (!params.channel_order.empty()) fmtp.push_back({ sdp::fields::channel_order, params.channel_order });
 
-        return make_session_description(sdp_params, transport_params, ptime, rtpmap, fmtp, source_filters);
+        return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    static web::json::value make_data_format_specific_parameters(const sdp_parameters::data_t& data_params)
+    // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
+    sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
     {
-        auto result = web::json::value_from_elements(data_params.did_sdids | boost::adaptors::transformed([](const nmos::did_sdid& did_sdid)
+        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("smpte291"), 90000 };
+
+        // a=fmtp:<format> <format specific parameters>
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        sdp_parameters::fmtp_t fmtp = boost::copy_range<sdp_parameters::fmtp_t>(params.did_sdids | boost::adaptors::transformed([](const nmos::did_sdid& did_sdid)
         {
-            return sdp::named_value(sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid));
+            return sdp_parameters::fmtp_t::value_type{ sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid) };
         }));
+        if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
 
-        if (0 != data_params.vpid_code)
-        {
-            web::json::push_back(result, sdp::named_value(sdp::fields::VPID_Code, utility::ostringstreamed(data_params.vpid_code)));
-        }
-
-        return result;
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    static web::json::value make_data_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
+    // Construct SDP parameters for "video/SMPTE2022-6", with sensible defaults for unspecified fields
+    sdp_parameters make_video_SMPTE2022_6_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
     {
-        using web::json::value;
-        using web::json::value_of;
-
-        const bool keep_order = true;
-
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto rtpmap = value_of({
-            { sdp::fields::name, sdp::attributes::rtpmap },
-            { sdp::fields::value, value_of({
-                { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
-                { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
-            }, keep_order) }
-        }, keep_order);
+        sdp_parameters::rtpmap_t rtpmap = { payload_type, U("SMPTE2022-6"), 27000000 };
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto fmtp = sdp_params.data.did_sdids.empty() && 0 == sdp_params.data.vpid_code ? value::null() : value_of({
-            { sdp::fields::name, sdp::attributes::fmtp },
-            { sdp::fields::value, value_of({
-                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, make_data_format_specific_parameters(sdp_params.data) }
-            }, keep_order) }
-        }, keep_order);
+        sdp_parameters::fmtp_t fmtp = {};
+        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp, source_filters);
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
-    static web::json::value make_mux_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
+    media_type get_media_type(const sdp_parameters& sdp_params)
     {
-        using web::json::value;
-        using web::json::value_of;
-
-        const bool keep_order = true;
-
-        // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto rtpmap = value_of({
-            { sdp::fields::name, sdp::attributes::rtpmap },
-            { sdp::fields::value, value_of({
-                { sdp::fields::payload_type, sdp_params.rtpmap.payload_type },
-                { sdp::fields::encoding_name, sdp_params.rtpmap.encoding_name },
-                { sdp::fields::clock_rate, sdp_params.rtpmap.clock_rate }
-            }, keep_order) }
-        }, keep_order);
-
-        auto format_specific_parameters = value::array();
-        if (!sdp_params.mux.tp.name.empty()) web::json::push_back(format_specific_parameters, sdp::named_value(sdp::fields::type_parameter, sdp_params.mux.tp.name));
-
-        // a=fmtp:<format> <format specific parameters>
-        // See https://tools.ietf.org/html/rfc4566#section-6
-        const auto fmtp = value_of({
-            { sdp::fields::name, sdp::attributes::fmtp },
-            { sdp::fields::value, value_of({
-                { sdp::fields::format, utility::ostringstreamed(sdp_params.rtpmap.payload_type) },
-                { sdp::fields::format_specific_parameters, std::move(format_specific_parameters) }
-            }, keep_order) }
-        }, keep_order);
-
-        return make_session_description(sdp_params, transport_params, {}, rtpmap, fmtp, source_filters);
-    }
-
-    namespace details
-    {
-        nmos::format get_format(const sdp_parameters& sdp_params)
-        {
-            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
-            if (sdp::media_types::audio == sdp_params.media_type) return nmos::formats::audio;
-            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
-            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
-            return{};
-        }
-
-        nmos::media_type get_media_type(const sdp_parameters& sdp_params)
-        {
-            return nmos::media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
-        }
+        return media_type{ sdp_params.media_type.name + U("/") + sdp_params.rtpmap.encoding_name };
     }
 
     web::json::value make_session_description(const sdp_parameters& sdp_params, const web::json::value& transport_params, bst::optional<bool> source_filters)
     {
-        const auto format = details::get_format(sdp_params);
-        if (nmos::formats::video == format) return make_video_session_description(sdp_params, transport_params, source_filters);
-        if (nmos::formats::audio == format) return make_audio_session_description(sdp_params, transport_params, source_filters);
-        if (nmos::formats::data == format)  return make_data_session_description(sdp_params, transport_params, source_filters);
-        if (nmos::formats::mux == format)  return make_mux_session_description(sdp_params, transport_params, source_filters);
-        throw details::sdp_creation_error("unsupported ST2110 media");
+        return make_session_description(sdp_params, transport_params, make_rtpmap(sdp_params), make_fmtp(sdp_params), source_filters);
     }
 
     namespace details
@@ -858,7 +841,6 @@ namespace nmos
     web::json::value get_session_description_transport_params(const web::json::value& session_description)
     {
         using web::json::value;
-        using web::json::value_of;
 
         web::json::value transport_params;
 
@@ -983,11 +965,10 @@ namespace nmos
         }
     }
 
-    // Get other SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
+    // Get the additional (non-transport) SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& sdp)
     {
         using web::json::value;
-        using web::json::value_of;
 
         sdp_parameters sdp_params;
 
@@ -1102,6 +1083,23 @@ namespace nmos
             }
         }
 
+        // Bandwidth
+        // See https://tools.ietf.org/html/rfc4566#section-5.8
+        {
+            const auto& media_bandwidth_information = sdp::fields::bandwidth_information(media_description);
+            auto bandwidths = boost::copy_range<std::vector<sdp_parameters::bandwidth_t>>(media_bandwidth_information.as_array() | boost::adaptors::transformed([](const web::json::value& bandwidth)
+            {
+                return sdp_parameters::bandwidth_t{ sdp::bandwidth_type{ sdp::fields::bandwidth_type(bandwidth) }, sdp::fields::bandwidth(bandwidth) };
+            }));
+            if (!bandwidths.empty())
+            {
+                // multiple "media-level" bandwidth lines seem to be rarely used
+                // e.g. RFC 3556 for RTP Control Protocol (RTCP) Bandwidth
+                // see https://tools.ietf.org/html/rfc3556
+                sdp_params.bandwidth = bandwidths.front();
+            }
+        }
+
         // Media
         // See https://tools.ietf.org/html/rfc4566#section-5.14
         const auto& media = sdp::fields::media(media_description);
@@ -1142,170 +1140,214 @@ namespace nmos
         sdp_params.rtpmap.encoding_name = sdp::fields::encoding_name(rtpmap_value);
         sdp_params.rtpmap.payload_type = sdp::fields::payload_type(rtpmap_value);
         sdp_params.rtpmap.clock_rate = sdp::fields::clock_rate(rtpmap_value);
-
-        const auto format = details::get_format(sdp_params);
-        const auto is_video_sdp = nmos::formats::video == format;
-        const auto is_audio_sdp = nmos::formats::audio == format;
-        const auto is_data_sdp = nmos::formats::data == format;
-        const auto is_mux_sdp = nmos::formats::mux == format;
-
-        if (is_audio_sdp)
-        {
-            const auto& encoding_name = sdp::fields::encoding_name(rtpmap_value);
-            sdp_params.audio.bit_depth = !encoding_name.empty() && U('L') == encoding_name.front() ? utility::istringstreamed<uint32_t>(encoding_name.substr(1)) : 0;
-
-            sdp_params.audio.sample_rate = nmos::rational{ (nmos::rational::int_type)sdp::fields::clock_rate(rtpmap_value) };
-            sdp_params.audio.channel_count = (uint32_t)sdp::fields::encoding_parameters(rtpmap_value);
-        }
+        sdp_params.rtpmap.encoding_parameters = sdp::fields::encoding_parameters(rtpmap_value);
 
         // ptime attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
         {
             auto ptime = sdp::find_name(media_attributes, sdp::attributes::ptime);
-            if (is_audio_sdp)
+            if (media_attributes.end() != ptime)
             {
-                if (media_attributes.end() == ptime) throw details::sdp_processing_error("missing attribute: ptime");
-                sdp_params.audio.packet_time = sdp::fields::value(*ptime).as_double();
+                sdp_params.packet_time = sdp::fields::value(*ptime).as_double();
+            }
+        }
+
+        // maxptime attribute
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        {
+            auto maxptime = sdp::find_name(media_attributes, sdp::attributes::maxptime);
+            if (media_attributes.end() != maxptime)
+            {
+                sdp_params.max_packet_time = sdp::fields::value(*maxptime).as_double();
+            }
+        }
+
+        // framerate attribute
+        // See https://tools.ietf.org/html/rfc4566#section-6
+        {
+            auto framerate = sdp::find_name(media_attributes, sdp::attributes::framerate);
+            if (media_attributes.end() != framerate)
+            {
+                sdp_params.framerate = sdp::fields::value(*framerate).as_double();
             }
         }
 
         // fmtp attribute
         // See https://tools.ietf.org/html/rfc4566#section-6
-        auto fmtp = sdp::find_name(media_attributes, sdp::attributes::fmtp);
-        if (is_video_sdp)
         {
-            if (media_attributes.end() == fmtp) throw details::sdp_processing_error("missing attribute: fmtp");
-            const auto& fmtp_value = sdp::fields::value(*fmtp);
-            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
-
-            // See SMPTE ST 2110-20:2017 Section 7.2 Required Media Type Parameters
-            // and Section 7.3 Media Type Parameters with default values
-
-            const auto width = sdp::find_name(format_specific_parameters, sdp::fields::width);
-            if (format_specific_parameters.end() == width) throw details::sdp_processing_error("missing format parameter: width");
-            sdp_params.video.width = utility::istringstreamed<uint32_t>(sdp::fields::value(*width).as_string());
-
-            const auto height = sdp::find_name(format_specific_parameters, sdp::fields::height);
-            if (format_specific_parameters.end() == height) throw details::sdp_processing_error("missing format parameter: height");
-            sdp_params.video.height = utility::istringstreamed<uint32_t>(sdp::fields::value(*height).as_string());
-
-            auto parse_rational = [](const utility::string_t& rational_string)
+            auto fmtp = sdp::find_name(media_attributes, sdp::attributes::fmtp);
+            if (media_attributes.end() != fmtp)
             {
-                const auto slash = rational_string.find(U('/'));
-                return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
-            };
-            const auto exactframerate = sdp::find_name(format_specific_parameters, sdp::fields::exactframerate);
-            if (format_specific_parameters.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
-            sdp_params.video.exactframerate = parse_rational(sdp::fields::value(*exactframerate).as_string());
-
-            // optional
-            const auto interlace = sdp::find_name(format_specific_parameters, sdp::fields::interlace);
-            sdp_params.video.interlace = format_specific_parameters.end() != interlace;
-
-            // optional
-            const auto segmented = sdp::find_name(format_specific_parameters, sdp::fields::segmented);
-            sdp_params.video.segmented = format_specific_parameters.end() != segmented;
-
-            const auto sampling = sdp::find_name(format_specific_parameters, sdp::fields::sampling);
-            if (format_specific_parameters.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
-            sdp_params.video.sampling = sdp::sampling{ sdp::fields::value(*sampling).as_string() };
-
-            const auto depth = sdp::find_name(format_specific_parameters, sdp::fields::depth);
-            if (format_specific_parameters.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
-            sdp_params.video.depth = utility::istringstreamed<uint32_t>(sdp::fields::value(*depth).as_string());
-
-            // optional
-            const auto tcs = sdp::find_name(format_specific_parameters, sdp::fields::transfer_characteristic_system);
-            if (format_specific_parameters.end() != tcs)
-            {
-                sdp_params.video.tcs = sdp::transfer_characteristic_system{ sdp::fields::value(*tcs).as_string() };
+                const auto& format_specific_parameters = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
+                sdp_params.fmtp = boost::copy_range<sdp_parameters::fmtp_t>(format_specific_parameters | boost::adaptors::transformed([&](const value& param)
+                {
+                    const auto& name = sdp::fields::name(param);
+                    const auto& value_or_null = sdp::fields::value(param);
+                    return sdp_parameters::fmtp_t::value_type{ name, !value_or_null.is_null() ? value_or_null.as_string() : U("") };
+                }));
             }
-            // else sdp_params.video.tcs = sdp::transfer_characteristic_systems::SDR;
-            // but better to let the caller distinguish that it's been defaulted?
-
-            const auto colorimetry = sdp::find_name(format_specific_parameters, sdp::fields::colorimetry);
-            if (format_specific_parameters.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
-            sdp_params.video.colorimetry = sdp::colorimetry{ sdp::fields::value(*colorimetry).as_string() };
-
-            // don't examine required parameters "PM" (packing mode), "SSN" (SMPTE standard number)
-            // don't examine optional parameters "RANGE", "MAXUDP", "PAR"
-
-            // "Senders and Receivers compliant to [ST 2110-20] shall comply with the provisions of SMPTE ST 2110-21."
-            // See SMPTE ST 2110-20:2017 Section 6.1.1
-
-            // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
-            // and Section 8.2 Optional Parameters
-
-            // hmm, "TP" (type parameter) is required, but currently omitted by several vendors, so allow that for now...
-            const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
-            if (format_specific_parameters.end() != tp)
-            {
-                sdp_params.video.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
-            }
-            // else sdp_params.video.tp = {};
-
-            // don't examine optional parameters "TROFF", "CMAX"
-        }
-        else if (is_audio_sdp && media_attributes.end() != fmtp)
-        {
-            const auto& fmtp_value = sdp::fields::value(*fmtp);
-            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
-
-            // optional
-            const auto channel_order = sdp::find_name(format_specific_parameters, sdp::fields::channel_order);
-            if (format_specific_parameters.end() != channel_order)
-            {
-                sdp_params.audio.channel_order = sdp::fields::value(*channel_order).as_string();
-            }
-        }
-        else if (is_data_sdp && media_attributes.end() != fmtp)
-        {
-            const auto& fmtp_value = sdp::fields::value(*fmtp);
-            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
-
-            // "The SDP object shall be constructed as described in IETF RFC 8331"
-            // See SMPTE ST 2110-40:2018 Section 6
-            // and https://tools.ietf.org/html/rfc8331
-
-            // optional
-            sdp_params.data.did_sdids = boost::copy_range<std::vector<nmos::did_sdid>>(format_specific_parameters | boost::adaptors::filtered([](const web::json::value& nv)
-            {
-                return sdp::fields::DID_SDID.key == sdp::fields::name(nv);
-            }) | boost::adaptors::transformed([](const web::json::value& did_sdid)
-            {
-                return parse_fmtp_did_sdid(sdp::fields::value(did_sdid).as_string());
-            }));
-
-            // optional
-            const auto vpid_code = sdp::find_name(format_specific_parameters, sdp::fields::VPID_Code);
-            if (format_specific_parameters.end() != vpid_code)
-            {
-                sdp_params.data.vpid_code = (nmos::vpid_code)utility::istringstreamed<uint32_t>(sdp::fields::value(*vpid_code).as_string());
-            }
-        }
-        else if (is_mux_sdp && media_attributes.end() != fmtp)
-        {
-            const auto& fmtp_value = sdp::fields::value(*fmtp);
-            const auto& format_specific_parameters = sdp::fields::format_specific_parameters(fmtp_value);
-
-            // "Senders shall signal Media Type Parameters TP and TROFF as specified in ST 2110-21"
-            // See SMPTE ST 2022-8:2019 Section 6
-
-            // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
-            // and Section 8.2 Optional Parameters
-
-            // "TP" (type parameter) is required, but allow it to be omitted for now...
-            const auto tp = sdp::find_name(format_specific_parameters, sdp::fields::type_parameter);
-            if (format_specific_parameters.end() != tp)
-            {
-                sdp_params.mux.tp = sdp::type_parameter{ sdp::fields::value(*tp).as_string() };
-            }
-            // else sdp_params.mux.tp = {};
-
-            // don't examine optional parameter "TROFF"
         }
 
         return sdp_params;
+    }
+
+    static sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& param_name)
+    {
+        return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
+        {
+            return param.first == param_name;
+        });
+    }
+
+    // Get additional "video/raw" parameters from the SDP parameters
+    video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params)
+    {
+        video_raw_parameters params;
+
+        if (sdp_params.fmtp.empty()) throw details::sdp_processing_error("missing attribute: fmtp");
+
+        // See SMPTE ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+        // and Section 7.3 Media Type Parameters with default values
+
+        const auto width = find_fmtp(sdp_params.fmtp, sdp::fields::width);
+        if (sdp_params.fmtp.end() == width) throw details::sdp_processing_error("missing format parameter: width");
+        params.width = utility::istringstreamed<uint32_t>(width->second);
+
+        const auto height = find_fmtp(sdp_params.fmtp, sdp::fields::height);
+        if (sdp_params.fmtp.end() == height) throw details::sdp_processing_error("missing format parameter: height");
+        params.height = utility::istringstreamed<uint32_t>(height->second);
+
+        auto parse_rational = [](const utility::string_t& rational_string)
+        {
+            const auto slash = rational_string.find(U('/'));
+            return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
+        };
+        const auto exactframerate = find_fmtp(sdp_params.fmtp, sdp::fields::exactframerate);
+        if (sdp_params.fmtp.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
+        params.exactframerate = parse_rational(exactframerate->second);
+
+        // optional
+        const auto interlace = find_fmtp(sdp_params.fmtp, sdp::fields::interlace);
+        params.interlace = sdp_params.fmtp.end() != interlace;
+
+        // optional
+        const auto segmented = find_fmtp(sdp_params.fmtp, sdp::fields::segmented);
+        params.segmented = sdp_params.fmtp.end() != segmented;
+
+        const auto sampling = find_fmtp(sdp_params.fmtp, sdp::fields::sampling);
+        if (sdp_params.fmtp.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
+        params.sampling = sdp::sampling{ sampling->second };
+
+        const auto depth = find_fmtp(sdp_params.fmtp, sdp::fields::depth);
+        if (sdp_params.fmtp.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
+        params.depth = utility::istringstreamed<uint32_t>(depth->second);
+
+        // optional
+        const auto tcs = find_fmtp(sdp_params.fmtp, sdp::fields::transfer_characteristic_system);
+        if (sdp_params.fmtp.end() != tcs)
+        {
+            params.tcs = sdp::transfer_characteristic_system{ tcs->second };
+        }
+        // else params.tcs = sdp::transfer_characteristic_systems::SDR;
+        // but better to let the caller distinguish that it's been defaulted?
+
+        const auto colorimetry = find_fmtp(sdp_params.fmtp, sdp::fields::colorimetry);
+        if (sdp_params.fmtp.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
+        params.colorimetry = sdp::colorimetry{ colorimetry->second };
+
+        // don't examine required parameters "PM" (packing mode), "SSN" (SMPTE standard number)
+        // don't examine optional parameters "RANGE", "MAXUDP", "PAR"
+
+        // "Senders and Receivers compliant to [ST 2110-20] shall comply with the provisions of SMPTE ST 2110-21."
+        // See SMPTE ST 2110-20:2017 Section 6.1.1
+
+        // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
+        // and Section 8.2 Optional Parameters
+
+        // hmm, "TP" (type parameter) is required, but currently omitted by several vendors, so allow that for now...
+        const auto tp = find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
+        if (sdp_params.fmtp.end() != tp)
+        {
+            params.tp = sdp::type_parameter{ tp->second };
+        }
+        // else params.tp = {};
+
+        // don't examine optional parameters "TROFF", "CMAX"
+
+        return params;
+    }
+
+    // Get additional "audio/L" parameters from the SDP parameters
+    audio_L_parameters get_audio_L_parameters(const sdp_parameters& sdp_params)
+    {
+        audio_L_parameters params;
+
+        const auto& encoding_name = sdp_params.rtpmap.encoding_name;
+        params.bit_depth = !encoding_name.empty() && U('L') == encoding_name.front() ? utility::istringstreamed<uint32_t>(encoding_name.substr(1)) : 0;
+
+        params.sample_rate = sdp_params.rtpmap.clock_rate;
+        params.channel_count = (uint32_t)sdp_params.rtpmap.encoding_parameters;
+
+        // optional
+        const auto channel_order = find_fmtp(sdp_params.fmtp, sdp::fields::channel_order);
+        if (sdp_params.fmtp.end() != channel_order)
+        {
+            params.channel_order = channel_order->second;
+        }
+
+        return params;
+    }
+
+    // Get additional "video/smpte291" parameters from the SDP parameters
+    video_smpte291_parameters get_video_smpte291_parameters(const sdp_parameters& sdp_params)
+    {
+        video_smpte291_parameters params;
+
+        // "The SDP object shall be constructed as described in IETF RFC 8331"
+        // See SMPTE ST 2110-40:2018 Section 6
+        // and https://tools.ietf.org/html/rfc8331
+
+        // optional
+        params.did_sdids = boost::copy_range<std::vector<nmos::did_sdid>>(sdp_params.fmtp | boost::adaptors::filtered([](const sdp_parameters::fmtp_t::value_type& param)
+        {
+            return sdp::fields::DID_SDID.key == param.first;
+        }) | boost::adaptors::transformed([](const sdp_parameters::fmtp_t::value_type& did_sdid)
+        {
+            return parse_fmtp_did_sdid(did_sdid.second);
+        }));
+
+        // optional
+        const auto vpid_code = find_fmtp(sdp_params.fmtp, sdp::fields::VPID_Code);
+        if (sdp_params.fmtp.end() != vpid_code)
+        {
+            params.vpid_code = (nmos::vpid_code)utility::istringstreamed<uint32_t>(vpid_code->second);
+        }
+
+        return params;
+    }
+
+    // Get additional "video/SMPTE2022-6" parameters from the SDP parameters
+    video_SMPTE2022_6_parameters get_video_SMPTE2022_6_parameters(const sdp_parameters& sdp_params)
+    {
+        video_SMPTE2022_6_parameters params;
+
+        // "Senders shall signal Media Type Parameters TP and TROFF as specified in ST 2110-21"
+        // See SMPTE ST 2022-8:2019 Section 6
+
+        // See SMPTE ST 2110-21:2017 Section 8.1 Required Parameters
+        // and Section 8.2 Optional Parameters
+
+        // "TP" (type parameter) is required, but allow it to be omitted for now...
+        const auto tp = find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
+        if (sdp_params.fmtp.end() != tp)
+        {
+            params.tp = sdp::type_parameter{ tp->second };
+        }
+        // else params.tp = {};
+
+        // don't examine optional parameter "TROFF"
+
+        return params;
     }
 
     // Get SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
@@ -1323,56 +1365,94 @@ namespace nmos
             || nmos::match_string_constraint(nmos::interlace_modes::interlaced_bff.name, constraint_set);
     }
 
-    bool match_sdp_parameters_constraint_set(const sdp_parameters& sdp_params, const web::json::value& constraint_set)
+    namespace details
+    {
+        nmos::format get_format(const sdp_parameters& sdp_params)
+        {
+            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return nmos::formats::video;
+            if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return nmos::formats::audio;
+            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return nmos::formats::data;
+            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return nmos::formats::mux;
+            throw sdp_processing_error("unsupported media type/encoding name");
+        }
+
+        typedef boost::variant<
+            video_raw_parameters,
+            audio_L_parameters,
+            video_smpte291_parameters,
+            video_SMPTE2022_6_parameters
+        > format_parameters;
+
+        format_parameters get_format_parameters(const sdp_parameters& sdp_params)
+        {
+            if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return get_video_raw_parameters(sdp_params);
+            if (sdp::media_types::audio == sdp_params.media_type && U("L") == sdp_params.rtpmap.encoding_name.substr(0, 1)) return get_audio_L_parameters(sdp_params);
+            if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return get_video_smpte291_parameters(sdp_params);
+            if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return get_video_SMPTE2022_6_parameters(sdp_params);
+            throw sdp_processing_error("unsupported media type/encoding name");
+        }
+
+        // for a little brevity, cf. sdp_parameters member type names
+        const video_raw_parameters* get_video(const format_parameters* format) { return boost::get<video_raw_parameters>(format); }
+        const audio_L_parameters* get_audio(const format_parameters* format) { return boost::get<audio_L_parameters>(format); }
+        const video_smpte291_parameters* get_data(const format_parameters* format) { return boost::get<video_smpte291_parameters>(format); }
+        const video_SMPTE2022_6_parameters* get_mux(const format_parameters* format) { return boost::get<video_SMPTE2022_6_parameters>(format); }
+
+        // NMOS Parameter Registers - Capabilities register
+        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
+#define CAPS_ARGS const sdp_parameters& sdp, const format_parameters& format, const web::json::value& con
+        static const std::map<utility::string_t, std::function<bool(CAPS_ARGS)>> format_constraints
+        {
+            // General Constraints
+
+            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
+            // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
+            // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
+            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto video = get_video(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
+
+            // Video Constraints
+
+            { nmos::caps::format::frame_height, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->height, con); } },
+            { nmos::caps::format::frame_width, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->width, con); } },
+            { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
+            { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
+            { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->tcs.name, con); } },
+            { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
+
+            // Audio Constraints
+
+            { nmos::caps::format::channel_count, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_integer_constraint(audio->channel_count, con); } },
+            { nmos::caps::format::sample_rate, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_rational_constraint(audio->sample_rate, con); } },
+            { nmos::caps::format::sample_depth, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_integer_constraint(audio->bit_depth, con); } },
+
+            // Transport Constraints
+
+            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.packet_time, con); } },
+            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.max_packet_time, con); } },
+            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { if (auto video = get_video(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = get_mux(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
+        };
+#undef CAPS_ARGS
+    }
+
+    static bool match_sdp_parameters_constraint_set(const sdp_parameters& sdp_params, const details::format_parameters& format_params, const web::json::value& constraint_set)
     {
         using web::json::value;
 
         if (!nmos::caps::meta::enabled(constraint_set)) return false;
 
-        // NMOS Parameter Registers - Capabilities register
-        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
-        static const std::map<utility::string_t, std::function<bool(const sdp_parameters& sdp, const value& con)>> match_constraints
-        {
-            // General Constraints
-
-            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
-            { nmos::caps::format::grain_rate, [](const sdp_parameters& sdp, const value& con) { return nmos::rational{} == sdp.video.exactframerate || nmos::match_rational_constraint(sdp.video.exactframerate, con); } },
-
-            // Video Constraints
-
-            { nmos::caps::format::frame_height, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.video.height, con); } },
-            { nmos::caps::format::frame_width, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.video.width, con); } },
-            { nmos::caps::format::color_sampling, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.sampling.name, con); } },
-            { nmos::caps::format::interlace_mode, [](const sdp_parameters& sdp, const value& con) { return nmos::match_interlace_mode_constraint(sdp.video.interlace, sdp.video.segmented, con); } },
-            { nmos::caps::format::colorspace, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.colorimetry.name, con); } },
-            { nmos::caps::format::transfer_characteristic, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.tcs.name, con); } },
-            { nmos::caps::format::component_depth, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.video.depth, con); } },
-
-            // Audio Constraints
-
-            { nmos::caps::format::channel_count, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.audio.channel_count, con); } },
-            { nmos::caps::format::sample_rate, [](const sdp_parameters& sdp, const value& con) { return nmos::match_rational_constraint(sdp.audio.sample_rate, con); } },
-            { nmos::caps::format::sample_depth, [](const sdp_parameters& sdp, const value& con) { return nmos::match_integer_constraint(sdp.audio.bit_depth, con); } },
-
-            // Transport Constraints
-
-            { nmos::caps::transport::packet_time, [](const sdp_parameters& sdp, const value& con) { return nmos::match_number_constraint(sdp.audio.packet_time, con); } },
-            // hm, nmos::caps::transport::max_packet_time
-            { nmos::caps::transport::st2110_21_sender_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.video.tp.name, con) || nmos::match_string_constraint(sdp.mux.tp.name, con); } }
-        };
-
         const auto& constraints = constraint_set.as_object();
         return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
         {
-            const auto& found = match_constraints.find(constraint.first);
-            return match_constraints.end() != found && !found->second(sdp_params, constraint.second);
+            const auto& found = details::format_constraints.find(constraint.first);
+            return details::format_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
         });
     }
 
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params)
     {
         const auto format = details::get_format(sdp_params);
-        const auto media_type = details::get_media_type(sdp_params);
+        const auto media_type = get_media_type(sdp_params);
 
         if (nmos::format{ nmos::fields::format(receiver) } != format) throw details::sdp_processing_error("unexpected media type/encoding name");
 
@@ -1387,8 +1467,9 @@ namespace nmos
         const auto& constraint_sets_or_null = nmos::fields::constraint_sets(caps);
         if (!constraint_sets_or_null.is_null())
         {
+            const auto format_params = details::get_format_parameters(sdp_params);
             const auto& constraint_sets = constraint_sets_or_null.as_array();
-            const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), std::bind(match_sdp_parameters_constraint_set, std::ref(sdp_params), std::placeholders::_1));
+            const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_sdp_parameters_constraint_set(sdp_params, format_params, constraint_set); });
             if (constraint_sets.end() == found) throw details::sdp_processing_error("unsupported transport or format-specific parameters");
         }
     }
