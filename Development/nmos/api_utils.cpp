@@ -603,7 +603,7 @@ namespace nmos
             nmos::api_gate gate(gate_, req, parameters);
             try
             {
-                std::rethrow_exception(std::current_exception());
+                throw;
             }
             // assume a JSON error indicates a bad request
             catch (const web::json::json_exception& e)
