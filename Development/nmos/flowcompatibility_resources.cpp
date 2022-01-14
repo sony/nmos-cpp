@@ -77,21 +77,32 @@ namespace nmos
             return{ is11_versions::v1_0, types::receiver, std::move(data), id, false };
         }
 
-        web::json::value make_flowcompatibility_edid_endpoint(const web::uri& edid_file)
+        web::json::value make_flowcompatibility_dummy_edid_endpoint(bool locked)
         {
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::edid_href, edid_file.to_string() }
+                { nmos::fields::temporarily_locked, locked },
             });
         }
 
-        web::json::value make_flowcompatibility_edid_endpoint(const utility::string_t& edid_file)
+        web::json::value make_flowcompatibility_edid_endpoint(const web::uri& edid_file, bool locked)
         {
             using web::json::value_of;
 
             return value_of({
-                { nmos::fields::edid_binary, edid_file }
+                { nmos::fields::edid_href, edid_file.to_string() },
+                { nmos::fields::temporarily_locked, locked },
+            });
+        }
+
+        web::json::value make_flowcompatibility_edid_endpoint(const utility::string_t& edid_file, bool locked)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::edid_binary, edid_file },
+                { nmos::fields::temporarily_locked, locked },
             });
         }
 
@@ -107,57 +118,62 @@ namespace nmos
             return data;
         }
 
-        struct edid_file_visitor : public boost::static_visitor<web::json::value>
+        nmos::resource make_flowcompatibility_input(const nmos::id& id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
-            web::json::value operator()(utility::string_t edid_file) const
-            {
-                return make_flowcompatibility_edid_endpoint(edid_file);
-            }
+            using web::json::value_from_elements;
 
-            web::json::value operator()(web::uri edid_file) const
-            {
-                return make_flowcompatibility_edid_endpoint(edid_file);
-            }
-        };
-
-        nmos::resource make_flowcompatibility_input(const nmos::id& id, bool connected, const nmos::settings& settings)
-        {
             auto data = make_flowcompatibility_input_output_base(id, connected, false, settings);
+            data[nmos::fields::senders] = value_from_elements(senders);
 
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_input(const nmos::id& id, bool connected, const bst::optional<web::json::value>& effective_edid_properties, const boost::variant<utility::string_t, web::uri>& effective_edid, const nmos::settings& settings)
+        nmos::resource make_flowcompatibility_input(const nmos::id& id, bool connected, bool base_edid_changeable, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
+            using web::json::value_from_elements;
+
             auto data = make_flowcompatibility_input_output_base(id, connected, true, settings);
+
+            if (base_edid_changeable)
+            {
+                data[nmos::fields::endpoint_base_edid] = make_flowcompatibility_dummy_edid_endpoint(false);
+            }
+
+            data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
 
             if (effective_edid_properties.has_value())
             {
                 data[nmos::fields::effective_edid_properties] = effective_edid_properties.value();
             }
 
-            data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
+            data[nmos::fields::senders] = value_from_elements(senders);
 
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const nmos::settings& settings)
+        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
+            using web::json::value_from_elements;
+
             auto data = make_flowcompatibility_input_output_base(id, connected, false, settings);
+            data[nmos::fields::receivers] = value_from_elements(receivers);
 
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const bst::optional<web::json::value>& edid_properties, const boost::variant<utility::string_t, web::uri>& edid, const nmos::settings& settings)
+        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const boost::variant<utility::string_t, web::uri>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
+            using web::json::value_from_elements;
+
             auto data = make_flowcompatibility_input_output_base(id, connected, true, settings);
+            data[nmos::fields::receivers] = value_from_elements(receivers);
+
+            data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), edid);
 
             if (edid_properties.has_value())
             {
                 data[nmos::fields::edid_properties] = edid_properties.value();
             }
-
-            data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), edid);
 
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
         }

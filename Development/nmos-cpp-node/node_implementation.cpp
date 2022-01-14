@@ -7,6 +7,7 @@
 #include <boost/range/algorithm_ext/push_back.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/join.hpp>
+#include "bst/optional.h"
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "cpprest/host_utils.h"
 #ifdef HAVE_LLDP
@@ -876,16 +877,23 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
             0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
         };
-        std::string edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
-        const auto input_id = impl::make_id(seed_id, nmos::types::input);
-        auto input = nmos::experimental::make_flowcompatibility_input(input_id, true, web::json::value::object(), edid, model.settings);
-        impl::set_label_description(input, impl::ports::mux, 0); // The single Input originates both video and audio signals
-        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(input), gate)) return;
+        utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
+        const auto input_id = impl::make_id(seed_id, nmos::types::input);
+
+        std::vector<nmos::id> sender_ids;
         int index = how_many - 1; // Make the last created Sender IS-11 compatible
         for (const auto& port : { impl::ports::video, impl::ports::audio })
         {
-            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            sender_ids.push_back(impl::make_id(seed_id, nmos::types::sender, port, index));
+        }
+
+        auto input = nmos::experimental::make_flowcompatibility_input(input_id, true, true, edid, web::json::value::object(), sender_ids, model.settings);
+        impl::set_label_description(input, impl::ports::mux, 0); // The single Input originates both video and audio signals
+        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(input), gate)) return;
+
+        for (const auto& sender_id : sender_ids)
+        {
             const std::vector<utility::string_t> supported_param_constraints{
                 nmos::caps::transport::packet_time.key
             };
@@ -914,16 +922,23 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
             0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
         };
-        std::string edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
-        const auto output_id = impl::make_id(seed_id, nmos::types::output);
-        auto output = nmos::experimental::make_flowcompatibility_output(output_id, false, boost::none, edid, model.settings);
-        impl::set_label_description(output, impl::ports::mux, 0); // The single Output consumes both video and audio signals
-        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(output), gate)) return;
+        utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
+        const auto output_id = impl::make_id(seed_id, nmos::types::output);
+
+        std::vector<nmos::id> receiver_ids;
         int index = how_many - 1; // Make the last created Receiver IS-11 compatible
         for (const auto& port : { impl::ports::video, impl::ports::audio })
         {
-            const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+            receiver_ids.push_back(impl::make_id(seed_id, nmos::types::receiver, port, index));
+        }
+
+        auto output = nmos::experimental::make_flowcompatibility_output(output_id, false, edid, boost::none, receiver_ids, model.settings);
+        impl::set_label_description(output, impl::ports::mux, 0); // The single Output consumes both video and audio signals
+        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(output), gate)) return;
+
+        for (const auto& receiver_id : receiver_ids)
+        {
             auto flowcompatibility_receiver = nmos::experimental::make_flowcompatibility_receiver(receiver_id, { output_id });
             if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(flowcompatibility_receiver), gate)) return;
         }
@@ -1293,6 +1308,84 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
+// Example Flow Compatibility Management API base EDID update callback to perform application-specific operations to apply updated Base EDID
+nmos::experimental::details::flowcompatibility_base_edid_put_handler make_node_implementation_flowcompatibility_base_edid_put_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::id& input_id, const utility::string_t& base_edid, bst::optional<web::json::value>& base_edid_properties)
+    {
+        base_edid_properties = boost::none;
+
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for input " << input_id;
+    };
+}
+
+// Example Flow Compatibility Management API base EDID delete callback to perform application-specific operations in the case Base EDID is deleted
+nmos::experimental::details::flowcompatibility_base_edid_delete_handler make_node_implementation_flowcompatibility_base_edid_delete_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::id& input_id)
+    {
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID deleted for input " << input_id;
+    };
+}
+
+// Example Flow Compatibility Management API callback to update effective EDID - captures flowcompatibility_resources by reference!
+nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_implementation_effective_edid_setter(const nmos::resources& flowcompatibility_resources, slog::base_gate& gate)
+{
+    return [&flowcompatibility_resources, &gate](const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid, bst::optional<web::json::value>& effective_edid_properties)
+    {
+        unsigned char edid_bytes[] = {
+            0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+            0x10, 0xac, 0x16, 0xd0, 0x48, 0x4c, 0x46, 0x34,
+            0x1a, 0x12, 0x01, 0x04, 0x6a, 0x25, 0x17, 0x78,
+            0xef, 0xb6, 0x90, 0xa6, 0x54, 0x51, 0x91, 0x25,
+            0x17, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x81, 0x80,
+            0x71, 0x4f, 0x95, 0x00, 0x01, 0x01, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xab, 0x22,
+            0xa0, 0xa0, 0x50, 0x84, 0x1a, 0x30, 0x30, 0x20,
+            0x36, 0x00, 0x72, 0xe6, 0x10, 0x00, 0x00, 0x1a,
+            0x00, 0x00, 0x00, 0xff, 0x00, 0x47, 0x33, 0x34,
+            0x30, 0x48, 0x38, 0x36, 0x50, 0x34, 0x46, 0x4c,
+            0x48, 0x0a, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x32,
+            0x4d, 0x1e, 0x53, 0x0e, 0x04, 0x11, 0xb2, 0x05,
+            0xf8, 0x58, 0xf0, 0x00, 0x00, 0x00, 0x00, 0xfc,
+            0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
+            0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
+        };
+
+        effective_edid_properties = boost::none;
+
+        bst::optional<utility::string_t> base_edid = boost::none;
+
+        const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
+        auto resource = find_resource(flowcompatibility_resources, id_type);
+        if (flowcompatibility_resources.end() != resource)
+        {
+            auto& edid_endpoint = nmos::fields::endpoint_base_edid(resource->data);
+
+            if (!edid_endpoint.is_null())
+            {
+                auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
+
+                if (!edid_binary.is_null())
+                {
+                    base_edid = edid_binary.as_string();
+                }
+            }
+        }
+
+        if (base_edid.has_value())
+        {
+            effective_edid = base_edid.value();
+        }
+        else
+        {
+            effective_edid = utility::string_t(edid_bytes, edid_bytes + sizeof(edid_bytes));
+        }
+
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Effective EDID is set for input " << input_id;
+    };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1410,5 +1503,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
-        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
+        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
+        .on_base_edid_changed(make_node_implementation_flowcompatibility_base_edid_put_handler(gate))
+        .on_base_edid_deleted(make_node_implementation_flowcompatibility_base_edid_delete_handler(gate))
+        .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.flowcompatibility_resources, gate));
 }

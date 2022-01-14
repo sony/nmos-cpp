@@ -235,21 +235,29 @@ namespace nmos
         // for flowcompatibility_api
         const web::json::field_as_array inputs{ U("inputs") };
         const web::json::field_as_array outputs{ U("outputs") };
+        const web::json::field_as_bool temporarily_locked{ U("temporarily_locked") };
+
+        // for properties
         const web::json::field_as_bool connected{ U("connected") };
         const web::json::field_as_bool edid_support{ U("edid_support") };
+        const web::json::field_as_object base_edid_properties{ U("base_edid") };
+        const web::json::field_as_object effective_edid_properties{ U("effective_edid") };
+        const web::json::field_as_object edid_properties{ U("edid") };
+
+        // for sender
+        const web::json::field_as_object active_constraints{ U("active_constraints") };
         const web::json::field_as_value active_constraint_sets{ U("active_constraint_sets") }; // object
         const web::json::field_as_value supported_param_constraints{ U("supported_param_constraints") }; // object
         const web::json::field_as_array parameter_constraints{ U("parameter_constraints") };
         const web::json::field_as_value status{ U("status") }; // object
         const web::json::field_as_string state{ U("state") };
-        const web::json::field_as_object base_edid_properties{ U("base_edid") };
-        const web::json::field_as_object effective_edid_properties{ U("effective_edid") };
-        const web::json::field_as_object edid_properties{ U("edid") };
+
+        // for EDID endpoints
         const web::json::field_as_value_or endpoint_base_edid{ U("endpoint_base_edid"), {} }; // object
         const web::json::field_as_value_or endpoint_effective_edid{ U("endpoint_effective_edid"), {} }; // object
         const web::json::field_as_value_or endpoint_edid{ U("endpoint_edid"), {} }; // object
         const web::json::field_as_value_or edid_binary{ U("edid_binary"), {} }; // string
-        const web::json::field_as_string edid_href{ U("edid_href") };
+        const web::json::field_as_value_or edid_href{ U("edid_href"), {} }; // string
 
         // NMOS Parameter Registers
 

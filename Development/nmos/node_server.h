@@ -6,6 +6,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/connection_api.h"
 #include "nmos/connection_activation.h"
+#include "nmos/flowcompatibility_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
@@ -57,6 +58,9 @@ namespace nmos
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
+            node_implementation& on_base_edid_changed(nmos::experimental::details::flowcompatibility_base_edid_put_handler base_edid_changed) { this->base_edid_changed = std::move(base_edid_changed); return *this; }
+            node_implementation& on_base_edid_deleted(nmos::experimental::details::flowcompatibility_base_edid_delete_handler base_edid_deleted) { this->base_edid_deleted = std::move(base_edid_deleted); return *this; }
+            node_implementation& on_set_effective_edid(nmos::experimental::details::flowcompatibility_effective_edid_setter set_effective_edid) { this->set_effective_edid = std::move(set_effective_edid); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -86,6 +90,10 @@ namespace nmos
             nmos::channelmapping_activation_handler channelmapping_activated;
 
             nmos::ocsp_response_handler get_ocsp_response;
+
+            nmos::experimental::details::flowcompatibility_base_edid_put_handler base_edid_changed;
+            nmos::experimental::details::flowcompatibility_base_edid_delete_handler base_edid_deleted;
+            nmos::experimental::details::flowcompatibility_effective_edid_setter set_effective_edid;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API
