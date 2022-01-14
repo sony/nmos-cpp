@@ -375,6 +375,10 @@ namespace web
                 value_init(bool b) : value(b) {}
                 value_init(utility::string_t s) : value(std::move(s)) {}
                 value_init(const utility::char_t* s) : value(s) {}
+
+            private:
+                // this prevents the surprising implicit conversion from e.g. char* to bool
+                template <typename T> value_init(T*) = delete;
             };
         }
 
