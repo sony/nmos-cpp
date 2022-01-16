@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "array",
+  "description": "Describes the Flow Compatibility Management API /receivers/{receiverId} base resource",
+  "title": "Flow Compatibility Management API /receivers/{receiverId} base resource",
+  "items": {
+    "type": "string",
+    "enum": [
+      "outputs/",
+      "status/"
+    ]
+  },
+  "minItems": 2,
+  "maxItems": 2,
+  "uniqueItems": true
+}

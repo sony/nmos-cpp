@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "description": "Describes an Output",
+  "title": "Output resource",
+  "allOf": [
+    { "$ref": "https://raw.githubusercontent.com/AMWA-TV/nmos-discovery-registration/v1.3.1/APIs/schemas/resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "connected",
+        "edid_support"
+      ],
+      "properties": {
+        "connected": {
+          "description": "Whether the downstream counterpart of this Output is connected",
+          "type": "boolean"
+        },
+        "edid": { "$ref": "edid.json" },
+        "edid_support": {
+          "description": "Whether the Output supports EDID",
+          "type": "boolean"
+        }
+      }
+    }
+  ]
+}

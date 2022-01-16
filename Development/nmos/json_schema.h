@@ -29,6 +29,8 @@ namespace nmos
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version);
 
+        web::uri make_flowcompatibilityapi_senders_active_constraints_put_request_uri(const nmos::api_version& version);
+
         // load the json schema for the specified base URI
         web::json::value load_json_schema(const web::uri& id);
     }

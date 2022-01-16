@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Describes a Receiver with Constraint Sets",
+  "title": "Receiver with Constraint Sets",
+  "type": "object",
+  "required": [
+    "caps"
+  ],
+  "properties": {
+    "caps": {
+      "description": "Capabilities",
+      "type": "object",
+      "dependencies": {
+        "constraint_sets": [
+          "version"
+        ]
+      },
+      "properties": {
+        "version": {
+          "description": "String formatted TAI timestamp (<seconds>:<nanoseconds>) indicating when an attribute of the 'caps' object last changed",
+          "type": "string",
+          "pattern": "^[0-9]+:[0-9]+$"
+        },
+        "constraint_sets": {
+          "$ref": "constraint_sets.json"
+        }
+      }
+    }
+  }
+}

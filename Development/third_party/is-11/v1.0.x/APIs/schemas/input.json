@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "description": "Describes an Input",
+  "title": "Input resource",
+  "allOf": [
+    { "$ref": "https://raw.githubusercontent.com/AMWA-TV/nmos-discovery-registration/v1.3.1/APIs/schemas/resource_core.json" },
+    {
+      "type": "object",
+      "required": [
+        "connected",
+        "edid_support"
+      ],
+      "properties": {
+        "base_edid": { "$ref": "edid.json" },
+        "connected": {
+          "description": "Whether the upstream counterpart of this Input is connected",
+          "type": "boolean"
+        },
+        "edid_support": {
+          "description": "Whether the Input supports EDID",
+          "type": "boolean"
+        },
+        "effective_edid": { "$ref": "edid.json" }
+      }
+    }
+  ]
+}

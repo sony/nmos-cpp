@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "description": "Status of Receiver",
+  "required": [
+    "state"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "No Transport File",
+        "OK",
+        "Receiver Capabilities Violation"
+      ]
+    }
+  }
+}
