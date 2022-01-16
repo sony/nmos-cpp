@@ -14,6 +14,8 @@ namespace nmos
 
     namespace experimental
     {
+        web::json::value make_flowcompatibility_active_constraints_endpoint(const web::json::value& constraint_sets, bool locked = false);
+
         nmos::resource make_flowcompatibility_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& param_constraints);
         nmos::resource make_flowcompatibility_receiver(const nmos::id& id, const std::vector<nmos::id>& outputs);
 

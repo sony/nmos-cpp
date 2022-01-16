@@ -245,7 +245,7 @@ namespace nmos
         const web::json::field_as_object edid_properties{ U("edid") };
 
         // for sender
-        const web::json::field_as_object active_constraints{ U("active_constraints") };
+        const web::json::field_as_value endpoint_active_constraints{ U("endpoint_active_constraints") }; // object
         const web::json::field_as_value active_constraint_sets{ U("active_constraint_sets") }; // object
         const web::json::field_as_value supported_param_constraints{ U("supported_param_constraints") }; // object
         const web::json::field_as_array parameter_constraints{ U("parameter_constraints") };

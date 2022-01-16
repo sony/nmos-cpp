@@ -1386,6 +1386,17 @@ nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_i
     };
 }
 
+// Example Flow Compatibility Management API callback to update active constraints
+nmos::experimental::details::flowcompatibility_active_constraints_put_handler make_node_implementation_active_constraints_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::id& sender_id, const web::json::value& constraint_sets) -> bool
+    {
+        bool sender_can_adhere = true;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active constraints are updated for sender " << sender_id;
+        return sender_can_adhere;
+    };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1506,5 +1517,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_base_edid_changed(make_node_implementation_flowcompatibility_base_edid_put_handler(gate))
         .on_base_edid_deleted(make_node_implementation_flowcompatibility_base_edid_delete_handler(gate))
-        .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.flowcompatibility_resources, gate));
+        .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.flowcompatibility_resources, gate))
+        .on_active_constraints_changed(make_node_implementation_active_constraints_handler(gate));
 }

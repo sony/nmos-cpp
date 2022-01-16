@@ -1,7 +1,7 @@
 #include "nmos/flowcompatibility_resources.h"
 
-#include <set>
-#include "nmos/capabilities.h"
+#include <unordered_set>
+#include "nmos/capabilities.h" // for nmos::fields::constraint_sets
 #include "nmos/is11_versions.h"
 #include "nmos/resource.h"
 
@@ -9,13 +9,27 @@ namespace nmos
 {
     namespace experimental
     {
+        web::json::value make_flowcompatibility_active_constraints_endpoint(const web::json::value& constraint_sets, bool locked)
+        {
+            using web::json::value_of;
+
+            auto active_constraint_sets = value_of({
+                { nmos::fields::constraint_sets, constraint_sets },
+            });
+
+            return value_of({
+                { nmos::fields::active_constraint_sets, active_constraint_sets },
+                { nmos::fields::temporarily_locked, locked },
+            });
+        }
+
         nmos::resource make_flowcompatibility_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& param_constraints)
         {
             using web::json::value;
             using web::json::value_of;
             using web::json::value_from_elements;
 
-            std::set<utility::string_t> parameter_constraints{
+            std::unordered_set<utility::string_t> parameter_constraints{
                 nmos::caps::meta::label.key,
                 nmos::caps::meta::preference.key,
                 nmos::caps::meta::enabled.key,
@@ -38,10 +52,6 @@ namespace nmos
                 { nmos::fields::state, U("Unconstrained") },
             });
 
-            auto active_constraint_sets = value_of({
-                { nmos::fields::constraint_sets, value::array() },
-            });
-
             auto supported_param_constraints = value_of({
                 { nmos::fields::parameter_constraints, value_from_elements(parameter_constraints) },
             });
@@ -49,7 +59,7 @@ namespace nmos
             auto data = value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::active_constraint_sets, active_constraint_sets },
+                { nmos::fields::endpoint_active_constraints, make_flowcompatibility_active_constraints_endpoint(value::array()) },
                 { nmos::fields::inputs, value_from_elements(inputs) },
                 { nmos::fields::supported_param_constraints, supported_param_constraints },
                 { nmos::fields::status, status },
