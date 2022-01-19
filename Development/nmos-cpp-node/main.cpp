@@ -143,12 +143,7 @@ int main(int argc, char* argv[])
     catch (const std::ios_base::failure& e)
     {
         // most likely from failing to open the command line settings file
-        slog::log<slog::severities::error>(gate, SLOG_FLF) << "File error: " << e.what()
-#if !defined(__GNUC__) || __GNUC__ > 4
-            // std::ios_base::failure doesn't derive from std::system_error until GCC 5
-            << " [" << e.code() << "]"
-#endif
-            ;
+        slog::log<slog::severities::error>(gate, SLOG_FLF) << "File error: " << e.what();
         return 1;
     }
     catch (const std::system_error& e)
