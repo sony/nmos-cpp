@@ -183,7 +183,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
     catch (const web::json::json_exception& e)
     {
-        // most likely from incorrect syntax or incorrect value types in the command line settings
+        // most likely from incorrect value types in the command line settings
         slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what();
     }
     catch (const std::system_error& e)
