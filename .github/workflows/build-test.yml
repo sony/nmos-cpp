@@ -79,8 +79,6 @@ jobs:
       if: matrix.use_conan == true
       run: |
         pip install conan
-        # override default 'semver_direct_mode' due to boost
-        conan config set general.default_package_id_mode=minor_mode
         conan config set general.revisions_enabled=1
     
     - name: install cmake
@@ -484,8 +482,6 @@ jobs:
       if: matrix.use_conan == true
       run: |
         pip install conan
-        # override default 'semver_direct_mode' due to boost
-        conan config set general.default_package_id_mode=minor_mode
         conan config set general.revisions_enabled=1
     
     - name: install cmake
