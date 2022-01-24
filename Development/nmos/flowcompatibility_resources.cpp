@@ -4,6 +4,7 @@
 #include "nmos/capabilities.h" // for nmos::fields::constraint_sets
 #include "nmos/is11_versions.h"
 #include "nmos/resource.h"
+#include "nmos/flowcompatibility_state.h"
 
 namespace nmos
 {
@@ -20,6 +21,20 @@ namespace nmos
             return value_of({
                 { nmos::fields::active_constraint_sets, active_constraint_sets },
                 { nmos::fields::temporarily_locked, locked },
+            });
+        }
+
+        web::json::value make_flowcompatibility_sender_status_endpoint(nmos::sender_state sender_state, nmos::signal_state signal_state)
+        {
+            using web::json::value_of;
+
+            auto sender_status = value_of({
+                { nmos::fields::state, sender_state.name },
+            });
+
+            return value_of({
+                { nmos::fields::status, sender_status },
+                { nmos::fields::signal_state, signal_state.name },
             });
         }
 
@@ -48,10 +63,6 @@ namespace nmos
 
             parameter_constraints.insert(param_constraints.begin(), param_constraints.end());
 
-            auto status = value_of({
-                { nmos::fields::state, U("Unconstrained") },
-            });
-
             auto supported_param_constraints = value_of({
                 { nmos::fields::parameter_constraints, value_from_elements(parameter_constraints) },
             });
@@ -62,7 +73,7 @@ namespace nmos
                 { nmos::fields::endpoint_active_constraints, make_flowcompatibility_active_constraints_endpoint(value::array()) },
                 { nmos::fields::inputs, value_from_elements(inputs) },
                 { nmos::fields::supported_param_constraints, supported_param_constraints },
-                { nmos::fields::status, status },
+                { nmos::fields::endpoint_status, make_flowcompatibility_sender_status_endpoint(nmos::sender_states::unconstrained, nmos::signal_states::signal_is_present) },
             });
 
             return{ is11_versions::v1_0, types::sender, std::move(data), id, false };
@@ -73,15 +84,19 @@ namespace nmos
             using web::json::value_of;
             using web::json::value_from_elements;
 
-            auto status = value_of({
-                { nmos::fields::state, U("OK") },
+            auto receiver_status = value_of({
+                { nmos::fields::state, nmos::receiver_states::no_transport_file.name },
+            });
+
+            auto endpoint_status = value_of({
+                { nmos::fields::status, receiver_status },
             });
 
             auto data = value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
                 { nmos::fields::outputs, value_from_elements(outputs) },
-                { nmos::fields::status, status },
+                { nmos::fields::endpoint_status, endpoint_status },
             });
 
             return{ is11_versions::v1_0, types::receiver, std::move(data), id, false };

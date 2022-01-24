@@ -906,7 +906,6 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/certificate_handlers.cpp
     nmos/channelmapping_activation.cpp
     nmos/channelmapping_api.cpp
-    nmos/flowcompatibility_resources.cpp
     nmos/channelmapping_resources.cpp
     nmos/channels.cpp
     nmos/client_utils.cpp
@@ -915,6 +914,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
+    nmos/constraints.cpp
     nmos/did_sdid.cpp
     nmos/events_api.cpp
     nmos/events_resources.cpp
@@ -922,6 +922,9 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/events_ws_client.cpp
     nmos/filesystem_route.cpp
     nmos/flowcompatibility_api.cpp
+    nmos/flowcompatibility_behaviour.cpp
+    nmos/flowcompatibility_resources.cpp
+    nmos/flowcompatibility_utils.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
     nmos/lldp_handler.cpp
@@ -987,6 +990,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
+    nmos/constraints.h
     nmos/device_type.h
     nmos/did_sdid.h
     nmos/event_type.h
@@ -996,7 +1000,9 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/events_ws_client.h
     nmos/filesystem_route.h
     nmos/flowcompatibility_api.h
+    nmos/flowcompatibility_behaviour.h
     nmos/flowcompatibility_resources.h
+    nmos/flowcompatibility_utils.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
@@ -1048,6 +1054,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/resources.h
     nmos/schemas_api.h
     nmos/sdp_utils.h
+    nmos/flowcompatibility_state.h
     nmos/server.h
     nmos/server_utils.h
     nmos/settings.h

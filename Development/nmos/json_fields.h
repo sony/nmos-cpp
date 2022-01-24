@@ -249,6 +249,10 @@ namespace nmos
         const web::json::field_as_value active_constraint_sets{ U("active_constraint_sets") }; // object
         const web::json::field_as_value supported_param_constraints{ U("supported_param_constraints") }; // object
         const web::json::field_as_array parameter_constraints{ U("parameter_constraints") };
+
+        // for status
+        const web::json::field_as_value endpoint_status{ U("endpoint_status") }; // object
+        const web::json::field_as_string signal_state{ U("signal_state") };
         const web::json::field_as_value status{ U("status") }; // object
         const web::json::field_as_string state{ U("state") };
 

@@ -6,6 +6,7 @@
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
 #include "nmos/flowcompatibility_api.h"
+#include "nmos/flowcompatibility_behaviour.h"
 #include "nmos/logging_api.h"
 #include "nmos/manifest_api.h"
 #include "nmos/model.h"
@@ -110,7 +111,8 @@ namespace nmos
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
-                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
+                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); },
+                [&] { nmos::experimental::flowcompatibility_behaviour_thread(node_model, gate); }
             });
 
             auto system_changed = node_implementation.system_changed;

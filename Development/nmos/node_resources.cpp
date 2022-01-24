@@ -115,7 +115,7 @@ namespace nmos
                     .set_scheme(nmos::http_scheme(settings))
                     .set_port(nmos::fields::flowcompatibility_port(settings))
                     .set_path(U("/x-nmos/flowcompatibility/") + make_api_version(version));
-                auto type = U("urn:x-nmos:control:fcm/") + make_api_version(version);
+                auto type = U("urn:x-nmos:control:fc-ctrl/") + make_api_version(version);
 
                 for (const auto& host : hosts)
                 {

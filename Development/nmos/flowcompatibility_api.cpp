@@ -1,4 +1,5 @@
 #include "nmos/flowcompatibility_api.h"
+#include "nmos/flowcompatibility_utils.h"
 
 #include <unordered_set>
 #include <boost/range/adaptor/filtered.hpp>
@@ -84,24 +85,6 @@ namespace nmos
                 return true;
             }
 
-            // it's expected that read lock is already catched for the model
-            void update_version(nmos::resources& resources, const nmos::id& resource_id, const utility::string_t& new_version)
-            {
-                modify_resource(resources, resource_id, [&new_version](nmos::resource& resource)
-                {
-                    resource.data[nmos::fields::version] = web::json::value::string(new_version);
-                });
-            }
-
-            // it's expected that read lock is already catched for the model
-            void update_version(nmos::resources& resources, const web::json::array& resource_ids, const utility::string_t& new_version)
-            {
-                for (const auto& resource_id : resource_ids)
-                {
-                    update_version(resources, resource_id.as_string(), new_version);
-                }
-            }
-
             // it's expected that write lock is already catched for the model and an input with the resource_id exists
             void update_effective_edid(nmos::node_model& model, const flowcompatibility_effective_edid_setter& effective_edid_setter, const utility::string_t resource_id)
             {
@@ -174,7 +157,7 @@ namespace nmos
                     sender.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                 });
 
-                details::update_version(model.node_resources, sender_id, updated_timestamp);
+                update_version(model.node_resources, sender_id, updated_timestamp);
 
                 if (effective_edid_setter)
                 {
@@ -400,7 +383,7 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    set_reply(res, status_codes::OK, nmos::fields::status(resource->data));
+                    set_reply(res, status_codes::OK, nmos::fields::status(nmos::fields::endpoint_status(resource->data)));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
@@ -501,6 +484,7 @@ namespace nmos
                 {
                     auto data = resource->data;
 
+                    // EDID endpoints hold information about EDID binary and they shouldn't be included in the response
                     if (nmos::types::input == nmos::type_from_resourceType(resourceType))
                     {
                         if (!nmos::fields::endpoint_base_edid(resource->data).is_null())
@@ -665,7 +649,7 @@ namespace nmos
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                             });
 
-                            details::update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
+                            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
 
                             if (effective_edid_setter)
                             {
@@ -746,7 +730,7 @@ namespace nmos
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
                             });
 
-                            details::update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
+                            update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
 
                             if (effective_edid_setter)
                             {
@@ -823,7 +807,7 @@ namespace nmos
 
                                 if (can_adhere)
                                 {
-                                    details::set_active_constraints(model, resourceId, data, effective_edid_setter);
+                                    details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(data), effective_edid_setter);
                                     set_reply(res, status_codes::OK, data);
                                 }
                                 else
