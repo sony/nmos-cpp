@@ -415,8 +415,10 @@ namespace sdp
                         auto v = web::json::value::object(keep_order);
 
                         const auto colon = s.find(':');
-                        // empty <token> for <att-field> (before the colon) is prohibited
                         const auto name = utility::s2us(s.substr(0, colon));
+
+                        // empty <token> for <att-field> (before the colon) is prohibited
+                        if (name.empty()) throw sdp_parse_error("expected an attribute name");
 
                         v[sdp::fields::name] = web::json::value::string(name);
 
@@ -792,14 +794,21 @@ namespace sdp
 
     web::json::value read_equals_value(std::istream& is, const grammar::converter& value_converter)
     {
+        // RFC 4566 section 5 requires that every line is "of the form: <type>=<value>"
+        // and this is confirmed by the ABNF in section 9
         if ('=' != is.get()) throw sdp_parse_error("expected '='");
 
-        std::string line;
-        std::getline(is, line, '\n');
-        if ('\r' == line.back()) line.pop_back();
-        // else throw sdp_parse_error("expected CRLF");
+        // RFC 4566 section 5 specifies that "CRLF is used to end a record, although parsers SHOULD be tolerant
+        // and also accept records terminated with a single newline charcter."
+        std::string value;
+        std::getline(is, value, '\n');
+        if (!value.empty() && '\r' == value.back()) value.pop_back();
 
-        return value_converter.parse(line);
+        // RFC 4566 section 5 doesn't specify that the value must not be empty although the ABNF in section 9
+        // ultimately prohibits empty values even for "s=" and "i=" lines
+        //if (value.empty()) throw sdp_parse_error("expected a value after '='");
+
+        return value_converter.parse(value);
     }
 
     void read_line(std::istream& is, int& line_number, web::json::value& line, const grammar::line& grammar)

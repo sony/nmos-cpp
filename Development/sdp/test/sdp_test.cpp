@@ -272,8 +272,14 @@ BST_TEST_CASE(testSdpParseErrors)
 
     // appending just a single 'a' results in an "sdp parse error - expected '=' at line 5"
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "a"), std::runtime_error);
-    // appending a complete 'a' line (even without a final CRLF) parses successfully
+    // appending the '=' as well results in an "sdp parse error - expected an attribute name at line 5"
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "a="), std::runtime_error);
+    // appending a valid "a=<flag>" form line (even without a final CRLF) parses successfully
     BST_REQUIRE_EQUAL(5, sdp::parse_session_description(enough + "a=foo").size());
+    // appending an invalid "a=<attribute>:<value>" form line results in an "sdp parse error - expected an attribute value after ':' at line 5"
+    BST_REQUIRE_THROW(sdp::parse_session_description(enough + "a=foo:"), std::runtime_error);
+    // appending a valid "a=<attribute>:<value>" line also parses successfully
+    BST_REQUIRE_EQUAL(5, sdp::parse_session_description(enough + "a=foo:bar").size());
 
     // appending an invalid type character results in "sdp parse error - unexpected characters before end-of-file at line 5"
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "x"), std::runtime_error);
