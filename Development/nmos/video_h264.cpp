@@ -1,5 +1,7 @@
 #include "nmos/video_h264.h"
 
+#include <iomanip>
+
 namespace nmos
 {
     sdp::packetization_mode make_sdp_packetization_mode(const packetization_mode& packetization_mode)
