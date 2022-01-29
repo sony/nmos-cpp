@@ -40,6 +40,7 @@
 #include "nmos/system_resources.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
+#include "nmos/video_h264.h"
 #include "sdp/sdp.h"
 
 // example node implementation details
@@ -343,13 +344,16 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             nmos::resource flow;
             if (impl::ports::video == port)
             {
-                flow = nmos::make_raw_video_flow(
+                flow = nmos::make_coded_video_flow(
                     flow_id, source_id, device_id,
                     frame_rate,
                     frame_width, frame_height, interlace_mode,
-                    colorspace, transfer_characteristic, sampling, bit_depth,
+                    colorspace, transfer_characteristic, nmos::media_types::video_H264,
                     model.settings
                 );
+                flow.data[nmos::fields::components] = nmos::make_components(sampling, frame_width, frame_height, bit_depth);
+                // Baseline Profile, Level 1
+                flow.data[nmos::fields::profile_level_id] = value(0x42000A);
             }
             else if (impl::ports::audio == port)
             {
@@ -378,6 +382,10 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
 
             const auto manifest_href = nmos::experimental::make_manifest_api_manifest(sender_id, model.settings);
             auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::rtp, device_id, manifest_href.to_string(), interface_names, model.settings);
+            if (impl::ports::video == port)
+            {
+                sender.data[nmos::fields::packetization_mode] = value(nmos::packetization_modes::single_nal_unit_mode.name);
+            }
             impl::set_label_description(sender, port, index);
             impl::insert_group_hint(sender, port, index);
 
@@ -418,6 +426,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             if (impl::ports::video == port)
             {
                 receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, model.settings);
+                receiver.data[U("caps")][U("media_types")][0] = value::string(nmos::media_types::video_H264.name);
                 // add an example constraint set; these should be completed fully!
                 const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
                     ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
@@ -428,7 +437,8 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                         { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
                         { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
                         { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
+                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) },
+                        { nmos::caps::transport::packetization_mode, nmos::make_caps_string_constraint({ nmos::packetization_modes::single_nal_unit_mode.name }) }
                     })
                 });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
@@ -903,9 +913,13 @@ nmos::registration_handler make_node_implementation_registration_handler(slog::b
 // Example Connection API callback to parse "transport_file" during a PATCH /staged request
 nmos::transport_file_parser make_node_implementation_transport_file_parser()
 {
-    // this example uses the default transport file parser explicitly
-    // (if this callback is specified, an 'empty' std::function is not allowed)
-    return &nmos::parse_rtp_transport_file;
+    return [](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
+    {
+        // hmm, handle video/H264 here as well as other required formats
+        // see nmos::validate_sdp_parameters
+        const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params) {};
+        return nmos::details::parse_rtp_transport_file(validate_sdp_parameters, receiver, connection_receiver, transport_file_type, transport_file_data, gate);
+    };
 }
 
 // Example Connection API callback to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
@@ -1014,7 +1028,12 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                 const nmos::format format{ nmos::fields::format(flow->data) };
                 if (nmos::formats::video == format)
                 {
-                    return nmos::make_video_sdp_parameters(node->data, source->data, flow->data, sender.data, nmos::details::payload_type_video_default, mids, {}, sdp::type_parameters::type_N);
+                    const nmos::video_H264_parameters params{
+                        nmos::fields::profile_level_id(flow->data),
+                        nmos::make_sdp_packetization_mode(nmos::packetization_mode{ nmos::fields::packetization_mode(sender.data) }),
+                        {}
+                    };
+                    return nmos::make_sdp_parameters(nmos::fields::label(sender.data), params, nmos::details::payload_type_video_default, mids, {});
                 }
                 else if (nmos::formats::audio == format)
                 {
