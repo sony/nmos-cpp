@@ -89,7 +89,7 @@ namespace nmos
             void update_effective_edid(nmos::node_model& model, const flowcompatibility_effective_edid_setter& effective_edid_setter, const utility::string_t resource_id)
             {
                 boost::variant<utility::string_t, web::uri> effective_edid;
-                bst::optional<web::json::value> effective_edid_properties = boost::none;
+                bst::optional<web::json::value> effective_edid_properties = bst::nullopt;
 
                 effective_edid_setter(resource_id, effective_edid, effective_edid_properties);
 
@@ -612,7 +612,7 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            bst::optional<web::json::value> base_edid_properties = boost::none;
+                            bst::optional<web::json::value> base_edid_properties = bst::nullopt;
 
                             const auto request_body = req.content_ready().get().extract_vector().get();
                             const utility::string_t base_edid{ request_body.begin(), request_body.end() };

@@ -1313,7 +1313,7 @@ nmos::experimental::details::flowcompatibility_base_edid_put_handler make_node_i
 {
     return [&gate](const nmos::id& input_id, const utility::string_t& base_edid, bst::optional<web::json::value>& base_edid_properties)
     {
-        base_edid_properties = boost::none;
+        base_edid_properties = bst::nullopt;
 
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for input " << input_id;
     };
@@ -1352,9 +1352,9 @@ nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_i
             0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
         };
 
-        effective_edid_properties = boost::none;
+        effective_edid_properties = bst::nullopt;
 
-        bst::optional<utility::string_t> base_edid = boost::none;
+        bst::optional<utility::string_t> base_edid = bst::nullopt;
 
         const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
         auto resource = find_resource(flowcompatibility_resources, id_type);
