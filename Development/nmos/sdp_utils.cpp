@@ -1418,7 +1418,7 @@ namespace nmos
             { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
             { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
             { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
-            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->tcs.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(!video->tcs.name.empty() ? video->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
 
             // Audio Constraints
@@ -1429,8 +1429,8 @@ namespace nmos
 
             // Transport Constraints
 
-            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.packet_time, con); } },
-            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.max_packet_time, con); } },
+            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return 0 == sdp.packet_time || nmos::match_number_constraint(sdp.packet_time, con); } },
+            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return 0 == sdp.max_packet_time || nmos::match_number_constraint(sdp.max_packet_time, con); } },
             { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { if (auto video = get_video(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = get_mux(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
         };
 #undef CAPS_ARGS

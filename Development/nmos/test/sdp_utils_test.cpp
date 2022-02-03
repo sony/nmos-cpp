@@ -88,9 +88,12 @@ BST_TEST_CASE(testValidateSdpParameters)
     using web::json::value_of;
 
     {
+        // omitting TCS should be treated as "SDR"
+        const sdp::transfer_characteristic_system omit_tcs;
+
         nmos::video_raw_parameters params{
             1920, 1080, nmos::rates::rate29_97, true, false, sdp::samplings::YCbCr_4_2_2, 10,
-            sdp::transfer_characteristic_systems::SDR,  sdp::colorimetries::BT2020,  sdp::type_parameters::type_N
+            omit_tcs,  sdp::colorimetries::BT2020,  sdp::type_parameters::type_N
         };
         auto sdp_params = nmos::make_video_raw_sdp_parameters(U("-"), params, nmos::details::payload_type_video_default);
 
