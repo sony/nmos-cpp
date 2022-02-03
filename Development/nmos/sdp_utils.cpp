@@ -525,7 +525,7 @@ namespace nmos
                 );
             }
 
-            // insert source-filter if source address is specified, depending on source_filters 
+            // insert source-filter if source address is specified, depending on source_filters
             // for now, when source_filters does not contain an explicit value, the default is to include the source-filter attribute
             // another choice would be to do so only for source-specific multicast addresses (232.0.0.0-232.255.255.255)
             const auto& source_ip = nmos::fields::source_ip(transport_param);
@@ -1405,7 +1405,7 @@ namespace nmos
         {
             // General Constraints
 
-            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
+            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(get_media_type(sdp).name, con); } },
             // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
             // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
             { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto video = get_video(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
