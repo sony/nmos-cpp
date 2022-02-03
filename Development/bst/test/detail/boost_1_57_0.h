@@ -51,6 +51,7 @@ PRAGMA_WARNING_POP
 #define BST_CHECK_GT(expected, actual) BOOST_CHECK_GT(expected, actual)
 #define BST_CHECK_GE(expected, actual) BOOST_CHECK_GE(expected, actual)
 #define BST_CHECK_THROW(expr, exception) BOOST_CHECK_THROW(expr, exception)
+#define BST_CHECK_NO_THROW(expr) BOOST_CHECK_NO_THROW(expr)
 #define BST_REQUIRE(expr) BOOST_REQUIRE(expr)
 #define BST_REQUIRE_EQUAL(expected, actual) BOOST_REQUIRE_EQUAL(expected, actual)
 #define BST_REQUIRE_NE(expected, actual) BOOST_REQUIRE_NE(expected, actual)
@@ -59,6 +60,7 @@ PRAGMA_WARNING_POP
 #define BST_REQUIRE_GT(expected, actual) BOOST_REQUIRE_GT(expected, actual)
 #define BST_REQUIRE_GE(expected, actual) BOOST_REQUIRE_GE(expected, actual)
 #define BST_REQUIRE_THROW(expr, exception) BOOST_REQUIRE_THROW(expr, exception) 
+#define BST_REQUIRE_NO_THROW(expr) BOOST_REQUIRE_NO_THROW(expr)
 #define BST_WARN(expr) BOOST_WARN(expr)
 #define BST_WARN_EQUAL(expected, actual) BOOST_WARN_EQUAL(expected, actual)
 #define BST_WARN_NE(expected, actual) BOOST_WARN_NE(expected, actual)
@@ -66,6 +68,8 @@ PRAGMA_WARNING_POP
 #define BST_WARN_LE(expected, actual) BOOST_WARN_LE(expected, actual)
 #define BST_WARN_GT(expected, actual) BOOST_WARN_GT(expected, actual)
 #define BST_WARN_GE(expected, actual) BOOST_WARN_GE(expected, actual)
+#define BST_WARN_THROW(expr, exception) BOOST_WARN_THROW(expr, exception) 
+#define BST_WARN_NO_THROW(expr) BOOST_WARN_NO_THROW(expr)
 
 // Explicit STRING macros to work around the different behaviours of the frameworks when comparing two char* or wchar_t*
 #define BST_CHECK_STRING_EQUAL(expected, actual) BOOST_CHECK_EQUAL(expected, actual)

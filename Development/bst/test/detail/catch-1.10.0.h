@@ -53,7 +53,9 @@ PRAGMA_WARNING_POP
 #define CATCH_CHECK_CATCH_AS( exceptionType )           INTERNAL_CATCH_CATCH_AS( exceptionType )
 #define CATCH_CHECK_CATCH_AS_NOFAIL( exceptionType )    INTERNAL_CATCH_CATCH_AS( exceptionType )
 
+#define CATCH_CHECK_THROWS_NOFAIL( expr )  INTERNAL_CATCH_THROWS( "CATCH_CHECK_THROWS_NOFAIL", Catch::ResultDisposition::ContinueOnFailure | Catch::ResultDisposition::SuppressFail, "", expr )
 #define CATCH_CHECK_THROWS_AS_NOFAIL( expr, exceptionType ) INTERNAL_CATCH_THROWS_AS( "CATCH_CHECK_THROWS_AS_NOFAIL", exceptionType, Catch::ResultDisposition::ContinueOnFailure | Catch::ResultDisposition::SuppressFail, expr )
+#define CATCH_CHECK_NOTHROW_NOFAIL( expr ) INTERNAL_CATCH_NO_THROW( "CATCH_CHECK_NOTHROW_NOFAIL", Catch::ResultDisposition::ContinueOnFailure | Catch::ResultDisposition::SuppressFail, expr )
 
 // If CATCH_CONFIG_PREFIX_ALL is not defined then the CATCH_ prefix is not required
 #else
@@ -66,7 +68,9 @@ PRAGMA_WARNING_POP
 #define CHECK_CATCH_AS( exceptionType )           INTERNAL_CATCH_CATCH_AS( exceptionType )
 #define CHECK_CATCH_AS_NOFAIL( exceptionType )    INTERNAL_CATCH_CATCH_AS( exceptionType )
 
+#define CHECK_THROWS_NOFAIL( expr )  INTERNAL_CATCH_THROWS( "CHECK_THROWS_NOFAIL", Catch::ResultDisposition::ContinueOnFailure | Catch::ResultDisposition::SuppressFail, "", expr )
 #define CHECK_THROWS_AS_NOFAIL( expr, exceptionType ) INTERNAL_CATCH_THROWS_AS( "CHECK_THROWS_AS_NOFAIL", exceptionType, Catch::ResultDisposition::ContinueOnFailure | Catch::ResultDisposition::SuppressFail, expr )
+#define CHECK_NOTHROW_NOFAIL( expr ) INTERNAL_CATCH_NO_THROW( "CHECK_NOTHROW_NOFAIL", Catch::ResultDisposition::ContinueOnFailure | Catch::ResultDisposition::SuppressFail, expr )
 
 #endif
 //- Break INTERNAL_CATCH_THROWS_AS in two so the statement can contain commas, etc.
@@ -231,6 +235,7 @@ PRAGMA_WARNING_POP
 #define BST_CHECK_GT(expected, actual) CATCH_CHECK((expected) > (actual))
 #define BST_CHECK_GE(expected, actual) CATCH_CHECK((expected) >= (actual))
 #define BST_CHECK_THROW(expr, exception) CATCH_CHECK_THROWS_AS(expr, exception)
+#define BST_CHECK_NO_THROW(expr) CATCH_CHECK_NOTHROW(expr)
 #define BST_REQUIRE(expr) CATCH_REQUIRE(expr)
 #define BST_REQUIRE_EQUAL(expected, actual) CATCH_REQUIRE((expected) == (actual))
 #define BST_REQUIRE_NE(expected, actual) CATCH_REQUIRE((expected) != (actual))
@@ -239,6 +244,7 @@ PRAGMA_WARNING_POP
 #define BST_REQUIRE_GT(expected, actual) CATCH_REQUIRE((expected) > (actual))
 #define BST_REQUIRE_GE(expected, actual) CATCH_REQUIRE((expected) >= (actual))
 #define BST_REQUIRE_THROW(expr, exception) CATCH_REQUIRE_THROWS_AS(expr, exception)
+#define BST_REQUIRE_NO_THROW(expr) CATCH_REQUIRE_NOTHROW(expr)
 #define BST_WARN(expr) CATCH_CHECK_NOFAIL(expr)
 #define BST_WARN_EQUAL(expected, actual) CATCH_CHECK_NOFAIL((expected) == (actual))
 #define BST_WARN_NE(expected, actual) CATCH_CHECK_NOFAIL((expected) != (actual))
@@ -246,6 +252,8 @@ PRAGMA_WARNING_POP
 #define BST_WARN_LE(expected, actual) CATCH_CHECK_NOFAIL((expected) <= (actual))
 #define BST_WARN_GT(expected, actual) CATCH_CHECK_NOFAIL((expected) > (actual))
 #define BST_WARN_GE(expected, actual) CATCH_CHECK_NOFAIL((expected) >= (actual))
+#define BST_WARN_THROW(expr, exception) CATCH_CHECK_THROWS_AS_NOFAIL(expr, exception) 
+#define BST_WARN_NO_THROW(expr) CATCH_CHECK_NOTHROW_NOFAIL(expr)
 
 // Explicit STRING macros to work around the different behaviours of the frameworks when comparing two char* or wchar_t*
 namespace bst_test_detail
