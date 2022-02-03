@@ -1287,6 +1287,7 @@ namespace nmos
 
         params.sample_rate = sdp_params.rtpmap.clock_rate;
         params.channel_count = (uint32_t)sdp_params.rtpmap.encoding_parameters;
+        if (0 == params.channel_count) params.channel_count = 1;
 
         // optional
         const auto channel_order = find_fmtp(sdp_params.fmtp, sdp::fields::channel_order);

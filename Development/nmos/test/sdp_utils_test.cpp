@@ -209,6 +209,39 @@ BST_TEST_CASE(testValidateSdpParameters)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpParametersRoundtrip)
+{
+    using web::json::value;
+
+    const std::string test_sdp = R"(v=0
+o=- 1643910985 1643910985 IN IP4 192.0.2.0
+s=SDP Example
+t=0 0
+m=video 5000 RTP/AVP 96
+c=IN IP4 233.252.0.0/32
+a=source-filter: incl IN IP4 233.252.0.0 192.0.2.0
+a=rtpmap:96 raw/90000
+)";
+
+    auto test_description = sdp::parse_session_description(test_sdp);
+    auto params = nmos::parse_session_description(test_description);
+    params.second[0][nmos::fields::interface_ip] = value::string(U("192.0.2.0"));
+    auto session_description = nmos::make_session_description(params.first, params.second);
+
+    auto test_sdp2 = sdp::make_session_description(session_description);
+    std::istringstream expected(test_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testInterpretationOfSdpFilesUnicast)
 {
     using web::json::value;
