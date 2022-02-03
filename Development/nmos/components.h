@@ -37,7 +37,7 @@ namespace nmos
 
     web::json::value make_component(const nmos::component_name& name, unsigned int width, unsigned int height, unsigned int bit_depth);
 
-    enum chroma_subsampling : int { YCbCr422, RGB444 };
+    enum chroma_subsampling : int { YCbCr422, RGB444, YCbCr444, YCbCr420 };
     // deprecated, see overload with sdp::sampling in nmos/sdp_utils.h
     web::json::value make_components(chroma_subsampling chroma_subsampling = YCbCr422, unsigned int frame_width = 1920, unsigned int frame_height = 1080, unsigned int bit_depth = 10);
 }

@@ -29,10 +29,22 @@ namespace nmos
                 make_component(component_names::B, frame_width, frame_height, bit_depth)
             });
         case YCbCr422:
-            return  value_of({
+            return value_of({
                 make_component(component_names::Y, frame_width, frame_height, bit_depth),
                 make_component(component_names::Cb, frame_width / 2, frame_height, bit_depth),
                 make_component(component_names::Cr, frame_width / 2, frame_height, bit_depth)
+            });
+        case YCbCr444:
+            return value_of({
+                make_component(component_names::Y, frame_width, frame_height, bit_depth),
+                make_component(component_names::Cb, frame_width, frame_height, bit_depth),
+                make_component(component_names::Cr, frame_width, frame_height, bit_depth)
+            });
+        case YCbCr420:
+            return value_of({
+                make_component(component_names::Y, frame_width, frame_height, bit_depth),
+                make_component(component_names::Cb, frame_width / 2, frame_height / 2, bit_depth),
+                make_component(component_names::Cr, frame_width / 2, frame_height / 2, bit_depth)
             });
         default:
             return web::json::value::null();
