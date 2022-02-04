@@ -1,10 +1,14 @@
 #ifndef NMOS_SDP_UTILS_H
 #define NMOS_SDP_UTILS_H
 
+#include <algorithm>
+#include <functional>
+#include <map>
+#include <stdexcept>
 #include "bst/optional.h"
-#include "cpprest/basic_utils.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
+#include "nmos/capabilities.h"
 #include "nmos/did_sdid.h"
 #include "nmos/rational.h"
 #include "nmos/vpid_code.h"
@@ -19,16 +23,23 @@ namespace nmos
 
     web::json::value make_components(const sdp::sampling& sampling, uint32_t width, uint32_t height, uint32_t depth);
 
-    // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
-    sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain);
+    // Construct SDP parameters from the IS-04 resources for "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
+    // using default values for unspecified items
 
+    // deprecated, use format-specific make_<media type/subtype>_parameters and then make_<media type/subtype>_sdp_parameters or equivalent overload of make_sdp_parameters
+    sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain);
     // deprecated, provided for backwards compatibility, because it may be necessary to also specify the PTP domain to generate an RFC 7273 'ts-refclk' attribute that meets the additional constraints of ST 2110-10
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids);
 
     // Construct SDP parameters for the specified format from the IS-04 resources, using default values for unspecified items
+
+    // deprecated, use make_video_raw_parameters and then make_video_raw_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp);
+    // deprecated, use make_audio_L_parameters and then make_audio_L_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time);
+    // deprecated, use make_video_smpte291_parameters and then make_video_smpte291_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code);
+    // deprecated, use make_video_SMPTE2022_6_parameters and then make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp);
 
     // Sender/Receiver helper functions
@@ -47,6 +58,7 @@ namespace nmos
     // Get SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     std::pair<sdp_parameters, web::json::value> parse_session_description(const web::json::value& session_description);
 
+    // Validate the SDP parameters against a receiver for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params);
 
     // Format-specific types
@@ -438,9 +450,55 @@ namespace nmos
         : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk))
     {}
 
-    // Helper functions for implementing format-specific make_<media type/subtype>_sdp_parameters functions
+    // Helper functions for implementing format-specific functions
     namespace details
     {
+        inline std::logic_error sdp_creation_error(const std::string& message)
+        {
+            return std::logic_error{ "sdp creation error - " + message };
+        }
+
+        inline std::runtime_error sdp_processing_error(const std::string& message)
+        {
+            return std::runtime_error{ "sdp processing error - " + message };
+        }
+
+        inline sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
+        {
+            return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
+            {
+                return param.first == name;
+            });
+        }
+        inline sdp_parameters::fmtp_t::iterator find_fmtp(sdp_parameters::fmtp_t& fmtp, const utility::string_t& name)
+        {
+            return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
+            {
+                return param.first == name;
+            });
+        }
+
+        template <typename FormatParameters>
+        using format_parameter_constraint = std::function<bool(const sdp_parameters& sdp, const FormatParameters& format, const web::json::value& con)>;
+
+        template <typename FormatParameters>
+        using format_parameter_constraints = std::map<utility::string_t, format_parameter_constraint<FormatParameters>>;
+
+        template <typename FormatParameters>
+        bool match_sdp_parameters_constraint_set(const format_parameter_constraints<FormatParameters>& format_constraints, const sdp_parameters& sdp_params, const FormatParameters& format_params, const web::json::value& constraint_set)
+        {
+            using web::json::value;
+
+            if (!nmos::caps::meta::enabled(constraint_set)) return false;
+
+            const auto& constraints = constraint_set.as_object();
+            return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
+            {
+                const auto found = format_constraints.find(constraint.first);
+                return format_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
+            });
+        }
+
         // Construct ts-refclk attributes for each leg based on the IS-04 resources
         std::vector<sdp_parameters::ts_refclk_t> make_ts_refclk(const web::json::value& node, const web::json::value& source, const web::json::value& sender, bst::optional<int> ptp_domain);
 

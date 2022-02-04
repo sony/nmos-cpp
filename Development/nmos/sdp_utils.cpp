@@ -1,6 +1,5 @@
 #include "nmos/sdp_utils.h"
 
-#include <map>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/range/adaptor/filtered.hpp>
@@ -10,7 +9,6 @@
 #include <boost/variant/get.hpp>
 #include <boost/variant/variant.hpp>
 #include "cpprest/basic_utils.h"
-#include "nmos/capabilities.h"
 #include "nmos/clock_ref_type.h"
 #include "nmos/channels.h"
 #include "nmos/components.h"
@@ -24,11 +22,6 @@ namespace nmos
 {
     namespace details
     {
-        std::logic_error sdp_creation_error(const std::string& message)
-        {
-            return std::logic_error{ "sdp creation error - " + message };
-        }
-
         std::pair<sdp::address_type, bool> get_address_type_multicast(const utility::string_t& address)
         {
 #if BOOST_VERSION >= 106600
@@ -223,6 +216,7 @@ namespace nmos
         return params;
     }
 
+    // deprecated, use make_video_raw_parameters and then make_video_raw_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_video_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
     {
         auto params = make_video_raw_parameters(node, source, flow, sender, tp);
@@ -255,6 +249,7 @@ namespace nmos
         return params;
     }
 
+    // deprecated, use make_audio_L_parameters and then make_audio_L_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_audio_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<double> packet_time)
     {
         auto params = make_audio_L_parameters(node, source, flow, sender, packet_time);
@@ -280,6 +275,7 @@ namespace nmos
         return params;
     }
 
+    // deprecated, use make_video_smpte291_parameters and then make_video_smpte291_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_data_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<nmos::vpid_code> vpid_code)
     {
         auto params = make_video_smpte291_parameters(node, source, flow, sender, vpid_code);
@@ -297,13 +293,17 @@ namespace nmos
         return params;
     }
 
+    // deprecated, use make_video_SMPTE2022_6_parameters and then make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_mux_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<uint64_t> payload_type, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain, bst::optional<sdp::type_parameter> tp)
     {
         auto params = make_video_SMPTE2022_6_parameters(node, source, flow, sender, tp);
         return{ nmos::fields::label(sender), params, payload_type ? *payload_type : details::payload_type_mux_default, !media_stream_ids.empty() ? media_stream_ids : details::make_media_stream_ids(sender), details::make_ts_refclk(node, source, sender, ptp_domain) };
     }
 
-    // Construct SDP parameters from the IS-04 resources, using default values for unspecified items
+    // Construct SDP parameters from the IS-04 resources for "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
+    // using default values for unspecified items
+
+    // deprecated, use format-specific make_<media type/subtype>_parameters and then make_<media type/subtype>_sdp_parameters or equivalent overload of make_sdp_parameters
     sdp_parameters make_sdp_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, const std::vector<utility::string_t>& media_stream_ids, bst::optional<int> ptp_domain)
     {
         const auto& format = nmos::fields::format(flow);
@@ -957,14 +957,6 @@ namespace nmos
         return transport_params;
     }
 
-    namespace details
-    {
-        std::runtime_error sdp_processing_error(const std::string& message)
-        {
-            return std::runtime_error{ "sdp processing error - " + message };
-        }
-    }
-
     // Get the additional (non-transport) SDP parameters from the json representation of an SDP file, e.g. from sdp::parse_session_description
     sdp_parameters get_session_description_sdp_parameters(const web::json::value& sdp)
     {
@@ -1191,14 +1183,6 @@ namespace nmos
         return sdp_params;
     }
 
-    static sdp_parameters::fmtp_t::const_iterator find_fmtp(const sdp_parameters::fmtp_t& fmtp, const utility::string_t& param_name)
-    {
-        return std::find_if(fmtp.begin(), fmtp.end(), [&](const sdp_parameters::fmtp_t::value_type& param)
-        {
-            return param.first == param_name;
-        });
-    }
-
     // Get additional "video/raw" parameters from the SDP parameters
     video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params)
     {
@@ -1209,11 +1193,11 @@ namespace nmos
         // See SMPTE ST 2110-20:2017 Section 7.2 Required Media Type Parameters
         // and Section 7.3 Media Type Parameters with default values
 
-        const auto width = find_fmtp(sdp_params.fmtp, sdp::fields::width);
+        const auto width = details::find_fmtp(sdp_params.fmtp, sdp::fields::width);
         if (sdp_params.fmtp.end() == width) throw details::sdp_processing_error("missing format parameter: width");
         params.width = utility::istringstreamed<uint32_t>(width->second);
 
-        const auto height = find_fmtp(sdp_params.fmtp, sdp::fields::height);
+        const auto height = details::find_fmtp(sdp_params.fmtp, sdp::fields::height);
         if (sdp_params.fmtp.end() == height) throw details::sdp_processing_error("missing format parameter: height");
         params.height = utility::istringstreamed<uint32_t>(height->second);
 
@@ -1222,28 +1206,28 @@ namespace nmos
             const auto slash = rational_string.find(U('/'));
             return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
         };
-        const auto exactframerate = find_fmtp(sdp_params.fmtp, sdp::fields::exactframerate);
+        const auto exactframerate = details::find_fmtp(sdp_params.fmtp, sdp::fields::exactframerate);
         if (sdp_params.fmtp.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
         params.exactframerate = parse_rational(exactframerate->second);
 
         // optional
-        const auto interlace = find_fmtp(sdp_params.fmtp, sdp::fields::interlace);
+        const auto interlace = details::find_fmtp(sdp_params.fmtp, sdp::fields::interlace);
         params.interlace = sdp_params.fmtp.end() != interlace;
 
         // optional
-        const auto segmented = find_fmtp(sdp_params.fmtp, sdp::fields::segmented);
+        const auto segmented = details::find_fmtp(sdp_params.fmtp, sdp::fields::segmented);
         params.segmented = sdp_params.fmtp.end() != segmented;
 
-        const auto sampling = find_fmtp(sdp_params.fmtp, sdp::fields::sampling);
+        const auto sampling = details::find_fmtp(sdp_params.fmtp, sdp::fields::sampling);
         if (sdp_params.fmtp.end() == sampling) throw details::sdp_processing_error("missing format parameter: sampling");
         params.sampling = sdp::sampling{ sampling->second };
 
-        const auto depth = find_fmtp(sdp_params.fmtp, sdp::fields::depth);
+        const auto depth = details::find_fmtp(sdp_params.fmtp, sdp::fields::depth);
         if (sdp_params.fmtp.end() == depth) throw details::sdp_processing_error("missing format parameter: depth");
         params.depth = utility::istringstreamed<uint32_t>(depth->second);
 
         // optional
-        const auto tcs = find_fmtp(sdp_params.fmtp, sdp::fields::transfer_characteristic_system);
+        const auto tcs = details::find_fmtp(sdp_params.fmtp, sdp::fields::transfer_characteristic_system);
         if (sdp_params.fmtp.end() != tcs)
         {
             params.tcs = sdp::transfer_characteristic_system{ tcs->second };
@@ -1251,7 +1235,7 @@ namespace nmos
         // else params.tcs = sdp::transfer_characteristic_systems::SDR;
         // but better to let the caller distinguish that it's been defaulted?
 
-        const auto colorimetry = find_fmtp(sdp_params.fmtp, sdp::fields::colorimetry);
+        const auto colorimetry = details::find_fmtp(sdp_params.fmtp, sdp::fields::colorimetry);
         if (sdp_params.fmtp.end() == colorimetry) throw details::sdp_processing_error("missing format parameter: colorimetry");
         params.colorimetry = sdp::colorimetry{ colorimetry->second };
 
@@ -1265,7 +1249,7 @@ namespace nmos
         // and Section 8.2 Optional Parameters
 
         // hmm, "TP" (type parameter) is required, but currently omitted by several vendors, so allow that for now...
-        const auto tp = find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
+        const auto tp = details::find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
         if (sdp_params.fmtp.end() != tp)
         {
             params.tp = sdp::type_parameter{ tp->second };
@@ -1290,7 +1274,7 @@ namespace nmos
         if (0 == params.channel_count) params.channel_count = 1;
 
         // optional
-        const auto channel_order = find_fmtp(sdp_params.fmtp, sdp::fields::channel_order);
+        const auto channel_order = details::find_fmtp(sdp_params.fmtp, sdp::fields::channel_order);
         if (sdp_params.fmtp.end() != channel_order)
         {
             params.channel_order = channel_order->second;
@@ -1318,7 +1302,7 @@ namespace nmos
         }));
 
         // optional
-        const auto vpid_code = find_fmtp(sdp_params.fmtp, sdp::fields::VPID_Code);
+        const auto vpid_code = details::find_fmtp(sdp_params.fmtp, sdp::fields::VPID_Code);
         if (sdp_params.fmtp.end() != vpid_code)
         {
             params.vpid_code = (nmos::vpid_code)utility::istringstreamed<uint32_t>(vpid_code->second);
@@ -1339,7 +1323,7 @@ namespace nmos
         // and Section 8.2 Optional Parameters
 
         // "TP" (type parameter) is required, but allow it to be omitted for now...
-        const auto tp = find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
+        const auto tp = details::find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
         if (sdp_params.fmtp.end() != tp)
         {
             params.tp = sdp::type_parameter{ tp->second };
@@ -1436,20 +1420,7 @@ namespace nmos
 #undef CAPS_ARGS
     }
 
-    static bool match_sdp_parameters_constraint_set(const sdp_parameters& sdp_params, const details::format_parameters& format_params, const web::json::value& constraint_set)
-    {
-        using web::json::value;
-
-        if (!nmos::caps::meta::enabled(constraint_set)) return false;
-
-        const auto& constraints = constraint_set.as_object();
-        return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
-        {
-            const auto& found = details::format_constraints.find(constraint.first);
-            return details::format_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
-        });
-    }
-
+    // Validate the SDP parameters against a receiver for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params)
     {
         const auto format = details::get_format(sdp_params);
@@ -1470,7 +1441,7 @@ namespace nmos
         {
             const auto format_params = details::get_format_parameters(sdp_params);
             const auto& constraint_sets = constraint_sets_or_null.as_array();
-            const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_sdp_parameters_constraint_set(sdp_params, format_params, constraint_set); });
+            const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(details::format_constraints, sdp_params, format_params, constraint_set); });
             if (constraint_sets.end() == found) throw details::sdp_processing_error("unsupported transport or format-specific parameters");
         }
     }
