@@ -468,7 +468,7 @@ namespace nmos
 
                 // Bandwidth
                 // See https://tools.ietf.org/html/rfc4566#section-5.8
-                { !sdp_params.bandwidth.bandwidth_type.name.empty() ? sdp::fields::bandwidth_information.key : U(""), value_of({
+                { !sdp_params.bandwidth.bandwidth_type.empty() ? sdp::fields::bandwidth_information.key : U(""), value_of({
                     value_of({
                         { sdp::fields::bandwidth_type, sdp_params.bandwidth.bandwidth_type.name },
                         { sdp::fields::bandwidth, sdp_params.bandwidth.bandwidth }
@@ -703,10 +703,10 @@ namespace nmos
         fmtp.push_back({ sdp::fields::sampling, params.sampling.name });
         fmtp.push_back({ sdp::fields::depth, utility::ostringstreamed(params.depth) });
         fmtp.push_back({ sdp::fields::colorimetry, params.colorimetry.name });
-        if (!params.tcs.name.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
+        if (!params.tcs.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
         fmtp.push_back({ sdp::fields::packing_mode, sdp::packing_modes::general.name }); // or block...
         fmtp.push_back({ sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name });
-        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+        if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -754,7 +754,7 @@ namespace nmos
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
         sdp_parameters::fmtp_t fmtp = {};
-        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+        if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -1418,7 +1418,7 @@ namespace nmos
             { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
             { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
             { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
-            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(!video->tcs.name.empty() ? video->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(!video->tcs.empty() ? video->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
 
             // Audio Constraints

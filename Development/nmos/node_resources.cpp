@@ -139,7 +139,7 @@ namespace nmos
         data[U("caps")] = value::object();
         data[U("device_id")] = value::string(device_id);
         data[U("parents")] = value::array();
-        data[U("clock_name")] = !clk.name.empty() ? value::string(clk.name) : value::null();
+        data[U("clock_name")] = !clk.empty() ? value::string(clk.name) : value::null();
 
         return{ is04_versions::v1_3, types::source, std::move(data), false };
     }
@@ -406,7 +406,7 @@ namespace nmos
 
         data[U("format")] = value::string(nmos::formats::data.name);
         data[U("media_type")] = value::string(nmos::media_types::application_json.name);
-        if (!event_type.name.empty())
+        if (!event_type.empty())
         {
             data[U("event_type")] = value::string(event_type.name);
         }

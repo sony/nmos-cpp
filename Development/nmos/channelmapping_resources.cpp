@@ -122,7 +122,7 @@ namespace nmos
         using web::json::value;
         using web::json::value_of;
 
-        const bool empty = id.empty() || type.name.empty();
+        const bool empty = id.empty() || type.empty();
         return value_of({
             { nmos::fields::id, empty ? value::null() : value::string(id) },
             { nmos::fields::type, empty ? value::null() : value::string(type.name) }
