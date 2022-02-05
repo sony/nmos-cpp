@@ -190,7 +190,7 @@ BST_TEST_CASE(testValidateSdpParameters)
                         { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ 48000 }) },
                         { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16 }) },
                         { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125, 1 }) },
-                        //{ nmos::caps::transport::max_packet_time, nmos::make_caps_number_constraint({ 0.125, 1 }) }
+                        { nmos::caps::transport::max_packet_time, nmos::make_caps_number_constraint({ 0.125, 1 }) }
                     }),
                     value_of({
                         { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(24).name }) }
