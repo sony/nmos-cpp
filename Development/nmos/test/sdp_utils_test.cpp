@@ -113,7 +113,8 @@ BST_TEST_CASE(testValidateSdpParameters)
                         { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
                         { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
                         { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
-                        { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
+                        { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) },
+                        { U("urn:x-nmos:cap:unimplemented"), nmos::make_caps_string_constraint({ U("ignored") }) }
                     })
                 }) }
             }) }
