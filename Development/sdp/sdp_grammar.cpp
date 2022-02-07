@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include "bst/regex.h"
 #include "cpprest/basic_utils.h"
+#include "cpprest/json_visit.h"
 #include "sdp/json.h"
 
 namespace sdp
@@ -35,7 +36,13 @@ namespace sdp
         inline std::string js2s(const web::json::value& v) { auto s = utility::us2s(v.as_string()); if (!s.empty()) return s; else throw sdp_format_error("expected a non-empty string"); }
         inline web::json::value s2js(const std::string& s) { if (!s.empty()) return web::json::value::string(utility::s2us(s)); else throw sdp_parse_error("expected a non-empty string"); }
 
-        inline std::string jn2s(const web::json::value& v) { return v.as_number(), utility::us2s(v.serialize()); }
+        inline std::string jn2s(const web::json::value& v)
+        {
+            // use web::json::basic_ostream_visitor rather than web::json::value::serialize
+            // to avoid, for example, 59.94 being output as 59.939999999999998
+            std::stringstream os;
+            return v.as_number(), web::json::visit(web::json::basic_ostream_visitor<char>(os), v), os.str();
+        }
         inline web::json::value s2jn(const std::string& s) { auto v = web::json::value::parse(utility::s2us(s)); return v.as_number(), v; }
 
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)

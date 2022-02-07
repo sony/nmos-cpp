@@ -102,24 +102,37 @@ BST_TEST_CASE(testOstreamVisitorNumbers)
 {
     {
         web::json::value two_thirds(2.0 / 3.0);
-        const auto expected = two_thirds.serialize();
+        const auto unexpected = U("0.66666666666666663");
+        // web::json::value::serialize does not currently use Grisu2
+        BST_CHECK_EQUAL(unexpected, two_thirds.serialize());
+        const auto expected = U("0.6666666666666666");
         utility::ostringstream_t os;
         web::json::visit(web::json::ostream_visitor(os), two_thirds);
-        BST_REQUIRE_EQUAL(two_thirds.serialize(), os.str());
+        BST_REQUIRE_EQUAL(expected, os.str());
     }
     {
         web::json::value big_uint(UINT64_C(12345678901234567890));
         const auto expected = big_uint.serialize();
         utility::ostringstream_t os;
         web::json::visit(web::json::ostream_visitor(os), big_uint);
-        BST_REQUIRE_EQUAL(big_uint.serialize(), os.str());
+        BST_REQUIRE_EQUAL(expected, os.str());
     }
     {
         web::json::value big_int(INT64_C(-1234567890123456789));
         const auto expected = big_int.serialize();
         utility::ostringstream_t os;
         web::json::visit(web::json::ostream_visitor(os), big_int);
-        BST_REQUIRE_EQUAL(big_int.serialize(), os.str());
+        BST_REQUIRE_EQUAL(expected, os.str());
+    }
+    {
+        web::json::value awkward(59.94);
+        const auto unexpected = U("59.939999999999998");
+        // web::json::value::serialize does not currently use Grisu2
+        BST_CHECK_EQUAL(unexpected, awkward.serialize());
+        const auto expected = U("59.94");
+        utility::ostringstream_t os;
+        web::json::visit(web::json::ostream_visitor(os), awkward);
+        BST_REQUIRE_EQUAL(expected, os.str());
     }
 }
 
