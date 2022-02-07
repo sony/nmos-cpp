@@ -5,7 +5,7 @@
 #include <functional>
 #include <map>
 #include <stdexcept>
-#include <boost/any.hpp>
+#include "bst/any.h"
 #include "bst/optional.h"
 #include "sdp/json.h"
 #include "sdp/ntp.h"
@@ -480,12 +480,12 @@ namespace nmos
         }
 
         // type-erased format-specific parameters
-        typedef boost::any format_parameters;
+        typedef bst::any format_parameters;
 
         template <typename FormatParameters>
         inline const FormatParameters* get(const format_parameters* any)
         {
-            return boost::any_cast<FormatParameters>(any);
+            return bst::any_cast<FormatParameters>(any);
         }
 
         // a function to validate the specified SDP parameters and format-specific parameters against the specified parameter constraint
