@@ -408,10 +408,10 @@ namespace web
             return result;
         }
 
-        namespace detail { class ambiguous; }
+        namespace details { class ambiguous; }
         // this overload intentionally makes value_of({}) ambiguous
         // since it's unclear whether that's intended to be an empty object or an empty array
-        web::json::value value_of(std::initializer_list<detail::ambiguous>);
+        web::json::value value_of(std::initializer_list<details::ambiguous>);
     }
 }
 
