@@ -6,9 +6,8 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/numeric.hpp>
-#include <boost/variant/get.hpp>
-#include <boost/variant/variant.hpp>
 #include "cpprest/basic_utils.h"
+#include "nmos/capabilities.h"
 #include "nmos/clock_ref_type.h"
 #include "nmos/channels.h"
 #include "nmos/components.h"
@@ -1361,13 +1360,6 @@ namespace nmos
             throw sdp_processing_error("unsupported media type/encoding name");
         }
 
-        typedef boost::variant<
-            video_raw_parameters,
-            audio_L_parameters,
-            video_smpte291_parameters,
-            video_SMPTE2022_6_parameters
-        > format_parameters;
-
         format_parameters get_format_parameters(const sdp_parameters& sdp_params)
         {
             if (sdp::media_types::video == sdp_params.media_type && U("raw") == sdp_params.rtpmap.encoding_name) return get_video_raw_parameters(sdp_params);
@@ -1378,10 +1370,10 @@ namespace nmos
         }
 
         // for a little brevity, cf. sdp_parameters member type names
-        const video_raw_parameters* get_video(const format_parameters* format) { return boost::get<video_raw_parameters>(format); }
-        const audio_L_parameters* get_audio(const format_parameters* format) { return boost::get<audio_L_parameters>(format); }
-        const video_smpte291_parameters* get_data(const format_parameters* format) { return boost::get<video_smpte291_parameters>(format); }
-        const video_SMPTE2022_6_parameters* get_mux(const format_parameters* format) { return boost::get<video_SMPTE2022_6_parameters>(format); }
+        const video_raw_parameters* get_video(const format_parameters* format) { return get<video_raw_parameters>(format); }
+        const audio_L_parameters* get_audio(const format_parameters* format) { return get<audio_L_parameters>(format); }
+        const video_smpte291_parameters* get_data(const format_parameters* format) { return get<video_smpte291_parameters>(format); }
+        const video_SMPTE2022_6_parameters* get_mux(const format_parameters* format) { return get<video_SMPTE2022_6_parameters>(format); }
 
         // NMOS Parameter Registers - Capabilities register
         // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
@@ -1418,31 +1410,52 @@ namespace nmos
             { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { if (auto video = get_video(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = get_mux(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
         };
 #undef CAPS_ARGS
+
+        // Check the specified SDP parameters and format-specific parameters against the specified constraint set
+        // using the specified parameter constraint functions
+        bool match_sdp_parameters_constraint_set(const format_parameter_constraints& format_constraints, const sdp_parameters& sdp_params, const format_parameters& format_params, const web::json::value& constraint_set)
+        {
+            using web::json::value;
+
+            if (!nmos::caps::meta::enabled(constraint_set)) return false;
+
+            const auto& constraints = constraint_set.as_object();
+            return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
+            {
+                const auto found = format_constraints.find(constraint.first);
+                return format_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
+            });
+        }
+
+        // Validate the specified SDP parameters and format-specific parameters against the specified receiver
+        // using the specified parameter constraint functions
+        void validate_sdp_parameters(const format_parameter_constraints& format_constraints, const sdp_parameters& sdp_params, const format& format, const format_parameters& format_params, const web::json::value& receiver)
+        {
+            const auto media_type = get_media_type(sdp_params);
+
+            if (nmos::format{ nmos::fields::format(receiver) } != format) throw details::sdp_processing_error("unexpected media type/encoding name");
+
+            const auto& caps = nmos::fields::caps(receiver);
+            const auto& media_types_or_null = nmos::fields::media_types(caps);
+            if (!media_types_or_null.is_null())
+            {
+                const auto& media_types = media_types_or_null.as_array();
+                const auto found = std::find(media_types.begin(), media_types.end(), web::json::value::string(media_type.name));
+                if (media_types.end() == found) throw details::sdp_processing_error("unsupported encoding name");
+            }
+            const auto& constraint_sets_or_null = nmos::fields::constraint_sets(caps);
+            if (!constraint_sets_or_null.is_null())
+            {
+                const auto& constraint_sets = constraint_sets_or_null.as_array();
+                const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(format_constraints, sdp_params, format_params, constraint_set); });
+                if (constraint_sets.end() == found) throw details::sdp_processing_error("unsupported transport or format-specific parameters");
+            }
+        }
     }
 
     // Validate the SDP parameters against a receiver for "video/raw", "audio/L", "video/smpte291" or "video/SMPTE2022-6"
     void validate_sdp_parameters(const web::json::value& receiver, const sdp_parameters& sdp_params)
     {
-        const auto format = details::get_format(sdp_params);
-        const auto media_type = get_media_type(sdp_params);
-
-        if (nmos::format{ nmos::fields::format(receiver) } != format) throw details::sdp_processing_error("unexpected media type/encoding name");
-
-        const auto& caps = nmos::fields::caps(receiver);
-        const auto& media_types_or_null = nmos::fields::media_types(caps);
-        if (!media_types_or_null.is_null())
-        {
-            const auto& media_types = media_types_or_null.as_array();
-            const auto found = std::find(media_types.begin(), media_types.end(), web::json::value::string(media_type.name));
-            if (media_types.end() == found) throw details::sdp_processing_error("unsupported encoding name");
-        }
-        const auto& constraint_sets_or_null = nmos::fields::constraint_sets(caps);
-        if (!constraint_sets_or_null.is_null())
-        {
-            const auto format_params = details::get_format_parameters(sdp_params);
-            const auto& constraint_sets = constraint_sets_or_null.as_array();
-            const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(details::format_constraints, sdp_params, format_params, constraint_set); });
-            if (constraint_sets.end() == found) throw details::sdp_processing_error("unsupported transport or format-specific parameters");
-        }
+        details::validate_sdp_parameters(details::format_constraints, sdp_params, details::get_format(sdp_params), details::get_format_parameters(sdp_params), receiver);
     }
 }
