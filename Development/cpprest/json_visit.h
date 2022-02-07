@@ -215,22 +215,19 @@ namespace web
             struct num_put
             {
                 // maximum required buffer capacity for double, based on a '-', no loss, '.', "e-123", null terminator
-                static const size_t capacity_double = 1 + (std::numeric_limits<double>::digits10 + 2) + 1 + 5 + 1;
+                static const size_t capacity_double = 1 + (std::numeric_limits<double>::max_digits10) + 1 + 5 + 1;
                 // maximum required buffer capacity for signed, based on a '-', no loss, null terminator
                 static const size_t capacity_signed = 1 + (std::numeric_limits<int64_t>::digits10 + 1) + 1;
                 // maximum required buffer capacity for unsigned, based on no loss, null terminator
                 static const size_t capacity_unsigned = (std::numeric_limits<uint64_t>::digits10 + 1) + 1;
 
-                static size_t put(CharType* buffer, size_t capacity, double v, std::streamsize precision = 0);
+                static size_t put(CharType* buffer, size_t capacity, double v, std::streamsize precision = std::numeric_limits<double>::max_digits10);
                 static size_t put(CharType* buffer, size_t capacity, int64_t v);
                 static size_t put(CharType* buffer, size_t capacity, uint64_t v);
             };
 
             template <>
-            inline size_t num_put<char>::put(char* buffer, size_t capacity, double v, std::streamsize precision)
-            {
-                return std::snprintf(buffer, capacity, "%.*g", (int)precision, v);
-            }
+            size_t num_put<char>::put(char* buffer, size_t capacity, double v, std::streamsize precision);
 
             template <>
             inline size_t num_put<char>::put(char* buffer, size_t capacity, int64_t v)
@@ -246,10 +243,7 @@ namespace web
 
 #ifdef _WIN32
             template <>
-            inline size_t num_put<wchar_t>::put(wchar_t* buffer, size_t capacity, double v, std::streamsize precision)
-            {
-                return std::swprintf(buffer, capacity, L"%.*g", (int)precision, v);
-            }
+            size_t num_put<wchar_t>::put(wchar_t* buffer, size_t capacity, double v, std::streamsize precision);
 
             template <>
             inline size_t num_put<wchar_t>::put(wchar_t* buffer, size_t capacity, int64_t v)
@@ -277,7 +271,7 @@ namespace web
             basic_ostream_visitor(std::basic_ostream<char_type>& os) : os(os)
             {
                 // this is *almost* always what the user wants
-                os.precision(std::numeric_limits<double>::digits10 + 2);
+                os.precision(std::numeric_limits<double>::max_digits10);
             }
 
             // visit callbacks

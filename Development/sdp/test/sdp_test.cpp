@@ -63,9 +63,9 @@ a=mid:SECONDARY
     {
         std::string expected_line, actual_line;
         std::getline(expected, expected_line);
-        // CR cannot appear in a raw string literal, so add it
-        if (!expected_line.empty()) expected_line.push_back('\r');
         std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
         BST_CHECK_EQUAL(expected_line, actual_line);
     } while (!expected.fail() && !actual.fail());
 
@@ -251,6 +251,77 @@ a=mid:SECONDARY
 
     BST_CHECK_EQUAL(session_description3, session_description2);
     BST_CHECK_EQUAL(session_description3.serialize(), session_description2.serialize());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpNumbers)
+{
+    const bool keep_order = true;
+
+    const std::string test_sdp = R"(v=0
+o=- 0 0 IN IP4 192.0.2.0
+s=Awkward frame rate values
+t=0 0
+a=framerate:23.98
+a=framerate:25
+a=framerate:29.97
+a=framerate:59.94
+)";
+
+    auto session_description = sdp::parse_session_description(test_sdp);
+
+    auto test_sdp2 = sdp::make_session_description(session_description);
+    std::istringstream expected(test_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
+
+    auto session_description2 = web::json::value_of({
+        { sdp::fields::protocol_version, 0 },
+        { sdp::fields::origin, web::json::value_of({
+            { sdp::fields::user_name, U("-") },
+            { sdp::fields::session_id, 0 },
+            { sdp::fields::session_version, 0 },
+            { sdp::fields::network_type, sdp::network_types::internet.name },
+            { sdp::fields::address_type, sdp::address_types::IP4.name },
+            { sdp::fields::unicast_address, U("192.0.2.0") }
+        }, keep_order) },
+        { sdp::fields::session_name, U("Awkward frame rate values") },
+        { sdp::fields::time_descriptions, web::json::value_of({
+            web::json::value_of({
+                { sdp::fields::timing, web::json::value_of({
+                    { sdp::fields::start_time, 0 },
+                    { sdp::fields::stop_time, 0 }
+                }, keep_order) }
+            })
+        }) },
+        { sdp::fields::attributes, web::json::value_of({
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::framerate },
+                { sdp::fields::value, 23.98 }
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::framerate },
+                { sdp::fields::value, 25 }
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::framerate },
+                { sdp::fields::value, 29.97 }
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::framerate },
+                { sdp::fields::value, 59.94 }
+            }, keep_order)
+        }) }
+    }, keep_order);
+
+    BST_REQUIRE_EQUAL(session_description, session_description2);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
