@@ -45,10 +45,10 @@ class NmosCppConan(ConanFile):
 
     def requirements(self):
         # for now, consistent with project's conanfile.txt
-        self.requires("boost/1.77.0")
+        self.requires("boost/1.78.0")
         self.requires("cpprestsdk/2.10.18")
         self.requires("websocketpp/0.8.2")
-        self.requires("openssl/1.1.1l")
+        self.requires("openssl/1.1.1m")
         self.requires("json-schema-validator/2.1.0")
 
     def build_requirements(self):

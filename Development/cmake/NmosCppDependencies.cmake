@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.77.0")
+set(BOOST_VERSION_CUR "1.78.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
