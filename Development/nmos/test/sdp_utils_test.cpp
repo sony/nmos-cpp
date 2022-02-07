@@ -91,9 +91,12 @@ BST_TEST_CASE(testValidateSdpParameters)
         // omitting TCS should be treated as "SDR"
         const sdp::transfer_characteristic_system omit_tcs;
 
+        // an unimplemented parameter constraint should be ignored
+        const utility::string_t unimplemented_parameter_constraint{ U("urn:x-nmos:cap:unimplemented") };
+
         nmos::video_raw_parameters params{
             1920, 1080, nmos::rates::rate29_97, true, false, sdp::samplings::YCbCr_4_2_2, 10,
-            omit_tcs,  sdp::colorimetries::BT2020,  sdp::type_parameters::type_N
+            omit_tcs, sdp::colorimetries::BT2020, sdp::type_parameters::type_N
         };
         auto sdp_params = nmos::make_video_raw_sdp_parameters(U("-"), params, nmos::details::payload_type_video_default);
 
@@ -114,7 +117,7 @@ BST_TEST_CASE(testValidateSdpParameters)
                         { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
                         { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
                         { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) },
-                        { U("urn:x-nmos:cap:unimplemented"), nmos::make_caps_string_constraint({ U("ignored") }) }
+                        { unimplemented_parameter_constraint, nmos::make_caps_string_constraint({ U("ignored") }) }
                     })
                 }) }
             }) }
@@ -199,6 +202,8 @@ BST_TEST_CASE(testValidateSdpParameters)
                 }) }
             }) }
         });
+
+        // because the SDP parameters don't include 'maxptime', the 'max_packet_time' parameter constraint will be ignored
 
         BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
 
