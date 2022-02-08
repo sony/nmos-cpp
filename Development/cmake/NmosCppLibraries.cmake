@@ -885,6 +885,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/slog.h
     nmos/ssl_context_options.h
     nmos/string_enum.h
+    nmos/string_enum_fwd.h
     nmos/system_api.h
     nmos/system_resources.h
     nmos/tai.h

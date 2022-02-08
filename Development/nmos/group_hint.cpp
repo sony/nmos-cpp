@@ -6,7 +6,7 @@ namespace nmos
 {
     utility::string_t make_group_hint(const group_hint& group_hint)
     {
-        return group_hint.optional_group_scope.name.empty()
+        return group_hint.optional_group_scope.empty()
             ? group_hint.group_name + U(':') + group_hint.role_in_group
             : group_hint.group_name + U(':') + group_hint.role_in_group + U(':') + group_hint.optional_group_scope.name;
     }

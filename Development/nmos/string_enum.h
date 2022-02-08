@@ -2,18 +2,21 @@
 #define NMOS_STRING_ENUM_H
 
 #include "cpprest/details/basic_types.h"
+#include "nmos/string_enum_fwd.h"
 
 namespace nmos
 {
     // Many of the JSON fields in the NMOS specifications are strings with an enumerated set of values.
     // Sometimes these enumerations are extensible (i.e. not a closed set), such as those for media types.
-    // string_enum is a base class using CRTP to implement type safe enums with simple conversion to string.
+    // string_enum is a base class using CRTP to implement type-safe enums with simple conversion to string.
     // See nmos/type.h for a usage example.
     template <class Derived>
     struct string_enum
     {
         utility::string_t name;
         // could add explicit string conversion operator?
+
+        bool empty() const { return name.empty(); }
 
         // totally_ordered rather than just equality_comparable only to allow use of type as a key
         // in associative containers; an alternative would be adding a std::hash override so that
@@ -27,9 +30,7 @@ namespace nmos
     };
 }
 
-#define DECLARE_STRING_ENUM(Type) \
-    struct Type;
-
+// Defines a type-safe extensible string enumeration type
 #define DEFINE_STRING_ENUM(Type) \
     struct Type : public nmos::string_enum<Type> \
     { \

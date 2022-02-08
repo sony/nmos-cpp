@@ -274,7 +274,7 @@ namespace nmos
 
                         href_type = fields.end() != field ? field->second : nmos::type{};
                     }
-                    else if (href_type.name.empty())
+                    else if (href_type.empty())
                     {
                         assign(std::move(value));
                     }

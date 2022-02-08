@@ -154,7 +154,7 @@ namespace sdp
         const web::json::field<uint64_t> payload_type{ U("payload_type") };
         const web::json::field_as_string encoding_name{ U("encoding_name") };
         const web::json::field<uint64_t> clock_rate{ U("clock_rate") };
-        const web::json::field_with_default<uint64_t> encoding_parameters{ U("encoding_parameters"), 1 };
+        const web::json::field_with_default<uint64_t> encoding_parameters{ U("encoding_parameters"), 0 };
 
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6

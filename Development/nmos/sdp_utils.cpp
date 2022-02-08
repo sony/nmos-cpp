@@ -468,7 +468,7 @@ namespace nmos
 
                 // Bandwidth
                 // See https://tools.ietf.org/html/rfc4566#section-5.8
-                { !sdp_params.bandwidth.bandwidth_type.name.empty() ? sdp::fields::bandwidth_information.key : U(""), value_of({
+                { !sdp_params.bandwidth.bandwidth_type.empty() ? sdp::fields::bandwidth_information.key : U(""), value_of({
                     value_of({
                         { sdp::fields::bandwidth_type, sdp_params.bandwidth.bandwidth_type.name },
                         { sdp::fields::bandwidth, sdp_params.bandwidth.bandwidth }
@@ -525,7 +525,7 @@ namespace nmos
                 );
             }
 
-            // insert source-filter if source address is specified, depending on source_filters 
+            // insert source-filter if source address is specified, depending on source_filters
             // for now, when source_filters does not contain an explicit value, the default is to include the source-filter attribute
             // another choice would be to do so only for source-specific multicast addresses (232.0.0.0-232.255.255.255)
             const auto& source_ip = nmos::fields::source_ip(transport_param);
@@ -703,10 +703,10 @@ namespace nmos
         fmtp.push_back({ sdp::fields::sampling, params.sampling.name });
         fmtp.push_back({ sdp::fields::depth, utility::ostringstreamed(params.depth) });
         fmtp.push_back({ sdp::fields::colorimetry, params.colorimetry.name });
-        if (!params.tcs.name.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
+        if (!params.tcs.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
         fmtp.push_back({ sdp::fields::packing_mode, sdp::packing_modes::general.name }); // or block...
         fmtp.push_back({ sdp::fields::smpte_standard_number, sdp::smpte_standard_numbers::ST2110_20_2017.name });
-        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+        if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -754,7 +754,7 @@ namespace nmos
         // a=fmtp:<format> <format specific parameters>
         // See https://tools.ietf.org/html/rfc4566#section-6
         sdp_parameters::fmtp_t fmtp = {};
-        if (!params.tp.name.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
+        if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
     }
@@ -1287,6 +1287,7 @@ namespace nmos
 
         params.sample_rate = sdp_params.rtpmap.clock_rate;
         params.channel_count = (uint32_t)sdp_params.rtpmap.encoding_parameters;
+        if (0 == params.channel_count) params.channel_count = 1;
 
         // optional
         const auto channel_order = find_fmtp(sdp_params.fmtp, sdp::fields::channel_order);
@@ -1405,7 +1406,7 @@ namespace nmos
         {
             // General Constraints
 
-            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
+            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(get_media_type(sdp).name, con); } },
             // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
             // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
             { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto video = get_video(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
@@ -1417,7 +1418,7 @@ namespace nmos
             { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
             { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
             { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
-            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->tcs.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(!video->tcs.empty() ? video->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
 
             // Audio Constraints
@@ -1428,8 +1429,8 @@ namespace nmos
 
             // Transport Constraints
 
-            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.packet_time, con); } },
-            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return nmos::match_number_constraint(sdp.max_packet_time, con); } },
+            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return 0 == sdp.packet_time || nmos::match_number_constraint(sdp.packet_time, con); } },
+            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return 0 == sdp.max_packet_time || nmos::match_number_constraint(sdp.max_packet_time, con); } },
             { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { if (auto video = get_video(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = get_mux(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
         };
 #undef CAPS_ARGS

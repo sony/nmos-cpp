@@ -2,8 +2,12 @@
 #include "nmos/sdp_utils.h"
 
 #include "bst/test/test.h"
+#include "nmos/capabilities.h"
 #include "nmos/components.h"
+#include "nmos/format.h"
+#include "nmos/interlace_mode.h"
 #include "nmos/json_fields.h"
+#include "nmos/media_type.h"
 #include "nmos/random.h"
 #include "sdp/sdp.h"
 
@@ -75,6 +79,175 @@ BST_TEST_CASE(testMakeComponentsMakeSampling)
         nmos::make_component(nmos::component_names::Cr, 40, 40, 8)
     });
     BST_REQUIRE_THROW(nmos::details::make_sampling(test_no_integer_divisor.as_array()), std::logic_error);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testValidateSdpParameters)
+{
+    using web::json::value;
+    using web::json::value_of;
+
+    {
+        // omitting TCS should be treated as "SDR"
+        const sdp::transfer_characteristic_system omit_tcs;
+
+        // an unimplemented parameter constraint should be ignored
+        const utility::string_t unimplemented_parameter_constraint{ U("urn:x-nmos:cap:unimplemented") };
+
+        nmos::video_raw_parameters params{
+            1920, 1080, nmos::rates::rate29_97, true, false, sdp::samplings::YCbCr_4_2_2, 10,
+            omit_tcs, sdp::colorimetries::BT2020, sdp::type_parameters::type_N
+        };
+        auto sdp_params = nmos::make_video_raw_sdp_parameters(U("-"), params, nmos::details::payload_type_video_default);
+
+        // only format and caps are used to validate SDP parameters
+        auto receiver = value_of({
+            { nmos::fields::format, nmos::formats::video.name },
+            { nmos::fields::caps, value_of({
+                { nmos::fields::media_types, value_of({ nmos::media_types::video_raw.name }) },
+                { nmos::fields::constraint_sets, value_of({
+                    value_of({
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
+                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
+                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
+                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+                        { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
+                        { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
+                        { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
+                        { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) },
+                        { unimplemented_parameter_constraint, nmos::make_caps_string_constraint({ U("ignored") }) }
+                    })
+                }) }
+            }) }
+        });
+
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        receiver[nmos::fields::caps][nmos::fields::media_types] = value_of({ U("foo/meow"), U("foo/purr") });
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        receiver[nmos::fields::caps].erase(nmos::fields::media_types);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::media_type] = nmos::make_caps_string_constraint({ U("foo/meow") });
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        // empty parameter constraint is always satisfied
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::media_type] = value::object();
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::grain_rate] = nmos::make_caps_rational_constraint({ nmos::rates::rate50 });
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0].erase(nmos::caps::format::grain_rate);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::component_depth] = nmos::make_caps_integer_constraint({}, 10);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::component_depth] = nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), 10);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::component_depth] = nmos::make_caps_integer_constraint({}, 10, 10);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::component_depth] = nmos::make_caps_integer_constraint({}, 11);
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::component_depth] = nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), 9);
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::format::component_depth] = nmos::make_caps_integer_constraint({ 9 }, 8, 12);
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0].erase(nmos::caps::format::component_depth);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        // empty enabled constraint set is always satisfied
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0] = value::object();
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        // empty disabled constraint set is not considered and when no constraint set is satisfied, the constraint sets altogether are not satisfied
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets][0][nmos::caps::meta::enabled] = value::boolean(false);
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        // when there are no (enabled) constraint sets, the constraint sets altogether are not satisfied
+        receiver[nmos::fields::caps][nmos::fields::constraint_sets] = value::array();
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        // when constraint sets aren't in use, that's valid!
+        receiver[nmos::fields::caps].erase(nmos::fields::constraint_sets);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+    }
+
+    {
+        nmos::audio_L_parameters params{ 4, 16, 48000, {}, 1 };
+        auto sdp_params = nmos::make_audio_L_sdp_parameters(U("-"), params, nmos::details::payload_type_audio_default);
+
+        // only format and caps are used to validate SDP parameters
+        auto receiver = value_of({
+            { nmos::fields::format, nmos::formats::audio.name },
+            { nmos::fields::caps, value_of({
+                { nmos::fields::media_types, value_of({ nmos::media_types::audio_L(16).name, nmos::media_types::audio_L(24).name }) },
+                { nmos::fields::constraint_sets, value_of({
+                    value_of({
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(16).name }) },
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, 8) },
+                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ 48000 }) },
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16 }) },
+                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125, 1 }) },
+                        { nmos::caps::transport::max_packet_time, nmos::make_caps_number_constraint({ 0.125, 1 }) }
+                    }),
+                    value_of({
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(24).name }) }
+                    })
+                }) }
+            }) }
+        });
+
+        // because the SDP parameters don't include 'maxptime', the 'max_packet_time' parameter constraint will be ignored
+
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+
+        params.channel_count = 16;
+        sdp_params = nmos::make_audio_L_sdp_parameters(U("-"), params, nmos::details::payload_type_audio_default);
+        BST_REQUIRE_THROW(nmos::validate_sdp_parameters(receiver, sdp_params), std::runtime_error);
+
+        params.bit_depth = 24;
+        sdp_params = nmos::make_audio_L_sdp_parameters(U("-"), params, nmos::details::payload_type_audio_default);
+        BST_REQUIRE_NO_THROW(nmos::validate_sdp_parameters(receiver, sdp_params));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpParametersRoundtrip)
+{
+    using web::json::value;
+
+    const std::string test_sdp = R"(v=0
+o=- 1643910985 1643910985 IN IP4 192.0.2.0
+s=SDP Example
+t=0 0
+m=video 5000 RTP/AVP 96
+c=IN IP4 233.252.0.0/32
+a=source-filter: incl IN IP4 233.252.0.0 192.0.2.0
+a=rtpmap:96 raw/90000
+)";
+
+    auto test_description = sdp::parse_session_description(test_sdp);
+    auto params = nmos::parse_session_description(test_description);
+    params.second[0][nmos::fields::interface_ip] = value::string(U("192.0.2.0"));
+    auto session_description = nmos::make_session_description(params.first, params.second);
+
+    auto test_sdp2 = sdp::make_session_description(session_description);
+    std::istringstream expected(test_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
