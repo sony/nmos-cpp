@@ -1413,23 +1413,23 @@ namespace nmos
 
         // Check the specified SDP parameters and format-specific parameters against the specified constraint set
         // using the specified parameter constraint functions
-        bool match_sdp_parameters_constraint_set(const format_parameter_constraints& format_constraints, const sdp_parameters& sdp_params, const format_parameters& format_params, const web::json::value& constraint_set)
+        bool match_sdp_parameters_constraint_set(const sdp_parameter_constraints& constraints, const sdp_parameters& sdp_params, const format_parameters& format_params, const web::json::value& constraint_set_)
         {
             using web::json::value;
 
-            if (!nmos::caps::meta::enabled(constraint_set)) return false;
+            if (!nmos::caps::meta::enabled(constraint_set_)) return false;
 
-            const auto& constraints = constraint_set.as_object();
-            return constraints.end() == std::find_if(constraints.begin(), constraints.end(), [&](const std::pair<utility::string_t, value>& constraint)
+            const auto& constraint_set = constraint_set_.as_object();
+            return constraint_set.end() == std::find_if(constraint_set.begin(), constraint_set.end(), [&](const std::pair<utility::string_t, value>& constraint)
             {
-                const auto found = format_constraints.find(constraint.first);
-                return format_constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
+                const auto found = constraints.find(constraint.first);
+                return constraints.end() != found && !found->second(sdp_params, format_params, constraint.second);
             });
         }
 
         // Validate the specified SDP parameters and format-specific parameters against the specified receiver
         // using the specified parameter constraint functions
-        void validate_sdp_parameters(const format_parameter_constraints& format_constraints, const sdp_parameters& sdp_params, const format& format, const format_parameters& format_params, const web::json::value& receiver)
+        void validate_sdp_parameters(const sdp_parameter_constraints& constraints, const sdp_parameters& sdp_params, const format& format, const format_parameters& format_params, const web::json::value& receiver)
         {
             const auto media_type = get_media_type(sdp_params);
 
@@ -1447,7 +1447,7 @@ namespace nmos
             if (!constraint_sets_or_null.is_null())
             {
                 const auto& constraint_sets = constraint_sets_or_null.as_array();
-                const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(format_constraints, sdp_params, format_params, constraint_set); });
+                const auto found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return details::match_sdp_parameters_constraint_set(constraints, sdp_params, format_params, constraint_set); });
                 if (constraint_sets.end() == found) throw details::sdp_processing_error("unsupported transport or format-specific parameters");
             }
         }
