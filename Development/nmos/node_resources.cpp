@@ -308,8 +308,9 @@ namespace nmos
     }
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video_coded.html
+    // and https://specs.amwa.tv/nmos-parameter-registers/branches/main/flow-attributes/#components
     // (media_type must *not* be nmos::media_types::video_raw; cf. nmos::make_raw_video_flow)
-    nmos::resource make_coded_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const nmos::media_type& media_type, const nmos::settings& settings)
+    nmos::resource make_coded_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const sdp::sampling& color_sampling, unsigned int bit_depth, const nmos::media_type& media_type, const nmos::settings& settings)
     {
         using web::json::value;
 
@@ -318,7 +319,17 @@ namespace nmos
 
         data[U("media_type")] = value::string(media_type.name);
 
+        if (!color_sampling.empty())
+        {
+            data[U("components")] = make_components(color_sampling, frame_width, frame_height, bit_depth);
+        }
+
         return resource;
+    }
+
+    nmos::resource make_coded_video_flow(const nmos::id& id, const nmos::id& source_id, const nmos::id& device_id, const nmos::rational& grain_rate, unsigned int frame_width, unsigned int frame_height, const nmos::interlace_mode& interlace_mode, const nmos::colorspace& colorspace, const nmos::transfer_characteristic& transfer_characteristic, const nmos::media_type& media_type, const nmos::settings& settings)
+    {
+        return make_coded_video_flow(id, source_id, device_id, grain_rate, frame_width, frame_height, interlace_mode, colorspace, transfer_characteristic, {}, {}, media_type, settings);
     }
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_audio.html
@@ -541,35 +552,37 @@ namespace nmos
         return result;
     }
 
-    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_video.html
-    nmos::resource make_video_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
+    nmos::resource make_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::format& format, const std::vector<nmos::media_type>& media_types, const nmos::settings& settings)
     {
         using web::json::value;
 
         auto resource = make_receiver(id, device_id, transport, interfaces, settings);
         auto& data = resource.data;
 
-        data[U("format")] = value::string(nmos::formats::video.name);
-        data[U("caps")][U("media_types")][0] = value::string(nmos::media_types::video_raw.name);
+        data[U("format")] = value::string(format.name);
+        for (const auto& media_type : media_types)
+        {
+            web::json::push_back(data[U("caps")][U("media_types")], value::string(media_type.name));
+        }
 
         return resource;
+    }
+
+    // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_video.html
+    nmos::resource make_video_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
+    {
+        return make_receiver(id, device_id, transport, interfaces, nmos::formats::video, { nmos::media_types::video_raw }, settings);
     }
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_audio.html
     nmos::resource make_audio_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const std::vector<unsigned int>& bit_depths, const nmos::settings& settings)
     {
-        using web::json::value;
-
-        auto resource = make_receiver(id, device_id, transport, interfaces, settings);
-        auto& data = resource.data;
-
-        data[U("format")] = value::string(nmos::formats::audio.name);
+        std::vector<nmos::media_type> media_types;
         for (const auto& bit_depth : bit_depths)
         {
-            web::json::push_back(data[U("caps")][U("media_types")], value::string(nmos::media_types::audio_L(bit_depth).name));
+            media_types.push_back(nmos::media_types::audio_L(bit_depth));
         }
-
-        return resource;
+        return make_receiver(id, device_id, transport, interfaces, nmos::formats::audio, media_types, settings);
     }
 
     nmos::resource make_audio_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, unsigned int bit_depth, const nmos::settings& settings)
@@ -580,15 +593,7 @@ namespace nmos
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_data.html
     nmos::resource make_sdianc_data_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
     {
-        using web::json::value;
-
-        auto resource = make_receiver(id, device_id, transport, interfaces, settings);
-        auto& data = resource.data;
-
-        data[U("format")] = value::string(nmos::formats::data.name);
-        data[U("caps")][U("media_types")][0] = value::string(nmos::media_types::video_smpte291.name);
-
-        return resource;
+        return make_receiver(id, device_id, transport, interfaces, nmos::formats::data, { nmos::media_types::video_smpte291 }, settings);
     }
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_data.html
@@ -597,11 +602,9 @@ namespace nmos
     {
         using web::json::value;
 
-        auto resource = make_receiver(id, device_id, transport, interfaces, settings);
+        auto resource = make_receiver(id, device_id, transport, interfaces, nmos::formats::data, { media_type }, settings);
         auto& data = resource.data;
 
-        data[U("format")] = value::string(nmos::formats::data.name);
-        data[U("caps")][U("media_types")][0] = value::string(media_type.name);
         for (const auto& event_type : event_types)
         {
             web::json::push_back(data[U("caps")][U("event_types")], value::string(event_type.name));
@@ -618,15 +621,7 @@ namespace nmos
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_mux.html
     nmos::resource make_mux_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::media_type& media_type, const nmos::settings& settings)
     {
-        using web::json::value;
-
-        auto resource = make_receiver(id, device_id, transport, interfaces, settings);
-        auto& data = resource.data;
-
-        data[U("format")] = value::string(nmos::formats::mux.name);
-        data[U("caps")][U("media_types")][0] = value::string(media_type.name);
-
-        return resource;
+        return make_receiver(id, device_id, transport, interfaces, nmos::formats::mux, { media_type }, settings);
     }
 
     nmos::resource make_mux_receiver(const nmos::id& id, const nmos::id& device_id, const nmos::transport& transport, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings)
