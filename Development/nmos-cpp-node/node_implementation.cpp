@@ -933,7 +933,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             receiver_ids.push_back(impl::make_id(seed_id, nmos::types::receiver, port, index));
         }
 
-        auto output = nmos::experimental::make_flowcompatibility_output(output_id, false, edid, boost::none, receiver_ids, model.settings);
+        auto output = nmos::experimental::make_flowcompatibility_output(output_id, false, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings);
         impl::set_label_description(output, impl::ports::mux, 0); // The single Output consumes both video and audio signals
         if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(output), gate)) return;
 

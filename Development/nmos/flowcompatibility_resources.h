@@ -34,7 +34,7 @@ namespace nmos
         // Makes an output without EDID support
         nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings);
         // Makes an output with EDID support
-        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const boost::variant<utility::string_t, web::uri>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings);
+        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings);
 
         struct edid_file_visitor : public boost::static_visitor<web::json::value>
         {

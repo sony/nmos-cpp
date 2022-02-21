@@ -186,14 +186,17 @@ namespace nmos
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const boost::variant<utility::string_t, web::uri>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
+        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
 
             auto data = make_flowcompatibility_input_output_base(id, connected, true, settings);
             data[nmos::fields::receivers] = value_from_elements(receivers);
 
-            data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), edid);
+            if (edid.has_value())
+            {
+                data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), edid.value());
+            }
 
             if (edid_properties.has_value())
             {
