@@ -495,6 +495,7 @@ namespace nmos
                         {
                             data.erase(nmos::fields::endpoint_effective_edid);
                         }
+                        data.erase(nmos::fields::senders);
                     }
                     else if (nmos::types::output == nmos::type_from_resourceType(resourceType))
                     {
@@ -502,6 +503,7 @@ namespace nmos
                         {
                             data.erase(nmos::fields::endpoint_edid);
                         }
+                        data.erase(nmos::fields::receivers);
                     }
 
                     set_reply(res, status_codes::OK, data);
