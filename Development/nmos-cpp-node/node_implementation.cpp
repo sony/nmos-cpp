@@ -15,6 +15,7 @@
 #endif
 #include "nmos/activation_mode.h"
 #include "nmos/capabilities.h"
+#include "nmos/constraints.h"
 #include "nmos/channels.h"
 #include "nmos/channelmapping_resources.h"
 #include "nmos/clock_name.h"
@@ -1389,11 +1390,49 @@ nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_i
 // Example Flow Compatibility Management API callback to update active constraints
 nmos::experimental::details::flowcompatibility_active_constraints_put_handler make_node_implementation_active_constraints_handler(slog::base_gate& gate)
 {
-    return [&gate](const nmos::id& sender_id, const web::json::value& constraint_sets) -> bool
+    using web::json::value_of;
+
+    auto sender_capabilities = value_of({
+        value_of({
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
+            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
+            { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
+        }),
+        value_of({
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 3840 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 2160 }) },
+            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
+            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
+            { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
+        })
+    });
+
+    return [&gate, sender_capabilities](const nmos::id& sender_id, const web::json::value& active_constraints) -> bool
     {
-        bool sender_can_adhere = true;
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active constraints are updated for sender " << sender_id;
-        return sender_can_adhere;
+        for (const auto& constraint_set : nmos::fields::constraint_sets(active_constraints).as_array())
+        {
+            for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
+            {
+                if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set))
+                {
+                    return true;
+                }
+            }
+        }
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
+        return false;
     };
 }
 

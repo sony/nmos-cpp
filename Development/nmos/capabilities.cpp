@@ -56,43 +56,6 @@ namespace nmos
         });
     }
 
-    namespace details
-    {
-        // cf. nmos::details::make_constraints_schema in nmos/connection_api.cpp 
-        template <typename T, typename Parse>
-        bool match_constraint(const T& value, const web::json::value& constraint, Parse parse)
-        {
-            if (constraint.has_field(nmos::fields::constraint_enum))
-            {
-                const auto& enum_values = nmos::fields::constraint_enum(constraint).as_array();
-                if (enum_values.end() == std::find_if(enum_values.begin(), enum_values.end(), [&parse, &value](const web::json::value& enum_value)
-                {
-                    return parse(enum_value) == value;
-                }))
-                {
-                    return false;
-                }
-            }
-            if (constraint.has_field(nmos::fields::constraint_minimum))
-            {
-                const auto& minimum = nmos::fields::constraint_minimum(constraint);
-                if (parse(minimum) > value)
-                {
-                    return false;
-                }
-            }
-            if (constraint.has_field(nmos::fields::constraint_maximum))
-            {
-                const auto& maximum = nmos::fields::constraint_maximum(constraint);
-                if (parse(maximum) < value)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
     bool match_string_constraint(const utility::string_t& value, const web::json::value& constraint)
     {
         return details::match_constraint(value, constraint, [](const web::json::value& enum_value)
