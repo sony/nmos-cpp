@@ -328,7 +328,7 @@ jobs:
     
         # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
-        printf "from . import Config as CONFIG\nCONFIG.DNS_SD_MODE = '${{ matrix.dns_sd_mode }}'\n" >> nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.DNS_SD_MODE = \'${{ matrix.dns_sd_mode }}\'\n" >> nmostesting/UserConfig.py
     
         # Download testssl
         cd testssl
