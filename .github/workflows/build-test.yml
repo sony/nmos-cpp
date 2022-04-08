@@ -12,28 +12,27 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
+        os: [ubuntu-20.04]
         install_mdns: [false]
         use_conan: [true]
         force_cpprest_asio: [false]
+        dns_sd_mode: [multicast]
         include:
-          - install_mdns: true
+          - os: ubuntu-20.04
+            install_mdns: false
             use_conan: true
             force_cpprest_asio: false
-            os: ubuntu-18.04
-          - install_mdns: true
+            dns_sd_mode: unicast
+          - os: ubuntu-20.04
+            install_mdns: true
             use_conan: true
             force_cpprest_asio: false
-            os: ubuntu-20.04
-          - install_mdns: false
-            use_conan: true
-            force_cpprest_asio: true
-            os: windows-latest
+            dns_sd_mode: unicast
 
     steps:
     - uses: actions/checkout@v2
@@ -329,6 +328,7 @@ jobs:
     
         # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.DNS_SD_MODE = '${{ matrix.dns_sd_mode }}'\n" >> nmostesting/UserConfig.py
     
         # Download testssl
         cd testssl
@@ -397,7 +397,14 @@ jobs:
           echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
         fi
     
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+        if [[ "${{ matrix.dns_sd_mode }}" == "unicast" ]]; then
+          sudo echo -e "nameserver ${{ env.HOST_IP_ADDRESS }}\n$(cat /etc/resolv.conf)" > /etc/resolv.conf
+          domain=testsuite.nmos.tv.
+        else
+          domain=local.
+        fi
+        
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
     
         if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
           docker stop nmos_testing
