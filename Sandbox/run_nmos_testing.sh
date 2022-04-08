@@ -2,6 +2,8 @@
 
 run_python=$1
 shift
+domain=$1
+shift
 node_command=$1
 shift
 registry_command=$1
@@ -40,7 +42,7 @@ config_auth=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENA
 if [[ "${config_secure}" == "True" ]]; then
   secure=true
   echo "Running TLS tests"
-  host=nmos-api.local
+  host=nmos-api.${domain}
   common_params=",\"client_secure\":true,\
   \"server_secure\":true,\
   \"ca_certificate_file\":\"test_data/BCP00301/ca/certs/ca.cert.pem\",\
@@ -86,7 +88,7 @@ else
   (( expected_disabled_IS_09_01+=6 ))
 fi
 
-common_params="${common_params} ,\"domain\":\"local\",\"logging_level\":-40"
+common_params="${common_params} ,\"domain\":\"${domain}\",\"logging_level\":-40"
 
 "${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &
 NODE_PID=$!
