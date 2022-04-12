@@ -21,6 +21,9 @@ export RPI_LIBS=${RPI_ROOT}/libs
 export RPI_TOOLS_DIR=${RPI_ROOT}/tools
 export PATH=$PATH:${RPI_ROOT}/tools/arm-bcm2708/arm-linux-gnueabihf/bin
 
+# Set up environment variable for package configuration
+export PKG_CONFIG_PATH=${RPI_ROOT}/lib/pkgconfig
+
 # Set up environment variables for cross-compiling those dependencies not using CMake.
 export CROSS=arm-linux-gnueabihf
 export CC=${CROSS}-gcc
@@ -42,13 +45,13 @@ All cross-compiled components will be stored in the directory specified by ``${R
 ### OpenSSL
 
 ```sh
-# Download and unpack the library.
-wget https://ftp.openssl.org/source/old/1.0.2/openssl-1.0.2l.tar.gz
-tar -xf openssl-1.0.2l.tar.gz
+# Fetch the library.
+cd ~
+git clone https://github.com/openssl/openssl.git
 
 # Configure for cross-compiling.
-cd openssl-1.0.2l
-./Configure --prefix=${RPI_LIBS} os/compiler:arm-linux-gnueabihf
+cd openssl
+./Configure linux-generic32 --prefix=${RPI_LIBS} --openssldir=${RPI_LIBS}/openssl
 
 # Cross-compile and install into ${RPI_LIBS}.
 make
@@ -59,11 +62,12 @@ make install
 
 ```sh
 # Download and unpack the libraries.
-wget https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.gz
-tar -xf boost_1_67_0.tar.gz
+cd ~
+wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz 
+tar -xf boost_1_78_0.tar.gz
 
 # Prepare Boost tools.
-cd boost_1_67_0
+cd boost_1_78_0
 ./bootstrap.sh
 
 # Configure for cross-compiling.
@@ -87,10 +91,11 @@ echo "import option ; import feature ; using gcc : arm : arm-linux-gnueabihf-g++
 
 ```sh
 # Fetch the library.
+cd ~
 git clone --recurse-submodules https://github.com/Microsoft/cpprestsdk.git
 
 # Configure for cross-compiling.
-cd ~/cpprestsdk/Release
+cd cpprestsdk/Release
 mkdir build.rpi
 cd build.rpi
 cmake .. \
@@ -98,7 +103,9 @@ cmake .. \
   -DCPPREST_EXCLUDE_COMPRESSION=1 \
   -DWERROR=0 \
   -DCMAKE_TOOLCHAIN_FILE=${RPI_ROOT}/Toolchain-rpi.cmake \
-  -DCMAKE_INSTALL_PREFIX=${RPI_LIBS}
+  -DCMAKE_INSTALL_PREFIX=${RPI_LIBS} \
+  -DBUILD_SAMPLES=0 \
+  -DBUILD_TESTS=0
 
 # Cross-compile and install into ${RPI_LIBS}.
 make
@@ -111,6 +118,7 @@ This XML parser library is required by Avahi.
 
 ```sh
 # Download and unpack the library.
+cd ~
 wget https://github.com/libexpat/libexpat/releases/download/R_2_2_5/expat-2.2.5.tar.bz2
 tar -xf expat-2.2.5.tar.bz2
 
@@ -129,6 +137,7 @@ This library for writing daemons is required by Avahi.
 
 ```sh
 # Download and unpack the library.
+cd ~
 wget http://0pointer.de/lennart/projects/libdaemon/libdaemon-0.14.tar.gz
 tar -xf libdaemon-0.14.tar.gz
 
@@ -147,6 +156,7 @@ This library for interprocess communication is required by Avahi.
 
 ```sh
 # Download and unpack the library.
+cd ~
 wget https://dbus.freedesktop.org/releases/dbus/dbus-1.12.8.tar.gz
 tar -xf dbus-1.12.8.tar.gz
 
@@ -169,6 +179,7 @@ Although Avahi is pre-installed on the Raspberry Pi, the optional *avahi-compat-
 
 ```sh
 # Download and unpack the library.
+cd ~
 wget https://github.com/lathiat/avahi/releases/download/v0.7/avahi-0.7.tar.gz
 tar -xf avahi-0.7.tar.gz
 
@@ -195,6 +206,7 @@ For more detailed instructions about building nmos-cpp itself, see the main [Get
 
 ```sh
 # Fetch the library.
+cd ~
 git clone https://github.com/sony/nmos-cpp.git
 
 # Configure for cross-compiling.
@@ -205,7 +217,9 @@ cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_TOOLCHAIN_FILE=${RPI_ROOT}/Toolchain-rpi.cmake \
   -DWEBSOCKETPP_INCLUDE_DIR:PATH="~/cpprestsdk/Release/libs/websocketpp" \
-  -DBONJOUR_INCLUDE=${RPI_LIBS}/include/avahi-compat-libdns_sd
+  -DNMOS_CPP_USE_AVAHI=1 \
+  -DAvahi_INCLUDE_DIR=${RPI_LIBS}/include/avahi-compat-libdns_sd \
+  -DNMOS_CPP_USE_CONAN=0
 
 # Cross-compile the library.
 make
