@@ -287,8 +287,7 @@ namespace mdns_details
 
     static bool resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
-        // apply a minimum timeout when the interface id isn't known e.g. from the result of a browse
-        const auto earliest_timeout_ = std::chrono::seconds(0 == interface_id ? 1 : 0);
+        const auto earliest_timeout_ = std::chrono::seconds(0);
 
         bool had_enough = false;
         bool more_coming = true;
@@ -347,8 +346,7 @@ namespace mdns_details
 
     static bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
-        // apply a minimum timeout when the interface id isn't known e.g. from the result of a browse
-        const auto earliest_timeout_ = std::chrono::seconds(0 == interface_id ? 1 : 0);
+        const auto earliest_timeout_ = std::chrono::seconds(0);
 
         bool had_enough = false;
 #ifdef HAVE_DNSSERVICEGETADDRINFO
