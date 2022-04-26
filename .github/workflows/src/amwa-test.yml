@@ -22,7 +22,7 @@
     # Configure the Testing Tool so all APIs are tested with TLS
     printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
     # Set the DNS-SD mode
-    printf 'CONFIG.DNS_SD_MODE = "${{ matrix.dns_sd_mode }}"\n' >> nmostesting/UserConfig.py
+    printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
 
     # Download testssl
     cd testssl
@@ -111,7 +111,12 @@
         # force testing tool to cache specification repos before changing the resolver configuration
         $run_python nmos-test.py suite IS-04-01 --selection auto --host ${{ env.HOST_IP_ADDRESS }} --port 444 --version v1.3 || true
         # change the resolver configuration to use only the testing tool's mock DNS server
+        # and instead configure the mock DNS server to use an upstream DNS server
         # as unicast DNS-SD test results are inconsistent if other servers are also configured
+        dns_upstream_ip=$(cat /etc/resolv.conf | grep ^nameserver | tr -s [:space:] ' ' | cut -f2 -d ' ' -s)
+        if [[ ! -z "$dns_upstream_ip" ]]; then
+          printf 'CONFIG.DNS_UPSTREAM_IP = "'${dns_upstream_ip}'"\n' >> nmostesting/UserConfig.py
+        fi
         sudo cp /etc/resolv.conf /etc/resolv.conf.bak
         echo -e "nameserver ${{ env.HOST_IP_ADDRESS }}" | sudo tee /etc/resolv.conf > /dev/null
       else
