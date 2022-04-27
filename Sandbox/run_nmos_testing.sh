@@ -2,6 +2,8 @@
 
 run_python=$1
 shift
+domain=$1
+shift
 node_command=$1
 shift
 registry_command=$1
@@ -20,8 +22,8 @@ self_dir=`pwd`
 cd -
 
 expected_disabled_BCP_003_01=0
-# test_02, test_02_01, test_12
-expected_disabled_IS_04_01=3
+# test_12
+expected_disabled_IS_04_01=1
 expected_disabled_IS_04_03=0
 expected_disabled_IS_05_01=0
 expected_disabled_IS_05_02=0
@@ -29,19 +31,39 @@ expected_disabled_IS_07_01=0
 expected_disabled_IS_07_02=0
 expected_disabled_IS_08_01=0
 expected_disabled_IS_08_02=0
-# test_02, test_02_01
-expected_disabled_IS_09_02=2
+expected_disabled_IS_09_02=0
 expected_disabled_IS_04_02=0
 expected_disabled_IS_09_01=0
 
 config_secure=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_HTTPS)'` || (echo "error running python"; exit 1)
+config_dns_sd_mode=`${run_python} -c $'from nmostesting import Config\nprint(Config.DNS_SD_MODE)'` || (echo "error running python"; exit 1)
 config_auth=`${run_python} -c $'from nmostesting import Config\nprint(Config.ENABLE_AUTH)'` || (echo "error running python"; exit 1)
+
+if [[ "${config_dns_sd_mode}" == "multicast" ]]; then
+  # domain should be e.g. local
+  host_name=nmos-api.${domain}
+else
+  # domain should be e.g. testsuite.nmos.tv
+  host_name=api.${domain}
+fi
+
+common_params=",\
+  \"logging_level\":-40,\
+  \"discovery_backoff_max\":10,\
+  \"registration_request_max\":5,\
+  \"system_request_max\":5,\
+  \"domain\":\"${domain}\",\
+  \"host_name\":\"${host_name}\",\
+  \"host_address\":\"${host_ip}\",\
+  \"host_addresses\":[\"${host_ip}\"]\
+  "
 
 if [[ "${config_secure}" == "True" ]]; then
   secure=true
   echo "Running TLS tests"
-  host=nmos-api.local
-  common_params=",\"client_secure\":true,\
+  host=${host_name}
+  common_params+=",\
+  \"client_secure\":true,\
   \"server_secure\":true,\
   \"ca_certificate_file\":\"test_data/BCP00301/ca/certs/ca.cert.pem\",\
   \"server_certificates\":\
@@ -55,17 +77,32 @@ if [[ "${config_secure}" == "True" ]]; then
     \"private_key_file\":\"test_data/BCP00301/ca/intermediate/private/rsa.api.testsuite.nmos.tv.key.pem\",\
     \"certificate_chain_file\":\"test_data/BCP00301/ca/intermediate/certs/rsa.api.testsuite.nmos.tv.cert.chain.pem\"\
   }],\
-  \"dh_param_file\":\"test_data/BCP00301/ca/intermediate/private/dhparam.pem\",\
-  \"host_name\":\"${host}\",\
-  \"host_address\":\"${host_ip}\"\
+  \"dh_param_file\":\"test_data/BCP00301/ca/intermediate/private/dhparam.pem\"\
   "
   registry_url=https://${host}:8088
 else
   secure=false
   echo "Running non-TLS tests"
   host=${host_ip}
-  common_params=
   registry_url=http://${host}:8088
+fi
+
+if [[ "${config_dns_sd_mode}" == "multicast" ]]; then
+  echo "Running multicast DNS-SD tests"
+  # test_02, test_02_01
+  (( expected_disabled_IS_04_01+=2 ))
+  # test_02, test_02_01
+  (( expected_disabled_IS_09_02+=2 ))
+else
+  echo "Running unicast DNS-SD tests"
+  # test_01, test_01_01
+  (( expected_disabled_IS_04_01+=2 ))
+  # test_01, test_02
+  (( expected_disabled_IS_04_02+=2 ))
+  # test_01
+  (( expected_disabled_IS_04_03+=1 ))
+  # test_01, test_01_01
+  (( expected_disabled_IS_09_02+=2 ))
 fi
 
 if [[ "${config_auth}" == "True" ]]; then
@@ -74,6 +111,7 @@ if [[ "${config_auth}" == "True" ]]; then
 else
   echo "Running non-Auth tests"
   auth=false
+  # 6 test cases per API under test
   (( expected_disabled_IS_04_01+=6 ))
   (( expected_disabled_IS_04_03+=6 ))
   (( expected_disabled_IS_05_01+=6 ))
@@ -82,11 +120,10 @@ else
   (( expected_disabled_IS_07_02+=18 ))
   (( expected_disabled_IS_08_01+=6 ))
   (( expected_disabled_IS_08_02+=12 ))
+  # test_33, test_33_1
   (( expected_disabled_IS_04_02+=14 ))
   (( expected_disabled_IS_09_01+=6 ))
 fi
-
-common_params="${common_params} ,\"domain\":\"local\",\"logging_level\":-40"
 
 "${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &
 NODE_PID=$!
@@ -156,7 +193,7 @@ REGISTRY_PID=$!
 # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
 sleep 2
 # add a persistent Query WebSocket API subscription before running the Registry test suite
-curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" || echo "failed to add subscription"
+curl --cacert test_data/BCP00301/ca/certs/ca.cert.pem "${registry_url}/x-nmos/query/v1.3/subscriptions" -H "Content-Type: application/json" -d "{\"max_update_rate_ms\": 100, \"resource_path\": \"/nodes\", \"params\": {\"label\": \"host1\"}, \"persist\": true, \"secure\": ${secure}}" -s > /dev/null || echo "failed to add subscription"
 
 do_run_test IS-04-02 $expected_disabled_IS_04_02 --host "${host}" "${host}" --port 8088 8088 --version v1.3 v1.3
 

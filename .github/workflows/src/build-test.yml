@@ -12,28 +12,31 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
-        install_mdns: [false]
+        os: [ubuntu-20.04, macos-11, windows-2019]
+        install_mdns: [false, true]
         use_conan: [true]
         force_cpprest_asio: [false]
+        dns_sd_mode: [multicast, unicast]
+        exclude:
+          - os: macos-11
+            install_mdns: true
+          - os: windows-2019
+            install_mdns: true
+          - os: macos-11
+            dns_sd_mode: unicast
+          - os: windows-2019
+            dns_sd_mode: unicast
         include:
-          - install_mdns: true
-            use_conan: true
-            force_cpprest_asio: false
-            os: ubuntu-18.04
-          - install_mdns: true
-            use_conan: true
-            force_cpprest_asio: false
-            os: ubuntu-20.04
-          - install_mdns: false
+          - os: windows-2019
+            install_mdns: false
             use_conan: true
             force_cpprest_asio: true
-            os: windows-latest
+            dns_sd_mode: multicast
 
     steps:
     - uses: actions/checkout@v2
@@ -43,9 +46,9 @@ jobs:
       run: |
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
           echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
@@ -69,22 +72,36 @@ jobs:
     @import build-and-test
 
   build_and_test_ubuntu_14:
-    name: 'ubuntu-14.04: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }})'
-    runs-on: ubuntu-latest
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    runs-on: ubuntu-20.04
     container:
       image: ubuntu:14.04
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-14.04]
         install_mdns: [true]
         use_conan: [false]
+        force_cpprest_asio: [false]
+        dns_sd_mode: [multicast]
 
     steps:
     - uses: actions/checkout@v2
 
     - name: set environment variables
+      shell: bash
       run: |
-        echo "BUILD_NAME=ubuntu-14.04_mdns" >> $GITHUB_ENV
+        if [[ "${{ runner.os }}"  == "Linux" ]]; then
+          if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+          else
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+          fi
+        elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
+          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
+        else
+          echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
+        fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
         # github.workspace points to the host path not the docker path, the home directory defaults to the workspace directory
@@ -98,8 +115,8 @@ jobs:
         apt-get install -y software-properties-common
         apt-get --allow-unauthenticated update -q
         apt-get --allow-unauthenticated install -y curl g++ git make patch zlib1g-dev libssl-dev bsdmainutils dnsutils unzip
-        curl -sS https://www.python.org/ftp/python/3.6.9/Python-3.6.9.xz | tar -xJ
-        cd Python-3.6.3
+        curl -sS https://www.python.org/ftp/python/3.6.9/Python-3.6.9.tar.xz | tar -xJ
+        cd Python-3.6.9
         ./configure
         make -j8
         make install
