@@ -32,7 +32,7 @@
     ).IPv4Address.IPAddress
     echo "HOST_IP_ADDRESS=$env:hostip" >> $env:GITHUB_ENV
     ipconfig
-    # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
+    # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
     # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
     Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
     # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
@@ -60,8 +60,8 @@
     ifconfig
     echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs" >> $GITHUB_ENV
     echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs" >> $GITHUB_ENV
-    # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
-    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
     # testssl.sh needs "timeout"
     brew install coreutils
 
@@ -98,8 +98,8 @@
     hostip=$(hostname -I | cut -f1 -d' ')
     echo "HOST_IP_ADDRESS=$hostip" >> $GITHUB_ENV
     ip address
-    # add the CRL Distribution Point to hosts so that it's discoverable when runing the AMWA test suite in mDNS mode
-    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts
+    # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+    echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
     # re-synchronize the package index
     sudo apt-get update -q
 

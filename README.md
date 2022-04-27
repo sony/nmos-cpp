@@ -50,14 +50,15 @@ Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to t
 
 The following configurations, defined by the [build-test](.github/workflows/src/build-test.yml) jobs, are built and unit tested automatically via continuous integration.
 
-| Platform | Version                  | Configuration Options                  |
-|----------|--------------------------|----------------------------------------|
-| Linux    | Ubuntu 20.04 (GCC 9.3.0) | mDNSResponder                          |
-| Linux    | Ubuntu 18.04 (GCC 7.5.0) | Avahi                                  |
-| Linux    | Ubuntu 18.04 (GCC 7.5.0) | mDNSResponder                          |
-| Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan         |
-| Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder)                |
-| macOS    | 10.15 (AppleClang 12.0)  | (Experimental)                         |
+| Platform | Version                  | Build Options                      | Test Options                               |
+|----------|--------------------------|------------------------------------|--------------------------------------------|
+| Linux    | Ubuntu 20.04 (GCC 9.4.0) | Avahi                              | Secure Communications, Multicast DNS-SD    |
+| Linux    | Ubuntu 20.04 (GCC 9.4.0) | Avahi                              | Secure Communications, Unicast DNS-SD      |
+| Linux    | Ubuntu 20.04 (GCC 9.4.0) | mDNSResponder                      | Secure Communications, Multicast DNS-SD    |
+| Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan     | Secure Communications, Multicast DNS-SD    |
+| Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder), WinHTTP   | Secure Communications, Multicast DNS-SD    |
+| Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder), ASIO      | Secure Communications, Multicast DNS-SD    |
+| macOS    | 11 (AppleClang 13.0)     | Bonjour (mDNSResponder)            | Secure Communications, Multicast DNS-SD    |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 

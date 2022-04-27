@@ -21,10 +21,12 @@
 
     # Configure the Testing Tool so all APIs are tested with TLS
     printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+    # Set the DNS-SD mode
+    printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
 
     # Download testssl
     cd testssl
-    curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz | tar -xvzf - --strip-components=1
+    curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
     cd ..
 
     # Create output directories
@@ -36,24 +38,29 @@
       docker pull amwa/nmos-testing
       docker run -d --name "nmos_testing" --entrypoint="/usr/bin/tail" -v `pwd`/results:/home/nmos-testing/results amwa/nmos-testing -f /dev/null
       run_python="docker exec -i nmos_testing python3"
-    elif  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+    elif [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
       # run test suite in vagrant VM
       cp ${{ env.GITHUB_WORKSPACE_BASH }}/.github/workflows/mac_Vagrantfile ./Vagrantfile
       vagrant plugin install vagrant-scp
       vagrant up
       vagrant ssh -- mkdir results
       run_python="vagrant ssh -- python3"
+    elif [[ "${{ runner.os }}" == "Linux" && "${{ matrix.dns_sd_mode }}" == "unicast" ]]; then
+      # run test suite directly
+      sudo pip install --upgrade -r requirements.txt
+      # install SDPoker
+      npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
+      run_python="sudo python"
     else
       # run test suite directly
       pip install -r requirements.txt
-
-      # Install SDPoker
+      # install SDPoker
       npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
       run_python="python"
     fi
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
-    
-    if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+
+    if [[ "${{ runner.os }}" == "Windows" ]]; then
         certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
         certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
         certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
@@ -70,16 +77,11 @@
         #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
     fi
 
-    if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+    if [[ "${{ runner.os }}" == "macOS" ]]; then
       # force DNS lookups to IPv4 as mDNS lookups on macos seem to wait for the IPv6 lookup to timeout before returning the IPv4 result
       mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
       printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
       cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
-    fi
-
-    if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
-      # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
-      avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
     fi
 
     if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
@@ -89,14 +91,100 @@
       echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
     fi
 
-    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+    if [[ "${{ runner.os }}" == "Linux" ]]; then
+      if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+        echo "Stopping mdnsd"
+        sudo /etc/init.d/mdns stop
+      else
+        echo "Stopping avahi-daemon"
+        sudo systemctl stop avahi-daemon
+      fi
+    fi
+
+    if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+      domain=local
+    else
+      domain=testsuite.nmos.tv
+      if [[ "${{ runner.os }}" == "Linux" ]]; then
+        # add host names
+        echo -e "${{ env.HOST_IP_ADDRESS }} api.$domain\n${{ env.HOST_IP_ADDRESS }} mocks.$domain" | sudo tee -a /etc/hosts > /dev/null
+        # force testing tool to cache specification repos before changing the resolver configuration
+        $run_python nmos-test.py suite IS-04-01 --selection auto --host ${{ env.HOST_IP_ADDRESS }} --port 444 --version v1.3 || true
+        # change the resolver configuration to use only the testing tool's mock DNS server
+        # and instead configure the mock DNS server to use an upstream DNS server
+        # as unicast DNS-SD test results are inconsistent if other servers are also configured
+        dns_upstream_ip=$(cat /etc/resolv.conf | grep ^nameserver | tr -s [:space:] ' ' | cut -f2 -d ' ' -s)
+        if [[ ! -z "$dns_upstream_ip" ]]; then
+          printf 'CONFIG.DNS_UPSTREAM_IP = "'${dns_upstream_ip}'"\n' >> nmostesting/UserConfig.py
+        fi
+        sudo cp /etc/resolv.conf /etc/resolv.conf.bak
+        echo -e "nameserver ${{ env.HOST_IP_ADDRESS }}" | sudo tee /etc/resolv.conf > /dev/null
+      else
+        echo "Unicast DNS-SD testing not yet supported on ${{ runner.os }}" && false
+      fi
+    fi
+
+    if [[ "${{ runner.os }}" == "Linux" ]]; then
+      if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+        echo "Restarting mdnsd"
+        sudo /etc/init.d/mdns start
+        #sudo /usr/sbin/mdnsd -debug &
+        sleep 2
+
+        dns-sd -V
+      else
+        echo "Restarting avahi-daemon"
+        sudo systemctl start avahi-daemon
+        sleep 2
+
+        ps -e | grep avahi-daemon
+        avahi-daemon -V
+      fi
+    fi
+
+    if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.install_mdns }}" == "false" ]]; then
+      # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
+      avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
+    fi
+    
+    ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+
+    if [[ "${{ runner.os }}" == "Linux" ]]; then
+      if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+        ps -e | grep mdnsd || true
+      else
+        ps -e | grep avahi-daemon || true
+      fi
+    fi
+
+    if [[ "${{ matrix.dns_sd_mode }}" == "unicast" ]]; then
+      if [[ "${{ runner.os }}" == "Linux" ]]; then
+        # restore DNS Server
+        if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+          echo "Stopping mdnsd"
+          sudo /etc/init.d/mdns stop
+        else
+          echo "Stopping avahi-daemon"
+          sudo systemctl stop avahi-daemon
+        fi
+        cat /etc/resolv.conf.bak | sudo tee /etc/resolv.conf > /dev/null
+        if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+          echo "Restarting mdnsd"
+          sudo /etc/init.d/mdns start
+        else
+          echo "Restarting avahi-daemon"
+          sudo systemctl start avahi-daemon
+        fi
+      fi
+    fi
 
     if [[ "${{ env.DOCKER_TEST_SUITE }}" == "true" ]]; then
       docker stop nmos_testing
       docker rm nmos_testing
     fi
-    if  [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
+    if [[ "${{ env.VAGRANT_TEST_SUITE }}" == "true" ]]; then
       vagrant scp :results/* results/
       vagrant destroy -f
     fi
+
     exit 0

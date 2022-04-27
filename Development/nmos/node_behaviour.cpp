@@ -1147,12 +1147,13 @@ namespace nmos
                 events = web::json::value::array();
 
                 // throttle updates to the DNS-SD daemon
-                // (because otherwise it may report that it's having to do that itself)
                 // "to protect the network against excessive packet flooding due to software
                 // bugs or malicious attack, a Multicast DNS responder MUST NOT multicast a
                 // record on a given interface until at least one second has elapsed since
                 // the last time that record was multicast on that particular interface."
                 // see https://tools.ietf.org/html/rfc6762#section-6
+                // (unfortunately mDNSResponder may still report "excessive update rate"
+                // because it implements a target interval of 6 seconds...)
                 const auto max_update_rate = std::chrono::seconds(1);
                 const auto now = tai_clock::now();
                 if (earliest_allowed_update > now)
@@ -1164,12 +1165,13 @@ namespace nmos
                     continue;
                 }
 
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Updating the 'ver_' TXT records";
                 update_node_service(advertiser, model.settings, ver);
 
                 earliest_allowed_update = now + max_update_rate;
             }
 
-            // withdraw the 'ver_' TXT records
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Withdrawing the 'ver_' TXT records";
             update_node_service(advertiser, model.settings);
 
             cancellation_source.cancel();
