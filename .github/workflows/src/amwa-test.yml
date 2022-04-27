@@ -127,8 +127,8 @@
     if [[ "${{ runner.os }}" == "Linux" ]]; then
       if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
         echo "Restarting mdnsd"
-        #sudo /etc/init.d/mdns start
-        sudo /usr/sbin/mdnsd -debug &
+        sudo /etc/init.d/mdns start
+        #sudo /usr/sbin/mdnsd -debug &
         sleep 2
 
         dns-sd -V
