@@ -91,6 +91,16 @@
       echo "1" > ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/nmos-testing-options/BCP-003-01_max_disabled.txt
     fi
 
+    if [[ "${{ runner.os }}" == "Linux" ]]; then
+      if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+        echo "Stopping mdnsd"
+        sudo /etc/init.d/mdns stop
+      else
+        echo "Stopping avahi-daemon"
+        sudo systemctl stop avahi-daemon
+      fi
+    fi
+
     if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
       domain=local
     else
@@ -104,17 +114,26 @@
         # as unicast DNS-SD test results are inconsistent if other servers are also configured
         sudo cp /etc/resolv.conf /etc/resolv.conf.bak
         echo -e "nameserver ${{ env.HOST_IP_ADDRESS }}" | sudo tee /etc/resolv.conf > /dev/null
-        if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-          echo "Restarting mdnsd"
-          sudo /etc/init.d/mdns restart
-          sleep 2
-        else
-          echo "Restarting avahi-daemon"
-          sudo systemctl restart avahi-daemon
-          sleep 2
-        fi
       else
         echo "Unicast DNS-SD testing not yet supported on ${{ runner.os }}" && false
+      fi
+    fi
+
+    if [[ "${{ runner.os }}" == "Linux" ]]; then
+      if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+        echo "Restarting mdnsd"
+        #sudo /etc/init.d/mdns start
+        sudo /usr/sbin/mdnsd -debug &
+        sleep 2
+
+        dns-sd -V
+      else
+        echo "Restarting avahi-daemon"
+        sudo systemctl start avahi-daemon
+        sleep 2
+
+        ps -e | grep avahi-daemon
+        avahi-daemon -V
       fi
     fi
 
@@ -125,10 +144,32 @@
     
     ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
+    if [[ "${{ runner.os }}" == "Linux" ]]; then
+      if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+        ps -e | grep mdnsd || true
+      else
+        ps -e | grep avahi-daemon || true
+      fi
+    fi
+
     if [[ "${{ matrix.dns_sd_mode }}" == "unicast" ]]; then
       if [[ "${{ runner.os }}" == "Linux" ]]; then
         # restore DNS Server
+        if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+          echo "Stopping mdnsd"
+          sudo /etc/init.d/mdns stop
+        else
+          echo "Stopping avahi-daemon"
+          sudo systemctl stop avahi-daemon
+        fi
         cat /etc/resolv.conf.bak | sudo tee /etc/resolv.conf > /dev/null
+        if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
+          echo "Restarting mdnsd"
+          sudo /etc/init.d/mdns start
+        else
+          echo "Restarting avahi-daemon"
+          sudo systemctl start avahi-daemon
+        fi
       fi
     fi
 
@@ -140,4 +181,5 @@
       vagrant scp :results/* results/
       vagrant destroy -f
     fi
+
     exit 0
