@@ -23,13 +23,20 @@ jobs:
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
         exclude:
+          # install_mdns is only meaningful on Linux
           - os: macos-11
             install_mdns: true
           - os: windows-2019
             install_mdns: true
+          # for now, unicast DNS-SD tests are only implemented on Linux
           - os: macos-11
             dns_sd_mode: unicast
           - os: windows-2019
+            dns_sd_mode: unicast
+          # for now, exclude unicast DNS-SD with mDNSResponder due to
+          # intermittent *** buffer overflow detected *** in mdnsd
+          - os: ubuntu-20.04
+            install_mdns: true
             dns_sd_mode: unicast
         include:
           - os: windows-2019

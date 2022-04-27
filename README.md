@@ -55,7 +55,6 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 | Linux    | Ubuntu 20.04 (GCC 9.4.0) | Avahi                              | Secure Communications, Multicast DNS-SD    |
 | Linux    | Ubuntu 20.04 (GCC 9.4.0) | Avahi                              | Secure Communications, Unicast DNS-SD      |
 | Linux    | Ubuntu 20.04 (GCC 9.4.0) | mDNSResponder                      | Secure Communications, Multicast DNS-SD    |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0) | mDNSResponder                      | Secure Communications, Unicast DNS-SD      |
 | Linux    | Ubuntu 14.04 (GCC 4.8.4) | mDNSResponder, not using Conan     | Secure Communications, Multicast DNS-SD    |
 | Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder), WinHTTP   | Secure Communications, Multicast DNS-SD    |
 | Windows  | Server 2019 (VS 2019)    | Bonjour (mDNSResponder), ASIO      | Secure Communications, Multicast DNS-SD    |
