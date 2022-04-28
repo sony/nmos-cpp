@@ -17,10 +17,10 @@ namespace nmos
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
-            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-discovery-registration/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-04/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.3.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-04/blob/v1.3.x/APIs/schemas/
         namespace v1_3
         {
             using namespace nmos::is04_schemas::v1_3_x;
@@ -31,7 +31,7 @@ namespace nmos
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
 
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.2.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-04/blob/v1.2.x/APIs/schemas/
         namespace v1_2
         {
             using namespace nmos::is04_schemas::v1_2_x;
@@ -42,7 +42,7 @@ namespace nmos
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
 
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.1.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-04/blob/v1.1.x/APIs/schemas/
         namespace v1_1
         {
             using namespace nmos::is04_schemas::v1_1_x;
@@ -53,7 +53,7 @@ namespace nmos
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
         }
 
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/blob/v1.0.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-04/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
             using namespace nmos::is04_schemas::v1_0_x;
@@ -69,10 +69,10 @@ namespace nmos
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
-            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-device-connection-management/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-05/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.1.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-05/blob/v1.1.x/APIs/schemas/
         namespace v1_1
         {
             using namespace nmos::is05_schemas::v1_1_x;
@@ -82,7 +82,7 @@ namespace nmos
             const web::uri connectionapi_receiver_staged_patch_request_uri = make_schema_uri(tag, _XPLATSTR("receiver-stage-schema.json"));
         }
 
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/blob/v1.0.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-05/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
             using namespace nmos::is05_schemas::v1_0_x;
@@ -97,9 +97,10 @@ namespace nmos
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
-            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-audio-channel-mapping/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-08/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
+        // See https://github.com/AMWA-TV/is-08/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
             using namespace nmos::is08_schemas::v1_0_x;
@@ -113,10 +114,10 @@ namespace nmos
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
-            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-system/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-09/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/nmos-system/blob/v1.0.x/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-09/blob/v1.0.x/APIs/schemas/
         namespace v1_0
         {
             using namespace nmos::is09_schemas::v1_0_x;

@@ -370,7 +370,7 @@ namespace nmos
 
         // note that a media description is always created for each leg in the transport_params
         // and the rtp_enabled status does not affect the leg's media description
-        // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/109#issuecomment-598721418
+        // see https://github.com/AMWA-TV/is-05/issues/109#issuecomment-598721418
 
         // check to ensure enough media_stream_ids for multi-leg transport_params
         if (transport_params.size() > 1 && transport_params.size() > sdp_params.group.media_stream_ids.size())

@@ -252,7 +252,7 @@ namespace nmos
             using web::json::value_of;
 
             // connection_uri for a sender is currently fixed, basically read-only
-            // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/70
+            // see https://github.com/AMWA-TV/is-05/issues/70
             return value_of({
                 { nmos::fields::connection_uri, value_of({
                     { nmos::fields::constraint_enum, value_of({

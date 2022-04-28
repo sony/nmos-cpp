@@ -148,10 +148,10 @@ namespace nmos
         // sub-object of a receiver. However, the schema, "subscription" sub-object does not have "additionalProperties": false
         // so downgrading from v1.2 to v1.1 and keeping the "active" property doesn't cause a schema violation, though this
         // could be an oversight...
-        // See nmos-discovery-registration/APIs/schemas/receiver_core.json
+        // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_core.html
         // Further examples of this are the proposed addition in v1.3 of "attached_network_device" in the "interfaces"
         // sub-objects of a node and of "authorization" in node "api.endpoints" and "services" and device "controls".
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/109/files#diff-251d9acc57a6ffaeed673153c6409f5f
+        // See https://github.com/AMWA-TV/is-04/pull/109/files#diff-251d9acc57a6ffaeed673153c6409f5f
 
         auto& resource_versions = resources_versions().at(resource_type);
         auto version_first = resource_versions.cbegin();

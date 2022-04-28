@@ -244,7 +244,7 @@ namespace nmos
                         }
 
                         // hmm, should probably try to re-make the connection, possibly with exponential back-off, for ephemeral error conditions
-                        // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/96
+                        // see https://github.com/AMWA-TV/is-05/issues/96
 
                         // for now, just signal via external handler
 
