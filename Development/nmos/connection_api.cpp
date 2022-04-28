@@ -305,7 +305,7 @@ namespace nmos
         }
 
         // Apparently, the response to errors in the transport file should be 500 Internal Error rather than 400 Bad Request
-        // See https://github.com/AMWA-TV/nmos-device-connection-management/issues/40
+        // See https://github.com/AMWA-TV/is-05/issues/40
         inline std::logic_error transport_file_error(const std::string& message)
         {
             return std::logic_error("Transport file error - " + message);

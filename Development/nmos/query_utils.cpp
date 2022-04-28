@@ -489,7 +489,7 @@ namespace nmos
                 // also omitted unless resource_path is empty (since that's also an extension);
                 // ironically, the latter is a schema violation, but the former wouldn't be because the schema
                 // does not have "additionalProperties": false
-                // see nmos-discovery-registration/APIs/schemas/queryapi-subscriptions-websocket.json
+                // see https://specs.amwa.tv/is-04/releases/v1.1.0/APIs/schemas/with-refs/queryapi-subscriptions-websocket.html
                 if (resource_path.empty())
                 {
                     if (!match.strip || resource.version < match.version)

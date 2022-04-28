@@ -231,7 +231,7 @@ namespace nmos
                 // determine the grain timestamps
 
                 // the meanings of each of these are being clarified in IS-04 v1.3
-                // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/102
+                // see https://github.com/AMWA-TV/is-04/pull/102
 
                 // origin_timestamp is like paging.until, the timestamp of the most recent update potentially included in this message
                 // it has therefore been subject to the usual adjustments to make it unique and strictly increasing

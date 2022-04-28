@@ -68,7 +68,7 @@ namespace nmos
         // Numbered Source Channel (001..127)
         // "due to original regex [in source_audio.json] allowing NSC000, but NSC001-NSC128 possibly
         // being preferable for consistency with U01-U64", it's OK to use NSC000 and NSC128 also!
-        // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/145
+        // see https://github.com/AMWA-TV/is-04/pull/145
         const channel_symbol NSC(unsigned int channel_number);
 
         // Undefined channel (01..64)

@@ -15,7 +15,7 @@ namespace nmos
         namespace patterns
         {
             const route_pattern schemas = make_route_pattern(U("api"), U("schemas"));
-            const route_pattern schemasRepository = make_route_pattern(U("repository"), U("nmos-[^/]+"));
+            const route_pattern schemasRepository = make_route_pattern(U("repository"), U("[^/]+"));
             const route_pattern schemasTag = make_route_pattern(U("tag"), U("v[0-9]+\\.[^/]+"));
             const route_pattern schemasRef = make_route_pattern(U("ref"), U("[^/]+"));
         }

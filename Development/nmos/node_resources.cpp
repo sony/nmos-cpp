@@ -477,7 +477,7 @@ namespace nmos
         data[U("transport")] = value::string(transport.name);
         data[U("device_id")] = value::string(device_id);
         // "Permit a Sender's 'manifest_href' to be null when the transport type does not require a transport file" from IS-04 v1.3
-        // See https://github.com/AMWA-TV/nmos-discovery-registration/pull/97
+        // See https://github.com/AMWA-TV/is-04/pull/97
         data[U("manifest_href")] = !manifest_href.empty() ? value::string(manifest_href) : value::null();
 
         auto& interface_bindings = data[U("interface_bindings")] = value::array();

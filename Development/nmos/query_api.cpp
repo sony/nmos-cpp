@@ -515,7 +515,7 @@ namespace nmos
                     // "Query API clients MAY choose to include [the 'secure'] attribute in requests for subscriptions,
                     // however they will receive a 400 response code unless the Query API explicitly supports a mismatch
                     // between encrypted HTTP and WebSocket connections."
-                    // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/84/commits/2d842770c1fc6c38b46fe6735c0b87bc42c48666
+                    // see https://github.com/AMWA-TV/is-04/pull/84/commits/2d842770c1fc6c38b46fe6735c0b87bc42c48666
                     const bool valid_secure_field = api_secure == nmos::fields::secure(data);
                     valid = valid && valid_secure_field;
                 }
@@ -525,7 +525,7 @@ namespace nmos
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Subscription requested on " << nmos::fields::resource_path(data) << ", to be " << (nmos::fields::persist(data) ? "persistent" : "non-persistent");
 
                     // if the query parameters are not supported, an exception from either of these constructors will result in an appropriate response, e.g. a 501 HTTP status code
-                    // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/99
+                    // see https://github.com/AMWA-TV/is-04/pull/99
                     const resource_query match(version, nmos::fields::resource_path(data), nmos::fields::params(data));
                     const resource_paging paging(nmos::fields::params(data));
 

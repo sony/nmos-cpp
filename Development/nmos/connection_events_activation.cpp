@@ -119,7 +119,7 @@ namespace nmos
                 else // "health", "shutdown" or "reboot"
                 {
                     // hmm, for "reboot", should probably try to re-make the connection, possibly with exponential back-off
-                    // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/96
+                    // see https://github.com/AMWA-TV/is-05/issues/96
 
                     // for now, just log all of these message types
 
@@ -136,10 +136,10 @@ namespace nmos
                 auto lock = model.write_lock();
 
                 // hmm, should probably try to re-make the connection, possibly with exponential back-off, for ephemeral error conditions
-                // see https://github.com/AMWA-TV/nmos-device-connection-management/issues/96
+                // see https://github.com/AMWA-TV/is-05/issues/96
 
                 // for now, just reflect this into the /active endpoint of all associated receivers by setting master_enable to false
-                // see https://github.com/AMWA-TV/nmos-device-connection-management/pull/97
+                // see https://github.com/AMWA-TV/is-05/pull/97
 
                 const auto activation_time = nmos::tai_now();
 

@@ -428,7 +428,7 @@ namespace nmos
                 {
                     // experimental extension, proposed for v1.3, using a more specific status code to distinguish conflicts from validation errors
                     // when that conflict may be resolvable automatically by the Node
-                    // see https://github.com/AMWA-TV/nmos-discovery-registration/pull/85
+                    // see https://github.com/AMWA-TV/is-04/pull/85
                     set_error_reply(res, status_codes::Conflict, U("Conflict; ") + details::make_valid_api_version_error(version, resource->version));
 
                     // the Location header would enable an HTTP DELETE to be performed to explicitly clear the registry of the conflicting registration
