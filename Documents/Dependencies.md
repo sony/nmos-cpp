@@ -59,7 +59,7 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
    - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install conan`  
    - Currently, Conan 1.43 or higher is required; version 1.45 (latest release at the time) has been tested
    - Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan` regularly
-   - By default [Conan assumes semver compatibility](https://docs.conan.io/en/1.42/creating_packages/define_abi_compatibility.html#versioning-schema).
+   - By default [Conan assumes semver compatibility](https://docs.conan.io/en/1.42/creating_packages/define_abi_compatibility.html#versioning-schema).
      Boost and other C++ libraries do not meet this expectation and break ABI compatibility between e.g. minor versions.
      Unfortunately, the recipes in Conan Center Index do not generally customize their `package_id` method to take this into account.
      Therefore it is strongly recommended to change Conan's default package id mode to `minor_mode` or a stricter mode such as `recipe_revision_mode`.
@@ -240,7 +240,7 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.1.1m installer (latest release at the time) has been tested
+     The Win64 OpenSSL v1.1.1n installer (latest release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available  
      The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
 
