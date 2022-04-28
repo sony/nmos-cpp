@@ -53,7 +53,7 @@ namespace nmos
     };
 
     // callback to supply a list of server certificates
-    // this callback is executed when opening the HTTP or WebSocket listener
+    // this callback is executed when a connection is accepted by the HTTP or WebSocket listener
     // this callback should not throw exceptions
     // on Windows, if C++ REST SDK is built with CPPREST_HTTP_LISTENER_IMPL=httpsys (reported as "listener=httpsys" by nmos::get_build_settings_info)
     // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
@@ -61,7 +61,7 @@ namespace nmos
 
     // callback to supply Diffie-Hellman parameters for ephemeral key exchange support, in PEM format or empty string for no support
     // see e.g. https://wiki.openssl.org/index.php/Diffie-Hellman_parameters
-    // this callback is executed when opening the HTTP or WebSocket listener
+    // this callback is executed when a connection is accepted by the HTTP or WebSocket listener
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_dh_param_handler;
 
