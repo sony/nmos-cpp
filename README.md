@@ -38,6 +38,8 @@ After setting up the dependencies, follow these [instructions](Documents/Getting
 
 Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
+An [nmos-cpp Conan package](https://conan.io/center/nmos-cpp) is published at Conan Center Index.
+
 ## Agile Development
 
 [<img alt="JT-NM Tested 03/20 NMOS & TR-1001-1" src="Documents/images/jt-nm-tested-03-20-registry.png?raw=true" height="135" align="right"/>](https://jt-nm.org/jt-nm_tested/)
@@ -107,6 +109,11 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Updates to the GitHub Actions build-test workflow for better coverage of platforms and to include unicast DNS-SD tests
+- Regular Conan Center Index releases (see [nmos-cpp recipe](https://github.com/conan-io/conan-center-index/blob/master/recipes/nmos-cpp))
+- Update to RQL implementation to support advanced queries for string values containing '.'
+- Improvements to the SDP parser/generator
+- Improvements to Conan/CMake build, including updates to preferred version of dependencies such as Boost and OpenSSL
 - Prepared a basic Conan recipe for building nmos-cpp, in [Sandbox/conan-recipe](Sandbox/conan-recipe)
 - Refactored the CMake build to make it easier to use nmos-cpp from another project, demonstrated by [Sandbox/my-nmos-node](Sandbox/my-nmos-node)
 - Added support for BCP-004-01 Receiver Capabilities
