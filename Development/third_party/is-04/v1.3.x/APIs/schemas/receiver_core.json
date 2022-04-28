@@ -42,19 +42,19 @@
           }
         },
         "subscription": {
-          "description": "Object containing the 'sender_id' currently subscribed to.",
+          "description": "Object indicating how this Receiver is currently configured to receive data.",
           "type": "object",
           "required": ["sender_id", "active"],
           "properties": {
             "sender_id": {
               "type": ["string", "null"],
-              "description": "UUID of the Sender that this Receiver is currently subscribed to",
+              "description": "UUID of the Sender from which this Receiver is currently configured to receive data. Only set if it is active and receiving from an NMOS Sender; otherwise null.",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
               "default": null
             },
             "active": {
               "type": "boolean",
-              "description": "Receiver is enabled and configured with a Sender's connection parameters",
+              "description": "Receiver is enabled and configured to receive data",
               "default": false
             }
           }
