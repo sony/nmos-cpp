@@ -88,7 +88,12 @@ namespace nmos
 
             for (auto& http_listener : http_listeners)
             {
-                if (0 <= http_listener.uri().port()) tasks.push_back(http_listener.close());
+                if (0 <= http_listener.uri().port())
+                {
+                    // close returns default pplx<void>::tasks if listener is already closed which crashes pplx::when_all.
+                    auto task = http_listener.close();
+                    if (task != pplx::task<void>()) tasks.push_back(task);
+                }
             }
             for (auto& ws_listener : ws_listeners)
             {
