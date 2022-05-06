@@ -2,6 +2,7 @@
 #define PPLX_PPLX_UTILS_H
 
 #include <chrono>
+#include <boost/range/adaptor/transformed.hpp>
 #include "pplx/pplxtasks.h"
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1800)) && !CPPREST_FORCE_PPLX
@@ -86,6 +87,19 @@ namespace pplx
         return pplx::task<ReturnType>() == task;
     }
 
+    namespace details
+    {
+        template <typename ReturnType>
+        void wait_nothrow(const pplx::task<ReturnType>& task)
+        {
+            try
+            {
+                task.wait();
+            }
+            catch (...) {}
+        }
+    }
+        
     /// <summary>
     ///     Silently 'observe' any exception thrown from a task.
     /// </summary>
@@ -98,13 +112,100 @@ namespace pplx
     {
         void operator()(pplx::task<ReturnType> finally) const
         {
-            try
-            {
-                finally.wait();
-            }
-            catch (...) {}
+            details::wait_nothrow(finally);
         }
     };
+
+    /// <summary>
+    ///     Silently 'observe' all exceptions thrown from a range of tasks.
+    /// </summary>
+    /// <remarks>
+    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
+    ///     Add this as a continuation to silently swallow all exceptions.
+    /// </remarks>
+    template <typename ReturnType>
+    struct observe_exceptions
+    {
+        template <typename InputRange>
+        explicit observe_exceptions(InputRange&& tasks) : tasks(tasks.begin(), tasks.end()) {}
+
+        template <typename InputIterator>
+        observe_exceptions(InputIterator&& first, InputIterator&& last) : tasks(first, last) {}
+
+        void operator()(pplx::task<ReturnType> finally) const
+        {
+            for (auto& task : tasks) details::wait_nothrow(task);
+            details::wait_nothrow(finally);
+        }
+
+    private:
+        std::vector<pplx::task<ReturnType>> tasks;
+    };
+
+    namespace details
+    {
+        template <typename ReturnType>
+        struct workaround_default_task
+        {
+            pplx::task<ReturnType> operator()(pplx::task<ReturnType> task) const
+            {
+                if (!pplx::empty(task)) return task;
+                // convert default constructed tasks into ones that pplx::when_{all,any} can handle
+                // see https://github.com/microsoft/cpprestsdk/issues/1701
+                try
+                {
+                    task.wait();
+                    // unreachable code
+                    return task;
+                }
+                catch (const pplx::invalid_operation& e)
+                {
+                    auto workaround = pplx::task_from_exception<ReturnType>(e);
+                    details::wait_nothrow(workaround);
+                    return workaround;
+                }
+            }
+        };
+    }
+
+    namespace ranges
+    {
+        namespace details
+        {
+            template <typename InputRange>
+            auto when_all(InputRange&& tasks, const pplx::task_options& options = pplx::task_options())
+                -> decltype(pplx::when_all(tasks.begin(), tasks.end(), options))
+            {
+                return pplx::when_all(tasks.begin(), tasks.end(), options);
+            }
+        }
+
+        template <typename InputRange>
+        auto when_all(InputRange&& tasks, const pplx::task_options& options = pplx::task_options())
+            -> decltype(pplx::when_all(tasks.begin(), tasks.end(), options))
+        {
+            using ReturnType = typename std::iterator_traits<decltype(tasks.begin())>::value_type::result_type;
+            return pplx::ranges::details::when_all(tasks | boost::adaptors::transformed(pplx::details::workaround_default_task<ReturnType>()));
+        }
+
+        namespace details
+        {
+            template <typename InputRange>
+            auto when_any(InputRange&& tasks, const pplx::task_options& options = pplx::task_options())
+                -> decltype(pplx::when_any(tasks.begin(), tasks.end(), options))
+            {
+                return pplx::when_any(tasks.begin(), tasks.end(), options);
+            }
+        }
+
+        template <typename InputRange>
+        auto when_any(InputRange&& tasks, const pplx::task_options& options = pplx::task_options())
+            -> decltype(pplx::when_any(tasks.begin(), tasks.end(), options))
+        {
+            using ReturnType = typename std::iterator_traits<decltype(tasks.begin())>::value_type::result_type;
+            return pplx::ranges::details::when_any(tasks | boost::adaptors::transformed(pplx::details::workaround_default_task<ReturnType>()));
+        }
+    }
 
     /// <summary>
     ///     RAII helper for classes that have asynchronous open/close member functions.
