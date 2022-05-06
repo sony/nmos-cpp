@@ -116,6 +116,18 @@ namespace pplx
         }
     };
 
+    namespace details
+    {
+        // see http://ericniebler.com/2013/08/07/universal-references-and-the-copy-constructo/
+        template<typename A, typename B>
+        using disable_if_same_or_derived =
+            typename std::enable_if<
+                !std::is_base_of<A,typename
+                    std::remove_reference<B>::type
+                >::value
+            >::type;
+    }
+
     /// <summary>
     ///     Silently 'observe' all exceptions thrown from a range of tasks.
     /// </summary>
@@ -126,7 +138,7 @@ namespace pplx
     template <typename ReturnType>
     struct observe_exceptions
     {
-        template <typename InputRange>
+        template <typename InputRange, typename X = pplx::details::disable_if_same_or_derived<observe_exceptions, InputRange>>
         explicit observe_exceptions(InputRange&& tasks) : tasks(tasks.begin(), tasks.end()) {}
 
         template <typename InputIterator>
