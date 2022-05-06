@@ -7,11 +7,6 @@ namespace nmos
         : model(model)
     {}
 
-    namespace details
-    {
-        void wait_nothrow(pplx::task<void> t) { try { t.wait(); } catch (...) {} }
-    }
-
     pplx::task<void> server::open()
     {
         return pplx::create_task([&]
@@ -70,11 +65,7 @@ namespace nmos
                 if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.open());
             }
 
-            return pplx::when_all(tasks.begin(), tasks.end()).then([tasks](pplx::task<void> finally)
-            {
-                for (auto& task : tasks) details::wait_nothrow(task);
-                finally.wait();
-            });
+            return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions<void>(tasks));
         });
     }
 
@@ -95,11 +86,7 @@ namespace nmos
                 if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.close());
             }
 
-            return pplx::when_all(tasks.begin(), tasks.end()).then([tasks](pplx::task<void> finally)
-            {
-                for (auto& task : tasks) details::wait_nothrow(task);
-                finally.wait();
-            });
+            return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions<void>(tasks));
         });
     }
 

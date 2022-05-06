@@ -91,8 +91,6 @@ namespace nmos
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
 
-            static void wait_nothrow(pplx::task<void> t) { try { t.wait(); } catch (...) {} }
-
             static nmos::details::omanip_gate make_gate(slog::base_gate& gate) { return{ gate, nmos::stash_category(nmos::categories::send_events_ws_commands) }; }
         };
 
@@ -335,11 +333,7 @@ namespace nmos
             subscriptions.clear();
             connections.clear();
 
-            return pplx::when_all(tasks.begin(), tasks.end()).then([tasks](pplx::task<void> finally)
-            {
-                for (auto& task : tasks) wait_nothrow(task);
-                finally.wait();
-            });
+            return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions<void>(tasks));
         }
     }
 
