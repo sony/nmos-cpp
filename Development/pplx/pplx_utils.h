@@ -122,6 +122,24 @@ namespace pplx
         open_close_guard& operator=(const open_close_guard&) = delete;
         guarded_t* guarded;
     };
+
+    namespace range 
+    {
+        /// <summary>
+        ///     Wrapper function for pplx::when_all(_Iterator _Begin, _Iterator _End, const task_options& _TaskOptions = task_options()).
+        ///     The original function fails on default generated task. This function can be used with a filtered range of tasks using boost::adaptors::transformed. 
+        /// </summary>
+        /// <remarks>
+        ///     Might be removed if microsoft/cpprestsdk#1700 and microsoft/cpprestsdk#1701 has been solved and released.
+        /// </remarks>
+        template<class RandomAccessRange>
+        pplx::task<void> when_all( const RandomAccessRange& rng )
+        {
+            return pplx::when_all( rng.begin(), rng.end() );
+        }
+    }
+
+
 }
 
 #endif

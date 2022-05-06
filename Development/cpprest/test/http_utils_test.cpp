@@ -3,6 +3,8 @@
 
 #include "bst/test/test.h"
 
+#include "boost/range/adaptors.hpp"
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testGetHostPort)
 {
@@ -171,4 +173,22 @@ BST_TEST_CASE(testParseTimingHeaderEdgeCases)
 {
     BST_REQUIRE_EQUAL(42.0, web::http::experimental::parse_timing_header(U("foo;dur=42;desc=bar;dur=57")).front().duration);
     BST_REQUIRE(web::http::experimental::parse_timing_header(U("foo;desc=\"\";dur=42;desc=bar")).front().description.empty());
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE( testRangeWhenAll )
+{
+    std::vector<pplx::task<void>> tasks(5);
+    BST_REQUIRE_EQUAL( pplx::task_status::completed, pplx::range::when_all( tasks | boost::adaptors::transformed( []( pplx::task<void> task )
+    {
+        try { task.is_done(); return task; }
+        catch( const pplx::invalid_operation& ) { return pplx::task_from_result(); }
+    } ) ).then( [tasks]( pplx::task<void> finally )
+    {
+        for( auto task : tasks )  try { task.wait(); }
+        catch( ... ) { }
+        finally.wait();
+    } ).wait() );
+
 }

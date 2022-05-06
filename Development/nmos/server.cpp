@@ -1,6 +1,8 @@
 #include "nmos/server.h"
 #include "nmos/model.h"
 
+#include "boost/range/adaptors.hpp"
+
 namespace nmos
 {
     server::server(nmos::base_model& model)
@@ -88,23 +90,26 @@ namespace nmos
 
             for (auto& http_listener : http_listeners)
             {
-                if (0 <= http_listener.uri().port())
-                {
-                    // close returns default pplx<void>::tasks if listener is already closed which crashes pplx::when_all.
-                    auto task = http_listener.close();
-                    if (task != pplx::task<void>()) tasks.push_back(task);
-                }
+                if (0 <= http_listener.uri().port()) tasks.push_back(http_listener.close());
             }
             for (auto& ws_listener : ws_listeners)
             {
                 if (0 <= ws_listener.uri().port()) tasks.push_back(ws_listener.close());
             }
 
-            return pplx::when_all(tasks.begin(), tasks.end()).then([tasks](pplx::task<void> finally)
+
+            // Call range::when_all to filter default constructed tasks which may occur when already closed http_listeners are closed again.
+            // See open issues microsoft/cpprestsdk#1700 and microsoft/cpprestsdk#1701. 
+            // TODO: Use standard pplx::when_all if cpprest issues are resolved and released.
+            return pplx::range::when_all( tasks | boost::adaptors::transformed( []( pplx::task<void> task )
             {
-                for (auto& task : tasks) details::wait_nothrow(task);
+                try { task.is_done(); return task; }
+                catch( const pplx::invalid_operation& ) { return pplx::task_from_result(); }
+            } ) ).then( [tasks]( pplx::task<void> finally )
+            {
+                for( auto task : tasks ) details::wait_nothrow( task );
                 finally.wait();
-            });
+            } );
         });
     }
 
