@@ -7,8 +7,8 @@
 BST_TEST_CASE(testWhenAll)
 {
     pplx::task<void> default_task;
-    pplx::task<void> successful_task1 = pplx::task_from_result<void>();
-    pplx::task<void> successful_task2 = pplx::task_from_result<void>();
+    pplx::task<void> successful_task1 = pplx::task_from_result();
+    pplx::task<void> successful_task2 = pplx::task_from_result();
     pplx::task<void> failed_task = pplx::task_from_exception<void>(std::runtime_error("failed"));
 
     BST_REQUIRE_THROW(failed_task.wait(), std::runtime_error);
