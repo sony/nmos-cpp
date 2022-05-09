@@ -100,6 +100,15 @@ namespace pplx
         }
     }
         
+    struct exception_observer
+    {
+        template <typename ContinuationReturnType>
+        void operator()(pplx::task<ContinuationReturnType> finally) const
+        {
+            details::wait_nothrow(finally);
+        }
+    };
+
     /// <summary>
     ///     Silently 'observe' any exception thrown from a task.
     /// </summary>
@@ -107,14 +116,10 @@ namespace pplx
     ///     Exceptions that are unobserved when a task is destructed will terminate the process.
     ///     Add this as a continuation to silently swallow all exceptions.
     /// </remarks>
-    template <typename ReturnType>
-    struct observe_exception
+    inline exception_observer observe_exception()
     {
-        void operator()(pplx::task<ReturnType> finally) const
-        {
-            details::wait_nothrow(finally);
-        }
-    };
+        return exception_observer();
+    }
 
     namespace details
     {
@@ -128,23 +133,17 @@ namespace pplx
             >::type;
     }
 
-    /// <summary>
-    ///     Silently 'observe' all exceptions thrown from a range of tasks.
-    /// </summary>
-    /// <remarks>
-    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
-    ///     Add this as a continuation to silently swallow all exceptions.
-    /// </remarks>
     template <typename ReturnType>
-    struct observe_exceptions
+    struct exceptions_observer
     {
-        template <typename InputRange, typename X = pplx::details::disable_if_same_or_derived<observe_exceptions, InputRange>>
-        explicit observe_exceptions(InputRange&& tasks) : tasks(tasks.begin(), tasks.end()) {}
+        template <typename InputRange, typename X = pplx::details::disable_if_same_or_derived<exceptions_observer, InputRange>>
+        explicit exceptions_observer(InputRange&& tasks) : tasks(tasks.begin(), tasks.end()) {}
 
         template <typename InputIterator>
-        observe_exceptions(InputIterator&& first, InputIterator&& last) : tasks(first, last) {}
+        exceptions_observer(InputIterator&& first, InputIterator&& last) : tasks(std::forward<InputIterator>(first), std::forward<InputIterator>(last)) {}
 
-        void operator()(pplx::task<ReturnType> finally) const
+        template <typename ContinuationReturnType>
+        void operator()(pplx::task<ContinuationReturnType> finally) const
         {
             for (auto& task : tasks) details::wait_nothrow(task);
             details::wait_nothrow(finally);
@@ -153,6 +152,32 @@ namespace pplx
     private:
         std::vector<pplx::task<ReturnType>> tasks;
     };
+
+    /// <summary>
+    ///     Silently 'observe' all exceptions thrown from a range of tasks.
+    /// </summary>
+    /// <remarks>
+    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
+    ///     Add this as a continuation to silently swallow all exceptions.
+    /// </remarks>
+    template <typename InputRange, typename ReturnType = typename std::iterator_traits<decltype(std::declval<InputRange>().begin())>::value_type::result_type>
+    inline exceptions_observer<ReturnType> observe_exceptions(InputRange&& tasks)
+    {
+        return exceptions_observer<ReturnType>(std::forward<InputRange>(tasks));
+    }
+
+    /// <summary>
+    ///     Silently 'observe' all exceptions thrown from a range of tasks.
+    /// </summary>
+    /// <remarks>
+    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
+    ///     Add this as a continuation to silently swallow all exceptions.
+    /// </remarks>
+    template <typename InputIterator, typename ReturnType = typename std::iterator_traits<InputIterator>::value_type::result_type>
+    inline exceptions_observer<ReturnType> observe_exceptions(InputIterator&& first, InputIterator&& last)
+    {
+        return exceptions_observer<ReturnType>(std::forward<InputIterator>(first), std::forward<InputIterator>(last));
+    }
 
     namespace details
     {

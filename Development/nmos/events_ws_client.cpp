@@ -281,7 +281,7 @@ namespace nmos
                                     .then([] { return true; });
                             });
                         }, token);
-                    }).then(pplx::observe_exception<void>());
+                    }).then(pplx::observe_exception());
 
                     connection = connections.insert({ connection_uri, client }).first;
                 }
@@ -333,7 +333,7 @@ namespace nmos
             subscriptions.clear();
             connections.clear();
 
-            return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions<void>(tasks));
+            return pplx::ranges::when_all(tasks).then(pplx::observe_exceptions(tasks));
         }
     }
 
