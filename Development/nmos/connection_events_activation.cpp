@@ -34,12 +34,12 @@ namespace nmos
             if (active && !connection_uri_or_null.is_null() && !ext_is_07_source_id_or_null.is_null())
             {
                 events_ws_client->subscribe(connection_resource.id, connection_uri_or_null.as_string(), ext_is_07_source_id_or_null.as_string())
-                    .then(pplx::observe_exception<void>());
+                    .then(pplx::observe_exception());
             }
             else
             {
                 events_ws_client->unsubscribe(connection_resource.id)
-                    .then(pplx::observe_exception<void>());
+                    .then(pplx::observe_exception());
             }
         };
     }

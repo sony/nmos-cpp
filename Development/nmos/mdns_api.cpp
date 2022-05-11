@@ -206,13 +206,10 @@ namespace nmos
                                 return mdns_result(browsed1, resolved);
                             }));
                         }
-                        return pplx::when_all(tasks.begin(), tasks.end()).then([res, version, tasks](pplx::task<std::vector<mdns_result>> finally) mutable
+                        return pplx::ranges::when_all(tasks).then([res, version, tasks](pplx::task<std::vector<mdns_result>> finally) mutable
                         {
                             // to ensure an exception from one doesn't leave other tasks' exceptions unobserved
-                            for (auto& task : tasks)
-                            {
-                                try { task.wait(); } catch (...) {}
-                            }
+                            for (auto& task : tasks) pplx::details::wait_nothrow(task);
 
                             // merge results that have the same host_target, port and txt records
                             // and only differ in the resolved addresses
