@@ -12,6 +12,8 @@ results_dir=$1
 shift
 badges_dir=$1
 shift
+summary_path=$1
+shift
 host_ip=$1
 shift
 build_prefix=$1
@@ -160,8 +162,12 @@ function do_run_test() {
     fi
   fi
   case $result in
-  [0-1])  echo "Pass" | tee ${badges_dir}/${suite}.txt ;;
-  *)      echo "Fail" | tee ${badges_dir}/${suite}.txt ;;
+  [0-1])  echo "Pass" | tee ${badges_dir}/${suite}.txt
+          echo "${suite} :heavy_check_mark:" >> ${summary_path}
+          ;;
+  *)      echo "Fail" | tee ${badges_dir}/${suite}.txt
+          echo "${suite} :x:" >> ${summary_path}
+          ;;
   esac
 }
 

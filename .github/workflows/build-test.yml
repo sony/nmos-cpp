@@ -464,7 +464,7 @@ jobs:
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
         fi
 
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
@@ -968,7 +968,7 @@ jobs:
           avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
         fi
 
-        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
+        ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
