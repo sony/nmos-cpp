@@ -85,7 +85,7 @@ namespace nmos
             using web::json::value_from_elements;
 
             auto receiver_status = value_of({
-                { nmos::fields::state, nmos::receiver_states::no_transport_file.name },
+                { nmos::fields::state, nmos::receiver_states::unknown.name },
             });
 
             auto endpoint_status = value_of({

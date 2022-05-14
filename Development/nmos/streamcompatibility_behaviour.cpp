@@ -96,7 +96,7 @@ namespace nmos
                 const auto session_description = sdp::parse_session_description(utility::us2s(sdp_data));
                 auto sdp_params = nmos::parse_session_description(session_description).first;
 
-                receiver_state = nmos::receiver_states::ok;
+                receiver_state = nmos::receiver_states::compliant_stream;
 
                 try
                 {
@@ -104,12 +104,12 @@ namespace nmos
                 }
                 catch (const std::runtime_error& e)
                 {
-                    receiver_state = nmos::receiver_states::receiver_capabilities_violation;
+                    receiver_state = nmos::receiver_states::non_compliant_stream;
                 }
             }
             else
             {
-                receiver_state = nmos::receiver_states::no_transport_file;
+                receiver_state = nmos::receiver_states::unknown;
             }
 
             return receiver_state;
@@ -227,7 +227,7 @@ namespace nmos
                             auto streamcompatibility_receiver = find_resource(streamcompatibility_resources, streamcompatibility_receiver_id_type);
                             if (streamcompatibility_resources.end() == streamcompatibility_receiver) throw std::logic_error("Matching IS-11 receiver not found");
 
-                            nmos::receiver_state receiver_state(nmos::receiver_states::no_transport_file);
+                            nmos::receiver_state receiver_state(nmos::receiver_states::unknown);
 
                             const std::pair<nmos::id, nmos::type> connection_receiver_id_type{ receiver_id, nmos::types::receiver };
                             auto connection_receiver = find_resource(connection_resources, connection_receiver_id_type);

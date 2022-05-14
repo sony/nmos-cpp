@@ -6,7 +6,7 @@
 #include "nmos/api_utils.h"
 #include "nmos/slog.h"
 
-// Flow Compatibility Management API implementation
+// Stream Compatibility Management API implementation
 // See https://github.com/AMWA-TV/is-11/blob/v1.0-dev/APIs/FlowCompatibilityManagementAPI.raml
 namespace nmos
 {

@@ -230,7 +230,7 @@ namespace nmos
         const web::json::field_as_string hostname{ U("hostname") }; // hostname, ipv4 or ipv6
         const web::json::field_as_integer port{ U("port") }; // 1..65535
 
-        // IS-11 Flow Compatibility Management
+        // IS-11 Stream Compatibility Management
 
         // for streamcompatibility_api
         const web::json::field_as_array inputs{ U("inputs") };

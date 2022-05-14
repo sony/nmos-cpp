@@ -50,7 +50,7 @@ namespace nmos
 		const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
-        // IS-11 Flow Compatibility Management API
+        // IS-11 Stream Compatibility Management API
         const route_pattern streamcompatibility_api = make_route_pattern(U("api"), U("streamcompatibility"));
 
         // API version pattern
@@ -82,8 +82,8 @@ namespace nmos
         const route_pattern outputSubroute = make_route_pattern(U("outputSubroute"), U("properties|sourceid|channels|caps"));
         const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
 
-        // Flow Compatibility Management API
-        const route_pattern flowCompatibilityResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|inputs|outputs"));
+        // Stream Compatibility Management API
+        const route_pattern streamCompatibilityResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|inputs|outputs"));
         const route_pattern senderReceiverSubrouteType = make_route_pattern(U("senderReceiverSubroute"), U("inputs|outputs"));
         const route_pattern constraintsType = make_route_pattern(U("constraintsType"), U("active|supported"));
         const route_pattern edidType = make_route_pattern(U("edidType"), U("base|effective"));

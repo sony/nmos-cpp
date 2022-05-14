@@ -226,13 +226,13 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::flowCompatibilityResourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::streamCompatibilityResourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.read_lock();
                 auto& resources = model.streamcompatibility_resources;
 
-                const string_t resourceType = parameters.at(nmos::patterns::flowCompatibilityResourceType.name);
+                const string_t resourceType = parameters.at(nmos::patterns::streamCompatibilityResourceType.name);
 
                 const auto match = [&resourceType](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
 
@@ -266,12 +266,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::flowCompatibilityResourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::streamCompatibilityResourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
                 auto& resources = model.streamcompatibility_resources;
 
-                const string_t resourceType = parameters.at(nmos::patterns::flowCompatibilityResourceType.name);
+                const string_t resourceType = parameters.at(nmos::patterns::streamCompatibilityResourceType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
