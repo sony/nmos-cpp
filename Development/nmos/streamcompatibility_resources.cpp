@@ -10,7 +10,7 @@ namespace nmos
 {
     namespace experimental
     {
-        web::json::value make_flowcompatibility_active_constraints_endpoint(const web::json::value& constraint_sets, bool locked)
+        web::json::value make_streamcompatibility_active_constraints_endpoint(const web::json::value& constraint_sets, bool locked)
         {
             using web::json::value_of;
 
@@ -24,7 +24,7 @@ namespace nmos
             });
         }
 
-        web::json::value make_flowcompatibility_sender_status_endpoint(nmos::sender_state sender_state, nmos::signal_state signal_state)
+        web::json::value make_streamcompatibility_sender_status_endpoint(nmos::sender_state sender_state, nmos::signal_state signal_state)
         {
             using web::json::value_of;
 
@@ -38,7 +38,7 @@ namespace nmos
             });
         }
 
-        nmos::resource make_flowcompatibility_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& param_constraints)
+        nmos::resource make_streamcompatibility_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& param_constraints)
         {
             using web::json::value;
             using web::json::value_of;
@@ -70,16 +70,16 @@ namespace nmos
             auto data = value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::endpoint_active_constraints, make_flowcompatibility_active_constraints_endpoint(value::array()) },
+                { nmos::fields::endpoint_active_constraints, make_streamcompatibility_active_constraints_endpoint(value::array()) },
                 { nmos::fields::inputs, value_from_elements(inputs) },
                 { nmos::fields::supported_param_constraints, supported_param_constraints },
-                { nmos::fields::endpoint_status, make_flowcompatibility_sender_status_endpoint(nmos::sender_states::unconstrained, nmos::signal_states::signal_is_present) },
+                { nmos::fields::endpoint_status, make_streamcompatibility_sender_status_endpoint(nmos::sender_states::unconstrained, nmos::signal_states::signal_is_present) },
             });
 
             return{ is11_versions::v1_0, types::sender, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_receiver(const nmos::id& id, const std::vector<nmos::id>& outputs)
+        nmos::resource make_streamcompatibility_receiver(const nmos::id& id, const std::vector<nmos::id>& outputs)
         {
             using web::json::value_of;
             using web::json::value_from_elements;
@@ -102,7 +102,7 @@ namespace nmos
             return{ is11_versions::v1_0, types::receiver, std::move(data), id, false };
         }
 
-        web::json::value make_flowcompatibility_dummy_edid_endpoint(bool locked)
+        web::json::value make_streamcompatibility_dummy_edid_endpoint(bool locked)
         {
             using web::json::value_of;
 
@@ -111,7 +111,7 @@ namespace nmos
             });
         }
 
-        web::json::value make_flowcompatibility_edid_endpoint(const web::uri& edid_file, bool locked)
+        web::json::value make_streamcompatibility_edid_endpoint(const web::uri& edid_file, bool locked)
         {
             using web::json::value_of;
 
@@ -121,7 +121,7 @@ namespace nmos
             });
         }
 
-        web::json::value make_flowcompatibility_edid_endpoint(const utility::string_t& edid_file, bool locked)
+        web::json::value make_streamcompatibility_edid_endpoint(const utility::string_t& edid_file, bool locked)
         {
             using web::json::value_of;
 
@@ -131,7 +131,7 @@ namespace nmos
             });
         }
 
-        web::json::value make_flowcompatibility_input_output_base(const nmos::id& id, bool connected, bool edid_support, const nmos::settings& settings)
+        web::json::value make_streamcompatibility_input_output_base(const nmos::id& id, bool connected, bool edid_support, const nmos::settings& settings)
         {
             using web::json::value;
 
@@ -143,25 +143,25 @@ namespace nmos
             return data;
         }
 
-        nmos::resource make_flowcompatibility_input(const nmos::id& id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings)
+        nmos::resource make_streamcompatibility_input(const nmos::id& id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
 
-            auto data = make_flowcompatibility_input_output_base(id, connected, false, settings);
+            auto data = make_streamcompatibility_input_output_base(id, connected, false, settings);
             data[nmos::fields::senders] = value_from_elements(senders);
 
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_input(const nmos::id& id, bool connected, bool base_edid_changeable, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings)
+        nmos::resource make_streamcompatibility_input(const nmos::id& id, bool connected, bool base_edid_changeable, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
 
-            auto data = make_flowcompatibility_input_output_base(id, connected, true, settings);
+            auto data = make_streamcompatibility_input_output_base(id, connected, true, settings);
 
             if (base_edid_changeable)
             {
-                data[nmos::fields::endpoint_base_edid] = make_flowcompatibility_dummy_edid_endpoint(false);
+                data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_dummy_edid_endpoint(false);
             }
 
             data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
@@ -176,21 +176,21 @@ namespace nmos
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
+        nmos::resource make_streamcompatibility_output(const nmos::id& id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
 
-            auto data = make_flowcompatibility_input_output_base(id, connected, false, settings);
+            auto data = make_streamcompatibility_input_output_base(id, connected, false, settings);
             data[nmos::fields::receivers] = value_from_elements(receivers);
 
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
         }
 
-        nmos::resource make_flowcompatibility_output(const nmos::id& id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
+        nmos::resource make_streamcompatibility_output(const nmos::id& id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
 
-            auto data = make_flowcompatibility_input_output_base(id, connected, true, settings);
+            auto data = make_streamcompatibility_input_output_base(id, connected, true, settings);
             data[nmos::fields::receivers] = value_from_elements(receivers);
 
             if (edid.has_value())

@@ -119,7 +119,7 @@
     //"events_port": 3216,
     //"events_ws_port": 3217,
     //"channelmapping_port": 3215,
-    //"flowcompatibility_port": 3218,
+    //"streamcompatibility_port": 3218,
     // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
     //"system_port": 10641,
 

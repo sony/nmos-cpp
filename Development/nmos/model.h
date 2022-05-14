@@ -103,8 +103,8 @@ namespace nmos
         nmos::resources channelmapping_resources;
 
         // IS-11 senders, receivers, inputs and outputs for this node
-        // see nmos/flowcompatibility_resources.h
-        nmos::resources flowcompatibility_resources;
+        // see nmos/streamcompatibility_resources.h
+        nmos::resources streamcompatibility_resources;
     };
 
     struct registry_model : model

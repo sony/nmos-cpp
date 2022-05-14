@@ -51,7 +51,7 @@ namespace nmos
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
         // IS-11 Flow Compatibility Management API
-        const route_pattern flowcompatibility_api = make_route_pattern(U("api"), U("flowcompatibility"));
+        const route_pattern streamcompatibility_api = make_route_pattern(U("api"), U("streamcompatibility"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));

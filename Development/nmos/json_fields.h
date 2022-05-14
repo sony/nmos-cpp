@@ -232,7 +232,7 @@ namespace nmos
 
         // IS-11 Flow Compatibility Management
 
-        // for flowcompatibility_api
+        // for streamcompatibility_api
         const web::json::field_as_array inputs{ U("inputs") };
         const web::json::field_as_array outputs{ U("outputs") };
         const web::json::field_as_bool temporarily_locked{ U("temporarily_locked") };

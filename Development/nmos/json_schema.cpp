@@ -449,7 +449,7 @@ namespace nmos
             return is08_schemas::v1_0::map_activations_post_request_uri;
         }
 
-        web::uri make_flowcompatibilityapi_senders_active_constraints_put_request_uri(const nmos::api_version& version)
+        web::uri make_streamcompatibilityapi_senders_active_constraints_put_request_uri(const nmos::api_version& version)
         {
             return is11_schemas::v1_0::senders_active_constraints_put_request_uri;
         }

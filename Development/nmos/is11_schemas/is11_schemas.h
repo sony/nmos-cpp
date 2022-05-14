@@ -16,7 +16,7 @@ namespace nmos
             extern const char* edid_timing;
             extern const char* empty_constraints_active;
             extern const char* error;
-            extern const char* flowcompatibility_api_base;
+            extern const char* streamcompatibility_api_base;
             extern const char* input_edid_base;
             extern const char* input;
             extern const char* input_output_base;

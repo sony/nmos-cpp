@@ -107,20 +107,20 @@ namespace nmos
             }
         }
 
-        if (0 <= nmos::fields::flowcompatibility_port(settings))
+        if (0 <= nmos::fields::streamcompatibility_port(settings))
         {
             for (const auto& version : nmos::is11_versions::from_settings(settings))
             {
-                auto flowcompatibility_uri = web::uri_builder()
+                auto streamcompatibility_uri = web::uri_builder()
                     .set_scheme(nmos::http_scheme(settings))
-                    .set_port(nmos::fields::flowcompatibility_port(settings))
-                    .set_path(U("/x-nmos/flowcompatibility/") + make_api_version(version));
+                    .set_port(nmos::fields::streamcompatibility_port(settings))
+                    .set_path(U("/x-nmos/streamcompatibility/") + make_api_version(version));
                 auto type = U("urn:x-nmos:control:fc-ctrl/") + make_api_version(version);
 
                 for (const auto& host : hosts)
                 {
                     web::json::push_back(data[U("controls")], value_of({
-                        { U("href"), flowcompatibility_uri.set_host(host).to_uri().to_string() },
+                        { U("href"), streamcompatibility_uri.set_host(host).to_uri().to_string() },
                         { U("type"), type }
                     }));
                 }

@@ -889,17 +889,17 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             sender_ids.push_back(impl::make_id(seed_id, nmos::types::sender, port, index));
         }
 
-        auto input = nmos::experimental::make_flowcompatibility_input(input_id, true, true, edid, web::json::value::object(), sender_ids, model.settings);
+        auto input = nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, web::json::value::object(), sender_ids, model.settings);
         impl::set_label_description(input, impl::ports::mux, 0); // The single Input originates both video and audio signals
-        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(input), gate)) return;
+        if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) return;
 
         for (const auto& sender_id : sender_ids)
         {
             const std::vector<utility::string_t> supported_param_constraints{
                 nmos::caps::transport::packet_time.key
             };
-            auto flowcompatibility_sender = nmos::experimental::make_flowcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
-            if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(flowcompatibility_sender), gate)) return;
+            auto streamcompatibility_sender = nmos::experimental::make_streamcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
+            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) return;
         }
     }
 
@@ -934,14 +934,14 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             receiver_ids.push_back(impl::make_id(seed_id, nmos::types::receiver, port, index));
         }
 
-        auto output = nmos::experimental::make_flowcompatibility_output(output_id, false, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings);
+        auto output = nmos::experimental::make_streamcompatibility_output(output_id, false, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings);
         impl::set_label_description(output, impl::ports::mux, 0); // The single Output consumes both video and audio signals
-        if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(output), gate)) return;
+        if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(output), gate)) return;
 
         for (const auto& receiver_id : receiver_ids)
         {
-            auto flowcompatibility_receiver = nmos::experimental::make_flowcompatibility_receiver(receiver_id, { output_id });
-            if (!insert_resource_after(delay_millis, model.flowcompatibility_resources, std::move(flowcompatibility_receiver), gate)) return;
+            auto streamcompatibility_receiver = nmos::experimental::make_streamcompatibility_receiver(receiver_id, { output_id });
+            if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_receiver), gate)) return;
         }
     }
 }
@@ -1310,7 +1310,7 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 }
 
 // Example Flow Compatibility Management API base EDID update callback to perform application-specific operations to apply updated Base EDID
-nmos::experimental::details::flowcompatibility_base_edid_put_handler make_node_implementation_flowcompatibility_base_edid_put_handler(slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_base_edid_put_handler make_node_implementation_streamcompatibility_base_edid_put_handler(slog::base_gate& gate)
 {
     return [&gate](const nmos::id& input_id, const utility::string_t& base_edid, bst::optional<web::json::value>& base_edid_properties)
     {
@@ -1321,7 +1321,7 @@ nmos::experimental::details::flowcompatibility_base_edid_put_handler make_node_i
 }
 
 // Example Flow Compatibility Management API base EDID delete callback to perform application-specific operations in the case Base EDID is deleted
-nmos::experimental::details::flowcompatibility_base_edid_delete_handler make_node_implementation_flowcompatibility_base_edid_delete_handler(slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_base_edid_delete_handler make_node_implementation_streamcompatibility_base_edid_delete_handler(slog::base_gate& gate)
 {
     return [&gate](const nmos::id& input_id)
     {
@@ -1329,10 +1329,10 @@ nmos::experimental::details::flowcompatibility_base_edid_delete_handler make_nod
     };
 }
 
-// Example Flow Compatibility Management API callback to update effective EDID - captures flowcompatibility_resources by reference!
-nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_implementation_effective_edid_setter(const nmos::resources& flowcompatibility_resources, slog::base_gate& gate)
+// Example Flow Compatibility Management API callback to update effective EDID - captures streamcompatibility_resources by reference!
+nmos::experimental::details::streamcompatibility_effective_edid_setter make_node_implementation_effective_edid_setter(const nmos::resources& streamcompatibility_resources, slog::base_gate& gate)
 {
-    return [&flowcompatibility_resources, &gate](const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid, bst::optional<web::json::value>& effective_edid_properties)
+    return [&streamcompatibility_resources, &gate](const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid, bst::optional<web::json::value>& effective_edid_properties)
     {
         unsigned char edid_bytes[] = {
             0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
@@ -1358,8 +1358,8 @@ nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_i
         bst::optional<utility::string_t> base_edid = bst::nullopt;
 
         const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
-        auto resource = find_resource(flowcompatibility_resources, id_type);
-        if (flowcompatibility_resources.end() != resource)
+        auto resource = find_resource(streamcompatibility_resources, id_type);
+        if (streamcompatibility_resources.end() != resource)
         {
             auto& edid_endpoint = nmos::fields::endpoint_base_edid(resource->data);
 
@@ -1388,7 +1388,7 @@ nmos::experimental::details::flowcompatibility_effective_edid_setter make_node_i
 }
 
 // Example Flow Compatibility Management API callback to update active constraints
-nmos::experimental::details::flowcompatibility_active_constraints_put_handler make_node_implementation_active_constraints_handler(slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_active_constraints_put_handler make_node_implementation_active_constraints_handler(slog::base_gate& gate)
 {
     using web::json::value_of;
 
@@ -1554,8 +1554,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_base_edid_changed(make_node_implementation_flowcompatibility_base_edid_put_handler(gate))
-        .on_base_edid_deleted(make_node_implementation_flowcompatibility_base_edid_delete_handler(gate))
-        .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.flowcompatibility_resources, gate))
+        .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_put_handler(gate))
+        .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
+        .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.streamcompatibility_resources, gate))
         .on_active_constraints_changed(make_node_implementation_active_constraints_handler(gate));
 }

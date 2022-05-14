@@ -12,7 +12,7 @@ namespace nmos
 
     namespace experimental
     {
-        void flowcompatibility_behaviour_thread(nmos::node_model& model, slog::base_gate& gate);
+        void streamcompatibility_behaviour_thread(nmos::node_model& model, slog::base_gate& gate);
     }
 }
 

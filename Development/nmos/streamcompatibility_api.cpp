@@ -86,7 +86,7 @@ namespace nmos
             }
 
             // it's expected that write lock is already catched for the model and an input with the resource_id exists
-            void update_effective_edid(nmos::node_model& model, const flowcompatibility_effective_edid_setter& effective_edid_setter, const utility::string_t resource_id)
+            void update_effective_edid(nmos::node_model& model, const streamcompatibility_effective_edid_setter& effective_edid_setter, const utility::string_t resource_id)
             {
                 boost::variant<utility::string_t, web::uri> effective_edid;
                 bst::optional<web::json::value> effective_edid_properties = bst::nullopt;
@@ -95,7 +95,7 @@ namespace nmos
 
                 utility::string_t updated_timestamp;
 
-                modify_resource(model.flowcompatibility_resources, resource_id, [&effective_edid, &effective_edid_properties, &updated_timestamp](nmos::resource& input)
+                modify_resource(model.streamcompatibility_resources, resource_id, [&effective_edid, &effective_edid_properties, &updated_timestamp](nmos::resource& input)
                 {
                     input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
 
@@ -109,16 +109,16 @@ namespace nmos
                 });
 
                 const std::pair<nmos::id, nmos::type> id_type{ resource_id, nmos::types::input };
-                auto resource = find_resource(model.flowcompatibility_resources, id_type);
+                auto resource = find_resource(model.streamcompatibility_resources, id_type);
 
                 update_version(model.node_resources, nmos::fields::senders(resource->data), updated_timestamp);
             }
 
             // it's expected that write lock is already catched for the model and IS-11 sender exists
-            void set_active_constraints(nmos::node_model& model, const nmos::id& sender_id, const web::json::value& constraints, const flowcompatibility_effective_edid_setter& effective_edid_setter)
+            void set_active_constraints(nmos::node_model& model, const nmos::id& sender_id, const web::json::value& constraints, const streamcompatibility_effective_edid_setter& effective_edid_setter)
             {
                 const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
-                auto resource = find_resource(model.flowcompatibility_resources, sender_id_type);
+                auto resource = find_resource(model.streamcompatibility_resources, sender_id_type);
                 auto matching_resource = find_resource(model.node_resources, sender_id_type);
                 if (model.node_resources.end() == matching_resource)
                 {
@@ -131,8 +131,8 @@ namespace nmos
                     for (const auto& input_id : nmos::fields::inputs(resource->data))
                     {
                         const std::pair<nmos::id, nmos::type> input_id_type{ input_id.as_string(), nmos::types::input };
-                        auto input = find_resource(model.flowcompatibility_resources, input_id_type);
-                        if (model.flowcompatibility_resources.end() != input)
+                        auto input = find_resource(model.streamcompatibility_resources, input_id_type);
+                        if (model.streamcompatibility_resources.end() != input)
                         {
                             if (!all_resources_exist(model.node_resources, nmos::fields::senders(input->data), nmos::types::sender))
                             {
@@ -148,10 +148,10 @@ namespace nmos
 
                 utility::string_t updated_timestamp;
 
-                // Update Active Constraints in flowcompatibility_resources
-                modify_resource(model.flowcompatibility_resources, sender_id, [&constraints, &updated_timestamp](nmos::resource& sender)
+                // Update Active Constraints in streamcompatibility_resources
+                modify_resource(model.streamcompatibility_resources, sender_id, [&constraints, &updated_timestamp](nmos::resource& sender)
                 {
-                    sender.data[nmos::fields::endpoint_active_constraints] = make_flowcompatibility_active_constraints_endpoint(constraints);
+                    sender.data[nmos::fields::endpoint_active_constraints] = make_streamcompatibility_active_constraints_endpoint(constraints);
 
                     updated_timestamp = nmos::make_version();
                     sender.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
@@ -171,43 +171,43 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_flowcompatibility_api(nmos::node_model& model, details::flowcompatibility_base_edid_put_handler base_edid_put_handler, details::flowcompatibility_base_edid_delete_handler base_edid_delete_handler, details::flowcompatibility_effective_edid_setter effective_edid_setter, details::flowcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_put_handler base_edid_put_handler, details::streamcompatibility_base_edid_delete_handler base_edid_delete_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_flowcompatibility_api(nmos::node_model& model, details::flowcompatibility_base_edid_put_handler base_edid_put_handler, details::flowcompatibility_base_edid_delete_handler base_edid_delete_handler, details::flowcompatibility_effective_edid_setter effective_edid_setter, details::flowcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_put_handler base_edid_put_handler, details::streamcompatibility_base_edid_delete_handler base_edid_delete_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
-            api_router flowcompatibility_api;
+            api_router streamcompatibility_api;
 
-            flowcompatibility_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+            streamcompatibility_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+            streamcompatibility_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("flowcompatibility/") }, req, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("streamcompatibility/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
             const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is11_versions::from_settings(model.settings); });
-            flowcompatibility_api.support(U("/x-nmos/") + nmos::patterns::flowcompatibility_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
+            streamcompatibility_api.support(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::flowcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_flowcompatibility_api(model, base_edid_put_handler, base_edid_delete_handler, effective_edid_setter, active_constraints_handler, gate));
+            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, base_edid_put_handler, base_edid_delete_handler, effective_edid_setter, active_constraints_handler, gate));
 
-            return flowcompatibility_api;
+            return streamcompatibility_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_flowcompatibility_api(nmos::node_model& model, details::flowcompatibility_base_edid_put_handler base_edid_put_handler, details::flowcompatibility_base_edid_delete_handler base_edid_delete_handler, details::flowcompatibility_effective_edid_setter effective_edid_setter, details::flowcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_put_handler base_edid_put_handler, details::streamcompatibility_base_edid_delete_handler base_edid_delete_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
-            api_router flowcompatibility_api;
+            api_router streamcompatibility_api;
 
             // check for supported API version
             const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is11_versions::from_settings(model.settings); });
@@ -215,22 +215,22 @@ namespace nmos
             const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
-                boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_flowcompatibilityapi_senders_active_constraints_put_request_uri))
+                boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_streamcompatibilityapi_senders_active_constraints_put_request_uri))
             };
 
-            flowcompatibility_api.support(U(".*"), nmos::details::make_api_version_handler(versions, gate_));
+            streamcompatibility_api.support(U(".*"), nmos::details::make_api_version_handler(versions, gate_));
 
-            flowcompatibility_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+            streamcompatibility_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/"), U("inputs/"), U("outputs/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::flowCompatibilityResourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::flowCompatibilityResourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::flowCompatibilityResourceType.name);
 
@@ -266,10 +266,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::flowCompatibilityResourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::flowCompatibilityResourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::flowCompatibilityResourceType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -316,10 +316,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::senderReceiverSubrouteType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::senderReceiverSubrouteType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -365,10 +365,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/status/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/status/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -397,10 +397,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -430,10 +430,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/") + nmos::patterns::constraintsType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/") + nmos::patterns::constraintsType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t constraintsType = parameters.at(nmos::patterns::constraintsType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -470,10 +470,10 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::inputOutputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/properties/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputOutputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/properties/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::inputOutputType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -520,11 +520,11 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::inputOutputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputOutputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::inputOutputType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -561,11 +561,11 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/") + nmos::patterns::edidType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/") + nmos::patterns::edidType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.read_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
                 const string_t edidType = parameters.at(nmos::patterns::edidType.name);
@@ -596,11 +596,11 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, base_edid_put_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, base_edid_put_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -637,7 +637,7 @@ namespace nmos
 
                             utility::string_t updated_timestamp;
 
-                            // Update Base EDID in flowcompatibility_resources
+                            // Update Base EDID in streamcompatibility_resources
                             modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp](nmos::resource& input)
                             {
                                 if (base_edid_properties.has_value())
@@ -645,7 +645,7 @@ namespace nmos
                                     input.data[nmos::fields::base_edid_properties] = base_edid_properties.value();
                                 }
 
-                                input.data[nmos::fields::endpoint_base_edid] = make_flowcompatibility_edid_endpoint(base_edid);
+                                input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid);
 
                                 updated_timestamp = nmos::make_version();
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
@@ -688,11 +688,11 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::DEL, [&model, base_edid_delete_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::DEL, [&model, base_edid_delete_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -726,7 +726,7 @@ namespace nmos
 
                             modify_resource(resources, resourceId, [&effective_edid_setter, &updated_timestamp](nmos::resource& input)
                             {
-                                input.data[nmos::fields::endpoint_base_edid] = make_flowcompatibility_dummy_edid_endpoint();
+                                input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_dummy_edid_endpoint();
 
                                 updated_timestamp = nmos::make_version();
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
@@ -769,17 +769,17 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::PUT, [&model, validator, active_constraints_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::PUT, [&model, validator, active_constraints_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 return nmos::details::extract_json(req, gate).then([&model, req, res, parameters, &validator, &active_constraints_handler, &effective_edid_setter, gate](value data) mutable
                 {
                     const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-                    validator.validate(data, experimental::make_flowcompatibilityapi_senders_active_constraints_put_request_uri(version));
+                    validator.validate(data, experimental::make_streamcompatibilityapi_senders_active_constraints_put_request_uri(version));
 
                     auto lock = model.write_lock();
-                    auto& resources = model.flowcompatibility_resources;
+                    auto& resources = model.streamcompatibility_resources;
 
                     const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -842,11 +842,11 @@ namespace nmos
                 });
             });
 
-            flowcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::DEL, [&model, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::DEL, [&model, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
-                auto& resources = model.flowcompatibility_resources;
+                auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -882,7 +882,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            return flowcompatibility_api;
+            return streamcompatibility_api;
         }
     }
 }

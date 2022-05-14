@@ -64,7 +64,7 @@ namespace nmos
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
 
             // Configure the Flow Compatibility API
-            node_server.api_routers[{ {}, nmos::fields::flowcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_flowcompatibility_api(node_model, node_implementation.base_edid_changed, node_implementation.base_edid_deleted, node_implementation.set_effective_edid, node_implementation.active_constraints_changed, gate));
+            node_server.api_routers[{ {}, nmos::fields::streamcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_streamcompatibility_api(node_model, node_implementation.base_edid_changed, node_implementation.base_edid_deleted, node_implementation.set_effective_edid, node_implementation.active_constraints_changed, gate));
 
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
             events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, gate);
@@ -112,7 +112,7 @@ namespace nmos
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
                 [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); },
-                [&] { nmos::experimental::flowcompatibility_behaviour_thread(node_model, gate); }
+                [&] { nmos::experimental::streamcompatibility_behaviour_thread(node_model, gate); }
             });
 
             auto system_changed = node_implementation.system_changed;
