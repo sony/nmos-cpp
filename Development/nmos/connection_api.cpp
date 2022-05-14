@@ -15,6 +15,7 @@
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/streamcompatibility_state.h"
 #include "nmos/transport.h"
 #include "nmos/thread_utils.h"
 #include "nmos/version.h"
@@ -454,6 +455,24 @@ namespace nmos
                         }
                         // find resource again just in case, since waiting releases and reacquires the lock
                         resource = find_resource(resources, id_type);
+                    }
+
+                    // "At any time if State of an active Sender becomes active_constraints_violation, the Sender MUST become inactive.
+                    // An inactive Sender in this state MUST NOT allow activations.
+                    // At any time if State of an active Receiver becomes non_compliant_stream, the Receiver SHOULD become inactive.
+                    // An inactive Receiver in this state SHOULD NOT allow activations."
+                    // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/Behaviour_-_Server_Side.html#preventing-restrictions-violation
+                    auto streamcompatibility_resource = find_resource(model.streamcompatibility_resources, id_type);
+                    if (model.streamcompatibility_resources.end() != streamcompatibility_resource)
+                    {
+                        auto resource_state = nmos::fields::state(nmos::fields::status(nmos::fields::endpoint_status(streamcompatibility_resource->data)));
+
+                        if (resource_state == nmos::sender_states::active_constraints_violation.name || resource_state == nmos::receiver_states::non_compliant_stream.name)
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Rejecting PATCH request for " << id_type << " due to its state: " << resource_state;
+
+                            return details::make_connection_resource_patch_error_response(status_codes::InternalError);
+                        }
                     }
                 }
                 else
