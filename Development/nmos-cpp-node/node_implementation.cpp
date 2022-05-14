@@ -24,7 +24,7 @@
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
 #include "nmos/format.h"
-#include "nmos/flowcompatibility_resources.h"
+#include "nmos/streamcompatibility_resources.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
 #ifdef HAVE_LLDP

@@ -702,7 +702,6 @@ set(NMOS_IS11_V1_0_SCHEMAS_JSON
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edid_timing.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/empty_constraints_active.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/error.json
-    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/flowcompatibility-api-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input-edid-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input-output-base.json
@@ -712,6 +711,7 @@ set(NMOS_IS11_V1_0_SCHEMAS_JSON
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource-list.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-status.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/streamcompatibility-api-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/uuid-list.json
     )
 
@@ -921,10 +921,10 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/events_ws_api.cpp
     nmos/events_ws_client.cpp
     nmos/filesystem_route.cpp
-    nmos/flowcompatibility_api.cpp
-    nmos/flowcompatibility_behaviour.cpp
-    nmos/flowcompatibility_resources.cpp
-    nmos/flowcompatibility_utils.cpp
+    nmos/streamcompatibility_api.cpp
+    nmos/streamcompatibility_behaviour.cpp
+    nmos/streamcompatibility_resources.cpp
+    nmos/streamcompatibility_utils.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
     nmos/lldp_handler.cpp
@@ -999,10 +999,10 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/events_ws_api.h
     nmos/events_ws_client.h
     nmos/filesystem_route.h
-    nmos/flowcompatibility_api.h
-    nmos/flowcompatibility_behaviour.h
-    nmos/flowcompatibility_resources.h
-    nmos/flowcompatibility_utils.h
+    nmos/streamcompatibility_api.h
+    nmos/streamcompatibility_behaviour.h
+    nmos/streamcompatibility_resources.h
+    nmos/streamcompatibility_utils.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
@@ -1054,7 +1054,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/resources.h
     nmos/schemas_api.h
     nmos/sdp_utils.h
-    nmos/flowcompatibility_state.h
+    nmos/streamcompatibility_state.h
     nmos/server.h
     nmos/server_utils.h
     nmos/settings.h

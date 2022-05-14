@@ -6,7 +6,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/connection_api.h"
 #include "nmos/connection_activation.h"
-#include "nmos/flowcompatibility_api.h"
+#include "nmos/streamcompatibility_api.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"

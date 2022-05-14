@@ -46,9 +46,6 @@
       "minItems": 1,
       "maxItems": 3,
       "uniqueItems": true,
-      "contains": {
-        "const": "RGB"
-      },
       "items": {
         "type": "string",
         "enum": [

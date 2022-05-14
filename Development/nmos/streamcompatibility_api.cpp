@@ -1,5 +1,5 @@
-#include "nmos/flowcompatibility_api.h"
-#include "nmos/flowcompatibility_utils.h"
+#include "nmos/streamcompatibility_api.h"
+#include "nmos/streamcompatibility_utils.h"
 
 #include <unordered_set>
 #include <boost/range/adaptor/filtered.hpp>
@@ -7,7 +7,7 @@
 #include "cpprest/containerstream.h"
 #include "cpprest/json_validator.h"
 #include "nmos/capabilities.h" // for nmos::fields::constraint_sets
-#include "nmos/flowcompatibility_resources.h"
+#include "nmos/streamcompatibility_resources.h"
 #include "nmos/is11_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"

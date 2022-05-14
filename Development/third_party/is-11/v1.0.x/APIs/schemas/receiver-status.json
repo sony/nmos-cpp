@@ -9,9 +9,9 @@
     "state": {
       "type": "string",
       "enum": [
-        "No Transport File",
-        "OK",
-        "Receiver Capabilities Violation"
+        "unknown",
+        "compliant_stream",
+        "non_compliant_stream"
       ]
     }
   }

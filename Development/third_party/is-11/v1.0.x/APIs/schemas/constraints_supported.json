@@ -9,27 +9,29 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^urn:x-nmos:cap:"
-      },
-      "contains": {
-        "type": "string",
-        "enum": [
-          "urn:x-nmos:cap:meta:label",
-          "urn:x-nmos:cap:meta:preference",
-          "urn:x-nmos:cap:meta:enabled",
-          "urn:x-nmos:cap:format:media_type",
-          "urn:x-nmos:cap:format:grain_rate",
-          "urn:x-nmos:cap:format:frame_width",
-          "urn:x-nmos:cap:format:frame_height",
-          "urn:x-nmos:cap:format:interlace_mode",
-          "urn:x-nmos:cap:format:color_sampling",
-          "urn:x-nmos:cap:format:component_depth",
-          "urn:x-nmos:cap:format:channel_count",
-          "urn:x-nmos:cap:format:sample_rate",
-          "urn:x-nmos:cap:format:sample_depth"
+        "anyOf": [
+          {
+            "enum": [
+              "urn:x-nmos:cap:meta:label",
+              "urn:x-nmos:cap:meta:preference",
+              "urn:x-nmos:cap:meta:enabled",
+              "urn:x-nmos:cap:format:media_type",
+              "urn:x-nmos:cap:format:grain_rate",
+              "urn:x-nmos:cap:format:frame_width",
+              "urn:x-nmos:cap:format:frame_height",
+              "urn:x-nmos:cap:format:interlace_mode",
+              "urn:x-nmos:cap:format:color_sampling",
+              "urn:x-nmos:cap:format:component_depth",
+              "urn:x-nmos:cap:format:channel_count",
+              "urn:x-nmos:cap:format:sample_rate",
+              "urn:x-nmos:cap:format:sample_depth"
+            ]
+          },
+          {
+            "pattern": "^urn:x-nmos:cap:"
+          }
         ]
       },
-      "minContains": 13,
       "uniqueItems": true
     }
   }

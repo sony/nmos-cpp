@@ -1,10 +1,10 @@
-#include "nmos/flowcompatibility_resources.h"
+#include "nmos/streamcompatibility_resources.h"
 
 #include <unordered_set>
 #include "nmos/capabilities.h" // for nmos::fields::constraint_sets
 #include "nmos/is11_versions.h"
 #include "nmos/resource.h"
-#include "nmos/flowcompatibility_state.h"
+#include "nmos/streamcompatibility_state.h"
 
 namespace nmos
 {

@@ -1,4 +1,4 @@
-#include "flowcompatibility_utils.h"
+#include "nmos/streamcompatibility_utils.h"
 
 namespace nmos
 {

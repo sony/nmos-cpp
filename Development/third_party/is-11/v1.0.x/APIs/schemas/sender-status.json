@@ -9,11 +9,11 @@
     "state": {
       "type": "string",
       "enum": [
-        "Unconstrained",
-        "Constrained",
-        "Active Constraints Violation",
-        "No Signal",
-        "Awaiting Signal"
+        "unconstrained",
+        "constrained",
+        "active_constraints_violation",
+        "no_signal",
+        "awaiting_signal"
       ]
     }
   }

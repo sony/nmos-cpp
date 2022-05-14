@@ -1,6 +1,6 @@
-#include "nmos/flowcompatibility_behaviour.h"
-#include "nmos/flowcompatibility_state.h"
-#include "nmos/flowcompatibility_utils.h"
+#include "nmos/streamcompatibility_behaviour.h"
+#include "nmos/streamcompatibility_state.h"
+#include "nmos/streamcompatibility_utils.h"
 
 #include <vector>
 #include <boost/range/adaptor/filtered.hpp>

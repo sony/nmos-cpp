@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema",
   "type": "array",
-  "description": "Describes the Flow Compatibility Management API /senders/{senderId}/constraints base resource",
-  "title": "Flow Compatibility Management API /senders/{senderId}/constraints base resource",
+  "description": "Describes the Stream Compatibility Management API /senders/{senderId}/constraints base resource",
+  "title": "Stream Compatibility Management API /senders/{senderId}/constraints base resource",
   "items": {
     "type": "string",
     "enum": [
