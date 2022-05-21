@@ -17,11 +17,9 @@ if(WIN32)
     string(APPEND NMOS_CPP_INSTALL_BINDIR "/$<IF:$<CONFIG:Debug>,Debug,Release>")
 endif()
 
-# enable C++11
+# enable C++
 enable_language(CXX)
-if(NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 11)
-endif()
+# check C++11 or higher
 if(CMAKE_CXX_STANDARD STREQUAL "98")
     message(FATAL_ERROR "CMAKE_CXX_STANDARD must be 11 or higher; C++98 is not supported")
 endif()
