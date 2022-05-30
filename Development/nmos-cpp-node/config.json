@@ -196,6 +196,9 @@
     // proxy_port [registry, node]: forward proxy port
     //"proxy_port": 8080,
 
+    // discovery_mode [node]: whether the discovered host name (1) or resolved addresses (2) are used to construct request URLs for Registration APIs or System APIs
+    //"discovery_mode": 1,
+
     // href_mode [registry, node]: whether the host name (1), addresses (2) or both (3) are used to construct response headers, and host and URL fields in the data model
     //"href_mode": 1,
 
