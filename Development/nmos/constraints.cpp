@@ -76,8 +76,7 @@ namespace nmos
             });
         }
 
-        template <typename Parse>
-        bool is_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint, Parse parse)
+        bool is_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
         {
             // subconstraint should have enum if constraint has enum
             if (constraint.has_field(nmos::fields::constraint_enum) && !subconstraint.has_field(nmos::fields::constraint_enum))
@@ -98,7 +97,7 @@ namespace nmos
             {
                 const auto& constraint_minimum = nmos::fields::constraint_minimum(constraint);
                 const auto& subconstraint_minimum = nmos::fields::constraint_minimum(subconstraint);
-                if (parse(constraint_minimum) > parse(subconstraint_minimum))
+                if (constraint_minimum > subconstraint_minimum)
                 {
                     return false;
                 }
@@ -107,7 +106,7 @@ namespace nmos
             {
                 const auto& constraint_maximum = nmos::fields::constraint_maximum(constraint);
                 const auto& subconstraint_maximum = nmos::fields::constraint_maximum(subconstraint);
-                if (parse(constraint_maximum) < parse(subconstraint_maximum))
+                if (constraint_maximum < subconstraint_maximum)
                 {
                     return false;
                 }
@@ -116,9 +115,9 @@ namespace nmos
             if (subconstraint.has_field(nmos::fields::constraint_enum))
             {
                 const auto& subconstraint_enum_values = nmos::fields::constraint_enum(subconstraint).as_array();
-                if (subconstraint_enum_values.end() == std::find_if(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&parse, &constraint](const web::json::value& enum_value)
+                if (subconstraint_enum_values.end() == std::find_if(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&constraint](const web::json::value& enum_value)
                 {
-                    return details::match_constraint(parse(enum_value), constraint, parse);
+                    return details::match_constraint(enum_value, constraint, [](const web::json::value& v) { return v; });
                 }))
                 {
                     return false;
@@ -126,80 +125,6 @@ namespace nmos
             }
             return true;
         }
-
-        bool is_string_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
-        {
-            return is_subconstraint(constraint, subconstraint, [](const web::json::value& enum_value)
-            {
-                return enum_value.as_string();
-            });
-        }
-
-        bool is_integer_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
-        {
-            return is_subconstraint(constraint, subconstraint, [](const web::json::value& enum_value)
-            {
-                return enum_value.as_integer();
-            });
-        }
-
-        bool is_number_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
-        {
-            return is_subconstraint(constraint, subconstraint, [](const web::json::value& enum_value)
-            {
-                return enum_value.as_double();
-            });
-        }
-
-        bool is_boolean_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
-        {
-            return is_subconstraint(constraint, subconstraint, [](const web::json::value& enum_value)
-            {
-                return enum_value.as_bool();
-            });
-        }
-
-        bool is_rational_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
-        {
-            return is_subconstraint(constraint, subconstraint, [](const web::json::value& enum_value)
-            {
-                return nmos::parse_rational(enum_value);
-            });
-        }
-
-#define CAPS_ARGS const web::json::value& constraint, const web::json::value& subconstraint
-        static const std::map<utility::string_t, std::function<bool(CAPS_ARGS)>> format_constraints
-        {
-            // General Constraints
-
-            { nmos::caps::format::media_type, [](CAPS_ARGS) { return is_string_subconstraint(constraint, subconstraint); } },
-            // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
-            // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
-            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { return is_rational_subconstraint(constraint, subconstraint); } },
-
-            // Video Constraints
-
-            { nmos::caps::format::frame_height, [](CAPS_ARGS) { return is_integer_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::frame_width, [](CAPS_ARGS) { return is_integer_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::color_sampling, [](CAPS_ARGS) { return is_string_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { return is_string_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::colorspace, [](CAPS_ARGS) { return is_string_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { return is_string_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::component_depth, [](CAPS_ARGS) { return is_integer_subconstraint(constraint, subconstraint); } },
-
-            // Audio Constraints
-
-            { nmos::caps::format::channel_count, [](CAPS_ARGS) { return is_integer_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::sample_rate, [](CAPS_ARGS) { return is_rational_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::format::sample_depth, [](CAPS_ARGS) { return is_integer_subconstraint(constraint, subconstraint); } },
-
-            // Transport Constraints
-
-            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return is_number_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return is_number_subconstraint(constraint, subconstraint); } },
-            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { return is_string_subconstraint(constraint, subconstraint); } },
-        };
-#undef CAPS_ARGS
 
         // Constraint Set B is a subset of Constraint Set A if all of Parameter Constraints of Constraint Set B, except for meta, are present in Constraint Set A and each Parameter Constraint of Constraint Set B, except for meta, is a subconstraint of the according Parameter Constraint of Constraint Set A.
         // Constraint B is a subconstraint of a Constraint A if:
@@ -220,9 +145,8 @@ namespace nmos
             {
                 if (subconstraint.first == nmos::caps::meta::label.key || subconstraint.first == nmos::caps::meta::preference.key) return false;
 
-                const auto& found = format_constraints.find(subconstraint.first);
                 const auto& constraint = param_constraints_set.find(subconstraint.first);
-                return param_constraints_set.end() == constraint || (found != format_constraints.end() && !found->second(constraint->second, subconstraint.second));
+                return param_constraints_set.end() == constraint || !is_subconstraint(constraint->second, subconstraint.second);
             });
         }
     }
