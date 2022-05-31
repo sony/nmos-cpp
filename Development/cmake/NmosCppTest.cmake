@@ -41,6 +41,7 @@ set(NMOS_CPP_TEST_MDNS_TEST_HEADERS
 set(NMOS_CPP_TEST_NMOS_TEST_SOURCES
     nmos/test/api_utils_test.cpp
     nmos/test/channels_test.cpp
+    nmos/test/constraints_test.cpp
     nmos/test/did_sdid_test.cpp
     nmos/test/event_type_test.cpp
     nmos/test/json_validator_test.cpp

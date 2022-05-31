@@ -112,15 +112,17 @@ namespace nmos
                     return false;
                 }
             }
-
             // subconstraint enum values should match constraint
-            const auto& subconstraint_enum_values = nmos::fields::constraint_enum(subconstraint).as_array();
-            if (subconstraint_enum_values.end() == std::find_if(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&parse, &constraint](const web::json::value& enum_value)
+            if (subconstraint.has_field(nmos::fields::constraint_enum))
             {
-                return details::match_constraint(parse(enum_value), constraint, parse);
-            }))
-            {
-                return false;
+                const auto& subconstraint_enum_values = nmos::fields::constraint_enum(subconstraint).as_array();
+                if (subconstraint_enum_values.end() == std::find_if(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&parse, &constraint](const web::json::value& enum_value)
+                {
+                    return details::match_constraint(parse(enum_value), constraint, parse);
+                }))
+                {
+                    return false;
+                }
             }
             return true;
         }
@@ -199,6 +201,12 @@ namespace nmos
         };
 #undef CAPS_ARGS
 
+        // Constraint Set B is a subset of Constraint Set A if all of Parameter Constraints of Constraint Set B, except for meta, are present in Constraint Set A and each Parameter Constraint of Constraint Set B, except for meta, is a subconstraint of the according Parameter Constraint of Constraint Set A.
+        // Constraint B is a subconstraint of a Constraint A if:
+
+        // 1. Constraint B has enum keyword when Constraint A has it and enum of Constraint B is a subset of enum of Constraint A
+        // 2. Constraint B has enum or minimum keyword when Constraint A has minimum keyword and allowed values for Constraint B are less than allowed values for Constraint A
+        // 3. Constraint B has enum or maximum keyword when Constraint A has maximum keyword and allowed values for Constraint B are greater than allowed values for Constraint A
         bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset)
         {
             using web::json::value;
