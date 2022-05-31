@@ -448,10 +448,10 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    if ("active" == constraintsType) {
+                    if (U("active") == constraintsType) {
                         set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(resource->data)));
                     }
-                    else if ("supported" == constraintsType) {
+                    else if (U("supported") == constraintsType) {
                         set_reply(res, status_codes::OK, nmos::fields::supported_param_constraints(resource->data));
                     }
                     else {
@@ -574,13 +574,13 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
-                    const auto filter = ("base" == edidType) ?
+                    const auto filter = (U("base") == edidType) ?
                         nmos::fields::endpoint_base_edid :
                         nmos::fields::endpoint_effective_edid;
 
                     auto& edid_endpoint = filter(resource->data);
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << edidType << " EDID requested for " << id_type;
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "EDID requested for " << id_type << ": " << edidType;
 
                     details::set_edid_endpoint_as_reply(res, id_type, edid_endpoint, gate);
                 }
