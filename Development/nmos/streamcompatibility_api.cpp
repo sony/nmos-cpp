@@ -99,9 +99,9 @@ namespace nmos
                 {
                     input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
 
-                    if (effective_edid_properties.has_value())
+                    if (effective_edid_properties)
                     {
-                        input.data[nmos::fields::effective_edid_properties] = effective_edid_properties.value();
+                        input.data[nmos::fields::effective_edid_properties] = *effective_edid_properties;
                     }
 
                     updated_timestamp = nmos::make_version();
@@ -640,9 +640,9 @@ namespace nmos
                             // Update Base EDID in streamcompatibility_resources
                             modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp](nmos::resource& input)
                             {
-                                if (base_edid_properties.has_value())
+                                if (base_edid_properties)
                                 {
-                                    input.data[nmos::fields::base_edid_properties] = base_edid_properties.value();
+                                    input.data[nmos::fields::base_edid_properties] = *base_edid_properties;
                                 }
 
                                 input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid);

@@ -1378,9 +1378,9 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
             }
         }
 
-        if (base_edid.has_value())
+        if (base_edid)
         {
-            effective_edid = base_edid.value();
+            effective_edid = *base_edid;
         }
         else
         {

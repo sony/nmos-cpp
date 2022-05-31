@@ -166,9 +166,9 @@ namespace nmos
 
             data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
 
-            if (effective_edid_properties.has_value())
+            if (effective_edid_properties)
             {
-                data[nmos::fields::effective_edid_properties] = effective_edid_properties.value();
+                data[nmos::fields::effective_edid_properties] = *effective_edid_properties;
             }
 
             data[nmos::fields::senders] = value_from_elements(senders);
@@ -193,14 +193,14 @@ namespace nmos
             auto data = make_streamcompatibility_input_output_base(id, connected, true, settings);
             data[nmos::fields::receivers] = value_from_elements(receivers);
 
-            if (edid.has_value())
+            if (edid)
             {
-                data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), edid.value());
+                data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), *edid);
             }
 
-            if (edid_properties.has_value())
+            if (edid_properties)
             {
-                data[nmos::fields::edid_properties] = edid_properties.value();
+                data[nmos::fields::edid_properties] = *edid_properties;
             }
 
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
