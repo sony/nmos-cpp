@@ -225,39 +225,6 @@ namespace nmos
             advertise_node_service(advertiser, with_read_lock(model.mutex, [&] { return model.settings; }));
         }
 
-        // query DNS Service Discovery for any Registration API in the specified browse domain, having priority in the specified range
-        // otherwise, after timeout or cancellation, returning the fallback registration service
-        web::json::value discover_registration_services(mdns::service_discovery& discovery, const std::string& browse_domain, const std::set<nmos::api_version>& versions, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& protocols, const std::set<bool>& authorization, const web::uri& fallback_registration_service, slog::base_gate& gate, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none())
-        {
-            std::list<web::uri> registration_services;
-
-            if (nmos::service_priorities::no_priority != priorities.first)
-            {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API in domain: " << browse_domain;
-
-                registration_services = nmos::experimental::resolve_service(discovery, nmos::service_types::registration, browse_domain, versions, priorities, protocols, authorization, true, timeout, token).get();
-
-                if (!registration_services.empty())
-                {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Discovered " << registration_services.size() << " Registration API(s)";
-                }
-                else
-                {
-                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via DNS-SD";
-                }
-            }
-
-            if (registration_services.empty())
-            {
-                if (!fallback_registration_service.is_empty())
-                {
-                    registration_services.push_back(fallback_registration_service);
-                }
-            }
-
-            return web::json::value_from_elements(registration_services | boost::adaptors::transformed([](const web::uri& u) { return u.to_string(); }));
-        }
-
         // get the fallback registration service from settings (if present)
         web::uri get_registration_service(const nmos::settings& settings)
         {
@@ -274,34 +241,55 @@ namespace nmos
         // query DNS Service Discovery for any Registration API based on settings
         bool discover_registration_services(nmos::base_model& model, mdns::service_discovery& discovery, slog::base_gate& gate, const pplx::cancellation_token& token)
         {
-            std::string browse_domain;
-            std::set<nmos::api_version> versions;
-            std::pair<nmos::service_priority, nmos::service_priority> priorities;
-            std::set<nmos::service_protocol> protocols;
-            std::set<bool> authorization; // yes, this is almost equivalent to a tribool
-            web::uri fallback_registration_service;
-            int timeout;
-            with_read_lock(model.mutex, [&]
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Trying Registration API discovery";
+
+            // lock to read settings, then unlock to wait for the discovery task to complete
+            auto registration_services = with_read_lock(model.mutex, [&]
             {
                 auto& settings = model.settings;
-                browse_domain = utility::us2s(nmos::get_domain(settings));
-                versions = nmos::is04_versions::from_settings(settings);
-                priorities = { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
-                protocols = { nmos::get_service_protocol(settings) };
-                authorization = { nmos::get_service_authorization(settings) };
-                fallback_registration_service = get_registration_service(settings);
 
-                // use a short timeout that's long enough to ensure the daemon's cache is exhausted
-                // when no cancellation token is specified
-                timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
+                if (nmos::service_priorities::no_priority != nmos::fields::highest_pri(settings))
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting discovery of a Registration API in domain: " << nmos::get_domain(settings);
+
+                    return nmos::experimental::resolve_service(discovery, nmos::service_types::registration, settings, token);
+                }
+                else
+                {
+                    return pplx::task_from_result(std::list<web::uri>{});
+                }
+            }).get();
+
+            with_write_lock(model.mutex, [&]
+            { 
+                if (!registration_services.empty())
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Discovered " << registration_services.size() << " Registration API(s)";
+                }
+                else
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Did not discover a suitable Registration API via DNS-SD";
+
+                    auto fallback_registration_service = get_registration_service(model.settings);
+                    if (!fallback_registration_service.is_empty())
+                    {
+                        registration_services.push_back(fallback_registration_service);
+                    }
+                }
+
+                if (!registration_services.empty()) slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the Registration API(s):" << slog::log_manip([&](slog::log_statement& s)
+                {
+                    for (auto& registration_service : registration_services)
+                    {
+                        s << '\n' << registration_service.to_string();
+                    }
+                });
+
+                model.settings[nmos::fields::registration_services] = web::json::value_from_elements(registration_services | boost::adaptors::transformed([](const web::uri& u) { return u.to_string(); }));
+                model.notify();
             });
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Trying Registration API discovery for about " << std::fixed << std::setprecision(3) << (double)timeout << " seconds";
-            auto registration_services = discover_registration_services(discovery, browse_domain, versions, priorities, protocols, authorization, fallback_registration_service, gate, std::chrono::seconds(timeout), token);
-            with_write_lock(model.mutex, [&] { model.settings[nmos::fields::registration_services] = registration_services; });
-            model.notify();
-
-            return !web::json::empty(registration_services);
+            return !registration_services.empty();
         }
 
         bool empty_registration_services(const nmos::settings& settings)
