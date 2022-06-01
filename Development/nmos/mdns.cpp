@@ -466,8 +466,7 @@ namespace nmos
         {
             discovery_mode_default = 0,
             discovery_mode_name = 1,
-            discovery_mode_addresses = 2,
-            discovery_mode_both = 3 // name + addresses
+            discovery_mode_addresses = 2
         };
 
         namespace details
@@ -481,8 +480,7 @@ namespace nmos
                 std::vector<utility::string_t> results;
 
                 // by default, use the host name if secure communications are in use
-                if (mode == discovery_mode_name || mode == discovery_mode_both
-                    || (mode == discovery_mode_default && is_service_protocol_secure(resolved_proto)))
+                if (mode == discovery_mode_name || (mode == discovery_mode_default && is_service_protocol_secure(resolved_proto)))
                 {
                     auto host_name = utility::s2us(resolved.host_name);
                     // remove a trailing '.' to turn an FQDN into a DNS name, for SSL certificate matching
@@ -492,8 +490,7 @@ namespace nmos
                     results.push_back(host_name);
                 }
 
-                if (mode == discovery_mode_addresses || mode == discovery_mode_both
-                    || (mode == discovery_mode_default && !is_service_protocol_secure(resolved_proto)))
+                if (mode == discovery_mode_addresses || (mode == discovery_mode_default && !is_service_protocol_secure(resolved_proto)))
                 {
                     for (const auto& ip_address : resolved.ip_addresses)
                     {
