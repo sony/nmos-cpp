@@ -80,9 +80,9 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
-   - Several Boost releases have been tested, including Version 1.78.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.79.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_78\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_79\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
@@ -152,8 +152,8 @@ If using Conan, this section can be skipped.
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - *Either* set ``Boost_DIR`` (PATH) to the location of the installed BoostConfig.cmake (since Boost 1.70.0)
-     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_78_0``
-       and *``<home-dir>``*``/boost_1_78_0/x64/lib`` respectively to match the suggested ``b2`` command
+     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_79_0``
+       and *``<home-dir>``*``/boost_1_79_0/x64/lib`` respectively to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install  
@@ -172,8 +172,8 @@ cmake .. ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_78_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_78_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_79_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_79_0/x64/lib" ^
   -DWERROR:BOOL="0" ^
   -DBUILD_SAMPLES:BOOL="0" ^
   -DBUILD_TESTS:BOOL="0"
