@@ -33,14 +33,14 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
    Notes:
-   - Currently, CMake 3.17 or higher is required; version 3.21.1 (latest release at the time) has been tested
+   - Currently, CMake 3.17 or higher is required; version 3.23.2 (latest release at the time) has been tested
    - Pre-built binary distributions are available for many platforms
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
      Fetch, build and install a suitable version:  
      ```sh
-     wget "https://cmake.org/files/v3.21/cmake-3.21.1.tar.gz"
-     tar -zxvf cmake-3.21.1.tar.gz
-     cd cmake-3.21.1
+     wget "https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz"
+     tar -zxvf cmake-3.23.2.tar.gz
+     cd cmake-3.23.2
      ./bootstrap
      make
      sudo make install
@@ -80,9 +80,9 @@ If using Conan, this section can be skipped.
 
 1. Download a [recent release](http://www.boost.org/users/download/)  
    Notes:
-   - Several Boost releases have been tested, including Version 1.78.0 (latest release at the time) and Version 1.54.0
+   - Several Boost releases have been tested, including Version 1.79.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_78\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_79\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
@@ -152,8 +152,8 @@ If using Conan, this section can be skipped.
      - Set ``Boost_USE_STATIC_LIBS`` (BOOL) to ``1`` (true)
    - If CMake cannot find it automatically, set hints for [finding Boost](https://cmake.org/cmake/help/latest/module/FindBoost.html), for example:
      - *Either* set ``Boost_DIR`` (PATH) to the location of the installed BoostConfig.cmake (since Boost 1.70.0)
-     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_78_0``
-       and *``<home-dir>``*``/boost_1_78_0/x64/lib`` respectively to match the suggested ``b2`` command
+     - *Or* set ``BOOST_INCLUDEDIR`` (PATH) and ``BOOST_LIBRARYDIR`` (PATH) to the appropriate full paths, e.g. *``<home-dir>``*``/boost_1_79_0``
+       and *``<home-dir>``*``/boost_1_79_0/x64/lib`` respectively to match the suggested ``b2`` command
    - Due to interactions with other dependencies, it may also be necessary to explicitly set ``WERROR`` (BOOL) to ``0`` so that compiler warnings are not treated as errors
    - To speed up the build by omitting the C++ REST SDK sample apps and test suite, set ``BUILD_SAMPLES`` and ``BUILD_TESTS`` (BOOL) to ``0`` (false)
 3. Use CMake to generate build/project files, and then build *and* install  
@@ -172,8 +172,8 @@ cmake .. ^
   -DCPPREST_EXCLUDE_COMPRESSION:BOOL="1" ^
   -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
-  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_78_0" ^
-  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_78_0/x64/lib" ^
+  -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_79_0" ^
+  -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_79_0/x64/lib" ^
   -DWERROR:BOOL="0" ^
   -DBUILD_SAMPLES:BOOL="0" ^
   -DBUILD_TESTS:BOOL="0"
@@ -240,7 +240,7 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.1.1n installer (latest release at the time) has been tested
+     The Win64 OpenSSL v1.1.1o installer (latest release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available  
      The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
 
