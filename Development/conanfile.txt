@@ -2,7 +2,7 @@
 boost/1.78.0
 cpprestsdk/2.10.18
 websocketpp/0.8.2
-openssl/1.1.1n
+openssl/1.1.1o
 json-schema-validator/2.1.0
 
 [imports]
