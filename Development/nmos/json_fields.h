@@ -251,10 +251,9 @@ namespace nmos
         const web::json::field_as_array parameter_constraints{ U("parameter_constraints") };
 
         // for status
-        const web::json::field_as_value endpoint_status{ U("endpoint_status") }; // object
-        const web::json::field_as_string signal_state{ U("signal_state") };
         const web::json::field_as_value status{ U("status") }; // object
         const web::json::field_as_string state{ U("state") };
+        const web::json::field_as_string debug{ U("debug") };
 
         // for EDID endpoints
         const web::json::field_as_value_or endpoint_base_edid{ U("endpoint_base_edid"), {} }; // object

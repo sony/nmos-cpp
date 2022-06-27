@@ -388,7 +388,7 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    set_reply(res, status_codes::OK, nmos::fields::status(nmos::fields::endpoint_status(resource->data)));
+                    set_reply(res, status_codes::OK, nmos::fields::status(resource->data));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {

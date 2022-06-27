@@ -170,10 +170,10 @@ namespace nmos
                             auto connection_sender = find_resource(connection_resources, sender_id_type);
                             if (connection_resources.end() == connection_sender) throw std::logic_error("Matching IS-05 Sender not found");
 
-                            nmos::signal_state signal_state(nmos::fields::signal_state(nmos::fields::endpoint_status(streamcompatibility_sender->data)));
-                            nmos::sender_state sender_state(signal_state.name);
+                            nmos::sender_state sender_state(nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)));
 
-                            if (signal_state == nmos::signal_states::signal_is_present)
+                            // Setting the State to any value except for "no_essence" or "awaiting_essence" triggers Active Constraints validation
+                            if (sender_state != nmos::sender_states::no_essence && sender_state != nmos::sender_states::awaiting_essence)
                             {
                                 const auto& constraint_sets = nmos::fields::constraint_sets(nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data))).as_array();
                                 auto& transport_file = nmos::fields::endpoint_transportfile(connection_sender->data);
@@ -182,13 +182,13 @@ namespace nmos
                                 sender_state = validate_sender_resources(transport_file, flow->data, source->data, constraint_sets);
                             }
 
-                            if (nmos::fields::state(nmos::fields::status(nmos::fields::endpoint_status(streamcompatibility_sender->data))) != sender_state.name)
+                            if (nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)) != sender_state.name)
                             {
                                 utility::string_t updated_timestamp;
 
                                 modify_resource(streamcompatibility_resources, sender_id, [&sender_state, &updated_timestamp, &gate](nmos::resource& sender)
                                 {
-                                    nmos::fields::status(nmos::fields::endpoint_status(sender.data))[nmos::fields::state] = web::json::value::string(sender_state.name);
+                                    nmos::fields::status(sender.data)[nmos::fields::state] = web::json::value::string(sender_state.name);
 
                                     updated_timestamp = nmos::make_version();
                                     sender.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
@@ -254,13 +254,13 @@ namespace nmos
 
                             receiver_state = validate_receiver_resources(transport_file, receiver->data);
 
-                            if (nmos::fields::state(nmos::fields::status(nmos::fields::endpoint_status(streamcompatibility_receiver->data))) != receiver_state.name)
+                            if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)
                             {
                                 utility::string_t updated_timestamp;
 
                                 modify_resource(streamcompatibility_resources, receiver_id, [&receiver_state, &updated_timestamp, &gate](nmos::resource& receiver)
                                 {
-                                    nmos::fields::status(nmos::fields::endpoint_status(receiver.data))[nmos::fields::state] = web::json::value::string(receiver_state.name);
+                                    nmos::fields::status(receiver.data)[nmos::fields::state] = web::json::value::string(receiver_state.name);
 
                                     updated_timestamp = nmos::make_version();
                                     receiver.data[nmos::fields::version] = web::json::value::string(updated_timestamp);

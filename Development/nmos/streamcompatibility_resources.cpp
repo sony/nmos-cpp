@@ -24,20 +24,6 @@ namespace nmos
             });
         }
 
-        web::json::value make_streamcompatibility_sender_status_endpoint(nmos::sender_state sender_state, nmos::signal_state signal_state)
-        {
-            using web::json::value_of;
-
-            auto sender_status = value_of({
-                { nmos::fields::state, sender_state.name },
-            });
-
-            return value_of({
-                { nmos::fields::status, sender_status },
-                { nmos::fields::signal_state, signal_state.name },
-            });
-        }
-
         nmos::resource make_streamcompatibility_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& param_constraints)
         {
             using web::json::value;
@@ -73,7 +59,7 @@ namespace nmos
                 { nmos::fields::endpoint_active_constraints, make_streamcompatibility_active_constraints_endpoint(value::array()) },
                 { nmos::fields::inputs, value_from_elements(inputs) },
                 { nmos::fields::supported_param_constraints, supported_param_constraints },
-                { nmos::fields::endpoint_status, make_streamcompatibility_sender_status_endpoint(nmos::sender_states::unconstrained, nmos::signal_states::signal_is_present) },
+                { nmos::fields::status, value_of({ { nmos::fields::state, nmos::sender_states::unconstrained.name } }) },
             });
 
             return{ is11_versions::v1_0, types::sender, std::move(data), id, false };
@@ -84,19 +70,11 @@ namespace nmos
             using web::json::value_of;
             using web::json::value_from_elements;
 
-            auto receiver_status = value_of({
-                { nmos::fields::state, nmos::receiver_states::unknown.name },
-            });
-
-            auto endpoint_status = value_of({
-                { nmos::fields::status, receiver_status },
-            });
-
             auto data = value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
                 { nmos::fields::outputs, value_from_elements(outputs) },
-                { nmos::fields::endpoint_status, endpoint_status },
+                { nmos::fields::status, value_of({ { nmos::fields::state, nmos::receiver_states::unknown.name } }) },
             });
 
             return{ is11_versions::v1_0, types::receiver, std::move(data), id, false };
@@ -146,9 +124,11 @@ namespace nmos
         nmos::resource make_streamcompatibility_input(const nmos::id& id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
+            using web::json::value_of;
 
             auto data = make_streamcompatibility_input_output_base(id, connected, false, settings);
             data[nmos::fields::senders] = value_from_elements(senders);
+            data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
@@ -156,6 +136,7 @@ namespace nmos
         nmos::resource make_streamcompatibility_input(const nmos::id& id, bool connected, bool base_edid_changeable, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
+            using web::json::value_of;
 
             auto data = make_streamcompatibility_input_output_base(id, connected, true, settings);
 
@@ -172,6 +153,7 @@ namespace nmos
             }
 
             data[nmos::fields::senders] = value_from_elements(senders);
+            data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
@@ -179,9 +161,11 @@ namespace nmos
         nmos::resource make_streamcompatibility_output(const nmos::id& id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
+            using web::json::value_of;
 
             auto data = make_streamcompatibility_input_output_base(id, connected, false, settings);
             data[nmos::fields::receivers] = value_from_elements(receivers);
+            data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::output_states::signal_present.name } });
 
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
         }
@@ -189,9 +173,11 @@ namespace nmos
         nmos::resource make_streamcompatibility_output(const nmos::id& id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
+            using web::json::value_of;
 
             auto data = make_streamcompatibility_input_output_base(id, connected, true, settings);
             data[nmos::fields::receivers] = value_from_elements(receivers);
+            data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::output_states::signal_present.name } });
 
             if (edid)
             {

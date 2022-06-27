@@ -465,7 +465,7 @@ namespace nmos
                     auto streamcompatibility_resource = find_resource(model.streamcompatibility_resources, id_type);
                     if (model.streamcompatibility_resources.end() != streamcompatibility_resource)
                     {
-                        auto resource_state = nmos::fields::state(nmos::fields::status(nmos::fields::endpoint_status(streamcompatibility_resource->data)));
+                        auto resource_state = nmos::fields::state(nmos::fields::status(streamcompatibility_resource->data));
 
                         if (resource_state == nmos::sender_states::active_constraints_violation.name || resource_state == nmos::receiver_states::non_compliant_stream.name)
                         {
