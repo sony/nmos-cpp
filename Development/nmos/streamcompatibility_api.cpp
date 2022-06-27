@@ -30,8 +30,13 @@ namespace nmos
                     if (!edid_binary.is_null())
                     {
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning EDID binary for " << id_type;
-
-                        auto i_stream = concurrency::streams::bytestream::open_istream(edid_binary.as_string());
+                        // Convert wchar_t to uint8_t if utility::string_t consists of wide chars
+                        auto edid_string = edid_binary.as_string();
+                        std::vector<uint8_t> edid_vector;
+                        std::transform(edid_string.begin(), edid_string.end(), std::back_inserter(edid_vector), [](utility::char_t char_element) {
+                            return static_cast<uint8_t>(char_element);
+                        });
+                        auto i_stream = concurrency::streams::bytestream::open_istream(edid_vector);
                         set_reply(res, web::http::status_codes::OK, i_stream);
                     }
                     else if (!edid_href.is_null())
