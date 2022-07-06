@@ -63,7 +63,7 @@ namespace nmos
             // Configure the Channel Mapping API
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
 
-            // Configure the Flow Compatibility API
+            // Configure the Stream Compatibility API
             node_server.api_routers[{ {}, nmos::fields::streamcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_streamcompatibility_api(node_model, node_implementation.base_edid_changed, node_implementation.base_edid_deleted, node_implementation.set_effective_edid, node_implementation.active_constraints_changed, gate));
 
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];

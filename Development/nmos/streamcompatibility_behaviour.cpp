@@ -72,8 +72,8 @@ namespace nmos
                     const auto session_description = sdp::parse_session_description(utility::us2s(sdp_data));
                     auto sdp_params = nmos::parse_session_description(session_description).first;
 
-                    const auto format_params = details::get_format_parameters(sdp_params);
-                    const auto sdp_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return nmos::details::match_sdp_parameters_constraint_set(details::format_constraints, sdp_params, format_params, constraint_set); });
+                    const auto format_params = nmos::details::get_format_parameters(sdp_params);
+                    const auto sdp_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return nmos::details::match_sdp_parameters_constraint_set(nmos::details::format_constraints, sdp_params, format_params, constraint_set); });
 
                     constrained = constrained && constraint_sets.end() != sdp_found;
                 }
@@ -211,11 +211,11 @@ namespace nmos
                                     merged[nmos::fields::master_enable] = value::boolean(false);
                                     auto activation = nmos::make_activation();
                                     activation[nmos::fields::mode] = value::string(nmos::activation_modes::activate_immediate.name);
-                                    details::merge_activation(merged[nmos::fields::activation], activation, nmos::tai_now());
+                                    nmos::details::merge_activation(merged[nmos::fields::activation], activation, nmos::tai_now());
                                     connection_resource.data[nmos::fields::endpoint_staged] = merged;
                                 });
 
-                                details::handle_immediate_activation_pending(model, lock, sender_id_type, merged[nmos::fields::activation], gate);
+                                nmos::details::handle_immediate_activation_pending(model, lock, sender_id_type, merged[nmos::fields::activation], gate);
                             }
                         }
                     }
@@ -283,11 +283,11 @@ namespace nmos
                                     merged[nmos::fields::master_enable] = value::boolean(false);
                                     auto activation = nmos::make_activation();
                                     activation[nmos::fields::mode] = value::string(nmos::activation_modes::activate_immediate.name);
-                                    details::merge_activation(merged[nmos::fields::activation], activation, nmos::tai_now());
+                                    nmos::details::merge_activation(merged[nmos::fields::activation], activation, nmos::tai_now());
                                     connection_resource.data[nmos::fields::endpoint_staged] = merged;
                                 });
 
-                                details::handle_immediate_activation_pending(model, lock, receiver_id_type, merged[nmos::fields::activation], gate);
+                                nmos::details::handle_immediate_activation_pending(model, lock, receiver_id_type, merged[nmos::fields::activation], gate);
                             }
                         }
                     }
