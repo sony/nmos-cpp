@@ -7,6 +7,7 @@
 #include "nmos/connection_api.h"
 #include "nmos/connection_activation.h"
 #include "nmos/streamcompatibility_api.h"
+#include "nmos/streamcompatibility_behaviour.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
@@ -62,6 +63,7 @@ namespace nmos
             node_implementation& on_base_edid_deleted(nmos::experimental::details::streamcompatibility_base_edid_delete_handler base_edid_deleted) { this->base_edid_deleted = std::move(base_edid_deleted); return *this; }
             node_implementation& on_set_effective_edid(nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid) { this->set_effective_edid = std::move(set_effective_edid); return *this; }
             node_implementation& on_active_constraints_changed(nmos::experimental::details::streamcompatibility_active_constraints_put_handler active_constraints_changed) { this->active_constraints_changed = std::move(active_constraints_changed); return *this; }
+            node_implementation& on_validate_sender_against_active_constraints(nmos::experimental::details::streamcompatibility_sender_validator validate_sender) { this->validate_sender = std::move(validate_sender); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -96,6 +98,7 @@ namespace nmos
             nmos::experimental::details::streamcompatibility_base_edid_delete_handler base_edid_deleted;
             nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
             nmos::experimental::details::streamcompatibility_active_constraints_put_handler active_constraints_changed;
+            nmos::experimental::details::streamcompatibility_sender_validator validate_sender;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

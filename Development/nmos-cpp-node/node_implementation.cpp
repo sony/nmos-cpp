@@ -1440,6 +1440,12 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
     };
 }
 
+nmos::experimental::details::streamcompatibility_sender_validator make_node_implementation_sender_validator()
+{
+    // this example uses the default sender validator explicitly
+    return &nmos::experimental::validate_sender_resources;
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1561,5 +1567,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_put_handler(gate))
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
         .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.streamcompatibility_resources, gate))
-        .on_active_constraints_changed(make_node_implementation_active_constraints_handler(gate));
+        .on_active_constraints_changed(make_node_implementation_active_constraints_handler(gate))
+        .on_validate_sender_against_active_constraints(make_node_implementation_sender_validator());
 }

@@ -117,7 +117,7 @@ namespace nmos
             return receiver_state;
         }
 
-        void streamcompatibility_behaviour_thread(nmos::node_model& model, slog::base_gate& gate)
+        void streamcompatibility_behaviour_thread(nmos::node_model& model, details::streamcompatibility_sender_validator validate_sender, slog::base_gate& gate)
         {
             using web::json::value;
             using web::json::value_of;
@@ -179,7 +179,10 @@ namespace nmos
                                 auto& transport_file = nmos::fields::endpoint_transportfile(connection_sender->data);
 
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is being validated with its Flow, Source and transport file";
-                                sender_state = validate_sender_resources(transport_file, flow->data, source->data, constraint_sets);
+                                if (validate_sender)
+                                {
+                                    sender_state = validate_sender(transport_file, flow->data, source->data, constraint_sets);
+                                }
                             }
 
                             if (nmos::fields::state(nmos::fields::status(streamcompatibility_sender->data)) != sender_state.name)
