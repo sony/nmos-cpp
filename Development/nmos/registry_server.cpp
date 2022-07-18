@@ -42,6 +42,7 @@ namespace nmos
             // Set up the APIs, assigning them to the configured ports
 
             const auto server_secure = nmos::experimental::fields::server_secure(registry_model.settings);
+            const auto htst = server_secure ? web::http::experimental::htst{ nmos::experimental::fields::hsts_max_age(registry_model.settings), nmos::experimental::fields::hsts_include_sub_domains(registry_model.settings) } : web::http::experimental::htst{};
 
             // Configure the DNS-SD Browsing API
 
@@ -113,7 +114,7 @@ namespace nmos
                 const auto& host = !api_router.first.first.empty() ? api_router.first.first : web::http::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
-                registry_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, registry_model.settings), api_router.second, http_config, gate));
+                registry_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, registry_model.settings), api_router.second, http_config, htst, gate));
             }
 
             // Set up the handlers for each WebSocket API port

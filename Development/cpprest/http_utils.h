@@ -133,6 +133,19 @@ namespace web
             utility::string_t make_ptokens_header(const ptokens& values);
             ptokens parse_ptokens_header(const utility::string_t& value);
 
+            // Strict-Transport-Security = "Strict-Transport-Security" ":"
+            // directives           = [directive] *(";"[directive])
+            // directive            = directive-name["=" directive-value]
+            // directive-name       = token
+            // directive-value      = token / quoted - string
+            // E.g Strict-Transport-Security uuses this format
+            // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
+
+            typedef std::pair<token, utility::string_t> directive;
+            typedef std::vector<directive> directives;
+
+            utility::string_t make_directives_header(const directives& values);
+            directives parse_directives_header(const utility::string_t& value);
 
             namespace header_names
             {
@@ -143,6 +156,10 @@ namespace web
                 // Resource Timing 2
                 // See https://www.w3.org/TR/resource-timing-2/#sec-timing-allow-origin
                 const web::http::http_headers::key_type timing_allow_origin{ _XPLATSTR("Timing-Allow-Origin") };
+
+                // Strict Transport Security
+                // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
+                const web::http::http_headers::key_type strict_transport_security{ _XPLATSTR("Strict-Transport-Security") };
             }
 
             struct timing_metric
@@ -162,6 +179,20 @@ namespace web
 
             utility::string_t make_timing_header(const timing_metrics& values);
             timing_metrics parse_timing_header(const utility::string_t& value);
+
+            struct htst
+            {
+                int32_t max_age; // seconds
+                bool includeSubDomains;
+                htst(int32_t max_age = 0, bool includeSubDomains = false) : max_age(max_age), includeSubDomains(includeSubDomains) {}
+
+                auto tied() const -> decltype(std::tie(max_age, includeSubDomains)) { return std::tie(max_age, includeSubDomains); }
+                friend bool operator==(const htst& lhs, const htst& rhs) { return lhs.tied() == rhs.tied(); }
+                friend bool operator!=(const htst& lhs, const htst& rhs) { return !(lhs == rhs); }
+            };
+
+            utility::string_t make_hsts_header(const htst& value);
+            htst parse_htst_header(const utility::string_t& value);
         }
 
         // Determine whether http_request::reply() has been called already

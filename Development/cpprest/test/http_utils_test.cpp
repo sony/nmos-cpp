@@ -172,3 +172,24 @@ BST_TEST_CASE(testParseTimingHeaderEdgeCases)
     BST_REQUIRE_EQUAL(42.0, web::http::experimental::parse_timing_header(U("foo;dur=42;desc=bar;dur=57")).front().duration);
     BST_REQUIRE(web::http::experimental::parse_timing_header(U("foo;desc=\"\";dur=42;desc=bar")).front().description.empty());
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
+{
+    // see https://datatracker.ietf.org/doc/html/rfc6797#section-6.2
+    BST_REQUIRE_EQUAL(web::http::experimental::make_hsts_header({}), U("max-age=0"));
+    BST_REQUIRE_EQUAL(web::http::experimental::make_hsts_header({ 31536000, true }), U("max-age=31536000;includeSubDomains"));
+
+    std::vector<std::pair<utility::string_t, web::http::experimental::htst>> examples{
+        { U("max-age=31536000;includeSubDomains"), { 31536000, true } },
+        { U("max-age = 31536000 ; includeSubDomains"), { 31536000, true } },
+        { U("includeSubDomains;max-age=31536000"), { 31536000, true } },
+        { U("includeSubDomains ; max-age = 31536000"), { 31536000, true } }
+    };
+
+    for (const auto& example : examples)
+    {
+        BST_REQUIRE_EQUAL(example.second, web::http::experimental::parse_htst_header(example.first));
+    }
+}
+

@@ -330,6 +330,111 @@ namespace web
                 return result;
             }
 
+            utility::string_t make_directives_header(const directives& values)
+            {
+                utility::string_t result;
+                for(auto it = values.begin(); it != values.end(); ++it)
+                {
+                    if (it != values.begin()) { result.push_back(U(';')); }
+                    result.append(it->first);
+                    if (!it->second.empty())
+                    {
+                        result.push_back(U('='));
+                        result.append(it->second);
+                    }
+                }
+                return result;
+            }
+
+            directives parse_directives_header(const utility::string_t& value)
+            {
+                enum {
+                    pre_param,
+                    pre_param_name,
+                    param_name,
+                    pre_param_value,
+                    param_value,
+                    param_value_token,
+                    param_value_quoted_string,
+                    param_value_quoted_string_escape
+                } state = pre_param_name;
+
+                // token      = 1*<any CHAR except CTLs or separators>
+                // separators = "(" | ")" | "<" | ">" | "@"
+                //            | "," | ";" | ":" | "\" | <">
+                //            | "/" | "[" | "]" | "?" | "="
+                //            | "{" | "}" | SP | HT
+                // see https://datatracker.ietf.org/doc/html/rfc2616#section-2.2
+                auto is_tchar = [](utility::char_t c)
+                {
+                    static const utility::string_t separators{ U("()<>@,;:\\\"/[]?={} \t") };
+                    return std::isalnum(c) || (!std::iscntrl(c) && std::string::npos == separators.find(c));
+                };
+
+                directives result;
+                utility::string_t name;
+                for (auto c : value)
+                {
+                    switch (state)
+                    {
+                    case pre_param:
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid value, expected ';'");
+                    case pre_param_name:
+                        if (is_tchar(c)) { name.push_back(c); state = param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid directive name, expected tchar");
+                    case param_name:
+                        if (is_tchar(c)) { name.push_back(c); break; }
+                        result.push_back({ name, {} }); name.clear();
+                        if (U('=') == c) { state = param_value; break; }
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_param_value; break; }
+                        throw std::invalid_argument("invalid directive name, expected tchar");
+                    case pre_param_value:
+                        if (U('=') == c) { state = param_value; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        throw std::invalid_argument("invalid directive, expected '='");
+                    case param_value:
+                        if (is_tchar(c)) { result.back().second.push_back(c); state = param_value_token; break; }
+                        if (U('"') == c) { state = param_value_quoted_string; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid directive value, expected tchar or '\"'");
+                    case param_value_token:
+                        if (is_tchar(c)) { result.back().second.push_back(c); break; }
+                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_param; break; }
+                        throw std::invalid_argument("invalid directive value, expected tchar");
+                    case param_value_quoted_string:
+                        if (U('"') == c) { state = pre_param_name; break; }
+                        if (U('\\') == c) { state = param_value_quoted_string_escape; break; }
+                        result.back().second.push_back(c);
+                        break;
+                    case param_value_quoted_string_escape:
+                        result.back().second.push_back(c);
+                        state = param_value_quoted_string;
+                        break;
+                    default:
+                        throw std::logic_error("unreachable code");
+                    }
+                }
+
+                if (!name.empty())
+                {
+                    switch (state)
+                    {
+                    case param_name:
+                        result.push_back({ name, {} }); break;
+                    default:
+                        throw std::logic_error("unreachable code");
+                    }
+                }
+
+                return result;
+            }
+
             namespace details
             {
                 template <typename TimePoint>
@@ -369,6 +474,33 @@ namespace web
                     results.push_back(std::move(metric));
                 }
                 return results;
+            }
+
+            utility::string_t make_hsts_header(const htst& value)
+            {
+                directives result;
+
+                // invalid htst default to HTST disable
+                auto htst_ = value;
+                if (htst_.max_age < 0) htst_ = htst{};
+
+                if (htst_.max_age >= 0)
+                {
+                    result.push_back({ U("max-age"), utility::ostringstreamed(htst_.max_age) });
+                    if (htst_.max_age > 0 && htst_.includeSubDomains) result.push_back({ U("includeSubDomains"), {} });
+                }
+                return make_directives_header(result);
+            }
+
+            htst parse_htst_header(const utility::string_t& value)
+            {
+                htst result;
+                auto directives = parse_directives_header(value);
+                const auto max_age = std::find_if(directives.begin(), directives.end(), [](const ptoken_param& param) { return boost::algorithm::iequals(param.first, U("max-age")); });
+                if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0);
+                const auto includeSubDomains = std::find_if(directives.begin(), directives.end(), [](const ptoken_param& param) { return boost::algorithm::iequals(param.first, U("includeSubDomains")); });
+                if (directives.end() != includeSubDomains) result.includeSubDomains = true;
+                return result;
             }
         }
 
