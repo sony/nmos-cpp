@@ -215,5 +215,13 @@
     // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1.2
     //"hsts_include_sub_domains": false,
 
+    // ocsp_interval_min/ocsp_interval_max [registry, node]: used to request for certificate status (OCSP response); default is about one hour
+    // Note: if the half life of the server cerificate expiry time is shorter, then the ocsp_interval_min/max will be overridden by it
+    //"ocsp_interval_min": 3600,
+    //"ocsp_interval_max": 3660,
+
+    // ocsp_request_max [registry, node]: timeout for interactions with the OCSP API
+    //"ocsp_request_max": 30,
+
     "don't worry": "about trailing commas"
 }

@@ -10,6 +10,7 @@
 #include "nmos/mdns.h"
 #include "nmos/mdns_api.h"
 #include "nmos/node_api.h"
+#include "nmos/ocsp_behaviour.h"
 #include "nmos/query_api.h"
 #include "nmos/query_ws_api.h"
 #include "nmos/registration_api.h"
@@ -106,7 +107,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_server.ocsp_settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
 
             for (auto& api_router : registry_server.api_routers)
             {
@@ -119,7 +120,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_server.ocsp_settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : registry_server.ws_handlers)
@@ -141,6 +142,14 @@ namespace nmos
                 [&] { nmos::advertise_registry_thread(registry_model, gate); }
             });
 
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+            if (server_secure)
+            {
+                auto load_ca_certificates = registry_implementation.load_ca_certificates;
+                auto load_server_certificates = registry_implementation.load_server_certificates;
+                registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, registry_server.ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
+            }
+#endif
             return registry_server;
         }
 

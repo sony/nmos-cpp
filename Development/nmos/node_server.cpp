@@ -10,6 +10,7 @@
 #include "nmos/model.h"
 #include "nmos/node_api.h"
 #include "nmos/node_behaviour.h"
+#include "nmos/ocsp_behaviour.h"
 #include "nmos/server.h"
 #include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
@@ -65,7 +66,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(node_model.settings, node_server.ocsp_settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
 
             for (auto& api_router : node_server.api_routers)
             {
@@ -78,7 +79,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, node_server.ocsp_settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : node_server.ws_handlers)
@@ -100,6 +101,7 @@ namespace nmos
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
+            auto load_server_certificates = node_implementation.load_server_certificates;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
@@ -114,6 +116,12 @@ namespace nmos
                 node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
             }
 
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+            if (server_secure)
+            {
+                node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, node_server.ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
+            }
+#endif
             return node_server;
         }
 

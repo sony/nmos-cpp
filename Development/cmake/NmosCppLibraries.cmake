@@ -781,6 +781,8 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/node_resources.cpp
     nmos/node_server.cpp
     nmos/node_system_behaviour.cpp
+    nmos/ocsp_behaviour.cpp
+    nmos/ocsp_utils.cpp
     nmos/process_utils.cpp
     nmos/query_api.cpp
     nmos/query_utils.cpp
@@ -797,6 +799,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/server_utils.cpp
     nmos/settings.cpp
     nmos/settings_api.cpp
+    nmos/ssl_utils.cpp
     nmos/system_api.cpp
     nmos/system_resources.cpp
     )
@@ -865,6 +868,9 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/node_resources.h
     nmos/node_server.h
     nmos/node_system_behaviour.h
+    nmos/ocsp_behaviour.h
+    nmos/ocsp_settings.h
+    nmos/ocsp_utils.h
     nmos/paging_utils.h
     nmos/process_utils.h
     nmos/query_api.h
@@ -885,6 +891,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/settings_api.h
     nmos/slog.h
     nmos/ssl_context_options.h
+    nmos/ssl_utils.h
     nmos/string_enum.h
     nmos/string_enum_fwd.h
     nmos/system_api.h
