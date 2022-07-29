@@ -25,7 +25,8 @@ namespace nmos
         static int server_certificate_status_request(SSL* s, void* arg)
         {
             nmos::experimental::ocsp_settings* settings = (nmos::experimental::ocsp_settings*)arg;
-            return (nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(*settings->mutex, [&] { return settings->ocsp_response; })) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_ALERT_FATAL);
+            nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(*settings->mutex, [&] { return settings->ocsp_response; }));
+            return SSL_TLSEXT_ERR_OK;
         }
 
         // setup server certificate status callback when client includes a certificate status request extension in the TLS handshake
