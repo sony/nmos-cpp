@@ -799,6 +799,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/settings_api.cpp
     nmos/system_api.cpp
     nmos/system_resources.cpp
+    nmos/video_jxsv.cpp
     )
 set(NMOS_CPP_NMOS_HEADERS
     nmos/activation_mode.h
@@ -895,6 +896,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/transport.h
     nmos/type.h
     nmos/version.h
+    nmos/video_jxsv.h
     nmos/vpid_code.h
     nmos/websockets.h
     )

@@ -172,6 +172,26 @@ namespace nmos
             return sampler->second;
         }
 
+        // Exact Frame Rate
+        // "Integer frame rates shall be signaled as a single decimal number (e.g. "25") whilst non-integer frame rates shall be
+        // signaled as a ratio of two integer decimal numbers separated by a "forward-slash" character (e.g. "30000/1001"),
+        // utilizing the numerically smallest numerator value possible."
+        // See ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+        utility::string_t make_exactframerate(const nmos::rational& exactframerate)
+        {
+            return exactframerate.denominator() != 1
+                ? utility::ostringstreamed(exactframerate.numerator()) + U("/") + utility::ostringstreamed(exactframerate.denominator())
+                : utility::ostringstreamed(exactframerate.numerator());
+        }
+
+        nmos::rational parse_exactframerate(const utility::string_t& exactframerate)
+        {
+            const auto slash = exactframerate.find(U('/'));
+            return utility::string_t::npos != slash
+                ? nmos::rational(utility::istringstreamed<int64_t>(exactframerate.substr(0, slash)), utility::istringstreamed<int64_t>(exactframerate.substr(slash + 1)))
+                : nmos::rational(utility::istringstreamed<int64_t>(exactframerate));
+        }
+
         // Construct simple media stream ids based on the sender's number of legs
         std::vector<utility::string_t> make_media_stream_ids(const web::json::value& sender)
         {
@@ -693,9 +713,7 @@ namespace nmos
         sdp_parameters::fmtp_t fmtp = {
             { sdp::fields::width, utility::ostringstreamed(params.width) },
             { sdp::fields::height, utility::ostringstreamed(params.height) },
-            { sdp::fields::exactframerate, params.exactframerate.denominator() != 1
-                ? utility::ostringstreamed(params.exactframerate.numerator()) + U("/") + utility::ostringstreamed(params.exactframerate.denominator())
-                : utility::ostringstreamed(params.exactframerate.numerator()) }
+            { sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) }
         };
         if (params.interlace) fmtp.push_back({ sdp::fields::interlace, {} });
         if (params.segmented) fmtp.push_back({ sdp::fields::segmented, {} });
@@ -1200,14 +1218,9 @@ namespace nmos
         if (sdp_params.fmtp.end() == height) throw details::sdp_processing_error("missing format parameter: height");
         params.height = utility::istringstreamed<uint32_t>(height->second);
 
-        auto parse_rational = [](const utility::string_t& rational_string)
-        {
-            const auto slash = rational_string.find(U('/'));
-            return nmos::rational(utility::istringstreamed<uint64_t>(rational_string.substr(0, slash)), utility::string_t::npos != slash ? utility::istringstreamed<uint64_t>(rational_string.substr(slash + 1)) : 1);
-        };
         const auto exactframerate = details::find_fmtp(sdp_params.fmtp, sdp::fields::exactframerate);
         if (sdp_params.fmtp.end() == exactframerate) throw details::sdp_processing_error("missing format parameter: exactframerate");
-        params.exactframerate = parse_rational(exactframerate->second);
+        params.exactframerate = nmos::details::parse_exactframerate(exactframerate->second);
 
         // optional
         const auto interlace = details::find_fmtp(sdp_params.fmtp, sdp::fields::interlace);
@@ -1340,15 +1353,6 @@ namespace nmos
         return{ get_session_description_sdp_parameters(session_description), get_session_description_transport_params(session_description) };
     }
 
-    bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint_set)
-    {
-        if (!interlace) return nmos::match_string_constraint(nmos::interlace_modes::progressive.name, constraint_set);
-        if (segmented) return nmos::match_string_constraint(nmos::interlace_modes::interlaced_psf.name, constraint_set);
-        // hmm, don't think we can be more precise than this, see comment regarding RFC 4175 top-field-first in make_video_sdp_parameters
-        return nmos::match_string_constraint(nmos::interlace_modes::interlaced_tff.name, constraint_set)
-            || nmos::match_string_constraint(nmos::interlace_modes::interlaced_bff.name, constraint_set);
-    }
-
     namespace details
     {
         nmos::format get_format(const sdp_parameters& sdp_params)
@@ -1367,6 +1371,16 @@ namespace nmos
             if (sdp::media_types::video == sdp_params.media_type && U("smpte291") == sdp_params.rtpmap.encoding_name) return get_video_smpte291_parameters(sdp_params);
             if (sdp::media_types::video == sdp_params.media_type && U("SMPTE2022-6") == sdp_params.rtpmap.encoding_name) return get_video_SMPTE2022_6_parameters(sdp_params);
             throw sdp_processing_error("unsupported media type/encoding name");
+        }
+
+        // Check the specified SDP interlace and segmented parameters against the specified interlace_mode constraint
+        bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint)
+        {
+            if (!interlace) return nmos::match_string_constraint(nmos::interlace_modes::progressive.name, constraint);
+            if (segmented) return nmos::match_string_constraint(nmos::interlace_modes::interlaced_psf.name, constraint);
+            // hmm, don't think we can be more precise than this, see comment regarding RFC 4175 top-field-first in make_video_sdp_parameters
+            return nmos::match_string_constraint(nmos::interlace_modes::interlaced_tff.name, constraint)
+                || nmos::match_string_constraint(nmos::interlace_modes::interlaced_bff.name, constraint);
         }
 
         // for a little brevity, cf. sdp_parameters member type names
@@ -1392,7 +1406,7 @@ namespace nmos
             { nmos::caps::format::frame_height, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->height, con); } },
             { nmos::caps::format::frame_width, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->width, con); } },
             { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
-            { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
+            { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::details::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
             { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
             { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(!video->tcs.empty() ? video->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },

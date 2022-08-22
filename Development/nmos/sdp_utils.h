@@ -304,8 +304,8 @@ namespace nmos
         bool segmented;
         sdp::sampling sampling;
         uint32_t depth;
-        sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is a subset
-        sdp::colorimetry colorimetry; // nmos::colorspace is a subset
+        sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is compatible
+        sdp::colorimetry colorimetry; // nmos::colorspace is compatible
         sdp::type_parameter tp;
 
         video_raw_parameters() : width(), height(), interlace(), segmented(), depth() {}
@@ -496,6 +496,9 @@ namespace nmos
         // a map from parameter constraint URNs to parameter constraint functions
         typedef std::map<utility::string_t, sdp_parameter_constraint> sdp_parameter_constraints;
 
+        // Check the specified SDP interlace and segmented parameters against the specified interlace_mode constraint
+        bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint);
+
         // Check the specified SDP parameters and format-specific parameters against the specified constraint set
         // using the specified parameter constraint functions
         bool match_sdp_parameters_constraint_set(const sdp_parameter_constraints& constraints, const sdp_parameters& sdp_params, const format_parameters& format_params, const web::json::value& constraint_set);
@@ -512,6 +515,14 @@ namespace nmos
 
         // cf. nmos::make_components
         sdp::sampling make_sampling(const web::json::array& components);
+
+        // Exact Frame Rate
+        // "Integer frame rates shall be signaled as a single decimal number (e.g. "25") whilst non-integer frame rates shall be
+        // signaled as a ratio of two integer decimal numbers separated by a "forward-slash" character (e.g. "30000/1001"),
+        // utilizing the numerically smallest numerator value possible."
+        // See ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+        utility::string_t make_exactframerate(const nmos::rational& exactframerate);
+        nmos::rational parse_exactframerate(const utility::string_t& exactframerate);
 
         // Payload identifiers 96-127 are used for payloads defined dynamically during a session
         // 96 and 97 are suitable for video and audio encodings not covered by the IANA registry

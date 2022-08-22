@@ -409,14 +409,14 @@ namespace sdp
         // and VSF TR-05:2018
 
         // ST 2110-20:2017 Section 7.2 Required Media Type Parameters
-        const web::json::field_as_string sampling{ U("sampling") };
+        const web::json::field_as_string sampling{ U("sampling") }; // see sdp::sampling
         const web::json::field<uint32_t> width{ U("width") };
         const web::json::field<uint32_t> height{ U("height") };
         const web::json::field<uint32_t> depth{ U("depth") };
         const web::json::field_as_string exactframerate{ U("exactframerate") };
-        const web::json::field_as_string colorimetry{ U("colorimetry") };
-        const web::json::field_as_string packing_mode{ U("PM") };
-        const web::json::field_as_string smpte_standard_number{ U("SSN") };
+        const web::json::field_as_string colorimetry{ U("colorimetry") }; // see sdp::colorimetry
+        const web::json::field_as_string packing_mode{ U("PM") }; // see sdp::packing_mode
+        const web::json::field_as_string smpte_standard_number{ U("SSN") }; // see sdp::smpte_standard_number
 
         // ST 2110-20:2017 Section 7.3 Media Type Parameters with default values
         const web::json::field_as_bool_or interlace{ U("interlace"), false };
@@ -426,11 +426,11 @@ namespace sdp
         // hm, for the following optional parameters, it seems important to distinguish
         // an omitted parameter from an explicitly specified default value...
         // "If the TCS value is not specified, receivers shall assume the value SDR" per ST 2110-20:2017 Section 7.6
-        const web::json::field_as_string transfer_characteristic_system{ U("TCS") };
+        const web::json::field_as_string transfer_characteristic_system{ U("TCS") }; // see sdp::transfer_characteristic_system
         // "In the absence of [the RANGE] parameter, NARROW shall be the assumed value" per ST 2110-20:2017 Section 7.3
-        // Hmm, the JPEG XS payload mapping says that "when paired with the UNSPECIFIED colo[ri]metry, FULL SHALL be the default assumed value"
-        // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6
-        const web::json::field_as_string range{ U("RANGE") };
+        // Hmm, the JPEG XS payload mapping says that "when paired with the UNSPECIFIED colorimetry, FULL SHALL be the default assumed value"
+        // See https://tools.ietf.org/html/rfc9134#section-7
+        const web::json::field_as_string range{ U("RANGE") }; // see sdp::range
         // "If [MAXUDP is] absent, it indicates that the Standard UDP Size Limit [i.e. 1460 octets] is in use."
         const web::json::field<uint32_t> max_udp_packet_size{ U("MAXUDP") };
         // "When it is signaled, PAR shall be signaled as a ratio of two integer decimal numbers separated by a colon character (e.g. 12:11).
@@ -439,23 +439,18 @@ namespace sdp
         const web::json::field_as_string pixel_aspect_ratio{ U("PAR") };
 
         // See SMPTE ST 2110-21:2017 Section 8 Session Description Considerations
-        const web::json::field_as_string type_parameter{ U("TP") };
+
+        // ST 2110-21:2017 Section 8.1 Required Parameters
+        const web::json::field_as_string type_parameter{ U("TP") }; // see sdp::type_parameter
 
         // See SMPTE ST 2110-30:2017
         // and https://tools.ietf.org/html/rfc3190
-        const web::json::field_as_string channel_order{ U("channel-order") }; // "<convention>.<order>", e.g. "SMPTE2110.(ST)"
+        const web::json::field_as_string channel_order{ U("channel-order") }; // "<convention>.<order>", e.g. "SMPTE2110.(ST)", see nmos/channels.h
 
         // See SMPTE ST 2110-40:2018
         // and https://tools.ietf.org/html/rfc8331
-        const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}"
-        const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255
-
-        // See the JPEG XS payload mapping
-        const web::json::field<uint32_t> transmission_mode{ U("transmode") }; // the T bit (0 for out-of-order-allowed or 1 for sequential)
-        const web::json::field<uint32_t> packet_mode{ U("packetmode") }; // the K bit (0 for codestream or 1 for slice)
-        const web::json::field_as_string profile{ U("profile") }; // e.g. 'Main-444.12' or 'High-444.12'
-        const web::json::field_as_string level{ U("level") }; // e.g. '2k-1' or '4k-1'
-        const web::json::field_as_string sublevel{ U("sublevel") }; // e.g. 'Sublev3bpp' or 'Sublev6pp'
+        const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}", see nmos::did_sdid
+        const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255, see nmos::vpid_code
     }
 }
 
@@ -493,8 +488,8 @@ namespace sdp
         // Key signal represented as a single component
         // e.g. as specified in SMPTE RP 157
         const sampling KEY{ U("KEY") };
-        // Hmm, only the JPEG XS payload mapping includes this value, for "sampling signaled by the payload"
-        // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6
+        // Hmm, the JPEG XS payload mapping adds this value, for "sampling signaled by the payload"
+        // See https://tools.ietf.org/html/rfc9134#section-7
         const sampling UNSPECIFIED{ U("UNSPECIFIED") };
     }
 
@@ -520,7 +515,6 @@ namespace sdp
         // SMPTE ST 2065-3 Academy Density Exchange Encoding (ADX)
         const colorimetry ST2065_3{ U("ST2065-3") };
         // Colorimetry that is not specified and must be manually coordinated between sender and receiver
-        // Hmm, the JPEG XS payload mapping adds that it may be "signaled in the payload by the Color Specification Box of ISO/IEC 21122-3"
         const colorimetry UNSPECIFIED{ U("UNSPECIFIED") };
         // ISO 11664-1 CIE 1931 standard colorimetric system
         const colorimetry XYZ{ U("XYZ") };
@@ -564,7 +558,7 @@ namespace sdp
     }
 
     // TCS (Transfer Characteristic System)
-    // See SMPTE ST 2110-20:2017 Section 7.6 Permitted values of TCS
+    // See SMPTE ST 2110-20:2022 Section 7.6 Permitted values of TCS
     // and AMWA IS-04 v1.2 "transfer_characteristic"
     DEFINE_STRING_ENUM(transfer_characteristic_system)
     namespace transfer_characteristic_systems
@@ -588,8 +582,6 @@ namespace sdp
         // Video streams of density encoded samples, such as those defined in SMPTE ST 2065-3.
         const transfer_characteristic_system DENSITY{ U("DENSITY") };
         // Video streams whose transfer characteristics are not specified. The transfer characteristics must be manually coordinated between sender and receiver.
-        // Hmm, the JPEG XS payload mapping includes "video streams whose transfer characteristics are signaled by the payload as specified in ISO/IEC 21122-3".
-        // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6
         const transfer_characteristic_system UNSPECIFIED{ U("UNSPECIFIED") };
         // Video streams of high dynamic range video that utilize the "Camera Log S3" (i.e. S-Log3) transfer characteristic specified in SMPTE ST 2115.
         const transfer_characteristic_system ST2115LOGS3{ U("ST2115LOGS3") };
