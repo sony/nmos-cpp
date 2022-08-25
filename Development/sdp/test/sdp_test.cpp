@@ -408,7 +408,9 @@ a=fmtp:96)";
     const std::vector<std::string> bad_params = {
         " ;",
         " ; foo=meow",
+        " foo=",
         " foo=meow;;",
+        " bar=; foo=meow",
         " bar=purr; ; foo=meow"
     };
 
