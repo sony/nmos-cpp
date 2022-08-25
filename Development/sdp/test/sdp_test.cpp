@@ -362,3 +362,58 @@ BST_TEST_CASE(testSdpParseErrors)
     // ... even if there's a complete valid line after it
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\na=foo"), std::runtime_error);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpFmtp)
+{
+    const std::string test_sdp = R"(v=0
+o=- 0 0 IN IP4 192.0.2.1
+s=Example Sender 1 (Video)
+t=0 0
+m=video 5004 RTP/AVP 96
+c=IN IP4 233.252.0.1/32
+a=fmtp:96)";
+
+    const std::vector<std::pair<size_t, std::string>> fmtp_params = {
+        { 0, "" },
+        { 0, " " },
+        { 1, " foo=meow" },
+        { 1, " foo=meow;" },
+        { 1, " foo=meow; " },
+        { 2, " foo=meow;bar=purr" },
+        { 2, " bar=purr; foo=meow;" }
+    };
+
+    for (const auto& fp : fmtp_params)
+    {
+        auto session_description = sdp::parse_session_description(test_sdp + fp.second);
+        auto& media_descriptions = sdp::fields::media_descriptions(session_description);
+        auto& media_description = media_descriptions.at(0);
+        auto& attributes = sdp::fields::attributes(media_description).as_array();
+
+        auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
+        BST_REQUIRE(attributes.end() != fmtp);
+
+        auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
+        BST_REQUIRE_EQUAL(fp.first, params.size());
+
+        if (0 != fp.first)
+        {
+            auto foo_param = sdp::find_name(params, U("foo"));
+            BST_REQUIRE(params.end() != foo_param);
+            BST_REQUIRE_EQUAL(U("meow"), sdp::fields::value(*foo_param).as_string());
+        }
+    }
+
+    const std::vector<std::string> bad_params = {
+        " ;",
+        " ; foo=meow",
+        " foo=meow;;",
+        " bar=purr; ; foo=meow"
+    };
+
+    for (const auto& bp : bad_params)
+    {
+        BST_REQUIRE_THROW(sdp::parse_session_description(test_sdp + bp), std::runtime_error);
+    }
+}
