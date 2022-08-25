@@ -567,7 +567,7 @@ namespace sdp
                             s += " ";
                             // <format specific parameters> are required but may be empty
                             const auto& params = v.at(sdp::fields::format_specific_parameters);
-                            if (0 != params.size()) s += named_values_converter.format(params) + "; ";
+                            s += named_values_converter.format(params);
                             return s;
                         },
                         [](const std::string& s) {

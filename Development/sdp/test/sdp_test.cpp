@@ -19,7 +19,7 @@ c=IN IP4 239.22.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
 a=source-filter: incl IN IP4 239.22.142.1 192.168.9.142
 a=rtpmap:96 raw/90000
-a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017; 
+a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017
 a=mediaclk:direct=0
 a=mid:PRIMARY
 m=video 50120 RTP/AVP 96
@@ -27,7 +27,7 @@ c=IN IP4 239.122.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
 a=source-filter: incl IN IP4 239.122.142.1 192.168.109.142
 a=rtpmap:96 raw/90000
-a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017; 
+a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017
 a=mediaclk:direct=0
 a=mid:SECONDARY
 )";
