@@ -160,8 +160,8 @@ namespace sdp
         // ST 2110-20:2022 says "the <format specific parameters> section shall consist of a sequence of
         // media type parameter entries, separated by the semicolon (";") character followed by whitespace"
         // but RFC 4566 does not itself specify the syntax of format-specific parameters and many examples
-        // in other RFCs and SMPTE standards are inconsistent, so make the following whitespace optional
-        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", ";[ \\t]*");
+        // in other RFCs and SMPTE standards are inconsistent, so allow additional whitespace
+        const converter named_values_converter = array_converter(key_value_converter('=', { sdp::fields::name, string_converter }, { sdp::fields::value, string_converter }), "; ", "[ \\t]*(;[ \\t]*|$)");
 
         converter object_converter(const std::vector<std::pair<utility::string_t, converter>>& field_converters, const std::string& delimiter = " ")
         {

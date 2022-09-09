@@ -381,7 +381,9 @@ a=fmtp:96)";
         { 1, " foo=meow;" },
         { 1, " foo=meow; " },
         { 2, " foo=meow;bar=purr" },
-        { 2, " bar=purr; foo=meow;" }
+        { 2, " bar=purr; foo=meow;" },
+        { 2, "  bar=purr ; foo=meow " },
+        { 2, "  bar=purr ; foo=meow ; " }
     };
 
     for (const auto& fp : fmtp_params)
@@ -402,6 +404,33 @@ a=fmtp:96)";
             auto foo_param = sdp::find_name(params, U("foo"));
             BST_REQUIRE(params.end() != foo_param);
             BST_REQUIRE_EQUAL(U("meow"), sdp::fields::value(*foo_param).as_string());
+        }
+    }
+
+    const std::vector<std::pair<size_t, std::string>> fail_params = {
+        // invalid case... whitespace on its own isn't a separator
+        // but nor is it allowed in the <name> or <value>
+        { 2, "  bar=purr ; foo=meow baz=hiss" }
+    };
+
+    for (const auto& fp : fail_params)
+    {
+        auto session_description = sdp::parse_session_description(test_sdp + fp.second);
+        auto& media_descriptions = sdp::fields::media_descriptions(session_description);
+        auto& media_description = media_descriptions.at(0);
+        auto& attributes = sdp::fields::attributes(media_description).as_array();
+
+        auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
+        BST_REQUIRE(attributes.end() != fmtp);
+
+        auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
+        BST_REQUIRE_EQUAL(fp.first, params.size());
+
+        if (0 != fp.first)
+        {
+            auto foo_param = sdp::find_name(params, U("foo"));
+            BST_REQUIRE(params.end() != foo_param);
+            BST_REQUIRE_NE(U("meow"), sdp::fields::value(*foo_param).as_string());
         }
     }
 
