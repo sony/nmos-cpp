@@ -19,7 +19,7 @@ c=IN IP4 239.22.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
 a=source-filter: incl IN IP4 239.22.142.1 192.168.9.142
 a=rtpmap:96 raw/90000
-a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017; 
+a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017
 a=mediaclk:direct=0
 a=mid:PRIMARY
 m=video 50120 RTP/AVP 96
@@ -27,7 +27,7 @@ c=IN IP4 239.122.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
 a=source-filter: incl IN IP4 239.122.142.1 192.168.109.142
 a=rtpmap:96 raw/90000
-a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017; 
+a=fmtp:96 colorimetry=BT709; exactframerate=30000/1001; depth=10; TCS=SDR; sampling=YCbCr-4:2:2; width=1920; interlace; TP=2110TPN; PM=2110GPM; height=1080; SSN=ST2110-20:2017
 a=mediaclk:direct=0
 a=mid:SECONDARY
 )";
@@ -361,4 +361,90 @@ BST_TEST_CASE(testSdpParseErrors)
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\n"), std::runtime_error);
     // ... even if there's a complete valid line after it
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\na=foo"), std::runtime_error);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpFmtp)
+{
+    const std::string test_sdp = R"(v=0
+o=- 0 0 IN IP4 192.0.2.1
+s=Example Sender 1 (Video)
+t=0 0
+m=video 5004 RTP/AVP 96
+c=IN IP4 233.252.0.1/32
+a=fmtp:96)";
+
+    const std::vector<std::pair<size_t, std::string>> fmtp_params = {
+        { 0, "" },
+        { 0, " " },
+        { 1, " foo=meow" },
+        { 1, " foo=meow;" },
+        { 1, " foo=meow; " },
+        { 2, " foo=meow;bar=purr" },
+        { 2, " bar=purr; foo=meow;" },
+        { 2, "  bar=purr ; foo=meow " },
+        { 2, "  bar=purr ; foo=meow ; " }
+    };
+
+    for (const auto& fp : fmtp_params)
+    {
+        auto session_description = sdp::parse_session_description(test_sdp + fp.second);
+        auto& media_descriptions = sdp::fields::media_descriptions(session_description);
+        auto& media_description = media_descriptions.at(0);
+        auto& attributes = sdp::fields::attributes(media_description).as_array();
+
+        auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
+        BST_REQUIRE(attributes.end() != fmtp);
+
+        auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
+        BST_REQUIRE_EQUAL(fp.first, params.size());
+
+        if (0 != fp.first)
+        {
+            auto foo_param = sdp::find_name(params, U("foo"));
+            BST_REQUIRE(params.end() != foo_param);
+            BST_REQUIRE_EQUAL(U("meow"), sdp::fields::value(*foo_param).as_string());
+        }
+    }
+
+    const std::vector<std::pair<size_t, std::string>> fail_params = {
+        // invalid case... whitespace on its own isn't a separator
+        // but nor is it allowed in the <name> or <value>
+        { 2, "  bar=purr ; foo=meow baz=hiss" }
+    };
+
+    for (const auto& fp : fail_params)
+    {
+        auto session_description = sdp::parse_session_description(test_sdp + fp.second);
+        auto& media_descriptions = sdp::fields::media_descriptions(session_description);
+        auto& media_description = media_descriptions.at(0);
+        auto& attributes = sdp::fields::attributes(media_description).as_array();
+
+        auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
+        BST_REQUIRE(attributes.end() != fmtp);
+
+        auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
+        BST_REQUIRE_EQUAL(fp.first, params.size());
+
+        if (0 != fp.first)
+        {
+            auto foo_param = sdp::find_name(params, U("foo"));
+            BST_REQUIRE(params.end() != foo_param);
+            BST_REQUIRE_NE(U("meow"), sdp::fields::value(*foo_param).as_string());
+        }
+    }
+
+    const std::vector<std::string> bad_params = {
+        " ;",
+        " ; foo=meow",
+        " foo=",
+        " foo=meow;;",
+        " bar=; foo=meow",
+        " bar=purr; ; foo=meow"
+    };
+
+    for (const auto& bp : bad_params)
+    {
+        BST_REQUIRE_THROW(sdp::parse_session_description(test_sdp + bp), std::runtime_error);
+    }
 }
