@@ -95,12 +95,12 @@ namespace nmos
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
             if ((size_t)BIO_write(bio.get(), cert_data.data(), (int)cert_data.size()) != cert_data.size())
             {
-                throw ocsp_exception("failed to get_ocsp_uri_use_file while loading server certificate: BIO_new failure: " + last_openssl_error());
+                throw ocsp_exception("failed to get_ocsp_uris while loading server certificate: BIO_new failure: " + last_openssl_error());
             }
             X509_ptr x509(PEM_read_bio_X509_AUX(bio.get(), NULL, NULL, NULL), &X509_free);
             if (!x509)
             {
-                throw ocsp_exception("failed to get_ocsp_uri_use_file while loading server certificate: PEM_read_bio_X509_AUX failure: " + last_openssl_error());
+                throw ocsp_exception("failed to get_ocsp_uris while loading server certificate: PEM_read_bio_X509_AUX failure: " + last_openssl_error());
             }
             auto ocsp_uris_ = X509_get1_ocsp(x509.get());
 
