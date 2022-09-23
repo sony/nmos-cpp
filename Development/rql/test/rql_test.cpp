@@ -34,3 +34,41 @@ BST_TEST_CASE(testRqlParseQuery)
         BST_REQUIRE_STRING_EQUAL(U("baz%2Equx"), key_path.rbegin()->as_string());
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testRqlValidateQuery)
+{
+    const rql::operators operators{
+        { U("foo"), {} },
+        { U("bar"), {} },
+        { U("baz"), {} }
+    };
+
+    // no call-operator
+    {
+        const utility::string_t query_rql = U("meow");
+        const auto rql_query = rql::parse_query(query_rql);
+        BST_REQUIRE_NO_THROW(rql::validate_query(rql_query, operators));
+    }
+
+    // only valid call-operators
+    {
+        const utility::string_t query_rql = U("foo(meow,bar(purr,baz(),hiss,(qux,yowl)))");
+        const auto rql_query = rql::parse_query(query_rql);
+        BST_REQUIRE_NO_THROW(rql::validate_query(rql_query, operators));
+    }
+
+    // invalid call-operator
+    {
+        const utility::string_t query_rql = U("meow()");
+        const auto rql_query = rql::parse_query(query_rql);
+        BST_REQUIRE_THROW(rql::validate_query(rql_query, operators), std::runtime_error);
+    }
+
+    // invalid call-operator within an array arg nested in valid call-operators
+    {
+        const utility::string_t query_rql = U("foo(meow,bar(purr,baz(),hiss,(qux(),yowl)))");
+        const auto rql_query = rql::parse_query(query_rql);
+        BST_REQUIRE_THROW(rql::validate_query(rql_query, operators), std::runtime_error);
+    }
+}

@@ -30,6 +30,8 @@ namespace nmos
         }
     }
 
+    rql::operators make_rql_operators(const nmos::resources& resources);
+
     resource_query::resource_query(const nmos::api_version& version, const utility::string_t& resource_path, const web::json::value& flat_query_params)
         : version(version)
         , resource_path(resource_path)
@@ -55,6 +57,8 @@ namespace nmos
                 else if (field.first == U("rql"))
                 {
                     rql_query = rql::parse_query(field.second.as_string());
+                    // validate against call-operators used in nmos::match_rql
+                    rql::validate_query(rql_query, make_rql_operators({}));
                 }
                 // extract the experimental flag, used to override the default behaviour that resources
                 // "must have all [higher-versioned] keys stripped by the Query API before they are returned"
@@ -239,7 +243,7 @@ namespace nmos
             : input;
     }
 
-    static inline rql::extractor make_extractor(const web::json::value& value)
+    static inline rql::extractor make_rql_extractor(const web::json::value& value)
     {
         return [&value](web::json::value& results, const web::json::value& key_path_)
         {
@@ -277,7 +281,7 @@ namespace nmos
             const auto rel = [&resolve, &relation_name, &operators, &query](const web::json::value& relation_value)
             {
                 // evaluate the call-operator against the specified data
-                return rql::evaluator{ make_extractor(resolve(relation_name, relation_value)), operators }(query);
+                return rql::evaluator{ make_rql_extractor(resolve(relation_name, relation_value)), operators }(query);
             };
 
             // cf. rql::details::logical_or
@@ -344,14 +348,26 @@ namespace nmos
         }
     }
 
-    bool match_rql(const web::json::value& value, const web::json::value& query, const nmos::resources& resources)
+    rql::operators make_rql_operators(const nmos::resources& resources)
     {
         auto operators = rql::default_any_operators(equal_to, less);
 
         operators[U("rel")] = std::bind(experimental::rel, std::cref(resources), std::placeholders::_1, std::placeholders::_2);
         operators[U("sub")] = experimental::sub;
 
-        return query.is_null() || rql::evaluator{ make_extractor(value), operators }(query) == rql::value_true;
+        return operators;
+    }
+
+    bool match_rql(const web::json::value& value, const web::json::value& query, const nmos::resources& resources)
+    {
+        try
+        {
+            return query.is_null() || rql::evaluator{ make_rql_extractor(value), make_rql_operators(resources) }(query) == rql::value_true;
+        }
+        catch (const std::runtime_error&) // i.e. rql::details::rql_exception
+        {
+            return false;
+        }
     }
 
     resource_query::result_type resource_query::operator()(const nmos::api_version& resource_version, const nmos::api_version& resource_downgrade_version, const nmos::type& resource_type, const web::json::value& resource_data, const nmos::resources& resources) const
