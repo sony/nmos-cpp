@@ -180,7 +180,7 @@ BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
     BST_REQUIRE_EQUAL(web::http::experimental::make_hsts_header({}), U("max-age=0"));
     BST_REQUIRE_EQUAL(web::http::experimental::make_hsts_header({ 31536000, true }), U("max-age=31536000;includeSubDomains"));
 
-    std::vector<std::pair<utility::string_t, web::http::experimental::htst>> examples{
+    std::vector<std::pair<utility::string_t, web::http::experimental::hsts>> examples{
         { U("max-age=31536000;includeSubDomains"), { 31536000, true } },
         { U("max-age = 31536000 ; includeSubDomains"), { 31536000, true } },
         { U("includeSubDomains;max-age=31536000"), { 31536000, true } },
@@ -189,7 +189,7 @@ BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
 
     for (const auto& example : examples)
     {
-        BST_REQUIRE_EQUAL(example.second, web::http::experimental::parse_htst_header(example.first));
+        BST_REQUIRE_EQUAL(example.second, web::http::experimental::parse_hsts_header(example.first));
     }
 }
 

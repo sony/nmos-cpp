@@ -180,19 +180,19 @@ namespace web
             utility::string_t make_timing_header(const timing_metrics& values);
             timing_metrics parse_timing_header(const utility::string_t& value);
 
-            struct htst
+            struct hsts
             {
                 int32_t max_age; // seconds
                 bool includeSubDomains;
-                htst(int32_t max_age = 0, bool includeSubDomains = false) : max_age(max_age), includeSubDomains(includeSubDomains) {}
+                hsts(int32_t max_age = 0, bool includeSubDomains = false) : max_age(max_age), includeSubDomains(includeSubDomains) {}
 
                 auto tied() const -> decltype(std::tie(max_age, includeSubDomains)) { return std::tie(max_age, includeSubDomains); }
-                friend bool operator==(const htst& lhs, const htst& rhs) { return lhs.tied() == rhs.tied(); }
-                friend bool operator!=(const htst& lhs, const htst& rhs) { return !(lhs == rhs); }
+                friend bool operator==(const hsts& lhs, const hsts& rhs) { return lhs.tied() == rhs.tied(); }
+                friend bool operator!=(const hsts& lhs, const hsts& rhs) { return !(lhs == rhs); }
             };
 
-            utility::string_t make_hsts_header(const htst& value);
-            htst parse_htst_header(const utility::string_t& value);
+            utility::string_t make_hsts_header(const hsts& value);
+            hsts parse_hsts_header(const utility::string_t& value);
         }
 
         // Determine whether http_request::reply() has been called already

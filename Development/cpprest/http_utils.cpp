@@ -476,25 +476,25 @@ namespace web
                 return results;
             }
 
-            utility::string_t make_hsts_header(const htst& value)
+            utility::string_t make_hsts_header(const hsts& value)
             {
                 directives result;
 
-                // invalid htst default to HTST disable
-                auto htst_ = value;
-                if (htst_.max_age < 0) htst_ = htst{};
+                // invalid hsts default to HSTS disable
+                auto hsts_ = value;
+                if (hsts_.max_age < 0) hsts_ = hsts{};
 
-                if (htst_.max_age >= 0)
+                if (hsts_.max_age >= 0)
                 {
-                    result.push_back({ U("max-age"), utility::ostringstreamed(htst_.max_age) });
-                    if (htst_.max_age > 0 && htst_.includeSubDomains) result.push_back({ U("includeSubDomains"), {} });
+                    result.push_back({ U("max-age"), utility::ostringstreamed(hsts_.max_age) });
+                    if (hsts_.max_age > 0 && hsts_.includeSubDomains) result.push_back({ U("includeSubDomains"), {} });
                 }
                 return make_directives_header(result);
             }
 
-            htst parse_htst_header(const utility::string_t& value)
+            hsts parse_hsts_header(const utility::string_t& value)
             {
-                htst result;
+                hsts result;
                 auto directives = parse_directives_header(value);
                 const auto max_age = std::find_if(directives.begin(), directives.end(), [](const ptoken_param& param) { return boost::algorithm::iequals(param.first, U("max-age")); });
                 if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0);
