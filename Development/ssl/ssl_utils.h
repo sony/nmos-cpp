@@ -1,5 +1,5 @@
-#ifndef NMOS_SSL_UTILS_H
-#define NMOS_SSL_UTILS_H
+#ifndef SSL_SSL_UTILS_H
+#define SSL_SSL_UTILS_H
 
 #include <memory>
 #include <stdexcept>
