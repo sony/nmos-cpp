@@ -798,8 +798,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/server.cpp
     nmos/server_utils.cpp
     nmos/settings.cpp
-    nmos/settings_api.cpp
-    nmos/ssl_utils.cpp
+    nmos/settings_api.cpp    
     nmos/system_api.cpp
     nmos/system_resources.cpp
     )
@@ -891,7 +890,6 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/settings_api.h
     nmos/slog.h
     nmos/ssl_context_options.h
-    nmos/ssl_utils.h
     nmos/string_enum.h
     nmos/string_enum_fwd.h
     nmos/system_api.h
@@ -930,6 +928,13 @@ set(NMOS_CPP_SDP_HEADERS
     sdp/sdp_grammar.h
     )
 
+set(NMOS_CPP_SSL_SOURCES
+    ssl/ssl_utils.cpp
+    )
+set(NMOS_CPP_SSL_HEADERS
+    ssl/ssl_utils.h
+    )
+
 add_library(
     nmos-cpp STATIC
     ${NMOS_CPP_BST_SOURCES}
@@ -944,6 +949,8 @@ add_library(
     ${NMOS_CPP_RQL_HEADERS}
     ${NMOS_CPP_SDP_SOURCES}
     ${NMOS_CPP_SDP_HEADERS}
+    ${NMOS_CPP_SSL_SOURCES}
+    ${NMOS_CPP_SSL_HEADERS}
     )
 
 source_group("bst\\Source Files" FILES ${NMOS_CPP_BST_SOURCES})
@@ -952,6 +959,7 @@ source_group("nmos\\Source Files" FILES ${NMOS_CPP_NMOS_SOURCES})
 source_group("pplx\\Source Files" FILES ${NMOS_CPP_PPLX_SOURCES})
 source_group("rql\\Source Files" FILES ${NMOS_CPP_RQL_SOURCES})
 source_group("sdp\\Source Files" FILES ${NMOS_CPP_SDP_SOURCES})
+source_group("ssl\\Source Files" FILES ${NMOS_CPP_SSL_SOURCES})
 
 source_group("bst\\Header Files" FILES ${NMOS_CPP_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_CPPREST_HEADERS})
@@ -959,6 +967,7 @@ source_group("nmos\\Header Files" FILES ${NMOS_CPP_NMOS_HEADERS})
 source_group("pplx\\Header Files" FILES ${NMOS_CPP_PPLX_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_RQL_HEADERS})
 source_group("sdp\\Header Files" FILES ${NMOS_CPP_SDP_HEADERS})
+source_group("ssl\\Header Files" FILES ${NMOS_CPP_SSL_HEADERS})
 
 target_link_libraries(
     nmos-cpp PRIVATE
@@ -1014,6 +1023,7 @@ install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR
 install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/pplx)
 install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/rql)
 install(FILES ${NMOS_CPP_SDP_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/sdp)
+install(FILES ${NMOS_CPP_SSL_HEADERS} DESTINATION ${NMOS_CPP_INSTALL_INCLUDEDIR}/ssl)
 
 list(APPEND NMOS_CPP_TARGETS nmos-cpp)
 add_library(nmos-cpp::nmos-cpp ALIAS nmos-cpp)

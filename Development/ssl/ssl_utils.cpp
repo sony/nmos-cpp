@@ -1,13 +1,15 @@
-#include "nmos/ssl_utils.h"
+#include "ssl/ssl_utils.h"
 
 #include <boost/algorithm/string.hpp> // for boost::split
 #include <openssl/err.h>
 #include <openssl/pem.h>
 
-namespace nmos
+namespace ssl
 {
 	namespace experimental
 	{
+        typedef std::unique_ptr<ASN1_TIME, decltype(&ASN1_STRING_free)> ASN1_TIME_ptr;
+
         namespace details
         {
             // get common name from subject
@@ -76,7 +78,11 @@ namespace nmos
                     if (gen->type == GEN_URI || gen->type == GEN_DNS || gen->type == GEN_EMAIL)
                     {
                         auto asn1_str = gen->d.uniformResourceIdentifier;
+#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
                         auto san = std::string(reinterpret_cast<const char*>(ASN1_STRING_get0_data(asn1_str)), ASN1_STRING_length(asn1_str));
+#else
+                        auto san = std::string(reinterpret_cast<char*>(ASN1_STRING_data(asn1_str)), ASN1_STRING_length(asn1_str));
+#endif
                         sans.push_back(san);
                     }
                     else
@@ -85,6 +91,67 @@ namespace nmos
                     }
                 }
                 return sans;
+            }
+
+            // create POSIX
+            // see https://stackoverflow.com/questions/10975542/asn1-time-to-time-t-conversion/47015958#47015958
+            time_t posix_time(uint32_t year, uint32_t month, uint32_t day, uint32_t hour, uint32_t min, uint32_t sec)
+            {
+                if (year < 1970 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || min > 59 || sec > 60)
+                {
+                    return -1;
+                }
+
+                // days upto months for non-leap years
+                static const int32_t month_day[13] = { -1, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+                year -= 1900;
+                // number of Februaries since 1900
+                const auto year_for_leap = (month > 2) ? year + 1 : year;
+
+                return sec + min * 60 + hour * 3600 + (month_day[month] + day - 1) * 86400 +
+                    (year - 70) * 31536000 + ((year_for_leap - 69) / 4) * 86400 -
+                    ((year_for_leap - 1) / 100) * 86400 + ((year_for_leap + 299) / 400) * 86400;
+            }
+
+            // convert ANS.1 to POSIX
+            // see https://stackoverflow.com/questions/10975542/asn1-time-to-time-t-conversion/47015958#47015958
+            time_t ASN1_TIME_to_posix_time(const ASN1_TIME* time)
+            {
+                if (!time) { return -1; }
+                auto s = (const char*)time->data;
+                if (!s) { return -1; }
+
+                auto two_digits_to_uint = [&]() // nested function: gcc extension
+                {
+                    unsigned n = 10 * (*s++ - '0');
+                    return n + (*s++ - '0');
+                };
+
+                uint32_t year;
+                switch (time->type)
+                {
+                    // https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2.5.1
+                case V_ASN1_UTCTIME: // YYMMDDHHMMSSZ
+                    year = two_digits_to_uint();
+                    year += year < 50 ? 2000 : 1900;
+                    break;
+                    // https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2.5.2
+                case V_ASN1_GENERALIZEDTIME: // YYYYMMDDHHMMSSZ
+                    year = 100 * two_digits_to_uint();
+                    year += two_digits_to_uint();
+                    break;
+                default:
+                    return -1; // error
+                }
+                auto month = two_digits_to_uint();
+                auto day = two_digits_to_uint();
+                auto hour = two_digits_to_uint();
+                auto min = two_digits_to_uint();
+                auto sec = two_digits_to_uint();
+                if (*s != 'Z') { return -1; }
+                // 99991231235959Z rfc 5280
+                if (year == 9999 && month == 12 && day == 31 && hour == 23 && min == 59 && sec == 59) { return -1; }
+                return posix_time(year, month, day, hour, min, sec);
             }
         }
 
@@ -127,12 +194,20 @@ namespace nmos
 
             // X509_get_notAfter returns the time that the cert expires, in Abstract Syntax Notation
             // According to the openssl documentation, the returned value is an internal pointer which MUST NOT be freed
+#if (OPENSSL_VERSION_NUMBER >= 0x1010000fL)
             auto not_before = X509_get0_notBefore(x509.get());
+#else
+            auto not_before = X509_get_notBefore(x509.get());
+#endif
             if (!not_before)
             {
                 throw ssl_exception("failed to get notBefore: X509_get0_notBefore failure: " + last_openssl_error());
             }
+#if (OPENSSL_VERSION_NUMBER >= 0x1010000fL)
             auto not_after = X509_get0_notAfter(x509.get());
+#else
+            auto not_after = X509_get_notAfter(x509.get());
+#endif
             if (!not_after)
             {
                 throw ssl_exception("failed to get notAfter: X509_get0_notAfter failure: " + last_openssl_error());
@@ -152,7 +227,7 @@ namespace nmos
                 throw ssl_exception("failed to convert not_after ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
             }
             not_after_time = mktime(&not_after_tm);
-#else
+#elif (OPENSSL_VERSION_NUMBER >= 0x1000200fL)
             // Construct another ASN1_TIME for the unix epoch, get the difference
             // between them and use that to calculate a unix timestamp representing
             // when the cert expires
@@ -165,12 +240,15 @@ namespace nmos
             {
                 throw est_exception("failed to get the days and seconds value of not_before: ASN1_TIME_diff failure: " + last_openssl_error());
             }
-            time_t not_before_time = (days * 24 * 60 * 60) + seconds;
+            not_before_time = (days * 24 * 60 * 60) + seconds;
             if (!ASN1_TIME_diff(&days, &seconds, epoch.get(), not_after))
             {
                 throw est_exception("failed to get the days and seconds value of not_after: ASN1_TIME_diff failure: " + last_openssl_error());
             }
-            time_t not_after_time = (days * 24 * 60 * 60) + seconds;
+            not_after_time = (days * 24 * 60 * 60) + seconds;
+#else
+            not_before_time = details::ASN1_TIME_to_posix_time(not_before);
+            not_after_time = details::ASN1_TIME_to_posix_time(not_after);
 #endif
             return{ _common_name, _issuer_name, not_before_time, not_after_time, sans };
         }

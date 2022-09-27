@@ -6,7 +6,7 @@
 #include <vector>
 #include "openssl/x509v3.h" // for X509V3_EXT_conf_nid
 
-namespace nmos
+namespace ssl
 {
     namespace experimental
     {

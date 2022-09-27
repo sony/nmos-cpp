@@ -8,7 +8,7 @@
 #include "nmos/ocsp_utils.h"
 #include "nmos/random.h"
 #include "nmos/slog.h"
-#include "nmos/ssl_utils.h"
+#include "ssl/ssl_utils.h"
 
 namespace nmos
 {
@@ -258,11 +258,11 @@ namespace nmos
                 // get the shorter expiry time from all the certificates
                 for (const auto& cert_data : certificate_chains_data)
                 {
-                    const auto expiry_time_ = nmos::experimental::certificate_expiry_from_now(utility::us2s(cert_data), 0.5);
+                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(cert_data), 0.5);
                     expiry_time = expiry_time < 0 ? expiry_time_ : std::min(expiry_time, expiry_time_);
                 }
             }
-            catch (const nmos::experimental::ssl_exception& e)
+            catch (const ssl::experimental::ssl_exception& e)
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Get certificate expiry time with SSL error: " << e.what();
             }
