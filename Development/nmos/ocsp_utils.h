@@ -3,8 +3,8 @@
 
 #include <stdexcept>
 #include <vector>
+#include <openssl/ssl.h>
 #include "cpprest/uri.h"
-#include "openssl/ssl.h"
 
 namespace nmos
 {

@@ -3,9 +3,9 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
 #include <boost/version.hpp>
+#include <openssl/opensslv.h>
 #include "cpprest/host_utils.h"
 #include "cpprest/version.h"
-#include "openssl/opensslv.h"
 #include "nmos/id.h"
 #include "websocketpp/version.hpp"
 
