@@ -8,8 +8,6 @@ namespace ssl
 {
 	namespace experimental
 	{
-        typedef std::unique_ptr<ASN1_TIME, decltype(&ASN1_STRING_free)> ASN1_TIME_ptr;
-
         namespace details
         {
             // get common name from subject
@@ -25,7 +23,7 @@ namespace ssl
                 OPENSSL_free(name);
 
                 // exmaple subject format
-                // e.g. subject=/DC=AMWA Workshop/CN=GBDEVWIND-8GGX.workshop.nmos.tv
+                // e.g. subject=/DC=Example/CN=api.example.com
                 const std::string common_name_prefix{ "CN=" };
                 std::vector<std::string> tokens;
                 boost::split(tokens, subject, boost::is_any_of("/"));
@@ -52,7 +50,7 @@ namespace ssl
                 std::string issuer(name);
                 OPENSSL_free(name);
 
-                // e.g. issuer=/C=GB/ST=England/O=NMOS Testing Ltd/CN=ica.workshop.nmos.tv
+                // e.g. issuer=/C=GB/ST=England/O=Example Ltd/CN=ica.example.com
                 const std::string common_name_prefix{ "CN=" };
                 std::vector<std::string> tokens;
                 boost::split(tokens, issuer, boost::is_any_of("/"));
@@ -93,7 +91,7 @@ namespace ssl
                 return sans;
             }
 
-            // create POSIX
+            // create POSIX time (UTC)
             // see https://stackoverflow.com/questions/10975542/asn1-time-to-time-t-conversion/47015958#47015958
             time_t posix_time(uint32_t year, uint32_t month, uint32_t day, uint32_t hour, uint32_t min, uint32_t sec)
             {
@@ -108,20 +106,48 @@ namespace ssl
                 // number of Februaries since 1900
                 const auto year_for_leap = (month > 2) ? year + 1 : year;
 
-                return sec + min * 60 + hour * 3600 + (month_day[month] + day - 1) * 86400 +
-                    (year - 70) * 31536000 + ((year_for_leap - 69) / 4) * 86400 -
-                    ((year_for_leap - 1) / 100) * 86400 + ((year_for_leap + 299) / 400) * 86400;
+                return static_cast<uint64_t>(sec) + static_cast<uint64_t>(min) * 60 + static_cast<uint64_t>(hour) * 3600 + (static_cast<int64_t>(month_day[month]) + day - 1) * 86400 +
+                    static_cast<uint64_t>(year - 70) * 31536000 + static_cast<uint64_t>((year_for_leap - 69) / 4) * 86400 -
+                    static_cast<uint64_t>((year_for_leap - 1) / 100) * 86400 + static_cast<uint64_t>((year_for_leap + 299) / 400) * 86400;
             }
 
-            // convert ANS.1 to POSIX
-            // see https://stackoverflow.com/questions/10975542/asn1-time-to-time-t-conversion/47015958#47015958
-            time_t ASN1_TIME_to_posix_time(const ASN1_TIME* time)
+            // convert ANS.1 to POSIX (UTC)
+            time_t ASN1_TIME_to_time_t(const ASN1_TIME* time)
             {
-                if (!time) { return -1; }
-                auto s = (const char*)time->data;
-                if (!s) { return -1; }
+                if (!time)
+                {
+                    throw ssl_exception("failed to convert ASN1_TIME to UTC: invalid ASN1_TIME");
+                }
 
-                auto two_digits_to_uint = [&]() // nested function: gcc extension
+#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
+                tm tm;
+                if (!ASN1_TIME_to_tm(time, &tm))
+                {
+                    throw ssl_exception("failed to convert ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
+                }
+                return mktime(&tm);
+#elif (OPENSSL_VERSION_NUMBER >= 0x1000200fL)
+                // Construct another ASN1_TIME for the unix epoch, get the difference
+                // between them and use that to calculate a unix timestamp representing
+                // when the cert expires
+                ASN1_TIME_ptr epoch(ASN1_TIME_new(), &ASN1_STRING_free);
+                ASN1_TIME_set_string(epoch.get(), "700101000000Z");
+                int days{ 0 };
+                int seconds{ 0 };
+
+                if (!ASN1_TIME_diff(&days, &seconds, epoch.get(), time))
+                {
+                    throw ssl_exception("failed to get the days and seconds value of ANS1_TIME: ASN1_TIME_diff failure: " + last_openssl_error());
+                }
+                return (days * 24 * 60 * 60) + seconds;
+#else
+                auto s = (const char*)time->data;
+                if (!s)
+                {
+                    throw ssl_exception("failed to convert ASN1_TIME to UTC: invalid ASN1_TIME, no data");
+                }
+
+                auto two_digits_to_uint = [&]()
                 {
                     unsigned n = 10 * (*s++ - '0');
                     return n + (*s++ - '0');
@@ -152,6 +178,7 @@ namespace ssl
                 // 99991231235959Z rfc 5280
                 if (year == 9999 && month == 12 && day == 31 && hour == 23 && min == 59 && sec == 59) { return -1; }
                 return posix_time(year, month, day, hour, min, sec);
+#endif
             }
         }
 
@@ -180,14 +207,14 @@ namespace ssl
 
             auto sans = details::subject_alt_names(x509.get());
 
-            auto _common_name = details::common_name(x509.get());
-            if (_common_name.empty())
+            auto common_name = details::common_name(x509.get());
+            if (common_name.empty())
             {
                 throw ssl_exception("missing Common Name");
             }
 
-            auto _issuer_name = details::issuer_name(x509.get());
-            if (_issuer_name.empty())
+            auto issuer_name = details::issuer_name(x509.get());
+            if (issuer_name.empty())
             {
                 throw ssl_exception("missing Issuer Common Name");
             }
@@ -212,48 +239,14 @@ namespace ssl
             {
                 throw ssl_exception("failed to get notAfter: X509_get0_notAfter failure: " + last_openssl_error());
             }
-            time_t not_before_time;
-            time_t not_after_time;
-#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
-            tm not_before_tm;
-            if (!ASN1_TIME_to_tm(not_before, &not_before_tm))
-            {
-                throw ssl_exception("failed to convert notBefore ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
-            }
-            not_before_time = mktime(&not_before_tm);
-            tm not_after_tm;
-            if (!ASN1_TIME_to_tm(not_after, &not_after_tm))
-            {
-                throw ssl_exception("failed to convert not_after ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
-            }
-            not_after_time = mktime(&not_after_tm);
-#elif (OPENSSL_VERSION_NUMBER >= 0x1000200fL)
-            // Construct another ASN1_TIME for the unix epoch, get the difference
-            // between them and use that to calculate a unix timestamp representing
-            // when the cert expires
-            ASN1_TIME_ptr epoch(ASN1_TIME_new(), &ASN1_STRING_free);
-            ASN1_TIME_set_string(epoch.get(), "700101000000Z");
-            int days{ 0 };
-            int seconds{ 0 };
 
-            if (!ASN1_TIME_diff(&days, &seconds, epoch.get(), not_before))
-            {
-                throw est_exception("failed to get the days and seconds value of not_before: ASN1_TIME_diff failure: " + last_openssl_error());
-            }
-            not_before_time = (days * 24 * 60 * 60) + seconds;
-            if (!ASN1_TIME_diff(&days, &seconds, epoch.get(), not_after))
-            {
-                throw est_exception("failed to get the days and seconds value of not_after: ASN1_TIME_diff failure: " + last_openssl_error());
-            }
-            not_after_time = (days * 24 * 60 * 60) + seconds;
-#else
-            not_before_time = details::ASN1_TIME_to_posix_time(not_before);
-            not_after_time = details::ASN1_TIME_to_posix_time(not_after);
-#endif
-            return{ _common_name, _issuer_name, not_before_time, not_after_time, sans };
+            auto not_before_time = details::ASN1_TIME_to_time_t(not_before);
+            auto not_after_time = details::ASN1_TIME_to_time_t(not_after);
+
+            return{ common_name, issuer_name, not_before_time, not_after_time, sans };
         }
 
-        // split certificate chain to list
+        // split certificate chain to list of certificates
         std::vector<std::string> split_certificate_chain(const std::string& cert_data)
         {
             std::vector<std::string> certs;
