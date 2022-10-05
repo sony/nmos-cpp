@@ -291,7 +291,7 @@ namespace nmos
                     // only add new OCSP URIs to the list
                     for (const auto& uri : uris)
                     {
-                        if (ocsp_uris.end() == std::find_if(ocsp_uris.begin(), ocsp_uris.end(), [&](const web::uri& uri_) { return uri_ == uri; }))
+                        if (ocsp_uris.end() == std::find(ocsp_uris.begin(), ocsp_uris.end(), uri))
                         {
                             ocsp_uris.push_back(uri);
                         }
