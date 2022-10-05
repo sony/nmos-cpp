@@ -471,6 +471,12 @@ namespace nmos
         static const utility::string_t actual_method{ U("X-Actual-Method") };
 
         // make handler to set appropriate response headers, and error response body if indicated
+        web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate)
+        {
+            return make_api_finally_handler({}, gate);
+        }
+
+        // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(const web::http::experimental::hsts& hsts, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -593,6 +599,12 @@ namespace nmos
     }
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
+    void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate)
+    {
+        add_api_finally_handler(api, {}, gate);
+    }
+
+    // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
     void add_api_finally_handler(web::http::experimental::listener::api_router& api, const web::http::experimental::hsts& hsts, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
@@ -655,6 +667,12 @@ namespace nmos
     }
 
     // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api, slog::base_gate& gate)
+    {
+        support_api(listener, api, {}, gate);
+    }
+
+    // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener
     void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api_, const web::http::experimental::hsts& hsts, slog::base_gate& gate)
     {
         add_api_finally_handler(api_, hsts, gate);
@@ -678,6 +696,13 @@ namespace nmos
             req.set_method(web::http::methods::GET);
             api(req);
         });
+    }
+
+    // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
+    // (including CORS preflight requests via "OPTIONS")
+    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate)
+    {
+        return make_api_listener(secure, host_address, port, api, config, {}, gate);
     }
 
     // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
