@@ -798,7 +798,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/server.cpp
     nmos/server_utils.cpp
     nmos/settings.cpp
-    nmos/settings_api.cpp    
+    nmos/settings_api.cpp
     nmos/system_api.cpp
     nmos/system_resources.cpp
     )
