@@ -157,7 +157,7 @@ namespace web
                 const web::http::http_headers::key_type timing_allow_origin{ _XPLATSTR("Timing-Allow-Origin") };
 
                 // Strict Transport Security
-                // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
+                // See https://tools.ietf.org/html/rfc6797#section-6.1
                 const web::http::http_headers::key_type strict_transport_security{ _XPLATSTR("Strict-Transport-Security") };
             }
 
