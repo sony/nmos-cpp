@@ -133,13 +133,12 @@ namespace web
             utility::string_t make_ptokens_header(const ptokens& values);
             ptokens parse_ptokens_header(const utility::string_t& value);
 
-            // Strict-Transport-Security = "Strict-Transport-Security" ":"
-            // directives           = [directive] *(";"[directive])
-            // directive            = directive-name["=" directive-value]
+            // directives           = [ directive ] *( ";" [ directive ] )
+            // directive            = directive-name [ "=" directive-value ]
             // directive-name       = token
-            // directive-value      = token / quoted - string
-            // E.g Strict-Transport-Security uuses this format
-            // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
+            // directive-value      = token | quoted-string
+            // E.g. Strict-Transport-Security uses this format
+            // See https://tools.ietf.org/html/rfc6797#section-6.1
 
             typedef std::pair<token, utility::string_t> directive;
             typedef std::vector<directive> directives;
