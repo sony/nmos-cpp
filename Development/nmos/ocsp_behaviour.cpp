@@ -297,7 +297,7 @@ namespace nmos
                         }
                     }
                 }
-                if (ocsp_uris.size() < 1)
+                if (ocsp_uris.empty())
                 {
                     throw nmos::experimental::ocsp_exception("missing OCSP URIs from server certificate");
                 }
