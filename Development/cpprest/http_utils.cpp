@@ -498,7 +498,7 @@ namespace web
                 auto directives = parse_directives_header(value);
                 const auto max_age = std::find_if(directives.begin(), directives.end(), [](const directive& directive) { return boost::algorithm::iequals(directive.first, U("max-age")); });
                 if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0);
-                const auto includeSubDomains = std::find_if(directives.begin(), directives.end(), [](const ptoken_param& param) { return boost::algorithm::iequals(param.first, U("includeSubDomains")); });
+                const auto includeSubDomains = std::find_if(directives.begin(), directives.end(), [](const directive& directive) { return boost::algorithm::iequals(directive.first, U("includeSubDomains")); });
                 if (directives.end() != includeSubDomains) result.includeSubDomains = true;
                 return result;
             }
