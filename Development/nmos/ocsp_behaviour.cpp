@@ -255,7 +255,7 @@ namespace nmos
             int expiry_time = -1;
             try
             {
-                // get the shorter expiry time from all the certificates
+                // get the shortest expiry time from all the certificates
                 for (const auto& cert_data : certificate_chains_data)
                 {
                     const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(cert_data), 0.5);
