@@ -268,7 +268,7 @@ namespace nmos
             }
             catch (const std::exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Get certificate expiry time with unexpected exception: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while getting certificate expiry time: " << e.what();
             }
             catch (...)
             {
