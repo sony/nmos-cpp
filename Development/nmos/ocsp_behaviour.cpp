@@ -312,7 +312,7 @@ namespace nmos
             }
             catch (...)
             {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Get OCSP URIs with nexpected unknown exception";
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while getting OCSP URIs";
             }
             return ocsp_uris;
         }
