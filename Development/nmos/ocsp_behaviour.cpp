@@ -328,7 +328,7 @@ namespace nmos
             }
             catch (const nmos::experimental::ocsp_exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Create OCSP request with OCSP error: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "OCSP error while creating OCSP request: " << e.what();
             }
             catch (const std::exception& e)
             {
