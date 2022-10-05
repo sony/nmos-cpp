@@ -336,7 +336,7 @@ namespace nmos
             }
             catch (...)
             {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Create OCSP request with nexpected unknown exception";
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while creating OCSP request";
             }
             return {};
         }
