@@ -364,7 +364,7 @@ namespace web
                 //            | "," | ";" | ":" | "\" | <">
                 //            | "/" | "[" | "]" | "?" | "="
                 //            | "{" | "}" | SP | HT
-                // see https://datatracker.ietf.org/doc/html/rfc2616#section-2.2
+                // see https://tools.ietf.org/html/rfc2616#section-2.2
                 auto is_tchar = [](utility::char_t c)
                 {
                     static const utility::string_t separators{ U("()<>@,;:\\\"/[]?={} \t") };
