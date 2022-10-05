@@ -56,9 +56,9 @@ namespace nmos
     {
         enum
         {
-            get_ocsp_uris,
+            initial_ocsp_operation,
             ocsp_behaviour
-        } mode = get_ocsp_uris;
+        } mode = initial_ocsp_operation;
 
         std::vector<web::uri> ocsp_uris;
 
@@ -75,7 +75,7 @@ namespace nmos
 
             switch (mode)
             {
-                case get_ocsp_uris:
+                case initial_ocsp_operation:
                 {
                     // Note: use the same discovery backoff settings for OCSP API retry
                     if (0 != backoff)
@@ -91,32 +91,47 @@ namespace nmos
                     const auto server_certificates = load_server_certificate();
                     const auto server_certificate_chains = boost::copy_range<std::vector<utility::string_t>>(server_certificates | boost::adaptors::transformed([](const nmos::certificate& cert) { return cert.certificate_chain; }));
 
-                    // get OCSP URIs
-                    ocsp_uris = details::get_ocsp_uris(server_certificate_chains, gate);
-                    if (ocsp_uris.size())
+                    try
                     {
-                        mode = ocsp_behaviour;
-
-                        // If the Node is unable to contact the OCSP API, the Node implements an exponential backoff algorithm
-                        // to avoid overloading the OCSP API in the event of a system restart.
-                        auto lock = model.read_lock();
-                        backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
-
-                        // extract the shortest half certificate expiry time from all server certificates
-                        state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
-
-                        // make ocsp request with the server certificates
-                        state.ocsp_request = details::make_ocsp_request(server_certificate_chains, gate);
-                        if (state.ocsp_request.size())
+                        // get OCSP URIs
+                        ocsp_uris = details::get_ocsp_uris(server_certificate_chains, gate);
+                        if (ocsp_uris.size())
                         {
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the OCSP API(s):" << slog::log_manip([&](slog::log_statement& s)
+                            mode = ocsp_behaviour;
+
+                            // If the Node is unable to contact the OCSP API, the Node implements an exponential backoff algorithm
+                            // to avoid overloading the OCSP API in the event of a system restart.
+                            auto lock = model.read_lock();
+                            backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
+
+                            // extract the shortest half certificate expiry time from all server certificates
+                            state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
+
+                            // make ocsp request with the server certificates
+                            state.ocsp_request = details::make_ocsp_request(server_certificate_chains, gate);
+                            if (state.ocsp_request.size())
                             {
-                                for (auto& ocsp_service : ocsp_uris)
+                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the OCSP API(s):" << slog::log_manip([&](slog::log_statement& s)
                                 {
-                                    s << '\n' << ocsp_service.to_string();
-                                }
-                            });
+                                    for (auto& ocsp_service : ocsp_uris)
+                                    {
+                                        s << '\n' << ocsp_service.to_string();
+                                    }
+                                });
+                            }
                         }
+                    }
+                    catch (const nmos::experimental::ocsp_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "OCSP error while initial OCSP operation: " << e.what();
+                    }
+                    catch (const std::exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while initial OCSP operation: " << e.what();
+                    }
+                    catch (...)
+                    {
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while initial OCSP operation";
                     }
                 }
                 break;
@@ -125,7 +140,7 @@ namespace nmos
                 details::ocsp_behaviour(model, ocsp_settings, ocsp_uris, state, gate);
 
                 // Should no further OCSP APIs be available, a re-query may be performed.
-                mode = get_ocsp_uris;
+                mode = initial_ocsp_operation;
                 break;
             }
         }
@@ -264,15 +279,7 @@ namespace nmos
             }
             catch (const ssl::experimental::ssl_exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "SSL error while getting certificate expiry time: " << e.what();
-            }
-            catch (const std::exception& e)
-            {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while getting certificate expiry time: " << e.what();
-            }
-            catch (...)
-            {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while getting certificate expiry time";
+                throw nmos::experimental::ocsp_exception("SSL error while getting certificate expiry time: " + std::string(e.what()));
             }
             return (expiry_time < 0 ? 0 : expiry_time);
         }
@@ -282,37 +289,22 @@ namespace nmos
         {
             std::vector<web::uri> ocsp_uris;
 
-            try
+            for (const auto& cert_chain_data : certificate_chains_data)
             {
-                for (const auto& cert_chain_data : certificate_chains_data)
-                {
-                    const auto uris = nmos::experimental::get_ocsp_uris(utility::us2s(cert_chain_data));
+                const auto uris = nmos::experimental::get_ocsp_uris(utility::us2s(cert_chain_data));
 
-                    // only add new OCSP URIs to the list
-                    for (const auto& uri : uris)
+                // only add new OCSP URIs to the list
+                for (const auto& uri : uris)
+                {
+                    if (ocsp_uris.end() == std::find(ocsp_uris.begin(), ocsp_uris.end(), uri))
                     {
-                        if (ocsp_uris.end() == std::find(ocsp_uris.begin(), ocsp_uris.end(), uri))
-                        {
-                            ocsp_uris.push_back(uri);
-                        }
+                        ocsp_uris.push_back(uri);
                     }
                 }
-                if (ocsp_uris.empty())
-                {
-                    throw nmos::experimental::ocsp_exception("missing OCSP URIs from server certificate");
-                }
             }
-            catch (const nmos::experimental::ocsp_exception& e)
+            if (ocsp_uris.empty())
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "OCSP error while getting OCSP URIs: " << e.what();
-            }
-            catch (const std::exception& e)
-            {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while getting OCSP URIs: " << e.what();
-            }
-            catch (...)
-            {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while getting OCSP URIs";
+                throw nmos::experimental::ocsp_exception("missing OCSP URIs from server certificate");
             }
             return ocsp_uris;
         }
@@ -320,25 +312,9 @@ namespace nmos
         // create OCSP request from the list of server certificate chains
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains_data, slog::base_gate& gate)
         {
-            try
-            {
-                // make OCSP request from multi cert chains
-                const auto certificate_chains_data_ = boost::copy_range<std::vector<std::string>>(certificate_chains_data | boost::adaptors::transformed([](const utility::string_t& cert) { return utility::us2s(cert); }));
-                return nmos::experimental::make_ocsp_request(certificate_chains_data_);
-            }
-            catch (const nmos::experimental::ocsp_exception& e)
-            {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "OCSP error while creating OCSP request: " << e.what();
-            }
-            catch (const std::exception& e)
-            {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while creating OCSP request: " << e.what();
-            }
-            catch (...)
-            {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while creating OCSP request";
-            }
-            return {};
+            // make OCSP request from multi cert chains
+            const auto certificate_chains_data_ = boost::copy_range<std::vector<std::string>>(certificate_chains_data | boost::adaptors::transformed([](const utility::string_t& cert) { return utility::us2s(cert); }));
+            return nmos::experimental::make_ocsp_request(certificate_chains_data_);
         }
 
         void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate)
