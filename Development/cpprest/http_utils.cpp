@@ -487,7 +487,7 @@ namespace web
                 if (hsts_.max_age >= 0)
                 {
                     result.push_back({ U("max-age"), utility::ostringstreamed(hsts_.max_age) });
-                    if (hsts_.includeSubDomains) result.push_back({ U("includeSubDomains"), {} });
+                    if (hsts_.include_sub_domains) result.push_back({ U("includeSubDomains"), {} });
                 }
                 return make_directives_header(result);
             }
@@ -499,7 +499,7 @@ namespace web
                 const auto max_age = std::find_if(directives.begin(), directives.end(), [](const directive& directive) { return boost::algorithm::iequals(directive.first, U("max-age")); });
                 if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0);
                 const auto includeSubDomains = std::find_if(directives.begin(), directives.end(), [](const directive& directive) { return boost::algorithm::iequals(directive.first, U("includeSubDomains")); });
-                if (directives.end() != includeSubDomains) result.includeSubDomains = true;
+                if (directives.end() != includeSubDomains) result.include_sub_domains = true;
                 return result;
             }
         }

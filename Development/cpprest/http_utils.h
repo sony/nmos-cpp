@@ -182,10 +182,10 @@ namespace web
             struct hsts
             {
                 int32_t max_age; // seconds
-                bool includeSubDomains;
-                hsts(int32_t max_age = 0, bool includeSubDomains = false) : max_age(max_age), includeSubDomains(includeSubDomains) {}
+                bool include_sub_domains;
+                hsts(int32_t max_age = 0, bool include_sub_domains = false) : max_age(max_age), include_sub_domains(include_sub_domains) {}
 
-                auto tied() const -> decltype(std::tie(max_age, includeSubDomains)) { return std::tie(max_age, includeSubDomains); }
+                auto tied() const -> decltype(std::tie(max_age, include_sub_domains)) { return std::tie(max_age, include_sub_domains); }
                 friend bool operator==(const hsts& lhs, const hsts& rhs) { return lhs.tied() == rhs.tied(); }
                 friend bool operator!=(const hsts& lhs, const hsts& rhs) { return !(lhs == rhs); }
             };
