@@ -147,7 +147,7 @@ namespace nmos
         {
             using ssl::experimental::BIO_ptr;
 
-            if(ocsp_resp_data.size() <= 0) { return false; }
+            if (ocsp_resp_data.size() <= 0) { return false; }
 
             // load OCSP response cache to BIO
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
