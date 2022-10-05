@@ -238,7 +238,7 @@
 
     // hsts_max_age [registry, node]: used for the Strict-Transport-Security HTTP response header's max-age field to enforce the HSTS Policy is to be used for the nth number of seconds; default is 365 days
     // using value 0 to disable the Strict-Transport-Security HSTS Policy, HSTS is also disable when server_secure is switched off
-    // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1.1
+    // See https://tools.ietf.org/html/rfc6797#section-6.1.1
     //"hsts_max_age": 31536000,
 
     // hsts_include_sub_domains [registry, node]: used for the Strict-Transport-Security HTTP response header's includeSubDomains field for signaling the client that the
