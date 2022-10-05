@@ -359,18 +359,6 @@ namespace web
                     param_value_quoted_string_escape
                 } state = pre_param_name;
 
-                // token      = 1*<any CHAR except CTLs or separators>
-                // separators = "(" | ")" | "<" | ">" | "@"
-                //            | "," | ";" | ":" | "\" | <">
-                //            | "/" | "[" | "]" | "?" | "="
-                //            | "{" | "}" | SP | HT
-                // see https://tools.ietf.org/html/rfc2616#section-2.2
-                auto is_tchar = [](utility::char_t c)
-                {
-                    static const utility::string_t separators{ U("()<>@,;:\\\"/[]?={} \t") };
-                    return std::isprint(c) && std::string::npos == separators.find(c);
-                };
-
                 directives result;
                 utility::string_t name;
                 for (auto c : value)
@@ -382,11 +370,11 @@ namespace web
                         if (U(' ') == c || U('\t') == c) { break; }
                         throw std::invalid_argument("invalid value, expected ';'");
                     case pre_param_name:
-                        if (is_tchar(c)) { name.push_back(c); state = param_name; break; }
+                        if (details::is_tchar(c)) { name.push_back(c); state = param_name; break; }
                         if (U(' ') == c || U('\t') == c) { break; }
                         throw std::invalid_argument("invalid directive name, expected tchar");
                     case param_name:
-                        if (is_tchar(c)) { name.push_back(c); break; }
+                        if (details::is_tchar(c)) { name.push_back(c); break; }
                         result.push_back({ name, {} }); name.clear();
                         if (U('=') == c) { state = param_value; break; }
                         if (U(';') == c) { state = pre_param_name; break; }
@@ -398,12 +386,12 @@ namespace web
                         if (U(';') == c) { state = pre_param_name; break; }
                         throw std::invalid_argument("invalid directive, expected '='");
                     case param_value:
-                        if (is_tchar(c)) { result.back().second.push_back(c); state = param_value_token; break; }
+                        if (details::is_tchar(c)) { result.back().second.push_back(c); state = param_value_token; break; }
                         if (U('"') == c) { state = param_value_quoted_string; break; }
                         if (U(' ') == c || U('\t') == c) { break; }
                         throw std::invalid_argument("invalid directive value, expected tchar or '\"'");
                     case param_value_token:
-                        if (is_tchar(c)) { result.back().second.push_back(c); break; }
+                        if (details::is_tchar(c)) { result.back().second.push_back(c); break; }
                         if (U(';') == c) { state = pre_param_name; break; }
                         if (U(' ') == c || U('\t') == c) { state = pre_param; break; }
                         throw std::invalid_argument("invalid directive value, expected tchar");
