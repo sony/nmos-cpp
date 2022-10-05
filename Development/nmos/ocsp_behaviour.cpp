@@ -288,7 +288,7 @@ namespace nmos
                 {
                     const auto uris = nmos::experimental::get_ocsp_uris(utility::us2s(cert_chain_data));
 
-                    // only add those non-existence OCSP URI to list
+                    // only add new OCSP URIs to the list
                     for (const auto& uri : uris)
                     {
                         if (ocsp_uris.end() == std::find_if(ocsp_uris.begin(), ocsp_uris.end(), [&](const web::uri& uri_) { return uri_ == uri; }))
