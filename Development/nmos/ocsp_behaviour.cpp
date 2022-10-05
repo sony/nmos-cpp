@@ -332,7 +332,7 @@ namespace nmos
             }
             catch (const std::exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Create OCSP request with unexpected exception: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while creating OCSP request: " << e.what();
             }
             catch (...)
             {
