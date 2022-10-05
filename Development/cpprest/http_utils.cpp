@@ -487,7 +487,7 @@ namespace web
                 if (hsts_.max_age >= 0)
                 {
                     result.push_back({ U("max-age"), utility::ostringstreamed(hsts_.max_age) });
-                    if (hsts_.max_age > 0 && hsts_.includeSubDomains) result.push_back({ U("includeSubDomains"), {} });
+                    if (hsts_.includeSubDomains) result.push_back({ U("includeSubDomains"), {} });
                 }
                 return make_directives_header(result);
             }
