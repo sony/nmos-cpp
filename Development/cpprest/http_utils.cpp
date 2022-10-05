@@ -333,14 +333,14 @@ namespace web
             utility::string_t make_directives_header(const directives& values)
             {
                 utility::string_t result;
-                for(auto it = values.begin(); it != values.end(); ++it)
+                for (auto& value : values)
                 {
-                    if (it != values.begin()) { result.push_back(U(';')); }
-                    result.append(it->first);
-                    if (!it->second.empty())
+                    if (!result.empty()) { result.push_back(U(';')); }
+                    result.append(value.first);
+                    if (!value.second.empty())
                     {
                         result.push_back(U('='));
-                        result.append(it->second);
+                        result.append(value.second);
                     }
                 }
                 return result;
