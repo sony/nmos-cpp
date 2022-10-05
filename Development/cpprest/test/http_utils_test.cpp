@@ -176,7 +176,7 @@ BST_TEST_CASE(testParseTimingHeaderEdgeCases)
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
 {
-    // see https://datatracker.ietf.org/doc/html/rfc6797#section-6.2
+    // see https://tools.ietf.org/html/rfc6797#section-6.2
     BST_REQUIRE_EQUAL(web::http::experimental::make_hsts_header({}), U("max-age=0"));
     BST_REQUIRE_EQUAL(web::http::experimental::make_hsts_header({ 31536000, true }), U("max-age=31536000;includeSubDomains"));
 
