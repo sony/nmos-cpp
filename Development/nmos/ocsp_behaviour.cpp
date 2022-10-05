@@ -264,7 +264,7 @@ namespace nmos
             }
             catch (const ssl::experimental::ssl_exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Get certificate expiry time with SSL error: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "SSL error while getting certificate expiry time: " << e.what();
             }
             catch (const std::exception& e)
             {
