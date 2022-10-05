@@ -270,7 +270,7 @@ namespace ssl
             return certs;
         }
 
-        // calculate the number of seconds to expire with the given ratio
+        // calculate the number of seconds until expiry with the given ratio
         int certificate_expiry_from_now(const std::string& cert_data, double ratio)
         {
             const auto cert_info = cert_information(cert_data);
