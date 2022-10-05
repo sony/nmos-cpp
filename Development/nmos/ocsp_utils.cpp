@@ -7,8 +7,8 @@
 
 namespace nmos
 {
-	namespace experimental
-	{
+    namespace experimental
+    {
         typedef std::unique_ptr<OCSP_REQUEST, decltype(&OCSP_REQUEST_free)> OCSP_REQUEST_ptr;
         typedef std::unique_ptr<OCSP_RESPONSE, decltype(&OCSP_RESPONSE_free)> OCSP_RESPONSE_ptr;
 
@@ -165,5 +165,5 @@ namespace nmos
             SSL_set_tlsext_status_ocsp_resp(s, buffer, buffer_len);
             return true;
         }
-	}
+    }
 }
