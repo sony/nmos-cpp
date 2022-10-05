@@ -272,7 +272,7 @@ namespace nmos
             }
             catch (...)
             {
-                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Get certificate expiry time with nexpected unknown exception";
+                slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while getting certificate expiry time";
             }
             return (expiry_time < 0 ? 0 : expiry_time);
         }
