@@ -368,7 +368,7 @@ namespace web
                 auto is_tchar = [](utility::char_t c)
                 {
                     static const utility::string_t separators{ U("()<>@,;:\\\"/[]?={} \t") };
-                    return std::isalnum(c) || (!std::iscntrl(c) && std::string::npos == separators.find(c));
+                    return std::isprint(c) && std::string::npos == separators.find(c);
                 };
 
                 directives result;
