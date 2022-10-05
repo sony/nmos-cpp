@@ -244,7 +244,7 @@
     // hsts_include_sub_domains [registry, node]: used for the Strict-Transport-Security HTTP response header's includeSubDomains field for signaling the client that the
     // HSTS Policy applies to this HSTS Host as well as any subdomains of the host's domain name
     // hsts_include_sub_domains will only be valid if and only if server_secure is switched on and hsts_max_age is set to > 0
-    // See https://datatracker.ietf.org/doc/html/rfc6797#section-6.1.2
+    // See https://tools.ietf.org/html/rfc6797#section-6.1.2
     //"hsts_include_sub_domains": false,
 
     // ocsp_interval_min/ocsp_interval_max [registry, node]: used to request for certificate status (OCSP response); default is about one hour
