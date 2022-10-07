@@ -99,11 +99,6 @@ namespace nmos
                         {
                             mode = ocsp_behaviour;
 
-                            // If the Node is unable to contact the OCSP API, the Node implements an exponential backoff algorithm
-                            // to avoid overloading the OCSP API in the event of a system restart.
-                            auto lock = model.read_lock();
-                            backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
-
                             // extract the shortest half certificate expiry time from all server certificates
                             state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
 
@@ -123,16 +118,20 @@ namespace nmos
                     }
                     catch (const nmos::experimental::ocsp_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "OCSP error while initial OCSP operation: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "OCSP error during initial OCSP operation: " << e.what();
                     }
                     catch (const std::exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception while initial OCSP operation: " << e.what();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception during initial OCSP operation: " << e.what();
                     }
                     catch (...)
                     {
-                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception while initial OCSP operation";
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception during initial OCSP operation";
                     }
+
+                    // the Node implements an exponential backoff algorithm to avoid overloading the OCSP API in the event of a system restart
+                    auto lock = model.read_lock();
+                    backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
                 }
                 break;
 
