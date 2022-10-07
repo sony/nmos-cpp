@@ -349,15 +349,15 @@ namespace web
             directives parse_directives_header(const utility::string_t& value)
             {
                 enum {
-                    pre_param,
-                    pre_param_name,
-                    param_name,
-                    pre_param_value,
-                    param_value,
-                    param_value_token,
-                    param_value_quoted_string,
-                    param_value_quoted_string_escape
-                } state = pre_param_name;
+                    pre_directive,
+                    pre_directive_name,
+                    directive_name,
+                    pre_directive_value,
+                    directive_value,
+                    directive_value_token,
+                    directive_value_quoted_string,
+                    directive_value_quoted_string_escape
+                } state = pre_directive_name;
 
                 directives result;
                 utility::string_t name;
@@ -365,44 +365,44 @@ namespace web
                 {
                     switch (state)
                     {
-                    case pre_param:
-                        if (U(';') == c) { state = pre_param_name; break; }
+                    case pre_directive:
+                        if (U(';') == c) { state = pre_directive_name; break; }
                         if (U(' ') == c || U('\t') == c) { break; }
                         throw std::invalid_argument("invalid value, expected ';'");
-                    case pre_param_name:
-                        if (details::is_tchar(c)) { name.push_back(c); state = param_name; break; }
+                    case pre_directive_name:
+                        if (details::is_tchar(c)) { name.push_back(c); state = directive_name; break; }
                         if (U(' ') == c || U('\t') == c) { break; }
                         throw std::invalid_argument("invalid directive name, expected tchar");
-                    case param_name:
+                    case directive_name:
                         if (details::is_tchar(c)) { name.push_back(c); break; }
                         result.push_back({ name, {} }); name.clear();
-                        if (U('=') == c) { state = param_value; break; }
-                        if (U(';') == c) { state = pre_param_name; break; }
-                        if (U(' ') == c || U('\t') == c) { state = pre_param_value; break; }
+                        if (U('=') == c) { state = directive_value; break; }
+                        if (U(';') == c) { state = pre_directive_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_directive_value; break; }
                         throw std::invalid_argument("invalid directive name, expected tchar");
-                    case pre_param_value:
-                        if (U('=') == c) { state = param_value; break; }
+                    case pre_directive_value:
+                        if (U('=') == c) { state = directive_value; break; }
                         if (U(' ') == c || U('\t') == c) { break; }
-                        if (U(';') == c) { state = pre_param_name; break; }
+                        if (U(';') == c) { state = pre_directive_name; break; }
                         throw std::invalid_argument("invalid directive, expected '='");
-                    case param_value:
-                        if (details::is_tchar(c)) { result.back().second.push_back(c); state = param_value_token; break; }
-                        if (U('"') == c) { state = param_value_quoted_string; break; }
+                    case directive_value:
+                        if (details::is_tchar(c)) { result.back().second.push_back(c); state = directive_value_token; break; }
+                        if (U('"') == c) { state = directive_value_quoted_string; break; }
                         if (U(' ') == c || U('\t') == c) { break; }
                         throw std::invalid_argument("invalid directive value, expected tchar or '\"'");
-                    case param_value_token:
+                    case directive_value_token:
                         if (details::is_tchar(c)) { result.back().second.push_back(c); break; }
-                        if (U(';') == c) { state = pre_param_name; break; }
-                        if (U(' ') == c || U('\t') == c) { state = pre_param; break; }
+                        if (U(';') == c) { state = pre_directive_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_directive; break; }
                         throw std::invalid_argument("invalid directive value, expected tchar");
-                    case param_value_quoted_string:
-                        if (U('"') == c) { state = pre_param_name; break; }
-                        if (U('\\') == c) { state = param_value_quoted_string_escape; break; }
+                    case directive_value_quoted_string:
+                        if (U('"') == c) { state = pre_directive_name; break; }
+                        if (U('\\') == c) { state = directive_value_quoted_string_escape; break; }
                         result.back().second.push_back(c);
                         break;
-                    case param_value_quoted_string_escape:
+                    case directive_value_quoted_string_escape:
                         result.back().second.push_back(c);
-                        state = param_value_quoted_string;
+                        state = directive_value_quoted_string;
                         break;
                     default:
                         throw std::logic_error("unreachable code");
@@ -413,13 +413,12 @@ namespace web
                 {
                     switch (state)
                     {
-                    case param_name:
+                    case directive_name:
                         result.push_back({ name, {} }); break;
                     default:
                         throw std::logic_error("unreachable code");
                     }
                 }
-
                 return result;
             }
 
