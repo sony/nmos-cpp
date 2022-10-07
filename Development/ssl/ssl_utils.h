@@ -39,7 +39,7 @@ namespace ssl
         std::vector<std::string> split_certificate_chain(const std::string& certificate_chain);
 
         // calculate the number of seconds to expire with the given ratio
-        int certificate_expiry_from_now(const std::string& cert, double ratio = 1.0);
+        double certificate_expiry_from_now(const std::string& cert, double ratio = 1.0);
     }
 }
 

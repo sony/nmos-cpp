@@ -271,12 +271,12 @@ namespace ssl
         }
 
         // calculate the number of seconds until expiry with the given ratio
-        int certificate_expiry_from_now(const std::string& certificate, double ratio)
+        double certificate_expiry_from_now(const std::string& certificate, double ratio)
         {
             const auto cert_info = certificate_information(certificate);
             const auto now = time(NULL);
             const auto from_now = difftime(cert_info.not_after, now);
-            return (int)(from_now > 0 ? from_now * ratio : 0);
+            return (from_now > 0.0 ? from_now * ratio : 0.0);
         }
 	}
 }

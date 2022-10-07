@@ -22,7 +22,7 @@ namespace nmos
             std::vector<uint8_t> ocsp_request;
 
             // how many seconds before next certificate status request
-            int next_request;
+            double next_request;
 
             nmos::details::seed_generator seeder;
             std::default_random_engine engine;
@@ -31,14 +31,14 @@ namespace nmos
             explicit ocsp_shared_state(load_ca_certificates_handler load_ca_certificates)
                 : load_ca_certificates(std::move(load_ca_certificates))
                 , ocsp_service_error(false)
-                , next_request(0)
+                , next_request(0.0)
                 , engine(seeder)
             {}
         };
 
         void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_client_certificate, slog::base_gate& gate);
 
-        int half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
+        double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<web::uri> get_ocsp_uris(const std::vector<utility::string_t>& certificates_chain, slog::base_gate& gate);
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
@@ -210,8 +210,8 @@ namespace nmos
                 if (state.base_uri == state.client->base_uri())
                 {
                     auto interval = std::uniform_int_distribution<>(
-                        std::min(ocsp_interval_min, (state.next_request > 0 ? state.next_request : ocsp_interval_min)),
-                        std::min(ocsp_interval_max, (state.next_request > 0 ? state.next_request : ocsp_interval_max)))(state.engine);
+                        std::min(ocsp_interval_min, (state.next_request > 0.0 ? (int)state.next_request : ocsp_interval_min)),
+                        std::min(ocsp_interval_max, (state.next_request > 0.0 ? (int)state.next_request : ocsp_interval_max)))(state.engine);
                     request_interval = std::chrono::seconds(interval);
 
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to request certificate status for about " << interval << " seconds";
@@ -264,9 +264,9 @@ namespace nmos
             });
         }
 
-        int half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
+        double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
         {
-            int expiry_time = -1;
+            double expiry_time = -1.0;
             try
             {
                 // get the shortest expiry time from all the certificates
@@ -280,7 +280,7 @@ namespace nmos
             {
                 throw nmos::experimental::ocsp_exception("SSL error while getting certificate expiry time: " + std::string(e.what()));
             }
-            return (expiry_time < 0 ? 0 : expiry_time);
+            return (expiry_time < 0.0 ? 0.0 : expiry_time);
         }
 
         // construct a list of OCSP URIs from a list of server certificate chains
