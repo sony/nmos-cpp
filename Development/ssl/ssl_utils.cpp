@@ -129,7 +129,7 @@ namespace ssl
 #elif (OPENSSL_VERSION_NUMBER >= 0x1000200fL)
                 // Construct another ASN1_TIME for the unix epoch, get the difference
                 // between them and use that to calculate a unix timestamp representing
-                // when the cert expires
+                // when the certificate expires
                 ASN1_TIME_ptr epoch(ASN1_TIME_new(), &ASN1_STRING_free);
                 ASN1_TIME_set_string(epoch.get(), "700101000000Z");
                 int days{ 0 };
@@ -191,18 +191,18 @@ namespace ssl
         }
 
         // get certificate information, such as expire date, it is represented as the number of seconds from 1970-01-01T0:0:0Z as measured in UTC
-        cert_info cert_information(const std::string& cert_data)
+        certificate_info certificate_information(const std::string& certificate)
         {
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
-            if ((size_t)BIO_write(bio.get(), cert_data.data(), (int)cert_data.size()) != cert_data.size())
+            if ((size_t)BIO_write(bio.get(), certificate.data(), (int)certificate.size()) != certificate.size())
             {
-                throw ssl_exception("failed to load cert to bio: BIO_write failure: " + last_openssl_error());
+                throw ssl_exception("failed to load certificate to bio: BIO_write failure: " + last_openssl_error());
             }
 
             X509_ptr x509(PEM_read_bio_X509_AUX(bio.get(), NULL, NULL, NULL), &X509_free);
             if (!x509)
             {
-                throw ssl_exception("failed to load cert: PEM_read_bio_X509_AUX failure: " + last_openssl_error());
+                throw ssl_exception("failed to load certificate bio to X509: PEM_read_bio_X509_AUX failure: " + last_openssl_error());
             }
 
             auto subject_alternative_names = details::subject_alt_names(x509.get());
@@ -247,33 +247,33 @@ namespace ssl
         }
 
         // split certificate chain to list of certificates
-        std::vector<std::string> split_certificate_chain(const std::string& cert_data)
+        std::vector<std::string> split_certificate_chain(const std::string& certificate_chain)
         {
-            std::vector<std::string> certs;
+            std::vector<std::string> certificates;
             const std::string begin_delimiter{ "-----BEGIN CERTIFICATE-----" };
             const std::string end_delimiter{ "-----END CERTIFICATE-----" };
             size_t start = 0;
             size_t end = 0;
             do
             {
-                start = cert_data.find(begin_delimiter, start);
-                end = cert_data.find(end_delimiter, start);
+                start = certificate_chain.find(begin_delimiter, start);
+                end = certificate_chain.find(end_delimiter, start);
 
                 if (std::string::npos != start && std::string::npos != end)
                 {
-                    certs.push_back(cert_data.substr(start, end - start + end_delimiter.length()));
+                    certificates.push_back(certificate_chain.substr(start, end - start + end_delimiter.length()));
                     start = end + end_delimiter.length();
                 }
 
             } while (std::string::npos != start && std::string::npos != end);
 
-            return certs;
+            return certificates;
         }
 
         // calculate the number of seconds until expiry with the given ratio
-        int certificate_expiry_from_now(const std::string& cert_data, double ratio)
+        int certificate_expiry_from_now(const std::string& certificate, double ratio)
         {
-            const auto cert_info = cert_information(cert_data);
+            const auto cert_info = certificate_information(certificate);
             const auto now = time(NULL);
             const auto from_now = difftime(cert_info.not_after, now);
             return (int)(from_now > 0 ? from_now * ratio : 0);

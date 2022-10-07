@@ -24,7 +24,7 @@ namespace ssl
         // get last openssl error
         std::string last_openssl_error();
 
-        struct cert_info
+        struct certificate_info
         {
             std::string common_name;
             std::string issuer_name;
@@ -33,13 +33,13 @@ namespace ssl
             std::vector<std::string> subject_alternative_names;
         };
         // get certificate information, such as expire date, it is represented as the number of seconds from 1970-01-01T0:0:0Z as measured in UTC
-        cert_info cert_information(const std::string& cert_data);
+        certificate_info certificate_information(const std::string& certificate);
 
         // split certificate chain to list of certificates
-        std::vector<std::string> split_certificate_chain(const std::string& cert_data);
+        std::vector<std::string> split_certificate_chain(const std::string& certificate_chain);
 
         // calculate the number of seconds to expire with the given ratio
-        int certificate_expiry_from_now(const std::string& cert_data, double ratio = 1.0);
+        int certificate_expiry_from_now(const std::string& cert, double ratio = 1.0);
     }
 }
 

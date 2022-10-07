@@ -21,10 +21,10 @@ namespace nmos
         };
 
         // get a list of OCSP URIs from certificate
-        std::vector<web::uri> get_ocsp_uris(const std::string& cert_data);
+        std::vector<web::uri> get_ocsp_uris(const std::string& cert);
 
         // create OCSP request from list of server certificate chains data
-        std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& cert_chains_data);
+        std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& cert_chains);
 
         // send OCSP response in TLS handshake
         bool send_ocsp_response(SSL* s, const std::vector<uint8_t>& ocsp_resp);
