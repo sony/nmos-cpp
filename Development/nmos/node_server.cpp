@@ -116,7 +116,7 @@ namespace nmos
                 node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
             }
 
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
             if (server_secure)
             {
                 node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, node_server.ocsp_settings, load_ca_certificates, load_server_certificates, gate); });

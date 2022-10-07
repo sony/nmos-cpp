@@ -142,7 +142,7 @@ namespace nmos
                 [&] { nmos::advertise_registry_thread(registry_model, gate); }
             });
 
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
             if (server_secure)
             {
                 auto load_ca_certificates = registry_implementation.load_ca_certificates;

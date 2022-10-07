@@ -92,7 +92,7 @@ namespace nmos
                 return ocsp_req_;
             }
 
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
             // This callback is called when client includes a certificate status request extension in the TLS handshake
             int server_certificate_status_request(SSL* s, void* arg)
             {
@@ -178,7 +178,7 @@ namespace nmos
         }
 
 
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         // setup server certificate status callback when client includes a certificate status request extension in the TLS handshake
         void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_settings& settings)
         {
