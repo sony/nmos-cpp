@@ -30,7 +30,7 @@ namespace ssl
             std::string issuer_name;
             time_t not_before;
             time_t not_after;
-            std::vector<std::string> sans;
+            std::vector<std::string> subject_alternative_names;
         };
         // get certificate information, such as expire date, it is represented as the number of seconds from 1970-01-01T0:0:0Z as measured in UTC
         cert_info cert_information(const std::string& cert_data);

@@ -68,7 +68,7 @@ namespace ssl
             // get subject alternative names
             std::vector<std::string> subject_alt_names(X509* x509)
             {
-                std::vector<std::string> sans;
+                std::vector<std::string> subject_alternative_names;
                 GENERAL_NAMES_ptr subject_alt_names((GENERAL_NAMES*)X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL), &GENERAL_NAMES_free);
                 for (auto idx = 0; idx < sk_GENERAL_NAME_num(subject_alt_names.get()); idx++)
                 {
@@ -81,14 +81,14 @@ namespace ssl
 #else
                         auto san = std::string(reinterpret_cast<char*>(ASN1_STRING_data(asn1_str)), ASN1_STRING_length(asn1_str));
 #endif
-                        sans.push_back(san);
+                        subject_alternative_names.push_back(san);
                     }
                     else
                     {
                         // hmm, not supporting other type of subject alt name
                     }
                 }
-                return sans;
+                return subject_alternative_names;
             }
 
             // create POSIX time (UTC)
@@ -205,7 +205,7 @@ namespace ssl
                 throw ssl_exception("failed to load cert: PEM_read_bio_X509_AUX failure: " + last_openssl_error());
             }
 
-            auto sans = details::subject_alt_names(x509.get());
+            auto subject_alternative_names = details::subject_alt_names(x509.get());
 
             auto common_name = details::common_name(x509.get());
             if (common_name.empty())
@@ -243,7 +243,7 @@ namespace ssl
             auto not_before_time = details::ASN1_TIME_to_time_t(not_before);
             auto not_after_time = details::ASN1_TIME_to_time_t(not_after);
 
-            return{ common_name, issuer_name, not_before_time, not_after_time, sans };
+            return{ common_name, issuer_name, not_before_time, not_after_time, subject_alternative_names };
         }
 
         // split certificate chain to list of certificates
