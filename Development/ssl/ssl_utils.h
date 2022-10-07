@@ -2,10 +2,10 @@
 #define SSL_SSL_UTILS_H
 
 #include <memory>
+#include <openssl/x509v3.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <openssl/x509v3.h> // for X509V3_EXT_conf_nid
 
 namespace ssl
 {
