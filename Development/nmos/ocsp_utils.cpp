@@ -3,6 +3,7 @@
 #include <boost/asio/ssl.hpp>
 #include <openssl/ocsp.h>
 #include "cpprest/basic_utils.h"
+#include "nmos/ocsp_settings.h"
 #include "ssl/ssl_utils.h"
 
 namespace nmos
@@ -90,6 +91,16 @@ namespace nmos
 
                 return ocsp_req_data;
             }
+
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+            // This callback is called when client includes a certificate status request extension in the TLS handshake
+            int server_certificate_status_request(SSL* s, void* arg)
+            {
+                nmos::experimental::ocsp_settings* settings = (nmos::experimental::ocsp_settings*)arg;
+                nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(*settings->mutex, [&] { return settings->ocsp_response; }));
+                return SSL_TLSEXT_ERR_OK;
+            }
+#endif
         }
 
         // get a list of OCSP URIs from certificate
@@ -165,5 +176,15 @@ namespace nmos
             SSL_set_tlsext_status_ocsp_resp(s, buffer, buffer_len);
             return true;
         }
+
+
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+        // setup server certificate status callback when client includes a certificate status request extension in the TLS handshake
+        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_settings& settings)
+        {
+            SSL_CTX_set_tlsext_status_cb(ctx.native_handle(), details::server_certificate_status_request);
+            SSL_CTX_set_tlsext_status_arg(ctx.native_handle(), (void*)&settings);
+        }
+#endif
     }
 }
