@@ -207,10 +207,10 @@ namespace web
                 typedef pplx::open_close_guard<http_listener> http_listener_guard;
 
                 // platform-specific wildcard address to accept connections for any address
-#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
-#else
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
                 const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
+#else
+                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
 #endif
 
                 // make an address to be used to accept HTTP or HTTPS connections for the specified address and port

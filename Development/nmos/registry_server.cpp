@@ -142,7 +142,9 @@ namespace nmos
                 [&] { nmos::advertise_registry_thread(registry_model, gate); }
             });
 
-#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+// only implement communication with OCSP responder if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
             if (server_secure)
             {
                 auto load_ca_certificates = registry_implementation.load_ca_certificates;
@@ -150,6 +152,7 @@ namespace nmos
                 registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, registry_server.ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
             }
 #endif
+
             return registry_server;
         }
 
