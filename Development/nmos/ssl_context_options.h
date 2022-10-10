@@ -1,7 +1,8 @@
 #ifndef NMOS_SSL_CONTEXT_OPTIONS_H
 #define NMOS_SSL_CONTEXT_OPTIONS_H
 
-#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+// cf. preprocessor conditions in nmos/client_utils.cpp and nmos/server_utils.cpp
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
 #include "boost/asio/ssl.hpp"
 
 namespace nmos

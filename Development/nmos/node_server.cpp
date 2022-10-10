@@ -116,12 +116,15 @@ namespace nmos
                 node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
             }
 
-#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+// only implement communication with OCSP responder if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
             if (server_secure)
             {
                 node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, node_server.ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
             }
 #endif
+
             return node_server;
         }
 

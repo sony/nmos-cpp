@@ -1,6 +1,5 @@
 #include "nmos/ocsp_behaviour.h"
 
-#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
 #include "pplx/pplx_utils.h" // for pplx::complete_at
 #include "nmos/client_utils.h"
 #include "nmos/model.h"
@@ -373,5 +372,3 @@ namespace nmos
         }
     }
 }
-
-#endif
