@@ -1,6 +1,7 @@
 #include "nmos/ocsp_utils.h"
 
 #include <boost/asio/ssl.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <openssl/ocsp.h>
 #include "cpprest/basic_utils.h"
 #include "nmos/ocsp_settings.h"
@@ -15,7 +16,7 @@ namespace nmos
 
         namespace details
         {
-            // create OCSP request from list of server certificate chains data
+            // create OCSP request using the issue certificate and the list of server certificates
             // This is based on the example given at https://stackoverflow.com/questions/56253312/how-to-create-ocsp-request-using-openssl-in-c
             std::vector<uint8_t> make_ocsp_request(const std::string& issuer_certificate, const std::vector<std::string>& server_certificates)
             {
@@ -103,21 +104,21 @@ namespace nmos
 #endif
         }
 
-        // get a list of OCSP URIs from certificate
-        std::vector<web::uri> get_ocsp_uris(const std::string& cert)
+        // get a list of OCSP URIs from server certificate
+        std::vector<web::uri> get_ocsp_uris(const std::string& certificate)
         {
             using ssl::experimental::BIO_ptr;
             using ssl::experimental::X509_ptr;
 
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
-            if ((size_t)BIO_write(bio.get(), cert.data(), (int)cert.size()) != cert.size())
+            if ((size_t)BIO_write(bio.get(), certificate.data(), (int)certificate.size()) != certificate.size())
             {
-                throw ocsp_exception("failed to get_ocsp_uris while loading server certificate: BIO_new failure: " + ssl::experimental::last_openssl_error());
+                throw ocsp_exception("failed to get_ocsp_uris while loading server certificate to BIO: BIO_new failure: " + ssl::experimental::last_openssl_error());
             }
             X509_ptr x509(PEM_read_bio_X509_AUX(bio.get(), NULL, NULL, NULL), &X509_free);
             if (!x509)
             {
-                throw ocsp_exception("failed to get_ocsp_uris while loading server certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
+                throw ocsp_exception("failed to get_ocsp_uris while converting server certificate BIO to X509: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
             }
             auto ocsp_uris_ = X509_get1_ocsp(x509.get());
 
@@ -133,24 +134,38 @@ namespace nmos
             return ocsp_uris;
         }
 
-        // create OCSP request from list of server certificate chains data
-        std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& cert_chains)
+        // create OCSP request from list of server certificate chains
+        std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& certificate_chains)
         {
-            // extract issuer certificate from the 1st server certificate
-            if (cert_chains.empty())
+            if (certificate_chains.empty())
             {
-                throw ocsp_exception("no server certificate");
+                throw ocsp_exception("failed to make_ocsp_request: no server certificate chains");
             }
-            // split issuer certificate from server certificate chain
-            const auto certs = ssl::experimental::split_certificate_chain(cert_chains[0]);
 
-            if (certs.size() < 2)
+            // a minimal format of a server certificate chain is starting with the server's certificate, followed by the server's issuer certifiacte.
+            // for now assuming all the server certificates are issued by the same issuer, lets get the issuer certificate from the 1st server certificate chain.
+
+            // 1. split the 1st server certificate chain to a list of individual certificates
+            // 2. get the issuer certificate from the list, this should be the 2nd certificate in the list
+            // 3. create OCSP request using the issue certificate and a list of server certificates
+
+            // 1. split the server certificate chain to a list of individual certificates
+            const auto certificates = ssl::experimental::split_certificate_chain(certificate_chains[0]);
+
+            // 2. get the issuer certificate from the list, this should be the 2nd certificate in the list
+            if (certificates.size() < 2)
             {
-                throw ocsp_exception("missing issuer certificate");
+                throw ocsp_exception("failed to make_ocsp_request: missing issuer certificate");
             }
-            const auto issuer_data = certs[1];
+            const auto issuer_certificate = certificates[1];
 
-            return details::make_ocsp_request(issuer_data, cert_chains);
+            // 3. create OCSP request using the issue certificate and the list of server certificates
+            const auto server_certificates = boost::copy_range<std::vector<std::string>>(certificate_chains | boost::adaptors::transformed([](const std::string& certificate_chain)
+                {
+                    const auto certs = ssl::experimental::split_certificate_chain(certificate_chain);
+                    return certs[0];
+                }));
+            return details::make_ocsp_request(issuer_certificate, server_certificates);
         }
 
         // send OCSP response in TLS handshake

@@ -35,23 +35,23 @@ namespace nmos
             {}
         };
 
-        void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_client_certificate, slog::base_gate& gate);
+        void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
 
         double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
-        std::vector<web::uri> get_ocsp_uris(const std::vector<utility::string_t>& certificates_chain, slog::base_gate& gate);
+        std::vector<web::uri> get_ocsp_uris(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
     }
 
-    void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificate, slog::base_gate& gate_)
+    void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::ocsp_behaviour));
 
-        details::ocsp_behaviour_thread(model, ocsp_settings, load_ca_certificates, load_server_certificate, gate);
+        details::ocsp_behaviour_thread(model, ocsp_settings, load_ca_certificates, load_server_certificates, gate);
     }
 
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void details::ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificate, slog::base_gate& gate)
+    void details::ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate)
     {
         enum
         {
@@ -87,7 +87,7 @@ namespace nmos
                     }
 
                     // get the list of server certificates chain
-                    const auto server_certificates = load_server_certificate();
+                    const auto server_certificates = load_server_certificates();
                     const auto server_certificate_chains = boost::copy_range<std::vector<utility::string_t>>(server_certificates | boost::adaptors::transformed([](const nmos::certificate& certificate) { return certificate.certificate_chain; }));
 
                     try
@@ -269,9 +269,9 @@ namespace nmos
             try
             {
                 // get the shortest expiry time from all the certificates
-                for (const auto& certificate : certificate_chains)
+                for (const auto& certificate_chain : certificate_chains)
                 {
-                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate), 0.5);
+                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate_chain), 0.5);
                     expiry_time = expiry_time < 0 ? expiry_time_ : std::min(expiry_time, expiry_time_);
                 }
             }
@@ -287,9 +287,9 @@ namespace nmos
         {
             std::vector<web::uri> ocsp_uris;
 
-            for (const auto& cert_chain : certificate_chains)
+            for (const auto& certificate_chain : certificate_chains)
             {
-                const auto uris = nmos::experimental::get_ocsp_uris(utility::us2s(cert_chain));
+                const auto uris = nmos::experimental::get_ocsp_uris(utility::us2s(certificate_chain));
 
                 // only add new OCSP URIs to the list
                 for (const auto& uri : uris)
@@ -311,7 +311,7 @@ namespace nmos
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
         {
             // make OCSP request from multi certificate chains
-            const auto certificate_chains_ = boost::copy_range<std::vector<std::string>>(certificate_chains | boost::adaptors::transformed([](const utility::string_t& certificate) { return utility::us2s(certificate); }));
+            const auto certificate_chains_ = boost::copy_range<std::vector<std::string>>(certificate_chains | boost::adaptors::transformed([](const utility::string_t& certificate_chain) { return utility::us2s(certificate_chain); }));
             return nmos::experimental::make_ocsp_request(certificate_chains_);
         }
 
