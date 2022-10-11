@@ -232,7 +232,7 @@ namespace nmos
 
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "cache the OCSP response";
 
-                    nmos::with_write_lock(*ocsp_settings.mutex, [&] { ocsp_settings.ocsp_response = ocsp_resp; });
+                    nmos::with_write_lock(ocsp_settings.mutex, [&] { ocsp_settings.ocsp_response = ocsp_resp; });
 
                     model.notify();
 

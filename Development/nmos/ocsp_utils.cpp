@@ -96,8 +96,8 @@ namespace nmos
             // This callback is called when client includes a certificate status request extension in the TLS handshake
             int server_certificate_status_request(SSL* s, void* arg)
             {
-                nmos::experimental::ocsp_settings* settings = (nmos::experimental::ocsp_settings*)arg;
-                nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(*settings->mutex, [&] { return settings->ocsp_response; }));
+                auto& ocsp_settings = *(nmos::experimental::ocsp_settings*)arg;
+                nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(ocsp_settings.mutex, [&] { return ocsp_settings.ocsp_response; }));
                 return SSL_TLSEXT_ERR_OK;
             }
 #endif

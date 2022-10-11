@@ -24,7 +24,7 @@ namespace nmos
 // cf. preprocessor conditions in nmos::make_http_listener_config and nmos::make_websocket_listener_config
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         template <typename ExceptionType>
-        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings,load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
         {
             if (!load_server_certificates)
             {

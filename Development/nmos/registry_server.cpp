@@ -44,6 +44,7 @@ namespace nmos
 
             const auto server_secure = nmos::experimental::fields::server_secure(registry_model.settings);
             const auto hsts = server_secure ? web::http::experimental::hsts{ nmos::experimental::fields::hsts_max_age(registry_model.settings), nmos::experimental::fields::hsts_include_sub_domains(registry_model.settings) } : web::http::experimental::hsts{};
+            auto ocsp_settings = registry_server.ocsp_settings;
 
             // Configure the DNS-SD Browsing API
 
@@ -107,7 +108,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_server.ocsp_settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(registry_model.settings, *ocsp_settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
 
             for (auto& api_router : registry_server.api_routers)
             {
@@ -120,7 +121,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_server.ocsp_settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, *ocsp_settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : registry_server.ws_handlers)
@@ -149,7 +150,7 @@ namespace nmos
             {
                 auto load_ca_certificates = registry_implementation.load_ca_certificates;
                 auto load_server_certificates = registry_implementation.load_server_certificates;
-                registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, registry_server.ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
+                registry_server.thread_functions.push_back([&, ocsp_settings, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, *ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
             }
 #endif
 

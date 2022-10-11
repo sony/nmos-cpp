@@ -23,7 +23,7 @@ namespace nmos
         nmos::base_model& model;
 
         // OCSP settings
-        nmos::experimental::ocsp_settings ocsp_settings;
+        std::shared_ptr<nmos::experimental::ocsp_settings> ocsp_settings;
 
         // HTTP APIs
         std::map<host_port, web::http::experimental::listener::api_router> api_routers;
