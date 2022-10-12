@@ -33,8 +33,9 @@ namespace nmos
             // Set up the APIs, assigning them to the configured ports
 
             const auto server_secure = nmos::experimental::fields::server_secure(node_model.settings);
-            const auto hsts = server_secure ? web::http::experimental::hsts{ nmos::experimental::fields::hsts_max_age(node_model.settings), nmos::experimental::fields::hsts_include_sub_domains(node_model.settings) } : web::http::experimental::hsts{};
-            auto ocsp_settings = node_server.ocsp_settings;
+
+            const auto hsts = nmos::experimental::get_hsts(node_model.settings);
+            const auto ocsp_settings = node_server.ocsp_settings;
 
             // Configure the Settings API
 

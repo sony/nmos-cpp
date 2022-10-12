@@ -3,6 +3,7 @@
 
 #include <map>
 #include <set>
+#include "bst/optional.h"
 #include "cpprest/api_router.h"
 #include "cpprest/http_listener.h" // for web::http::experimental::listener::http_listener_config
 #include "cpprest/regex_utils.h"
@@ -125,16 +126,16 @@ namespace nmos
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
     void add_api_finally_handler(web::http::experimental::listener::api_router& api, slog::base_gate& gate);
-    void add_api_finally_handler(web::http::experimental::listener::api_router& api, const web::http::experimental::hsts& hsts, slog::base_gate& gate);
+    void add_api_finally_handler(web::http::experimental::listener::api_router& api, const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate);
 
     // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener
     void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api, slog::base_gate& gate);
-    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api, const web::http::experimental::hsts& hsts, slog::base_gate& gate);
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api, const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate);
 
     // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS")
     web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, slog::base_gate& gate);
-    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, const web::http::experimental::hsts& hsts, slog::base_gate& gate);
+    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate);
 
     // construct an http_listener on the specified port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS")
@@ -187,7 +188,7 @@ namespace nmos
 
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate);
-        web::http::experimental::listener::route_handler make_api_finally_handler(const web::http::experimental::hsts& hsts, slog::base_gate& gate);
+        web::http::experimental::listener::route_handler make_api_finally_handler(const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate);
     }
 }
 

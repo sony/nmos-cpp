@@ -477,7 +477,7 @@ namespace nmos
         }
 
         // make handler to set appropriate response headers, and error response body if indicated
-        web::http::experimental::listener::route_handler make_api_finally_handler(const web::http::experimental::hsts& hsts, slog::base_gate& gate_)
+        web::http::experimental::listener::route_handler make_api_finally_handler(const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -496,7 +496,11 @@ namespace nmos
                     req.headers().remove(details::received_time);
                     res.headers().add(web::http::experimental::header_names::server_timing, web::http::experimental::make_timing_header({ { U("proc"), processing_dur } }));
                     res.headers().add(web::http::experimental::header_names::timing_allow_origin, U("*"));
-                    if (hsts.max_age >= 0) res.headers().add(web::http::experimental::header_names::strict_transport_security, web::http::experimental::make_hsts_header(hsts));
+                }
+
+                if (hsts)
+                {
+                    res.headers().add(web::http::experimental::header_names::strict_transport_security, web::http::experimental::make_hsts_header(*hsts));
                 }
 
                 // if it was a HEAD request, restore that and discard any response body
@@ -605,7 +609,7 @@ namespace nmos
     }
 
     // add handler to set appropriate response headers, and error response body if indicated - call this only after adding all others!
-    void add_api_finally_handler(web::http::experimental::listener::api_router& api, const web::http::experimental::hsts& hsts, slog::base_gate& gate_)
+    void add_api_finally_handler(web::http::experimental::listener::api_router& api, const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -673,7 +677,7 @@ namespace nmos
     }
 
     // modify the specified API to handle all requests (including CORS preflight requests via "OPTIONS") and attach it to the specified listener
-    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api_, const web::http::experimental::hsts& hsts, slog::base_gate& gate)
+    void support_api(web::http::experimental::listener::http_listener& listener, web::http::experimental::listener::api_router api_, const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate)
     {
         add_api_finally_handler(api_, hsts, gate);
         auto api = [api_, &gate](web::http::http_request req) mutable
@@ -707,10 +711,10 @@ namespace nmos
 
     // construct an http_listener on the specified address and port, modifying the specified API to handle all requests
     // (including CORS preflight requests via "OPTIONS")
-    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, const web::http::experimental::hsts& hsts, slog::base_gate& gate)
+    web::http::experimental::listener::http_listener make_api_listener(bool secure, const utility::string_t& host_address, int port, web::http::experimental::listener::api_router api, web::http::experimental::listener::http_listener_config config, const bst::optional<web::http::experimental::hsts>& hsts, slog::base_gate& gate)
     {
         web::http::experimental::listener::http_listener api_listener(web::http::experimental::listener::make_listener_uri(secure, host_address, port), std::move(config));
-        nmos::support_api(api_listener, api, secure ? hsts : web::http::experimental::hsts{}, gate);
+        nmos::support_api(api_listener, api, secure ? hsts : bst::optional<web::http::experimental::hsts>{}, gate);
         return api_listener;
     }
 

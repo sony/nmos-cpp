@@ -166,6 +166,7 @@ namespace web
                 utility::string_t name;
                 double duration; // milliseconds
                 utility::string_t description;
+
                 timing_metric(utility::string_t name, double duration = 0.0, utility::string_t description = {}) : name(name), duration(duration), description(description) {}
                 timing_metric(utility::string_t name, utility::string_t description) : name(name), duration(0.0), description(description) {}
 
@@ -181,9 +182,14 @@ namespace web
 
             struct hsts
             {
-                int32_t max_age; // seconds
+                uint32_t max_age; // seconds
                 bool include_sub_domains;
-                hsts(int32_t max_age = 0, bool include_sub_domains = false) : max_age(max_age), include_sub_domains(include_sub_domains) {}
+
+                // "If the max-age header field value token has a value of zero, the
+                // UA MUST remove its cached HSTS Policy information if the HSTS Host is
+                // known, or the UA MUST NOT note this HSTS Host if it is not yet known."
+                // See https://tools.ietf.org/html/rfc6797#section-8.1
+                hsts(uint32_t max_age = 0u, bool include_sub_domains = false) : max_age(max_age), include_sub_domains(include_sub_domains) {}
 
                 auto tied() const -> decltype(std::tie(max_age, include_sub_domains)) { return std::tie(max_age, include_sub_domains); }
                 friend bool operator==(const hsts& lhs, const hsts& rhs) { return lhs.tied() == rhs.tied(); }
