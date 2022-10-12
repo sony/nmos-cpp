@@ -315,18 +315,33 @@ namespace web
                     }
                 }
 
-                if (!name.empty())
+                switch (state)
                 {
-                    switch (state)
-                    {
-                    case value_name:
-                        result.push_back({ name, {} }); name.clear(); break;
-                    case param_name:
-                        throw std::invalid_argument("invalid parameter, expected '='");
-                    default:
-                        throw std::logic_error("unreachable code");
-                    }
+                case pre_value:
+                    break;
+                case value_name:
+                    result.push_back({ name, {} }); name.clear();
+                    break;
+                case pre_param:
+                    break;
+                case pre_param_name:
+                    throw std::invalid_argument("invalid parameter name, expected tchar");
+                case param_name:
+                    throw std::invalid_argument("invalid parameter, expected '='");
+                case pre_param_value:
+                    throw std::invalid_argument("invalid parameter, expected '='");
+                case param_value:
+                    throw std::invalid_argument("invalid parameter value, expected tchar or '\"'");
+                case param_value_token:
+                    break;
+                case param_value_quoted_string:
+                    throw std::invalid_argument("invalid parameter value, expected '\"'");
+                case param_value_quoted_string_escape:
+                    throw std::invalid_argument("invalid parameter value, expected escaped char'");
+                default:
+                    throw std::logic_error("unreachable code");
                 }
+
                 return result;
             }
 
@@ -396,7 +411,7 @@ namespace web
                         if (U(' ') == c || U('\t') == c) { state = pre_directive; break; }
                         throw std::invalid_argument("invalid directive value, expected tchar");
                     case directive_value_quoted_string:
-                        if (U('"') == c) { state = pre_directive_name; break; }
+                        if (U('"') == c) { state = pre_directive; break; }
                         if (U('\\') == c) { state = directive_value_quoted_string_escape; break; }
                         result.back().second.push_back(c);
                         break;
@@ -409,16 +424,30 @@ namespace web
                     }
                 }
 
-                if (!name.empty())
+                switch (state)
                 {
-                    switch (state)
-                    {
-                    case directive_name:
-                        result.push_back({ name, {} }); break;
-                    default:
-                        throw std::logic_error("unreachable code");
-                    }
+                case pre_directive:
+                    break;
+                case pre_directive_name:
+                    break;
+                case directive_name:
+                    result.push_back({ name, {} }); name.clear();
+                    break;
+                case pre_directive_value:
+                    break;
+                case directive_value:
+                    throw std::invalid_argument("invalid directive value, expected tchar or '\"'");
+                case directive_value_token:
+                    break;
+                case directive_value_quoted_string:
+                    throw std::invalid_argument("invalid directive value, expected '\"'");
+                case directive_value_quoted_string_escape:
+                    throw std::invalid_argument("invalid directive value, expected escaped char'");
+                    break;
+                default:
+                    throw std::logic_error("unreachable code");
                 }
+
                 return result;
             }
 
@@ -486,12 +515,17 @@ namespace web
             {
                 hsts result;
                 auto directives = parse_directives_header(value);
-                // hm, required
+
+                // required
                 const auto max_age = find_directive(directives, U("max-age"));
-                if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0u);
+                if (directives.end() == max_age) throw std::invalid_argument("invalid Strict-Transport-Security header, missing max-age");
+                // hm, invalid value is treated as 0
+                result.max_age = utility::istringstreamed(max_age->second, 0u);
+
                 // optional
                 const auto include_sub_domains = find_directive(directives, U("includeSubDomains"));
                 if (directives.end() != include_sub_domains) result.include_sub_domains = true;
+
                 return result;
             }
         }
