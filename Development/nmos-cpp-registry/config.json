@@ -37,6 +37,12 @@
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
+    // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [registry, node]: used to back-off after errors interacting with all discoverable service instances
+    // e.g. Registration APIs, System APIs, or OCSP servers
+    //"discovery_backoff_min": 1,
+    //"discovery_backoff_max": 30,
+    //"discovery_backoff_factor": 1.5,
+
     // port numbers [registry, node]: ports to which clients should connect for each API
 
     // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
@@ -213,12 +219,12 @@
     // See https://tools.ietf.org/html/rfc6797#section-6.1.2
     //"hsts_include_sub_domains": false,
 
-    // ocsp_interval_min/ocsp_interval_max [registry, node]: used to request for certificate status (OCSP response); default is about one hour
-    // Note: if the half life of the server cerificate expiry time is shorter, then the ocsp_interval_min/max will be overridden by it
+    // ocsp_interval_min/ocsp_interval_max [registry, node]: used to poll for certificate status (OCSP) changes; default is about one hour
+    // Note that if half of the server certificate expiry time is shorter, then the ocsp_interval_min/max will be overridden by it
     //"ocsp_interval_min": 3600,
     //"ocsp_interval_max": 3660,
 
-    // ocsp_request_max [registry, node]: timeout for interactions with the OCSP API
+    // ocsp_request_max [registry, node]: timeout for interactions with the OCSP server
     //"ocsp_request_max": 30,
 
     "don't worry": "about trailing commas"

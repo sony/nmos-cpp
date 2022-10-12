@@ -108,7 +108,8 @@ namespace nmos
         const web::json::field_as_integer_or highest_pri{ U("highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
         const web::json::field_as_integer_or lowest_pri{ U("lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
 
-        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [registry, node]: used to back-off after errors interacting with all discoverable Registration APIs, System APIs or OCSP API
+        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [registry, node]: used to back-off after errors interacting with all discoverable service instances
+        // e.g. Registration APIs, System APIs, or OCSP servers
         const web::json::field_as_integer_or discovery_backoff_min{ U("discovery_backoff_min"), 1 };
         const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_backoff_max"), 30 };
         const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_backoff_factor"), 1.5 };
@@ -339,12 +340,12 @@ namespace nmos
             // See https://tools.ietf.org/html/rfc6797#section-6.1.2
             const web::json::field_as_bool_or hsts_include_sub_domains{ U("hsts_include_sub_domains"), false };
 
-            // ocsp_interval_min/ocsp_interval_max [registry, node]: used to request for certificate status (OCSP response); default is about one hour
-            // Note: if the half life of the server cerificate expiry time is shorter, then the ocsp_interval_min/max will be overridden by it
+            // ocsp_interval_min/ocsp_interval_max [registry, node]: used to poll for certificate status (OCSP) changes; default is about one hour
+            // Note that if half of the server certificate expiry time is shorter, then the ocsp_interval_min/max will be overridden by it
             const web::json::field_as_integer_or ocsp_interval_min{ U("ocsp_interval_min"), 3600 };
             const web::json::field_as_integer_or ocsp_interval_max{ U("ocsp_interval_max"), 3660 };
 
-            // ocsp_request_max [registry, node]: timeout for interactions with the OCSP API
+            // ocsp_request_max [registry, node]: timeout for interactions with the OCSP server
             const web::json::field_as_integer_or ocsp_request_max{ U("ocsp_request_max"), 30 };
         }
     }

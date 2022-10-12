@@ -1,5 +1,5 @@
-#ifndef NMOS_OCSP_SETTINGS_H
-#define NMOS_OCSP_SETTINGS_H
+#ifndef NMOS_OCSP_STATE_H
+#define NMOS_OCSP_STATE_H
 
 #include <vector>
 #include "nmos/mutex.h"
@@ -8,9 +8,9 @@ namespace nmos
 {
     namespace experimental
     {
-        struct ocsp_settings
+        struct ocsp_state
         {
-            // mutex to be used to protect the members of the settings from simultaneous access by multiple threads
+            // mutex to be used to protect the members from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
 
             std::vector<uint8_t> ocsp_response;

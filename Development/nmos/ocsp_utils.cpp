@@ -4,7 +4,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <openssl/ocsp.h>
 #include "cpprest/basic_utils.h"
-#include "nmos/ocsp_settings.h"
+#include "nmos/ocsp_state.h"
 #include "ssl/ssl_utils.h"
 
 namespace nmos
@@ -16,8 +16,8 @@ namespace nmos
 
         namespace details
         {
-            // create OCSP request using the issue certificate and the list of server certificates
-            // This is based on the example given at https://stackoverflow.com/questions/56253312/how-to-create-ocsp-request-using-openssl-in-c
+            // construct OCSP request using the issuer certificate and the list of server certificates
+            // see https://stackoverflow.com/questions/56253312/how-to-create-ocsp-request-using-openssl-in-c
             std::vector<uint8_t> make_ocsp_request(const std::string& issuer_certificate, const std::vector<std::string>& server_certificates)
             {
                 using ssl::experimental::BIO_ptr;
@@ -35,11 +35,11 @@ namespace nmos
                     throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
                 }
 
-                // setup OCSP request to load certificates
+                // set up OCSP request to load certificates
                 OCSP_REQUEST_ptr ocsp_req(OCSP_REQUEST_new(), &OCSP_REQUEST_free);
                 if (!ocsp_req)
                 {
-                    throw ocsp_exception("failed to make_ocsp_request while setup OCSP request: OCSP_REQUEST_new failure: " + ssl::experimental::last_openssl_error());
+                    throw ocsp_exception("failed to make_ocsp_request while setting up OCSP request: OCSP_REQUEST_new failure: " + ssl::experimental::last_openssl_error());
                 }
 
                 // load server certificate then add to OCSP request
@@ -94,11 +94,11 @@ namespace nmos
             }
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-            // This callback is called when client includes a certificate status request extension in the TLS handshake
+            // this callback is called when client includes a certificate status request extension in the TLS handshake
             int server_certificate_status_request(SSL* s, void* arg)
             {
-                auto& ocsp_settings = *(nmos::experimental::ocsp_settings*)arg;
-                nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(ocsp_settings.mutex, [&] { return ocsp_settings.ocsp_response; }));
+                auto& ocsp_state = *(nmos::experimental::ocsp_state*)arg;
+                nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(ocsp_state.mutex, [&] { return ocsp_state.ocsp_response; }));
                 return SSL_TLSEXT_ERR_OK;
             }
 #endif
@@ -134,7 +134,7 @@ namespace nmos
             return ocsp_uris;
         }
 
-        // create OCSP request from list of server certificate chains
+        // construct an OCSP request from the specified list of server certificate chains
         std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& certificate_chains)
         {
             if (certificate_chains.empty())
@@ -142,12 +142,8 @@ namespace nmos
                 throw ocsp_exception("failed to make_ocsp_request: no server certificate chains");
             }
 
-            // a minimal format of a server certificate chain is starting with the server's certificate, followed by the server's issuer certifiacte.
-            // for now assuming all the server certificates are issued by the same issuer, lets get the issuer certificate from the 1st server certificate chain.
-
-            // 1. split the 1st server certificate chain to a list of individual certificates
-            // 2. get the issuer certificate from the list, this should be the 2nd certificate in the list
-            // 3. create OCSP request using the issue certificate and a list of server certificates
+            // a minimal server certificate chain starts with the server's certificate, followed by the server's issuer certificate.
+            // for now, assuming all the server certificates are issued by the same issuer, let's get the issuer certificate from the 1st server certificate chain.
 
             // 1. split the server certificate chain to a list of individual certificates
             const auto certificates = ssl::experimental::split_certificate_chain(certificate_chains[0]);
@@ -159,12 +155,12 @@ namespace nmos
             }
             const auto issuer_certificate = certificates[1];
 
-            // 3. create OCSP request using the issue certificate and the list of server certificates
+            // 3. construct OCSP request using the issuer certificate and the list of server certificates
             const auto server_certificates = boost::copy_range<std::vector<std::string>>(certificate_chains | boost::adaptors::transformed([](const std::string& certificate_chain)
-                {
-                    const auto certs = ssl::experimental::split_certificate_chain(certificate_chain);
-                    return certs[0];
-                }));
+            {
+                const auto certs = ssl::experimental::split_certificate_chain(certificate_chain);
+                return certs[0];
+            }));
             return details::make_ocsp_request(issuer_certificate, server_certificates);
         }
 
@@ -194,8 +190,8 @@ namespace nmos
 
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        // setup server certificate status callback when client includes a certificate status request extension in the TLS handshake
-        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_settings& settings)
+        // set up server certificate status callback when client includes a certificate status request extension in the TLS handshake
+        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_state& settings)
         {
             SSL_CTX_set_tlsext_status_cb(ctx.native_handle(), details::server_certificate_status_request);
             SSL_CTX_set_tlsext_status_arg(ctx.native_handle(), (void*)&settings);

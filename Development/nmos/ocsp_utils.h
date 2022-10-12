@@ -13,7 +13,7 @@ namespace nmos
 {
     namespace experimental
     {
-        struct ocsp_settings;
+        struct ocsp_state;
 
         struct ocsp_exception : std::runtime_error
         {
@@ -23,15 +23,15 @@ namespace nmos
         // get a list of OCSP URIs from server certificate
         std::vector<web::uri> get_ocsp_uris(const std::string& certificate);
 
-        // create OCSP request from list of server certificate chains
+        // construct an OCSP request from the specified list of server certificate chains
         std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& certificate_chains);
 
         // send OCSP response in TLS handshake
         bool send_ocsp_response(SSL* s, const std::vector<uint8_t>& ocsp_resp);
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        // setup server certificate status callback when client includes a certificate status request extension in the TLS handshake
-        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_settings& settings);
+        // set up server certificate status callback when client includes a certificate status request extension in the TLS handshake
+        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_state& settings);
 #endif
     }
 }
