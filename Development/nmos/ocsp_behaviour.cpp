@@ -3,7 +3,7 @@
 #include "pplx/pplx_utils.h" // for pplx::complete_at
 #include "nmos/client_utils.h"
 #include "nmos/model.h"
-#include "nmos/ocsp_settings.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/ocsp_utils.h"
 #include "nmos/random.h"
 #include "nmos/slog.h"
@@ -35,23 +35,23 @@ namespace nmos
             {}
         };
 
-        void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
+        void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
 
         double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<web::uri> get_ocsp_uris(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
-        void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
+        void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
     }
 
-    void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate_)
+    void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::ocsp_behaviour));
 
-        details::ocsp_behaviour_thread(model, ocsp_settings, load_ca_certificates, load_server_certificates, gate);
+        details::ocsp_behaviour_thread(model, ocsp_state, load_ca_certificates, load_server_certificates, gate);
     }
 
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void details::ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate)
+    void details::ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate)
     {
         enum
         {
@@ -76,12 +76,12 @@ namespace nmos
             {
                 case initial_ocsp_operation:
                 {
-                    // Note: use the same discovery backoff settings for OCSP API retry
+                    // note: use the same discovery backoff settings for OCSP server retry
                     if (0 != backoff)
                     {
                         auto lock = model.read_lock();
                         const auto random_backoff = std::uniform_real_distribution<>(0, backoff)(backoff_engine);
-                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry OCSP API for about " << std::fixed << std::setprecision(3) << random_backoff << " seconds (current backoff limit: " << backoff << " seconds)";
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to retry OCSP server for about " << std::fixed << std::setprecision(3) << random_backoff << " seconds (current backoff limit: " << backoff << " seconds)";
                         model.wait_for(lock, std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * random_backoff)), [&] { return model.shutdown; });
                         if (model.shutdown) break;
                     }
@@ -101,15 +101,15 @@ namespace nmos
                             // extract the shortest half certificate expiry time from all server certificates
                             state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
 
-                            // make ocsp request with the server certificates
+                            // construct an OCSP request with the server certificates
                             state.ocsp_request = details::make_ocsp_request(server_certificate_chains, gate);
                             if (state.ocsp_request.size())
                             {
-                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the OCSP API(s):" << slog::log_manip([&](slog::log_statement& s)
+                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the OCSP server(s):" << slog::log_manip([&](slog::log_statement& s)
                                 {
-                                    for (auto& ocsp_service : ocsp_uris)
+                                    for (auto& ocsp_uri : ocsp_uris)
                                     {
-                                        s << '\n' << ocsp_service.to_string();
+                                        s << '\n' << ocsp_uri.to_string();
                                     }
                                 });
                             }
@@ -128,16 +128,15 @@ namespace nmos
                         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception during initial OCSP operation";
                     }
 
-                    // the Node implements an exponential backoff algorithm to avoid overloading the OCSP API in the event of a system restart
+                    // implement an exponential backoff algorithm to avoid overloading the OCSP server in the event of a system restart
                     auto lock = model.read_lock();
                     backoff = (std::min)((std::max)((double)nmos::fields::discovery_backoff_min(model.settings), backoff * nmos::fields::discovery_backoff_factor(model.settings)), (double)nmos::fields::discovery_backoff_max(model.settings));
                 }
                 break;
 
             case ocsp_behaviour:
-                details::ocsp_behaviour(model, ocsp_settings, ocsp_uris, state, gate);
+                details::ocsp_behaviour(model, ocsp_state, ocsp_uris, state, gate);
 
-                // Should no further OCSP APIs be available, a re-query may be performed.
                 mode = initial_ocsp_operation;
                 break;
             }
@@ -155,7 +154,7 @@ namespace nmos
 
         struct ocsp_service_exception {};
 
-        // make an asynchronously POST request on the OCSP API to get certificate status
+        // make an asynchronously POST request on the OCSP server to get certificate status
         // see https://specs.amwa.tv/bcp-003-03/releases/v1.0.0/docs/1.0._Certificate_Provisioning.html#certificate-request
         pplx::task<std::vector<uint8_t>> request_certificate_status(web::http::client::http_client client, std::vector<uint8_t>& ocsp_request, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
@@ -197,13 +196,13 @@ namespace nmos
         }
 
         // task to continuously fetch the certificate status (OCSP response) on a time interval until failure or cancellation
-        pplx::task<void> do_certificate_status_requests(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, ocsp_shared_state& state, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        pplx::task<void> do_certificate_status_requests(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, ocsp_shared_state& state, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             const auto& ocsp_interval_min(nmos::experimental::fields::ocsp_interval_min(model.settings));
             const auto& ocsp_interval_max(nmos::experimental::fields::ocsp_interval_max(model.settings));
 
             // start a background task to continously request certificate status on a given interval
-            return pplx::do_while([=, &model, &ocsp_settings, &state, &gate]
+            return pplx::do_while([=, &model, &ocsp_state, &state, &gate]
             {
                 auto request_interval = std::chrono::seconds(0);
                 if (state.base_uri == state.client->base_uri())
@@ -224,15 +223,15 @@ namespace nmos
                 return pplx::complete_at(time_now + request_interval, token).then([=, &state, &gate]()
                 {
                     return request_certificate_status(*state.client, state.ocsp_request, gate, token);
-                }).then([&model, &ocsp_settings, &state, &gate](std::vector<uint8_t> ocsp_resp)
+                }).then([&model, &ocsp_state, &state, &gate](std::vector<uint8_t> ocsp_response)
                 {
                     // cache the OCSP response
 
                     auto lock = model.write_lock(); // in order to update local state
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "cache the OCSP response";
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Cache the OCSP response";
 
-                    nmos::with_write_lock(ocsp_settings.mutex, [&] { ocsp_settings.ocsp_response = ocsp_resp; });
+                    nmos::with_write_lock(ocsp_state.mutex, [&] { ocsp_state.ocsp_response = ocsp_response; });
 
                     model.notify();
 
@@ -255,8 +254,8 @@ namespace nmos
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Certificate status request error";
                 }
 
-                // reaching here, there must be something has gone wrong with the OCSP API
-                // let's select the next available OCSP API
+                // reaching here, there must be something has gone wrong with the OCSP server
+                // let's select the next available OCSP server
                 state.ocsp_service_error = true;
 
                 model.notify();
@@ -307,15 +306,14 @@ namespace nmos
             return ocsp_uris;
         }
 
-        // create OCSP request from the list of server certificate chains
-        std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
+        // construct an OCSP request from the specified list of server certificate chains
+        std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains_, slog::base_gate& gate)
         {
-            // make OCSP request from multi certificate chains
-            const auto certificate_chains_ = boost::copy_range<std::vector<std::string>>(certificate_chains | boost::adaptors::transformed([](const utility::string_t& certificate_chain) { return utility::us2s(certificate_chain); }));
-            return nmos::experimental::make_ocsp_request(certificate_chains_);
+            const auto certificate_chains = boost::copy_range<std::vector<std::string>>(certificate_chains_ | boost::adaptors::transformed([](const utility::string_t& certificate_chain) { return utility::us2s(certificate_chain); }));
+            return nmos::experimental::make_ocsp_request(certificate_chains);
         }
 
-        void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_settings& ocsp_settings, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate)
+        void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting certificates status requests";
 
@@ -350,7 +348,7 @@ namespace nmos
                 }
                 if (shutdown || ocsp_uris.empty()) break;
 
-                // selects the first OCSP API from the OCSP URI list
+                // selects the first OCSP server from the OCSP URI list
                 if (!state.client)
                 {
                     const auto ocsp_uri = ocsp_uris.front();
@@ -360,7 +358,7 @@ namespace nmos
                 auto token = cancellation_source.get_token();
 
                 // start a background task to intermittently request certificate status (OCSP response)
-                requests = do_certificate_status_requests(model, ocsp_settings, state, gate, token);
+                requests = do_certificate_status_requests(model, ocsp_state, state, gate, token);
 
                 condition.wait(lock, [&] { return shutdown || state.ocsp_service_error; });
             }

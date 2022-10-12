@@ -13,14 +13,14 @@ namespace nmos
 {
     namespace experimental
     {
-        struct ocsp_settings;
+        struct ocsp_state;
     }
 
     // construct listener config based on settings
-    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate);
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate);
 
     // construct listener config based on settings
-    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate);
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate);
 
     namespace experimental
     {

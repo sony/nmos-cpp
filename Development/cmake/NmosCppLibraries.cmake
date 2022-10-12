@@ -868,7 +868,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/node_server.h
     nmos/node_system_behaviour.h
     nmos/ocsp_behaviour.h
-    nmos/ocsp_settings.h
+    nmos/ocsp_state.h
     nmos/ocsp_utils.h
     nmos/paging_utils.h
     nmos/process_utils.h

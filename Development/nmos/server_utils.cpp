@@ -11,7 +11,7 @@
 #include "cpprest/http_listener.h"
 #include "cpprest/ws_listener.h"
 #include "nmos/certificate_handlers.h"
-#include "nmos/ocsp_settings.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/ocsp_utils.h"
 #include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
@@ -24,7 +24,7 @@ namespace nmos
 // cf. preprocessor conditions in nmos::make_http_listener_config and nmos::make_websocket_listener_config
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         template <typename ExceptionType>
-        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+        inline std::function<void(boost::asio::ssl::context&)> make_listener_ssl_context_callback(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
         {
             if (!load_server_certificates)
             {
@@ -36,7 +36,7 @@ namespace nmos
                 load_dh_param = make_load_dh_param_handler(settings, gate);
             }
 
-            return [&ocsp_settings, load_server_certificates, load_dh_param](boost::asio::ssl::context& ctx)
+            return [&ocsp_state, load_server_certificates, load_dh_param](boost::asio::ssl::context& ctx)
             {
                 try
                 {
@@ -81,8 +81,8 @@ namespace nmos
                         ctx.use_tmp_dh(boost::asio::buffer(dh_param.data(), dh_param.size()));
                     }
 
-                    // setup server certificate status callback when client includes a certificate status request extension in the TLS handshake
-                    set_server_certificate_status_handler(ctx, ocsp_settings);
+                    // set up server certificate status callback when client includes a certificate status request extension in the TLS handshake
+                    set_server_certificate_status_handler(ctx, ocsp_state);
                 }
                 catch (const boost::system::system_error& e)
                 {
@@ -94,7 +94,7 @@ namespace nmos
     }
 
     // construct listener config based on settings
-    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
     {
         web::http::experimental::listener::http_listener_config config;
         config.set_backlog(nmos::fields::listen_backlog(settings));
@@ -102,19 +102,19 @@ namespace nmos
         // hmm, hostport_listener::on_accept(...) in http_server_asio.cpp
         // only expects boost::system::system_error to be thrown, so for now
         // don't use web::http::http_exception
-        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<boost::system::system_error>(settings, ocsp_settings, load_server_certificates, load_dh_param, gate));
+        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<boost::system::system_error>(settings, ocsp_state, load_server_certificates, load_dh_param, gate));
 #endif
 
         return config;
     }
 
     // construct listener config based on settings
-    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_settings& ocsp_settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate)
     {
         web::websockets::experimental::listener::websocket_listener_config config;
         config.set_backlog(nmos::fields::listen_backlog(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<web::websockets::websocket_exception>(settings, ocsp_settings, load_server_certificates, load_dh_param, gate));
+        config.set_ssl_context_callback(details::make_listener_ssl_context_callback<web::websockets::websocket_exception>(settings, ocsp_state, load_server_certificates, load_dh_param, gate));
 #endif
 
         return config;

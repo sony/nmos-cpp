@@ -35,7 +35,7 @@ namespace nmos
             const auto server_secure = nmos::experimental::fields::server_secure(node_model.settings);
 
             const auto hsts = nmos::experimental::get_hsts(node_model.settings);
-            const auto ocsp_settings = node_server.ocsp_settings;
+            auto& ocsp_state = *node_server.ocsp_state;
 
             // Configure the Settings API
 
@@ -68,7 +68,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(node_model.settings, *ocsp_settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(node_model.settings, ocsp_state, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
 
             for (auto& api_router : node_server.api_routers)
             {
@@ -81,7 +81,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, *ocsp_settings, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(node_model.settings, ocsp_state, node_implementation.load_server_certificates, node_implementation.load_dh_param, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : node_server.ws_handlers)
@@ -118,12 +118,12 @@ namespace nmos
                 node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
             }
 
-// only implement communication with OCSP responder if http_listener supports OCSP stapling
+// only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
             if (server_secure)
             {
-                node_server.thread_functions.push_back([&, ocsp_settings, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, *ocsp_settings, load_ca_certificates, load_server_certificates, gate); });
+                node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
             }
 #endif
 

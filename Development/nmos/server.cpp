@@ -5,7 +5,7 @@ namespace nmos
 {
     server::server(nmos::base_model& model)
         : model(model)
-        , ocsp_settings(std::make_shared<nmos::experimental::ocsp_settings>())
+        , ocsp_state(new nmos::experimental::ocsp_state())
     {}
 
     pplx::task<void> server::open()
