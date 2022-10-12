@@ -1,6 +1,7 @@
 #ifndef NMOS_SETTINGS_H
 #define NMOS_SETTINGS_H
 
+#include "bst/optional.h"
 #include "cpprest/json_utils.h"
 
 namespace web
@@ -10,6 +11,13 @@ namespace web
         namespace experimental
         {
             struct host_interface;
+        }
+    }
+    namespace http
+    {
+        namespace experimental
+        {
+            struct hsts;
         }
     }
 }
@@ -39,6 +47,12 @@ namespace nmos
 
     // Get interfaces corresponding to the host addresses in the settings
     std::vector<web::hosts::experimental::host_interface> get_host_interfaces(const settings& settings);
+
+    namespace experimental
+    {
+        // Get HTTP Strict-Transport-Security settings
+        bst::optional<web::http::experimental::hsts> get_hsts(const settings& settings);
+    }
 
     // Get a summary of the build configuration, including versions of dependencies
     utility::string_t get_build_settings_info();
@@ -316,14 +330,12 @@ namespace nmos
             // system_syslogv2_port [registry]: the port number for the system's syslog "version 2" server
             const web::json::field_as_integer_or system_syslogv2_port{ U("system_syslogv2_port"), 6514 };
 
-            // hsts_max_age [registry, node]: used for the Strict-Transport-Security HTTP response header's max-age field to enforce the HSTS Policy is to be used for the nth number of seconds; default is 365 days
-            // using value 0 to disable the Strict-Transport-Security HSTS Policy, HSTS is also disable when server_secure is switched off
+            // hsts_max_age [registry, node]: the HTTP Strict-Transport-Security response header's max-age value; default is approximately 365 days
+            // (the header is omitted if server_secure is false, or hsts_max_age is negative)
             // See https://tools.ietf.org/html/rfc6797#section-6.1.1
             const web::json::field_as_integer_or hsts_max_age{ U("hsts_max_age"), 31536000 };
 
-            // hsts_include_sub_domains [registry, node]: used for the Strict-Transport-Security HTTP response header's includeSubDomains field for signaling the client that the
-            // HSTS Policy applies to this HSTS Host as well as any subdomains of the host's domain name
-            // hsts_include_sub_domains will only be valid if and only if server_secure is switched on and hsts_max_age is set to > 0
+            // hsts_include_sub_domains [registry, node]: the HTTP Strict-Transport-Security HTTP response header's includeSubDomains value
             // See https://tools.ietf.org/html/rfc6797#section-6.1.2
             const web::json::field_as_bool_or hsts_include_sub_domains{ U("hsts_include_sub_domains"), false };
 

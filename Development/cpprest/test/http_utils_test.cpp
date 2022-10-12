@@ -184,7 +184,8 @@ BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
         { U("max-age=31536000;includeSubDomains"), { 31536000, true } },
         { U("max-age = 31536000 ; includeSubDomains"), { 31536000, true } },
         { U("includeSubDomains;max-age=31536000"), { 31536000, true } },
-        { U("includeSubDomains ; max-age = 31536000"), { 31536000, true } }
+        { U("includeSubDomains ; max-age = 31536000"), { 31536000, true } },
+        { U("max-age=31536000;foo;bar=baz;includeSubDomains"), { 31536000, true } }
     };
 
     for (const auto& example : examples)
@@ -192,4 +193,3 @@ BST_TEST_CASE(testMakeHSTSHeaderParseHSTSHeader)
         BST_REQUIRE_EQUAL(example.second, web::http::experimental::parse_hsts_header(example.first));
     }
 }
-

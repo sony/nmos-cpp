@@ -466,27 +466,32 @@ namespace web
             utility::string_t make_hsts_header(const hsts& value)
             {
                 directives result;
-
-                // invalid hsts default to HSTS disable
-                auto hsts_ = value;
-                if (hsts_.max_age < 0) hsts_ = hsts{};
-
-                if (hsts_.max_age >= 0)
-                {
-                    result.push_back({ U("max-age"), utility::ostringstreamed(hsts_.max_age) });
-                    if (hsts_.include_sub_domains) result.push_back({ U("includeSubDomains"), {} });
-                }
+                result.push_back({ U("max-age"), utility::ostringstreamed(value.max_age) });
+                if (value.include_sub_domains) result.push_back({ U("includeSubDomains"), {} });
                 return make_directives_header(result);
+            }
+
+            // "1.  The order of appearance of directives is not significant.
+            //  2.  All directives MUST appear only once in an STS header field.
+            //      Directives are either optional or required, as stipulated in
+            //      their definitions.
+            //  3.  Directive names are case-insensitive."
+            // See https://tools.ietf.org/html/rfc6797#section-6.1
+            inline directives::const_iterator find_directive(const directives& directives, const directive::first_type& directive_name)
+            {
+                return std::find_if(directives.begin(), directives.end(), [&](const directive& directive) { return boost::algorithm::iequals(directive.first, directive_name); });
             }
 
             hsts parse_hsts_header(const utility::string_t& value)
             {
                 hsts result;
                 auto directives = parse_directives_header(value);
-                const auto max_age = std::find_if(directives.begin(), directives.end(), [](const directive& directive) { return boost::algorithm::iequals(directive.first, U("max-age")); });
-                if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0);
-                const auto includeSubDomains = std::find_if(directives.begin(), directives.end(), [](const directive& directive) { return boost::algorithm::iequals(directive.first, U("includeSubDomains")); });
-                if (directives.end() != includeSubDomains) result.include_sub_domains = true;
+                // hm, required
+                const auto max_age = find_directive(directives, U("max-age"));
+                if (directives.end() != max_age) result.max_age = utility::istringstreamed(max_age->second, 0u);
+                // optional
+                const auto include_sub_domains = find_directive(directives, U("includeSubDomains"));
+                if (directives.end() != include_sub_domains) result.include_sub_domains = true;
                 return result;
             }
         }
