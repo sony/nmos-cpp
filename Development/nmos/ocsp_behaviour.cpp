@@ -94,26 +94,22 @@ namespace nmos
                     {
                         // get OCSP URIs
                         ocsp_uris = details::get_ocsp_uris(server_certificate_chains, gate);
-                        if (ocsp_uris.size())
+
+                        mode = ocsp_behaviour;
+
+                        // extract the shortest half certificate expiry time from all server certificates
+                        state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
+
+                        // construct an OCSP request with the server certificates
+                        state.ocsp_request = details::make_ocsp_request(server_certificate_chains, gate);
+
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the OCSP server(s):" << slog::log_manip([&](slog::log_statement& s)
                         {
-                            mode = ocsp_behaviour;
-
-                            // extract the shortest half certificate expiry time from all server certificates
-                            state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
-
-                            // construct an OCSP request with the server certificates
-                            state.ocsp_request = details::make_ocsp_request(server_certificate_chains, gate);
-                            if (state.ocsp_request.size())
+                            for (auto& ocsp_uri : ocsp_uris)
                             {
-                                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using the OCSP server(s):" << slog::log_manip([&](slog::log_statement& s)
-                                {
-                                    for (auto& ocsp_uri : ocsp_uris)
-                                    {
-                                        s << '\n' << ocsp_uri.to_string();
-                                    }
-                                });
+                                s << '\n' << ocsp_uri.to_string();
                             }
-                        }
+                        });
                     }
                     catch (const nmos::experimental::ocsp_exception& e)
                     {
