@@ -103,7 +103,6 @@ namespace nmos
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
-            auto load_server_certificates = node_implementation.load_server_certificates;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
@@ -123,6 +122,7 @@ namespace nmos
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
             if (server_secure)
             {
+                auto load_server_certificates = node_implementation.load_server_certificates;
                 node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
             }
 #endif
