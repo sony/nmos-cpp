@@ -208,8 +208,8 @@ namespace nmos
                 if (state.base_uri == state.client->base_uri())
                 {
                     auto interval = std::uniform_int_distribution<>(
-                        std::min(ocsp_interval_min, (state.next_request > 0.0 ? (int)state.next_request : ocsp_interval_min)),
-                        std::min(ocsp_interval_max, (state.next_request > 0.0 ? (int)state.next_request : ocsp_interval_max)))(state.engine);
+                        state.next_request > 0.0 ? std::min((int)state.next_request, ocsp_interval_min) : ocsp_interval_min,
+                        state.next_request > 0.0 ? std::min((int)state.next_request, ocsp_interval_max) : ocsp_interval_max)(state.engine);
                     request_interval = std::chrono::seconds(interval);
 
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to request certificate status for about " << interval << " seconds";
