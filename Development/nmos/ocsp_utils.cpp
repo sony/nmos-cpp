@@ -16,58 +16,65 @@ namespace nmos
 
         namespace details
         {
-            // construct OCSP request using the issuer certificate and the list of server certificates
+            typedef std::map<std::string, std::vector<std::string>> issuer_certificate_vs_server_certifiactes_map;
+
+            // construct OCSP request using an issuer certificate to server certificates lookup map
             // see https://stackoverflow.com/questions/56253312/how-to-create-ocsp-request-using-openssl-in-c
-            std::vector<uint8_t> make_ocsp_request(const std::string& issuer_certificate, const std::vector<std::string>& server_certificates)
+            std::vector<uint8_t> make_ocsp_request(const issuer_certificate_vs_server_certifiactes_map& issuer_certificate_vs_server_certifiactes)
             {
                 using ssl::experimental::BIO_ptr;
                 using ssl::experimental::X509_ptr;
 
-                // load issuer certificate
-                BIO_ptr issuer_bio(BIO_new(BIO_s_mem()), &BIO_free);
-                if ((size_t)BIO_write(issuer_bio.get(), issuer_certificate.data(), (int)issuer_certificate.size()) != issuer_certificate.size())
-                {
-                    throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: BIO_write failure: " + ssl::experimental::last_openssl_error());
-                }
-                X509_ptr issuer_x509(PEM_read_bio_X509_AUX(issuer_bio.get(), NULL, NULL, NULL), &X509_free);
-                if (!issuer_x509)
-                {
-                    throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
-                }
-
                 // set up OCSP request to load certificates
-                OCSP_REQUEST_ptr ocsp_req(OCSP_REQUEST_new(), &OCSP_REQUEST_free);
-                if (!ocsp_req)
+                OCSP_REQUEST_ptr ocsp_request(OCSP_REQUEST_new(), &OCSP_REQUEST_free);
+                if (!ocsp_request)
                 {
                     throw ocsp_exception("failed to make_ocsp_request while setting up OCSP request: OCSP_REQUEST_new failure: " + ssl::experimental::last_openssl_error());
                 }
 
-                // load server certificate then add to OCSP request
-                for (const auto& server_certificate : server_certificates)
+                for (const auto& issuer_certificate_vs_server_certifiactes_item : issuer_certificate_vs_server_certifiactes)
                 {
-                    // load server certificate
-                    BIO_ptr server_bio(BIO_new(BIO_s_mem()), &BIO_free);
-                    if ((size_t)BIO_write(server_bio.get(), server_certificate.data(), (int)server_certificate.size()) != server_certificate.size())
+                    // load issuer certificate
+                    BIO_ptr issuer_bio(BIO_new(BIO_s_mem()), &BIO_free);
+                    const auto& issuer_certificate = issuer_certificate_vs_server_certifiactes_item.first;
+                    if ((size_t)BIO_write(issuer_bio.get(), issuer_certificate.data(), (int)issuer_certificate.size()) != issuer_certificate.size())
                     {
-                        throw ocsp_exception("failed to make_ocsp_request while loading server certificate: BIO_write failure: " + ssl::experimental::last_openssl_error());
+                        throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: BIO_write failure: " + ssl::experimental::last_openssl_error());
                     }
-                    X509_ptr server_x509(PEM_read_bio_X509_AUX(server_bio.get(), NULL, NULL, NULL), &X509_free);
-                    if (!server_x509)
+                    X509_ptr issuer_x509(PEM_read_bio_X509_AUX(issuer_bio.get(), NULL, NULL, NULL), &X509_free);
+                    if (!issuer_x509)
                     {
-                        throw ocsp_exception("failed to make_ocsp_request while loading server certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
+                        throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
                     }
 
-                    auto const cert_id_md = EVP_sha1();
+                    const auto& server_certificates = issuer_certificate_vs_server_certifiactes_item.second;
+                    // load server certificate then add to OCSP request
+                    for (const auto& server_certificate : server_certificates)
+                    {
+                        // load server certificate
+                        BIO_ptr server_bio(BIO_new(BIO_s_mem()), &BIO_free);
+                        if ((size_t)BIO_write(server_bio.get(), server_certificate.data(), (int)server_certificate.size()) != server_certificate.size())
+                        {
+                            throw ocsp_exception("failed to make_ocsp_request while loading server certificate: BIO_write failure: " + ssl::experimental::last_openssl_error());
+                        }
+                        X509_ptr server_x509(PEM_read_bio_X509_AUX(server_bio.get(), NULL, NULL, NULL), &X509_free);
+                        if (!server_x509)
+                        {
+                            throw ocsp_exception("failed to make_ocsp_request while loading server certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
+                        }
 
-                    // creates and returns a new OCSP_CERTID structure using message digest dgst for certificate subject with issuer
-                    auto id = OCSP_cert_to_id(cert_id_md, server_x509.get(), issuer_x509.get());
-                    if (!id)
-                    {
-                        throw ocsp_exception("failed to make_ocsp_request while creating new OCSP_CERTID: OCSP_cert_to_id failure: " + ssl::experimental::last_openssl_error());
-                    }
-                    if (!OCSP_request_add0_id(ocsp_req.get(), id))
-                    {
-                        throw ocsp_exception("failed to make_ocsp_request while adding certificate to OCSP request: OCSP_request_add0_id failure: " + ssl::experimental::last_openssl_error());
+                        auto const cert_id_md = EVP_sha1();
+
+                        // creates and returns a new OCSP_CERTID structure using message digest dgst for certificate subject with issuer
+                        auto id = OCSP_cert_to_id(cert_id_md, server_x509.get(), issuer_x509.get());
+                        if (!id)
+                        {
+                            throw ocsp_exception("failed to make_ocsp_request while creating new OCSP_CERTID: OCSP_cert_to_id failure: " + ssl::experimental::last_openssl_error());
+                        }
+                        if (!OCSP_request_add0_id(ocsp_request.get(), id))
+                        {
+                            throw ocsp_exception("failed to make_ocsp_request while adding certificate to OCSP request: OCSP_request_add0_id failure: " + ssl::experimental::last_openssl_error());
+                        }
                     }
                 }
 
@@ -77,20 +84,20 @@ namespace nmos
                 {
                     throw ocsp_exception("failed to make_ocsp_request while creating BIO to load OCSP request: BIO_new failure: " + ssl::experimental::last_openssl_error());
                 }
-                if (ASN1_i2d_bio(reinterpret_cast<i2d_of_void*>(i2d_OCSP_REQUEST), bio.get(), reinterpret_cast<uint8_t*>(ocsp_req.get())) == 0)
+                if (ASN1_i2d_bio(reinterpret_cast<i2d_of_void*>(i2d_OCSP_REQUEST), bio.get(), reinterpret_cast<uint8_t*>(ocsp_request.get())) == 0)
                 {
                     throw ocsp_exception("failed to make_ocsp_request while converting OCSP REQUEST in DER format: ASN1_i2d_bio failed: " + ssl::experimental::last_openssl_error());
                 }
 
                 BUF_MEM* buf;
                 BIO_get_mem_ptr(bio.get(), &buf);
-                std::vector<uint8_t> ocsp_req_(size_t(buf->length), 0);
-                if ((size_t)BIO_read(bio.get(), (void*)ocsp_req_.data(), (int)ocsp_req_.size()) != ocsp_req_.size())
+                std::vector<uint8_t> ocsp_request_der(size_t(buf->length), 0);
+                if ((size_t)BIO_read(bio.get(), (void*)ocsp_request_der.data(), (int)ocsp_request_der.size()) != ocsp_request_der.size())
                 {
                     throw ocsp_exception("failed to make_ocsp_request while converting OCSP REQUEST to byte array: BIO_read failed: " + ssl::experimental::last_openssl_error());
                 }
 
-                return ocsp_req_;
+                return ocsp_request_der;
             }
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
@@ -102,6 +109,20 @@ namespace nmos
                 return nmos::experimental::set_ocsp_response(ssl, nmos::with_read_lock(ocsp_state.mutex, [&] { return ocsp_state.ocsp_response; })) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
             }
 #endif
+
+            // get the certificate at position index in the server certificate chain
+            std::string get_certificate_at(const std::string& certificate_chain, size_t index)
+            {
+                // split the server certificate chain to a list of individual certificates
+                const auto certificates = ssl::experimental::split_certificate_chain(certificate_chain);
+
+                // get the certificate at position index
+                if (index >= certificates.size())
+                {
+                    throw ocsp_exception("required certificate not found");
+                }
+                return certificates[index];
+            }
         }
 
         // get a list of OCSP URIs from server certificate
@@ -142,26 +163,29 @@ namespace nmos
                 throw ocsp_exception("failed to make_ocsp_request: no server certificate chains");
             }
 
-            // a minimal server certificate chain starts with the server's certificate, followed by the server's issuer certificate.
-            // for now, assuming all the server certificates are issued by the same issuer, let's get the issuer certificate from the 1st server certificate chain.
-
-            // 1. split the server certificate chain to a list of individual certificates
-            const auto certificates = ssl::experimental::split_certificate_chain(certificate_chains[0]);
-
-            // 2. get the issuer certificate from the list, this should be the 2nd certificate in the list
-            if (certificates.size() < 2)
+            details::issuer_certificate_vs_server_certifiactes_map issuer_certificate_vs_server_certifiactes;
+            for (const auto& certificate_chain : certificate_chains)
             {
-                throw ocsp_exception("failed to make_ocsp_request: missing issuer certificate");
+                // a minimal server certificate chain starts with the server's certificate, followed by the server's issuer certificate.
+
+                // get the issuer certificate from the certificate chain, this should be the 2nd certificate in the chain
+                const auto issuer_certificate = details::get_certificate_at(certificate_chain, 1);
+                // get the server certificate from the certificate chain, this should be the 1st certificate in the chain
+                const auto server_certificate = details::get_certificate_at(certificate_chain, 0);
+
+                // construct the issuer certificate to server certificates lookup map
+                const auto found = issuer_certificate_vs_server_certifiactes.find(issuer_certificate);
+                if (issuer_certificate_vs_server_certifiactes.end() == found)
+                {
+                    issuer_certificate_vs_server_certifiactes[issuer_certificate] = { server_certificate };
+                }
+                else
+                {
+                    issuer_certificate_vs_server_certifiactes[issuer_certificate].push_back(server_certificate);
+                }
             }
-            const auto issuer_certificate = certificates[1];
 
-            // 3. construct OCSP request using the issuer certificate and the list of server certificates
-            const auto server_certificates = boost::copy_range<std::vector<std::string>>(certificate_chains | boost::adaptors::transformed([](const std::string& certificate_chain)
-            {
-                const auto certs = ssl::experimental::split_certificate_chain(certificate_chain);
-                return certs[0];
-            }));
-            return details::make_ocsp_request(issuer_certificate, server_certificates);
+            return details::make_ocsp_request(issuer_certificate_vs_server_certifiactes);
         }
 
         // set up OCSP response for the OCSP stapling in the TLS handshake
@@ -180,7 +204,6 @@ namespace nmos
 #endif
             return 0 != SSL_set_tlsext_status_ocsp_resp(ssl, buffer, (int)ocsp_response.size());
         }
-
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         // set up server certificate status callback when client includes a certificate status request extension in the TLS handshake
