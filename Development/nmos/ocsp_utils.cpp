@@ -169,9 +169,15 @@ namespace nmos
         {
             if (ocsp_response.empty()) return false;
 
+#if (OPENSSL_VERSION_NUMBER < 0x1010100fL)
+            auto buffer = OPENSSL_malloc(ocsp_response.size());
+#else
             auto buffer = OPENSSL_memdup(ocsp_response.data(), ocsp_response.size());
+#endif
             if (0 == buffer) return false;
-
+#if (OPENSSL_VERSION_NUMBER < 0x1010100fL)
+            std::memcpy(buffer, ocsp_response.data(), ocsp_response.size());
+#endif
             return 0 != SSL_set_tlsext_status_ocsp_resp(ssl, buffer, (int)ocsp_response.size());
         }
 
