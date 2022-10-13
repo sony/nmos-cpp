@@ -246,7 +246,7 @@ namespace ssl
             return{ common_name, issuer_name, not_before_time, not_after_time, subject_alternative_names };
         }
 
-        // split certificate chain to list of certificates
+        // split certificate chain to a list of certificates
         std::vector<std::string> split_certificate_chain(const std::string& certificate_chain)
         {
             std::vector<std::string> certificates;
