@@ -226,14 +226,8 @@ namespace nmos
                 }).then([&model, &ocsp_state, &state, &gate](std::vector<uint8_t> ocsp_response)
                 {
                     // cache the OCSP response
-
-                    auto lock = model.write_lock(); // in order to update local state
-
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Cache the OCSP response";
-
                     nmos::with_write_lock(ocsp_state.mutex, [&] { ocsp_state.ocsp_response = ocsp_response; });
-
-                    model.notify();
 
                     return true;
                 });
