@@ -22,7 +22,7 @@ namespace ssl
                 std::string subject(name);
                 OPENSSL_free(name);
 
-                // exmaple subject format
+                // example subject format
                 // e.g. subject=/DC=Example/CN=api.example.com
                 const std::string common_name_prefix{ "CN=" };
                 std::vector<std::string> tokens;
@@ -156,12 +156,12 @@ namespace ssl
                 uint32_t year;
                 switch (time->type)
                 {
-                    // https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2.5.1
+                // see https://tools.ietf.org/html/rfc5280#section-4.1.2.5.1
                 case V_ASN1_UTCTIME: // YYMMDDHHMMSSZ
                     year = two_digits_to_uint();
                     year += year < 50 ? 2000 : 1900;
                     break;
-                    // https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2.5.2
+                // https://tools.ietf.org/html/rfc5280#section-4.1.2.5.2
                 case V_ASN1_GENERALIZEDTIME: // YYYYMMDDHHMMSSZ
                     year = 100 * two_digits_to_uint();
                     year += two_digits_to_uint();
