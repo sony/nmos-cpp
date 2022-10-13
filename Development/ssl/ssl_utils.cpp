@@ -6,8 +6,8 @@
 
 namespace ssl
 {
-	namespace experimental
-	{
+    namespace experimental
+    {
         namespace details
         {
             // get common name from subject
@@ -278,5 +278,5 @@ namespace ssl
             const auto from_now = difftime(cert_info.not_after, now);
             return (from_now > 0.0 ? from_now * ratio : 0.0);
         }
-	}
+    }
 }
