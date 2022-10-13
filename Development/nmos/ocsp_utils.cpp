@@ -95,11 +95,11 @@ namespace nmos
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
             // this callback is called when client includes a certificate status request extension in the TLS handshake
-            int server_certificate_status_request(SSL* s, void* arg)
+            int server_certificate_status_request(SSL* ssl, void* arg)
             {
                 auto& ocsp_state = *(nmos::experimental::ocsp_state*)arg;
-                nmos::experimental::send_ocsp_response(s, nmos::with_read_lock(ocsp_state.mutex, [&] { return ocsp_state.ocsp_response; }));
-                return SSL_TLSEXT_ERR_OK;
+
+                return nmos::experimental::set_ocsp_response(ssl, nmos::with_read_lock(ocsp_state.mutex, [&] { return ocsp_state.ocsp_response; })) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
             }
 #endif
         }
@@ -164,28 +164,15 @@ namespace nmos
             return details::make_ocsp_request(issuer_certificate, server_certificates);
         }
 
-        // send OCSP response in TLS handshake
-        bool send_ocsp_response(SSL* s, const std::vector<uint8_t>& ocsp_resp)
+        // set up OCSP response for the OCSP stapling in the TLS handshake
+        bool set_ocsp_response(SSL* ssl, const std::vector<uint8_t>& ocsp_response)
         {
-            using ssl::experimental::BIO_ptr;
+            if (ocsp_response.empty()) return false;
 
-            if (ocsp_resp.size() <= 0) { return false; }
+            auto buffer = OPENSSL_memdup(ocsp_response.data(), ocsp_response.size());
+            if (!buffer) return false;
 
-            // load OCSP response cache to BIO
-            BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
-            if (BIO_write(bio.get(), ocsp_resp.data(), (int)ocsp_resp.size()) != (int)ocsp_resp.size()) { return false; }
-
-            // BIO to OCSP response structure
-            OCSP_RESPONSE_ptr ocsp_resp_(d2i_OCSP_RESPONSE_bio(bio.get(), NULL), &OCSP_RESPONSE_free);
-
-            // encode OCSP response structure
-            unsigned char* buffer = NULL;
-            const auto buffer_len = i2d_OCSP_RESPONSE(ocsp_resp_.get(), &buffer);
-            if (buffer_len <= 0) { return false; }
-
-            // send OCSP response
-            SSL_set_tlsext_status_ocsp_resp(s, buffer, buffer_len);
-            return true;
+            return SSL_set_tlsext_status_ocsp_resp(ssl, buffer, (int)ocsp_response.size());
         }
 
 

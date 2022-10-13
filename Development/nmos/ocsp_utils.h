@@ -26,8 +26,8 @@ namespace nmos
         // construct an OCSP request from the specified list of server certificate chains
         std::vector<uint8_t> make_ocsp_request(const std::vector<std::string>& certificate_chains);
 
-        // send OCSP response in TLS handshake
-        bool send_ocsp_response(SSL* s, const std::vector<uint8_t>& ocsp_resp);
+        // set up OCSP response for the OCSP stapling in the TLS handshake
+        bool set_ocsp_response(SSL* s, const std::vector<uint8_t>& ocsp_resp);
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         // set up server certificate status callback when client includes a certificate status request extension in the TLS handshake
