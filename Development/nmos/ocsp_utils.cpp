@@ -170,9 +170,9 @@ namespace nmos
             if (ocsp_response.empty()) return false;
 
             auto buffer = OPENSSL_memdup(ocsp_response.data(), ocsp_response.size());
-            if (!buffer) return false;
+            if (0 == buffer) return false;
 
-            return SSL_set_tlsext_status_ocsp_resp(ssl, buffer, (int)ocsp_response.size());
+            return 0 != SSL_set_tlsext_status_ocsp_resp(ssl, buffer, (int)ocsp_response.size());
         }
 
 
