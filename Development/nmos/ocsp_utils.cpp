@@ -65,7 +65,7 @@ namespace nmos
 
                         auto const cert_id_md = EVP_sha1();
 
-                        // creates and returns a new OCSP_CERTID structure using message digest dgst for certificate subject with issuer
+                        // creates and returns a new OCSP_CERTID structure using SHA1 message digest for the server certificate with the issuer
                         auto id = OCSP_cert_to_id(cert_id_md, server_x509.get(), issuer_x509.get());
                         if (!id)
                         {
