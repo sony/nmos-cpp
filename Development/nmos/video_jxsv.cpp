@@ -185,8 +185,25 @@ namespace nmos
         return params;
     }
 
+    // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
+    uint64_t get_video_jxsv_bit_rate(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height, double bits_per_pixel)
+    {
+        const auto sampling_points = (int64_t)frame_width * (int64_t)frame_height;
+        const auto pixels_per_second = sampling_points * grain_rate;
+        const auto bit_rate = boost::rational_cast<double>(pixels_per_second) * bits_per_pixel;
+        return uint64_t(bit_rate / 1e3 + 0.5);
+    }
+
     namespace details
     {
+        // Check the specified SDP bandwidth parameter against the specified transport bit rate (kilobits/second) constraint
+        // See ST 2110-22:2022
+        bool match_transport_bit_rate_constraint(const nmos::sdp_parameters::bandwidth_t& bandwidth, const web::json::value& constraint)
+        {
+            return bandwidth.bandwidth_type == sdp::bandwidth_types::application_specific
+                && nmos::match_integer_constraint(bandwidth.bandwidth, constraint);
+        }
+
         const video_jxsv_parameters* get_jxsv(const format_parameters* format) { return get<video_jxsv_parameters>(format); }
 
         // NMOS Parameter Registers - Capabilities register
@@ -207,7 +224,8 @@ namespace nmos
             { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(!jxsv->tcs.empty() ? jxsv->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_integer_constraint(jxsv->depth, con); } },
             { nmos::caps::transport::packet_transmission_mode, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(nmos::parse_packet_transmission_mode(jxsv->packetmode, jxsv->transmode).name, con); } },
-            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return nmos::match_string_constraint(jxsv->tp.name, con); } }
+            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return nmos::match_string_constraint(jxsv->tp.name, con); } },
+            { nmos::caps::transport::bit_rate, [](CAPS_ARGS) { return nmos::details::match_transport_bit_rate_constraint(sdp.bandwidth, con); } }
         };
 #undef CAPS_ARGS
     }

@@ -338,6 +338,16 @@ namespace nmos
 
     // Validate SDP parameters for "video/jxsv" against IS-04 receiver capabilities
     void validate_video_jxsv_sdp_parameters(const web::json::value& receiver, const nmos::sdp_parameters& sdp_params);
+
+    // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
+    uint64_t get_video_jxsv_bit_rate(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height, double bits_per_pixel);
+
+    namespace details
+    {
+        // Check the specified SDP bandwidth parameter against the specified transport bit rate (kilobits/second) constraint
+        // See ST 2110-22:2022
+        bool match_transport_bit_rate_constraint(const nmos::sdp_parameters::bandwidth_t& bandwidth, const web::json::value& constraint);
+    }
 }
 
 #endif
