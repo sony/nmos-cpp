@@ -87,6 +87,9 @@ namespace sdp
             const level Bayer20k_1{ U("Bayer20k-1") };
         }
 
+        // Calculate the lowest possible JPEG XS level from the specified frame rate and dimensions
+        level get_level(const nmos::rational& frame_rate, uint32_t frame_width, uint32_t frame_height);
+
         // JPEG XS Sublevel
         // "The JPEG XS sublevel [ISO21122-2] in use. Any white space Unicode character in the sublevel name SHALL be omitted."
         // See https://tools.ietf.org/html/rfc9134
@@ -215,6 +218,12 @@ namespace nmos
         const level Bayer16k_3{ U("Bayer16k-3") };
         const level Level10k_1{ U("10k-1") };
         const level Bayer20k_1{ U("Bayer20k-1") };
+    }
+
+    // Calculate the lowest possible JPEG XS level from the specified frame rate and dimensions
+    inline nmos::level get_video_jxsv_level(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height)
+    {
+        return nmos::level{ sdp::video_jxsv::get_level(grain_rate, frame_width, frame_height).name };
     }
 
     // Sublevel

@@ -6,6 +6,57 @@
 #include "nmos/interlace_mode.h"
 #include "nmos/json_fields.h"
 
+namespace sdp
+{
+    namespace video_jxsv
+    {
+        struct level_limits
+        {
+            uint32_t max_width;
+            uint32_t max_height;
+            uint64_t max_pixels;
+            uint64_t max_pixel_rate;
+
+            friend bool operator<=(const level_limits& lhs, const level_limits& rhs)
+            {
+                if (lhs.max_width > rhs.max_width) return false;
+                if (lhs.max_height > rhs.max_height) return false;
+                if (lhs.max_pixels > rhs.max_pixels) return false;
+                if (lhs.max_pixel_rate > rhs.max_pixel_rate) return false;
+                return true;
+            }
+        };
+
+        // Calculate the lowest possible JPEG XS level from the specified frame rate and dimensions
+        level get_level(const nmos::rational& frame_rate, uint32_t frame_width, uint32_t frame_height)
+        {
+            // See https://en.wikipedia.org/wiki/JPEG_XS#Profiles,_levels_and_sublevels
+            static const std::pair<level, level_limits> levels[] = {
+                { levels::Level1k_1, { 1280, 5120, 2621440, 83558400 } },
+                { levels::Level2k_1, { 2048, 8192, 4194304, 133693440 } },
+                { levels::Level4k_1, { 4096, 16384, 8912896, 267386880 } },
+                { levels::Level4k_2, { 4096, 16384, 16777216, 534773760 } },
+                { levels::Level4k_3, { 4096, 16384, 16777216, 1069547520 } },
+                { levels::Level8k_1, { 8192, 32768, 35651584, 1069547520 } },
+                { levels::Level8k_2, { 8192, 32768, 67108864, 2139095040 } },
+                { levels::Level8k_3, { 8192, 32768, 67108864, 4278190080 } },
+                { levels::Level10k_1, { 10240, 40960, 104857600, 3342336000 } }
+            };
+
+            const auto sampling_points = (int64_t)frame_width * (int64_t)frame_height;
+            const auto pixels_per_second = sampling_points * frame_rate;
+            const level_limits value{ frame_width, frame_height, (uint64_t)sampling_points, uint64_t(boost::rational_cast<double>(pixels_per_second) + 0.5) };
+
+            for (const auto& level : levels)
+            {
+                if (value <= level.second) return level.first;
+            }
+
+            return{};
+        }
+    }
+}
+
 namespace nmos
 {
     std::pair<sdp::video_jxsv::packetization_mode, sdp::video_jxsv::transmission_mode> make_packet_transmission_mode(const nmos::packet_transmission_mode& mode)
