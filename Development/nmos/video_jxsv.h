@@ -6,19 +6,101 @@
 
 namespace sdp
 {
-    namespace fields
+    namespace video_jxsv
     {
-        // See https://www.iana.org/assignments/media-types/video/jxsv
-        // and https://tools.ietf.org/html/rfc9134#section-7
+        namespace fields
+        {
+            // See https://www.iana.org/assignments/media-types/video/jxsv
+            // and https://tools.ietf.org/html/rfc9134#section-7
+
+            // pacKetization mode (K) bit
+            const web::json::field<uint32_t> packetmode{ U("packetmode") }; // cf. sdp::video_jxsv::packetization_mode
+            // Transmission mode (T) bit
+            const web::json::field_with_default<uint32_t> transmode{ U("transmode"), 1 }; // sequential, cf. sdp::video_jxsv::transmission_mode
+
+            const web::json::field_as_string profile{ U("profile") }; // cf. sdp::video_jxsv::profile
+            const web::json::field_as_string level{ U("level") }; // cf. sdp::video_jxsv::level
+            const web::json::field_as_string sublevel{ U("sublevel") }; // cf. sdp::video_jxsv::sublevel
+        }
 
         // pacKetization mode (K) bit
-        const web::json::field<uint32_t> packetmode{ U("packetmode") };
-        // Transmission mode (T) bit
-        const web::json::field_with_default<uint32_t> transmode{ U("transmode"), 1 };
+        // See https://tools.ietf.org/html/rfc9134
+        enum packetization_mode
+        {
+            codestream = 0,
+            slice = 1
+        };
 
-        const web::json::field_as_string profile{ U("profile") };
-        const web::json::field_as_string level{ U("level") };
-        const web::json::field_as_string sublevel{ U("sublevel") };
+        // Transmission mode (T) bit
+        // See https://tools.ietf.org/html/rfc9134
+        enum transmission_mode
+        {
+            out_of_order = 0,
+            sequential = 1
+        };
+
+        // JPEG XS Profile
+        // "The JPEG XS profile [ISO21122-2] in use. Any white space Unicode character in the profile name SHALL be omitted."
+        // See https://tools.ietf.org/html/rfc9134
+        DEFINE_STRING_ENUM(profile)
+        namespace profiles
+        {
+            const profile HighBayer{ U("HighBayer") };
+            const profile MainBayer{ U("MainBayer") };
+            const profile LightBayer{ U("LightBayer") };
+            const profile High4444_12{ U("High4444.12") };
+            const profile Main4444_12{ U("Main4444.12") };
+            const profile High444_12{ U("High444.12") };
+            const profile Main444_12{ U("Main444.12") };
+            const profile Light444_12{ U("Light444.12") };
+            const profile Main422_10{ U("Main422.10") };
+            const profile Light422_10{ U("Light422.10") };
+            const profile Light_Subline422_10{ U("Light-Subline422.10") };
+            const profile MLS_12{ U("MLS.12") };
+            const profile High420_12{ U("High420.12") };
+            const profile Main420_12{ U("Main420.12") };
+        }
+
+        // JPEG XS Level
+        // "The JPEG XS level [ISO21122-2] in use. Any white space Unicode character in the level name SHALL be omitted."
+        // See https://tools.ietf.org/html/rfc9134
+        DEFINE_STRING_ENUM(level)
+        namespace levels
+        {
+            const level Level1k_1{ U("1k-1") };
+            const level Bayer2k_1{ U("Bayer2k-1") };
+            const level Level2k_1{ U("2k-1") };
+            const level Bayer4k_1{ U("Bayer4k-1") };
+            const level Level4k_1{ U("4k-1") };
+            const level Bayer8k_1{ U("Bayer8k-1") };
+            const level Level4k_2{ U("4k-2") };
+            const level Bayer8k_2{ U("Bayer8k-2") };
+            const level Level4k_3{ U("4k-3") };
+            const level Bayer8k_3{ U("Bayer8k-3") };
+            const level Level8k_1{ U("8k-1") };
+            const level Bayer16k_1{ U("Bayer16k-1") };
+            const level Level8k_2{ U("8k-2") };
+            const level Bayer16k_2{ U("Bayer16k-2") };
+            const level Level8k_3{ U("8k-3") };
+            const level Bayer16k_3{ U("Bayer16k-3") };
+            const level Level10k_1{ U("10k-1") };
+            const level Bayer20k_1{ U("Bayer20k-1") };
+        }
+
+        // JPEG XS Sublevel
+        // "The JPEG XS sublevel [ISO21122-2] in use. Any white space Unicode character in the sublevel name SHALL be omitted."
+        // See https://tools.ietf.org/html/rfc9134
+        DEFINE_STRING_ENUM(sublevel)
+        namespace sublevels
+        {
+            const sublevel Full{ U("Full") };
+            const sublevel Sublev12bpp{ U("Sublev12bpp") };
+            const sublevel Sublev9bpp{ U("Sublev9bpp") };
+            const sublevel Sublev6bpp{ U("Sublev6bpp") };
+            const sublevel Sublev4bpp{ U("Sublev4bpp") };
+            const sublevel Sublev3bpp{ U("Sublev3bpp") };
+            const sublevel Sublev2bpp{ U("Sublev2bpp") };
+        }
     }
 }
 
@@ -182,10 +264,11 @@ namespace nmos
     struct video_jxsv_parameters
     {
         // fmtp indicates format
-        nmos::packet_transmission_mode packet_transmission_mode;
-        nmos::profile profile;
-        nmos::level level;
-        nmos::sublevel sublevel;
+        sdp::video_jxsv::packetization_mode packetmode;
+        sdp::video_jxsv::transmission_mode transmode;
+        sdp::video_jxsv::profile profile; // nmos::profile has compatible values
+        sdp::video_jxsv::level level; // nmos::level has compatible values
+        sdp::video_jxsv::sublevel sublevel; // nmos::sublevel has compatible values
         uint32_t depth;
         uint32_t width;
         uint32_t height;
@@ -197,13 +280,14 @@ namespace nmos
         sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is compatible
         sdp::type_parameter tp; // nmos::st2110_21_sender_type is compatible
 
-        video_jxsv_parameters() : depth(), width(), height(), interlace(), segmented() {}
+        video_jxsv_parameters() : packetmode(sdp::video_jxsv::codestream), transmode(sdp::video_jxsv::sequential), depth(), width(), height(), interlace(), segmented() {}
 
         video_jxsv_parameters(
-            nmos::packet_transmission_mode packet_transmission_mode,
-            nmos::profile profile,
-            nmos::level level,
-            nmos::sublevel sublevel,
+            sdp::video_jxsv::packetization_mode packetmode,
+            sdp::video_jxsv::transmission_mode transmode,
+            sdp::video_jxsv::profile profile,
+            sdp::video_jxsv::level level,
+            sdp::video_jxsv::sublevel sublevel,
             uint32_t depth,
             uint32_t width,
             uint32_t height,
@@ -215,7 +299,8 @@ namespace nmos
             sdp::transfer_characteristic_system tcs,
             sdp::type_parameter tp
         )
-            : packet_transmission_mode(std::move(packet_transmission_mode))
+            : packetmode(packetmode)
+            , transmode(transmode)
             , profile(std::move(profile))
             , level(std::move(level))
             , sublevel(std::move(sublevel))

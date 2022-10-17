@@ -13,11 +13,26 @@ namespace nmos
     {
         video_jxsv_parameters params;
 
-        params.packet_transmission_mode = nmos::packet_transmission_mode{ nmos::fields::packet_transmission_mode(sender) };
+        const auto mode = nmos::packet_transmission_mode{ nmos::fields::packet_transmission_mode(sender) };
+        if (nmos::packet_transmission_modes::codestream == mode)
+        {
+            params.packetmode = sdp::video_jxsv::codestream;
+            params.transmode = sdp::video_jxsv::sequential;
+        }
+        else if (nmos::packet_transmission_modes::slice_sequential == mode)
+        {
+            params.packetmode = sdp::video_jxsv::slice;
+            params.transmode = sdp::video_jxsv::sequential;
+        }
+        else if (nmos::packet_transmission_modes::slice_out_of_order == mode)
+        {
+            params.packetmode = sdp::video_jxsv::slice;
+            params.transmode = sdp::video_jxsv::out_of_order;
+        }
 
-        params.profile = nmos::profile{ nmos::fields::profile(flow) };
-        params.level = nmos::level{  nmos::fields::level(flow) };
-        params.sublevel = nmos::sublevel{ nmos::fields::sublevel(flow) };
+        params.profile = sdp::video_jxsv::profile{ nmos::fields::profile(flow) };
+        params.level = sdp::video_jxsv::level{  nmos::fields::level(flow) };
+        params.sublevel = sdp::video_jxsv::sublevel{ nmos::fields::sublevel(flow) };
 
         // cf. nmos::make_video_raw_parameters
 
@@ -57,15 +72,13 @@ namespace nmos
         // following the order of parameters given in RFC 9134
         // See https://tools.ietf.org/html/rfc4566#section-6
         // and https://tools.ietf.org/html/rfc9134#section-7
-        const uint32_t k = nmos::packet_transmission_modes::codestream == params.packet_transmission_mode ? 0 : 1;
-        const uint32_t t = nmos::packet_transmission_modes::slice_out_of_order == params.packet_transmission_mode ? 0 : 1;
         sdp_parameters::fmtp_t fmtp = {
-            { sdp::fields::packetmode, utility::ostringstreamed(k) }
+            { sdp::video_jxsv::fields::packetmode, utility::ostringstreamed((uint32_t)params.packetmode) }
         };
-        if (1 != t) fmtp.push_back({ sdp::fields::transmode, utility::ostringstreamed(t) });
-        if (!params.profile.empty()) fmtp.push_back({ sdp::fields::profile, params.profile.name });
-        if (!params.level.empty()) fmtp.push_back({ sdp::fields::level, params.level.name });
-        if (!params.sublevel.empty()) fmtp.push_back({ sdp::fields::sublevel, params.sublevel.name });
+        if (sdp::video_jxsv::sequential != params.transmode) fmtp.push_back({ sdp::video_jxsv::fields::transmode, utility::ostringstreamed((uint32_t)params.transmode) });
+        if (!params.profile.empty()) fmtp.push_back({ sdp::video_jxsv::fields::profile, params.profile.name });
+        if (!params.level.empty()) fmtp.push_back({ sdp::video_jxsv::fields::level, params.level.name });
+        if (!params.sublevel.empty()) fmtp.push_back({ sdp::video_jxsv::fields::sublevel, params.sublevel.name });
 
         // cf. nmos::make_video_raw_sdp_parameters
 
@@ -90,29 +103,27 @@ namespace nmos
 
         if (sdp_params.fmtp.empty()) return params;
 
-        const auto k = details::find_fmtp(sdp_params.fmtp, sdp::fields::packetmode);
-        if (sdp_params.fmtp.end() != k) throw details::sdp_processing_error("missing format parameter: packetmode");
+        const auto packetmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::packetmode);
+        if (sdp_params.fmtp.end() == packetmode) throw details::sdp_processing_error("missing format parameter: packetmode");
+        params.packetmode = (sdp::video_jxsv::packetization_mode)utility::istringstreamed<uint32_t>(packetmode->second);
 
         // optional
-        const auto t = details::find_fmtp(sdp_params.fmtp, sdp::fields::transmode);
-
-        params.packet_transmission_mode = 0 == utility::istringstreamed<uint32_t>(k->second)
-            ? nmos::packet_transmission_modes::codestream
-            : sdp_params.fmtp.end() != t && 1 != utility::istringstreamed<uint32_t>(t->second)
-                ? nmos::packet_transmission_modes::slice_sequential
-                : nmos::packet_transmission_modes::slice_out_of_order;
+        const auto transmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::transmode);
+        params.transmode = sdp_params.fmtp.end() != transmode
+            ? (sdp::video_jxsv::transmission_mode)utility::istringstreamed<uint32_t>(transmode->second)
+            : sdp::video_jxsv::sequential;
 
         // optional
-        const auto profile = details::find_fmtp(sdp_params.fmtp, sdp::fields::profile);
-        if (sdp_params.fmtp.end() != profile) params.profile = nmos::profile{ profile->second };
+        const auto profile = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::profile);
+        if (sdp_params.fmtp.end() != profile) params.profile = sdp::video_jxsv::profile{ profile->second };
 
         // optional
-        const auto level = details::find_fmtp(sdp_params.fmtp, sdp::fields::level);
-        if (sdp_params.fmtp.end() != level) params.level = nmos::level{ level->second };
+        const auto level = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::level);
+        if (sdp_params.fmtp.end() != level) params.level = sdp::video_jxsv::level{ level->second };
 
         // optional
-        const auto sublevel = details::find_fmtp(sdp_params.fmtp, sdp::fields::sublevel);
-        if (sdp_params.fmtp.end() != sublevel) params.sublevel = nmos::sublevel{ sublevel->second };
+        const auto sublevel = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::sublevel);
+        if (sdp_params.fmtp.end() != sublevel) params.sublevel = sdp::video_jxsv::sublevel{ sublevel->second };
 
         // optional
         const auto depth = details::find_fmtp(sdp_params.fmtp, sdp::fields::depth);
