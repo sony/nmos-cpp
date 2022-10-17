@@ -16,11 +16,11 @@ namespace nmos
 
         namespace details
         {
-            typedef std::map<std::string, std::vector<std::string>> issuer_certificate_vs_server_certifiactes_map;
+            typedef std::map<std::string, std::vector<std::string>> issuer_certificate_vs_server_certificates_map;
 
             // construct OCSP request using an issuer certificate to server certificates lookup map
             // see https://stackoverflow.com/questions/56253312/how-to-create-ocsp-request-using-openssl-in-c
-            std::vector<uint8_t> make_ocsp_request(const issuer_certificate_vs_server_certifiactes_map& issuer_certificate_vs_server_certifiactes)
+            std::vector<uint8_t> make_ocsp_request(const issuer_certificate_vs_server_certificates_map& issuer_certificate_vs_server_certificates)
             {
                 using ssl::experimental::BIO_ptr;
                 using ssl::experimental::X509_ptr;
@@ -32,11 +32,11 @@ namespace nmos
                     throw ocsp_exception("failed to make_ocsp_request while setting up OCSP request: OCSP_REQUEST_new failure: " + ssl::experimental::last_openssl_error());
                 }
 
-                for (const auto& issuer_certificate_vs_server_certifiactes_item : issuer_certificate_vs_server_certifiactes)
+                for (const auto& issuer_certificate_vs_server_certificates_item : issuer_certificate_vs_server_certificates)
                 {
                     // load issuer certificate
                     BIO_ptr issuer_bio(BIO_new(BIO_s_mem()), &BIO_free);
-                    const auto& issuer_certificate = issuer_certificate_vs_server_certifiactes_item.first;
+                    const auto& issuer_certificate = issuer_certificate_vs_server_certificates_item.first;
                     if ((size_t)BIO_write(issuer_bio.get(), issuer_certificate.data(), (int)issuer_certificate.size()) != issuer_certificate.size())
                     {
                         throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: BIO_write failure: " + ssl::experimental::last_openssl_error());
@@ -47,7 +47,7 @@ namespace nmos
                         throw ocsp_exception("failed to make_ocsp_request while loading issuer certificate: PEM_read_bio_X509_AUX failure: " + ssl::experimental::last_openssl_error());
                     }
 
-                    const auto& server_certificates = issuer_certificate_vs_server_certifiactes_item.second;
+                    const auto& server_certificates = issuer_certificate_vs_server_certificates_item.second;
                     // load server certificate then add to OCSP request
                     for (const auto& server_certificate : server_certificates)
                     {
@@ -163,7 +163,7 @@ namespace nmos
                 throw ocsp_exception("failed to make_ocsp_request: no server certificate chains");
             }
 
-            details::issuer_certificate_vs_server_certifiactes_map issuer_certificate_vs_server_certifiactes;
+            details::issuer_certificate_vs_server_certificates_map issuer_certificate_vs_server_certificates;
             for (const auto& certificate_chain : certificate_chains)
             {
                 // a minimal server certificate chain starts with the server's certificate, followed by the server's issuer certificate.
@@ -174,18 +174,18 @@ namespace nmos
                 const auto server_certificate = details::get_certificate_at(certificate_chain, 0);
 
                 // construct the issuer certificate to server certificates lookup map
-                const auto found = issuer_certificate_vs_server_certifiactes.find(issuer_certificate);
-                if (issuer_certificate_vs_server_certifiactes.end() == found)
+                const auto found = issuer_certificate_vs_server_certificates.find(issuer_certificate);
+                if (issuer_certificate_vs_server_certificates.end() == found)
                 {
-                    issuer_certificate_vs_server_certifiactes[issuer_certificate] = { server_certificate };
+                    issuer_certificate_vs_server_certificates[issuer_certificate] = { server_certificate };
                 }
                 else
                 {
-                    issuer_certificate_vs_server_certifiactes[issuer_certificate].push_back(server_certificate);
+                    issuer_certificate_vs_server_certificates[issuer_certificate].push_back(server_certificate);
                 }
             }
 
-            return details::make_ocsp_request(issuer_certificate_vs_server_certifiactes);
+            return details::make_ocsp_request(issuer_certificate_vs_server_certificates);
         }
 
         // set up OCSP response for the OCSP stapling in the TLS handshake
