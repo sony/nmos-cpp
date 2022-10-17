@@ -129,6 +129,8 @@ namespace nmos
         const auto& grain_rate = nmos::fields::grain_rate(flow.has_field(nmos::fields::grain_rate) ? flow : source);
         params.exactframerate = nmos::rational(nmos::fields::numerator(grain_rate), nmos::fields::denominator(grain_rate));
 
+        params.bit_rate = nmos::fields::bit_rate(sender);
+
         return params;
     }
 
@@ -163,15 +165,13 @@ namespace nmos
         if (!params.tcs.empty()) fmtp.push_back({ sdp::fields::transfer_characteristic_system, params.tcs.name });
         if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
 
-        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, params.bit_rate, {}, {}, {}, media_stream_ids, ts_refclk };
     }
 
     // Get additional "video/jxsv" parameters from the SDP parameters
     video_jxsv_parameters get_video_jxsv_parameters(const sdp_parameters& sdp_params)
     {
         video_jxsv_parameters params;
-
-        if (sdp_params.fmtp.empty()) return params;
 
         const auto packetmode = details::find_fmtp(sdp_params.fmtp, sdp::video_jxsv::fields::packetmode);
         if (sdp_params.fmtp.end() == packetmode) throw details::sdp_processing_error("missing format parameter: packetmode");
@@ -223,6 +223,7 @@ namespace nmos
         const auto sampling = details::find_fmtp(sdp_params.fmtp, sdp::fields::sampling);
         if (sdp_params.fmtp.end() != sampling)  params.sampling = sdp::sampling{ sampling->second };
 
+        // optional
         const auto colorimetry = details::find_fmtp(sdp_params.fmtp, sdp::fields::colorimetry);
         if (sdp_params.fmtp.end() != colorimetry) params.colorimetry = sdp::colorimetry{ colorimetry->second };
 
@@ -230,8 +231,13 @@ namespace nmos
         const auto tcs = details::find_fmtp(sdp_params.fmtp, sdp::fields::transfer_characteristic_system);
         if (sdp_params.fmtp.end() != tcs) params.tcs = sdp::transfer_characteristic_system{ tcs->second };
 
+        // optional
         const auto tp = details::find_fmtp(sdp_params.fmtp, sdp::fields::type_parameter);
         if (sdp_params.fmtp.end() != tp) params.tp = sdp::type_parameter{ tp->second };
+
+        // optional
+        if (sdp::bandwidth_types::application_specific == sdp_params.bandwidth.bandwidth_type)
+            params.bit_rate = sdp_params.bandwidth.bandwidth;
 
         return params;
     }
@@ -247,14 +253,6 @@ namespace nmos
 
     namespace details
     {
-        // Check the specified SDP bandwidth parameter against the specified transport bit rate (kilobits/second) constraint
-        // See ST 2110-22:2022
-        bool match_transport_bit_rate_constraint(const nmos::sdp_parameters::bandwidth_t& bandwidth, const web::json::value& constraint)
-        {
-            return bandwidth.bandwidth_type == sdp::bandwidth_types::application_specific
-                && nmos::match_integer_constraint(bandwidth.bandwidth, constraint);
-        }
-
         const video_jxsv_parameters* get_jxsv(const format_parameters* format) { return get<video_jxsv_parameters>(format); }
 
         // NMOS Parameter Registers - Capabilities register
@@ -263,20 +261,20 @@ namespace nmos
         static const std::map<utility::string_t, std::function<bool(CAPS_ARGS)>> jxsv_constraints
         {
             { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(get_media_type(sdp).name, con); } },
-            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return !jxsv || nmos::rational{} == jxsv->exactframerate || nmos::match_rational_constraint(jxsv->exactframerate, con); } },
-            { nmos::caps::format::profile, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->profile.name, con); } },
-            { nmos::caps::format::level, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->level.name, con); } },
-            { nmos::caps::format::sublevel, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->sublevel.name, con); } },
-            { nmos::caps::format::frame_height, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_integer_constraint(jxsv->height, con); } },
-            { nmos::caps::format::frame_width, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_integer_constraint(jxsv->width, con); } },
-            { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->sampling.name, con); } },
+            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (nmos::rational{} == jxsv->exactframerate || nmos::match_rational_constraint(jxsv->exactframerate, con)); } },
+            { nmos::caps::format::profile, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->profile.empty() || nmos::match_string_constraint(jxsv->profile.name, con)); } },
+            { nmos::caps::format::level, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->level.empty() || nmos::match_string_constraint(jxsv->level.name, con)); } },
+            { nmos::caps::format::sublevel, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->sublevel.empty() || nmos::match_string_constraint(jxsv->sublevel.name, con)); } },
+            { nmos::caps::format::frame_height, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (0 == jxsv->height || nmos::match_integer_constraint(jxsv->height, con)); } },
+            { nmos::caps::format::frame_width, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (0 == jxsv->width || nmos::match_integer_constraint(jxsv->width, con)); } },
+            { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->sampling.empty() || nmos::match_string_constraint(jxsv->sampling.name, con)); } },
             { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::details::match_interlace_mode_constraint(jxsv->interlace, jxsv->segmented, con); } },
-            { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->colorimetry.name, con); } },
-            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(!jxsv->tcs.empty() ? jxsv->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
-            { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_integer_constraint(jxsv->depth, con); } },
+            { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->colorimetry.empty() || nmos::match_string_constraint(jxsv->colorimetry.name, con)); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (jxsv->tcs.empty() || nmos::match_string_constraint(jxsv->tcs.name, con)); } },
+            { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (0 == jxsv->depth || nmos::match_integer_constraint(jxsv->depth, con)); } },
             { nmos::caps::transport::packet_transmission_mode, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(nmos::parse_packet_transmission_mode(jxsv->packetmode, jxsv->transmode).name, con); } },
             { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return nmos::match_string_constraint(jxsv->tp.name, con); } },
-            { nmos::caps::transport::bit_rate, [](CAPS_ARGS) { return nmos::details::match_transport_bit_rate_constraint(sdp.bandwidth, con); } }
+            { nmos::caps::transport::bit_rate, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && (0 == jxsv->bit_rate || nmos::match_integer_constraint(jxsv->bit_rate, con)); } }
         };
 #undef CAPS_ARGS
     }

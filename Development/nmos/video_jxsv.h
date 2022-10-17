@@ -295,7 +295,10 @@ namespace nmos
         sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is compatible
         sdp::type_parameter tp; // nmos::st2110_21_sender_type is compatible
 
-        video_jxsv_parameters() : packetmode(sdp::video_jxsv::codestream), transmode(sdp::video_jxsv::sequential), depth(), width(), height(), interlace(), segmented() {}
+        // bandwidth
+        uint64_t bit_rate; // transport bit rate
+
+        video_jxsv_parameters() : packetmode(sdp::video_jxsv::codestream), transmode(sdp::video_jxsv::sequential), depth(), width(), height(), interlace(), segmented(), bit_rate() {}
 
         video_jxsv_parameters(
             sdp::video_jxsv::packetization_mode packetmode,
@@ -312,7 +315,8 @@ namespace nmos
             sdp::sampling sampling,
             sdp::colorimetry colorimetry,
             sdp::transfer_characteristic_system tcs,
-            sdp::type_parameter tp
+            sdp::type_parameter tp,
+            uint64_t bit_rate
         )
             : packetmode(packetmode)
             , transmode(transmode)
@@ -329,6 +333,7 @@ namespace nmos
             , colorimetry(std::move(colorimetry))
             , tcs(std::move(tcs))
             , tp(std::move(tp))
+            , bit_rate(bit_rate)
         {}
     };
 
@@ -350,13 +355,6 @@ namespace nmos
 
     // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
     uint64_t get_video_jxsv_bit_rate(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height, double bits_per_pixel);
-
-    namespace details
-    {
-        // Check the specified SDP bandwidth parameter against the specified transport bit rate (kilobits/second) constraint
-        // See ST 2110-22:2022
-        bool match_transport_bit_rate_constraint(const nmos::sdp_parameters::bandwidth_t& bandwidth, const web::json::value& constraint);
-    }
 }
 
 #endif
