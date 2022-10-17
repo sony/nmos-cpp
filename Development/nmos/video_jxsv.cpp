@@ -8,30 +8,49 @@
 
 namespace nmos
 {
+    std::pair<sdp::video_jxsv::packetization_mode, sdp::video_jxsv::transmission_mode> make_packet_transmission_mode(const nmos::packet_transmission_mode& mode)
+    {
+        if (nmos::packet_transmission_modes::codestream == mode)
+        {
+            return{ sdp::video_jxsv::codestream, sdp::video_jxsv::sequential };
+        }
+        else if (nmos::packet_transmission_modes::slice_sequential == mode)
+        {
+            return{ sdp::video_jxsv::slice, sdp::video_jxsv::sequential };
+        }
+        else if (nmos::packet_transmission_modes::slice_out_of_order == mode)
+        {
+            return{ sdp::video_jxsv::slice, sdp::video_jxsv::out_of_order };
+        }
+        throw std::invalid_argument("invalid packet_transmission_mode");
+    }
+
+    nmos::packet_transmission_mode parse_packet_transmission_mode(sdp::video_jxsv::packetization_mode packetmode, sdp::video_jxsv::transmission_mode transmode)
+    {
+        if (sdp::video_jxsv::codestream == packetmode && sdp::video_jxsv::sequential == transmode)
+        {
+            return nmos::packet_transmission_modes::codestream;
+        }
+        else if (sdp::video_jxsv::slice == packetmode && sdp::video_jxsv::sequential == transmode)
+        {
+            return nmos::packet_transmission_modes::slice_sequential;
+        }
+        else if (sdp::video_jxsv::slice == packetmode && sdp::video_jxsv::out_of_order == transmode)
+        {
+            return nmos::packet_transmission_modes::slice_out_of_order;
+        }
+        throw std::invalid_argument("invalid packetmode/transmode");
+    }
+
     // Construct additional "video/jxsv" parameters from the IS-04 resources
     video_jxsv_parameters make_video_jxsv_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender)
     {
         video_jxsv_parameters params;
 
-        const auto mode = nmos::packet_transmission_mode{ nmos::fields::packet_transmission_mode(sender) };
-        if (nmos::packet_transmission_modes::codestream == mode)
-        {
-            params.packetmode = sdp::video_jxsv::codestream;
-            params.transmode = sdp::video_jxsv::sequential;
-        }
-        else if (nmos::packet_transmission_modes::slice_sequential == mode)
-        {
-            params.packetmode = sdp::video_jxsv::slice;
-            params.transmode = sdp::video_jxsv::sequential;
-        }
-        else if (nmos::packet_transmission_modes::slice_out_of_order == mode)
-        {
-            params.packetmode = sdp::video_jxsv::slice;
-            params.transmode = sdp::video_jxsv::out_of_order;
-        }
+        std::tie(params.packetmode, params.transmode) = make_packet_transmission_mode(nmos::packet_transmission_mode{ nmos::fields::packet_transmission_mode(sender) });
 
         params.profile = sdp::video_jxsv::profile{ nmos::fields::profile(flow) };
-        params.level = sdp::video_jxsv::level{  nmos::fields::level(flow) };
+        params.level = sdp::video_jxsv::level{ nmos::fields::level(flow) };
         params.sublevel = sdp::video_jxsv::sublevel{ nmos::fields::sublevel(flow) };
 
         // cf. nmos::make_video_raw_parameters
@@ -187,6 +206,7 @@ namespace nmos
             { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(jxsv->colorimetry.name, con); } },
             { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(!jxsv->tcs.empty() ? jxsv->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
             { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_integer_constraint(jxsv->depth, con); } },
+            { nmos::caps::transport::packet_transmission_mode, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return jxsv && nmos::match_string_constraint(nmos::parse_packet_transmission_mode(jxsv->packetmode, jxsv->transmode).name, con); } },
             { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { auto jxsv = get_jxsv(&format); return nmos::match_string_constraint(jxsv->tp.name, con); } }
         };
 #undef CAPS_ARGS

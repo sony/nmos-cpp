@@ -157,6 +157,9 @@ namespace nmos
         {
             // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/#transport-bit-rate
             const web::json::field_as_value_or bit_rate{ U("urn:x-nmos:cap:transport:bit_rate"), {} }; // number
+
+            // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/#packet-transmission-mode
+            const web::json::field_as_value_or packet_transmission_mode{ U("urn:x-nmos:cap:transport:packet_transmission_mode"), {} }; // string
         }
     }
 
@@ -244,6 +247,9 @@ namespace nmos
         const packet_transmission_mode slice_sequential{ U("slice_sequential") };
         const packet_transmission_mode slice_out_of_order{ U("slice_out_of_order") };
     }
+
+    std::pair<sdp::video_jxsv::packetization_mode, sdp::video_jxsv::transmission_mode> make_packet_transmission_mode(const nmos::packet_transmission_mode& mode);
+    nmos::packet_transmission_mode parse_packet_transmission_mode(sdp::video_jxsv::packetization_mode packetmode, sdp::video_jxsv::transmission_mode transmode);
 
     // ST 2110-21 Sender Type
     // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/sender-attributes/#st-2110-21-sender-type
