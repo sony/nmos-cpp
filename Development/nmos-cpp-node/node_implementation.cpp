@@ -18,7 +18,6 @@
 #include "nmos/channelmapping_resources.h"
 #include "nmos/clock_name.h"
 #include "nmos/colorspace.h"
-#include "nmos/components.h" // for nmos::chroma_subsampling
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
@@ -367,6 +366,17 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                         model.settings
                     );
                 }
+                else if (nmos::media_types::video_jxsv == video_type)
+                {
+                    flow = nmos::make_video_jxsv_flow(
+                        flow_id, source_id, device_id,
+                        frame_rate,
+                        frame_width, frame_height, interlace_mode,
+                        colorspace, transfer_characteristic, sampling, bit_depth,
+                        profile, level, sublevel, bits_per_pixel,
+                        model.settings
+                    );
+                }
                 else
                 {
                     flow = nmos::make_coded_video_flow(
@@ -377,16 +387,6 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                         video_type,
                         model.settings
                     );
-                    if (nmos::media_types::video_jxsv == video_type)
-                    {
-                        // additional attributes required by BCP-006-01
-                        // see https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#flows
-                        flow.data[nmos::fields::components] = nmos::make_components(sampling, frame_width, frame_height, bit_depth);
-                        flow.data[nmos::fields::profile] = value(profile.name);
-                        flow.data[nmos::fields::level] = value(level.name);
-                        flow.data[nmos::fields::sublevel] = value(sublevel.name);
-                        flow.data[nmos::fields::bit_rate] = value(nmos::get_video_jxsv_bit_rate(frame_rate, frame_width, frame_height, bits_per_pixel));
-                    }
                 }
             }
             else if (impl::ports::audio == port)
@@ -416,6 +416,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
 
             const auto manifest_href = nmos::experimental::make_manifest_api_manifest(sender_id, model.settings);
             auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::rtp, device_id, manifest_href.to_string(), interface_names, model.settings);
+            // hm, could add nmos::make_video_jxsv_sender to encapsulate this?
             if (impl::ports::video == port && nmos::media_types::video_jxsv == video_type)
             {
                 // additional attributes required by BCP-006-01

@@ -5,6 +5,7 @@
 #include "nmos/format.h"
 #include "nmos/interlace_mode.h"
 #include "nmos/json_fields.h"
+#include "nmos/resource.h"
 
 namespace sdp
 {
@@ -288,5 +289,48 @@ namespace nmos
         if (nmos::media_types::video_jxsv != media_type) throw std::invalid_argument("unexpected media type/encoding name");
 
         nmos::details::validate_sdp_parameters(details::jxsv_constraints, sdp_params, nmos::formats::video, get_video_jxsv_parameters(sdp_params), receiver);
+    }
+
+    // See https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#flows
+    // cf. nmos::make_coded_video_flow
+    nmos::resource make_video_jxsv_flow(
+        const nmos::id& id,
+        const nmos::id& source_id,
+        const nmos::id& device_id,
+        const nmos::rational& grain_rate,
+        unsigned int frame_width,
+        unsigned int frame_height,
+        const nmos::interlace_mode& interlace_mode,
+        const nmos::colorspace& colorspace,
+        const nmos::transfer_characteristic& transfer_characteristic,
+        const sdp::sampling& color_sampling,
+        unsigned int bit_depth,
+        const nmos::profile& profile,
+        const nmos::level& level,
+        const nmos::sublevel& sublevel,
+        double bits_per_pixel,
+        const nmos::settings& settings)
+    {
+        using web::json::value;
+
+        auto resource = nmos::make_coded_video_flow(
+            id, source_id, device_id,
+            grain_rate,
+            frame_width, frame_height, interlace_mode,
+            colorspace, transfer_characteristic, color_sampling, bit_depth,
+            nmos::media_types::video_jxsv,
+            settings
+        );
+        auto& data = resource.data;
+
+        // additional attributes required by BCP-006-01
+        // see https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#flows
+        if (!profile.empty()) data[nmos::fields::profile] = value(profile.name);
+        if (!level.empty()) data[nmos::fields::level] = value(level.name);
+        if (!sublevel.empty()) data[nmos::fields::sublevel] = value(sublevel.name);
+        const auto bit_rate = nmos::get_video_jxsv_bit_rate(grain_rate, frame_width, frame_height, bits_per_pixel);
+        if (0 != bit_rate) data[nmos::fields::bit_rate] = value(bit_rate);
+
+        return resource;
     }
 }

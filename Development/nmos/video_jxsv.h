@@ -2,6 +2,7 @@
 #define NMOS_VIDEO_JXSV_H
 
 #include "nmos/media_type.h"
+#include "nmos/node_resources.h"
 #include "nmos/sdp_utils.h"
 
 namespace sdp
@@ -355,6 +356,26 @@ namespace nmos
 
     // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
     uint64_t get_video_jxsv_bit_rate(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height, double bits_per_pixel);
+
+    // See https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#flows
+    // cf. nmos::make_coded_video_flow
+    nmos::resource make_video_jxsv_flow(
+        const nmos::id& id,
+        const nmos::id& source_id,
+        const nmos::id& device_id,
+        const nmos::rational& grain_rate,
+        unsigned int frame_width,
+        unsigned int frame_height,
+        const nmos::interlace_mode& interlace_mode,
+        const nmos::colorspace& colorspace,
+        const nmos::transfer_characteristic& transfer_characteristic,
+        const sdp::sampling& color_sampling,
+        unsigned int bit_depth,
+        const nmos::profile& profile,
+        const nmos::level& level,
+        const nmos::sublevel& sublevel,
+        double bits_per_pixel,
+        const nmos::settings& settings);
 }
 
 #endif
