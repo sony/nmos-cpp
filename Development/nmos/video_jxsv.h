@@ -135,9 +135,6 @@ namespace nmos
 
         // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/sender-attributes/#packet-transmission-mode
         const web::json::field_as_string_or packet_transmission_mode{ U("packet_transmission_mode"), U("codestream") };
-
-        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/sender-attributes/#st-2110-21-sender-type
-        const web::json::field_as_string st2110_21_sender_type{ U("st2110_21_sender_type") };
     }
 
     namespace caps
@@ -285,21 +282,32 @@ namespace nmos
         sdp::video_jxsv::profile profile; // nmos::profile has compatible values
         sdp::video_jxsv::level level; // nmos::level has compatible values
         sdp::video_jxsv::sublevel sublevel; // nmos::sublevel has compatible values
+        sdp::sampling sampling;
         uint32_t depth;
         uint32_t width;
         uint32_t height;
         nmos::rational exactframerate;
         bool interlace;
         bool segmented;
-        sdp::sampling sampling;
-        sdp::colorimetry colorimetry; // nmos::colorspace is compatible
         sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is compatible
-        sdp::type_parameter tp; // nmos::st2110_21_sender_type is compatible
+        sdp::colorimetry colorimetry; // nmos::colorspace is compatible
+        sdp::range range; // if omitted (empty), assume sdp::ranges::NARROW
+        sdp::smpte_standard_number ssn;
+
+        // additional fmtp parameters from ST 2110-21:2022
+        sdp::type_parameter tp;
+        uint32_t troff; // if omitted (zero), assume default
+        uint32_t cmax; // if omitted (zero), assume max defined for tp
+
+        // additional fmtp parameters from ST 2110-10:2022
+        uint32_t maxudp; // if omitted (zero), assume the Standard UP Size Limit
+        sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
+        uint32_t tsdelay;
 
         // bandwidth
         uint64_t bit_rate; // transport bit rate
 
-        video_jxsv_parameters() : packetmode(sdp::video_jxsv::codestream), transmode(sdp::video_jxsv::sequential), depth(), width(), height(), interlace(), segmented(), bit_rate() {}
+        video_jxsv_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay() {}
 
         video_jxsv_parameters(
             sdp::video_jxsv::packetization_mode packetmode,
@@ -307,16 +315,23 @@ namespace nmos
             sdp::video_jxsv::profile profile,
             sdp::video_jxsv::level level,
             sdp::video_jxsv::sublevel sublevel,
+            sdp::sampling sampling,
             uint32_t depth,
             uint32_t width,
             uint32_t height,
             nmos::rational exactframerate,
             bool interlace,
             bool segmented,
-            sdp::sampling sampling,
-            sdp::colorimetry colorimetry,
             sdp::transfer_characteristic_system tcs,
+            sdp::colorimetry colorimetry,
+            sdp::range range,
+            sdp::smpte_standard_number ssn,
             sdp::type_parameter tp,
+            uint32_t troff,
+            uint32_t cmax,
+            uint32_t maxudp,
+            sdp::timestamp_mode tsmode,
+            uint32_t tsdelay,
             uint64_t bit_rate
         )
             : packetmode(packetmode)
@@ -324,16 +339,23 @@ namespace nmos
             , profile(std::move(profile))
             , level(std::move(level))
             , sublevel(std::move(sublevel))
+            , sampling(std::move(sampling))
             , depth(depth)
             , width(width)
             , height(height)
             , exactframerate(exactframerate)
             , interlace(interlace)
             , segmented(segmented)
-            , sampling(std::move(sampling))
-            , colorimetry(std::move(colorimetry))
             , tcs(std::move(tcs))
+            , colorimetry(std::move(colorimetry))
+            , range(std::move(range))
+            , ssn(std::move(ssn))
             , tp(std::move(tp))
+            , troff(troff)
+            , cmax(cmax)
+            , maxudp(maxudp)
+            , tsmode(std::move(tsmode))
+            , tsdelay(tsdelay)
             , bit_rate(bit_rate)
         {}
     };

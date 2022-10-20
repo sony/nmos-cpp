@@ -404,21 +404,39 @@ namespace sdp
 {
     namespace fields
     {
+        // See SMPTE ST 2110-10:2022 Section 8 Session Description Protocol (SDP)
+
+        // ST 2110-10:2022 Section 8.6 UDP Datagram Size
+        // "Senders operating with UDP Sizes which exceed the Standard UDP Size Limit shall include
+        // a Format Specific Parameter MAXUDP with a decimal value indicating the largest UDP Datagram
+        // Size (in octets) that might be present in the stream. If the MAXUDP parameter is not
+        // present, Receivers shall assume the Standard UDP Size Limit [of 1460 octets]."
+        const web::json::field<uint32_t> max_udp_packet_size{ U("MAXUDP") }; // used for ST 2110-20 and ST 2110-22
+        // ST 2110-10:2022 Section 8.7 RTP Timestamp Mode and Delay
+        // "Format Specific Parameter TSMODE is defined to indicate the relationship of the RTP
+        // timestamps to the content sampling instnace or production timeline. If the TSMODE parameter
+        // is not present, the receiver shall presume a value of TSMODE=NEW."
+        const web::json::field_as_string timestamp_mode{ U("TSMODE") }; // see sdp::timestamp_mode
+        // "Format Specific Parameter TSDELAY is defined to signal the Transmission Delay. The time
+        // value is represented as a decimal positve integer number of microseconds. If the TSDELAY
+        // parameter is not present, the receiver shall take a receiver-dependent action."
+        const web::json::field<uint32_t> timestamp_delay{ U("TSDELAY") };
+
         // See https://tools.ietf.org/html/rfc4175
-        // and SMPTE ST 2110-20:2017 Section 7 Session Description Protocol (SDP) Considerations
+        // and SMPTE ST 2110-20:2022 Section 7 Session Description Protocol (SDP) Considerations
         // and VSF TR-05:2018
 
-        // ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+        // ST 2110-20:2022 Section 7.2 Required Media Type Parameters
         const web::json::field_as_string sampling{ U("sampling") }; // see sdp::sampling
         const web::json::field<uint32_t> width{ U("width") };
         const web::json::field<uint32_t> height{ U("height") };
         const web::json::field<uint32_t> depth{ U("depth") };
-        const web::json::field_as_string exactframerate{ U("exactframerate") };
+        const web::json::field_as_string exactframerate{ U("exactframerate") }; // also used for ST 2110-22 and ST 2110-40
         const web::json::field_as_string colorimetry{ U("colorimetry") }; // see sdp::colorimetry
         const web::json::field_as_string packing_mode{ U("PM") }; // see sdp::packing_mode
         const web::json::field_as_string smpte_standard_number{ U("SSN") }; // see sdp::smpte_standard_number
 
-        // ST 2110-20:2017 Section 7.3 Media Type Parameters with default values
+        // ST 2110-20:2022 Section 7.3 Media Type Parameters with default values
         const web::json::field_as_bool_or interlace{ U("interlace"), false };
         const web::json::field_as_bool_or segmented{ U("segmented"), false };
         // RFC 4175 defines top-field-first, but it's not included in ST 2110-20
@@ -431,26 +449,29 @@ namespace sdp
         // Hmm, the JPEG XS payload mapping says that "when paired with the UNSPECIFIED colorimetry, FULL SHALL be the default assumed value"
         // See https://tools.ietf.org/html/rfc9134#section-7
         const web::json::field_as_string range{ U("RANGE") }; // see sdp::range
-        // "If [MAXUDP is] absent, it indicates that the Standard UDP Size Limit [i.e. 1460 octets] is in use."
-        const web::json::field<uint32_t> max_udp_packet_size{ U("MAXUDP") };
         // "When it is signaled, PAR shall be signaled as a ratio of two integer decimal numbers separated by a colon character (e.g. 12:11).
         // The first integer in the PAR is the width of a luminance sample, and the second integer is the height. The smallest integer values
         // possible for width and height shall be used. If PAR is not signaled, the receiver shall assume that PAR = 1:1."
         const web::json::field_as_string pixel_aspect_ratio{ U("PAR") };
 
-        // See SMPTE ST 2110-21:2017 Section 8 Session Description Considerations
+        // See SMPTE ST 2110-21:2022 Section 8 Session Description Considerations
 
-        // ST 2110-21:2017 Section 8.1 Required Parameters
-        const web::json::field_as_string type_parameter{ U("TP") }; // see sdp::type_parameter
+        // ST 2110-21:2022 Section 8.1 Required Parameters
+        const web::json::field_as_string type_parameter{ U("TP") }; // used for ST 2110-20 and ST 2110-22, see sdp::type_parameter
+
+        // ST 2110-21:2022 Section 8.2 Optional Parameters
+        const web::json::field<uint32_t> TROFF{ U("TROFF") }; // used for ST 2110-20, ST 2110-22 and ST 2110-40
+        const web::json::field<uint32_t> CMAX{ U("CMAX") }; // used for ST 2110-20 and ST 2110-22
 
         // See SMPTE ST 2110-30:2017
         // and https://tools.ietf.org/html/rfc3190
         const web::json::field_as_string channel_order{ U("channel-order") }; // "<convention>.<order>", e.g. "SMPTE2110.(ST)", see nmos/channels.h
 
-        // See SMPTE ST 2110-40:2018
+        // See SMPTE ST 2110-40:2022
         // and https://tools.ietf.org/html/rfc8331
         const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}", see nmos::did_sdid
         const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255, see nmos::vpid_code
+        const web::json::field_as_string TM{ U("TM") }; // see sdp::tranmission_model
     }
 }
 
@@ -522,6 +543,19 @@ namespace sdp
         const colorimetry ALPHA{ U("ALPHA") };
     }
 
+    // Timestamp Mode
+    // See SMPTE ST 2110-10:2022 Section 8.7 RTP Timestamp Mode and Delay
+    DEFINE_STRING_ENUM(timestamp_mode)
+    namespace timestamp_modes
+    {
+        // "Effective sampling instant"
+        const timestamp_mode SAMP{ U("SAMP") };
+        // "Created anew at the egress of this sender"
+        const timestamp_mode NEW{ U("NEW") };
+        // "Preserved from an input signal [that] did not indicate a value of TSMODE=SAMP"
+        const timestamp_mode PRES{ U("PRES") };
+    }
+
     // Packing Mode
     // See SMPTE ST 2110-20:2017 Section 6.3.1 Packing Modes, etc.
     DEFINE_STRING_ENUM(packing_mode)
@@ -535,6 +569,8 @@ namespace sdp
 
     // SMPTE Standard Number
     // See SMPTE ST 2110-20:2022 Section 7.2 Required Media Type Parameters
+    // and SMPTE ST 2110-22:2022 Section 7.2 Format-specific Parameters
+    // and SMPTE ST 2110-40:2022 Section 7 Session Description Protocol (SDP)
     DEFINE_STRING_ENUM(smpte_standard_number)
     namespace smpte_standard_numbers
     {
@@ -542,6 +578,18 @@ namespace sdp
         // "Senders implementing this standard shall signal the value ST2110-20:2017 unless the colorimetry value ALPHA
         // or the TCS value ST2115LOGS3 are used, in which case the value ST2110-20:2022 shall be signaled."
         const smpte_standard_number ST2110_20_2022{ U("ST2110-20:2022") };
+
+        const smpte_standard_number ST2110_22_2019{ U("ST2110-22:2019") };
+        // "If present, the value shall be either ST2110-22:2019 or ST2110-22:2022, depending on the version of the
+        // standard implemented."
+        // Note that SSN was not actually specified in ST 2110-22:2019...
+        const smpte_standard_number ST2110_22_2022{ U("ST2110-22:2022") };
+
+        const smpte_standard_number ST2110_40_2018{ U("ST2110-40:2018") };
+        // "Senders implementing this standard shall signal the value ST2110-40:2018 unless they are signaling TM, in
+        // which case they shall signal the value ST2110-40:2022."
+        // Note that SSN was not actually specified in ST 2110-40:2018...
+        const smpte_standard_number ST2110_40_2022{ U("ST2110-40:2022") };
     }
 
     // TP (Media Type Parameter)
@@ -595,6 +643,17 @@ namespace sdp
         const range NARROW{ U("NARROW") };
         const range FULLPROTECT{ U("FULLPROTECT") };
         const range FULL{ U("FULL") };
+    }
+
+    // TM (Transmission Model)
+    // See SMPTE ST 2110-40:2022 Section 7 Session Description Protocol (SDP)
+    DEFINE_STRING_ENUM(transmission_model)
+    namespace transmission_models
+    {
+        // Low-Latency Transmission Model
+        const transmission_model low_latency{ U("LLTM") };
+        // Compatible Transmission Model (default)
+        const transmission_model compatible{ U("CTM") };
     }
 }
 

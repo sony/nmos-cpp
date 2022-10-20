@@ -571,7 +571,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         }
     }
 
-    // example event sources, senders, flows
+    // example event sources, flows and senders
     for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
     {
         for (const auto& port : impl::ports::ws)

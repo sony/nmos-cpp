@@ -229,6 +229,13 @@ namespace nmos
         const web::json::field_as_value_or syslogv2{ U("syslogv2"), {} };
         const web::json::field_as_string hostname{ U("hostname") }; // hostname, ipv4 or ipv6
         const web::json::field_as_integer port{ U("port") }; // 1..65535
+
+        // NMOS Parameter Registers
+
+        // Sender Attributes Register
+
+        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/sender-attributes/#st-2110-21-sender-type
+        const web::json::field_as_string st2110_21_sender_type{ U("st2110_21_sender_type") };
     }
 
     // Fields for experimental extensions
