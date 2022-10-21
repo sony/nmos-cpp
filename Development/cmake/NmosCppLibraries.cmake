@@ -782,6 +782,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/node_server.cpp
     nmos/node_system_behaviour.cpp
     nmos/ocsp_behaviour.cpp
+    nmos/ocsp_response_handler.cpp
     nmos/ocsp_utils.cpp
     nmos/process_utils.cpp
     nmos/query_api.cpp
@@ -868,6 +869,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/node_server.h
     nmos/node_system_behaviour.h
     nmos/ocsp_behaviour.h
+    nmos/ocsp_response_handler.h
     nmos/ocsp_state.h
     nmos/ocsp_utils.h
     nmos/paging_utils.h
