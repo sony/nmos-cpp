@@ -10,8 +10,8 @@ namespace ssl
     {
         namespace details
         {
-            // get the Relative Distinguished Name Sequence in the format specified in RFC2253
-            // see https://www.rfc-editor.org/rfc/rfc2253#section-2
+            // get the Relative Distinguished Name Sequence in the format specified in RFC 2253
+            // see https://tools.ietf.org/html/rfc2253#section-2
             std::string get_relative_distinguished_name_sequence(X509_NAME* x509_name)
             {
                 std::string result;
@@ -32,7 +32,7 @@ namespace ssl
             }
 
             // get the Relative Distinguished Names from the given X509 Distinguished Name
-            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.1
+            // see https://tools.ietf.org/html/rfc2253#section-2.1
             std::vector<std::string> get_relative_distinguished_names(X509_NAME* x509_name)
             {
                 const auto relative_distinguished_name_sequence = get_relative_distinguished_name_sequence(x509_name);
@@ -44,7 +44,7 @@ namespace ssl
             }
 
             // get the Attribute Type And Values from the given X509 Distinguished Name
-            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.2
+            // see https://tools.ietf.org/html/rfc2253#section-2.2
             std::vector<std::string> get_attribute_type_and_values(X509_NAME* x509_name)
             {
                 const auto relative_distinguished_names = get_relative_distinguished_names(x509_name);
@@ -64,15 +64,16 @@ namespace ssl
                 return attribute_type_and_values;
             }
 
-            // get the Attribute Value from the given X509 Distinguished Name with the Attribyte Type
-            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.3
+            // get the Attribute Value from the given X509 Distinguished Name with the Attribute Type
+            // see https://tools.ietf.org/html/rfc2253#section-2.3
             std::string get_attribute_value(X509_NAME* x509_name, const std::string& attribute_type)
             {
                 const auto attribute_type_and_values = get_attribute_type_and_values(x509_name);
 
                 auto found = std::find_if(attribute_type_and_values.begin(), attribute_type_and_values.end(), [&attribute_type](const std::string& attribute_type_and_value)
                 {
-                    return std::string::npos != attribute_type_and_value.find(attribute_type + "=");
+                    // C++20 starts_with
+                    return 0 == attribute_type_and_value.rfind(attribute_type + "=", 0);
                 });
 
                 return attribute_type_and_values.end() != found ? found->substr(attribute_type.length() + 1) : ""; // where +1 is the '=' character
