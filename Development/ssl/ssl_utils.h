@@ -35,7 +35,7 @@ namespace ssl
         struct certificate_info
         {
             std::string subject_common_name;
-            std::string issuer_name;
+            std::string issuer_common_name;
             time_t not_before;
             time_t not_after;
             std::vector<std::string> subject_alternative_names;

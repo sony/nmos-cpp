@@ -91,8 +91,8 @@ namespace ssl
                 return get_attribute_value(subject_name, "CN");
             }
 
-            // get issuer name from certificate
-            std::string get_issuer_name(X509* x509)
+            // get issuer common name from certificate
+            std::string get_issuer_common_name(X509* x509)
             {
                 auto issuer_name = X509_get_issuer_name(x509);
                 if (!issuer_name)
@@ -256,8 +256,8 @@ namespace ssl
                 throw ssl_exception("missing Subject Common Name");
             }
 
-            auto issuer_name = details::get_issuer_name(x509.get());
-            if (issuer_name.empty())
+            auto issuer_common_name = details::get_issuer_common_name(x509.get());
+            if (issuer_common_name.empty())
             {
                 throw ssl_exception("missing Issuer Common Name");
             }
@@ -286,7 +286,7 @@ namespace ssl
             auto not_before_time = details::ASN1_TIME_to_time_t(not_before);
             auto not_after_time = details::ASN1_TIME_to_time_t(not_after);
 
-            return{ subject_common_name, issuer_name, not_before_time, not_after_time, subject_alternative_names };
+            return{ subject_common_name, issuer_common_name, not_before_time, not_after_time, subject_alternative_names };
         }
 
         // split certificate chain to a list of certificates
