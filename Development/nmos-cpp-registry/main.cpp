@@ -3,6 +3,7 @@
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
 #include "nmos/ocsp_behaviour.h"
+#include "nmos/ocsp_response_handler.h"
 #include "nmos/ocsp_state.h"
 #include "nmos/process_utils.h"
 #include "nmos/registry_server.h"
@@ -11,13 +12,11 @@
 
 int main(int argc, char* argv[])
 {
-    // Construct our data models and OCSP state including mutexes to protect them
+    // Construct our data models including mutexes to protect them
 
     nmos::registry_model registry_model;
 
     nmos::experimental::log_model log_model;
-
-    nmos::experimental::ocsp_state ocsp_state;
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -96,7 +95,18 @@ int main(int argc, char* argv[])
 
         // Set up the callbacks between the registry server and the underlying implementation
 
-        auto registry_implementation = make_registry_implementation(registry_model, ocsp_state, gate);
+        auto registry_implementation = make_registry_implementation(registry_model, gate);
+
+// only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+// Note: the get_ocsp_response callback must be set up before executing the make_registry_server where make_http_listener_config is set up
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        nmos::experimental::ocsp_state ocsp_state;
+        if (nmos::experimental::fields::server_secure(registry_model.settings))
+        {
+            registry_implementation.on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
+        }
+#endif
 
         // Set up the registry server
 
@@ -112,7 +122,9 @@ int main(int argc, char* argv[])
             }
         }
 
-        // only implement communication with OCSP server if http_listener supports OCSP stapling
+        // Add the underlying implementation
+
+// only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         if (nmos::experimental::fields::server_secure(registry_model.settings))
