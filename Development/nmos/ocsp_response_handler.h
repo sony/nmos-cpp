@@ -1,6 +1,7 @@
 #ifndef NMOS_OCSP_RESPONSE_HANDLER_H
 #define NMOS_OCSP_RESPONSE_HANDLER_H
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
