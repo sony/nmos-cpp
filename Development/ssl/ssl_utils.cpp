@@ -10,63 +10,100 @@ namespace ssl
     {
         namespace details
         {
-            // get common name from subject
-            std::string common_name(X509* x509)
+            // get the Relative Distinguished Name Sequence in the format specified in RFC2253
+            // see https://www.rfc-editor.org/rfc/rfc2253#section-2
+            inline std::string get_relative_distinguished_name_sequence(X509_NAME* x509_name)
+            {
+                std::string result;
+
+                BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
+                if (!bio)
+                {
+                    throw ssl_exception("failed to get_relative_distinguished_name_sequence while creating BIO to load OCSP request: BIO_new failure: " + last_openssl_error());
+                }
+                X509_NAME_print_ex(bio.get(), x509_name, 0, XN_FLAG_RFC2253);
+                char buf[128];
+                int bytes_read;
+                while ((bytes_read = BIO_gets(bio.get(), &buf[0], sizeof(buf))) > 0)
+                {
+                    result.append(buf);
+                }
+                return result;
+            }
+
+            // get the Relative Distinguished Names from the given X509 Distinguished Name
+            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.1
+            inline std::vector<std::string> get_relative_distinguished_names(X509_NAME* x509_name)
+            {
+                const auto relative_distinguished_name_sequence = get_relative_distinguished_name_sequence(x509_name);
+
+                std::vector<std::string> relative_distinguished_names;
+                boost::split(relative_distinguished_names, relative_distinguished_name_sequence, boost::is_any_of(","));
+
+                return relative_distinguished_names;
+            }
+
+            // get the Attribute Type And Values from the given X509 Distinguished Name
+            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.2
+            std::vector<std::string> get_attribute_type_and_values(X509_NAME* x509_name)
+            {
+                const auto relative_distinguished_names = get_relative_distinguished_names(x509_name);
+
+                std::vector<std::string> attribute_type_and_values;
+                for (const auto& relative_distinguished_name : relative_distinguished_names)
+                {
+                    std::vector<std::string> attribute_type_and_values_;
+                    boost::split(attribute_type_and_values_, relative_distinguished_name, boost::is_any_of("+"));
+
+                    if (!attribute_type_and_values_.empty())
+                    {
+                        attribute_type_and_values.insert(attribute_type_and_values.end(), attribute_type_and_values_.begin(), attribute_type_and_values_.end());
+                    }
+                }
+
+                return attribute_type_and_values;
+            }
+
+            // get the Attribute Value from the given X509 Distinguished Name with the Attribyte Type
+            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.3
+            std::string get_attribute_value(X509_NAME* x509_name, const std::string& attribute_type)
+            {
+                const auto attribute_type_and_values = get_attribute_type_and_values(x509_name);
+
+                auto found = std::find_if(attribute_type_and_values.begin(), attribute_type_and_values.end(), [&attribute_type](const std::string& attribute_type_and_value)
+                {
+                    return std::string::npos != attribute_type_and_value.find(attribute_type + "=");
+                });
+
+                return attribute_type_and_values.end() != found ? found->substr(attribute_type.length() + 1) : ""; // where +1 is the '=' character
+            }
+
+            // get subject common name from certificate
+            std::string get_subject_common_name(X509* x509)
             {
                 auto subject_name = X509_get_subject_name(x509);
                 if (!subject_name)
                 {
                     throw ssl_exception("failed to get subject: X509_get_subject_name failure: " + last_openssl_error());
                 }
-                auto name = X509_NAME_oneline(subject_name, NULL, 0);
-                std::string subject(name);
-                OPENSSL_free(name);
 
-                // example subject format
-                // e.g. subject=/DC=Example/CN=api.example.com
-                const std::string common_name_prefix{ "CN=" };
-                std::vector<std::string> tokens;
-                boost::split(tokens, subject, boost::is_any_of("/"));
-                auto found_common_name_token = std::find_if(tokens.begin(), tokens.end(), [&common_name_prefix](const std::string& token)
-                    {
-                        return std::string::npos != token.find(common_name_prefix);
-                    });
-                if (tokens.end() != found_common_name_token)
-                {
-                    return found_common_name_token->substr(common_name_prefix.length());
-                }
-                return "";
+                return get_attribute_value(subject_name, "CN");
             }
 
-            // get issuer name from issuer
-            std::string issuer_name(X509* x509)
+            // get issuer name from certificate
+            std::string get_issuer_name(X509* x509)
             {
                 auto issuer_name = X509_get_issuer_name(x509);
                 if (!issuer_name)
                 {
                     throw ssl_exception("failed to get issuer: X509_get_issuer_name failure: " + last_openssl_error());
                 }
-                auto name = X509_NAME_oneline(issuer_name, NULL, 0);
-                std::string issuer(name);
-                OPENSSL_free(name);
 
-                // e.g. issuer=/C=GB/ST=England/O=Example Ltd/CN=ica.example.com
-                const std::string common_name_prefix{ "CN=" };
-                std::vector<std::string> tokens;
-                boost::split(tokens, issuer, boost::is_any_of("/"));
-                auto found_common_name_token = std::find_if(tokens.begin(), tokens.end(), [&common_name_prefix](const std::string& token)
-                    {
-                        return std::string::npos != token.find(common_name_prefix);
-                    });
-                if (tokens.end() != found_common_name_token)
-                {
-                    return found_common_name_token->substr(common_name_prefix.length());
-                }
-                return "";
+                return get_attribute_value(issuer_name, "CN");
             }
 
-            // get subject alternative names
-            std::vector<std::string> subject_alt_names(X509* x509)
+            // get subject alternative names from certificate
+            std::vector<std::string> get_subject_alt_names(X509* x509)
             {
                 std::vector<std::string> subject_alternative_names;
                 GENERAL_NAMES_ptr subject_alt_names((GENERAL_NAMES*)X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL), &GENERAL_NAMES_free);
@@ -194,6 +231,11 @@ namespace ssl
         certificate_info certificate_information(const std::string& certificate)
         {
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
+            if (!bio)
+            {
+                throw ssl_exception("failed to load certificate while creating BIO memory: BIO_new failure: " + last_openssl_error());
+            }
+
             if ((size_t)BIO_write(bio.get(), certificate.data(), (int)certificate.size()) != certificate.size())
             {
                 throw ssl_exception("failed to load certificate to bio: BIO_write failure: " + last_openssl_error());
@@ -205,15 +247,15 @@ namespace ssl
                 throw ssl_exception("failed to load certificate bio to X509: PEM_read_bio_X509_AUX failure: " + last_openssl_error());
             }
 
-            auto subject_alternative_names = details::subject_alt_names(x509.get());
+            auto subject_alternative_names = details::get_subject_alt_names(x509.get());
 
-            auto common_name = details::common_name(x509.get());
+            auto common_name = details::get_subject_common_name(x509.get());
             if (common_name.empty())
             {
                 throw ssl_exception("missing Common Name");
             }
 
-            auto issuer_name = details::issuer_name(x509.get());
+            auto issuer_name = details::get_issuer_name(x509.get());
             if (issuer_name.empty())
             {
                 throw ssl_exception("missing Issuer Common Name");

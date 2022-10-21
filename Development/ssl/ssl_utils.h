@@ -18,6 +18,7 @@ namespace ssl
 
         typedef std::unique_ptr<BIO, decltype(&BIO_free)> BIO_ptr;
         typedef std::unique_ptr<X509, decltype(&X509_free)> X509_ptr;
+        typedef std::unique_ptr<X509_NAME, decltype(&X509_NAME_free)> X509_NAME_ptr;
         typedef std::unique_ptr<GENERAL_NAMES, decltype(&GENERAL_NAMES_free)> GENERAL_NAMES_ptr;
         typedef std::unique_ptr<ASN1_TIME, decltype(&ASN1_STRING_free)> ASN1_TIME_ptr;
 
