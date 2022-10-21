@@ -10,7 +10,6 @@
 #include "nmos/mdns.h"
 #include "nmos/mdns_api.h"
 #include "nmos/node_api.h"
-#include "nmos/ocsp_behaviour.h"
 #include "nmos/query_api.h"
 #include "nmos/query_ws_api.h"
 #include "nmos/registration_api.h"
@@ -45,7 +44,6 @@ namespace nmos
             const auto server_secure = nmos::experimental::fields::server_secure(registry_model.settings);
 
             const auto hsts = nmos::experimental::get_hsts(registry_model.settings);
-            auto& ocsp_state = *registry_server.ocsp_state;
 
             // Configure the DNS-SD Browsing API
 
@@ -109,7 +107,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(registry_model.settings, ocsp_state, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, registry_implementation.get_ocsp_response, gate);
 
             for (auto& api_router : registry_server.api_routers)
             {
@@ -122,7 +120,7 @@ namespace nmos
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, ocsp_state, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, registry_implementation.get_ocsp_response, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : registry_server.ws_handlers)
@@ -143,17 +141,6 @@ namespace nmos
                 [&] { nmos::erase_expired_resources_thread(registry_model, gate); },
                 [&] { nmos::advertise_registry_thread(registry_model, gate); }
             });
-
-// only implement communication with OCSP server if http_listener supports OCSP stapling
-// cf. preprocessor conditions in nmos::make_http_listener_config
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-            if (server_secure)
-            {
-                auto load_ca_certificates = registry_implementation.load_ca_certificates;
-                auto load_server_certificates = registry_implementation.load_server_certificates;
-                registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
-            }
-#endif
 
             return registry_server;
         }

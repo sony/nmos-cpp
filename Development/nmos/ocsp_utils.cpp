@@ -36,6 +36,10 @@ namespace nmos
                 {
                     // load issuer certificate
                     BIO_ptr issuer_bio(BIO_new(BIO_s_mem()), &BIO_free);
+                    if (!issuer_bio)
+                    {
+                        throw ocsp_exception("failed to make_ocsp_request while creating BIO memory: BIO_new failure: " + ssl::experimental::last_openssl_error());
+                    }
                     const auto& issuer_certificate = issuer_certificate_vs_server_certificates_item.first;
                     if ((size_t)BIO_write(issuer_bio.get(), issuer_certificate.data(), (int)issuer_certificate.size()) != issuer_certificate.size())
                     {
@@ -53,6 +57,10 @@ namespace nmos
                     {
                         // load server certificate
                         BIO_ptr server_bio(BIO_new(BIO_s_mem()), &BIO_free);
+                        if (!server_bio)
+                        {
+                            throw ocsp_exception("failed to make_ocsp_request while creating BIO memory: BIO_new failure: " + ssl::experimental::last_openssl_error());
+                        }
                         if ((size_t)BIO_write(server_bio.get(), server_certificate.data(), (int)server_certificate.size()) != server_certificate.size())
                         {
                             throw ocsp_exception("failed to make_ocsp_request while loading server certificate: BIO_write failure: " + ssl::experimental::last_openssl_error());
@@ -104,9 +112,8 @@ namespace nmos
             // this callback is called when client includes a certificate status request extension in the TLS handshake
             int server_certificate_status_request(SSL* ssl, void* arg)
             {
-                auto& ocsp_state = *(nmos::experimental::ocsp_state*)arg;
-
-                return nmos::experimental::set_ocsp_response(ssl, nmos::with_read_lock(ocsp_state.mutex, [&] { return ocsp_state.ocsp_response; })) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
+                auto ocsp_response = *(std::vector<uint8_t>*)arg;
+                return nmos::experimental::set_ocsp_response(ssl, ocsp_response) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
             }
 #endif
 
@@ -132,6 +139,10 @@ namespace nmos
             using ssl::experimental::X509_ptr;
 
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
+            if (!bio)
+            {
+                throw ocsp_exception("failed to get_ocsp_uris while creating BIO memory: BIO_new failure: " + ssl::experimental::last_openssl_error());
+            }
             if ((size_t)BIO_write(bio.get(), certificate.data(), (int)certificate.size()) != certificate.size())
             {
                 throw ocsp_exception("failed to get_ocsp_uris while loading server certificate to BIO: BIO_new failure: " + ssl::experimental::last_openssl_error());
@@ -207,10 +218,10 @@ namespace nmos
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         // set up server certificate status callback when client includes a certificate status request extension in the TLS handshake
-        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const nmos::experimental::ocsp_state& settings)
+        void set_server_certificate_status_handler(boost::asio::ssl::context& ctx, const std::vector<uint8_t>& ocsp_response)
         {
             SSL_CTX_set_tlsext_status_cb(ctx.native_handle(), details::server_certificate_status_request);
-            SSL_CTX_set_tlsext_status_arg(ctx.native_handle(), (void*)&settings);
+            SSL_CTX_set_tlsext_status_arg(ctx.native_handle(), (void*)(&ocsp_response));
         }
 #endif
     }

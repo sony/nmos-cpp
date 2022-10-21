@@ -4,7 +4,6 @@
 #include <thread>
 #include "cpprest/api_router.h"
 #include "cpprest/http_listener.h"
-#include "nmos/ocsp_state.h"
 #include "nmos/websockets.h"
 
 namespace nmos
@@ -21,9 +20,6 @@ namespace nmos
         server(nmos::base_model& model);
 
         nmos::base_model& model;
-
-        // OCSP state
-        std::unique_ptr<nmos::experimental::ocsp_state> ocsp_state;
 
         // HTTP APIs
         std::map<host_port, web::http::experimental::listener::api_router> api_routers;

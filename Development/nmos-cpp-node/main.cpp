@@ -3,17 +3,21 @@
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
 #include "nmos/node_server.h"
+#include "nmos/ocsp_behaviour.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/process_utils.h"
 #include "nmos/server.h"
 #include "node_implementation.h"
 
 int main(int argc, char* argv[])
 {
-    // Construct our data models including mutexes to protect them
+    // Construct our data models and OCSP state including mutexes to protect them
 
     nmos::node_model node_model;
 
     nmos::experimental::log_model log_model;
+
+    nmos::experimental::ocsp_state ocsp_state;
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -91,7 +95,7 @@ int main(int argc, char* argv[])
 
         // Set up the callbacks between the node server and the underlying implementation
 
-        auto node_implementation = make_node_implementation(node_model, gate);
+        auto node_implementation = make_node_implementation(node_model, ocsp_state, gate);
 
         // Set up the node server
 
@@ -110,6 +114,17 @@ int main(int argc, char* argv[])
         // Add the underlying implementation, which will set up the node resources, etc.
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
+
+// only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        if (nmos::experimental::fields::server_secure(node_model.settings))
+        {
+            auto load_ca_certificates = node_implementation.load_ca_certificates;
+            auto load_server_certificates = node_implementation.load_server_certificates;
+            node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
+        }
+#endif
 
         // Open the API ports and start up node operation (including the DNS-SD advertisements)
 

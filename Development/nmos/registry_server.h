@@ -2,6 +2,7 @@
 #define NMOS_REGISTRY_SERVER_H
 
 #include "nmos/certificate_handlers.h"
+#include "nmos/ocsp_response_handler.h"
 
 namespace slog
 {
@@ -22,10 +23,11 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Registry
         struct registry_implementation
         {
-            registry_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates)
+            registry_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::ocsp_response_handler get_ocsp_response)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
+                , get_ocsp_response(std::move(get_ocsp_response))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -36,6 +38,7 @@ namespace nmos
             registry_implementation& on_load_server_certificates(nmos::load_server_certificates_handler load_server_certificates) { this->load_server_certificates = std::move(load_server_certificates); return *this; }
             registry_implementation& on_load_dh_param(nmos::load_dh_param_handler load_dh_param) { this->load_dh_param = std::move(load_dh_param); return *this; }
             registry_implementation& on_load_ca_certificates(nmos::load_ca_certificates_handler load_ca_certificates) { this->load_ca_certificates = std::move(load_ca_certificates); return *this; }
+            registry_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
 
             // determine if the required callbacks have been specified
             bool valid() const
@@ -46,6 +49,8 @@ namespace nmos
             nmos::load_server_certificates_handler load_server_certificates;
             nmos::load_dh_param_handler load_dh_param;
             nmos::load_ca_certificates_handler load_ca_certificates;
+
+            nmos::ocsp_response_handler get_ocsp_response;
         };
 
         // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-09 System API, the IS-10 Authorization API

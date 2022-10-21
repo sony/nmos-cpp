@@ -4,6 +4,7 @@
 #include "cpprest/http_listener.h" // forward declaration of web::http::experimental::listener::http_listener_config
 #include "cpprest/ws_listener.h" // forward declaration of web::websockets::experimental::listener::websocket_listener_config
 #include "nmos/certificate_handlers.h"
+#include "nmos/ocsp_response_handler.h"
 #include "nmos/settings.h"
 
 namespace slog { class base_gate; }
@@ -11,16 +12,11 @@ namespace slog { class base_gate; }
 // Utility types, constants and functions for implementing NMOS REST API servers
 namespace nmos
 {
-    namespace experimental
-    {
-        struct ocsp_state;
-    }
+    // construct listener config based on settings
+    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, ocsp_response_handler get_ocsp_response, slog::base_gate& gate);
 
     // construct listener config based on settings
-    web::http::experimental::listener::http_listener_config make_http_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate);
-
-    // construct listener config based on settings
-    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, const nmos::experimental::ocsp_state& ocsp_state, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, slog::base_gate& gate);
+    web::websockets::experimental::listener::websocket_listener_config make_websocket_listener_config(const nmos::settings& settings, load_server_certificates_handler load_server_certificates, load_dh_param_handler load_dh_param, ocsp_response_handler get_ocsp_response, slog::base_gate& gate);
 
     namespace experimental
     {

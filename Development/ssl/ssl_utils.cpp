@@ -22,11 +22,11 @@ namespace ssl
                     throw ssl_exception("failed to get_relative_distinguished_name_sequence while creating BIO to load OCSP request: BIO_new failure: " + last_openssl_error());
                 }
                 X509_NAME_print_ex(bio.get(), x509_name, 0, XN_FLAG_RFC2253);
-                char buf[128];
+                char buffer[128];
                 int bytes_read;
-                while ((bytes_read = BIO_gets(bio.get(), &buf[0], sizeof(buf))) > 0)
+                while ((bytes_read = BIO_gets(bio.get(), &buffer[0], sizeof(buffer))) > 0)
                 {
-                    result.append(buf);
+                    result.append(buffer);
                 }
                 return result;
             }
@@ -249,10 +249,10 @@ namespace ssl
 
             auto subject_alternative_names = details::get_subject_alt_names(x509.get());
 
-            auto common_name = details::get_subject_common_name(x509.get());
-            if (common_name.empty())
+            auto subject_common_name = details::get_subject_common_name(x509.get());
+            if (subject_common_name.empty())
             {
-                throw ssl_exception("missing Common Name");
+                throw ssl_exception("missing Subject Common Name");
             }
 
             auto issuer_name = details::get_issuer_name(x509.get());
@@ -285,7 +285,7 @@ namespace ssl
             auto not_before_time = details::ASN1_TIME_to_time_t(not_before);
             auto not_after_time = details::ASN1_TIME_to_time_t(not_after);
 
-            return{ common_name, issuer_name, not_before_time, not_after_time, subject_alternative_names };
+            return{ subject_common_name, issuer_name, not_before_time, not_after_time, subject_alternative_names };
         }
 
         // split certificate chain to a list of certificates

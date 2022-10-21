@@ -2,6 +2,8 @@
 #include <iostream>
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
+#include "nmos/ocsp_behaviour.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/process_utils.h"
 #include "nmos/registry_server.h"
 #include "nmos/server.h"
@@ -9,11 +11,13 @@
 
 int main(int argc, char* argv[])
 {
-    // Construct our data models including mutexes to protect them
+    // Construct our data models and OCSP state including mutexes to protect them
 
     nmos::registry_model registry_model;
 
     nmos::experimental::log_model log_model;
+
+    nmos::experimental::ocsp_state ocsp_state;
 
     // Streams for logging, initially configured to write errors to stderr and to discard the access log
     std::filebuf error_log_buf;
@@ -92,7 +96,7 @@ int main(int argc, char* argv[])
 
         // Set up the callbacks between the registry server and the underlying implementation
 
-        auto registry_implementation = make_registry_implementation(registry_model, gate);
+        auto registry_implementation = make_registry_implementation(registry_model, ocsp_state, gate);
 
         // Set up the registry server
 
@@ -107,6 +111,17 @@ int main(int argc, char* argv[])
                 http_listener.support(web::http::methods::TRCE, [](web::http::http_request req) { req.reply(web::http::status_codes::MethodNotAllowed); });
             }
         }
+
+        // only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        if (nmos::experimental::fields::server_secure(registry_model.settings))
+        {
+            auto load_ca_certificates = registry_implementation.load_ca_certificates;
+            auto load_server_certificates = registry_implementation.load_server_certificates;
+            registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
+        }
+#endif
 
         // Open the API ports and start up registry management
 

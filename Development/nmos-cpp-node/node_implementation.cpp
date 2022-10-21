@@ -34,6 +34,7 @@
 #include "nmos/node_resource.h"
 #include "nmos/node_resources.h"
 #include "nmos/node_server.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/random.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -1235,4 +1236,12 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
+}
+
+// This constructs all the callbacks including OCSP stapling used to integrate the example device-specific underlying implementation
+// into the server instance for the NMOS Node.
+nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, nmos::experimental::ocsp_state& ocsp_state, slog::base_gate& gate)
+{
+    return make_node_implementation(model, gate)
+        .on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
 }
