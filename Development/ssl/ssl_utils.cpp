@@ -12,7 +12,7 @@ namespace ssl
         {
             // get the Relative Distinguished Name Sequence in the format specified in RFC2253
             // see https://www.rfc-editor.org/rfc/rfc2253#section-2
-            inline std::string get_relative_distinguished_name_sequence(X509_NAME* x509_name)
+            std::string get_relative_distinguished_name_sequence(X509_NAME* x509_name)
             {
                 std::string result;
 
@@ -33,7 +33,7 @@ namespace ssl
 
             // get the Relative Distinguished Names from the given X509 Distinguished Name
             // see https://www.rfc-editor.org/rfc/rfc2253#section-2.1
-            inline std::vector<std::string> get_relative_distinguished_names(X509_NAME* x509_name)
+            std::vector<std::string> get_relative_distinguished_names(X509_NAME* x509_name)
             {
                 const auto relative_distinguished_name_sequence = get_relative_distinguished_name_sequence(x509_name);
 

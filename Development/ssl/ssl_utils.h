@@ -11,6 +11,13 @@ namespace ssl
 {
     namespace experimental
     {
+        namespace details
+        {
+            // get the Attribute Value from the given X509 Distinguished Name with the Attribyte Type
+            // see https://www.rfc-editor.org/rfc/rfc2253#section-2.3
+            std::string get_attribute_value(X509_NAME* x509_name, const std::string& attribute_type);
+        }
+
         struct ssl_exception : std::runtime_error
         {
             ssl_exception(const std::string& message) : std::runtime_error(message) {}
