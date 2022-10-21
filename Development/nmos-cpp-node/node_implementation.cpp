@@ -36,6 +36,7 @@
 #include "nmos/random.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/st2110_21_sender_type.h"
 #include "nmos/system_resources.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"

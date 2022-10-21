@@ -886,6 +886,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/settings_api.h
     nmos/slog.h
     nmos/ssl_context_options.h
+    nmos/st2110_21_sender_type.h
     nmos/string_enum.h
     nmos/string_enum_fwd.h
     nmos/system_api.h

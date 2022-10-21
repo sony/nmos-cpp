@@ -258,19 +258,6 @@ namespace nmos
     std::pair<sdp::video_jxsv::packetization_mode, sdp::video_jxsv::transmission_mode> make_packet_transmission_mode(const nmos::packet_transmission_mode& mode);
     nmos::packet_transmission_mode parse_packet_transmission_mode(sdp::video_jxsv::packetization_mode packetmode, sdp::video_jxsv::transmission_mode transmode);
 
-    // ST 2110-21 Sender Type
-    // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/sender-attributes/#st-2110-21-sender-type
-    DEFINE_STRING_ENUM(st2110_21_sender_type)
-    namespace st2110_21_sender_types
-    {
-        // Narrow Senders (Type N)
-        const st2110_21_sender_type type_N{ U("2110TPN") };
-        // Narrow Linear Senders (Type NL)
-        const st2110_21_sender_type type_NL{ U("2110TPNL") };
-        // Wide Senders (Type W)
-        const st2110_21_sender_type type_W{ U("2110TPW") };
-    }
-
     // Additional "video/jxsv" parameters
     // See https://www.iana.org/assignments/media-types/video/jxsv
     // and https://tools.ietf.org/html/rfc9134
