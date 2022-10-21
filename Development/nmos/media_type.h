@@ -20,10 +20,6 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc4175#section-6
         const media_type video_raw{ U("video/raw") };
 
-        // JPEG XS
-        // See https://tools.ietf.org/html/draft-ietf-payload-rtp-jpegxs-09#section-6
-        const media_type video_jxsv{ U("video/jxsv") };
-
         // Audio media types
 
         inline media_type audio_L(unsigned int bit_depth)

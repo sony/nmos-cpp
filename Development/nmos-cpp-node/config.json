@@ -35,6 +35,9 @@
     // component_depth: controls the bits per component sample of video flows
     //"component_depth": 10,
 
+    // video_type: media type of video flows, e.g. "video/raw" or "video/jxsv", see nmos::media_types
+    //"video_type": "video/jxsv",
+
     // channel_count: controls the number of channels in audio sources
     //"channel_count": 8,
 

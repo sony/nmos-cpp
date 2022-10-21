@@ -799,6 +799,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/settings_api.cpp
     nmos/system_api.cpp
     nmos/system_resources.cpp
+    nmos/video_jxsv.cpp
     )
 set(NMOS_CPP_NMOS_HEADERS
     nmos/activation_mode.h
@@ -885,6 +886,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/settings_api.h
     nmos/slog.h
     nmos/ssl_context_options.h
+    nmos/st2110_21_sender_type.h
     nmos/string_enum.h
     nmos/string_enum_fwd.h
     nmos/system_api.h
@@ -895,6 +897,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/transport.h
     nmos/type.h
     nmos/version.h
+    nmos/video_jxsv.h
     nmos/vpid_code.h
     nmos/websockets.h
     )

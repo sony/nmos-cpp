@@ -292,34 +292,85 @@ namespace nmos
     // Format-specific types and functions
 
     // Additional "video/raw" parameters
-    // See SMPTE ST 2110-20:2017
+    // See SMPTE ST 2110-20:2022
+    // and SMPTE ST 2110-10:2022
+    // and SMPTE ST 2110-21:2022
     // and https://www.iana.org/assignments/media-types/video/raw
+    // and https://tools.ietf.org/html/rfc4175
     struct video_raw_parameters
     {
         // fmtp indicates format
+        sdp::sampling sampling;
+        uint32_t depth;
         uint32_t width;
         uint32_t height;
         nmos::rational exactframerate;
         bool interlace;
         bool segmented;
-        sdp::sampling sampling;
-        uint32_t depth;
-        sdp::transfer_characteristic_system tcs; // nmos::transfer_characteristic is a subset
-        sdp::colorimetry colorimetry; // nmos::colorspace is a subset
-        sdp::type_parameter tp;
+        sdp::transfer_characteristic_system tcs; // if omitted (empty), assume sdp::transfer_characteristic_systems::SDR; nmos::transfer_characteristic is compatible
+        sdp::colorimetry colorimetry; // nmos::colorspace is compatible
+        sdp::range range; // if omitted (empty), assume sdp::ranges::NARROW
+        nmos::rational par; // if omitted (zero), assume 1:1
+        sdp::packing_mode pm;
+        sdp::smpte_standard_number ssn;
 
-        video_raw_parameters() : width(), height(), interlace(), segmented(), depth() {}
-        video_raw_parameters(uint32_t width, uint32_t height, const nmos::rational& exactframerate, bool interlace, bool segmented, const sdp::sampling& sampling, uint32_t depth, const sdp::transfer_characteristic_system& tcs, const sdp::colorimetry& colorimetry, const sdp::type_parameter& tp)
-            : width(width)
+        // additional fmtp parameters from ST 2110-21:2022
+        sdp::type_parameter tp;
+        uint32_t troff; // if omitted (zero), assume default
+        uint32_t cmax; // if omitted (zero), assume max defined for tp
+
+        // additional fmtp parameters from ST 2110-10:2022
+        uint32_t maxudp; // if omitted (zero), assume the Standard UP Size Limit
+        sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
+        uint32_t tsdelay;
+
+        video_raw_parameters() : depth(), width(), height(), interlace(), segmented(), troff(), cmax(), maxudp(), tsdelay() {}
+
+        video_raw_parameters(
+            sdp::sampling sampling,
+            uint32_t depth,
+            uint32_t width,
+            uint32_t height,
+            nmos::rational exactframerate,
+            bool interlace,
+            bool segmented,
+            sdp::transfer_characteristic_system tcs,
+            sdp::colorimetry colorimetry,
+            sdp::range range,
+            nmos::rational par,
+            sdp::packing_mode pm,
+            sdp::smpte_standard_number ssn,
+            sdp::type_parameter tp,
+            uint32_t troff,
+            uint32_t cmax,
+            uint32_t maxudp,
+            sdp::timestamp_mode tsmode,
+            uint32_t tsdelay
+        )
+            : sampling(std::move(sampling))
+            , depth(depth)
+            , width(width)
             , height(height)
             , exactframerate(exactframerate)
             , interlace(interlace)
             , segmented(segmented)
-            , sampling(sampling)
-            , depth(depth)
-            , tcs(tcs)
-            , colorimetry(colorimetry)
-            , tp(tp)
+            , tcs(std::move(tcs))
+            , colorimetry(std::move(colorimetry))
+            , range(std::move(range))
+            , par(par)
+            , pm(std::move(pm))
+            , ssn(std::move(ssn))
+            , tp(std::move(tp))
+            , troff(troff)
+            , cmax(cmax)
+            , maxudp(maxudp)
+            , tsmode(tsmode)
+            , tsdelay(tsdelay)
+        {}
+
+        // deprecated
+        video_raw_parameters(uint32_t width, uint32_t height, const nmos::rational& exactframerate, bool interlace, bool segmented, const sdp::sampling& sampling, uint32_t depth, const sdp::transfer_characteristic_system& tcs, const sdp::colorimetry& colorimetry, const sdp::type_parameter& tp)
+            : video_raw_parameters(sampling, depth, width, height, exactframerate, interlace, segmented, tcs, colorimetry, {}, {}, sdp::packing_modes::general, sdp::smpte_standard_numbers::ST2110_20_2017, tp, {}, {}, {}, {}, {})
         {}
     };
 
@@ -340,21 +391,41 @@ namespace nmos
         // fmtp indicates channel-order (e.g. "SMPTE2110.(ST)")
         utility::string_t channel_order;
 
+        // additional fmtp parameters from ST 2110-10:2022
+        sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
+        uint32_t tsdelay;
+
         // ptime
         double packet_time;
 
-        audio_L_parameters() : channel_count(), bit_depth(), sample_rate(), packet_time() {}
-        audio_L_parameters(uint32_t channel_count, uint32_t bit_depth, uint64_t sample_rate, const utility::string_t& channel_order, double packet_time)
+        audio_L_parameters() : channel_count(), bit_depth(), sample_rate(), tsdelay(), packet_time() {}
+
+        audio_L_parameters(
+            uint32_t channel_count,
+            uint32_t bit_depth,
+            uint64_t sample_rate,
+            utility::string_t channel_order,
+            sdp::timestamp_mode tsmode,
+            uint32_t tsdelay,
+            double packet_time
+        )
             : channel_count(channel_count)
             , bit_depth(bit_depth)
             , sample_rate(sample_rate)
-            , channel_order(channel_order)
+            , channel_order(std::move(channel_order))
+            , tsmode(std::move(tsmode))
+            , tsdelay(tsdelay)
             , packet_time(packet_time)
+        {}
+
+        // deprecated
+        audio_L_parameters(uint32_t channel_count, uint32_t bit_depth, uint64_t sample_rate, const utility::string_t& channel_order, double packet_time)
+            : audio_L_parameters(channel_count, bit_depth, sample_rate, channel_order, {}, {}, packet_time)
         {}
     };
 
     // Additional "video/smpte291" data payload parameters
-    // See SMPTE ST 2110-40:2018
+    // See SMPTE ST 2110-40:2022
     // and https://www.iana.org/assignments/media-types/video/smpte291
     // and https://tools.ietf.org/html/rfc8331
     struct video_smpte291_parameters
@@ -363,10 +434,45 @@ namespace nmos
         std::vector<nmos::did_sdid> did_sdids;
         // fmtp optionally indicates VPID Code of the source interface
         nmos::vpid_code vpid_code;
+        // fmtp is required to indicate frame rate, since ST 2110-40:2022
+        nmos::rational exactframerate;
+        // fmtp optionally indicates TM, since ST 2110-40:2022
+        sdp::transmission_model tm; // if omitted (empty), assume sdp::transmission_models::CTM
+        // fmtp is required to indicate SSN, since ST 2110-40:2022
+        sdp::smpte_standard_number ssn;
 
-        video_smpte291_parameters(const std::vector<nmos::did_sdid>& did_sdids = {}, nmos::vpid_code vpid_code = {})
-            : did_sdids(did_sdids)
+        // additional fmtp parameters from ST 2110-21:2022
+        uint32_t troff; // if omitted (zero), assume default
+
+        // additional fmtp parameters from ST 2110-10:2022
+        sdp::timestamp_mode tsmode; // if omitted (empty), assume sdp::timestamp_modes::NEW
+        uint32_t tsdelay;
+
+        video_smpte291_parameters() : vpid_code(), troff(), tsdelay() {}
+
+        video_smpte291_parameters(
+            std::vector<nmos::did_sdid> did_sdids,
+            nmos::vpid_code vpid_code,
+            nmos::rational exactframerate,
+            sdp::transmission_model tm,
+            sdp::smpte_standard_number ssn,
+            uint32_t troff,
+            sdp::timestamp_mode tsmode,
+            uint32_t tsdelay
+        )
+            : did_sdids(std::move(did_sdids))
             , vpid_code(vpid_code)
+            , exactframerate(exactframerate)
+            , tm(std::move(tm))
+            , ssn(std::move(ssn))
+            , troff(troff)
+            , tsmode(std::move(tsmode))
+            , tsdelay(tsdelay)
+        {}
+
+        // deprecated
+        video_smpte291_parameters(const std::vector<nmos::did_sdid>& did_sdids, const nmos::vpid_code& vpid_code = {})
+            : video_smpte291_parameters(did_sdids, vpid_code, {}, {}, {}, {}, {}, {})
         {}
     };
 
@@ -374,11 +480,23 @@ namespace nmos
     // See SMPTE ST 2022-8:2019
     struct video_SMPTE2022_6_parameters
     {
+        // additional fmtp parameters from ST 2110-21:2017
         sdp::type_parameter tp;
+        uint32_t troff; // if omitted (zero), assume default
 
-        video_SMPTE2022_6_parameters() {}
+        video_SMPTE2022_6_parameters() : troff() {}
+
+        video_SMPTE2022_6_parameters(
+            sdp::type_parameter tp,
+            uint32_t troff
+        )
+            : tp(std::move(tp))
+            , troff(troff)
+        {}
+
+        // deprecated
         video_SMPTE2022_6_parameters(const sdp::type_parameter& tp)
-            : tp(tp)
+            : video_SMPTE2022_6_parameters(tp, {})
         {}
     };
 
@@ -397,7 +515,7 @@ namespace nmos
     audio_L_parameters get_audio_L_parameters(const sdp_parameters& sdp_params);
 
     // Construct additional "video/smpte291" parameters from the IS-04 resources, using default values for unspecified items
-    video_smpte291_parameters make_video_smpte291_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<nmos::vpid_code> vpid_code);
+    video_smpte291_parameters make_video_smpte291_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<nmos::vpid_code> vpid_code, bst::optional<sdp::transmission_model> tm = bst::nullopt);
     // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
     sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {});
     // Get additional "video/smpte291" parameters from the SDP parameters
@@ -496,6 +614,9 @@ namespace nmos
         // a map from parameter constraint URNs to parameter constraint functions
         typedef std::map<utility::string_t, sdp_parameter_constraint> sdp_parameter_constraints;
 
+        // Check the specified SDP interlace and segmented parameters against the specified interlace_mode constraint
+        bool match_interlace_mode_constraint(bool interlace, bool segmented, const web::json::value& constraint);
+
         // Check the specified SDP parameters and format-specific parameters against the specified constraint set
         // using the specified parameter constraint functions
         bool match_sdp_parameters_constraint_set(const sdp_parameter_constraints& constraints, const sdp_parameters& sdp_params, const format_parameters& format_params, const web::json::value& constraint_set);
@@ -512,6 +633,20 @@ namespace nmos
 
         // cf. nmos::make_components
         sdp::sampling make_sampling(const web::json::array& components);
+
+        // Exact Frame Rate
+        // "Integer frame rates shall be signaled as a single decimal number (e.g. "25") whilst non-integer frame rates shall be
+        // signaled as a ratio of two integer decimal numbers separated by a "forward-slash" character (e.g. "30000/1001"),
+        // utilizing the numerically smallest numerator value possible."
+        // See ST 2110-20:2017 Section 7.2 Required Media Type Parameters
+        utility::string_t make_exactframerate(const nmos::rational& exactframerate);
+        nmos::rational parse_exactframerate(const utility::string_t& exactframerate);
+
+        // Pixel Aspect Ratio
+        // "PAR shall be signaled as a ratio of two integer decimal numbers separated by a "colon" character (e.g. "12:11")."
+        // See ST 2110-20:2017 Section 7.3 Media Type Parameters with default values
+        utility::string_t make_pixel_aspect_ratio(const nmos::rational& par);
+        nmos::rational parse_pixel_aspect_ratio(const utility::string_t& par);
 
         // Payload identifiers 96-127 are used for payloads defined dynamically during a session
         // 96 and 97 are suitable for video and audio encodings not covered by the IANA registry
