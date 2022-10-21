@@ -41,7 +41,7 @@ namespace ssl
             std::vector<std::string> subject_alternative_names;
         };
         // get certificate information, such as expire date, it is represented as the number of seconds from 1970-01-01T0:0:0Z as measured in UTC
-        certificate_info certificate_information(const std::string& certificate);
+        certificate_info get_certificate_info(const std::string& certificate);
 
         // split certificate chain to a list of certificates
         std::vector<std::string> split_certificate_chain(const std::string& certificate_chain);
