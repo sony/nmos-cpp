@@ -116,20 +116,6 @@ namespace nmos
                 return nmos::experimental::set_ocsp_response(ssl, ocsp_response) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
             }
 #endif
-
-            // get the certificate at position index in the server certificate chain
-            std::string get_certificate_at(const std::string& certificate_chain, size_t index)
-            {
-                // split the server certificate chain to a list of individual certificates
-                const auto certificates = ssl::experimental::split_certificate_chain(certificate_chain);
-
-                // get the certificate at position index
-                if (index >= certificates.size())
-                {
-                    throw ocsp_exception("required certificate not found");
-                }
-                return certificates[index];
-            }
         }
 
         // get a list of OCSP URIs from server certificate
@@ -179,10 +165,16 @@ namespace nmos
             {
                 // a minimal server certificate chain starts with the server's certificate, followed by the server's issuer certificate.
 
+                // split the server certificate chain to a list of individual certificates
+                const auto certificates = ssl::experimental::split_certificate_chain(certificate_chain);
+                if (2 > certificates.size())
+                {
+                    throw ocsp_exception("failed to make_ocsp_request: not all the required certificates found in the server certificate chain");
+                }
                 // get the issuer certificate from the certificate chain, this should be the 2nd certificate in the chain
-                const auto issuer_certificate = details::get_certificate_at(certificate_chain, 1);
+                const auto issuer_certificate = certificates[1];
                 // get the server certificate from the certificate chain, this should be the 1st certificate in the chain
-                const auto server_certificate = details::get_certificate_at(certificate_chain, 0);
+                const auto server_certificate = certificates[0];
 
                 // construct the issuer certificate to server certificates lookup map
                 const auto found = issuer_certificate_vs_server_certificates.find(issuer_certificate);
