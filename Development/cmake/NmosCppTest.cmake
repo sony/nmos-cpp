@@ -119,6 +119,7 @@ source_group("mdns\\test\\Header Files" FILES ${NMOS_CPP_TEST_MDNS_TEST_HEADERS}
 source_group("nmos\\test\\Header Files" FILES ${NMOS_CPP_TEST_NMOS_TEST_HEADERS})
 source_group("pplx\\test\\Header Files" FILES ${NMOS_CPP_TEST_PPLX_TEST_HEADERS})
 source_group("rql\\test\\Header Files" FILES ${NMOS_CPP_TEST_RQL_TEST_HEADERS})
+source_group("sdp\\test\\Header Files" FILES ${NMOS_CPP_TEST_SDP_TEST_HEADERS})
 source_group("ssl\\test\\Header Files" FILES ${NMOS_CPP_TEST_SSL_TEST_HEADERS})
 
 target_link_libraries(
