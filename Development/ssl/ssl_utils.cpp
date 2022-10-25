@@ -228,7 +228,7 @@ namespace ssl
             return buffer;
         }
 
-        // get certificate information, such as expire date, it is represented as the number of seconds from 1970-01-01T0:0:0Z as measured in UTC
+        // get certificate information, such as subject, issuer and validity
         certificate_info get_certificate_info(const std::string& certificate)
         {
             BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
@@ -313,13 +313,13 @@ namespace ssl
             return certificates;
         }
 
-        // calculate the number of seconds until expiry with the given ratio
-        double certificate_expiry_from_now(const std::string& certificate, double ratio)
+        // calculate the specified proportion of the number of seconds until expiry of the specified certificate
+        double certificate_expiry_from_now(const std::string& certificate, double proportion)
         {
             const auto certificate_info = get_certificate_info(certificate);
             const auto now = time(NULL);
             const auto from_now = difftime(certificate_info.not_after, now);
-            return (from_now > 0.0 ? from_now * ratio : 0.0);
+            return (from_now > 0.0 ? from_now * proportion : 0.0);
         }
     }
 }

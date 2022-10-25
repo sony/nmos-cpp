@@ -36,18 +36,21 @@ namespace ssl
         {
             std::string subject_common_name;
             std::string issuer_common_name;
+            // not_before and not_after are the start and end of the certificate's validity
+            // represented as the number of seconds in UTC since 1970-01-01T0:0:0Z
             time_t not_before;
             time_t not_after;
             std::vector<std::string> subject_alternative_names;
         };
-        // get certificate information, such as expire date, it is represented as the number of seconds from 1970-01-01T0:0:0Z as measured in UTC
+
+        // get certificate information, such as subject, issuer and validity
         certificate_info get_certificate_info(const std::string& certificate);
 
         // split certificate chain to a list of certificates
         std::vector<std::string> split_certificate_chain(const std::string& certificate_chain);
 
-        // calculate the number of seconds to expire with the given ratio
-        double certificate_expiry_from_now(const std::string& certificate, double ratio = 1.0);
+        // calculate the specified proportion of the number of seconds until expiry of the specified certificate
+        double certificate_expiry_from_now(const std::string& certificate, double proportion = 1.0);
     }
 }
 
