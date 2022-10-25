@@ -254,21 +254,21 @@ namespace nmos
 
         double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
         {
-            double expiry_time = -1.0;
+            double expiry_time = (std::numeric_limits<double>::max)();
             try
             {
                 // get the shortest expiry time from all the certificates
                 for (const auto& certificate_chain : certificate_chains)
                 {
                     const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate_chain)) * 0.5;
-                    expiry_time = expiry_time < 0 ? expiry_time_ : std::min(expiry_time, expiry_time_);
+                    expiry_time = std::min(expiry_time, expiry_time_);
                 }
             }
             catch (const ssl::experimental::ssl_exception& e)
             {
                 throw nmos::experimental::ocsp_exception("SSL error while getting certificate expiry time: " + std::string(e.what()));
             }
-            return (expiry_time < 0.0 ? 0.0 : expiry_time);
+            return expiry_time;
         }
 
         // construct a list of OCSP URIs from a list of server certificate chains
