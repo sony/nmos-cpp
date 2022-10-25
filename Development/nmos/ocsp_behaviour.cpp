@@ -30,14 +30,14 @@ namespace nmos
             explicit ocsp_shared_state(load_ca_certificates_handler load_ca_certificates)
                 : load_ca_certificates(std::move(load_ca_certificates))
                 , ocsp_service_error(false)
-                , next_request(0.0)
+                , next_request((std::numeric_limits<double>::max)())
                 , engine(seeder)
             {}
         };
 
         void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
 
-        double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
+        double certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<web::uri> get_ocsp_uris(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
@@ -98,7 +98,7 @@ namespace nmos
                         mode = ocsp_behaviour;
 
                         // extract the shortest half certificate expiry time from all server certificates
-                        state.next_request = details::half_certificate_expiry_from_now(server_certificate_chains, gate);
+                        state.next_request = details::certificate_expiry_from_now(server_certificate_chains, gate) * 0.5;
 
                         // construct an OCSP request with the server certificates
                         state.ocsp_request = details::make_ocsp_request(server_certificate_chains, gate);
@@ -150,7 +150,7 @@ namespace nmos
 
         struct ocsp_service_exception {};
 
-        // make an asynchronously POST request on the OCSP server to get certificate status
+        // make an asynchronous POST request on the OCSP server to get certificate status
         // see https://specs.amwa.tv/bcp-003-03/releases/v1.0.0/docs/1.0._Certificate_Provisioning.html#certificate-request
         pplx::task<std::vector<uint8_t>> request_certificate_status(web::http::client::http_client client, std::vector<uint8_t>& ocsp_request, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
@@ -204,8 +204,8 @@ namespace nmos
                 if (state.base_uri == state.client->base_uri())
                 {
                     auto interval = std::uniform_int_distribution<>(
-                        state.next_request > 0.0 ? std::min((int)state.next_request, ocsp_interval_min) : ocsp_interval_min,
-                        state.next_request > 0.0 ? std::min((int)state.next_request, ocsp_interval_max) : ocsp_interval_max)(state.engine);
+                        (std::min)((int)state.next_request, ocsp_interval_min),
+                        (std::min)((int)state.next_request, ocsp_interval_max))(state.engine);
                     request_interval = std::chrono::seconds(interval);
 
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Waiting to request certificate status for about " << interval << " seconds";
@@ -252,16 +252,19 @@ namespace nmos
             });
         }
 
-        double half_certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
+        double certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate)
         {
             double expiry_time = (std::numeric_limits<double>::max)();
             try
             {
-                // get the shortest expiry time from all the certificates
+                // get the shortest expiry time of the server certificates in each certificate chain
                 for (const auto& certificate_chain : certificate_chains)
                 {
-                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate_chain)) * 0.5;
-                    expiry_time = std::min(expiry_time, expiry_time_);
+                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate_chain));
+                    if (expiry_time_ < expiry_time)
+                    {
+                        expiry_time = expiry_time_;
+                    }
                 }
             }
             catch (const ssl::experimental::ssl_exception& e)

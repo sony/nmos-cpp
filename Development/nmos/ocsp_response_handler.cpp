@@ -10,7 +10,7 @@ namespace nmos
     {
         return [&]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Retrieve OCSP response from cache";
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrieve OCSP response from cache";
 
             auto lock = ocsp_state.read_lock();
             return ocsp_state.ocsp_response;
