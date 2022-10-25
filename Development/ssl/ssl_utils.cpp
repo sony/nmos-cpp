@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp> // for boost::split
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include "bst/regex.h"
 
 namespace ssl
 {
@@ -38,7 +39,27 @@ namespace ssl
                 const auto relative_distinguished_name_sequence = get_relative_distinguished_name_sequence(x509_name);
 
                 std::vector<std::string> relative_distinguished_names;
-                boost::split(relative_distinguished_names, relative_distinguished_name_sequence, boost::is_any_of(","));
+                // split Relative Distinguished Names by ','
+                bst::regex rgx(R"(((?:[^\\,]|\\.)+))");
+                bst::sregex_token_iterator iter(relative_distinguished_name_sequence.begin(),
+                    relative_distinguished_name_sequence.end(), rgx, 1);
+                bst::sregex_token_iterator end;
+
+                auto remove_substrs = [](std::string& src, const std::string& sub_string)
+                {
+                    const auto sub_string_len = sub_string.length();
+                    for (auto found = src.find(sub_string); std::string::npos != found; found = src.find(sub_string))
+                    {
+                        src.erase(found, sub_string_len);
+                    }
+                    return src;
+                };
+
+                while (end != iter)
+                {
+                    std::string value = *iter++;
+                    relative_distinguished_names.push_back(remove_substrs(value, "\\"));
+                }
 
                 return relative_distinguished_names;
             }
@@ -53,6 +74,7 @@ namespace ssl
                 for (const auto& relative_distinguished_name : relative_distinguished_names)
                 {
                     std::vector<std::string> attribute_type_and_values_;
+                    // split Attribute Type And Values by '+'
                     boost::split(attribute_type_and_values_, relative_distinguished_name, boost::is_any_of("+"));
 
                     if (!attribute_type_and_values_.empty())
@@ -320,7 +342,7 @@ namespace ssl
             const auto certificate_info = get_certificate_info(certificate);
             const auto now = time(NULL);
             const auto from_now = difftime(certificate_info.not_after, now);
-            return (from_now > 0.0 ? from_now : 0.0);
+            return (std::max)(0.0, from_now);
         }
     }
 }
