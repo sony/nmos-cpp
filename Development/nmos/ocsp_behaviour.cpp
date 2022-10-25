@@ -260,7 +260,7 @@ namespace nmos
                 // get the shortest expiry time from all the certificates
                 for (const auto& certificate_chain : certificate_chains)
                 {
-                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate_chain), 0.5);
+                    const auto expiry_time_ = ssl::experimental::certificate_expiry_from_now(utility::us2s(certificate_chain)) * 0.5;
                     expiry_time = expiry_time < 0 ? expiry_time_ : std::min(expiry_time, expiry_time_);
                 }
             }

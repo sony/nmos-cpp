@@ -313,13 +313,14 @@ namespace ssl
             return certificates;
         }
 
-        // calculate the specified proportion of the number of seconds until expiry of the specified certificate
-        double certificate_expiry_from_now(const std::string& certificate, double proportion)
+        // calculate the number of seconds until expiry of the specified certificate
+        // 0 is returned if certificate has already expired
+        double certificate_expiry_from_now(const std::string& certificate)
         {
             const auto certificate_info = get_certificate_info(certificate);
             const auto now = time(NULL);
             const auto from_now = difftime(certificate_info.not_after, now);
-            return (from_now > 0.0 ? from_now * proportion : 0.0);
+            return (from_now > 0.0 ? from_now : 0.0);
         }
     }
 }
