@@ -71,7 +71,7 @@ set(NMOS_CPP_TEST_SDP_TEST_HEADERS
     )
 
 set(NMOS_CPP_TEST_SSL_TEST_SOURCES
-    ssl/test/ssl_test.cpp
+    ssl/test/ssl_utils_test.cpp
     )
 set(NMOS_CPP_TEST_SSL_TEST_HEADERS
     )
