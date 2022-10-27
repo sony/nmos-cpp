@@ -45,20 +45,65 @@ namespace ssl
                     relative_distinguished_name_sequence.end(), rgx, 1);
                 bst::sregex_token_iterator end;
 
-                auto remove_substrs = [](std::string& src, const std::string& sub_string)
-                {
-                    const auto sub_string_len = sub_string.length();
-                    for (auto found = src.find(sub_string); std::string::npos != found; found = src.find(sub_string))
-                    {
-                        src.erase(found, sub_string_len);
-                    }
-                    return src;
-                };
-
                 while (end != iter)
                 {
-                    std::string value = *iter++;
-                    relative_distinguished_names.push_back(remove_substrs(value, "\\"));
+                    // decode openssl compatible RFC 2253 distinguished name to a printable string
+                    auto make_distinguished_name = [](const std::string& dn)
+                    {
+                        enum
+                        {
+                            init_parse,
+                            parse_esc_sequence,
+                            parse_hex
+                        } state = init_parse;
+
+                        std::string result;
+                        std::string hex;
+                        for (const auto c : dn)
+                        {
+                            switch (state)
+                            {
+                            case init_parse:
+                                if (c == '\\')
+                                {
+                                    state = parse_esc_sequence;
+                                }
+                                else
+                                {
+                                    result += c;
+                                }
+                                break;
+                            case parse_esc_sequence:
+                                if (isxdigit(c))
+                                {
+                                    hex += c;
+                                    state = parse_hex;
+                                }
+                                else
+                                {
+                                    result += c;
+                                    state = init_parse;
+                                }
+                                break;
+                            case parse_hex:
+                                if (isxdigit(c))
+                                {
+                                    hex += c;
+                                    result += (char)strtol(hex.c_str(), NULL, 16);
+                                    hex.clear();
+                                    state = init_parse;
+                                }
+                                else
+                                {
+                                    throw ssl_exception("failed to make_distinguished_name: invalid character found in distinguished_name_sequence");
+                                }
+                                break;
+                            }
+                        }
+                        return result;
+                    };
+
+                    relative_distinguished_names.push_back(make_distinguished_name(*iter++));
                 }
 
                 return relative_distinguished_names;
@@ -110,7 +155,7 @@ namespace ssl
                     throw ssl_exception("failed to get subject: X509_get_subject_name failure: " + last_openssl_error());
                 }
 
-                return get_attribute_value(subject_name, "CN");
+                return get_attribute_value(subject_name, SN_commonName);
             }
 
             // get issuer common name from certificate
@@ -122,7 +167,7 @@ namespace ssl
                     throw ssl_exception("failed to get issuer: X509_get_issuer_name failure: " + last_openssl_error());
                 }
 
-                return get_attribute_value(issuer_name, "CN");
+                return get_attribute_value(issuer_name, SN_commonName);
             }
 
             // get subject alternative names from certificate
