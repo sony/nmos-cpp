@@ -189,7 +189,7 @@ namespace web
                 inline bool is_tchar(utility::char_t c)
                 {
                     static const utility::string_t tchar_punct{ U("!#$%&'*+-.^_`|~") };
-                    return std::isalnum(c) || std::string::npos != tchar_punct.find(c);
+                    return std::isalnum(c) || utility::string_t::npos != tchar_punct.find(c);
                 }
 
                 // "A sender SHOULD NOT generate a quoted-pair in a quoted-string except where necessary to quote DQUOTE and backslash"

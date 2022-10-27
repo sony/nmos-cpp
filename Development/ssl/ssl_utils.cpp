@@ -11,16 +11,16 @@ namespace ssl
     {
         namespace details
         {
-            // get the Relative Distinguished Name Sequence in the format specified in RFC 2253
+            // get the Distinguished Name in the format specified in RFC 2253
             // see https://tools.ietf.org/html/rfc2253#section-2
-            std::string get_relative_distinguished_name_sequence(X509_NAME* x509_name)
+            std::string get_distinguished_name(X509_NAME* x509_name)
             {
                 std::string result;
 
                 BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
                 if (!bio)
                 {
-                    throw ssl_exception("failed to get_relative_distinguished_name_sequence while creating BIO to load OCSP request: BIO_new failure: " + last_openssl_error());
+                    throw ssl_exception("failed to get_distinguished_name while creating BIO to load OCSP request: BIO_new failure: " + last_openssl_error());
                 }
                 X509_NAME_print_ex(bio.get(), x509_name, 0, XN_FLAG_RFC2253);
                 char buffer[128];
@@ -32,73 +32,227 @@ namespace ssl
                 return result;
             }
 
-            // get the Relative Distinguished Names from the given X509 Distinguished Name
-            // see https://tools.ietf.org/html/rfc2253#section-2.1
-            std::vector<std::string> get_relative_distinguished_names(X509_NAME* x509_name)
+            // distinguishedName = [name]                    ; may be empty string
+            // 
+            // name       = name-component *("," name-component)
+            // 
+            // name-component = attributeTypeAndValue *("+" attributeTypeAndValue)
+            // 
+            // attributeTypeAndValue = attributeType "=" attributeValue
+            // 
+            // attributeType = (ALPHA 1*keychar) / oid
+            // keychar    = ALPHA / DIGIT / "-"
+            // 
+            // oid        = 1*DIGIT *("." 1*DIGIT)
+            // 
+            // attributeValue = string
+            // 
+            // string     = *( stringchar / pair )
+            //              / "#" hexstring
+            //              / QUOTATION *( quotechar / pair ) QUOTATION ; only from v2
+            // 
+            // quotechar     = <any character except "\" or QUOTATION >
+            // 
+            // special    = "," / "=" / "+" / "<" /  ">" / "#" / ";"
+            // 
+            // pair       = "\" ( special / "\" / QUOTATION / hexpair )
+            // stringchar = <any character except one of special, "\" or QUOTATION >
+            // 
+            // hexstring  = 1*hexpair
+            // hexpair    = hexchar hexchar
+            // 
+            // hexchar    = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+            //              / "a" / "b" / "c" / "d" / "e" / "f"
+            // 
+            // ALPHA      =  <any ASCII alphabetic character>
+            //                                          ; (decimal 65-90 and 97-122)
+            // DIGIT      =  <any ASCII decimal digit>  ; (decimal 48-57)
+            // QUOTATION  =  <the ASCII double quotation mark character '"' decimal 34>
+            // See https://tools.ietf.org/html/rfc2253#section-3
+
+            inline bool is_alpha(char c)
             {
-                const auto relative_distinguished_name_sequence = get_relative_distinguished_name_sequence(x509_name);
-
-                std::vector<std::string> relative_distinguished_names;
-                // split Relative Distinguished Names by ','
-                bst::regex rgx(R"(((?:[^\\,]|\\.)+))");
-                bst::sregex_token_iterator iter(relative_distinguished_name_sequence.begin(),
-                    relative_distinguished_name_sequence.end(), rgx, 1);
-                bst::sregex_token_iterator end;
-
-                auto remove_substrs = [](std::string& src, const std::string& sub_string)
-                {
-                    const auto sub_string_len = sub_string.length();
-                    for (auto found = src.find(sub_string); std::string::npos != found; found = src.find(sub_string))
-                    {
-                        src.erase(found, sub_string_len);
-                    }
-                    return src;
-                };
-
-                while (end != iter)
-                {
-                    std::string value = *iter++;
-                    relative_distinguished_names.push_back(remove_substrs(value, "\\"));
-                }
-
-                return relative_distinguished_names;
+                return std::isalpha((unsigned char)c);
+            }
+            inline bool is_digit(char c)
+            {
+                return std::isdigit((unsigned char)c);
+            }
+            inline bool is_key(char c)
+            {
+                return details::is_alpha(c) || details::is_digit(c) || '-' == c;
+            }
+            inline bool is_xdigit(char c)
+            {
+                return std::isxdigit((unsigned char)c);
+            }
+            inline bool is_special(char c)
+            {
+                static const std::string special{ ",=+<>#;" };
+                return std::string::npos != special.find(c);
+            }
+            inline char parse_xdigit(char c)
+            {
+                if ('0' <= c && c <= '9') return c - '0';
+                else if ('a' <= c && c <= 'f') return (c - 'a') + 0x0a;
+                else if ('A' <= c && c <= 'F') return (c - 'A') + 0x0A;
+                else return 0;
             }
 
-            // get the Attribute Type And Values from the given X509 Distinguished Name
-            // see https://tools.ietf.org/html/rfc2253#section-2.2
-            std::vector<std::string> get_attribute_type_and_values(X509_NAME* x509_name)
+            distinguished_name parse_distinguished_name(const std::string& value_)
             {
-                const auto relative_distinguished_names = get_relative_distinguished_names(x509_name);
+                enum {
+                    pre_name,
+                    pre_attribute_type,
+                    attribute_type,
+                    attribute_type_key,
+                    attribute_type_oid,
+                    attribute_value,
+                    attribute_value_string,
+                    attribute_value_string_pair,
+                    attribute_value_string_pair2,
+                    attribute_value_hexstring_pair,
+                    attribute_value_hexstring_pair2,
+                    attribute_value_quoted_string,
+                    attribute_value_quoted_string_pair,
+                    attribute_value_quoted_string_pair2
+                } state = pre_name;
 
-                std::vector<std::string> attribute_type_and_values;
-                for (const auto& relative_distinguished_name : relative_distinguished_names)
+                distinguished_name result;
+                const auto push_name_component = [&result] { result.emplace_back(); };
+                const auto push_attribute_type_and_value = [&result] { result.back().emplace_back(); };
+                const auto type = [&result]() -> std::string& { return result.back().back().first; };
+                const auto value = [&result]() -> std::string& { return result.back().back().second; };
+                for (auto c : value_)
                 {
-                    std::vector<std::string> attribute_type_and_values_;
-                    // split Attribute Type And Values by '+'
-                    boost::split(attribute_type_and_values_, relative_distinguished_name, boost::is_any_of("+"));
-
-                    if (!attribute_type_and_values_.empty())
+                    switch (state)
                     {
-                        attribute_type_and_values.insert(attribute_type_and_values.end(), attribute_type_and_values_.begin(), attribute_type_and_values_.end());
+                    case pre_name:
+                        push_name_component();
+                        push_attribute_type_and_value();
+                        if (details::is_alpha(c)) { type().push_back(c); state = attribute_type_key; break; }
+                        if (details::is_digit(c)) { type().push_back(c); state = attribute_type_oid; break; }
+                        throw std::invalid_argument("invalid attribute type, expected ALPHA or DIGIT");
+                    case pre_attribute_type:
+                        if ('+' == c) { state = attribute_type; break; }
+                        if (',' == c) { push_name_component(); state = attribute_type; break; }
+                        throw std::invalid_argument("invalid value, expected ',' or '+'");
+                    case attribute_type:
+                        push_attribute_type_and_value();
+                        if (details::is_alpha(c)) { type().push_back(c); state = attribute_type_key; break; }
+                        if (details::is_digit(c)) { type().push_back(c); state = attribute_type_oid; break; }
+                        throw std::invalid_argument("invalid attribute type, expected ALPHA or DIGIT");
+                    case attribute_type_key:
+                        if (details::is_key(c)) { type().push_back(c); break; }
+                        if ('=' == c) { state = attribute_value; break; }
+                        throw std::invalid_argument("invalid attribute type, expected ALPHA, DIGIT or '-'");
+                    case attribute_type_oid:
+                        if (details::is_digit(c)) { type().push_back(c); break; }
+                        if ('.' == c && '.' != type().back()) { type().push_back(c); break; }
+                        if ('=' == c && '.' != type().back()) { state = attribute_value; break; }
+                        throw std::invalid_argument("invalid attribute type, expected DIGIT");
+                    case attribute_value:
+                        if (!details::is_special(c) && '\\' != c && '"' != c) { value().push_back(c); state = attribute_value_string; break; }
+                        if ('\\' == c) { state = attribute_value_string_pair; break; }
+                        if ('#' == c) { state = attribute_value_hexstring_pair; break; }
+                        if ('"' == c) { state = attribute_value_quoted_string; break; }
+                        if ('+' == c) { state = attribute_type; break; }
+                        if (',' == c) { push_name_component(); state = attribute_type; break; }
+                        throw std::invalid_argument("invalid attribute value");
+                    case attribute_value_string:
+                        if (!details::is_special(c) && '\\' != c && '"' != c) { value().push_back(c); break; }
+                        if ('\\' == c) { state = attribute_value_string_pair; break; }
+                        if ('+' == c) { state = attribute_type; break; }
+                        if (',' == c) { push_name_component(); state = attribute_type; break; }
+                        throw std::invalid_argument("invalid attribute value");
+                    case attribute_value_string_pair:
+                        if (details::is_special(c) || '\\' == c || '"' == c) { value().push_back(c); state = attribute_value_string; break; }
+                        if (details::is_xdigit(c)) { value().push_back(details::parse_xdigit(c) << 4); state = attribute_value_string_pair2; break; }
+                        throw std::invalid_argument("invalid attribute value, expected pair char");
+                    case attribute_value_string_pair2:
+                        if (details::is_xdigit(c)) { value().back() += details::parse_xdigit(c); state = attribute_value_string; break; }
+                        throw std::invalid_argument("invalid attribute value, expected hexchar");
+                    case attribute_value_hexstring_pair:
+                        if (details::is_xdigit(c)) { value().push_back(details::parse_xdigit(c) << 4); state = attribute_value_hexstring_pair2; break; }
+                        if ('+' == c && !value().empty()) { state = attribute_type; break; }
+                        if (',' == c && !value().empty()) { push_name_component(); state = attribute_type; break; }
+                        throw std::invalid_argument("invalid attribute value, expected hexchar");
+                    case attribute_value_hexstring_pair2:
+                        if (details::is_xdigit(c)) { value().back() += details::parse_xdigit(c); state = attribute_value_hexstring_pair; break; }
+                        throw std::invalid_argument("invalid attribute value, expected hexchar");
+                    case attribute_value_quoted_string:
+                        if ('"' == c) { state = pre_attribute_type; break; }
+                        if ('\\' == c) { state = attribute_value_quoted_string_pair; break; }
+                        value().push_back(c);
+                        break;
+                    case attribute_value_quoted_string_pair:
+                        if (details::is_special(c) || '\\' == c || '"' == c) { value().push_back(c); state = attribute_value_quoted_string; break; }
+                        if (details::is_xdigit(c)) { value().push_back(details::parse_xdigit(c) << 4); state = attribute_value_quoted_string_pair2; break; }
+                        throw std::invalid_argument("invalid attribute value, expected pair char");
+                    case attribute_value_quoted_string_pair2:
+                        if (details::is_xdigit(c)) { value().back() += details::parse_xdigit(c); state = attribute_value_quoted_string; break; }
+                        throw std::invalid_argument("invalid attribute value, expected hexchar");
+                    default:
+                        throw std::logic_error("unreachable code");
                     }
                 }
 
-                return attribute_type_and_values;
+                switch (state)
+                {
+                case pre_name:
+                    break;
+                case pre_attribute_type:
+                    break;
+                case attribute_type:
+                    throw std::invalid_argument("invalid attribute type, expected ALPHA or DIGIT");
+                case attribute_type_key:
+                    throw std::invalid_argument("invalid attribute type and value, expected '='");
+                case attribute_type_oid:
+                    if ('.' != type().back()) throw std::invalid_argument("invalid attribute type and value, expected '='");
+                    throw std::invalid_argument("invalid attribute type, expected DIGIT");
+                case attribute_value:
+                    // empty attribute value
+                    break;
+                case attribute_value_string:
+                    // string attribute value
+                    break;
+                case attribute_value_string_pair:
+                    throw std::invalid_argument("invalid attribute value, expected pair char");
+                case attribute_value_string_pair2:
+                    throw std::invalid_argument("invalid attribute value, expected hexchar");
+                case attribute_value_hexstring_pair:
+                    if (value().empty()) throw std::invalid_argument("invalid attribute value, expected hexchar");
+                    break;
+                case attribute_value_hexstring_pair2:
+                    throw std::invalid_argument("invalid attribute value, expected hexchar");
+                case attribute_value_quoted_string:
+                    throw std::invalid_argument("invalid attribute value, expected '\"'");
+                case attribute_value_quoted_string_pair:
+                    throw std::invalid_argument("invalid attribute value, expected pair char");
+                case attribute_value_quoted_string_pair2:
+                    throw std::invalid_argument("invalid attribute value, expected hexchar");
+                default:
+                    throw std::logic_error("unreachable code");
+                }
+
+                return result;
             }
 
             // get the Attribute Value from the given X509 Distinguished Name with the Attribute Type
             // see https://tools.ietf.org/html/rfc2253#section-2.3
             std::string get_attribute_value(X509_NAME* x509_name, const std::string& attribute_type)
             {
-                const auto attribute_type_and_values = get_attribute_type_and_values(x509_name);
+                const auto dn = parse_distinguished_name(get_distinguished_name(x509_name));
 
-                auto found = std::find_if(attribute_type_and_values.begin(), attribute_type_and_values.end(), [&attribute_type](const std::string& attribute_type_and_value)
+                for (const auto& rdn : dn)
                 {
-                    // C++20 starts_with
-                    return 0 == attribute_type_and_value.rfind(attribute_type + "=", 0);
-                });
+                    for (const auto& atv : rdn)
+                    {
+                        if (atv.first == attribute_type) return atv.second;
+                    }
+                }
 
-                return attribute_type_and_values.end() != found ? found->substr(attribute_type.length() + 1) : ""; // where +1 is the '=' character
+                return{};
             }
 
             // get subject common name from certificate

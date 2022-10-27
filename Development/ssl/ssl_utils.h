@@ -2,10 +2,11 @@
 #define SSL_SSL_UTILS_H
 
 #include <memory>
-#include <openssl/x509v3.h>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
+#include <openssl/x509v3.h>
 
 namespace ssl
 {
@@ -13,6 +14,12 @@ namespace ssl
     {
         namespace details
         {
+            // see https://tools.ietf.org/html/rfc2253#section-3
+            typedef std::pair<std::string, std::string> attribute_type_and_value;
+            typedef std::vector<attribute_type_and_value> relative_distinguished_name;
+            typedef std::vector<relative_distinguished_name> distinguished_name;
+            distinguished_name parse_distinguished_name(const std::string& value);
+
             // get the Attribute Value from the given X509 Distinguished Name with the Attribyte Type
             // see https://www.rfc-editor.org/rfc/rfc2253#section-2.3
             std::string get_attribute_value(X509_NAME* x509_name, const std::string& attribute_type);
