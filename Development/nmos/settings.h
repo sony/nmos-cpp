@@ -1,6 +1,7 @@
 #ifndef NMOS_SETTINGS_H
 #define NMOS_SETTINGS_H
 
+#include "bst/optional.h"
 #include "cpprest/json_utils.h"
 
 namespace web
@@ -10,6 +11,13 @@ namespace web
         namespace experimental
         {
             struct host_interface;
+        }
+    }
+    namespace http
+    {
+        namespace experimental
+        {
+            struct hsts;
         }
     }
 }
@@ -39,6 +47,12 @@ namespace nmos
 
     // Get interfaces corresponding to the host addresses in the settings
     std::vector<web::hosts::experimental::host_interface> get_host_interfaces(const settings& settings);
+
+    namespace experimental
+    {
+        // Get HTTP Strict-Transport-Security settings
+        bst::optional<web::http::experimental::hsts> get_hsts(const settings& settings);
+    }
 
     // Get a summary of the build configuration, including versions of dependencies
     utility::string_t get_build_settings_info();
@@ -94,7 +108,8 @@ namespace nmos
         const web::json::field_as_integer_or highest_pri{ U("highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
         const web::json::field_as_integer_or lowest_pri{ U("lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
 
-        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [node]: used to back-off after errors interacting with all discoverable Registration APIs or System APIs
+        // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [registry, node]: used to back-off after errors interacting with all discoverable service instances
+        // e.g. Registration APIs, System APIs, or OCSP servers
         const web::json::field_as_integer_or discovery_backoff_min{ U("discovery_backoff_min"), 1 };
         const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_backoff_max"), 30 };
         const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_backoff_factor"), 1.5 };
@@ -315,6 +330,23 @@ namespace nmos
 
             // system_syslogv2_port [registry]: the port number for the system's syslog "version 2" server
             const web::json::field_as_integer_or system_syslogv2_port{ U("system_syslogv2_port"), 6514 };
+
+            // hsts_max_age [registry, node]: the HTTP Strict-Transport-Security response header's max-age value; default is approximately 365 days
+            // (the header is omitted if server_secure is false, or hsts_max_age is negative)
+            // See https://tools.ietf.org/html/rfc6797#section-6.1.1
+            const web::json::field_as_integer_or hsts_max_age{ U("hsts_max_age"), 31536000 };
+
+            // hsts_include_sub_domains [registry, node]: the HTTP Strict-Transport-Security HTTP response header's includeSubDomains value
+            // See https://tools.ietf.org/html/rfc6797#section-6.1.2
+            const web::json::field_as_bool_or hsts_include_sub_domains{ U("hsts_include_sub_domains"), false };
+
+            // ocsp_interval_min/ocsp_interval_max [registry, node]: used to poll for certificate status (OCSP) changes; default is about one hour
+            // Note that if half of the server certificate expiry time is shorter, then the ocsp_interval_min/max will be overridden by it
+            const web::json::field_as_integer_or ocsp_interval_min{ U("ocsp_interval_min"), 3600 };
+            const web::json::field_as_integer_or ocsp_interval_max{ U("ocsp_interval_max"), 3660 };
+
+            // ocsp_request_max [registry, node]: timeout for interactions with the OCSP server
+            const web::json::field_as_integer_or ocsp_request_max{ U("ocsp_request_max"), 30 };
         }
     }
 }

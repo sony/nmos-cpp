@@ -2,6 +2,9 @@
 #include <iostream>
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
+#include "nmos/ocsp_behaviour.h"
+#include "nmos/ocsp_response_handler.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/process_utils.h"
 #include "nmos/registry_server.h"
 #include "nmos/server.h"
@@ -94,6 +97,17 @@ int main(int argc, char* argv[])
 
         auto registry_implementation = make_registry_implementation(registry_model, gate);
 
+// only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+// Note: the get_ocsp_response callback must be set up before executing the make_registry_server where make_http_listener_config is set up
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        nmos::experimental::ocsp_state ocsp_state;
+        if (nmos::experimental::fields::server_secure(registry_model.settings))
+        {
+            registry_implementation.on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
+        }
+#endif
+
         // Set up the registry server
 
         auto registry_server = nmos::experimental::make_registry_server(registry_model, registry_implementation, log_model, gate);
@@ -107,6 +121,19 @@ int main(int argc, char* argv[])
                 http_listener.support(web::http::methods::TRCE, [](web::http::http_request req) { req.reply(web::http::status_codes::MethodNotAllowed); });
             }
         }
+
+        // Add the underlying implementation
+
+// only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        if (nmos::experimental::fields::server_secure(registry_model.settings))
+        {
+            auto load_ca_certificates = registry_implementation.load_ca_certificates;
+            auto load_server_certificates = registry_implementation.load_server_certificates;
+            registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
+        }
+#endif
 
         // Open the API ports and start up registry management
 

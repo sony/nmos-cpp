@@ -3,6 +3,9 @@
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
 #include "nmos/node_server.h"
+#include "nmos/ocsp_behaviour.h"
+#include "nmos/ocsp_response_handler.h"
+#include "nmos/ocsp_state.h"
 #include "nmos/process_utils.h"
 #include "nmos/server.h"
 #include "node_implementation.h"
@@ -93,6 +96,17 @@ int main(int argc, char* argv[])
 
         auto node_implementation = make_node_implementation(node_model, gate);
 
+// only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+// Note: the get_ocsp_response callback must be set up before executing the make_node_server where make_http_listener_config is set up
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        nmos::experimental::ocsp_state ocsp_state;
+        if (nmos::experimental::fields::server_secure(node_model.settings))
+        {
+            node_implementation.on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
+        }
+#endif
+
         // Set up the node server
 
         auto node_server = nmos::experimental::make_node_server(node_model, node_implementation, log_model, gate);
@@ -110,6 +124,17 @@ int main(int argc, char* argv[])
         // Add the underlying implementation, which will set up the node resources, etc.
 
         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
+
+// only implement communication with OCSP server if http_listener supports OCSP stapling
+// cf. preprocessor conditions in nmos::make_http_listener_config
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+        if (nmos::experimental::fields::server_secure(node_model.settings))
+        {
+            auto load_ca_certificates = node_implementation.load_ca_certificates;
+            auto load_server_certificates = node_implementation.load_server_certificates;
+            node_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(node_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
+        }
+#endif
 
         // Open the API ports and start up node operation (including the DNS-SD advertisements)
 

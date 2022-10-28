@@ -43,6 +43,7 @@ namespace nmos
         const category events_expiry{ "events_expiry" };
         const category send_events_ws_commands{ "send_events_ws_commands" };
         const category node_system_behaviour{ "node_system_behaviour" };
+        const category ocsp_behaviour{ "ocsp_behaviour" };
 
         // other categories may be defined ad-hoc
     }

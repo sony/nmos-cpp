@@ -43,6 +43,8 @@ namespace nmos
 
             const auto server_secure = nmos::experimental::fields::server_secure(registry_model.settings);
 
+            const auto hsts = nmos::experimental::get_hsts(registry_model.settings);
+
             // Configure the DNS-SD Browsing API
 
             const host_port mdns_address(nmos::experimental::fields::mdns_address(registry_model.settings), nmos::experimental::fields::mdns_port(registry_model.settings));
@@ -105,7 +107,7 @@ namespace nmos
 
             // Set up the listeners for each HTTP API port
 
-            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto http_config = nmos::make_http_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, registry_implementation.get_ocsp_response, gate);
 
             for (auto& api_router : registry_server.api_routers)
             {
@@ -113,12 +115,12 @@ namespace nmos
                 const auto& host = !api_router.first.first.empty() ? api_router.first.first : web::http::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
-                registry_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, registry_model.settings), api_router.second, http_config, gate));
+                registry_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, registry_model.settings), api_router.second, http_config, hsts, gate));
             }
 
             // Set up the handlers for each WebSocket API port
 
-            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, gate);
+            auto websocket_config = nmos::make_websocket_listener_config(registry_model.settings, registry_implementation.load_server_certificates, registry_implementation.load_dh_param, registry_implementation.get_ocsp_response, gate);
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             for (auto& ws_handler : registry_server.ws_handlers)

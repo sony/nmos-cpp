@@ -1,5 +1,6 @@
 #include "nmos/client_utils.h"
 
+// cf. preprocessor conditions in nmos::details::make_client_ssl_context_callback
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
 #include "boost/asio/ssl/set_cipher_list.hpp"
 #endif
@@ -27,6 +28,7 @@ namespace nmos
 
     namespace details
     {
+// cf. preprocessor conditions in nmos::make_http_client_config and nmos::make_websocket_client_config
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         template <typename ExceptionType>
         inline std::function<void(boost::asio::ssl::context&)> make_client_ssl_context_callback(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)

@@ -315,18 +315,139 @@ namespace web
                     }
                 }
 
-                if (!name.empty())
+                switch (state)
+                {
+                case pre_value:
+                    break;
+                case value_name:
+                    result.push_back({ name, {} }); name.clear();
+                    break;
+                case pre_param:
+                    break;
+                case pre_param_name:
+                    throw std::invalid_argument("invalid parameter name, expected tchar");
+                case param_name:
+                    throw std::invalid_argument("invalid parameter, expected '='");
+                case pre_param_value:
+                    throw std::invalid_argument("invalid parameter, expected '='");
+                case param_value:
+                    throw std::invalid_argument("invalid parameter value, expected tchar or '\"'");
+                case param_value_token:
+                    break;
+                case param_value_quoted_string:
+                    throw std::invalid_argument("invalid parameter value, expected '\"'");
+                case param_value_quoted_string_escape:
+                    throw std::invalid_argument("invalid parameter value, expected escaped char'");
+                default:
+                    throw std::logic_error("unreachable code");
+                }
+
+                return result;
+            }
+
+            utility::string_t make_directives_header(const directives& values)
+            {
+                utility::string_t result;
+                for (auto& value : values)
+                {
+                    if (!result.empty()) { result.push_back(U(';')); }
+                    result.append(value.first);
+                    if (!value.second.empty())
+                    {
+                        result.push_back(U('='));
+                        result.append(value.second);
+                    }
+                }
+                return result;
+            }
+
+            directives parse_directives_header(const utility::string_t& value)
+            {
+                enum {
+                    pre_directive,
+                    pre_directive_name,
+                    directive_name,
+                    pre_directive_value,
+                    directive_value,
+                    directive_value_token,
+                    directive_value_quoted_string,
+                    directive_value_quoted_string_escape
+                } state = pre_directive_name;
+
+                directives result;
+                utility::string_t name;
+                for (auto c : value)
                 {
                     switch (state)
                     {
-                    case value_name:
-                        result.push_back({ name, {} }); name.clear(); break;
-                    case param_name:
-                        throw std::invalid_argument("invalid parameter, expected '='");
+                    case pre_directive:
+                        if (U(';') == c) { state = pre_directive_name; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid value, expected ';'");
+                    case pre_directive_name:
+                        if (details::is_tchar(c)) { name.push_back(c); state = directive_name; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid directive name, expected tchar");
+                    case directive_name:
+                        if (details::is_tchar(c)) { name.push_back(c); break; }
+                        result.push_back({ name, {} }); name.clear();
+                        if (U('=') == c) { state = directive_value; break; }
+                        if (U(';') == c) { state = pre_directive_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_directive_value; break; }
+                        throw std::invalid_argument("invalid directive name, expected tchar");
+                    case pre_directive_value:
+                        if (U('=') == c) { state = directive_value; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        if (U(';') == c) { state = pre_directive_name; break; }
+                        throw std::invalid_argument("invalid directive, expected '='");
+                    case directive_value:
+                        if (details::is_tchar(c)) { result.back().second.push_back(c); state = directive_value_token; break; }
+                        if (U('"') == c) { state = directive_value_quoted_string; break; }
+                        if (U(' ') == c || U('\t') == c) { break; }
+                        throw std::invalid_argument("invalid directive value, expected tchar or '\"'");
+                    case directive_value_token:
+                        if (details::is_tchar(c)) { result.back().second.push_back(c); break; }
+                        if (U(';') == c) { state = pre_directive_name; break; }
+                        if (U(' ') == c || U('\t') == c) { state = pre_directive; break; }
+                        throw std::invalid_argument("invalid directive value, expected tchar");
+                    case directive_value_quoted_string:
+                        if (U('"') == c) { state = pre_directive; break; }
+                        if (U('\\') == c) { state = directive_value_quoted_string_escape; break; }
+                        result.back().second.push_back(c);
+                        break;
+                    case directive_value_quoted_string_escape:
+                        result.back().second.push_back(c);
+                        state = directive_value_quoted_string;
+                        break;
                     default:
                         throw std::logic_error("unreachable code");
                     }
                 }
+
+                switch (state)
+                {
+                case pre_directive:
+                    break;
+                case pre_directive_name:
+                    break;
+                case directive_name:
+                    result.push_back({ name, {} }); name.clear();
+                    break;
+                case pre_directive_value:
+                    break;
+                case directive_value:
+                    throw std::invalid_argument("invalid directive value, expected tchar or '\"'");
+                case directive_value_token:
+                    break;
+                case directive_value_quoted_string:
+                    throw std::invalid_argument("invalid directive value, expected '\"'");
+                case directive_value_quoted_string_escape:
+                    throw std::invalid_argument("invalid directive value, expected escaped char'");
+                    break;
+                default:
+                    throw std::logic_error("unreachable code");
+                }
+
                 return result;
             }
 
@@ -369,6 +490,43 @@ namespace web
                     results.push_back(std::move(metric));
                 }
                 return results;
+            }
+
+            utility::string_t make_hsts_header(const hsts& value)
+            {
+                directives result;
+                result.push_back({ U("max-age"), utility::ostringstreamed(value.max_age) });
+                if (value.include_sub_domains) result.push_back({ U("includeSubDomains"), {} });
+                return make_directives_header(result);
+            }
+
+            // "1.  The order of appearance of directives is not significant.
+            //  2.  All directives MUST appear only once in an STS header field.
+            //      Directives are either optional or required, as stipulated in
+            //      their definitions.
+            //  3.  Directive names are case-insensitive."
+            // See https://tools.ietf.org/html/rfc6797#section-6.1
+            inline directives::const_iterator find_directive(const directives& directives, const directive::first_type& directive_name)
+            {
+                return std::find_if(directives.begin(), directives.end(), [&](const directive& directive) { return boost::algorithm::iequals(directive.first, directive_name); });
+            }
+
+            hsts parse_hsts_header(const utility::string_t& value)
+            {
+                hsts result;
+                auto directives = parse_directives_header(value);
+
+                // required
+                const auto max_age = find_directive(directives, U("max-age"));
+                if (directives.end() == max_age) throw std::invalid_argument("invalid Strict-Transport-Security header, missing max-age");
+                // hm, invalid value is treated as 0
+                result.max_age = utility::istringstreamed(max_age->second, 0u);
+
+                // optional
+                const auto include_sub_domains = find_directive(directives, U("includeSubDomains"));
+                if (directives.end() != include_sub_domains) result.include_sub_domains = true;
+
+                return result;
             }
         }
 

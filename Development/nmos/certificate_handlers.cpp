@@ -13,7 +13,7 @@ namespace nmos
 
         return [&, ca_certificate_file]()
         {
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load certification authorities";
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Load certification authorities";
 
             if (ca_certificate_file.empty())
             {
@@ -41,7 +41,7 @@ namespace nmos
             const auto private_key_files = nmos::experimental::fields::private_key_files(settings);
             const auto certificate_chain_files = nmos::experimental::fields::certificate_chain_files(settings);
 
-            const auto size = std::min(private_key_files.size(), certificate_chain_files.size());
+            const auto size = (std::min)(private_key_files.size(), certificate_chain_files.size());
             for (size_t i = 0; i < size; ++i)
             {
                 web::json::push_back(server_certificates,

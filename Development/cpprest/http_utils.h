@@ -133,6 +133,18 @@ namespace web
             utility::string_t make_ptokens_header(const ptokens& values);
             ptokens parse_ptokens_header(const utility::string_t& value);
 
+            // directives           = [ directive ] *( ";" [ directive ] )
+            // directive            = directive-name [ "=" directive-value ]
+            // directive-name       = token
+            // directive-value      = token | quoted-string
+            // E.g. Strict-Transport-Security uses this format
+            // See https://tools.ietf.org/html/rfc6797#section-6.1
+
+            typedef std::pair<token, utility::string_t> directive;
+            typedef std::vector<directive> directives;
+
+            utility::string_t make_directives_header(const directives& values);
+            directives parse_directives_header(const utility::string_t& value);
 
             namespace header_names
             {
@@ -143,6 +155,10 @@ namespace web
                 // Resource Timing 2
                 // See https://www.w3.org/TR/resource-timing-2/#sec-timing-allow-origin
                 const web::http::http_headers::key_type timing_allow_origin{ _XPLATSTR("Timing-Allow-Origin") };
+
+                // Strict Transport Security
+                // See https://tools.ietf.org/html/rfc6797#section-6.1
+                const web::http::http_headers::key_type strict_transport_security{ _XPLATSTR("Strict-Transport-Security") };
             }
 
             struct timing_metric
@@ -150,6 +166,7 @@ namespace web
                 utility::string_t name;
                 double duration; // milliseconds
                 utility::string_t description;
+
                 timing_metric(utility::string_t name, double duration = 0.0, utility::string_t description = {}) : name(name), duration(duration), description(description) {}
                 timing_metric(utility::string_t name, utility::string_t description) : name(name), duration(0.0), description(description) {}
 
@@ -162,6 +179,25 @@ namespace web
 
             utility::string_t make_timing_header(const timing_metrics& values);
             timing_metrics parse_timing_header(const utility::string_t& value);
+
+            struct hsts
+            {
+                uint32_t max_age; // seconds
+                bool include_sub_domains;
+
+                // "If the max-age header field value token has a value of zero, the
+                // UA MUST remove its cached HSTS Policy information if the HSTS Host is
+                // known, or the UA MUST NOT note this HSTS Host if it is not yet known."
+                // See https://tools.ietf.org/html/rfc6797#section-8.1
+                hsts(uint32_t max_age = 0u, bool include_sub_domains = false) : max_age(max_age), include_sub_domains(include_sub_domains) {}
+
+                auto tied() const -> decltype(std::tie(max_age, include_sub_domains)) { return std::tie(max_age, include_sub_domains); }
+                friend bool operator==(const hsts& lhs, const hsts& rhs) { return lhs.tied() == rhs.tied(); }
+                friend bool operator!=(const hsts& lhs, const hsts& rhs) { return !(lhs == rhs); }
+            };
+
+            utility::string_t make_hsts_header(const hsts& value);
+            hsts parse_hsts_header(const utility::string_t& value);
         }
 
         // Determine whether http_request::reply() has been called already
@@ -177,10 +213,10 @@ namespace web
                 typedef pplx::open_close_guard<http_listener> http_listener_guard;
 
                 // platform-specific wildcard address to accept connections for any address
-#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
-                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
-#else
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
                 const utility::string_t host_wildcard{ _XPLATSTR("0.0.0.0") };
+#else
+                const utility::string_t host_wildcard{ _XPLATSTR("*") }; // "weak wildcard"
 #endif
 
                 // make an address to be used to accept HTTP or HTTPS connections for the specified address and port

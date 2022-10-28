@@ -3,9 +3,10 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
 #include <boost/version.hpp>
+#include <openssl/opensslv.h>
 #include "cpprest/host_utils.h"
+#include "cpprest/http_utils.h"
 #include "cpprest/version.h"
-#include "openssl/opensslv.h"
 #include "nmos/id.h"
 #include "websocketpp/version.hpp"
 
@@ -175,6 +176,19 @@ namespace nmos
                 return interface_address == host_address.as_string();
             });
         }));
+    }
+
+    namespace experimental
+    {
+        // Get HTTP Strict-Transport-Security settings
+        bst::optional<web::http::experimental::hsts> get_hsts(const settings& settings)
+        {
+            // when using a reverse proxy for TLS termination, the proxy should be responsible for HSTS
+            // so check server_secure rather than client_secure
+            if (nmos::experimental::fields::server_secure(settings) && nmos::experimental::fields::hsts_max_age(settings) > 0)
+                return web::http::experimental::hsts{ (uint32_t)nmos::experimental::fields::hsts_max_age(settings), nmos::experimental::fields::hsts_include_sub_domains(settings) };
+            return bst::nullopt;
+        }
     }
 
     // Get a summary of the build configuration, including versions of dependencies
