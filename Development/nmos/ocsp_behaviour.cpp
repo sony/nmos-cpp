@@ -151,7 +151,7 @@ namespace nmos
         struct ocsp_service_exception {};
 
         // make an asynchronous POST request on the OCSP server to get certificate status
-        // see https://specs.amwa.tv/bcp-003-03/releases/v1.0.0/docs/1.0._Certificate_Provisioning.html#certificate-request
+        // see https://specs.amwa.tv/bcp-003-01/releases/v1.0.1/docs/Secure_Communication.html#certificate-management-client
         pplx::task<std::vector<uint8_t>> request_certificate_status(web::http::client::http_client client, std::vector<uint8_t>& ocsp_request, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting certificate status";
