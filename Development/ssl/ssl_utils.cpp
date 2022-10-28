@@ -52,7 +52,7 @@ namespace ssl
                 return subject_alternative_names;
             }
 
-            // convert ANS.1 time to POSIX (UTC)
+            // convert ASN.1 time to POSIX (UTC)
             time_t ASN1_TIME_to_time_t(const ASN1_TIME* time)
             {
                 if (!time)
@@ -95,14 +95,14 @@ namespace ssl
                     tm.tm_year -= 1900;
                     break;
                 default:
-                    throw ssl_exception("failed to convert ASN1_TIME to UTC: invalid ANS.1 time type");
+                    throw ssl_exception("failed to convert ASN1_TIME to UTC: invalid ASN.1 time type");
                 }
                 tm.tm_mon = two_digits_to_uint() - 1;
                 tm.tm_mday = two_digits_to_uint();
                 tm.tm_hour = two_digits_to_uint();
                 tm.tm_min = two_digits_to_uint();
                 tm.tm_sec = two_digits_to_uint();
-                if (*s != 'Z') { throw ssl_exception("failed to convert ASN1_TIME to UTC: invalid ANS.1 time format"); }
+                if (*s != 'Z') { throw ssl_exception("failed to convert ASN1_TIME to UTC: invalid ASN.1 time format"); }
                 tm.tm_isdst = 0;
 #endif
 
