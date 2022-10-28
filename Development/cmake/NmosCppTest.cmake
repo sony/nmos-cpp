@@ -70,12 +70,6 @@ set(NMOS_CPP_TEST_SDP_TEST_SOURCES
 set(NMOS_CPP_TEST_SDP_TEST_HEADERS
     )
 
-set(NMOS_CPP_TEST_SSL_TEST_SOURCES
-    ssl/test/ssl_test.cpp
-    )
-set(NMOS_CPP_TEST_SSL_TEST_HEADERS
-    )
-
 add_executable(
     nmos-cpp-test
     ${NMOS_CPP_TEST_SOURCES}
@@ -96,8 +90,6 @@ add_executable(
     ${NMOS_CPP_TEST_RQL_TEST_HEADERS}
     ${NMOS_CPP_TEST_SDP_TEST_SOURCES}
     ${NMOS_CPP_TEST_SDP_TEST_HEADERS}
-    ${NMOS_CPP_TEST_SSL_TEST_SOURCES}
-    ${NMOS_CPP_TEST_SSL_TEST_HEADERS}
     )
 
 source_group("Source Files" FILES ${NMOS_CPP_TEST_SOURCES})
@@ -109,7 +101,6 @@ source_group("nmos\\test\\Source Files" FILES ${NMOS_CPP_TEST_NMOS_TEST_SOURCES}
 source_group("pplx\\test\\Source Files" FILES ${NMOS_CPP_TEST_PPLX_TEST_SOURCES})
 source_group("rql\\test\\Source Files" FILES ${NMOS_CPP_TEST_RQL_TEST_SOURCES})
 source_group("sdp\\test\\Source Files" FILES ${NMOS_CPP_TEST_SDP_TEST_SOURCES})
-source_group("ssl\\test\\Source Files" FILES ${NMOS_CPP_TEST_SSL_TEST_SOURCES})
 
 source_group("Header Files" FILES ${NMOS_CPP_TEST_HEADERS})
 source_group("bst\\test\\Header Files" FILES ${NMOS_CPP_TEST_BST_TEST_HEADERS})
@@ -120,7 +111,6 @@ source_group("nmos\\test\\Header Files" FILES ${NMOS_CPP_TEST_NMOS_TEST_HEADERS}
 source_group("pplx\\test\\Header Files" FILES ${NMOS_CPP_TEST_PPLX_TEST_HEADERS})
 source_group("rql\\test\\Header Files" FILES ${NMOS_CPP_TEST_RQL_TEST_HEADERS})
 source_group("sdp\\test\\Header Files" FILES ${NMOS_CPP_TEST_SDP_TEST_HEADERS})
-source_group("ssl\\test\\Header Files" FILES ${NMOS_CPP_TEST_SSL_TEST_HEADERS})
 
 target_link_libraries(
     nmos-cpp-test
