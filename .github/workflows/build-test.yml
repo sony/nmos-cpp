@@ -348,7 +348,7 @@ jobs:
 
         # Download testssl
         cd testssl
-        curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+        curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         cd ..
 
         # Create output directories
@@ -852,7 +852,7 @@ jobs:
 
         # Download testssl
         cd testssl
-        curl -L https://github.com/drwetter/testssl.sh/archive/3.0.2.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+        curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         cd ..
 
         # Create output directories
