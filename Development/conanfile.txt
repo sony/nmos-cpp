@@ -4,6 +4,7 @@ cpprestsdk/2.10.18
 websocketpp/0.8.2
 openssl/1.1.1o
 json-schema-validator/2.1.0
+zlib/1.2.13
 
 [imports]
 bin, *.dll -> ./bin
