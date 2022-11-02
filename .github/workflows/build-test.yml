@@ -97,7 +97,7 @@ jobs:
         conan config set general.revisions_enabled=1
 
     - name: install cmake
-      uses: lukka/get-cmake@v3.23.0
+      uses: lukka/get-cmake@v3.24.2
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -601,7 +601,7 @@ jobs:
         conan config set general.revisions_enabled=1
 
     - name: install cmake
-      uses: lukka/get-cmake@v3.23.0
+      uses: lukka/get-cmake@v3.24.2
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
