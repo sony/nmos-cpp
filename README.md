@@ -115,7 +115,7 @@ Recent activity on the project (newest first):
 - Update to RQL implementation to support advanced queries for string values containing '.'
 - Improvements to the SDP parser/generator
 - Improvements to Conan/CMake build, including updates to preferred version of dependencies such as Boost and OpenSSL
-- Prepared a basic Conan recipe for building nmos-cpp, in [Sandbox/conan-recipe](Sandbox/conan-recipe)
+- Prepared a basic Conan recipe for building nmos-cpp, in ~[Sandbox/conan-recipe](Sandbox/conan-recipe)~
 - Refactored the CMake build to make it easier to use nmos-cpp from another project, demonstrated by [Sandbox/my-nmos-node](Sandbox/my-nmos-node)
 - Added support for BCP-004-01 Receiver Capabilities
 - Switched CI testing to run the nmos-cpp applications and the AMWA NMOS Testing Tool with secure communication (TLS) enabled, as per BCP-003-01
