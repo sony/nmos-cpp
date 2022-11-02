@@ -240,7 +240,7 @@ It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [use
 1. Download and install a recent release
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.1.1o installer (latest release at the time) has been tested
+     The Win64 OpenSSL v1.1.1s installer (latest release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available  
      The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
 
