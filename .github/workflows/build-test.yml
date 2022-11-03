@@ -51,7 +51,7 @@ jobs:
             dns_sd_mode: multicast
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: set environment variables
       shell: bash
@@ -545,7 +545,7 @@ jobs:
         dns_sd_mode: [multicast]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: set environment variables
       shell: bash
@@ -1039,7 +1039,7 @@ jobs:
     needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: set environment variables
       shell: bash
