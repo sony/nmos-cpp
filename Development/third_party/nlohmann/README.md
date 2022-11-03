@@ -7,7 +7,7 @@ This directory contains the single header version of the [JSON for Modern C++](h
 Original source code:
 
 - Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-- Copyright (c) 2013-2022 Niels Lohmann <http://nlohmann.me>.
+- Copyright (c) 2013-2022 Niels Lohmann <https://nlohmann.me>.
 
 
 ## Modern C++ JSON schema validator
