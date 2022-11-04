@@ -110,6 +110,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for HSTS and OCSP stapling
 - Updates to the GitHub Actions build-test workflow for better coverage of platforms and to include unicast DNS-SD tests
 - Regular Conan Center Index releases (see [nmos-cpp recipe](https://github.com/conan-io/conan-center-index/blob/master/recipes/nmos-cpp))
 - Update to RQL implementation to support advanced queries for string values containing '.'
