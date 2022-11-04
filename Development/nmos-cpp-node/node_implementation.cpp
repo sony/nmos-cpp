@@ -467,24 +467,24 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             nmos::resource receiver;
             if (impl::ports::video == port)
             {
-                const auto video_types = nmos::media_types::video_raw == video_type
-                    ? std::vector<nmos::media_type>{ video_type }
-                    : std::vector<nmos::media_type>{ nmos::media_types::video_raw, video_type };
-
-                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, nmos::formats::video, video_types, model.settings);
-                // add an example constraint set for each type; these should be completed fully!
-                const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
-                    ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
-                    : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
-                web::json::push_back(receiver.data[nmos::fields::caps][nmos::fields::constraint_sets], value_of({
-                    { nmos::media_types::video_raw != video_type ? nmos::caps::format::media_type.key : U(""), nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name })},
-                    { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
-                    { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
-                    { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
-                    { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                    { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
-                }));
-                if (nmos::media_types::video_jxsv == video_type)
+                receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, nmos::formats::video, { video_type }, model.settings);
+                // add an example constraint set; these should be completed fully!
+                if (nmos::media_types::video_raw == video_type)
+                {
+                    const auto interlace_modes = nmos::interlace_modes::progressive != interlace_mode
+                        ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
+                        : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
+                    receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                        value_of({
+                            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
+                            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
+                            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
+                            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
+                            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sampling.name }) }
+                        })
+                    });
+                }
+                else if (nmos::media_types::video_jxsv == video_type)
                 {
                     // some of the parameter constraints recommended by BCP-006-01
                     // see https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#receivers
@@ -492,21 +492,16 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                     // round to nearest Megabit/second per examples in VSF TR-08:2022
                     const auto max_transport_bit_rate = uint64_t(transport_bit_rate_factor * max_format_bit_rate / 1e3 + 0.5) * 1000;
 
-                    web::json::push_back(receiver.data[nmos::fields::caps][nmos::fields::constraint_sets], value_of({
-                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ video_type.name })},
-                        { nmos::caps::format::profile, nmos::make_caps_string_constraint({ profile.name }) },
-                        { nmos::caps::format::level, nmos::make_caps_string_constraint({ level.name }) },
-                        { nmos::caps::format::sublevel, nmos::make_caps_string_constraint({ nmos::sublevels::Sublev3bpp.name, nmos::sublevels::Sublev4bpp.name }) },
-                        { nmos::caps::format::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_format_bit_rate) },
-                        { nmos::caps::transport::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_transport_bit_rate) },
-                        { nmos::caps::transport::packet_transmission_mode, nmos::make_caps_string_constraint({ nmos::packet_transmission_modes::codestream.name }) }
-                    }));
-                }
-                else
-                {
-                    web::json::push_back(receiver.data[nmos::fields::caps][nmos::fields::constraint_sets], value_of({
-                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ video_type.name })}
-                    }));
+                    receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
+                        value_of({
+                            { nmos::caps::format::profile, nmos::make_caps_string_constraint({ profile.name }) },
+                            { nmos::caps::format::level, nmos::make_caps_string_constraint({ level.name }) },
+                            { nmos::caps::format::sublevel, nmos::make_caps_string_constraint({ nmos::sublevels::Sublev3bpp.name, nmos::sublevels::Sublev4bpp.name }) },
+                            { nmos::caps::format::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_format_bit_rate) },
+                            { nmos::caps::transport::bit_rate, nmos::make_caps_integer_constraint({}, nmos::no_minimum<int64_t>(), (int64_t)max_transport_bit_rate) },
+                            { nmos::caps::transport::packet_transmission_mode, nmos::make_caps_string_constraint({ nmos::packet_transmission_modes::codestream.name }) }
+                        })
+                    });
                 }
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
             }
