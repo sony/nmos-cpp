@@ -308,6 +308,37 @@ namespace rql
 
     // Helpers for evaluating RQL
 
+    void validate_query(const web::json::value& query)
+    {
+        validate_query(query, default_operators());
+    }
+
+    void validate_query(const web::json::value& arg, const operators& operators)
+    {
+        if (is_call_operator(arg))
+        {
+            const auto& name = arg.at(U("name")).as_string();
+            const auto& args = arg.at(U("args"));
+
+            const auto found = operators.find(name);
+            if (found == operators.end())
+            {
+                throw details::unimplemented_operator(name);
+            }
+            validate_query(args, operators);
+        }
+        else if (arg.is_array())
+        {
+            const auto& array_args = arg.as_array();
+
+            // depth-first recursion to report first unimplemented operator
+            for (const auto& array_arg : array_args)
+            {
+                validate_query(array_arg, operators);
+            }
+        }
+    }
+
     evaluator::evaluator(extractor extract)
         : extract(extract)
         , operators(default_operators())

@@ -32,6 +32,9 @@ namespace rql
     typedef std::function<bool(web::json::value& results, const web::json::value& key)> extractor;
     typedef std::unordered_map<utility::string_t, std::function<web::json::value(const evaluator& eval, const web::json::value& args)>> operators;
 
+    void validate_query(const web::json::value& query); // with default call-operators
+    void validate_query(const web::json::value& query, const operators& operators);
+
     struct evaluator
     {
         explicit evaluator(extractor extract); // with default call-operators
