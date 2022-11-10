@@ -67,7 +67,7 @@ namespace ssl
                 {
                     throw ssl_exception("failed to convert ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
                 }
-#elif (OPENSSL_VERSION_NUMBER >= 0x1000200fL)
+#else
                 auto s = time->data;
                 if (!s)
                 {
