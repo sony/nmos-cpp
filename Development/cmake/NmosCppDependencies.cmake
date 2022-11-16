@@ -197,7 +197,7 @@ if(NMOS_CPP_USE_CONAN)
     endif()
 
     add_library(json_schema_validator INTERFACE)
-    target_link_libraries(json_schema_validator INTERFACE nlohmann_json_schema_validator::nlohmann_json_schema_validator)
+    target_link_libraries(json_schema_validator INTERFACE nlohmann_json_schema_validator)
 else()
     set(JSON_SCHEMA_VALIDATOR_SOURCES
         third_party/nlohmann/json-patch.cpp
