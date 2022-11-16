@@ -97,3 +97,17 @@ BST_TEST_CASE(testSubconstraints)
         BST_REQUIRE(is_constraint_subset(constraint_set, constraint_subset));
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testRationalMinMaxSubconstraints)
+{
+    {
+        using web::json::value_of;
+        using nmos::experimental::is_subconstraint;
+
+        auto wideRange = nmos::make_caps_rational_constraint({}, nmos::rates::rate25, nmos::rates::rate30);
+        auto narrowRange = nmos::make_caps_rational_constraint({}, nmos::rates::rate25, nmos::rates::rate29_97);
+
+        BST_REQUIRE(is_subconstraint(wideRange, narrowRange));
+    }
+}

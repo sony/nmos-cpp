@@ -44,10 +44,7 @@ namespace nmos
                 // General Constraints
 
                 { nmos::caps::format::media_type, [](const web::json::value& flow, const value& con) { return nmos::match_string_constraint(flow.at(U("media_type")).as_string(), con); } },
-                { nmos::caps::format::grain_rate, [](const web::json::value& flow, const value& con) {
-                    auto grain_rate = nmos::rational(nmos::fields::numerator(nmos::fields::grain_rate(flow)), nmos::fields::denominator(nmos::fields::grain_rate(flow)));
-                    return nmos::match_rational_constraint(grain_rate, con); }
-                },
+                { nmos::caps::format::grain_rate, [](const web::json::value& flow, const value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::grain_rate(flow)), con); } },
 
                 // Video Constraints
 
@@ -61,10 +58,7 @@ namespace nmos
 
                 // Audio Constraints
 
-                { nmos::caps::format::sample_rate, [](const web::json::value& flow, const value& con) {
-                    auto sample_rate = nmos::rational(nmos::fields::numerator(nmos::fields::sample_rate(flow)), nmos::fields::denominator(nmos::fields::sample_rate(flow)));
-                    return nmos::match_rational_constraint(sample_rate, con); }
-                },
+                { nmos::caps::format::sample_rate, [](const web::json::value& flow, const value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::sample_rate(flow)), con); } },
                 { nmos::caps::format::sample_depth, [](const web::json::value& flow, const value& con) { return nmos::match_integer_constraint(nmos::fields::bit_depth(flow), con); } },
             };
 
@@ -95,18 +89,28 @@ namespace nmos
             }
             if (constraint.has_field(nmos::fields::constraint_minimum) && subconstraint.has_field(nmos::fields::constraint_minimum))
             {
-                const auto& constraint_minimum = nmos::fields::constraint_minimum(constraint);
-                const auto& subconstraint_minimum = nmos::fields::constraint_minimum(subconstraint);
-                if (constraint_minimum > subconstraint_minimum)
+                if (constraint.at(U("minimum")).has_field(nmos::fields::numerator))
+                {
+                    if (nmos::parse_rational(constraint.at(U("minimum"))) > nmos::parse_rational(subconstraint.at(U("minimum"))))
+                    {
+                        return false;
+                    }
+                }
+                else if (nmos::fields::constraint_minimum(constraint) > nmos::fields::constraint_minimum(subconstraint))
                 {
                     return false;
                 }
             }
             if (constraint.has_field(nmos::fields::constraint_maximum) && subconstraint.has_field(nmos::fields::constraint_maximum))
             {
-                const auto& constraint_maximum = nmos::fields::constraint_maximum(constraint);
-                const auto& subconstraint_maximum = nmos::fields::constraint_maximum(subconstraint);
-                if (constraint_maximum < subconstraint_maximum)
+                if (constraint.at(U("maximum")).has_field(nmos::fields::numerator))
+                {
+                    if (nmos::parse_rational(constraint.at(U("maximum"))) < nmos::parse_rational(subconstraint.at(U("maximum"))))
+                    {
+                        return false;
+                    }
+                }
+                else if (nmos::fields::constraint_maximum(constraint) < nmos::fields::constraint_maximum(subconstraint))
                 {
                     return false;
                 }
