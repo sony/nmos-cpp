@@ -117,11 +117,7 @@ namespace nmos
                 const auto& subconstraint_enum_values = nmos::fields::constraint_enum(subconstraint).as_array();
                 if (subconstraint_enum_values.end() == std::find_if(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&constraint](const web::json::value& enum_value)
                 {
-                    if (enum_value.has_field(nmos::fields::numerator))
-                    {
-                        return details::match_constraint(nmos::parse_rational(enum_value), constraint, [](const web::json::value& v) { return nmos::parse_rational(v); });
-                    }
-                    return details::match_constraint(enum_value, constraint, [](const web::json::value& v) { return v; });
+                    return match_constraint(enum_value, constraint);
                 }))
                 {
                     return false;

@@ -56,6 +56,43 @@ namespace nmos
         });
     }
 
+    namespace details
+    {
+        // cf. nmos::details::make_constraints_schema in nmos/connection_api.cpp
+        template <typename T, typename Parse>
+        bool match_constraint(const T& value, const web::json::value& constraint, Parse parse)
+        {
+            if (constraint.has_field(nmos::fields::constraint_enum))
+            {
+                const auto& enum_values = nmos::fields::constraint_enum(constraint).as_array();
+                if (enum_values.end() == std::find_if(enum_values.begin(), enum_values.end(), [&parse, &value](const web::json::value& enum_value)
+                {
+                    return parse(enum_value) == value;
+                }))
+                {
+                    return false;
+                }
+            }
+            if (constraint.has_field(nmos::fields::constraint_minimum))
+            {
+                const auto& minimum = nmos::fields::constraint_minimum(constraint);
+                if (parse(minimum) > value)
+                {
+                    return false;
+                }
+            }
+            if (constraint.has_field(nmos::fields::constraint_maximum))
+            {
+                const auto& maximum = nmos::fields::constraint_maximum(constraint);
+                if (parse(maximum) < value)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
     bool match_string_constraint(const utility::string_t& value, const web::json::value& constraint)
     {
         return details::match_constraint(value, constraint, [](const web::json::value& enum_value)
@@ -94,5 +131,35 @@ namespace nmos
         {
             return nmos::parse_rational(enum_value);
         });
+    }
+
+    bool match_constraint(const web::json::value& value, const web::json::value& constraint)
+    {
+        bool result = false;
+        if (value.is_string())
+        {
+            result = match_string_constraint(value.as_string(), constraint);
+        }
+        else if (value.is_integer())
+        {
+            result = match_integer_constraint(value.as_integer(), constraint);
+        }
+        else if (value.is_double())
+        {
+            result = match_number_constraint(value.as_double(), constraint);
+        }
+        else if (value.is_boolean())
+        {
+            result = match_boolean_constraint(value.as_bool(), constraint);
+        }
+        else if (value.has_field(nmos::fields::numerator))
+        {
+            result = match_rational_constraint(nmos::parse_rational(value), constraint);
+        }
+        else
+        {
+            throw std::logic_error("unreachable code");
+        }
+        return result;
     }
 }

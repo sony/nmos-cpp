@@ -2,7 +2,6 @@
 #define NMOS_CAPABILITIES_H
 
 #include "cpprest/json_utils.h"
-#include "nmos/json_fields.h"
 #include "nmos/rational.h"
 
 namespace nmos
@@ -35,48 +34,12 @@ namespace nmos
     // See https://specs.amwa.tv/bcp-004-01/releases/v1.0.0/docs/1.0._Receiver_Capabilities.html#rational-constraint-keywords
     web::json::value make_caps_rational_constraint(const std::vector<nmos::rational>& enum_values = {}, const nmos::rational& minimum = no_minimum<nmos::rational>(), const nmos::rational& maximum = no_maximum<nmos::rational>());
 
-    namespace details
-    {
-        // cf. nmos::details::make_constraints_schema in nmos/connection_api.cpp
-        template <typename T, typename Parse>
-        bool match_constraint(const T& value, const web::json::value& constraint, Parse parse)
-        {
-            if (constraint.has_field(nmos::fields::constraint_enum))
-            {
-                const auto& enum_values = nmos::fields::constraint_enum(constraint).as_array();
-                if (enum_values.end() == std::find_if(enum_values.begin(), enum_values.end(), [&parse, &value](const web::json::value& enum_value)
-                {
-                    return parse(enum_value) == value;
-                }))
-                {
-                    return false;
-                }
-            }
-            if (constraint.has_field(nmos::fields::constraint_minimum))
-            {
-                const auto& minimum = nmos::fields::constraint_minimum(constraint);
-                if (parse(minimum) > value)
-                {
-                    return false;
-                }
-            }
-            if (constraint.has_field(nmos::fields::constraint_maximum))
-            {
-                const auto& maximum = nmos::fields::constraint_maximum(constraint);
-                if (parse(maximum) < value)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
     bool match_string_constraint(const utility::string_t& value, const web::json::value& constraint);
     bool match_integer_constraint(int64_t value, const web::json::value& constraint);
     bool match_number_constraint(double value, const web::json::value& constraint);
     bool match_boolean_constraint(bool value, const web::json::value& constraint);
     bool match_rational_constraint(const nmos::rational& value, const web::json::value& constraint);
+    bool match_constraint(const web::json::value& value, const web::json::value& constraint);
 
     // NMOS Parameter Registers - Capabilities register
     // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
