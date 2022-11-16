@@ -264,7 +264,12 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
             message(STATUS "Found Avahi version " ${Avahi_VERSION})
         endif()
 
-        target_link_libraries(DNSSD INTERFACE Avahi::compat-libdns_sd)
+        if(TARGET Avahi::compat-libdns_sd)
+            target_link_libraries(DNSSD INTERFACE Avahi::compat-libdns_sd)
+        else()
+            # unfortunately some versions of the Conan 'avahi' recipe may produce a lowercase namespace
+            target_link_libraries(DNSSD INTERFACE avahi::compat-libdns_sd)
+        endif()
     else()
         find_package(DNSSD REQUIRED)
         if(NOT DNSSD_VERSION)
