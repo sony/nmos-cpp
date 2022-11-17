@@ -1446,6 +1446,13 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     return &nmos::experimental::validate_sender_resources;
 }
 
+nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_receiver_validator()
+{
+    // this example uses the default receiver validator explicitly
+    return &nmos::experimental::validate_receiver_resources;
+}
+
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1568,5 +1575,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
         .on_set_effective_edid(make_node_implementation_effective_edid_setter(model.streamcompatibility_resources, gate))
         .on_active_constraints_changed(make_node_implementation_active_constraints_handler(gate))
-        .on_validate_sender_against_active_constraints(make_node_implementation_sender_validator());
+        .on_validate_sender_against_active_constraints(make_node_implementation_sender_validator())
+        .on_validate_receiver_against_transport_file(make_node_implementation_receiver_validator());
 }
