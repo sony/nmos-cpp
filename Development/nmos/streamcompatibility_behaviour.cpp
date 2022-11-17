@@ -109,7 +109,7 @@ namespace nmos
                 catch (const std::runtime_error& e)
                 {
                     receiver_state = nmos::receiver_states::non_compliant_stream;
-                    receiver_state_debug = e.what();
+                    receiver_state_debug = utility::conversions::to_string_t(e.what());
                 }
             }
             else

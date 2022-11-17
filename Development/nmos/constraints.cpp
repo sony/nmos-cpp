@@ -26,7 +26,7 @@ namespace nmos
         {
             // General Constraints
 
-            { nmos::caps::format::media_type, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(flow.at(U("media_type")).as_string(), con); } },
+            { nmos::caps::format::media_type, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::media_type(flow), con); } },
             { nmos::caps::format::grain_rate, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::grain_rate(flow)), con); } },
 
             // Video Constraints
