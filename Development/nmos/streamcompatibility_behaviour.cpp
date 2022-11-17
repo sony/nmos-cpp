@@ -53,7 +53,7 @@ namespace nmos
             }));
         }
 
-        nmos::sender_state validate_sender_resources(const web::json::value& transport_file, const web::json::value& flow, const web::json::value& source, const web::json::array& constraint_sets)
+        nmos::sender_state validate_sender_resources(const web::json::value& transport_file, const web::json::value& sender, const web::json::value& flow, const web::json::value& source, const web::json::array& constraint_sets)
         {
             nmos::sender_state sender_state;
 
@@ -63,8 +63,9 @@ namespace nmos
 
                 auto source_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_source_parameters_constraint_set(source, constraint_set); });
                 auto flow_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_flow_parameters_constraint_set(flow, constraint_set); });
+                auto sender_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_sender_parameters_constraint_set(sender, constraint_set); });
 
-                constrained = constraint_sets.end() != source_found && constraint_sets.end() != flow_found;
+                constrained = constraint_sets.end() != source_found && constraint_sets.end() != flow_found && constraint_sets.end() != sender_found;
 
                 if (!transport_file.is_null() && !transport_file.as_object().empty())
                 {
@@ -181,7 +182,7 @@ namespace nmos
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is being validated with its Flow, Source and transport file";
                                 if (validate_sender)
                                 {
-                                    sender_state = validate_sender(transport_file, flow->data, source->data, constraint_sets);
+                                    sender_state = validate_sender(transport_file, sender->data, flow->data, source->data, constraint_sets);
                                 }
                             }
 
