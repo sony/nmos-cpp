@@ -321,14 +321,14 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::senderReceiverSubrouteType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::inputOutputType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
                 auto& resources = model.streamcompatibility_resources;
 
                 const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
-                const string_t associatedResourceType = parameters.at(nmos::patterns::senderReceiverSubrouteType.name);
+                const string_t associatedResourceType = parameters.at(nmos::patterns::inputOutputType.name);
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
                 auto resource = find_resource(resources, id_type);
