@@ -1427,6 +1427,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
     {
         for (const auto& constraint_set : nmos::fields::constraint_sets(active_constraints).as_array())
         {
+            if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
             {
                 if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set))

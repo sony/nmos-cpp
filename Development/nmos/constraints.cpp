@@ -2,6 +2,7 @@
 #include "nmos/constraints.h"
 
 #include <map>
+#include <boost/algorithm/string/predicate.hpp>
 #include "nmos/capabilities.h"
 #include "nmos/json_fields.h"
 #include "nmos/sdp_utils.h"
@@ -149,14 +150,12 @@ namespace nmos
         {
             using web::json::value;
 
-            if (!nmos::caps::meta::enabled(constraint_subset)) return true;
-
             const auto& param_constraints_set = constraint_set.as_object();
             const auto& param_constraints_subset = constraint_subset.as_object();
 
             return param_constraints_subset.end() == std::find_if(param_constraints_subset.begin(), param_constraints_subset.end(), [&](const std::pair<utility::string_t, value>& subconstraint)
             {
-                if (subconstraint.first == nmos::caps::meta::label.key || subconstraint.first == nmos::caps::meta::preference.key) return false;
+                if (boost::algorithm::istarts_with(subconstraint.first, U("urn:x-nmos:cap:meta:"))) return false;
 
                 const auto& constraint = param_constraints_set.find(subconstraint.first);
                 return param_constraints_set.end() == constraint || !is_subconstraint(constraint->second, subconstraint.second);
