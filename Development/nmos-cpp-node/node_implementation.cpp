@@ -1090,11 +1090,32 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
 }
 
 // Example Connection API callback to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
-nmos::details::connection_resource_patch_validator make_node_implementation_patch_validator()
+nmos::details::connection_resource_patch_validator make_node_implementation_patch_validator(nmos::node_model& model)
 {
-    // this example uses an 'empty' std::function because it does not need to do any validation
-    // beyond what is expressed by the schemas and /constraints endpoint
-    return{};
+    // "At any time if State of an active Sender becomes active_constraints_violation, the Sender MUST become inactive.
+    // An inactive Sender in this state MUST NOT allow activations.
+    // At any time if State of an active Receiver becomes non_compliant_stream, the Receiver SHOULD become inactive.
+    // An inactive Receiver in this state SHOULD NOT allow activations."
+    // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/Behaviour_-_Server_Side.html#preventing-restrictions-violation
+    return [&] (const nmos::resource& resource, const nmos::resource& connection_resource, const web::json::value& endpoint_staged, slog::base_gate& gate)
+    {
+        if (nmos::fields::master_enable(endpoint_staged))
+        {
+            const auto id = nmos::fields::id(resource.data);
+            const auto type = resource.type;
+
+            auto streamcompatibility_resource = find_resource(model.streamcompatibility_resources, {id, type});
+            if (model.streamcompatibility_resources.end() != streamcompatibility_resource)
+            {
+                auto resource_state = nmos::fields::state(nmos::fields::status(streamcompatibility_resource->data));
+
+                if (resource_state == nmos::sender_states::active_constraints_violation.name || resource_state == nmos::receiver_states::non_compliant_stream.name)
+                {
+                    throw std::logic_error("activation failed due to Status of the connector");
+                }
+            }
+        }
+    };
 }
 
 // Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
@@ -1566,7 +1587,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
         .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
         .on_parse_transport_file(make_node_implementation_transport_file_parser()) // may be omitted if the default is sufficient
-        .on_validate_connection_resource_patch(make_node_implementation_patch_validator()) // may be omitted if not required
+        .on_validate_connection_resource_patch(make_node_implementation_patch_validator(model)) // may be omitted if not required
         .on_resolve_auto(make_node_implementation_auto_resolver(model.settings))
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
