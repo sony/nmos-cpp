@@ -1,5 +1,5 @@
-#ifndef NMOS_FLOWCOMPATIBILITY_RESOURCES_H
-#define NMOS_FLOWCOMPATIBILITY_RESOURCES_H
+#ifndef NMOS_STREAMCOMPATIBILITY_RESOURCES_H
+#define NMOS_STREAMCOMPATIBILITY_RESOURCES_H
 
 #include <vector>
 #include <boost/variant.hpp>
@@ -24,13 +24,13 @@ namespace nmos
         web::json::value make_streamcompatibility_edid_endpoint(const web::uri& edid_file, bool locked = false);
         web::json::value make_streamcompatibility_edid_endpoint(const utility::string_t& edid_file, bool locked = false);
 
-        // See https://github.com/AMWA-TV/is-11/blob/v1.0-dev/APIs/schemas/input.json
+        // See https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/input.html
         // Makes an input without EDID support
         nmos::resource make_streamcompatibility_input(const nmos::id& id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings);
         // Makes an input with EDID support
         nmos::resource make_streamcompatibility_input(const nmos::id& id, bool connected, bool base_edid_changeable, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings);
 
-        // See https://github.com/AMWA-TV/is-11/blob/v1.0-dev/APIs/schemas/output.json
+        // See https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/output.html
         // Makes an output without EDID support
         nmos::resource make_streamcompatibility_output(const nmos::id& id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings);
         // Makes an output with EDID support

@@ -1,4 +1,3 @@
-
 #include "nmos/constraints.h"
 
 #include <map>
