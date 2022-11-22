@@ -914,6 +914,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
+    nmos/connection_streamcompatibility_validator.cpp
     nmos/constraints.cpp
     nmos/did_sdid.cpp
     nmos/events_api.cpp
@@ -990,6 +991,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
+    nmos/connection_streamcompatibility_validator.h
     nmos/constraints.h
     nmos/device_type.h
     nmos/did_sdid.h
