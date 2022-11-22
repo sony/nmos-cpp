@@ -15,12 +15,12 @@ namespace nmos
             using web::json::value_of;
 
             auto active_constraint_sets = value_of({
-                { nmos::fields::constraint_sets, constraint_sets },
+                { nmos::fields::constraint_sets, constraint_sets }
             });
 
             return value_of({
                 { nmos::fields::active_constraint_sets, active_constraint_sets },
-                { nmos::fields::temporarily_locked, locked },
+                { nmos::fields::temporarily_locked, locked }
             });
         }
 

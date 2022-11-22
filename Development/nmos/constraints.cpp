@@ -19,7 +19,7 @@ namespace nmos
         {
             // Audio Constraints
 
-            { nmos::caps::format::channel_count, [](const web::json::value& source, const web::json::value& con) { return nmos::match_integer_constraint((uint32_t)nmos::fields::channels(source).size(), con); } },
+            { nmos::caps::format::channel_count, [](const web::json::value& source, const web::json::value& con) { return nmos::match_integer_constraint((uint32_t)nmos::fields::channels(source).size(), con); } }
         };
 
         static const std::map<utility::string_t, std::function<bool(const web::json::value& flow, const web::json::value& con)>> flow_constraints_matcher
@@ -42,14 +42,14 @@ namespace nmos
             // Audio Constraints
 
             { nmos::caps::format::sample_rate, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::sample_rate(flow)), con); } },
-            { nmos::caps::format::sample_depth, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_depth(flow), con); } },
+            { nmos::caps::format::sample_depth, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_depth(flow), con); } }
         };
 
         static const std::map<utility::string_t, std::function<bool(const web::json::value& sender, const web::json::value& con)>> sender_constraints_matcher
         {
             { nmos::caps::transport::packet_transmission_mode, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::packet_transmission_mode(sender), con); } },
             { nmos::caps::transport::st2110_21_sender_type, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::st2110_21_sender_type(sender), con); } },
-            { nmos::caps::transport::bit_rate, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_rate(sender), con); } },
+            { nmos::caps::transport::bit_rate, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_rate(sender), con); } }
         };
 
         bool match_resource_parameters_constraint_set(const web::json::value& resource, const constraints_matcher& matcher, const web::json::value& constraint_set)
