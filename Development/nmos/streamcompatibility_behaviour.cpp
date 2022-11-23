@@ -8,6 +8,7 @@
 #include "nmos/activation_mode.h"
 #include "nmos/activation_utils.h"
 #include "nmos/capabilities.h" // for constraint_sets
+#include "nmos/connection_api.h" // for get_transport_type_data
 #include "nmos/constraints.h"
 #include "nmos/id.h"
 #include "nmos/media_type.h"
@@ -21,27 +22,6 @@ namespace nmos
 {
     namespace experimental
     {
-        utility::string_t get_sdp_data(const web::json::value& transport_file)
-        {
-            // "'data' and 'type' must both be strings or both be null"
-            // See https://specs.amwa.tv/is-05/releases/v1.0.2/APIs/schemas/with-refs/v1.0-receiver-response-schema.html
-            // and https://specs.amwa.tv/is-05/releases/v1.1.0/APIs/schemas/with-refs/receiver-transport-file.html
-
-            if (!transport_file.has_field(nmos::fields::data)) throw std::logic_error("data is required");
-
-            auto& transport_data = transport_file.at(nmos::fields::data);
-            if (transport_data.is_null()) throw std::logic_error("data is required");
-
-            if (!transport_file.has_field(nmos::fields::type)) throw std::logic_error("type is required");
-
-            auto& transport_type = transport_file.at(nmos::fields::type);
-            if (transport_type.is_null() || transport_type.as_string().empty()) throw std::logic_error("type is required");
-
-            if (nmos::media_types::application_sdp.name != transport_type.as_string()) throw std::logic_error("transport file type is not SDP");
-
-            return transport_data.as_string();
-        }
-
         std::vector<nmos::id> get_resources_ids(const nmos::resources& resources, const nmos::type& type)
         {
             return boost::copy_range<std::vector<nmos::id>>(resources | boost::adaptors::filtered([&type] (const nmos::resource& resource)
@@ -53,42 +33,6 @@ namespace nmos
             }));
         }
 
-        std::pair<nmos::sender_state, utility::string_t> validate_sender_resources(const web::json::value& transport_file, const web::json::value& sender, const web::json::value& flow, const web::json::value& source, const web::json::array& constraint_sets)
-        {
-            nmos::sender_state sender_state;
-
-            if (!web::json::empty(constraint_sets))
-            {
-                bool constrained = true;
-
-                auto source_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_source_parameters_constraint_set(source, constraint_set); });
-                auto flow_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_flow_parameters_constraint_set(flow, constraint_set); });
-                auto sender_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_sender_parameters_constraint_set(sender, constraint_set); });
-
-                constrained = constraint_sets.end() != source_found && constraint_sets.end() != flow_found && constraint_sets.end() != sender_found;
-
-                if (!transport_file.is_null() && !transport_file.as_object().empty())
-                {
-                    utility::string_t sdp_data = get_sdp_data(transport_file);
-                    const auto session_description = sdp::parse_session_description(utility::us2s(sdp_data));
-                    auto sdp_params = nmos::parse_session_description(session_description).first;
-
-                    const auto format_params = nmos::details::get_format_parameters(sdp_params);
-                    const auto sdp_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return nmos::details::match_sdp_parameters_constraint_set(nmos::details::format_constraints, sdp_params, format_params, constraint_set); });
-
-                    constrained = constrained && constraint_sets.end() != sdp_found;
-                }
-
-                sender_state = constrained ? nmos::sender_states::constrained : nmos::sender_states::active_constraints_violation;
-            }
-            else
-            {
-                sender_state = nmos::sender_states::unconstrained;
-            }
-
-            return { sender_state, {} };
-        }
-
         std::pair<nmos::receiver_state, utility::string_t> validate_receiver_resources(const web::json::value& transport_file, const web::json::value& receiver)
         {
             nmos::receiver_state receiver_state;
@@ -96,8 +40,13 @@ namespace nmos
 
             if (!transport_file.is_null() && !transport_file.as_object().empty())
             {
-                utility::string_t sdp_data = get_sdp_data(transport_file);
-                const auto session_description = sdp::parse_session_description(utility::us2s(sdp_data));
+                const auto [transport_file_type, transport_file_data] = nmos::details::get_transport_type_data(transport_file);
+                if (nmos::media_types::application_sdp.name != transport_file_type)
+                {
+                    throw std::runtime_error("unknown transport file type");
+                }
+
+                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
                 auto sdp_params = nmos::parse_session_description(session_description).first;
 
                 receiver_state = nmos::receiver_states::compliant_stream;
@@ -185,7 +134,7 @@ namespace nmos
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is being validated with its Flow, Source and transport file";
                                 if (validate_sender)
                                 {
-                                    std::tie(sender_state, sender_state_debug) = validate_sender(transport_file, sender->data, flow->data, source->data, constraint_sets);
+                                    std::tie(sender_state, sender_state_debug) = validate_sender(transport_file, *sender, *flow, *source, constraint_sets);
                                 }
                             }
 

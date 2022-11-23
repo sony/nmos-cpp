@@ -22,7 +22,7 @@
 #include "nmos/colorspace.h"
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
-#include "nmos/connection_streamcompatibility_validator.h"
+#include "nmos/streamcompatibility_validation.h"
 #include "nmos/events_resources.h"
 #include "nmos/format.h"
 #include "nmos/streamcompatibility_resources.h"
@@ -1442,8 +1442,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
 
 nmos::experimental::details::streamcompatibility_sender_validator make_node_implementation_streamcompatibility_sender_validator()
 {
-    // this example uses the default sender validator explicitly
-    return &nmos::experimental::validate_sender_resources;
+    return nmos::experimental::make_streamcompatibility_sender_resources_validator();
 }
 
 nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator()
