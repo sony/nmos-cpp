@@ -33,20 +33,20 @@ namespace nmos
             }));
         }
 
-        std::pair<nmos::receiver_state, utility::string_t> validate_receiver_resources(const web::json::value& transport_file, const web::json::value& receiver)
+        std::pair<nmos::receiver_state, utility::string_t> validate_receiver_resources(const web::json::value& transport_file_, const web::json::value& receiver)
         {
             nmos::receiver_state receiver_state;
             utility::string_t receiver_state_debug;
 
-            if (!transport_file.is_null() && !transport_file.as_object().empty())
+            if (!transport_file_.is_null() && !transport_file_.as_object().empty())
             {
-                const auto [transport_file_type, transport_file_data] = nmos::details::get_transport_type_data(transport_file);
-                if (nmos::media_types::application_sdp.name != transport_file_type)
+                const auto transport_file = nmos::details::get_transport_type_data(transport_file_);
+                if (nmos::media_types::application_sdp.name != transport_file.first)
                 {
                     throw std::runtime_error("unknown transport file type");
                 }
 
-                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
+                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file.second));
                 auto sdp_params = nmos::parse_session_description(session_description).first;
 
                 receiver_state = nmos::receiver_states::compliant_stream;

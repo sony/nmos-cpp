@@ -72,12 +72,11 @@ namespace nmos
 
             const details::transport_file_constraint_sets_matcher match_transport_file_constraint_sets = [](const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets) -> bool
             {
-                const auto& [transport_file_type, transport_file_data] = transport_file;
-                if (nmos::media_types::application_sdp.name != transport_file_type)
+                if (nmos::media_types::application_sdp.name != transport_file.first)
                 {
                     throw std::runtime_error("unknown transport file type");
                 }
-                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
+                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file.second));
                 auto sdp_params = nmos::parse_session_description(session_description).first;
 
                 const auto format_params = nmos::details::get_format_parameters(sdp_params);
