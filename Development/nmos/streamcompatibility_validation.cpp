@@ -13,7 +13,7 @@ namespace nmos
     {
         bool match_resource_parameters_constraint_set(const parameter_constraints& constraints, const web::json::value& resource, const web::json::value& constraint_set_)
         {
-            if (!nmos::caps::meta::enabled(constraint_set_)) return true;
+            if (!nmos::caps::meta::enabled(constraint_set_)) return false;
 
             const auto& constraint_set = constraint_set_.as_object();
             return constraint_set.end() == std::find_if(constraint_set.begin(), constraint_set.end(), [&](const std::pair<utility::string_t, web::json::value>& constraint)

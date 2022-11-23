@@ -6,13 +6,42 @@
 #include "bst/test/test.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSimpleCase)
+{
+    {
+        using web::json::value;
+        using web::json::value_of;
+        using nmos::experimental::is_constraint_subset;
+
+        auto a = value_of({
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({}, 1920) }
+        });
+
+        auto b1 = value_of({
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({}, 2000) },
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
+        });
+
+        auto b2 = value_of({
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({}, 1900) }
+        });
+
+        auto b3 = value::object();
+
+        BST_REQUIRE(is_constraint_subset(a, b1));
+        BST_REQUIRE(!is_constraint_subset(a, b2));
+        BST_REQUIRE(!is_constraint_subset(a, b3));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testLessConstraints)
 {
     {
         using web::json::value_of;
         using nmos::experimental::is_constraint_subset;
 
-        auto constraint_set = value_of({
+        auto a = value_of({
             { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
             { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
             { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
@@ -25,15 +54,15 @@ BST_TEST_CASE(testLessConstraints)
             { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
         });
 
-        auto constraint_subset = value_of({
+        auto b = value_of({
             { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
             { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
             { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
             { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) }
         });
 
-        BST_REQUIRE(is_constraint_subset(constraint_set, constraint_subset));
-        BST_REQUIRE(!is_constraint_subset(constraint_subset, constraint_set));
+        BST_REQUIRE(!is_constraint_subset(a, b));
+        BST_REQUIRE(is_constraint_subset(b, a));
     }
 }
 

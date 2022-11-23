@@ -10,6 +10,10 @@ namespace nmos
 {
     namespace experimental
     {
+        // Constraint B is a subconstraint of Constraint A if:
+        // 1. Constraint B has enum keyword when Constraint A has it and enumerated values of Constraint B are a subset of enumerated values of Constraint A
+        // 2. Constraint B has enum or minimum keyword when Constraint A has minimum keyword and allowed values of Constraint B are greater than minimum value of Constraint A
+        // 3. Constraint B has enum or maximum keyword when Constraint A has maximum keyword and allowed values of Constraint B are less than maximum value of Constraint A
         bool is_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint)
         {
             // subconstraint should have enum if constraint has enum
@@ -59,23 +63,16 @@ namespace nmos
             if (subconstraint.has_field(nmos::fields::constraint_enum))
             {
                 const auto& subconstraint_enum_values = nmos::fields::constraint_enum(subconstraint).as_array();
-                if (subconstraint_enum_values.end() == std::find_if(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&constraint](const web::json::value& enum_value)
+                return subconstraint_enum_values.end() == std::find_if_not(subconstraint_enum_values.begin(), subconstraint_enum_values.end(), [&constraint](const web::json::value& enum_value)
                 {
                     return match_constraint(enum_value, constraint);
-                }))
-                {
-                    return false;
-                }
+                });
             }
             return true;
         }
 
-        // Constraint Set B is a subset of Constraint Set A if all of Parameter Constraints of Constraint Set B, except for meta, are present in Constraint Set A and each Parameter Constraint of Constraint Set B, except for meta, is a subconstraint of the according Parameter Constraint of Constraint Set A.
-        // Constraint B is a subconstraint of a Constraint A if:
-
-        // 1. Constraint B has enum keyword when Constraint A has it and enum of Constraint B is a subset of enum of Constraint A
-        // 2. Constraint B has enum or minimum keyword when Constraint A has minimum keyword and allowed values for Constraint B are less than allowed values for Constraint A
-        // 3. Constraint B has enum or maximum keyword when Constraint A has maximum keyword and allowed values for Constraint B are greater than allowed values for Constraint A
+        // Constraint Set B is a subset of Constraint Set A if all Parameter Constraints of Constraint Set A are present in Constraint Set B, and for each Parameter Constraint
+        // that is present in both, the Parameter Constraint of Constraint Set B is a subconstraint of the Parameter Constraint of Constraint Set A.
         bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset)
         {
             using web::json::value;
@@ -83,12 +80,12 @@ namespace nmos
             const auto& param_constraints_set = constraint_set.as_object();
             const auto& param_constraints_subset = constraint_subset.as_object();
 
-            return param_constraints_subset.end() == std::find_if(param_constraints_subset.begin(), param_constraints_subset.end(), [&](const std::pair<utility::string_t, value>& subconstraint)
+            return param_constraints_set.end() == std::find_if_not(param_constraints_set.begin(), param_constraints_set.end(), [&param_constraints_subset](const std::pair<utility::string_t, value>& constraint)
             {
-                if (boost::algorithm::starts_with(subconstraint.first, U("urn:x-nmos:cap:meta:"))) return false;
+                if (boost::algorithm::starts_with(constraint.first, U("urn:x-nmos:cap:meta:"))) return true;
 
-                const auto& constraint = param_constraints_set.find(subconstraint.first);
-                return param_constraints_set.end() == constraint || !is_subconstraint(constraint->second, subconstraint.second);
+                const auto& subconstraint = param_constraints_subset.find(constraint.first);
+                return param_constraints_subset.end() != subconstraint && is_subconstraint(constraint.second, subconstraint->second);
             });
         }
     }
