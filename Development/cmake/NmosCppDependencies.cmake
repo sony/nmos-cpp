@@ -257,6 +257,10 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
     set(NMOS_CPP_USE_AVAHI ON CACHE BOOL "Use Avahi compatibility library rather than mDNSResponder")
     if(NMOS_CPP_USE_AVAHI)
+        # third_party/cmake/FindAvahi.cmake uses the package name and target namespace 'Avahi'
+        # but some revisions of the 'avahi' conan recipe do not override the conan default
+        # for cmake package name and target namespace, which is the conan package name lower-cased
+        # (luckily find_package is case-insensitive)
         find_package(Avahi REQUIRED)
         if(NOT Avahi_VERSION)
             message(STATUS "Found Avahi unknown version")
@@ -267,10 +271,12 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
         if(TARGET Avahi::compat-libdns_sd)
             target_link_libraries(DNSSD INTERFACE Avahi::compat-libdns_sd)
         else()
-            # unfortunately some versions of the Conan 'avahi' recipe may produce a lowercase namespace
             target_link_libraries(DNSSD INTERFACE avahi::compat-libdns_sd)
         endif()
     else()
+        # third_party/cmake/FindDNSSD.cmake uses the package name and target namespace 'DNSSD'
+        # but some revisions of the 'mdnsresponder' conan recipe do not override the conan default
+        # for cmake package name and target namespace, which is the conan package name lower-cased
         find_package(DNSSD)
         if(DNSSD_FOUND)
             if(NOT DNSSD_VERSION)
@@ -281,7 +287,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 
             target_link_libraries(DNSSD INTERFACE DNSSD::DNSSD)
         else()
-            # unfortunately some versions of the Conan 'mdnsresponder' recipe may use different package and target names
             find_package(mdnsresponder REQUIRED)
             if(NOT mdnsresponder_VERSION)
                 message(STATUS "Found mdnsresponder unknown version")
@@ -303,6 +308,9 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     set(NMOS_CPP_USE_BONJOUR_SDK OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
     mark_as_advanced(FORCE NMOS_CPP_USE_BONJOUR_SDK)
     if(NMOS_CPP_USE_BONJOUR_SDK)
+        # third_party/cmake/FindDNSSD.cmake uses the package name and target namespace 'DNSSD'
+        # but some revisions of the 'mdnsresponder' conan recipe do not override the conan default
+        # for cmake package name and target namespace, which is the conan package name lower-cased
         find_package(DNSSD)
         if(DNSSD_FOUND)
             if(NOT DNSSD_VERSION)
@@ -313,7 +321,6 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
             target_link_libraries(DNSSD INTERFACE DNSSD::DNSSD)
         else()
-            # unfortunately some versions of the Conan 'mdnsresponder' recipe may use different package and target names
             find_package(mdnsresponder REQUIRED)
             if(NOT mdnsresponder_VERSION)
                 message(STATUS "Found mdnsresponder unknown version")
