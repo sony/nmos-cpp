@@ -196,8 +196,21 @@ if(NMOS_CPP_USE_CONAN)
         message(STATUS "Found nlohmann_json_schema_validator version " ${nlohmann_json_schema_validator_VERSION})
     endif()
 
+    set(NLOHMANN_JSON_VERSION_MIN "3.6.0")
+    set(NLOHMANN_JSON_VERSION_CUR "3.11.2")
+    find_package(nlohmann_json REQUIRED)
+    if(NOT nlohmann_json_VERSION)
+        message(STATUS "Found nlohmann_json unknown version; minimum version: " ${NLOHMANN_JSON_VERSION_MIN})
+    elseif(nlohmann_json_VERSION VERSION_LESS NLOHMANN_JSON_VERSION_MIN)
+        message(FATAL_ERROR "Found nlohmann_json version " ${nlohmann_json_VERSION} " that is lower than the minimum version: " ${NLOHMANN_JSON_VERSION_MIN})
+    elseif(nlohmann_json_VERSION VERSION_GREATER NLOHMANN_JSON_VERSION_CUR)
+        message(STATUS "Found nlohmann_json version " ${nlohmann_json_VERSION} " that is higher than the current tested version: " ${NLOHMANN_JSON_VERSION_CUR})
+    else()
+        message(STATUS "Found nlohmann_json version " ${nlohmann_json_VERSION})
+    endif()
+
     add_library(json_schema_validator INTERFACE)
-    target_link_libraries(json_schema_validator INTERFACE nlohmann_json_schema_validator)
+    target_link_libraries(json_schema_validator INTERFACE nlohmann_json_schema_validator nlohmann_json::nlohmann_json)
 else()
     set(JSON_SCHEMA_VALIDATOR_SOURCES
         third_party/nlohmann/json-patch.cpp
