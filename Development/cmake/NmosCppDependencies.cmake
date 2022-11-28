@@ -184,7 +184,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 if(NMOS_CPP_USE_CONAN)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
-    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.1.0")
+    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.2.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
     if(NOT nlohmann_json_schema_validator_VERSION)
         message(STATUS "Found nlohmann_json_schema_validator unknown version; minimum version: " ${JSON_SCHEMA_VALIDATOR_VERSION_MIN})
