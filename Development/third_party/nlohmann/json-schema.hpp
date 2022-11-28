@@ -24,11 +24,11 @@
 #include <nlohmann/json.hpp>
 
 #ifdef NLOHMANN_JSON_VERSION_MAJOR
-#	if (NLOHMANN_JSON_VERSION_MAJOR * 10000 + NLOHMANN_JSON_VERSION_MINOR * 100 + NLOHMANN_JSON_VERSION_PATCH) < 30600
-#		error "Please use this library with NLohmann's JSON version 3.6.0 or higher"
+#	if (NLOHMANN_JSON_VERSION_MAJOR * 10000 + NLOHMANN_JSON_VERSION_MINOR * 100 + NLOHMANN_JSON_VERSION_PATCH) < 30800
+#		error "Please use this library with NLohmann's JSON version 3.8.0 or higher"
 #	endif
 #else
-#	error "expected existing NLOHMANN_JSON_VERSION_MAJOR preproc variable, please update to NLohmann's JSON 3.6.0"
+#	error "expected existing NLOHMANN_JSON_VERSION_MAJOR preproc variable, please update to NLohmann's JSON 3.8.0"
 #endif
 
 // make yourself a home - welcome to nlohmann's namespace
@@ -59,10 +59,9 @@ protected:
 	// decodes a JSON uri and replaces all or part of the currently stored values
 	void update(const std::string &uri);
 
-	std::tuple<std::string, std::string, std::string, std::string, std::string> tie() const
+	std::tuple<std::string, std::string, std::string, std::string, std::string> as_tuple() const
 	{
-		return std::tie(urn_, scheme_, authority_, path_,
-		                identifier_ != "" ? identifier_ : pointer_);
+		return std::make_tuple(urn_, scheme_, authority_, path_, identifier_ != "" ? identifier_ : pointer_.to_string());
 	}
 
 public:
@@ -81,7 +80,7 @@ public:
 	std::string fragment() const
 	{
 		if (identifier_ == "")
-			return pointer_;
+			return pointer_.to_string();
 		else
 			return identifier_;
 	}
@@ -115,12 +114,12 @@ public:
 
 	friend bool operator<(const json_uri &l, const json_uri &r)
 	{
-		return l.tie() < r.tie();
+		return l.as_tuple() < r.as_tuple();
 	}
 
 	friend bool operator==(const json_uri &l, const json_uri &r)
 	{
-		return l.tie() == r.tie();
+		return l.as_tuple() == r.as_tuple();
 	}
 
 	friend std::ostream &operator<<(std::ostream &os, const json_uri &u);
@@ -133,6 +132,7 @@ extern json draft7_schema_builtin;
 
 typedef std::function<void(const json_uri & /*id*/, json & /*value*/)> schema_loader;
 typedef std::function<void(const std::string & /*format*/, const std::string & /*value*/)> format_checker;
+typedef std::function<void(const std::string & /*contentEncoding*/, const std::string & /*contentMediaType*/, const json & /*instance*/)> content_checker;
 
 // Interface for validation error handlers
 class JSON_SCHEMA_VALIDATOR_API error_handler
@@ -159,7 +159,7 @@ public:
 /**
  * Checks validity of JSON schema built-in string format specifiers like 'date-time', 'ipv4', ...
  */
-void default_string_format_check(const std::string &format, const std::string &value);
+void JSON_SCHEMA_VALIDATOR_API default_string_format_check(const std::string &format, const std::string &value);
 
 class root_schema;
 
@@ -168,10 +168,10 @@ class JSON_SCHEMA_VALIDATOR_API json_validator
 	std::unique_ptr<root_schema> root_;
 
 public:
-	json_validator(schema_loader = nullptr, format_checker = nullptr);
+	json_validator(schema_loader = nullptr, format_checker = nullptr, content_checker = nullptr);
 
-	json_validator(const json &, schema_loader = nullptr, format_checker = nullptr);
-	json_validator(json &&, schema_loader = nullptr, format_checker = nullptr);
+	json_validator(const json &, schema_loader = nullptr, format_checker = nullptr, content_checker = nullptr);
+	json_validator(json &&, schema_loader = nullptr, format_checker = nullptr, content_checker = nullptr);
 
 	json_validator(json_validator &&);
 	json_validator &operator=(json_validator &&);
@@ -189,7 +189,7 @@ public:
 	json validate(const json &) const;
 
 	// validate a json-document based on the root-schema with a custom error-handler
-	json validate(const json &, error_handler &) const;
+	json validate(const json &, error_handler &, const json_uri &initial_uri = json_uri("#")) const;
 };
 
 } // namespace json_schema
