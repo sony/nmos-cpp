@@ -10,6 +10,12 @@
     // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
     //"activate_senders": false,
 
+    // senders, receivers: controls which kinds of sender and receiver are instantiated by the example node
+    // the values must be an array of unique strings identifying the kinds of 'port', like ["v", "a", "d"], see impl::ports
+    // when omitted, all ports are instantiated
+    //"senders": ["v", "a"],
+    //"receivers": [],
+
     // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
     // and the equivalent parameter constraint on video receivers
     // the value must be an object like { "numerator": 25, "denominator": 1 }
@@ -20,7 +26,7 @@
     //"frame_height": 2160,
 
     // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
-    // when omitted, a default is used based on the frame_rate, etc.
+    // when omitted, a default of "progressive" or "interlaced_tff" is used based on the frame_rate, etc.
     //"interlace_mode": "progressive",
 
     // colorspace: controls the colorspace of video flows, see nmos::colorspace
