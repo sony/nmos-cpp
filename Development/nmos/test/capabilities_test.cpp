@@ -25,7 +25,7 @@ BST_TEST_CASE(testMatchConstraint)
         BST_REQUIRE(nmos::match_integer_constraint(i, nmos::make_caps_integer_constraint({}, 37, 57)));
     for (auto i : { -100, 0, 100 })
         BST_REQUIRE(!nmos::match_integer_constraint(i, nmos::make_caps_integer_constraint({}, 37, 57)));
-    BST_REQUIRE(nmos::match_integer_constraint(0xBADC0FFEE, nmos::make_caps_integer_constraint({}, 0xC0FFEE, 0xC01DC0FFEE)));
+    BST_REQUIRE(nmos::match_integer_constraint(INT64_C(0xBADC0FFEE), nmos::make_caps_integer_constraint({}, INT64_C(0xC0FFEE), INT64_C(0xC01DC0FFEE))));
 
     BST_REQUIRE(nmos::match_number_constraint(4.2, nmos::make_caps_number_constraint({ 3.7, 4.2, 5.7 }, 3.7, 5.7)));
     BST_REQUIRE(!nmos::match_number_constraint(4.2, nmos::make_caps_number_constraint({ 3.7, 5.7 })));
@@ -48,7 +48,7 @@ BST_TEST_CASE(testMatchConstraint)
     BST_REQUIRE(!nmos::match_constraint(value(U("purr")), nmos::make_caps_string_constraint({ U("meow"), U("hiss") })));
     BST_REQUIRE(nmos::match_constraint(value(42), nmos::make_caps_integer_constraint({ 37, 42, 57 }, 37, 57)));
     BST_REQUIRE(!nmos::match_constraint(value(42), nmos::make_caps_integer_constraint({ 37, 57 })));
-    BST_REQUIRE(nmos::match_constraint(value(0xBADC0FFEE), nmos::make_caps_integer_constraint({}, 0xC0FFEE, 0xC01DC0FFEE)));
+    BST_REQUIRE(nmos::match_constraint(value(INT64_C(0xBADC0FFEE)), nmos::make_caps_integer_constraint({}, INT64_C(0xC0FFEE), INT64_C(0xC01DC0FFEE))));
     BST_REQUIRE(nmos::match_constraint(value(4.2), nmos::make_caps_number_constraint({ 3.7, 4.2, 5.7 }, 3.7, 5.7)));
     BST_REQUIRE(!nmos::match_constraint(value(4.2), nmos::make_caps_number_constraint({ 3.7, 5.7 })));
     BST_REQUIRE(nmos::match_constraint(value(true), nmos::make_caps_boolean_constraint({ false, true })));
