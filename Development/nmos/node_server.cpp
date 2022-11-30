@@ -106,7 +106,7 @@ namespace nmos
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
-            auto validate_sender = node_implementation.validate_sender;
+            auto validate_sender_resources = node_implementation.validate_sender_resources;
             auto validate_receiver = node_implementation.validate_receiver;
             node_server.thread_functions.assign({
                 [&, load_ca_certificates, registration_changed] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, gate); },
@@ -114,7 +114,7 @@ namespace nmos
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
                 [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); },
-                [&, validate_sender, validate_receiver] { nmos::experimental::streamcompatibility_behaviour_thread(node_model, validate_sender, validate_receiver, gate); }
+                [&, validate_sender_resources, validate_receiver] { nmos::experimental::streamcompatibility_behaviour_thread(node_model, validate_sender_resources, validate_receiver, gate); }
             });
 
             auto system_changed = node_implementation.system_changed;
