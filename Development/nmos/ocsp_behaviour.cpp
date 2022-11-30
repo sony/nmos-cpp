@@ -35,23 +35,23 @@ namespace nmos
             {}
         };
 
-        void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
+        void ocsp_behaviour_thread(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
 
         double certificate_expiry_from_now(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<web::uri> get_ocsp_uris(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
         std::vector<uint8_t> make_ocsp_request(const std::vector<utility::string_t>& certificate_chains, slog::base_gate& gate);
-        void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
+        void ocsp_behaviour(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate);
     }
 
     // callbacks from this function are called with the model locked, and may read the model
-    void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate_)
+    void ocsp_behaviour_thread(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::ocsp_behaviour));
 
         details::ocsp_behaviour_thread(model, ocsp_state, load_ca_certificates, load_server_certificates, gate);
     }
 
-    void details::ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate)
+    void details::ocsp_behaviour_thread(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate)
     {
         enum
         {
@@ -192,7 +192,7 @@ namespace nmos
         }
 
         // task to continuously fetch the certificate status (OCSP response) on a time interval until failure or cancellation
-        pplx::task<void> do_certificate_status_requests(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, ocsp_shared_state& state, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        pplx::task<void> do_certificate_status_requests(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, ocsp_shared_state& state, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             const auto& ocsp_interval_min(nmos::experimental::fields::ocsp_interval_min(model.settings));
             const auto& ocsp_interval_max(nmos::experimental::fields::ocsp_interval_max(model.settings));
@@ -306,7 +306,7 @@ namespace nmos
             return nmos::experimental::make_ocsp_request(certificate_chains);
         }
 
-        void ocsp_behaviour(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate)
+        void ocsp_behaviour(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, std::vector<web::uri>& ocsp_uris, ocsp_shared_state& state, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting certificates status requests";
 
