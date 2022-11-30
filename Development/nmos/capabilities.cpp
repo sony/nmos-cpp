@@ -99,8 +99,7 @@ namespace nmos
             return true;
         }
 
-        template <typename T>
-        bool match_pattern_constraint(const T& value, const web::json::value& constraint)
+        bool match_pattern_constraint(const utility::string_t& value, const web::json::value& constraint)
         {
             if (constraint.has_field(nmos::fields::constraint_pattern))
             {
