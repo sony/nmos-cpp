@@ -33,28 +33,34 @@ namespace nmos
             }
             if (constraint.has_field(nmos::fields::constraint_minimum) && subconstraint.has_field(nmos::fields::constraint_minimum))
             {
-                if (constraint.at(U("minimum")).has_field(nmos::fields::numerator))
+                const auto& constraint_min = nmos::fields::constraint_minimum(constraint);
+                const auto& subconstraint_min = nmos::fields::constraint_minimum(subconstraint);
+
+                if (constraint_min.has_field(nmos::fields::numerator))
                 {
-                    if (nmos::parse_rational(constraint.at(U("minimum"))) > nmos::parse_rational(subconstraint.at(U("minimum"))))
+                    if (nmos::parse_rational(constraint_min) > nmos::parse_rational(subconstraint_min))
                     {
                         return false;
                     }
                 }
-                else if (nmos::fields::constraint_minimum(constraint) > nmos::fields::constraint_minimum(subconstraint))
+                else if (constraint_min.as_double() > subconstraint_min.as_double())
                 {
                     return false;
                 }
             }
             if (constraint.has_field(nmos::fields::constraint_maximum) && subconstraint.has_field(nmos::fields::constraint_maximum))
             {
-                if (constraint.at(U("maximum")).has_field(nmos::fields::numerator))
+                const auto& constraint_max = nmos::fields::constraint_maximum(constraint);
+                const auto& subconstraint_max = nmos::fields::constraint_maximum(subconstraint);
+
+                if (constraint_max.has_field(nmos::fields::numerator))
                 {
-                    if (nmos::parse_rational(constraint.at(U("maximum"))) < nmos::parse_rational(subconstraint.at(U("maximum"))))
+                    if (nmos::parse_rational(constraint_max) < nmos::parse_rational(subconstraint_max))
                     {
                         return false;
                     }
                 }
-                else if (nmos::fields::constraint_maximum(constraint) < nmos::fields::constraint_maximum(subconstraint))
+                else if (constraint_max.as_double() < subconstraint_max.as_double())
                 {
                     return false;
                 }
