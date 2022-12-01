@@ -31,6 +31,8 @@ namespace nmos
         return make_rational({ numerator, denominator });
     }
 
+    bool is_rational(const web::json::value& value);
+
     rational parse_rational(const web::json::value& value);
 }
 

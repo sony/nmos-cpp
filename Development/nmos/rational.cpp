@@ -11,6 +11,12 @@ namespace nmos
         });
     }
 
+    bool is_rational(const web::json::value& value)
+    {
+        // denominator has a default of 1 so may be omitted
+        return value.has_integer_field(nmos::fields::numerator);
+    }
+
     rational parse_rational(const web::json::value& value)
     {
         return{
