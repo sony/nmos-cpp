@@ -122,7 +122,7 @@ namespace nmos
 
         // port numbers [registry, node]: ports to which clients should connect for each API
 
-        // http_port [registry, node]: if specified, used in preference to the individual defaults for each HTTP API
+        // http_port [registry, node]: if specified, this becomes the default port for each HTTP API and the next higher port becomes the default for each WebSocket API
         const web::json::field_as_integer_or http_port{ U("http_port"), 0 };
 
         const web::json::field_as_integer_or query_port{ U("query_port"), 3211 };
