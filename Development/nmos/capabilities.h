@@ -20,7 +20,7 @@ namespace nmos
     template <> nmos::rational inline no_maximum() { return 0; }
 
     // See https://specs.amwa.tv/bcp-004-01/releases/v1.0.0/docs/1.0._Receiver_Capabilities.html#string-constraint-keywords
-    web::json::value make_caps_string_constraint(const std::vector<utility::string_t>& enum_values = {});
+    web::json::value make_caps_string_constraint(const std::vector<utility::string_t>& enum_values = {}, const utility::string_t& pattern = {});
 
     // See https://specs.amwa.tv/bcp-004-01/releases/v1.0.0/docs/1.0._Receiver_Capabilities.html#integer-and-number-constraint-keywords
     web::json::value make_caps_integer_constraint(const std::vector<int64_t>& enum_values = {}, int64_t minimum = no_minimum<int64_t>(), int64_t maximum = no_maximum<int64_t>());

@@ -11,7 +11,7 @@ namespace slog
 
 namespace nmos
 {
-    struct model;
+    struct base_model;
 
     namespace experimental
     {
@@ -19,7 +19,7 @@ namespace nmos
     }
 
     // callbacks from this function are called with the model locked, and may read the model
-    void ocsp_behaviour_thread(nmos::model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
+    void ocsp_behaviour_thread(nmos::base_model& model, nmos::experimental::ocsp_state& ocsp_state, load_ca_certificates_handler load_ca_certificates, load_server_certificates_handler load_server_certificates, slog::base_gate& gate);
 }
 
 #endif

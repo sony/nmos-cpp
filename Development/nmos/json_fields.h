@@ -124,8 +124,8 @@ namespace nmos
 
         // for connection_api
         const web::json::field_as_value endpoint_constraints{ U("constraints") }; // array
-        const web::json::field_as_value constraint_maximum{ U("maximum") }; // integer, number or object
-        const web::json::field_as_value constraint_minimum{ U("minimum") }; // integer, number or object
+        const web::json::field_as_value constraint_maximum{ U("maximum") }; // integer, number or rational
+        const web::json::field_as_value constraint_minimum{ U("minimum") }; // integer, number or rational
         const web::json::field_as_value constraint_enum{ U("enum") }; // array
         const web::json::field_as_string constraint_pattern{ U("pattern") }; // regex
         const web::json::field_as_string_or constraint_description{ U("description"), {} }; // string
