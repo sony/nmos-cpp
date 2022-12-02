@@ -36,9 +36,16 @@ namespace nmos
                 const auto& constraint_min = nmos::fields::constraint_minimum(constraint);
                 const auto& subconstraint_min = nmos::fields::constraint_minimum(subconstraint);
 
-                if (constraint_min.has_field(nmos::fields::numerator))
+                if (nmos::is_rational(constraint_min))
                 {
                     if (nmos::parse_rational(constraint_min) > nmos::parse_rational(subconstraint_min))
+                    {
+                        return false;
+                    }
+                }
+                else if (constraint_min.is_integer() && subconstraint_min.is_integer())
+                {
+                    if (constraint_min.as_number().to_int64() > subconstraint_min.as_number().to_int64())
                     {
                         return false;
                     }
@@ -53,9 +60,16 @@ namespace nmos
                 const auto& constraint_max = nmos::fields::constraint_maximum(constraint);
                 const auto& subconstraint_max = nmos::fields::constraint_maximum(subconstraint);
 
-                if (constraint_max.has_field(nmos::fields::numerator))
+                if (nmos::is_rational(constraint_max))
                 {
                     if (nmos::parse_rational(constraint_max) < nmos::parse_rational(subconstraint_max))
+                    {
+                        return false;
+                    }
+                }
+                else if (constraint_max.is_integer() && subconstraint_max.is_integer())
+                {
+                    if (constraint_max.as_number().to_int64() < subconstraint_max.as_number().to_int64())
                     {
                         return false;
                     }
