@@ -160,6 +160,9 @@ namespace impl
     // generate a repeatable source-specific multicast address for each leg of a sender
     utility::string_t make_source_specific_multicast_address_v4(const nmos::id& id, int leg = 0);
 
+    // add a selection of parents to a source or flow
+    void insert_parents(nmos::resource& resource, const nmos::id& seed_id, const port& port, int index);
+
     // add a helpful suffix to the label of a sub-resource for the example node
     void set_label_description(nmos::resource& resource, const port& port, int index);
 
@@ -369,6 +372,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             {
                 source = nmos::make_mux_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
             }
+            impl::insert_parents(source, seed_id, port, index);
             impl::set_label_description(source, port, index);
 
             nmos::resource flow;
@@ -426,6 +430,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
                 // add optional grain_rate
                 flow.data[nmos::fields::grain_rate] = nmos::make_rational(frame_rate);
             }
+            impl::insert_parents(flow, seed_id, port, index);
             impl::set_label_description(flow, port, index);
 
             // set_transportfile needs to find the matching source and flow for the sender, so insert these first
@@ -1341,6 +1346,23 @@ namespace impl
         a[0] = 232;
         a[2] |= 1;
         return utility::s2us(boost::asio::ip::address_v4(a).to_string());
+    }
+
+    // add a selection of parents to a source or flow
+    void insert_parents(nmos::resource& resource, const nmos::id& seed_id, const port& port, int index)
+    {
+        // algorithm to produce signal ancestry with a range of depths and breadths
+        // see https://github.com/sony/nmos-cpp/issues/312#issuecomment-1335641637
+        int b = 0;
+        while (index & (1 << b)) ++b;
+        if (!b) return;
+        index &= ~(1 << (b - 1));
+        do
+        {
+            index &= ~(1 << b);
+            web::json::push_back(resource.data[nmos::fields::parents], impl::make_id(seed_id, resource.type, port, index));
+            ++b;
+        } while (index & (1 << b));
     }
 
     // add a helpful suffix to the label of a sub-resource for the example node
