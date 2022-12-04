@@ -51,9 +51,25 @@ namespace nmos
             };
         }
 
-        details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator()
+        details::transport_file_constraint_sets_matcher make_streamcompatibility_sdp_constraint_sets_matcher(const details::sdp_constraint_sets_matcher& match_sdp_parameters_constraint_sets)
         {
-            const details::resource_constraints_matcher match_resource_constraint_set = [](const nmos::resource& resource, const web::json::value& constraint_set) -> bool
+            return [match_sdp_parameters_constraint_sets](const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets) -> bool
+            {
+                if (nmos::media_types::application_sdp.name != transport_file.first)
+                {
+                    throw std::runtime_error("unknown transport file type");
+                }
+                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file.second));
+                auto sdp_params = nmos::parse_session_description(session_description).first;
+
+                return match_sdp_parameters_constraint_sets(constraint_sets, sdp_params);
+            };
+
+        }
+
+        details::resource_constraints_matcher make_streamcompatibility_resource_constraint_set_matcher()
+        {
+            return [](const nmos::resource& resource, const web::json::value& constraint_set) -> bool
             {
                 const std::map<nmos::type, parameter_constraints> resource_parameter_constraints
                 {
@@ -69,23 +85,6 @@ namespace nmos
 
                 return match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
             };
-
-            const details::transport_file_constraint_sets_matcher match_transport_file_constraint_sets = [](const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets) -> bool
-            {
-                if (nmos::media_types::application_sdp.name != transport_file.first)
-                {
-                    throw std::runtime_error("unknown transport file type");
-                }
-                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file.second));
-                auto sdp_params = nmos::parse_session_description(session_description).first;
-
-                const auto format_params = nmos::details::get_format_parameters(sdp_params);
-                const auto sdp_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return nmos::details::match_sdp_parameters_constraint_set(nmos::details::format_constraints, sdp_params, format_params, constraint_set); });
-
-                return constraint_sets.end() != sdp_found;
-            };
-
-            return make_streamcompatibility_sender_resources_validator(match_resource_constraint_set, match_transport_file_constraint_sets);
         }
 
         details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator(const details::resource_constraints_matcher& match_resource_constraint_set, const details::transport_file_constraint_sets_matcher& match_transport_file_constraint_sets)

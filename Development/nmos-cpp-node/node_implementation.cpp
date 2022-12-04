@@ -1474,7 +1474,29 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
 
 nmos::experimental::details::streamcompatibility_sender_validator make_node_implementation_streamcompatibility_sender_validator()
 {
-    return nmos::experimental::make_streamcompatibility_sender_resources_validator();
+    using nmos::experimental::make_streamcompatibility_sender_resources_validator;
+    using nmos::experimental::make_streamcompatibility_resource_constraint_set_matcher;
+    using nmos::experimental::make_streamcompatibility_sdp_constraint_sets_matcher;
+    using nmos::experimental::match_resource_parameters_constraint_set;
+
+    return [](const web::json::value& transport_file, const nmos::resource& sender, const nmos::resource& flow, const nmos::resource& source, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
+    {
+        const auto video_jxsv_sender_resources_matcher = [](const nmos::resource& resource, const web::json::value& constraint_set) -> bool
+        {
+            return match_resource_parameters_constraint_set(nmos::video_jxsv_parameter_constraints, resource.data, constraint_set);
+        };
+        const auto validate_video_jxsv_sender_resources = make_streamcompatibility_sender_resources_validator(video_jxsv_sender_resources_matcher, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_video_jxsv_sdp_parameters_constraint_sets));
+        const auto validate_sender_resources = make_streamcompatibility_sender_resources_validator(make_streamcompatibility_resource_constraint_set_matcher(), make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets));
+        if (nmos::media_types::video_jxsv.name == nmos::fields::media_type(flow.data))
+        {
+            return validate_video_jxsv_sender_resources(transport_file, sender, flow, source, constraint_sets);
+        }
+        else
+        {
+            // validate core media types, i.e., "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
+            return validate_sender_resources(transport_file, sender, flow, source, constraint_sets);
+        }
+    };
 }
 
 nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator()

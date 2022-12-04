@@ -1,6 +1,8 @@
 #ifndef NMOS_VIDEO_JXSV_H
 #define NMOS_VIDEO_JXSV_H
 
+#include "nmos/capabilities.h"
+#include "nmos/json_fields.h"
 #include "nmos/media_type.h"
 #include "nmos/node_resources.h"
 #include "nmos/sdp_utils.h"
@@ -363,6 +365,10 @@ namespace nmos
     // Validate SDP parameters for "video/jxsv" against IS-04 receiver capabilities
     void validate_video_jxsv_sdp_parameters(const web::json::value& receiver, const nmos::sdp_parameters& sdp_params);
 
+    // Check the specified SDP parameters against the specified constraint sets
+    // for "video/jxsv"
+    bool match_video_jxsv_sdp_parameters_constraint_sets(const web::json::array& constraint_sets, const sdp_parameters& sdp_params);
+
     // Calculate the format bit rate (kilobits/second) from the specified frame rate, dimensions and bits per pixel
     uint64_t get_video_jxsv_bit_rate(const nmos::rational& grain_rate, uint32_t frame_width, uint32_t frame_height, double bits_per_pixel);
 
@@ -385,6 +391,31 @@ namespace nmos
         const nmos::sublevel& sublevel,
         double bits_per_pixel,
         const nmos::settings& settings);
+
+    const std::map<utility::string_t, std::function<bool(const web::json::value& resource, const web::json::value& con)>> video_jxsv_parameter_constraints
+    {
+        // Flow Constraints
+
+        { nmos::caps::format::media_type, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::media_type(flow), con); } },
+        { nmos::caps::format::grain_rate, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_rational_constraint(nmos::parse_rational(nmos::fields::grain_rate(flow)), con); } },
+        { nmos::caps::format::profile, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::profile(flow), con); } },
+        { nmos::caps::format::level, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::level(flow), con); } },
+        { nmos::caps::format::sublevel, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::sublevel(flow), con); } },
+        { nmos::caps::format::frame_height, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::frame_height(flow), con); } },
+        { nmos::caps::format::frame_width, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::frame_width(flow), con); } },
+        { nmos::caps::format::color_sampling, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::details::make_sampling(nmos::fields::components(flow)).name, con); } },
+        { nmos::caps::format::interlace_mode, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::interlace_mode(flow), con); } },
+        { nmos::caps::format::colorspace, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::colorspace(flow), con); } },
+        { nmos::caps::format::transfer_characteristic, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::transfer_characteristic(flow), con); } },
+        { nmos::caps::format::component_depth, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_depth(nmos::fields::components(flow).at(0)), con); } },
+        { nmos::caps::format::bit_rate, [](const web::json::value& flow, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_rate(flow), con); } },
+
+        // Sender Constraints
+
+        { nmos::caps::transport::packet_transmission_mode, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::packet_transmission_mode(sender), con); } },
+        { nmos::caps::transport::st2110_21_sender_type, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::st2110_21_sender_type(sender), con); } },
+        { nmos::caps::transport::bit_rate, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_rate(sender), con); } }
+    };
 }
 
 #endif
