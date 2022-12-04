@@ -1530,6 +1530,42 @@ namespace nmos
             else return{};
         }
 
+        // NMOS Parameter Registers - Capabilities register
+        // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
+#define CAPS_ARGS const sdp_parameters& sdp, const format_parameters& format, const web::json::value& con
+        static const std::map<utility::string_t, std::function<bool(CAPS_ARGS)>> format_constraints
+        {
+            // General Constraints
+
+            { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(get_media_type(sdp).name, con); } },
+            // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
+            // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
+            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto exactframerate = get_exactframerate(&format); return nmos::rational{} == exactframerate || nmos::match_rational_constraint(exactframerate, con); } },
+
+            // Video Constraints
+
+            { nmos::caps::format::frame_height, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->height, con); } },
+            { nmos::caps::format::frame_width, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->width, con); } },
+            { nmos::caps::format::color_sampling, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->sampling.name, con); } },
+            { nmos::caps::format::interlace_mode, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::details::match_interlace_mode_constraint(video->interlace, video->segmented, con); } },
+            { nmos::caps::format::colorspace, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(video->colorimetry.name, con); } },
+            { nmos::caps::format::transfer_characteristic, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_string_constraint(!video->tcs.empty() ? video->tcs.name : sdp::transfer_characteristic_systems::SDR.name, con); } },
+            { nmos::caps::format::component_depth, [](CAPS_ARGS) { auto video = get_video(&format); return video && nmos::match_integer_constraint(video->depth, con); } },
+
+            // Audio Constraints
+
+            { nmos::caps::format::channel_count, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_integer_constraint(audio->channel_count, con); } },
+            { nmos::caps::format::sample_rate, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_rational_constraint(audio->sample_rate, con); } },
+            { nmos::caps::format::sample_depth, [](CAPS_ARGS) { auto audio = get_audio(&format); return audio && nmos::match_integer_constraint(audio->bit_depth, con); } },
+
+            // Transport Constraints
+
+            { nmos::caps::transport::packet_time, [](CAPS_ARGS) { return 0 == sdp.packet_time || nmos::match_number_constraint(sdp.packet_time, con); } },
+            { nmos::caps::transport::max_packet_time, [](CAPS_ARGS) { return 0 == sdp.max_packet_time || nmos::match_number_constraint(sdp.max_packet_time, con); } },
+            { nmos::caps::transport::st2110_21_sender_type, [](CAPS_ARGS) { if (auto video = get_video(&format)) return nmos::match_string_constraint(video->tp.name, con); else if (auto mux = get_mux(&format)) return nmos::match_string_constraint(mux->tp.name, con); else return false; } }
+        };
+#undef CAPS_ARGS
+
         // Check the specified SDP parameters and format-specific parameters against the specified constraint set
         // using the specified parameter constraint functions
         bool match_sdp_parameters_constraint_set(const sdp_parameter_constraints& constraints, const sdp_parameters& sdp_params, const format_parameters& format_params, const web::json::value& constraint_set_)

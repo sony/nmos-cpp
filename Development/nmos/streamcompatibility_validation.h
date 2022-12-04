@@ -5,6 +5,7 @@
 #include <map>
 #include "nmos/capabilities.h"
 #include "nmos/connection_api.h"
+#include "nmos/media_type.h"
 #include "nmos/resource.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/streamcompatibility_state.h"

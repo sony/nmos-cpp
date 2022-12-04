@@ -1,6 +1,8 @@
 #include "nmos/capabilities.h"
 #include "nmos/constraints.h"
+#include "nmos/interlace_mode.h"
 #include "nmos/json_fields.h"
+#include "nmos/media_type.h"
 #include "nmos/sdp_utils.h"
 
 #include "bst/test/test.h"
