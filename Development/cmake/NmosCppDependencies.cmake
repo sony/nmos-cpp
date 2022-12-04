@@ -189,7 +189,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 if(NMOS_CPP_USE_CONAN)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
-    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.1.0")
+    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.2.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
     if(NOT nlohmann_json_schema_validator_VERSION)
         message(STATUS "Found nlohmann_json_schema_validator unknown version; minimum version: " ${JSON_SCHEMA_VALIDATOR_VERSION_MIN})
@@ -222,14 +222,17 @@ else()
     set(JSON_SCHEMA_VALIDATOR_SOURCES
         third_party/nlohmann/json-patch.cpp
         third_party/nlohmann/json-schema-draft7.json.cpp
-        third_party/nlohmann/json-validator.cpp
         third_party/nlohmann/json-uri.cpp
+        third_party/nlohmann/json-validator.cpp
+        third_party/nlohmann/smtp-address-validator.cpp
+        third_party/nlohmann/string-format-check.cpp
         )
 
     set(JSON_SCHEMA_VALIDATOR_HEADERS
         third_party/nlohmann/json-patch.hpp
         third_party/nlohmann/json-schema.hpp
         third_party/nlohmann/json.hpp
+        third_party/nlohmann/smtp-address-validator.hpp
         )
 
     add_library(
