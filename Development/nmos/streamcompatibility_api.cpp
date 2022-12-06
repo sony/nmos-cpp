@@ -321,18 +321,24 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::inputOutputType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::streamCompatibilityInputOutputType.pattern + U("/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto lock = model.read_lock();
                 auto& resources = model.streamcompatibility_resources;
 
-                const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
+                const auto resourceType = nmos::type_from_resourceType(parameters.at(nmos::patterns::connectorType.name));
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
-                const string_t associatedResourceType = parameters.at(nmos::patterns::inputOutputType.name);
+                const auto associatedResourceType = nmos::type_from_resourceType(parameters.at(nmos::patterns::streamCompatibilityInputOutputType.name));
 
-                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
+                const bool consistentTypes
+                {
+                    (nmos::types::sender == resourceType && nmos::types::input == associatedResourceType) ||
+                    (nmos::types::receiver == resourceType && nmos::types::output == associatedResourceType)
+                };
+
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, resourceType };
                 auto resource = find_resource(resources, id_type);
-                if (resources.end() != resource)
+                if (resources.end() != resource && consistentTypes)
                 {
                     auto matching_resource = find_resource(model.node_resources, id_type);
                     if (model.node_resources.end() == matching_resource)
@@ -340,23 +346,11 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    const auto match = [&](const nmos::resources::value_type& resource)
-                    {
-                        return resource.type == nmos::type_from_resourceType(resourceType) && nmos::fields::id(resource.data) == resourceId;
-                    };
-
-                    const auto filter = (nmos::types::input == nmos::type_from_resourceType(associatedResourceType)) ?
+                    const auto filter = (nmos::types::input == associatedResourceType) ?
                         nmos::fields::inputs :
                         nmos::fields::outputs;
 
-                    set_reply(res, status_codes::OK,
-                        web::json::serialize_array(resources
-                            | boost::adaptors::filtered(match)
-                            | boost::adaptors::transformed(
-                                [&filter](const nmos::resource& resource) { return value_from_elements(filter(resource.data)); }
-                            )
-                        ),
-                        web::http::details::mime_types::application_json);
+                    set_reply(res, status_codes::OK, web::json::value_from_elements(filter(resource->data)));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {

@@ -84,6 +84,7 @@ namespace nmos
 
         // Stream Compatibility Management API
         const route_pattern streamCompatibilityResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|inputs|outputs"));
+        const route_pattern streamCompatibilityInputOutputType = make_route_pattern(U("inputOutputType"), U("inputs|outputs"));
         const route_pattern constraintsType = make_route_pattern(U("constraintsType"), U("active|supported"));
         const route_pattern edidType = make_route_pattern(U("edidType"), U("base|effective"));
 
