@@ -1,0 +1,267 @@
+#include "nmos/authorization_handlers.h"
+
+#include "cpprest/basic_utils.h"
+#include "cpprest/json_validator.h"
+#include "cpprest/response_type.h"
+#include "nmos/api_utils.h"  // for nmos::experimental::details::make_validate_authorization_handler
+#include "nmos/authorization_state.h"
+#include "nmos/is10_versions.h"
+#include "nmos/json_schema.h"
+#include "nmos/json_fields.h"
+#include "nmos/slog.h"
+#if defined(_WIN32) && !defined(__cplusplus_winrt)
+#include <Windows.h>
+#include <shellapi.h>
+#endif
+
+namespace nmos
+{
+    namespace experimental
+    {
+        namespace details
+        {
+            static const web::json::experimental::json_validator& auth_clients_schema_validator()
+            {
+                static const web::json::experimental::json_validator validator
+                {
+                    nmos::experimental::load_json_schema,
+                    boost::copy_range<std::vector<web::uri>>(is10_versions::all | boost::adaptors::transformed(experimental::make_auth_clients_schema_uri))
+                };
+                return validator;
+            }
+        }
+
+        // load the table of authorization server vs authorization client metadata from file
+        static web::json::value load_authorization_clients_file(const utility::string_t& filename, slog::base_gate& gate)
+        {
+            using web::json::value;
+
+            utility::ifstream_t is(filename);
+            if (is.is_open())
+            {
+                return value::parse(is);
+            }
+            return web::json::value::array();
+        }
+
+        // construct callback to load a table of authorization server uri vs authorization client metadata from file based on settings seed_id
+        // it is not required for scopeless OAuth 2.0 client (client not require to access any protected APIs)
+        load_authorization_clients_handler make_load_authorization_clients_handler(const nmos::settings& settings, slog::base_gate& gate)
+        {
+            return [&]()
+            {
+                // obtain client metadata from the safe, permission-restricted, location in the non-volatile memory, e.g. a file
+                // Client metadata SHOULD consist of the client_id, client_secret, client_secret_expires_at, client_uri, grant_types, redirect_uris, response_types, scope, token_endpoint_auth_method
+                auto filename = nmos::experimental::fields::seed_id(settings) + U(".json");
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load authorization client from non-volatile memory: " << filename;
+
+                // example of the authorization client file
+                //  [
+                //    {
+                //      "authorization_server_uri": "https://example.com"
+                //    },
+                //    {
+                //      "client_metadata": {
+                //        "client_id": "acc8fd35-327d-4486-a02f-9a8fdc25a609",
+                //        "client_name" : "example client",
+                //        "grant_types" : [ "authorization_code", "client_credentials","refresh_token" ],
+                //        "jwks_uri" : "https://example_client/jwks",
+                //        "redirect_uris" : [ "https://example_client/callback" ],
+                //        "registration_access_token" : "eyJhbGci....",
+                //        "registration_client_uri" : "https://example.com/openid-connect/acc8fd35-327d-4486-a02f-9a8fdc25a609",
+                //        "response_types" : [ "code" ],
+                //        "scope" : "registration",
+                //        "subject_type" : "public",
+                //        "tls_client_certificate_bound_access_tokens" : false,
+                //        "token_endpoint_auth_method" : "private_key_jwt"
+                //      }
+                //    }
+                //  ]
+
+                try
+                {
+                    const auto authorization_clients = load_authorization_clients_file(filename, gate);
+
+                    details::auth_clients_schema_validator().validate(authorization_clients, experimental::make_auth_clients_schema_uri(is10_versions::v1_0));
+
+                    return authorization_clients;
+                }
+                catch (const web::json::json_exception& e)
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Unable to load authorization client from non-volatile memory: " << filename << ": " << e.what();
+
+                    return web::json::value::array();
+                }
+            };
+        }
+
+        // construct callback to save the authorization server uri vs authorization client metadata table to file, using seed_id for the filename
+        // it is not required for scopeless OAuth 2.0 client (client not require to access any protected APIs)
+        save_authorization_client_handler make_save_authorization_client_handler(const nmos::settings& settings, slog::base_gate& gate)
+        {
+            return [&](const web::json::value& authorization_client)
+            {
+                // Client metadata SHOULD be stored in a safe, permission-restricted, location in non-volatile memory in case of a device restart to prevent duplicate registrations.
+                // Client secrets SHOULD be encrypted before being stored to reduce the chance of client secret leaking.
+                // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.2._Behaviour_-_Clients.html#client-credentials
+                const auto filename = nmos::experimental::fields::seed_id(settings) + U(".json");
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Save authorization client to non-volatile memory: " << filename;
+
+                // exmaple of authorization client JSON
+                //  {
+                //    {
+                //      "authorization_server_uri": "https://example.com"
+                //    },
+                //    {
+                //      "client_metadata": {
+                //        "client_id": "acc8fd35-327d-4486-a02f-9a8fdc25a609",
+                //        "client_name" : "example client",
+                //        "grant_types" : [ "authorization_code", "client_credentials","refresh_token" ],
+                //        "issuer" : "https://example.com",
+                //        "jwks_uri" : "https://example_client/jwks",
+                //        "redirect_uris" : [ "https://example_client/callback" ],
+                //        "registration_access_token" : "eyJhbGci....",
+                //        "registration_client_uri" : "https://example.com/openid-connect/acc8fd35-327d-4486-a02f-9a8fdc25a609",
+                //        "response_types" : [ "code" ],
+                //        "scope" : "registration",
+                //        "subject_type" : "public",
+                //        "tls_client_certificate_bound_access_tokens" : false,
+                //        "token_endpoint_auth_method" : "private_key_jwt"
+                //      }
+                //    }
+                //  }
+
+                // load authorization_clients from file
+                web::json::value authorization_clients;
+                try
+                {
+                    authorization_clients = load_authorization_clients_file(filename, gate);
+                }
+                catch (const web::json::json_exception& e)
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Unable to load authorization client from non-volatile memory: " << filename << ": " << e.what();
+
+                    authorization_clients = web::json::value::array();
+                }
+
+                // insert client to authorization_clients
+                bool inserted{ false };
+                if (authorization_clients.as_array().size())
+                {
+                    for (auto& setting : authorization_clients.as_array())
+                    {
+                        const auto& authorization_server_uri = setting.at(nmos::experimental::fields::authorization_server_uri);
+                        if (authorization_server_uri == authorization_client.at(nmos::experimental::fields::authorization_server_uri))
+                        {
+                            setting[nmos::experimental::fields::client_metadata] = authorization_client.at(nmos::experimental::fields::client_metadata);
+                            inserted = true;
+                            break;
+                        }
+                    }
+                }
+                if (!inserted)
+                {
+                    web::json::push_back(authorization_clients, authorization_client);
+                }
+
+                // save the updated authorization_clients to file
+                utility::ofstream_t os(filename, std::ios::out | std::ios::trunc);
+                if (os.is_open())
+                {
+                    os << authorization_clients.serialize();
+                    os.close();
+                }
+            };
+        }
+
+        // construct callback to start the authorization code flow request on a browser
+        // it is required for OAuth client which is using the Authorization Code Flow to obtain the token
+        request_authorization_code_handler make_request_authorization_code_handler(slog::base_gate& gate)
+        {
+            return[&gate](const web::uri& authorization_code_uri)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Open a browser to start the authorization code flow: " << authorization_code_uri.to_string();
+
+#if defined(_WIN32) && !defined(__cplusplus_winrt)
+                ShellExecuteA(NULL, "open", utility::us2s(authorization_code_uri.to_string()).c_str(), NULL, NULL, SW_SHOWNORMAL);
+#else
+                auto browser_cmd(U("xdg-open \"") + authorization_code_uri.to_string() + U("\""));
+                if (0 > system(browser_cmd.c_str()))
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Faile to open a browser to start the authorization code flow";
+                }
+#endif
+            };
+        }
+
+        // construct callback to make OAuth 2.0 config
+        authorization_config_handler make_authorization_config_handler(const web::json::value& authorization_server_metadata, const web::json::value& client_metadata, slog::base_gate& gate)
+        {
+            return[&](const web::http::oauth2::experimental::oauth2_token& bearer_token)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make OAuth 2.0 config";
+
+                web::http::oauth2::experimental::oauth2_config config(
+                    client_metadata.is_null() ? U("") : nmos::experimental::fields::client_id(client_metadata),
+                    client_metadata.is_null() ? U("") : client_metadata.has_string_field(nmos::experimental::fields::client_secret) ? nmos::experimental::fields::client_secret(client_metadata) : U(""),
+                    authorization_server_metadata.is_null() ? U("") : nmos::experimental::fields::authorization_endpoint(authorization_server_metadata),
+                    authorization_server_metadata.is_null() ? U("") : nmos::experimental::fields::token_endpoint(authorization_server_metadata),
+                    client_metadata.is_null() ? U("") : client_metadata.has_array_field(nmos::experimental::fields::redirect_uris) && nmos::experimental::fields::redirect_uris(client_metadata).size() ? nmos::experimental::fields::redirect_uris(client_metadata).at(0).as_string() : U(""),
+                    client_metadata.is_null() ? U("") : client_metadata.has_string_field(nmos::experimental::fields::scope) ? nmos::experimental::fields::scope(client_metadata) : U(""));
+
+                if (!client_metadata.is_null())
+                {
+                    const auto& response_types = nmos::experimental::fields::response_types(client_metadata);
+                    bool found_code = false;
+                    bool found_token = false;
+                    for (auto response_type : response_types)
+                    {
+                        if (web::http::oauth2::experimental::response_types::code.name == response_type.as_string()) { found_code = true; }
+                        else if (web::http::oauth2::experimental::response_types::token.name == response_type.as_string()) { found_token = true; }
+                    };
+                    config.set_bearer_auth(found_code || !found_token);
+                }
+
+                config.set_token(bearer_token);
+
+                return config;
+            };
+        }
+        authorization_config_handler make_authorization_config_handler(const authorization_state& authorization_state, slog::base_gate& gate)
+        {
+            return[&](const web::http::oauth2::experimental::oauth2_token& /*bearer_token*/)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make OAuth 2.0 config using bearer_token cache";
+
+                auto lock = authorization_state.read_lock();
+
+                const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
+                const auto client_metadata = get_client_metadata(authorization_state);
+
+                auto make_authorization_config = make_authorization_config_handler(authorization_server_metadata, client_metadata, gate);
+                return make_authorization_config(authorization_state.bearer_token);
+            };
+        }
+
+        validate_authorization_handler make_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, slog::base_gate& gate)
+        {
+            return[&](const nmos::experimental::scope& scope)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make authorization validation";
+
+                return nmos::experimental::details::make_validate_authorization_handler(model, authorization_state, scope, gate);
+            };
+        }
+
+        authorization_token_handler make_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
+        {
+            return[&]()
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrieve bearer token from cache";
+
+                auto lock = authorization_state.read_lock();
+                return authorization_state.bearer_token;
+            };
+        }
+    }
+}

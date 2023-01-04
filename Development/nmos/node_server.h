@@ -1,6 +1,7 @@
 #ifndef NMOS_NODE_SERVER_H
 #define NMOS_NODE_SERVER_H
 
+#include "nmos/authorization_handlers.h"
 #include "nmos/certificate_handlers.h"
 #include "nmos/channelmapping_api.h"
 #include "nmos/channelmapping_activation.h"
@@ -9,6 +10,7 @@
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
+#include "nmos/ws_api_utils.h"
 
 namespace nmos
 {
@@ -24,7 +26,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response)
+            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, authorization_config_handler make_authorization_config, authorization_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -36,6 +38,14 @@ namespace nmos
                 , set_transportfile(std::move(set_transportfile))
                 , connection_activated(std::move(connection_activated))
                 , get_ocsp_response(std::move(get_ocsp_response))
+                , make_authorization_config(std::move(make_authorization_config))
+                , get_authorization_bearer_token(std::move(get_authorization_bearer_token))
+                , validate_authorization(std::move(validate_authorization))
+                , ws_validate_authorization(std::move(ws_validate_authorization))
+                , load_rsa_private_keys(std::move(load_rsa_private_keys))
+                , load_authorization_clients(std::move(load_authorization_clients))
+                , save_authorization_client(std::move(save_authorization_client))
+                , request_authorization_code(std::move(request_authorization_code))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -57,6 +67,14 @@ namespace nmos
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
+            node_implementation& on_make_authorization_config(authorization_config_handler make_authorization_config) { this->make_authorization_config = std::move(make_authorization_config); return *this; }
+            node_implementation& on_get_authorization_bearer_token(authorization_token_handler get_authorization_bearer_token) { this->get_authorization_bearer_token = std::move(get_authorization_bearer_token); return *this; }
+            node_implementation& on_validate_authorization(validate_authorization_handler validate_authorization) { this->validate_authorization = std::move(validate_authorization); return *this; }
+            node_implementation& on_ws_validate_authorization(ws_validate_authorization_handler ws_validate_authorization) { this->ws_validate_authorization = std::move(ws_validate_authorization); return *this; }
+            node_implementation& on_load_rsa_private_keys(nmos::load_rsa_private_keys_handler load_rsa_private_keys) { this->load_rsa_private_keys = std::move(load_rsa_private_keys); return *this; }
+            node_implementation& on_load_authorization_clients(load_authorization_clients_handler load_authorization_clients) { this->load_authorization_clients = std::move(load_authorization_clients); return *this; }
+            node_implementation& on_save_authorization_client(save_authorization_client_handler save_authorization_client) { this->save_authorization_client = std::move(save_authorization_client); return *this; }
+            node_implementation& on_request_authorization_code(request_authorization_code_handler request_authorization_code) { this->request_authorization_code = std::move(request_authorization_code); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -86,6 +104,15 @@ namespace nmos
             nmos::channelmapping_activation_handler channelmapping_activated;
 
             nmos::ocsp_response_handler get_ocsp_response;
+
+            authorization_config_handler make_authorization_config;
+            authorization_token_handler get_authorization_bearer_token;
+            validate_authorization_handler validate_authorization;
+            ws_validate_authorization_handler ws_validate_authorization;
+            nmos::load_rsa_private_keys_handler load_rsa_private_keys;
+            load_authorization_clients_handler load_authorization_clients;
+            save_authorization_client_handler save_authorization_client;
+            request_authorization_code_handler request_authorization_code;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

@@ -6,6 +6,7 @@ openssl/1.1.1s
 json-schema-validator/2.2.0
 nlohmann_json/3.11.2
 zlib/1.2.13
+jwt-cpp/0.5.1
 
 [imports]
 bin, *.dll -> ./bin

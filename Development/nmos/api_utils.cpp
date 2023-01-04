@@ -5,10 +5,16 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_visit.h"
+#include "cpprest/resource_server_error.h"
 #include "cpprest/uri_schemes.h"
 #include "cpprest/ws_utils.h"
 #include "nmos/api_version.h"
+#include "nmos/authorization.h"
+#include "nmos/authorization_state.h"
+#include "nmos/authorization_utils.h"
 #include "nmos/media_type.h"
+#include "nmos/model.h"
+#include "nmos/scope.h"
 #include "nmos/slog.h"
 #include "nmos/type.h"
 #include "nmos/version.h"
@@ -753,6 +759,103 @@ namespace nmos
     utility::string_t mqtt_scheme(const nmos::settings& settings)
     {
         return mqtt_scheme(nmos::experimental::fields::client_secure(settings));
+    }
+
+    namespace experimental
+    {
+        namespace details
+        {
+            // JWT validation to confirm authentication credentials and an access token that allows access to the protected resource
+            // see https://tools.ietf.org/html/rfc6750#section-3
+            web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, slog::base_gate& gate_)
+            {
+                using namespace web::http::experimental::listener::api_router_using_declarations;
+
+                return [&model, &authorization_state, scope, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+                {
+                    nmos::api_gate gate(gate_, req, parameters);
+
+                    if (methods::OPTIONS == req.method()) return pplx::task_from_result(true);
+
+                    const auto audience = with_read_lock(model.mutex, [&] { const auto& settings = model.settings; return nmos::get_host_name(settings); });
+                    auto error = with_write_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &gate_]
+                    {
+                        return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, authorization_state.authorization_server_uri, authorization_state.token_issuer, gate_);
+                    });
+
+                    if (error)
+                    {
+                        // set error repsonse
+                        auto realm = web::http::get_host_port(req).first;
+                        if (realm.empty()) { realm = nmos::get_host(model.settings); }
+                        set_error_reply(res, realm, error);
+
+                        // if error was deal to no matching keys, trigger a re-fetch to obtain public keys from the token issuer
+                        if (error.value == nmos::experimental::authorization_error::no_matching_keys)
+                        {
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Authorization warning: " << error.message;
+
+                            with_write_lock(authorization_state.mutex, [&authorization_state]
+                            {
+                                authorization_state.fetch_token_issuer_pubkeys = true;
+                            });
+
+                            auto lock = model.write_lock();
+                            model.notify();
+                        }
+                        else
+                        {
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization error: " << error.message;
+                        }
+
+                        throw nmos::details::to_api_finally_handler{}; // in order to skip other route handlers and then send the response
+                    }
+
+                    return pplx::task_from_result(true);
+                };
+            }
+
+            void set_error_reply(web::http::http_response& res, const utility::string_t& realm, const nmos::experimental::authorization_error& error)
+            {
+                using namespace web::http;
+
+                // WWW-Authenticate Response Header Field definition
+                // see https://tools.ietf.org/html/rfc6750#section-3
+                utility::string_t auth_params{ U("Bearer realm=") + realm };
+                utility::string_t error_description{};
+                // If the request lacks any authentication information (e.g., the client
+                // was unaware that authentication is necessary or attempted using an
+                //    unsupported authentication method), the resource server SHOULD NOT
+                //    include an error code or other error information.
+                //
+                //    For example :
+                //
+                // HTTP / 1.1 401 Unauthorized
+                //    WWW - Authenticate : Bearer realm = "example"
+                // see https://tools.ietf.org/html/rfc6750#section-3.1
+                if (error.value != nmos::experimental::authorization_error::without_authentication)
+                {
+                    utility::string_t error_string = { (error.value == nmos::experimental::authorization_error::insufficient_scope) ? web::http::oauth2::experimental::resource_server_errors::insufficient_scope.name : web::http::oauth2::experimental::resource_server_errors::invalid_token.name };
+                    error_description = utility::s2us(error.message);
+                    auth_params += U(",error=") + error_string + U(",error_description=") + error_description;
+                }
+
+                res.headers().add(web::http::header_names::www_authenticate, auth_params);
+
+                auto status_code = status_codes::Unauthorized;
+                if (error.value == nmos::experimental::authorization_error::insufficient_scope)
+                {
+                    status_code = status_codes::Forbidden;
+                }
+                else if (error.value == nmos::experimental::authorization_error::no_matching_keys)
+                {
+                    status_code = status_codes::ServiceUnavailable;
+                    res.headers().add(web::http::header_names::retry_after, 5); //hmm, may be a shorter retry time?
+                }
+
+                nmos::set_error_reply(res, status_code, utility::s2us(error.message));
+            }
+        }
     }
 }
 

@@ -27,7 +27,7 @@ namespace nmos
 
     namespace experimental
     {
-        // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-09 System API
+        // Construct a server instance for an NMOS Registry instance, implementing the IS-04 Registration and Query APIs, the Node API, the IS-09 System API, the IS-10 Authorization API
         // and the experimental DNS-SD Browsing API, Logging API and Settings API, according to the specified data models
         nmos::server make_registry_server(nmos::registry_model& registry_model, nmos::experimental::registry_implementation registry_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
@@ -62,22 +62,23 @@ namespace nmos
 
             // Configure the Query API
 
-            registry_server.api_routers[{ {}, nmos::fields::query_port(registry_model.settings) }].mount({}, nmos::make_query_api(registry_model, gate));
+            auto validate_authorization = registry_implementation.validate_authorization;
+            registry_server.api_routers[{ {}, nmos::fields::query_port(registry_model.settings) }].mount({}, nmos::make_query_api(registry_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::query) : nullptr, gate));
 
             // "Source ID of the Query API instance issuing the data Grain"
             // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/queryapi-subscriptions-websocket.html
             const nmos::id query_id = nmos::make_repeatable_id(nmos::experimental::fields::seed_id(registry_model.settings), U("/x-nmos/query"));
 
             auto& query_ws_api = registry_server.ws_handlers[{ {}, nmos::fields::query_ws_port(registry_model.settings) }];
-            query_ws_api.first = nmos::make_query_ws_api(query_id, registry_model, query_ws_api.second, gate);
+            query_ws_api.first = nmos::make_query_ws_api(query_id, registry_model, query_ws_api.second, registry_implementation.ws_validate_authorization, gate);
 
             // Configure the Registration API
 
-            registry_server.api_routers[{ {}, nmos::fields::registration_port(registry_model.settings) }].mount({}, nmos::make_registration_api(registry_model, gate));
+            registry_server.api_routers[{ {}, nmos::fields::registration_port(registry_model.settings) }].mount({}, nmos::make_registration_api(registry_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::registration) : nullptr, gate));
 
             // Configure the Node API
 
-            registry_server.api_routers[{ {}, nmos::fields::node_port(registry_model.settings) }].mount({}, nmos::make_node_api(registry_model, {}, gate));
+            registry_server.api_routers[{ {}, nmos::fields::node_port(registry_model.settings) }].mount({}, nmos::make_node_api(registry_model, {}, validate_authorization ? validate_authorization(nmos::experimental::scopes::node) : nullptr, gate));
 
             // set up the node resources
             auto& self_resources = registry_model.node_resources;

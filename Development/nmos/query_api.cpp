@@ -17,7 +17,7 @@ namespace nmos
 {
     inline web::http::experimental::listener::api_router make_unmounted_query_api(nmos::registry_model& model, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_query_api(nmos::registry_model& model, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -34,6 +34,12 @@ namespace nmos
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("query/") }, req, res));
             return pplx::task_from_result(true);
         });
+
+        if (validate_authorization)
+        {
+            query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), validate_authorization);
+            query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/.*"), validate_authorization);
+        }
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
         query_api.support(U("/x-nmos/") + nmos::patterns::query_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)

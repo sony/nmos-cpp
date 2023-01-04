@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Authorization clients table",
+  "description": "Authorization client for the different Auhorization server",
+  "type": "array",
+  "items": {
+    "type": "object",
+	"required": ["authorization_server_uri", "client_metadata"],
+	"properties": {
+      "authorization_server_uri": {
+        "description": "The authorization server's issuer identifier, which is a URL that uses the 'https' scheme and has no query or fragment components.",
+        "format": "uri",
+        "type": "string",
+        "minLength": 1
+      },
+	  "client_metadata" : {
+        "$ref": "register_client_response.json"
+      }
+	}
+  }
+}

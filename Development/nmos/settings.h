@@ -101,12 +101,19 @@ namespace nmos
         // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is09_versions{ U("is09_versions") }; // when omitted, nmos::is09_versions::all is used
 
+        // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is10_versions{ U("is10_versions") }; // when omitted, nmos::is10_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
-        // highest_pri, lowest_pri [node]: used to specify the (inclusive) range of suitable 'pri' values of discovered APIs, to avoid development and live systems colliding
+        // highest_pri, lowest_pri [registry, node]: used to specify the (inclusive) range of suitable 'pri' values of discovered APIs, to avoid development and live systems colliding
         const web::json::field_as_integer_or highest_pri{ U("highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
         const web::json::field_as_integer_or lowest_pri{ U("lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
+
+        // authorization_highest_pri, authorization_lowest_pri [registry, node]: used to specify the (inclusive) range of suitable 'pri' values of discovered Authorization APIs, to avoid development and live systems colliding
+        const web::json::field_as_integer_or authorization_highest_pri{ U("authorization_highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
+        const web::json::field_as_integer_or authorization_lowest_pri{ U("authorization_lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
 
         // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [registry, node]: used to back-off after errors interacting with all discoverable service instances
         // e.g. Registration APIs, System APIs, or OCSP servers
@@ -347,6 +354,76 @@ namespace nmos
 
             // ocsp_request_max [registry, node]: timeout for interactions with the OCSP server
             const web::json::field_as_integer_or ocsp_request_max{ U("ocsp_request_max"), 30 };
+
+            // authorization_selector [registry, node]: used to construct request URLs for the authorization API (if not discovered via DNS-SD)
+            const web::json::field_as_string_or authorization_selector{ U("authorization_selector"), U("") };
+
+            // authorization_address [registry, node]: IP address or host name used to construct request URLs for Authorization APIs (if not discovered via DNS-SD)
+            const web::json::field_as_string authorization_address{ U("authorization_address") };
+
+            // authorization_port [registry, node]: used to construct request URLs for the authorization server's Authorization API (if not discovered via DNS-SD)
+            const web::json::field_as_integer_or authorization_port{ U("authorization_port"), 443 };
+
+            // authorization_version [registry, node]: used to construct request URLs for authorization APIs (if not discovered via DNS-SD)
+            const web::json::field_as_string_or authorization_version{ U("authorization_version"), U("v1.0") };
+
+            // authorization_services [registry, node]: the discovered list of Authorization APIs, in the order they should be used
+            // this list is created and maintained by nmos::authorization_operation_thread; each entry is a uri like http://example.api.com/x-nmos/auth/{version}
+            const web::json::field_as_value authorization_services{ U("authorization_services") };
+
+            // authorization_request_max [registry, node]: timeout for interactions with the Authorization API /certs & /token endpoints
+            const web::json::field_as_integer_or authorization_request_max{ U("authorization_request_max"), 30 };
+
+            // fetch_authorization_public_keys_interval_min/fetch_authorization_public_keys_interval_max [registry, node]: used to poll for Authorization API public keys changes; default is about one hour
+            // "Resource Servers (Nodes) SHOULD seek to fetch public keys from the Authorization Server at least once every hour. Resource Servers MUST vary their retrieval
+            // interval at random by up to at least one minute to avoid overloading the Authorization Server due to Resource Servers synchronising their retrieval time."
+            // See https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.1._Behaviour_-_Authorization_Servers.html#authorization-server-public-keys
+            const web::json::field_as_integer_or fetch_authorization_public_keys_interval_min{ U("fetch_authorization_public_keys_interval_min"), 3600 };
+            const web::json::field_as_integer_or fetch_authorization_public_keys_interval_max{ U("fetch_authorization_public_keys_interval_max"), 3660 };
+
+            // access_token_refresh_interval [node]: time interval (in seconds) to refresh access token from Authorization Server
+            // It specified the access token refresh period otherwise Bearer token's expires_in is used instead.
+            // See https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#access-token-lifetime
+            const web::json::field_as_integer_or access_token_refresh_interval{ U("access_token_refresh_interval"), -1 };
+
+            // client_authorization [node]: whether clients should use authorization to access protected APIs
+            const web::json::field_as_bool_or client_authorization{ U("client_authorization"), false };
+
+            // server_authorization [registry, node]: whether server should use authorization to protect its APIs
+            const web::json::field_as_bool_or server_authorization{ U("server_authorization"), false };
+
+            // authorization_code_flow_max [node]: timeout for the authorization code workflow (in seconds)
+            // No timeout if value is set to -1, default to 30 seconds
+            const web::json::field_as_integer_or authorization_code_flow_max{ U("authorization_code_flow_max"), 30 };
+
+            // authorization_flow [node]: used to specify the authorization flow for the registered scopes
+            // supported flow are authorization_code and client_credentials
+            // client_credentials SHOULD only be used for NO user interface node/registry, otherwise authorization_code MUST be used
+            const web::json::field_as_string_or authorization_flow{ U("authorization_flow"), U("authorization_code") };
+
+            // authorization_redirect_port [node]: redirect URL port for listening authorization code, used for client registration
+            const web::json::field_as_integer_or authorization_redirect_port{ U("authorization_redirect_port"), 3218 };
+
+            // initial_access_token [node]: initial access token giving access to the client registration endpoint for non-opened registration
+            const web::json::field_as_string_or initial_access_token{ U("initial_access_token"), U("") };
+
+            // authorization_scopes [node]: used to specify the supported scopes for client registration
+            // supported scopes are registration, query, node, connection, events and channelmapping
+            const web::json::field_as_array authorization_scopes{ U("authorization_scopes") };
+
+            // token_endpoint_auth_method [node]: String indicator of the requested authentication method for the token endpoint
+            // supported methods are none, client_secret_basic and private_key_jwt, default to client_secret_basic, where none is used for public client
+            const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic")};
+
+            // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration
+            const web::json::field_as_integer_or jwks_uri_port{ U("jwks_uri_port"), 3219 };
+
+            // validate_openid_client [node]: boolean value, false (bypass openid connect client validation), or true (do not bypass, the default behaviour)
+            const web::json::field_as_bool_or validate_openid_client{ U("validate_openid_client"), true };
+
+            // no_trailing_dot_for_authorization_callback_uri [node]: used to specify whether no trailing dot FQDN should be used to construct the URL for the authorization server callbacks
+            // as it is because not all Authorization server can cope with URL with trailing dot, default to true
+            const web::json::field_as_bool_or no_trailing_dot_for_authorization_callback_uri{ U("no_trailing_dot_for_authorization_callback_uri"), true};
         }
     }
 }

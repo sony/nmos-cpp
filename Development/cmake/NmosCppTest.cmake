@@ -14,6 +14,7 @@ set(NMOS_CPP_TEST_BST_TEST_HEADERS
 
 set(NMOS_CPP_TEST_CPPREST_TEST_SOURCES
     cpprest/test/api_router_test.cpp
+    cpprest/test/basic_utils_test.cpp
     cpprest/test/http_utils_test.cpp
     cpprest/test/json_utils_test.cpp
     cpprest/test/json_visit_test.cpp

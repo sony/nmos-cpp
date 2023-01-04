@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Register Client Request",
+  "description": "Object defining client registration request",
+  "type": "object",
+  "properties": {
+    "redirect_uris": {
+      "description": "Array of redirection URI strings for use in redirect-based flows such as the authorization code and implicit flows",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "token_endpoint_auth_method": {
+      "description": "String indicator of the requested authentication method for the token endpoint",
+      "type": "string"
+    },
+    "grant_types": {
+      "description": "Array of OAuth 2.0 grant type strings that the client can use at the token endpoint",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "response_types": {
+      "description": "Array of the OAuth 2.0 response type strings that the client can use at the authorization endpoint",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "client_name": {
+      "description": "Human-readable string name of the client to be presented to the end-user during authorization",
+      "type": "string"
+    },
+    "client_uri": {
+      "description": "URL string of a web page providing information about the client",
+      "type": "string"
+    },
+    "logo_uri": {
+      "description": "URL string that references a logo for the client",
+      "type": "string"
+    },
+    "scope": {
+      "description": "String containing a space-separated list of scope values",
+      "type": "string"
+    },
+    "contacts": {
+      "description": "Array of strings representing ways to contact people responsible for this client, typically email addresses",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tos_uri": {
+      "description": "URL string that points to a human-readable terms of service document for the client",
+      "type": "string"
+    },
+    "policy_uri": {
+      "description": "URL string that points to a human-readable privacy policy document",
+      "type": "string"
+    },
+    "jwks_uri": {
+      "description": "URL string referencing the client's JSON Web Key (JWK) Set document, which contains the client's public keys",
+      "type": "string"
+    },
+    "jwks": {
+      "description": "Client's JSON Web Key Set document value, which contains the client's public keys",
+      "type": "object",
+      "allOf": [
+        {"$ref": "jwks_schema.json"}
+      ]
+    },
+    "software_id": {
+      "description": "A unique identifier string (e.g. a UUID) assigned by the client developer or software publisher",
+      "type": "string"
+    },
+    "software_version": {
+      "description": "A version identifier string for the client software identified by 'software_id'",
+      "type": "string"
+    }
+  },
+  "required": [ "client_name" ]
+}

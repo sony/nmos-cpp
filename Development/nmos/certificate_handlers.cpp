@@ -121,4 +121,61 @@ namespace nmos
             return utility::string_t{};
         };
     }
+
+    // construct callback to load RSA private keys from file based on settings, see nmos/certificate_settings.h
+    // require for OAuth client which is using Private Key JWT as the requested authentication method for the token endpoint
+    load_rsa_private_keys_handler make_load_rsa_private_keys_handler(const nmos::settings& settings, slog::base_gate& gate)
+    {
+        // load the server private keys from files
+        auto server_certificates = nmos::experimental::fields::server_certificates(settings);
+        if (0 == server_certificates.size())
+        {
+            // (deprecated, replaced by server_certificates)
+            const auto private_key_files = nmos::experimental::fields::private_key_files(settings);
+
+            for (const auto& private_key_file : private_key_files.as_array())
+            {
+                web::json::push_back(server_certificates,
+                    web::json::value_of({
+                        { nmos::experimental::fields::private_key_file, private_key_file },
+                        { nmos::experimental::fields::certificate_chain_file, {} }
+                    })
+                );
+            }
+        }
+
+        return [&, server_certificates]()
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Load server private keys";
+
+            auto data = std::vector<nmos::certificate>();
+            auto private_keys = std::vector<utility::string_t>();
+            if (0 == server_certificates.size())
+            {
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing server certificates";
+            }
+
+            for (const auto& server_certificate : server_certificates.as_array())
+            {
+                const auto key_algorithm = nmos::experimental::fields::key_algorithm(server_certificate);
+                const auto private_key_file = nmos::experimental::fields::private_key_file(server_certificate);
+
+                utility::stringstream_t pkey;
+                if (private_key_file.empty())
+                {
+                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Missing private key file";
+                }
+                else
+                {
+                    if (key_algorithm.empty() || key_algorithms::RSA.name == key_algorithm)
+                    {
+                        utility::ifstream_t pkey_file(private_key_file);
+                        pkey << pkey_file.rdbuf();
+                        private_keys.push_back(pkey.str());
+                    }
+                }
+            }
+            return private_keys;
+        };
+    }
 }

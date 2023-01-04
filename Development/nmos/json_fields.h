@@ -238,6 +238,70 @@ namespace nmos
         const web::json::field_as_string st2110_21_sender_type{ U("st2110_21_sender_type") }; // see nmos::st2110_21_sender_type
     }
 
+    // IS-10 Authorization
+    namespace experimental
+    {
+        namespace fields
+        {
+            // Authorization Server Metadata
+            const web::json::field_as_value authorization_server_metadata{ U("authorization_server_metadata") };
+            // see https://tools.ietf.org/html/rfc8414#section-2
+            const web::json::field_as_string_or issuer{ U("issuer"),{} };
+            const web::json::field_as_string_or authorization_endpoint{ U("authorization_endpoint"),{} };
+            const web::json::field_as_string_or token_endpoint{ U("token_endpoint"),{} };
+            const web::json::field_as_string_or registration_endpoint{ U("registration_endpoint"),{} };
+            const web::json::field_as_array scopes_supported{ U("scopes_supported") };  // OPTIONAL
+            const web::json::field_as_array response_types_supported{ U("response_types_supported") };
+            const web::json::field_as_array response_modes_supported{ U("response_modes_supported") }; // OPTIONAL
+            const web::json::field_as_array grant_types_supported{ U("grant_types_supported") }; // OPTIONAL
+            const web::json::field_as_array token_endpoint_auth_methods_supported{ U("token_endpoint_auth_methods_supported") }; // OPTIONAL
+            const web::json::field_as_array token_endpoint_auth_signing_alg_values_supported{ U("token_endpoint_auth_signing_alg_values_supported") }; // OPTIONAL
+            const web::json::field_as_string service_documentation{ U("service_documentation") }; // OPTIONAL
+            const web::json::field_as_array ui_locales_supported{ U("ui_locales_supported") }; // OPTIONAL
+            const web::json::field_as_string op_policy_uri{ U("op_policy_uri") }; // OPTIONAL
+            const web::json::field_as_string op_tos_uri{ U("op_tos_uri") }; // OPTIONAL
+            const web::json::field_as_string revocation_endpoint{ U("revocation_endpoint") }; // OPTIONAL
+            const web::json::field_as_array revocation_endpoint_auth_methods_supported{ U("revocation_endpoint_auth_methods_supported") }; // OPTIONAL
+            const web::json::field_as_array revocation_endpoint_auth_signing_alg_values_supported{ U("revocation_endpoint_auth_signing_alg_values_supported") }; // OPTIONAL
+            const web::json::field_as_string introspection_endpoint{ U("introspection_endpoint") }; // OPTIONAL
+            const web::json::field_as_array introspection_endpoint_auth_methods_supported{ U("introspection_endpoint_auth_methods_supported") }; // OPTIONAL
+            const web::json::field_as_array introspection_endpoint_auth_signing_alg_values_supported{ U("introspection_endpoint_auth_signing_alg_values_supported") }; // OPTIONAL
+            const web::json::field_as_array code_challenge_methods_supported{ U("code_challenge_methods_supported") };
+
+            // Client Metadata
+            const web::json::field_as_value client_metadata{ U("client_metadata") };
+            // see https://tools.ietf.org/html/rfc7591#section-2
+            // see https://tools.ietf.org/html/rfc7591#section-3.1
+            // see https://tools.ietf.org/html/rfc7591#section-3.2
+            const web::json::field_as_array redirect_uris{ U("redirect_uris") };
+            //const web::json::field_as_string token_endpoint_auth_method{ U("token_endpoint_auth_method") }; // OPTIONAL already defined in settings
+            const web::json::field_as_array grant_types{ U("grant_types") }; // OPTIONAL
+            const web::json::field_as_array response_types{ U("response_types") }; // OPTIONAL
+            const web::json::field_as_string client_name{ U("client_name") }; // OPTIONAL
+            const web::json::field_as_string client_uri{ U("client_uri") }; // OPTIONAL
+            const web::json::field_as_string logo_uri{ U("logo_uri") }; // OPTIONAL
+            const web::json::field_as_string scope{ U("scope") }; // OPTIONAL
+            const web::json::field_as_array contacts{ U("contacts") }; // OPTIONAL
+            const web::json::field_as_string tos_uri{ U("tos_uri") }; // OPTIONAL
+            const web::json::field_as_string policy_uri{ U("policy_uri") }; // OPTIONAL
+            const web::json::field_as_value jwks{ U("jwks") }; // OPTIONAL
+            const web::json::field_as_array keys{ U("keys") }; // use inside jwks
+            const web::json::field_as_string software_id{ U("software_id") }; // OPTIONAL
+            const web::json::field_as_string software_version{ U("software_version") }; // OPTIONAL
+            const web::json::field_as_string_or client_id{ U("client_id"),{} };
+            const web::json::field_as_string client_secret{ U("client_secret") }; // OPTIONAL
+            const web::json::field_as_integer client_id_issued_at{ U("client_id_issued_at") }; // OPTIONAL
+            const web::json::field_as_integer_or client_secret_expires_at{ U("client_secret_expires_at"),0 };
+            // OpenID Connect extension
+            const web::json::field_as_string registration_client_uri{ U("registration_client_uri") }; // OPTIONAL
+            const web::json::field_as_string registration_access_token{ U("registration_access_token") }; // OPTIONAL
+
+            // use for Authorization Server Metadata & Client Metadata
+            const web::json::field_as_string_or jwks_uri{ U("jwks_uri"),{} };
+        }
+    }
+
+
     // Fields for experimental extensions
     namespace experimental
     {

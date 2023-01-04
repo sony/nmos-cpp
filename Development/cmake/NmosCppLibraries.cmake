@@ -686,6 +686,81 @@ target_include_directories(nmos_is09_schemas PUBLIC
 list(APPEND NMOS_CPP_TARGETS nmos_is09_schemas)
 add_library(nmos-cpp::nmos_is09_schemas ALIAS nmos_is09_schemas)
 
+# nmos_is10_schemas library
+
+set(NMOS_IS10_SCHEMAS_HEADERS
+    nmos/is10_schemas/is10_schemas.h
+    )
+
+set(NMOS_IS10_V1_0_TAG v1.0.x)
+
+set(NMOS_IS10_V1_0_SCHEMAS_JSON
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/auth_clients_schema.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/auth_metadata.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/jwks_response.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/jwks_schema.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/register_client_error_response.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/register_client_request.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/register_client_response.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/token_error_response.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/token_response.json
+    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/token_schema.json
+    )
+
+set(NMOS_IS10_SCHEMAS_JSON_MATCH "third_party/is-10/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS10_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/is10_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS10_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS10_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS10_V1_0_SCHEMAS_SOURCES "${NMOS_IS10_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS10_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS10_SCHEMAS_JSON_MATCH}" "${NMOS_IS10_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS10_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS10_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is10_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is10_schemas STATIC
+    ${NMOS_IS10_SCHEMAS_HEADERS}
+    ${NMOS_IS10_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is10_schemas\\Header Files" FILES ${NMOS_IS10_SCHEMAS_HEADERS})
+source_group("nmos\\is10_schemas\\${NMOS_IS10_V1_0_TAG}\\Source Files" FILES ${NMOS_IS10_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is10_schemas PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(nmos_is10_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
+
+list(APPEND NMOS_CPP_TARGETS nmos_is10_schemas)
+add_library(nmos-cpp::nmos_is10_schemas ALIAS nmos_is10_schemas)
+
 # nmos-cpp library
 
 set(NMOS_CPP_BST_SOURCES
@@ -718,6 +793,9 @@ endif()
 set(NMOS_CPP_CPPREST_HEADERS
     cpprest/api_router.h
     cpprest/basic_utils.h
+    cpprest/client_type.h
+    cpprest/code_challenge_method.h
+    cpprest/grant_type.h
     cpprest/host_utils.h
     cpprest/http_utils.h
     cpprest/json_escape.h
@@ -728,6 +806,9 @@ set(NMOS_CPP_CPPREST_HEADERS
     cpprest/json_visit.h
     cpprest/logging_utils.h
     cpprest/regex_utils.h
+    cpprest/resource_server_error.h
+    cpprest/response_type.h
+    cpprest/token_endpoint_auth_method.h
     cpprest/uri_schemes.h
     cpprest/ws_listener.h
     cpprest/ws_utils.h
@@ -740,11 +821,28 @@ set(NMOS_CPP_CPPREST_DETAILS_HEADERS
     cpprest/details/system_error.h
     )
 
+set(NMOS_CPP_JWK_HEADERS
+    jwk/algorithm.h
+    jwk/public_key_use.h
+    )
+
+set(NMOS_CPP_JWT_HEADERS
+    jwt/nlohmann_traits.h
+    )
+
 set(NMOS_CPP_NMOS_SOURCES
     nmos/activation_utils.cpp
     nmos/admin_ui.cpp
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
+    nmos/authorization.cpp
+    nmos/authorization_handlers.cpp
+    nmos/authorization_redirect_api.cpp
+    nmos/authorization_behaviour.cpp
+    nmos/authorization_operation.cpp
+    nmos/authorization_state.cpp
+    nmos/authorization_utils.cpp
+    nmos/authorization_behaviour.cpp
     nmos/capabilities.cpp
     nmos/certificate_handlers.cpp
     nmos/channelmapping_activation.cpp
@@ -768,6 +866,10 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/lldp_handler.cpp
     nmos/lldp_manager.cpp
     nmos/json_schema.cpp
+    nmos/jwt_generator_impl.cpp
+    nmos/jwk_utils.cpp
+    nmos/jwks_uri_api.cpp
+    nmos/jwt_validator_impl.cpp
     nmos/log_model.cpp
     nmos/logging_api.cpp
     nmos/manifest_api.cpp
@@ -803,6 +905,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/system_api.cpp
     nmos/system_resources.cpp
     nmos/video_jxsv.cpp
+    nmos/ws_api_utils.cpp
     )
 set(NMOS_CPP_NMOS_HEADERS
     nmos/activation_mode.h
@@ -811,6 +914,14 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
+    nmos/authorization.h
+    nmos/authorization_handlers.h
+    nmos/authorization_redirect_api.h
+    nmos/authorization_behaviour.h
+    nmos/authorization_operation.h
+    nmos/authorization_scopes.h
+    nmos/authorization_state.h
+    nmos/authorization_utils.h
     nmos/capabilities.h
     nmos/certificate_handlers.h
     nmos/certificate_settings.h
@@ -846,8 +957,14 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/is07_versions.h
     nmos/is08_versions.h
     nmos/is09_versions.h
+    nmos/is10_versions.h
+    nmos/issuers.h
     nmos/json_fields.h
     nmos/json_schema.h
+    nmos/jwks_uri_api.h
+    nmos/jwk_utils.h
+    nmos/jwt_generator.h
+    nmos/jwt_validator.h
     nmos/lldp_handler.h
     nmos/lldp_manager.h
     nmos/log_gate.h
@@ -886,6 +1003,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/resource.h
     nmos/resources.h
     nmos/schemas_api.h
+    nmos/scope.h
     nmos/sdp_utils.h
     nmos/server.h
     nmos/server_utils.h
@@ -907,6 +1025,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/video_jxsv.h
     nmos/vpid_code.h
     nmos/websockets.h
+    nmos/ws_api_utils.h
     )
 
 set(NMOS_CPP_PPLX_SOURCES
@@ -948,6 +1067,8 @@ add_library(
     ${NMOS_CPP_CPPREST_HEADERS}
     ${NMOS_CPP_NMOS_SOURCES}
     ${NMOS_CPP_NMOS_HEADERS}
+    ${NMOS_CPP_JWT_HEADERS}
+    ${NMOS_CPP_JWK_HEADERS}
     ${NMOS_CPP_PPLX_SOURCES}
     ${NMOS_CPP_PPLX_HEADERS}
     ${NMOS_CPP_RQL_SOURCES}
@@ -968,6 +1089,8 @@ source_group("ssl\\Source Files" FILES ${NMOS_CPP_SSL_SOURCES})
 
 source_group("bst\\Header Files" FILES ${NMOS_CPP_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_CPPREST_HEADERS})
+source_group("jwt\\Header Files" FILES ${NMOS_CPP_JWT_HEADERS})
+source_group("jwk\\Header Files" FILES ${NMOS_CPP_JWK_HEADERS})
 source_group("nmos\\Header Files" FILES ${NMOS_CPP_NMOS_HEADERS})
 source_group("pplx\\Header Files" FILES ${NMOS_CPP_PPLX_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_RQL_HEADERS})
@@ -984,6 +1107,7 @@ target_link_libraries(
     nmos-cpp::nmos_is05_schemas
     nmos-cpp::nmos_is08_schemas
     nmos-cpp::nmos_is09_schemas
+    nmos-cpp::nmos_is10_schemas
     nmos-cpp::mdns
     nmos-cpp::slog
     nmos-cpp::OpenSSL
@@ -994,6 +1118,7 @@ target_link_libraries(
     nmos-cpp PRIVATE
     nmos-cpp::websocketpp
     nmos-cpp::json_schema_validator
+    nmos-cpp::jwt-cpp
     )
 if(NMOS_CPP_BUILD_LLDP)
     target_link_libraries(
