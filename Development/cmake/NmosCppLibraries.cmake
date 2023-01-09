@@ -695,7 +695,6 @@ set(NMOS_IS10_SCHEMAS_HEADERS
 set(NMOS_IS10_V1_0_TAG v1.0.x)
 
 set(NMOS_IS10_V1_0_SCHEMAS_JSON
-    third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/auth_clients_schema.json
     third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/auth_metadata.json
     third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/jwks_response.json
     third_party/is-10/${NMOS_IS10_V1_0_TAG}/APIs/schemas/jwks_schema.json

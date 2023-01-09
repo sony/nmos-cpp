@@ -100,6 +100,12 @@ namespace nmos
         // this callback should not throw exceptions
         typedef std::function<void(const web::uri& authorization_code_uri)> request_authorization_code_handler;
 
+        // helper function to load from the authorization clients file
+        web::json::value load_authorization_clients_file(const utility::string_t& filename, slog::base_gate& gate);
+
+        // helper function to update the authorization clients file
+        void update_authorization_clients_file(const utility::string_t& filename, const web::json::value& authorization_client, slog::base_gate& gate);
+
         // construct callback to load a table of authorization server uri vs authorization clients metadata from file based on settings seed_id
         load_authorization_clients_handler make_load_authorization_clients_handler(const nmos::settings& settings, slog::base_gate& gate);
 

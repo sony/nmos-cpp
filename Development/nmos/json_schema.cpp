@@ -140,8 +140,6 @@ namespace nmos
             using namespace nmos::is10_schemas::v1_0_x;
             const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
-            const web::uri auth_clients_schema_uri = make_schema_uri(tag, _XPLATSTR("auth_clients_schema.json"));
-
             const web::uri authapi_auth_metadata_schema_uri = make_schema_uri(tag, _XPLATSTR("auth_metadata.json"));
             const web::uri authapi_jwks_response_schema_uri = make_schema_uri(tag, _XPLATSTR("jwks_response.json"));
             const web::uri authapi_register_client_error_response_uri = make_schema_uri(tag, _XPLATSTR("register_client_error_response.json"));
@@ -341,8 +339,6 @@ namespace nmos
             return
             {
                 // v1.0
-                { make_schema_uri(v1_0::tag, _XPLATSTR("auth_clients_schema.json")), make_schema(v1_0::auth_clients_schema) },
-
                 { make_schema_uri(v1_0::tag, _XPLATSTR("auth_metadata.json")), make_schema(v1_0::auth_metadata) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("jwks_response.json")), make_schema(v1_0::jwks_response) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("jwks_schema.json")), make_schema(v1_0::jwks_schema) },
@@ -424,11 +420,6 @@ namespace nmos
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version)
         {
             return is08_schemas::v1_0::map_activations_post_request_uri;
-        }
-
-        web::uri make_auth_clients_schema_uri(const nmos::api_version& version)
-        {
-            return is10_schemas::v1_0::auth_clients_schema_uri;
         }
 
         web::uri make_authapi_auth_metadata_schema_uri(const nmos::api_version& version)
