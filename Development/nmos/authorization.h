@@ -52,13 +52,13 @@ namespace nmos
 
         utility::string_t get_client_id(const web::http::http_headers& headers, slog::base_gate& gate);
 
-        authorization_error validate_authorization(const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, const web::uri& auth_server, web::uri& token_issuer, slog::base_gate& gate);
+        authorization_error validate_authorization(const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, slog::base_gate& gate);
 
         // RFC 6750 defines two methods of sending bearer access tokens which are applicable to WebSocket
         // Clients SHOULD use the "Authorization Request Header Field" method.
         // Clients MAY use "URI Query Parameter".
         // See https://tools.ietf.org/html/rfc6750#section-2
-        authorization_error ws_validate_authorization(const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, const web::uri& auth_server, web::uri& token_issuer, slog::base_gate& gate);
+        authorization_error ws_validate_authorization(const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, slog::base_gate& gate);
     }
 }
 

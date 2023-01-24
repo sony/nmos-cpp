@@ -79,7 +79,7 @@ namespace nmos
                 const auto& settings = model.settings;
 
                 authorization_state.write_lock();
-                const auto error = nmos::experimental::ws_validate_authorization(authorization_state.issuers, req, nmos::experimental::scopes::events, nmos::get_host_name(settings), authorization_state.authorization_server_uri, authorization_state.token_issuer, gate_);
+                const auto error = nmos::experimental::ws_validate_authorization(authorization_state.issuers, req, nmos::experimental::scopes::events, nmos::get_host_name(settings), authorization_state.token_issuer, gate_);
                 if (error)
                 {
                     // set error repsonse

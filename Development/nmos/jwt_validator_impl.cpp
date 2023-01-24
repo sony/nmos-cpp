@@ -100,7 +100,7 @@ namespace nmos
                     throw std::runtime_error("no public keys to validate access token expiry");
                 }
 
-                void validate(const utility::string_t& token, const web::http::http_request& req, const scope& scope, const utility::string_t& audience, const web::uri& auth_server) const
+                void validate(const utility::string_t& token, const web::http::http_request& req, const scope& scope, const utility::string_t& audience) const
                 {
                     using namespace jwt::experimental::details;
 
@@ -357,11 +357,6 @@ namespace nmos
                             }
                         }
                     }
-                    else
-                    {
-                        // no public keys to validate token
-                        errors.push_back("no public keys to validate access token");
-                    }
 
                     // reaching here, there must be no matching public key for the token
 
@@ -373,35 +368,12 @@ namespace nmos
                     // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
 
                     const auto token_issuer = web::uri{ utility::s2us(decoded_token.get_issuer()) };
-
-                    // if token is coming from an unknown issuer, do public keys fetch on token issuer, otherwise failed with no public keys!
-                    if (!auth_server.has_same_authority(token_issuer))
-                    {
-                        // verify token issuer
-                        if (token_issuer.scheme() != web::uri_schemes::http && token_issuer.scheme() != web::uri_schemes::https)
-                        {
-                            errors.push_back("issuer must be 'http' or 'https'");
-                            throw std::runtime_error(format_errors(errors));
-                        }
-
-                        if (token_issuer.host().empty())
-                        {
-                            errors.push_back("issuer must contain a hostname");
-                            throw std::runtime_error(format_errors(errors));
-                        }
-
-                        // no matching public keys for the token, re-fetch public keys from token issuer
-                        throw no_matching_keys_exception(token_issuer, format_errors(errors));
-                    }
-                    else
-                    {
-                        // no public keys to validate token
-                        throw std::runtime_error("no public keys to validate access token");
-                    }
+                    // no matching public keys for the token, re-fetch public keys from token issuer
+                    throw no_matching_keys_exception(token_issuer, format_errors(errors));
                 }
 
                 // may throw
-                static utility::string_t client_id(const utility::string_t& token)
+                static utility::string_t get_client_id(const utility::string_t& token)
                 {
                     using namespace jwt::experimental::details;
 
@@ -429,7 +401,7 @@ namespace nmos
                 }
 
                 // may throw
-                static web::uri token_issuer(const utility::string_t& token)
+                static web::uri get_token_issuer(const utility::string_t& token)
                 {
                     using namespace jwt::experimental::details;
 
@@ -474,21 +446,21 @@ namespace nmos
             impl->validate_expiry(token);
         }
 
-        void jwt_validator::validate(const utility::string_t& token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, const web::uri& auth_server) const
+        void jwt_validator::validate(const utility::string_t& token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience) const
         {
             if (!impl) { throw std::runtime_error("JWT validator has not initiliased"); }
 
-            impl->validate(token, request, scope, audience, auth_server);
+            impl->validate(token, request, scope, audience);
         }
 
-        utility::string_t jwt_validator::client_id(const utility::string_t& token)
+        utility::string_t jwt_validator::get_client_id(const utility::string_t& token)
         {
-            return details::jwt_validator_impl::client_id(token);
+            return details::jwt_validator_impl::get_client_id(token);
         }
 
-        web::uri jwt_validator::token_issuer(const utility::string_t& token)
+        web::uri jwt_validator::get_token_issuer(const utility::string_t& token)
         {
-            return details::jwt_validator_impl::token_issuer(token);
+            return details::jwt_validator_impl::get_token_issuer(token);
         }
     }
 }

@@ -51,10 +51,10 @@ namespace nmos
             bool is_initialized() const;
 
             void validate_expiry(const utility::string_t& token) const;
-            void validate(const utility::string_t& token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, const web::uri& auth_server) const;
+            void validate(const utility::string_t& token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience) const;
 
-            static utility::string_t client_id(const utility::string_t& token);
-            static web::uri token_issuer(const utility::string_t& token);
+            static utility::string_t get_client_id(const utility::string_t& token);
+            static web::uri get_token_issuer(const utility::string_t& token);
 
         private:
             std::shared_ptr<details::jwt_validator_impl> impl;

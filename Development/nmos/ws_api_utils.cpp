@@ -21,7 +21,7 @@ namespace nmos
                     const auto& settings = model.settings;
 
                     authorization_state.write_lock();
-                    const auto error = ws_validate_authorization(authorization_state.issuers, request, scope, nmos::get_host_name(settings), authorization_state.authorization_server_uri, authorization_state.token_issuer, gate);
+                    const auto error = ws_validate_authorization(authorization_state.issuers, request, scope, nmos::get_host_name(settings), authorization_state.token_issuer, gate);
                     if (error)
                     {
                         // set error repsonse

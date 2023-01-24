@@ -780,7 +780,7 @@ namespace nmos
                     const auto audience = with_read_lock(model.mutex, [&] { const auto& settings = model.settings; return nmos::get_host_name(settings); });
                     auto error = with_write_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &gate_]
                     {
-                        return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, authorization_state.authorization_server_uri, authorization_state.token_issuer, gate_);
+                        return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, authorization_state.token_issuer, gate_);
                     });
 
                     if (error)
