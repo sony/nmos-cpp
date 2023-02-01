@@ -710,9 +710,12 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         }
     }
 
-    // example audio inputs
+    // example channelmapping resources demonstrating a range of input/output capabilities
+    // see https://github.com/sony/nmos-cpp/issues/111#issuecomment-740613137
 
-    for (int index = 0; index < how_many; ++index)
+    // example audio inputs
+    const bool channelmapping_receivers = 0 <= nmos::fields::channelmapping_port(model.settings) && rtp_receiver_ports.end() != boost::range::find(rtp_receiver_ports, impl::ports::audio);
+    for (int index = 0; channelmapping_receivers && index < how_many; ++index)
     {
         const auto stri = utility::conversions::details::to_string_t(index);
 
@@ -735,8 +738,8 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example audio outputs
-
-    for (int index = 0; index < how_many; ++index)
+    const bool channelmapping_senders = 0 <= nmos::fields::channelmapping_port(model.settings) && rtp_sender_ports.end() != boost::range::find(rtp_sender_ports, impl::ports::audio);
+    for (int index = 0; channelmapping_senders && index < how_many; ++index)
     {
         const auto stri = utility::conversions::details::to_string_t(index);
 
@@ -757,9 +760,11 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
-    // example non-IP audio input
     const int input_block_size = 8;
     const int input_block_count = 8;
+
+    // example non-IP audio input
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("inputA");
 
@@ -783,7 +788,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example outputs to some audio gizmo
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("outputX");
 
@@ -812,7 +817,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example source for some audio gizmo
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, how_many);
 
@@ -828,7 +833,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example inputs from some audio gizmo
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("inputX");
 
@@ -853,7 +858,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example non-ST 2110-30 audio output
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("outputB");
 
@@ -905,7 +910,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
             const nmos::events_number temp(175.0 + std::abs(nmos::tai_now().seconds % 100 - 50), 10);
             // i.e. 17.5-22.5 C
 
-            for (int index = 0; index < how_many; ++index)
+            for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
             {
                 for (const auto& port : ws_sender_ports)
                 {
