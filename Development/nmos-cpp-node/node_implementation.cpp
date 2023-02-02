@@ -1456,7 +1456,14 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
 
     return [&gate, sender_capabilities](const nmos::id& sender_id, const web::json::value& active_constraints) -> bool
     {
-        for (const auto& constraint_set : nmos::fields::constraint_sets(active_constraints).as_array())
+        using web::json::empty;
+
+        const auto& constraint_sets = nmos::fields::constraint_sets(active_constraints).as_array();
+        if (empty(constraint_sets))
+        {
+            return true;
+        }
+        for (const auto& constraint_set : constraint_sets)
         {
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
