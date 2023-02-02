@@ -10,7 +10,7 @@ BST_TEST_CASE(testResourceValidator)
         using web::json::value_of;
         using nmos::experimental::flow_parameter_constraints;
         using nmos::experimental::sender_parameter_constraints;
-        using nmos::experimental::match_resource_parameters_constraint_set;
+        using nmos::experimental::detail::match_resource_parameters_constraint_set;
 
         auto constraint_set = value_of({
             { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },

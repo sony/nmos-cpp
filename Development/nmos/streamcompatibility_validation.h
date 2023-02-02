@@ -72,7 +72,10 @@ namespace nmos
             { nmos::caps::transport::st2110_21_sender_type, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::st2110_21_sender_type(sender), con); } }
         };
 
-        bool match_resource_parameters_constraint_set(const parameter_constraints& constraints, const web::json::value& resource, const web::json::value& constraint_set);
+        namespace detail
+        {
+            bool match_resource_parameters_constraint_set(const parameter_constraints& constraints, const web::json::value& resource, const web::json::value& constraint_set);
+        }
 
         // "At any time if State of an active Sender becomes active_constraints_violation, the Sender MUST become inactive.
         // An inactive Sender in this state MUST NOT allow activations.
@@ -82,7 +85,7 @@ namespace nmos
         nmos::details::connection_resource_patch_validator make_connection_streamcompatibility_validator(nmos::node_model& model);
 
         details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator(const details::resource_constraints_matcher& resource_matcher, const details::transport_file_constraint_sets_matcher& transport_file_matcher);
-        details::resource_constraints_matcher make_streamcompatibility_resource_constraint_set_matcher();
+        bool match_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set);
         details::transport_file_constraint_sets_matcher make_streamcompatibility_sdp_constraint_sets_matcher(const details::sdp_constraint_sets_matcher& match_sdp_parameters_constraint_sets);
     }
 }

@@ -8,6 +8,7 @@
 #include "nmos/connection_activation.h"
 #include "nmos/streamcompatibility_api.h"
 #include "nmos/streamcompatibility_behaviour.h"
+#include "nmos/streamcompatibility_validation.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
@@ -44,6 +45,7 @@ namespace nmos
             // (by itself, the default constructor does not construct a valid instance)
             node_implementation()
                 : parse_transport_file(&nmos::parse_rtp_transport_file)
+                , validate_sender_resources(make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets)))
             {}
 
             node_implementation& on_load_server_certificates(nmos::load_server_certificates_handler load_server_certificates) { this->load_server_certificates = std::move(load_server_certificates); return *this; }

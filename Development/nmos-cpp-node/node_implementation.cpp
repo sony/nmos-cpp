@@ -1482,18 +1482,18 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
 nmos::experimental::details::streamcompatibility_sender_validator make_node_implementation_streamcompatibility_sender_validator()
 {
     using nmos::experimental::make_streamcompatibility_sender_resources_validator;
-    using nmos::experimental::make_streamcompatibility_resource_constraint_set_matcher;
     using nmos::experimental::make_streamcompatibility_sdp_constraint_sets_matcher;
-    using nmos::experimental::match_resource_parameters_constraint_set;
 
+    // this example uses a custom sender resources validator to handle video/jxsv in addition to the core media types
+    // (if this callback is specified, an 'empty' std::function is not allowed)
     return [](const web::json::value& transport_file, const nmos::resource& sender, const nmos::resource& flow, const nmos::resource& source, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
     {
         const auto video_jxsv_sender_resources_matcher = [](const nmos::resource& resource, const web::json::value& constraint_set) -> bool
         {
-            return match_resource_parameters_constraint_set(nmos::video_jxsv_parameter_constraints, resource.data, constraint_set);
+            return nmos::experimental::detail::match_resource_parameters_constraint_set(nmos::video_jxsv_parameter_constraints, resource.data, constraint_set);
         };
         const auto validate_video_jxsv_sender_resources = make_streamcompatibility_sender_resources_validator(video_jxsv_sender_resources_matcher, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_video_jxsv_sdp_parameters_constraint_sets));
-        const auto validate_sender_resources = make_streamcompatibility_sender_resources_validator(make_streamcompatibility_resource_constraint_set_matcher(), make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets));
+        const auto validate_sender_resources = make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets));
         if (nmos::media_types::video_jxsv.name == nmos::fields::media_type(flow.data))
         {
             return validate_video_jxsv_sender_resources(transport_file, sender, flow, source, constraint_sets);
@@ -1671,6 +1671,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
         .on_set_effective_edid(make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate))
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(gate))
-        .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator())
+        .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
         .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator());
 }

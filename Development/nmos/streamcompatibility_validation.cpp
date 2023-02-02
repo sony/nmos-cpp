@@ -11,16 +11,20 @@ namespace nmos
 {
     namespace experimental
     {
-        bool match_resource_parameters_constraint_set(const parameter_constraints& constraints, const web::json::value& resource, const web::json::value& constraint_set_)
+        namespace detail
         {
-            if (!nmos::caps::meta::enabled(constraint_set_)) return false;
-
-            const auto& constraint_set = constraint_set_.as_object();
-            return constraint_set.end() == std::find_if(constraint_set.begin(), constraint_set.end(), [&](const std::pair<utility::string_t, web::json::value>& constraint)
+            bool match_resource_parameters_constraint_set(const parameter_constraints& constraints, const web::json::value& resource, const web::json::value& constraint_set_)
             {
-                const auto found = constraints.find(constraint.first);
-                return constraints.end() != found && !found->second(resource, constraint.second);
-            });
+                if (!nmos::caps::meta::enabled(constraint_set_)) return false;
+
+                const auto& constraint_set = constraint_set_.as_object();
+                return constraint_set.end() == std::find_if(constraint_set.begin(), constraint_set.end(), [&](const std::pair<utility::string_t, web::json::value>& constraint)
+                {
+                    const auto found = constraints.find(constraint.first);
+                    return constraints.end() != found && !found->second(resource, constraint.second);
+                });
+            }
+
         }
 
         // "At any time if State of an active Sender becomes active_constraints_violation, the Sender MUST become inactive.
@@ -67,24 +71,21 @@ namespace nmos
 
         }
 
-        details::resource_constraints_matcher make_streamcompatibility_resource_constraint_set_matcher()
+        bool match_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set)
         {
-            return [](const nmos::resource& resource, const web::json::value& constraint_set) -> bool
+            const std::map<nmos::type, parameter_constraints> resource_parameter_constraints
             {
-                const std::map<nmos::type, parameter_constraints> resource_parameter_constraints
-                {
-                    { nmos::types::source, source_parameter_constraints },
-                    { nmos::types::flow, flow_parameter_constraints },
-                    { nmos::types::sender, sender_parameter_constraints }
-                };
-
-                if (0 == resource_parameter_constraints.count(resource.type))
-                {
-                    throw std::logic_error("wrong resource type");
-                }
-
-                return match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
+                { nmos::types::source, source_parameter_constraints },
+                { nmos::types::flow, flow_parameter_constraints },
+                { nmos::types::sender, sender_parameter_constraints }
             };
+
+            if (0 == resource_parameter_constraints.count(resource.type))
+            {
+                throw std::logic_error("wrong resource type");
+            }
+
+            return detail::match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
         }
 
         details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator(const details::resource_constraints_matcher& match_resource_constraint_set, const details::transport_file_constraint_sets_matcher& match_transport_file_constraint_sets)
