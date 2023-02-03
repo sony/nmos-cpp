@@ -786,24 +786,27 @@ namespace nmos
                     auto resource = find_resource(resources, id_type);
                     if (resources.end() != resource)
                     {
-                        const auto supported_param_constraints = boost::copy_range<std::unordered_set<utility::string_t>>(nmos::fields::parameter_constraints(nmos::fields::supported_param_constraints(resource->data)) | boost::adaptors::transformed([](const web::json::value& param_constraint)
-                        {
-                            return std::unordered_set<utility::string_t>::value_type{ param_constraint.as_string() };
-                        }));
+                        auto& endpoint_active_constraints = nmos::fields::endpoint_active_constraints(resource->data);
 
-                        if (details::validate_constraint_sets(nmos::fields::constraint_sets(data).as_array(), supported_param_constraints))
+                        if (!nmos::fields::temporarily_locked(endpoint_active_constraints))
                         {
-                            auto& endpoint_active_constraints = nmos::fields::endpoint_active_constraints(resource->data);
+                            const auto supported_param_constraints = boost::copy_range<std::unordered_set<utility::string_t>>(nmos::fields::parameter_constraints(nmos::fields::supported_param_constraints(resource->data)) | boost::adaptors::transformed([](const web::json::value& param_constraint)
+                            {
+                                return std::unordered_set<utility::string_t>::value_type{ param_constraint.as_string() };
+                            }));
 
-                            if (!nmos::fields::temporarily_locked(endpoint_active_constraints))
+                            if (details::validate_constraint_sets(nmos::fields::constraint_sets(data).as_array(), supported_param_constraints))
                             {
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type;
 
                                 bool can_adhere = true;
 
-                                if (active_constraints_handler)
+                                if (!web::json::empty(nmos::fields::constraint_sets(data).as_array()))
                                 {
-                                    can_adhere = active_constraints_handler(resourceId, data);
+                                    if (active_constraints_handler)
+                                    {
+                                        can_adhere = active_constraints_handler(resourceId, data);
+                                    }
                                 }
 
                                 if (can_adhere)
@@ -819,13 +822,13 @@ namespace nmos
                             }
                             else
                             {
-                                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this operation is locked";
-                                set_error_reply(res, status_codes::Locked);
+                                set_error_reply(res, status_codes::BadRequest, U("The requested Constraint Set uses Parameter Constraints unsupported by this Sender."));
                             }
                         }
                         else
                         {
-                            set_error_reply(res, status_codes::BadRequest, U("The requested Constraint Set uses Parameter Constraints unsupported by this Sender."));
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this operation is locked";
+                            set_error_reply(res, status_codes::Locked);
                         }
                     }
                     else if (nmos::details::is_erased_resource(resources, id_type))
