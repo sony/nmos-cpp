@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.79.0")
+set(BOOST_VERSION_CUR "1.80.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
@@ -167,8 +167,13 @@ add_library(nmos-cpp::websocketpp ALIAS websocketpp)
 
 # OpenSSL
 
-# note: good idea to use same version as cpprestsk was built with!
+# note: good idea to use same version as cpprestsdk was built with!
 find_package(OpenSSL REQUIRED)
+if(NOT OpenSSL_VERSION)
+    message(STATUS "Found OpenSSL unknown version")
+else()
+    message(STATUS "Found OpenSSL version " ${OpenSSL_VERSION})
+endif()
 if(DEFINED OPENSSL_INCLUDE_DIR)
     message(STATUS "Using OpenSSL include directory at ${OPENSSL_INCLUDE_DIR}")
 endif()
@@ -184,7 +189,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 if(NMOS_CPP_USE_CONAN)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
-    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.1.0")
+    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.2.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
     if(NOT nlohmann_json_schema_validator_VERSION)
         message(STATUS "Found nlohmann_json_schema_validator unknown version; minimum version: " ${JSON_SCHEMA_VALIDATOR_VERSION_MIN})
@@ -196,20 +201,38 @@ if(NMOS_CPP_USE_CONAN)
         message(STATUS "Found nlohmann_json_schema_validator version " ${nlohmann_json_schema_validator_VERSION})
     endif()
 
+    set(NLOHMANN_JSON_VERSION_MIN "3.6.0")
+    set(NLOHMANN_JSON_VERSION_CUR "3.11.2")
+    find_package(nlohmann_json REQUIRED)
+    if(NOT nlohmann_json_VERSION)
+        message(STATUS "Found nlohmann_json unknown version; minimum version: " ${NLOHMANN_JSON_VERSION_MIN})
+    elseif(nlohmann_json_VERSION VERSION_LESS NLOHMANN_JSON_VERSION_MIN)
+        message(FATAL_ERROR "Found nlohmann_json version " ${nlohmann_json_VERSION} " that is lower than the minimum version: " ${NLOHMANN_JSON_VERSION_MIN})
+    elseif(nlohmann_json_VERSION VERSION_GREATER NLOHMANN_JSON_VERSION_CUR)
+        message(STATUS "Found nlohmann_json version " ${nlohmann_json_VERSION} " that is higher than the current tested version: " ${NLOHMANN_JSON_VERSION_CUR})
+    else()
+        message(STATUS "Found nlohmann_json version " ${nlohmann_json_VERSION})
+    endif()
+
     add_library(json_schema_validator INTERFACE)
-    target_link_libraries(json_schema_validator INTERFACE nlohmann_json_schema_validator::nlohmann_json_schema_validator)
+    target_link_libraries(json_schema_validator INTERFACE nlohmann_json_schema_validator nlohmann_json::nlohmann_json)
 else()
+    message(STATUS "Using sources at third_party/nlohmann instead of external \"nlohman_json_schema_validator\" and \"nlohmann_json\" packages.")
+
     set(JSON_SCHEMA_VALIDATOR_SOURCES
         third_party/nlohmann/json-patch.cpp
         third_party/nlohmann/json-schema-draft7.json.cpp
-        third_party/nlohmann/json-validator.cpp
         third_party/nlohmann/json-uri.cpp
+        third_party/nlohmann/json-validator.cpp
+        third_party/nlohmann/smtp-address-validator.cpp
+        third_party/nlohmann/string-format-check.cpp
         )
 
     set(JSON_SCHEMA_VALIDATOR_HEADERS
         third_party/nlohmann/json-patch.hpp
         third_party/nlohmann/json-schema.hpp
         third_party/nlohmann/json.hpp
+        third_party/nlohmann/smtp-address-validator.hpp
         )
 
     add_library(
@@ -253,20 +276,47 @@ add_library(nmos-cpp::json_schema_validator ALIAS json_schema_validator)
 # even if the DLL stub library is built from the patched sources on Windows
 add_library(DNSSD INTERFACE)
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
-    set(NMOS_CPP_USE_AVAHI ON CACHE BOOL "Use Avahi compatibility library rather than mDNSResponder")
-    if(NMOS_CPP_USE_AVAHI)
-        find_package(Avahi REQUIRED)
-        if(NOT Avahi_VERSION)
-            message(STATUS "Found Avahi unknown version")
-        else()
-            message(STATUS "Found Avahi version " ${Avahi_VERSION})
-        endif()
+macro(find_avahi)
+    # third_party/cmake/FindAvahi.cmake uses the package name and target namespace 'Avahi'
+    # but newer revisions of the 'avahi' recipe on Conan Center Index do not override the conan default
+    # for cmake package name and target namespace, which is the conan package name lower-cased...
+    # find_package treats <PackageName> as case-insensitive when searching for a find module or
+    # config package, and ultimately creates <PackageName>_FOUND and <PackageName>_VERSION with the
+    # specified case, but that doesn't apply to targets created by the find module or config package
+    # so one find_package call is sufficient here, but need to detect the different target namespace
+    find_package(Avahi REQUIRED)
+    if(NOT Avahi_VERSION)
+        message(STATUS "Found Avahi unknown version")
+    else()
+        message(STATUS "Found Avahi version " ${Avahi_VERSION})
+    endif()
 
+    if(TARGET Avahi::compat-libdns_sd)
         target_link_libraries(DNSSD INTERFACE Avahi::compat-libdns_sd)
     else()
+        target_link_libraries(DNSSD INTERFACE avahi::compat-libdns_sd)
+    endif()
+endmacro()
+
+macro(find_mdnsresponder)
+    # third_party/cmake/FindDNSSD.cmake uses the package name and target namespace 'DNSSD'
+    # but newer revisions of the 'mdnsresponder' recipe on CCI may not override the conan default
+    # for cmake package name and target namespace, which is the conan package name lower-cased...
+    # so may need two find_package attempts here
+    find_package(mdnsresponder QUIET)
+    if(mdnsresponder_FOUND)
+        if(NOT mdnsresponder_VERSION)
+            message(STATUS "Found mdnsresponder unknown version")
+        else()
+            message(STATUS "Found mdnsresponder version " ${mdnsresponder_VERSION})
+        endif()
+
+        target_link_libraries(DNSSD INTERFACE mdnsresponder::mdnsresponder)
+    else()
+        message(STATUS "Could not find a package configuration file provided by \"mdnsresponder\".\n"
+                       "Trying \"DNSSD\" instead.")
         find_package(DNSSD REQUIRED)
+
         if(NOT DNSSD_VERSION)
             message(STATUS "Found DNSSD unknown version")
         else()
@@ -274,6 +324,16 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
         endif()
 
         target_link_libraries(DNSSD INTERFACE DNSSD::DNSSD)
+    endif()
+endmacro()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    # find Bonjour or Avahi compatibility library for the mDNS support library (mdns)
+    set(NMOS_CPP_USE_AVAHI ON CACHE BOOL "Use Avahi compatibility library rather than mDNSResponder")
+    if(NMOS_CPP_USE_AVAHI)
+        find_avahi()
+    else()
+        find_mdnsresponder()
     endif()
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     # find Bonjour for the mDNS support library (mdns)
@@ -286,14 +346,7 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     set(NMOS_CPP_USE_BONJOUR_SDK OFF CACHE BOOL "Use dnssd.lib from the installed Bonjour SDK")
     mark_as_advanced(FORCE NMOS_CPP_USE_BONJOUR_SDK)
     if(NMOS_CPP_USE_BONJOUR_SDK)
-        find_package(DNSSD REQUIRED)
-        if(NOT DNSSD_VERSION)
-            message(STATUS "Found DNSSD unknown version")
-        else()
-            message(STATUS "Found DNSSD version " ${DNSSD_VERSION})
-        endif()
-
-        target_link_libraries(DNSSD INTERFACE DNSSD::DNSSD)
+        find_mdnsresponder()
 
         # dnssd.lib is built with /MT, so exclude libcmt if we're building nmos-cpp with the dynamically-linked runtime library
         # default is "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
@@ -303,6 +356,8 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
             target_link_options(DNSSD INTERFACE /NODEFAULTLIB:libcmt)
         endif()
     else()
+        message(STATUS "Using sources at third_party/mDNSResponder instead of external \"mdnsresponder\" package.")
+
         # hm, where best to install dns_sd.h?
         set(BONJOUR_INCLUDE
             "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/mDNSResponder/mDNSShared>"
@@ -366,12 +421,14 @@ if(NMOS_CPP_BUILD_LLDP)
     # hmm, this needs replacing with a proper find-module
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         # find libpcap for the LLDP support library (lldp)
+        message(STATUS "Using system libpcap")
         target_link_libraries(PCAP INTERFACE pcap)
     elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
         # find WinPcap for the LLDP support library (lldp)
         set(PCAP_INCLUDE_DIR "third_party/WpdPack/Include" CACHE PATH "WinPcap include directory")
         set(PCAP_LIB_DIR "third_party/WpdPack/Lib/x64" CACHE PATH "WinPcap library directory")
         set(PCAP_LIB wpcap.lib)
+        message(STATUS "Using configured WinPcap include directory at " ${PCAP_INCLUDE_DIR})
 
         # enable 'new' WinPcap functions like pcap_open, pcap_findalldevs_ex
         target_compile_definitions(PCAP INTERFACE HAVE_REMOTE)

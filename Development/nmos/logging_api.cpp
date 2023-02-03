@@ -36,16 +36,24 @@ namespace nmos
             return logging_api;
         }
 
+        static inline rql::extractor make_rql_extractor(const web::json::value& value)
+        {
+            return [&value](web::json::value& results, const web::json::value& key)
+            {
+                return web::json::extract(value.as_object(), results, key.as_string());
+            };
+        }
+
         bool match_logging_rql(const web::json::value& value, const web::json::value& query)
         {
-            return query.is_null() || rql::evaluator
+            try
             {
-                [&value](web::json::value& results, const web::json::value& key)
-                {
-                    return web::json::extract(value.as_object(), results, key.as_string());
-                },
-                rql::default_any_operators()
-            }(query) == rql::value_true;
+                return query.is_null() || rql::evaluator{ make_rql_extractor(value), rql::default_any_operators() }(query) == rql::value_true;
+            }
+            catch (const std::runtime_error&) // i.e. rql::details::rql_exception
+            {
+                return false;
+            }
         }
 
         // Predicate to match events against a query
@@ -80,6 +88,8 @@ namespace nmos
                     if (field.first == U("rql"))
                     {
                         rql_query = rql::parse_query(field.second.as_string());
+                        // validate against call-operators used in nmos::experimental::match_logging_rql
+                        rql::validate_query(rql_query, rql::default_any_operators());
                     }
                     // an error is reported for unimplemented parameters
                     else

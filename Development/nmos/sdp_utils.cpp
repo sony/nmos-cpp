@@ -1522,6 +1522,14 @@ namespace nmos
         const video_smpte291_parameters* get_data(const format_parameters* format) { return get<video_smpte291_parameters>(format); }
         const video_SMPTE2022_6_parameters* get_mux(const format_parameters* format) { return get<video_SMPTE2022_6_parameters>(format); }
 
+        // both video/raw and video/smpte291 may have exactframerate
+        nmos::rational get_exactframerate(const format_parameters* format)
+        {
+            if (auto video = get_video(format)) return video->exactframerate;
+            else if (auto data = get_data(format)) return data->exactframerate;
+            else return{};
+        }
+
         // NMOS Parameter Registers - Capabilities register
         // See https://specs.amwa.tv/nmos-parameter-registers/branches/main/capabilities/
 #define CAPS_ARGS const sdp_parameters& sdp, const format_parameters& format, const web::json::value& con
@@ -1532,7 +1540,7 @@ namespace nmos
             { nmos::caps::format::media_type, [](CAPS_ARGS) { return nmos::match_string_constraint(get_media_type(sdp).name, con); } },
             // hm, how best to match (rational) nmos::caps::format::grain_rate against (double) framerate e.g. for video/SMPTE2022-6?
             // is 23.976 a match for 24000/1001? how about 23.98, or 23.9? or even 23?!
-            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto video = get_video(&format); return !video || nmos::rational{} == video->exactframerate || nmos::match_rational_constraint(video->exactframerate, con); } },
+            { nmos::caps::format::grain_rate, [](CAPS_ARGS) { auto exactframerate = get_exactframerate(&format); return nmos::rational{} == exactframerate || nmos::match_rational_constraint(exactframerate, con); } },
 
             // Video Constraints
 

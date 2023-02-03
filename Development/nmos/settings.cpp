@@ -64,17 +64,17 @@ namespace nmos
             if (settings.has_field(nmos::fields::http_port))
             {
                 const auto http_port = nmos::fields::http_port(settings);
+                // can't share a port between an http_listener and a websocket_listener, so use next higher port
+                const auto ws_port = http_port + 1;
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::query_port, http_port));
-                // can't share a port between an http_listener and a websocket_listener, so don't apply this one...
-                //if (registry) web::json::insert(settings, std::make_pair(nmos::fields::query_ws_port, http_port));
+                if (registry) web::json::insert(settings, std::make_pair(nmos::fields::query_ws_port, ws_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::registration_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::fields::node_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::system_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::connection_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_port, http_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::channelmapping_port, http_port));
-                // can't share a port between an http_listener and a websocket_listener, so don't apply this one...
-                //if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_ws_port, http_port));
+                if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::events_ws_port, ws_port));
                 if (!registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::manifest_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::experimental::fields::settings_port, http_port));
                 web::json::insert(settings, std::make_pair(nmos::experimental::fields::logging_port, http_port));

@@ -51,7 +51,7 @@ jobs:
             dns_sd_mode: multicast
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: set environment variables
       shell: bash
@@ -73,7 +73,7 @@ jobs:
         echo "RUNNER_WORKSPACE=${{ runner.workspace }}" >> $GITHUB_ENV
 
     - name: install python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: 3.8
 
@@ -97,7 +97,7 @@ jobs:
         conan config set general.revisions_enabled=1
 
     - name: install cmake
-      uses: lukka/get-cmake@v3.23.0
+      uses: lukka/get-cmake@v3.24.2
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -127,6 +127,8 @@ jobs:
         # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
         # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
+        # add the OCSP server to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip ocsp.testsuite.nmos.tv`n"
         # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
         # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
@@ -152,8 +154,8 @@ jobs:
         ifconfig
         echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs" >> $GITHUB_ENV
         echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs" >> $GITHUB_ENV
-        # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
-        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
+        # add the CRL Distribution Point and the OCSP server to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+        echo -e "$hostip crl.testsuite.nmos.tv\n$hostip ocsp.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
         # testssl.sh needs "timeout"
         brew install coreutils
 
@@ -190,8 +192,8 @@ jobs:
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "HOST_IP_ADDRESS=$hostip" >> $GITHUB_ENV
         ip address
-        # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
-        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
+        # add the CRL Distribution Point and the OCSP server to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+        echo -e "$hostip crl.testsuite.nmos.tv\n$hostip ocsp.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
         # re-synchronize the package index
         sudo apt-get update -q
 
@@ -199,12 +201,13 @@ jobs:
       if: runner.os == 'Linux' && matrix.install_mdns == true
       run: |
         cd ${{ env.GITHUB_WORKSPACE }}
-        curl https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-878.200.35.tar.gz -o mDNSResponder-878.200.35.tar.gz
-        tar -xzf mDNSResponder-878.200.35.tar.gz
-        patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/unicast.patch
-        patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
-        patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
-        cd mDNSResponder-878.200.35/mDNSPosix
+        mkdir mDNSResponder
+        cd mDNSResponder
+        curl -L https://github.com/apple-oss-distributions/mDNSResponder/archive/mDNSResponder-878.200.35.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+        patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/unicast.patch
+        patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
+        patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
+        cd mDNSPosix
         make os=linux && sudo make os=linux install
         # install Name Service Cache Daemon to speed up repeated mDNS name discovery
         sudo apt-get install -f nscd
@@ -545,7 +548,7 @@ jobs:
         dns_sd_mode: [multicast]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: set environment variables
       shell: bash
@@ -601,7 +604,7 @@ jobs:
         conan config set general.revisions_enabled=1
 
     - name: install cmake
-      uses: lukka/get-cmake@v3.23.0
+      uses: lukka/get-cmake@v3.24.2
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -631,6 +634,8 @@ jobs:
         # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
         # and avoid SSL Error: WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED failed to check revocation status.
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip crl.testsuite.nmos.tv`n"
+        # add the OCSP server to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+        Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip ocsp.testsuite.nmos.tv`n"
         # add nmos-api.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite to take 2-3 hours to complete
         Add-Content $env:WINDIR\System32\Drivers\Etc\Hosts "`n$env:hostip nmos-api.local`n"
         # add nmos-mocks.local to hosts to workaround mDNS lookups on windows being very slow and causing the AMWA test suite IS-04-01 test_05 to fail due to latency messing up the apparent heart beat interval
@@ -656,8 +661,8 @@ jobs:
         ifconfig
         echo "CTEST_EXTRA_ARGS=$CTEST_EXTRA_ARGS -E testMdnsResolveAPIs" >> $GITHUB_ENV
         echo "CTEST_EXPECTED_FAILURES=$CTEST_EXPECTED_FAILURES -R testMdnsResolveAPIs" >> $GITHUB_ENV
-        # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
-        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
+        # add the CRL Distribution Point and the OCSP server to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+        echo -e "$hostip crl.testsuite.nmos.tv\n$hostip ocsp.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
         # testssl.sh needs "timeout"
         brew install coreutils
 
@@ -694,8 +699,8 @@ jobs:
         hostip=$(hostname -I | cut -f1 -d' ')
         echo "HOST_IP_ADDRESS=$hostip" >> $GITHUB_ENV
         ip address
-        # add the CRL Distribution Point to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
-        echo "$hostip crl.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
+        # add the CRL Distribution Point and the OCSP server to hosts so that it's discoverable when running the AMWA test suite in mDNS mode
+        echo -e "$hostip crl.testsuite.nmos.tv\n$hostip ocsp.testsuite.nmos.tv" | sudo tee -a /etc/hosts > /dev/null
         # re-synchronize the package index
         sudo apt-get update -q
 
@@ -703,12 +708,13 @@ jobs:
       if: runner.os == 'Linux' && matrix.install_mdns == true
       run: |
         cd ${{ env.GITHUB_WORKSPACE }}
-        curl https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-878.200.35.tar.gz -o mDNSResponder-878.200.35.tar.gz
-        tar -xzf mDNSResponder-878.200.35.tar.gz
-        patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/unicast.patch
-        patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
-        patch -d mDNSResponder-878.200.35/ -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
-        cd mDNSResponder-878.200.35/mDNSPosix
+        mkdir mDNSResponder
+        cd mDNSResponder
+        curl -L https://github.com/apple-oss-distributions/mDNSResponder/archive/mDNSResponder-878.200.35.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
+        patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/unicast.patch
+        patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/permit-over-long-service-types.patch
+        patch -p1 < ${{ env.GITHUB_WORKSPACE }}/Development/third_party/mDNSResponder/poll-rather-than-select.patch
+        cd mDNSPosix
         make os=linux && sudo make os=linux install
         # install Name Service Cache Daemon to speed up repeated mDNS name discovery
         sudo apt-get install -f nscd
@@ -1039,7 +1045,7 @@ jobs:
     needs: [build_and_test, build_and_test_ubuntu_14]
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: set environment variables
       shell: bash
