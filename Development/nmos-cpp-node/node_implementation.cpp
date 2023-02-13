@@ -949,8 +949,8 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio });
 
         auto input = edid_support
-            ? nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, bst::nullopt, sender_ids, model.settings)
-            : nmos::experimental::make_streamcompatibility_input(input_id, true, sender_ids, model.settings);
+            ? nmos::experimental::make_streamcompatibility_input(input_id, device_id, true, true, edid, bst::nullopt, sender_ids, model.settings)
+            : nmos::experimental::make_streamcompatibility_input(input_id, device_id, true, sender_ids, model.settings);
         impl::set_label_description(input, impl::ports::mux, 0); // The single Input consumes both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) return;
 
@@ -1013,8 +1013,8 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, { impl::ports::video, impl::ports::audio });
 
         auto output = edid_support
-            ? nmos::experimental::make_streamcompatibility_output(output_id, true, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings)
-            : nmos::experimental::make_streamcompatibility_output(output_id, true, receiver_ids, model.settings);
+            ? nmos::experimental::make_streamcompatibility_output(output_id, device_id, true, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings)
+            : nmos::experimental::make_streamcompatibility_output(output_id, device_id, true, receiver_ids, model.settings);
         impl::set_label_description(output, impl::ports::mux, 0); // The single Output produces both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(output), gate)) return;
 
