@@ -194,7 +194,7 @@ namespace nmos
                 auto browser_cmd(U("xdg-open \"") + authorization_code_uri.to_string() + U("\""));
                 if (0 > system(browser_cmd.c_str()))
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Faile to open a browser to start the authorization code flow";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Failed to open a browser to start the authorization code flow";
                 }
 #endif
             };
