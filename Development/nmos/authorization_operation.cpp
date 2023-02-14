@@ -918,23 +918,23 @@ namespace nmos
                     auto fetch_time = std::chrono::steady_clock::now();
                     return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &model , &token_state, &gate]()
                     {
-                        // create client assertion for private key jwt
+                        // create client assertion using private key jwt
                         utility::string_t client_assertion;
                         with_read_lock(model.mutex, [&]
                         {
                             if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name == token_endpoint_auth_method)
                             {
-                                // get RSA private key from list
+                                // use the 1st RSA private key from RSA private keys list to create the client_assertion
                                 if (!token_state.load_rsa_private_keys)
                                 {
                                     throw web::http::oauth2::experimental::oauth2_exception(U("missing RSA private key loader to extract RSA private key"));
                                 }
-                                auto rsa_private_key = details::found_rsa_key(token_state.load_rsa_private_keys());
-                                if (rsa_private_key.empty())
+                                auto rsa_private_keys = token_state.load_rsa_private_keys();
+                                if (rsa_private_keys.empty() || rsa_private_keys[0].empty())
                                 {
                                     throw web::http::oauth2::experimental::oauth2_exception(U("no RSA key to create client assertion"));
                                 }
-                                client_assertion = jwt_generator::create_client_assertion(client_id, client_id, token_endpoint, client_assertion_lifespan, rsa_private_key);
+                                client_assertion = jwt_generator::create_client_assertion(client_id, client_id, token_endpoint, client_assertion_lifespan, rsa_private_keys[0], U("1"));
                             }
                         });
 

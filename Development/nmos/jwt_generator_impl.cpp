@@ -14,7 +14,7 @@ namespace nmos
             class jwt_generator_impl
             {
             public:
-                static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& public_key, const utility::string_t& private_key)
+                static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& public_key, const utility::string_t& private_key, const utility::string_t& keyid)
                 {
                     using namespace jwt::experimental::details;
 
@@ -29,22 +29,23 @@ namespace nmos
                         .set_issued_at(std::chrono::system_clock::now())
                         .set_expires_at(std::chrono::system_clock::now() + token_lifetime)
                         .set_id(utility::us2s(nmos::make_id()))
+                        .set_key_id(utility::us2s(keyid))
                         .set_type("JWT")
                         .sign(jwt::algorithm::rs256(utility::us2s(public_key), utility::us2s(private_key))));
                 }
 
-                static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& private_key)
+                static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& private_key, const utility::string_t& keyid)
                 {
-                    return create_client_assertion(issuer, subject, audience, token_lifetime, rsa_public_key(private_key), private_key);
+                    return create_client_assertion(issuer, subject, audience, token_lifetime, rsa_public_key(private_key), private_key, keyid);
                 }
             };
         }
 
-        utility::string_t jwt_generator::create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& private_key)
+        utility::string_t jwt_generator::create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& private_key, const utility::string_t& keyid)
         {
             try
             {
-                return details::jwt_generator_impl::create_client_assertion(issuer, subject, audience, token_lifetime, private_key);
+                return details::jwt_generator_impl::create_client_assertion(issuer, subject, audience, token_lifetime, private_key, keyid);
             }
             catch (const jwt::error::signature_generation_exception& e)
             {

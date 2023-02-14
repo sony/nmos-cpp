@@ -79,6 +79,7 @@ namespace nmos
                 utility::string_t redirect_uri;
                 utility::string_t token_endpoint_auth_method;
                 utility::string_t rsa_private_key;
+                utility::string_t keyid;
                 auto client_assertion_lifespan(std::chrono::seconds(30));
                 with_read_lock(model.mutex, [&, load_ca_certificates, load_rsa_private_keys]
                 {
@@ -95,8 +96,13 @@ namespace nmos
 
                     if (load_rsa_private_keys)
                     {
-                        // get RSA private key from list
-                        rsa_private_key = details::found_rsa_key(load_rsa_private_keys());
+                        // use the 1st RSA private key from RSA private keys list to create the client_assertion
+                        auto rsa_private_keys = load_rsa_private_keys();
+                        if (!rsa_private_keys.empty())
+                        {
+                            rsa_private_key = rsa_private_keys[0];
+                            keyid = U("1");
+                        }
                     }
                     client_assertion_lifespan = std::chrono::seconds(nmos::experimental::fields::authorization_request_max(settings));
                 });
@@ -107,7 +113,7 @@ namespace nmos
 
                 if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name == token_endpoint_auth_method)
                 {
-                    const auto client_assertion = jwt_generator::create_client_assertion(client_id, client_id, token_endpoint, client_assertion_lifespan, rsa_private_key);
+                    const auto client_assertion = jwt_generator::create_client_assertion(client_id, client_id, token_endpoint, client_assertion_lifespan, rsa_private_key, keyid);
 
                     // exchange authorization code for bearer token
                     // where redirected URI: /x-authorization/callback/?state=<state>&code=<authorization code>

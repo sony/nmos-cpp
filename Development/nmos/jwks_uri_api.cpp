@@ -42,9 +42,11 @@ namespace nmos
                     rsa_private_keys = load_rsa_private_keys();
                 });
 
+                int idx = 0;
                 for (const auto rsa_private_key : rsa_private_keys)
                 {
-                    const auto jwk = details::private_key_to_jwk(rsa_private_key, make_id());
+                    const auto keyid = std::to_string(++idx);
+                    const auto jwk = details::private_key_to_jwk(rsa_private_key, utility::s2us(keyid));
                     web::json::push_back(keys, jwk);
                 }
 
