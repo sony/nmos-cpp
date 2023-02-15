@@ -106,10 +106,12 @@ namespace nmos
 
         nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
+            using web::json::value;
             using web::json::value_from_elements;
             using web::json::value_of;
 
             auto data = make_streamcompatibility_input_output_base(id, device_id, connected, false, settings);
+            data[nmos::fields::base_edid_changeable] = value::boolean(false);
             data[nmos::fields::senders] = value_from_elements(senders);
             data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 
@@ -118,6 +120,7 @@ namespace nmos
 
         nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, bool base_edid_changeable, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
+            using web::json::value;
             using web::json::value_from_elements;
             using web::json::value_of;
 
@@ -135,6 +138,7 @@ namespace nmos
                 data[nmos::fields::effective_edid_properties] = *effective_edid_properties;
             }
 
+            data[nmos::fields::base_edid_changeable] = value::boolean(base_edid_changeable);
             data[nmos::fields::senders] = value_from_elements(senders);
             data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 
