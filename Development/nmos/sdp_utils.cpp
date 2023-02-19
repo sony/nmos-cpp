@@ -723,6 +723,26 @@ namespace nmos
             );
         }
 
+        // insert hkep if specified
+        for (const auto& hkep_attr : sdp_params.hkep)
+        {
+            // a=hkep:<port> <nettype> <addrtype> <unicast-address> <node-id> <port-id>
+            // See VSF TR-10-5 Section 10
+            web::json::push_back(
+                session_attributes, value_of({
+                    { sdp::fields::name, sdp::attributes::hkep },
+                    { sdp::fields::value, value_of({
+                        { sdp::fields::port, hkep_attr.port },
+                        { sdp::fields::network_type, sdp::network_types::internet.name },
+                        { sdp::fields::address_type, details::get_address_type_multicast(origin_address).first.name },
+                        { sdp::fields::unicast_address, origin_address },
+                        { sdp::fields::node_id, hkep_attr.node_id },
+                        { sdp::fields::port_id, hkep_attr.port_id },
+                    }, keep_order) }
+                }, keep_order)
+            );
+        }
+
         return session_description;
     }
 
@@ -764,7 +784,7 @@ namespace nmos
     }
 
     // Construct SDP parameters for "video/raw", with sensible defaults for unspecified fields
-    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
+    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::hkep_t>& hkep)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -799,11 +819,11 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
 
-        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk, hkep };
     }
 
     // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
-    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
+    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::hkep_t>& hkep)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -816,7 +836,7 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
 
-        return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk, hkep };
     }
 
     // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
@@ -1118,6 +1138,22 @@ namespace nmos
             for (const auto& mid : sdp::fields::mids(value))
             {
                 sdp_params.group.media_stream_ids.push_back(mid.as_string());
+            }
+        }
+
+        // HKEP Signalling
+        // See VSF TR-10-5 Section 10
+        {
+            auto isHkep = [](const web::json::value& nv)
+            {
+                return sdp::fields::name(nv) == sdp::attributes::hkep;
+            };
+            auto iter = session_attributes.begin();
+            while ((iter = std::find_if(iter, session_attributes.end(), isHkep)) != session_attributes.end())
+            {
+                const auto& hkep = sdp::fields::value(*iter);
+                sdp_params.hkep.push_back(sdp_parameters::hkep_t{ sdp::fields::port(hkep), sdp::fields::node_id(hkep), sdp::fields::port_id(hkep) });
+                iter++;
             }
         }
 

@@ -143,6 +143,9 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc7273
         const utility::string_t ts_refclk{ U("ts-refclk") };
         const utility::string_t mediaclk{ U("mediaclk") };
+
+        // See VSF TR-10-5 Section 10
+        const utility::string_t hkep{ U("hkep") };
     }
 
     namespace fields
@@ -195,6 +198,11 @@ namespace sdp
 
         // a=mediaclk:[id=<clock id> ]<clock source>[=<clock parameters>]
         // See https://tools.ietf.org/html/rfc7273#section-5
+
+        // a=hkep:<port> <nettype> <addrtype> <unicast-address> <node-id> <port-id>
+        // See VSF TR-10-5 Section 10
+        const web::json::field_as_string node_id{ U("node_id") };
+        const web::json::field_as_string port_id{ U("port_id") };
     }
 
     // make a named value (useful for attributes)
