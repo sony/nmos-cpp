@@ -17,7 +17,7 @@ namespace nmos
             // get grant type set from json array
             std::set<web::http::oauth2::experimental::grant_type> grant_types(const web::json::array& grants)
             {
-                return boost::copy_range<std::set<web::http::oauth2::experimental::grant_type>>(grants | boost::adaptors::transformed([](const web::json::value& v) { return web::http::oauth2::experimental::parse_grant(v.as_string()); }));
+                return boost::copy_range<std::set<web::http::oauth2::experimental::grant_type>>(grants | boost::adaptors::transformed([](const web::json::value& v) { return web::http::oauth2::experimental::to_grant_type(v.as_string()); }));
             }
 
             // get grant type set from settings
@@ -58,7 +58,7 @@ namespace nmos
             // get token_endpoint_auth_method from settings
             web::http::oauth2::experimental::token_endpoint_auth_method token_endpoint_auth_method_from_settings(const nmos::settings& settings)
             {
-                return web::http::oauth2::experimental::parse_token_endpoint_auth_method(nmos::experimental::fields::token_endpoint_auth_method(settings));
+                return web::http::oauth2::experimental::to_token_endpoint_auth_method(nmos::experimental::fields::token_endpoint_auth_method(settings));
             }
 
             // get token_endpoint_auth_method from client metadata if presented, otherwise return default_token_endpoint_auth_method

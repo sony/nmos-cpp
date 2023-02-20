@@ -1,5 +1,6 @@
 #include "nmos/authorization_redirect_api.h"
 
+#include "cpprest/access_token_error.h"
 #include "cpprest/response_type.h"
 #include "nmos/api_utils.h"
 #include "nmos/authorization_behaviour.h" // for top_authorization_service
@@ -17,6 +18,21 @@ namespace nmos
 {
     namespace experimental
     {
+        struct authorization_flow_exception : std::runtime_error
+        {
+            web::http::oauth2::experimental::access_token_error error;
+            utility::string_t description;
+
+            explicit authorization_flow_exception(web::http::oauth2::experimental::access_token_error error)
+                : std::runtime_error(utility::us2s(error.name))
+                , error(std::move(error)) {}
+
+            explicit authorization_flow_exception(web::http::oauth2::experimental::access_token_error error, utility::string_t description)
+                : std::runtime_error(utility::us2s(error.name))
+                , error(std::move(error))
+                , description(std::move(description)) {}
+        };
+
         namespace details
         {
             typedef std::pair<web::http::status_code, web::json::value> authorization_flow_response;
@@ -29,6 +45,88 @@ namespace nmos
             inline authorization_flow_response make_authorization_flow_error_response(web::http::status_code code, const std::exception& debug)
             {
                 return make_authorization_flow_error_response(code, {}, utility::s2us(debug.what()));
+            }
+
+            void process_error_response(const web::uri& redirected_uri, const utility::string_t& response_type, const utility::string_t& state)
+            {
+                using web::http::oauth2::experimental::oauth2_exception;
+                using web::http::oauth2::details::oauth2_strings;
+                namespace response_types = web::http::oauth2::experimental::response_types;
+                namespace access_token_errors = web::http::oauth2::experimental::access_token_errors;
+
+                std::map<utility::string_t, utility::string_t> query;
+
+                // for Authorization Code Grant
+                // "If the resource owner denies the access request or if the request
+                // fails for reasons other than a missing or invalid redirection URI,
+                // the authorization server informs the client by adding the following
+                // parameters to the query component of the redirection URI using the
+                // "application/x-www-form-urlencoded" format"
+                //
+                // For example, the authorization server redirects the user-agent by
+                // sending the following HTTP response
+                //   HTTP/1.1 302 Found
+                //   Location: https://client.example.com/cb?error=access_denied&state=xyz
+                // see https://tools.ietf.org/html/rfc6749#section-4.1.2.1
+                if (response_type == response_types::code.name)
+                {
+                    query = web::uri::split_query(redirected_uri.query());
+                }
+                // for Implicit Grant
+                // "If the resource owner denies the access request or if the request
+                // fails for reasons other than a missing or invalid redirection URI,
+                // the authorization server informs the client by adding the following
+                // parameters to the fragment component of the redirection URI using the
+                // "application/x-www-form-urlencoded" format"
+                //
+                // For example, the authorization server redirects the user-agent by
+                // sending the following HTTP response
+                //   HTTP/1.1 302 Found
+                //   Location: https://client.example.com/cb#error=access_denied&state=xyz
+                // see https://tools.ietf.org/html/rfc6749#section-4.2.2.1
+                else if (response_type == response_types::token.name)
+                {
+                    query = web::uri::split_query(redirected_uri.fragment());
+                }
+                else
+                {
+                    throw oauth2_exception(U("response_type: '") + response_type + U("' is not supported"));
+                }
+
+                auto state_param = query.find(oauth2_strings::state);
+                if (state_param == query.end())
+                {
+                    throw oauth2_exception(U("parameter 'state' missing from redirected URI"));
+                }
+
+                if (state != state_param->second)
+                {
+                    throw oauth2_exception(U("parameter 'state': '") + state_param->second + U("' does not match with the expected 'state': '") + state + U("'"));
+                }
+
+                auto error_param = query.find(U("error"));
+                if (error_param != query.end())
+                {
+                    const auto error = web::http::oauth2::experimental::to_access_token_error(error_param->second);
+                    if (error.empty())
+                    {
+                        throw oauth2_exception(U("invalid 'error' parameter"));
+                    }
+
+                    auto error_description_param = query.find(U("error_description"));
+                    if (error_description_param != query.end())
+                    {
+                        auto error_description = web::uri::decode(error_description_param->second);
+                        std::replace(error_description.begin(), error_description.end(), '+', ' ');
+                        throw authorization_flow_exception(error, error_description);
+                    }
+                    else
+                    {
+                        throw authorization_flow_exception(error);
+                    }
+
+                    // hmm, error_uri is ignored for now
+                }
             }
         }
 
@@ -107,24 +205,78 @@ namespace nmos
                     client_assertion_lifespan = std::chrono::seconds(nmos::experimental::fields::authorization_request_max(settings));
                 });
 
+                // The Authorization server may redirect error back due to something have went wrong
+                // such as resource owner rejects the request or the developer did something wrong
+                // when creating the Authorization request
+                {
+                    auto lock = authorization_state.write_lock(); // in order to update shared state
+                    try
+                    {
+                        details::process_error_response(req.request_uri(), response_type, state);
+                    }
+                    catch (const web::http::oauth2::experimental::oauth2_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request OAuth 2.0 error: " << e.what();
+                        result = details::make_authorization_flow_error_response(status_codes::InternalError, e);
+                        authorization_state.authorization_flow = authorization_state::failed;
+                    }
+                    catch (const authorization_flow_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request Authorization Flow error: " << utility::us2s(e.error.name) << " description: " << utility::us2s(e.description);
+                        result = details::make_authorization_flow_error_response(status_codes::BadRequest, e.error.name, e.description);
+                        authorization_state.authorization_flow = authorization_state::failed;
+                    }
+
+                    if (authorization_state::failed == authorization_state.authorization_flow)
+                    {
+                        with_write_lock(model.mutex, [&]
+                        {
+                            model.notify();
+                        });
+
+                        set_reply(res, result.first, !result.second.is_null() ? result.second : nmos::make_error_response_body(result.first));
+
+                        return pplx::task_from_result(true);
+                    }
+                }
+
                 web::http::client::http_client client(token_endpoint, config);
 
                 auto request_token = pplx::task_from_result(web::http::oauth2::experimental::oauth2_token());
 
-                if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name == token_endpoint_auth_method)
-                {
-                    const auto client_assertion = jwt_generator::create_client_assertion(client_id, client_id, token_endpoint, client_assertion_lifespan, rsa_private_key, keyid);
+                const auto token_endpoint_auth_meth = web::http::oauth2::experimental::to_token_endpoint_auth_method(token_endpoint_auth_method);
 
-                    // exchange authorization code for bearer token
-                    // where redirected URI: /x-authorization/callback/?state=<state>&code=<authorization code>
-                    request_token = details::request_token_from_redirected_uri(client, version, req.request_uri(), response_type, client_id, scope, redirect_uri, state, code_verifier, token_endpoint_auth_method, client_assertion, gate);
-                }
-                else
+                // create client assertion for private_key_jwt
+                utility::string_t client_assertion;
+                if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt == token_endpoint_auth_meth)
                 {
-                    // exchange authorization code for bearer token
-                    // where redirected URI: /x-authorization/callback/?state=<state>&code=<authorization code>
-                    request_token = details::request_token_from_redirected_uri(client, version, req.request_uri(), response_type, client_id, client_secret, scope, redirect_uri, state, code_verifier, gate);
+                    auto lock = authorization_state.write_lock(); // in order to update shared state
+                    try
+                    {
+                        client_assertion = jwt_generator::create_client_assertion(client_id, client_id, token_endpoint, client_assertion_lifespan, rsa_private_key, keyid);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request Create Client Assertion error: " << e.what();
+                        result = details::make_authorization_flow_error_response(status_codes::InternalError, e);
+                        authorization_state.authorization_flow = authorization_state::failed;
+                    }
+
+                    if (authorization_state::failed == authorization_state.authorization_flow)
+                    {
+                        with_write_lock(model.mutex, [&]
+                        {
+                            model.notify();
+                        });
+
+                        set_reply(res, result.first, !result.second.is_null() ? result.second : nmos::make_error_response_body(result.first));
+
+                        return pplx::task_from_result(true);
+                    }
                 }
+
+                // exchange authorization code for bearer token
+                request_token = details::request_token_from_redirected_uri(client, version, req.request_uri(), response_type, client_id, client_secret, scope, redirect_uri, state, code_verifier, token_endpoint_auth_meth, client_assertion, gate);
 
                 auto request = request_token.then([&model, &authorization_state, &scope, &gate](web::http::oauth2::experimental::oauth2_token bearer_token)
                 {
@@ -145,7 +297,7 @@ namespace nmos
                     try
                     {
                         finally.get();
-                        result = { status_codes::OK, web::json::value_of({U("Bearer token received")}) };
+                        result = { status_codes::OK, web::json::value_of({{ U("status"), U("Bearer token received") }}, true) };
                     }
                     catch (const web::http::http_exception& e)
                     {
@@ -162,6 +314,12 @@ namespace nmos
                     catch (const web::http::oauth2::experimental::oauth2_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request OAuth 2.0 error: " << e.what();
+                        result = details::make_authorization_flow_error_response(status_codes::InternalError, e);
+                        authorization_state.authorization_flow = authorization_state::failed;
+                    }
+                    catch (const std::exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request error: " << e.what();
                         result = details::make_authorization_flow_error_response(status_codes::InternalError, e);
                         authorization_state.authorization_flow = authorization_state::failed;
                     }

@@ -25,18 +25,14 @@ namespace web
                     const token_endpoint_auth_method client_secret_jwt{ U("client_secret_jwt") };
                 }
 
-                inline utility::string_t make_token_endpoint_auth_method(const token_endpoint_auth_method& token_endpoint_auth_method)
+                inline token_endpoint_auth_method to_token_endpoint_auth_method(const utility::string_t& token_endpoint_auth_method)
                 {
-                    return token_endpoint_auth_method.name;
-                }
-
-                inline token_endpoint_auth_method parse_token_endpoint_auth_method(const utility::string_t& token_endpoint_auth_method)
-                {
-                    if (token_endpoint_auth_method == token_endpoint_auth_methods::client_secret_basic.name) { return token_endpoint_auth_methods::client_secret_basic; }
-                    if (token_endpoint_auth_method == token_endpoint_auth_methods::client_secret_post.name) { return token_endpoint_auth_methods::client_secret_post; }
-                    if (token_endpoint_auth_method == token_endpoint_auth_methods::none.name) { return token_endpoint_auth_methods::none; }
-                    if (token_endpoint_auth_method == token_endpoint_auth_methods::private_key_jwt.name) { return token_endpoint_auth_methods::private_key_jwt; }
-                    if (token_endpoint_auth_method == token_endpoint_auth_methods::client_secret_jwt.name) { return token_endpoint_auth_methods::client_secret_jwt; }
+                    using namespace token_endpoint_auth_methods;
+                    if (token_endpoint_auth_method == client_secret_basic.name) { return client_secret_basic; }
+                    if (token_endpoint_auth_method == client_secret_post.name) { return client_secret_post; }
+                    if (token_endpoint_auth_method == none.name) { return none; }
+                    if (token_endpoint_auth_method == private_key_jwt.name) { return private_key_jwt; }
+                    if (token_endpoint_auth_method == client_secret_jwt.name) { return client_secret_jwt; }
                     return {};
                 }
             }

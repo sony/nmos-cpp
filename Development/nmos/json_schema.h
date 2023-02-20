@@ -32,6 +32,7 @@ namespace nmos
         web::uri make_authapi_auth_metadata_schema_uri(const nmos::api_version& version);
         web::uri make_authapi_jwks_response_schema_uri(const nmos::api_version& version);
         web::uri make_authapi_register_client_response_uri(const nmos::api_version& version);
+        web::uri make_authapi_token_error_response_uri(const nmos::api_version& version);
         web::uri make_authapi_token_schema_schema_uri(const nmos::api_version& version);
         web::uri make_authapi_token_response_schema_uri(const nmos::api_version& version);
 

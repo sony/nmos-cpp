@@ -43,14 +43,7 @@ namespace nmos
 
         utility::string_t jwt_generator::create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& private_key, const utility::string_t& keyid)
         {
-            try
-            {
-                return details::jwt_generator_impl::create_client_assertion(issuer, subject, audience, token_lifetime, private_key, keyid);
-            }
-            catch (const jwt::error::signature_generation_exception& e)
-            {
-                throw std::invalid_argument(e.what());
-            }
+            return details::jwt_generator_impl::create_client_assertion(issuer, subject, audience, token_lifetime, private_key, keyid);
         }
     }
 }

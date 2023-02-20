@@ -23,19 +23,6 @@ namespace web
                     const resource_server_error invalid_token{ U("invalid_token") };
                     const resource_server_error insufficient_scope{ U("insufficient_scope") };
                 }
-
-                inline utility::string_t make_resource_server_error(const resource_server_error& error)
-                {
-                    return error.name;
-                }
-
-                inline resource_server_error parse_resource_server_error(const utility::string_t& error)
-                {
-                    if (resource_server_errors::invalid_request.name == error) { return resource_server_errors::invalid_request; }
-                    if (resource_server_errors::invalid_token.name == error) { return resource_server_errors::invalid_token; }
-                    if (resource_server_errors::insufficient_scope.name == error) { return resource_server_errors::insufficient_scope; }
-                    return{};
-                }
             }
         }
     }

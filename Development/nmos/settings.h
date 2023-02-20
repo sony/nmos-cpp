@@ -412,7 +412,7 @@ namespace nmos
             const web::json::field_as_array authorization_scopes{ U("authorization_scopes") };
 
             // token_endpoint_auth_method [node]: String indicator of the requested authentication method for the token endpoint
-            // supported methods are none, client_secret_basic and private_key_jwt, default to client_secret_basic, where none is used for public client
+            // supported methods are client_secret_basic and private_key_jwt, default to client_secret_basic
             const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic")};
 
             // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration

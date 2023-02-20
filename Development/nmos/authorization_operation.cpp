@@ -1,5 +1,6 @@
 #include "nmos/authorization_operation.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/range/join.hpp>
 #include "cpprest/code_challenge_method.h"
 #include "cpprest/json_validator.h"
@@ -31,10 +32,11 @@ namespace nmos
                 static const web::json::experimental::json_validator validator
                 {
                     nmos::experimental::load_json_schema,
-                    boost::copy_range<std::vector<web::uri>>(boost::join(boost::join(boost::join(boost::join(
+                    boost::copy_range<std::vector<web::uri>>(boost::join(boost::join(boost::join(boost::join(boost::join(
                         is10_versions::all | boost::adaptors::transformed(experimental::make_authapi_auth_metadata_schema_uri),
                         is10_versions::all | boost::adaptors::transformed(experimental::make_authapi_jwks_response_schema_uri)),
                         is10_versions::all | boost::adaptors::transformed(experimental::make_authapi_register_client_response_uri)),
+                        is10_versions::all | boost::adaptors::transformed(experimental::make_authapi_token_error_response_uri)),
                         is10_versions::all | boost::adaptors::transformed(experimental::make_authapi_token_response_schema_uri)),
                         is10_versions::all | boost::adaptors::transformed(experimental::make_authapi_token_schema_schema_uri)))
                 };
@@ -649,11 +651,11 @@ namespace nmos
                             }
                             else
                             {
-#if defined (NDEBUG)
-                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token error: " << response.status_code() << " " << response.reason_phrase();
-#else
-                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token error: " << response.status_code() << " " << response.reason_phrase() << " " << utility::us2s(body.serialize());
-#endif
+                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token error: " << response.status_code() << " " << utility::us2s(body.serialize());
+
+                                // validate token error response JSON
+                                authapi_validator().validate(body, experimental::make_authapi_token_error_response_uri(version)); // may throw json_exception
+
                                 throw authorization_exception();
                             }
                         });
@@ -695,37 +697,34 @@ namespace nmos
                 return request_token(client, version, ub, client_id, {}, scope, gate, token);
             }
 
+            web::uri_builder make_request_token_base_query(const utility::string_t& code, const utility::string_t& redirect_uri, const utility::string_t& code_verifier)
+            {
+                using web::http::oauth2::details::oauth2_strings;
+
+                web::uri_builder ub;
+                ub.append_query(oauth2_strings::grant_type, oauth2_strings::authorization_code, false);
+                ub.append_query(oauth2_strings::code, web::uri::encode_data_string(code), false);
+                ub.append_query(oauth2_strings::redirect_uri, web::uri::encode_data_string(redirect_uri), false);
+                ub.append_query(U("code_verifier"), code_verifier, false);
+                return ub;
+            }
+
             // make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_authorization_code(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& code, const utility::string_t& redirect_uri, const utility::string_t& code_verifier, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with code_verifier: " << utility::us2s(code_verifier);
 
-                using namespace web::http;
-                using web::http::oauth2::details::oauth2_strings;
-
-                web::uri_builder ub;
-                ub.append_query(oauth2_strings::grant_type, oauth2_strings::authorization_code, false);
-                ub.append_query(oauth2_strings::code, web::uri::encode_data_string(code), false);
-                ub.append_query(oauth2_strings::redirect_uri, web::uri::encode_data_string(redirect_uri), false);
-                ub.append_query(U("code_verifier"), code_verifier, false);
+                auto ub = make_request_token_base_query(code, redirect_uri, code_verifier);
 
                 return request_token(client, version, ub, client_id, client_secret, scope, gate, token);
             }
 
             // make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token with private_key_jwt for client authentication
-            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_authorization_code(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& scope, const utility::string_t& code, const utility::string_t& redirect_uri, const utility::string_t& code_verifier, const utility::string_t& token_endpoint_auth_method, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_authorization_code_with_private_key_jwt(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& scope, const utility::string_t& code, const utility::string_t& redirect_uri, const utility::string_t& code_verifier, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with " << utility::us2s(token_endpoint_auth_method) << " and code_verifier: "<< utility::us2s(code_verifier) << " and client_assertion: " << utility::us2s(client_assertion);
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with private_key_jwt and code_verifier: " << utility::us2s(code_verifier) << " and client_assertion: " << utility::us2s(client_assertion);
 
-                using namespace web::http;
-                using web::http::oauth2::details::oauth2_strings;
-
-                web::uri_builder ub;
-                ub.append_query(oauth2_strings::grant_type, oauth2_strings::authorization_code, false);
-                ub.append_query(oauth2_strings::code, web::uri::encode_data_string(code), false);
-                ub.append_query(oauth2_strings::redirect_uri, web::uri::encode_data_string(redirect_uri), false);
-                ub.append_query(U("code_verifier"), code_verifier, false);
-
+                auto ub = make_request_token_base_query(code, redirect_uri, code_verifier);
                 // use private_key_jwt client authentication
                 // see https://tools.ietf.org/html/rfc7523#section-2.2
                 ub.append_query(U("client_assertion_type"), U("urn:ietf:params:oauth:client-assertion-type:jwt-bearer"), false);
@@ -734,16 +733,28 @@ namespace nmos
                 return request_token(client, version, ub, client_id, {}, scope, gate, token);
             }
 
-            // make an asynchronously POST request on the Authorization API to fetch the bearer token using refresh_token grant
-            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_refresh_token(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& refresh_token, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+            web::uri_builder make_request_token_base_query(const utility::string_t& refresh_token)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using refresh_token grant";
-
                 using web::http::oauth2::details::oauth2_strings;
 
                 web::uri_builder ub;
                 ub.append_query(oauth2_strings::grant_type, oauth2_strings::refresh_token, false);
                 ub.append_query(oauth2_strings::refresh_token, web::uri::encode_data_string(refresh_token), false);
+                return ub;
+            }
+
+            // make an asynchronously POST request on the Authorization API to fetch the bearer token using refresh_token grant
+            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_refresh_token(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& refresh_token, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+            {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using refresh_token grant";
+
+                //using web::http::oauth2::details::oauth2_strings;
+
+                //web::uri_builder ub;
+                //ub.append_query(oauth2_strings::grant_type, oauth2_strings::refresh_token, false);
+                //ub.append_query(oauth2_strings::refresh_token, web::uri::encode_data_string(refresh_token), false);
+
+                auto ub = make_request_token_base_query(refresh_token);
 
                 return request_token(client, version, ub, client_id, client_secret, scope, gate, token);
             }
@@ -755,9 +766,7 @@ namespace nmos
 
                 using web::http::oauth2::details::oauth2_strings;
 
-                web::uri_builder ub;
-                ub.append_query(oauth2_strings::grant_type, oauth2_strings::refresh_token, false);
-                ub.append_query(oauth2_strings::refresh_token, web::uri::encode_data_string(refresh_token), false);
+                auto ub = make_request_token_base_query(refresh_token);
 
                 // use private_key_jwt client authentication
                 // see https://tools.ietf.org/html/rfc7523#section-2.2
@@ -767,68 +776,49 @@ namespace nmos
                 return request_token(client, version, ub, client_id, {}, scope, gate, token);
             }
 
-            // verify the redirect URI and make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token
-            // this function is based on the oauth2_config::token_from_redirected_uri
-            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_redirected_uri(web::http::client::http_client client, const nmos::api_version& version, const web::uri& redirected_uri, const utility::string_t& response_type, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& redirect_uri, const utility::string_t& state, const utility::string_t& code_verifier, slog::base_gate& gate, const pplx::cancellation_token& token)
-            {
-                using web::http::oauth2::experimental::oauth2_exception;
-                using web::http::oauth2::details::oauth2_strings;
-                namespace response_types = web::http::oauth2::experimental::response_types;
-
-                // authorization code grant
-                //     redirected_uri: /x-authorization/callback/?state=<state>&code=<authorization code>
-                // implicit grant
-                //     redirected_uri: /x-authorization/callback/#state=<state>&code=<authorization code> or
-                //     redirected_uri: /x-authorization/callback/#state=<state>&access_token=<access token>
-                auto query = web::uri::split_query(response_type == response_types::token.name ? redirected_uri.fragment() : redirected_uri.query());
-
-                auto state_param = query.find(oauth2_strings::state);
-                if (state_param == query.end())
-                {
-                    throw oauth2_exception(U("parameter 'state' missing from redirected URI"));
-                }
-
-                if (state != state_param->second)
-                {
-                    utility::string_t err(U("redirected URI parameter 'state'='"));
-                    err += state_param->second;
-                    err += U("' does not match excepted state='");
-                    err += state;
-                    err += U("'");
-                    throw oauth2_exception(std::move(err));
-                }
-
-                auto code_param = query.find(oauth2_strings::code);
-                if (code_param != query.end())
-                {
-                    return request_token_from_authorization_code(client, version, client_id, client_secret, scope, code_param->second, redirect_uri, code_verifier, gate, token);
-                }
-
-                // NOTE: The redirected URI contains access token only in the implicit grant
-                // The implicit grant never passes a refresh token
-                auto token_param = query.find(oauth2_strings::access_token);
-                if (token_param == query.end())
-                {
-                    throw oauth2_exception(U("either 'code' or 'access_token' parameter must be in the redirected URI"));
-                }
-
-                return pplx::task_from_result(web::http::oauth2::experimental::oauth2_token(token_param->second));
-            }
-
             // verify the redirect URI and make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token with private_key_jwt for client authentication
             // this function is based on the oauth2_config::token_from_redirected_uri
-            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_redirected_uri(web::http::client::http_client client, const nmos::api_version& version, const web::uri& redirected_uri, const utility::string_t& response_type, const utility::string_t& client_id, const utility::string_t& scope, const utility::string_t& redirect_uri, const utility::string_t& state, const utility::string_t& code_verifier, const utility::string_t& token_endpoint_auth_method, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token)
+            pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_redirected_uri(web::http::client::http_client client, const nmos::api_version& version, const web::uri& redirected_uri, const utility::string_t& response_type, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& redirect_uri, const utility::string_t& state, const utility::string_t& code_verifier, const web::http::oauth2::experimental::token_endpoint_auth_method& token_endpoint_auth_method, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token)
             {
                 using web::http::oauth2::experimental::oauth2_exception;
                 using web::http::oauth2::details::oauth2_strings;
                 namespace response_types = web::http::oauth2::experimental::response_types;
 
-                // authorization code grant
-                //     redirected_uri: /auth/callback/?state=<state>&code=<authorization code>
-                // implicit grant
-                //     redirected_uri: /auth/callback/#state=<state>&code=<authorization code> or
-                //     redirected_uri: /auth/callback/#state=<state>&access_token=<access token>
-                auto query = web::uri::split_query(response_type == response_types::token.name ? redirected_uri.fragment() : redirected_uri.query());
+                std::map<utility::string_t, utility::string_t> query;
+
+                // for Authorization Code Grant Type Response (response_type = code)
+                // "If the resource owner grants the access request, the authorization
+                // server issues an authorization codeand delivers it to the client by
+                // adding the following parameters to the query component of the
+                // redirection URI using the "application/x-www-form-urlencoded" format
+                //
+                // For example, the authorization server redirects the user-agent by
+                // sending the following HTTP response :
+                //   HTTP / 1.1 302 Found
+                //   Location : https://client.example.com/cb?code=SplxlOBeZQQYbYS6WxSbIA&state=xyz
+                // see https://tools.ietf.org/html/rfc6749#section-4.1.2
+                if (response_type == response_types::code.name)
+                {
+                    query = web::uri::split_query(redirected_uri.query());
+                }
+                // for Implicit Grant Type Response (response_type = token)
+                // "If the resource owner grants the access request, the authorization
+                // server issues an access tokenand delivers it to the client by adding
+                // the following parameters to the fragment component of the redirection
+                // URI using the "application/x-www-form-urlencoded" format"
+                //
+                // For example, the authorization server redirects the user-agent by
+                // sending the following HTTP response
+                //   HTTP / 1.1 302 Found
+                //   Location : http://example.com/cb#access_token=2YotnFZFEjr1zCsicMWpAA&state=xyz&token_type=example&expires_in=3600
+                else if (response_type == response_types::token.name)
+                {
+                    query = web::uri::split_query(redirected_uri.fragment());
+                }
+                else
+                {
+                    throw oauth2_exception(U("response_type: '") + response_type + U("' is not supported"));
+                }
 
                 auto state_param = query.find(oauth2_strings::state);
                 if (state_param == query.end())
@@ -838,26 +828,50 @@ namespace nmos
 
                 if (state != state_param->second)
                 {
-                    utility::string_t err(U("redirected URI parameter 'state'='"));
-                    err += state_param->second;
-                    err += U("' does not match excepted state='");
-                    err += state;
-                    err += U("'");
-                    throw oauth2_exception(std::move(err));
+                    throw oauth2_exception(U("parameter 'state': '") + state_param->second + U("' does not match with the expected 'state': '") + state + U("'"));
                 }
 
-                auto code_param = query.find(oauth2_strings::code);
-                if (code_param != query.end())
+                // for Authorization Code Grant Type Response (response_type = code)
+                // do request_token_from_authorization_code
+                if (response_type == response_types::code.name)
                 {
-                    return request_token_from_authorization_code(client, version, client_id, scope, code_param->second, redirect_uri, code_verifier, token_endpoint_auth_method, client_assertion, gate, token);
+                    auto code_param = query.find(oauth2_strings::code);
+                    if (code_param == query.end())
+                    {
+                        throw oauth2_exception(U("parameter 'code' missing from redirected URI"));
+                    }
+
+                    if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt == token_endpoint_auth_method)
+                    {
+                        return request_token_from_authorization_code_with_private_key_jwt(client, version, client_id, scope, code_param->second, redirect_uri, code_verifier, client_assertion, gate, token);
+                    }
+                    else if (web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic == token_endpoint_auth_method)
+                    {
+                        return request_token_from_authorization_code(client, version, client_id, client_secret, scope, code_param->second, redirect_uri, code_verifier, gate, token);
+                    }
+                    else
+                    {
+                        throw oauth2_exception(U("token_endpoint_auth_method: '") + token_endpoint_auth_method.name + U("' is not curently supported"));
+                    }
                 }
 
-                // NOTE: The redirected URI contains access token only in the implicit grant
-                // The implicit grant never passes a refresh token
+                // for Implicit Grant Type Response (response_type = token)
+                // extract access token from query parameters
+                auto token_type_param = query.find(oauth2_strings::token_type);
+                if (token_type_param == query.end())
+                {
+                    throw oauth2_exception(U("parameter 'token_type' missing from redirected URI"));
+                }
+
+                if (boost::algorithm::to_lower_copy(token_type_param->second) != U("bearer"))
+                {
+                    throw oauth2_exception(U("invalid parameter 'token_type': '") + token_type_param->second + U("', expecting 'bearer'"));
+                }
+
                 auto token_param = query.find(oauth2_strings::access_token);
                 if (token_param == query.end())
                 {
-                    throw oauth2_exception(U("either 'code' or 'access_token' parameter must be in the redirected URI"));
+                    throw oauth2_exception(U("parameter 'access_token' missing from redirected URI"));
                 }
 
                 return pplx::task_from_result(web::http::oauth2::experimental::oauth2_token(token_param->second));
@@ -897,7 +911,8 @@ namespace nmos
                 const auto client_id = nmos::experimental::fields::client_id(client_metadata);
                 const auto client_secret = client_metadata.has_string_field(nmos::experimental::fields::client_secret) ? nmos::experimental::fields::client_secret(client_metadata) : U("");
                 const auto scope = nmos::experimental::fields::scope(client_metadata);
-                const auto token_endpoint_auth_method = client_metadata.has_string_field(nmos::experimental::fields::token_endpoint_auth_method) ? nmos::experimental::fields::token_endpoint_auth_method(client_metadata) : web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic.name;
+                const auto token_endpoint_auth_method = client_metadata.has_string_field(nmos::experimental::fields::token_endpoint_auth_method) ?
+                    web::http::oauth2::experimental::to_token_endpoint_auth_method(nmos::experimental::fields::token_endpoint_auth_method(client_metadata)) : web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic;
                 const auto token_endpoint = nmos::experimental::fields::token_endpoint(authorization_server_metadata);
                 const auto client_assertion_lifespan = std::chrono::seconds(nmos::experimental::fields::authorization_request_max(model.settings));
 
@@ -922,7 +937,7 @@ namespace nmos
                         utility::string_t client_assertion;
                         with_read_lock(model.mutex, [&]
                         {
-                            if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name == token_endpoint_auth_method)
+                            if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt == token_endpoint_auth_method)
                             {
                                 // use the 1st RSA private key from RSA private keys list to create the client_assertion
                                 if (!token_state.load_rsa_private_keys)
@@ -940,7 +955,7 @@ namespace nmos
 
                         if (web::http::oauth2::experimental::grant_types::authorization_code == token_state.grant_type)
                         {
-                            if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name == token_endpoint_auth_method)
+                            if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt == token_endpoint_auth_method)
                             {
                                 return request_token_from_refresh_token_using_private_key_jwt(*token_state.client, token_state.version, client_id, scope, token_state.bearer_token.refresh_token(), client_assertion, gate, token);
                             }
@@ -951,7 +966,7 @@ namespace nmos
                         }
                         else if (web::http::oauth2::experimental::grant_types::client_credentials == token_state.grant_type)
                         {
-                            if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name == token_endpoint_auth_method)
+                            if (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt == token_endpoint_auth_method)
                             {
                                 return request_token_from_client_credentials_using_private_key_jwt(*token_state.client, token_state.version, client_id, scope, client_assertion, gate, token);
                             }
@@ -1334,8 +1349,10 @@ namespace nmos
                 {
                     auto lock = model.write_lock();
 
-                    if ((nmos::experimental::fields::token_endpoint_auth_method(client_metadata) != web::http::oauth2::experimental::token_endpoint_auth_methods::none.name)
-                        && (nmos::experimental::fields::token_endpoint_auth_method(client_metadata) != web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name)
+                    // check client_secret existence for confidential client
+                    if (((nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic.name)
+                        || (nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_post.name)
+                        || (nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_jwt.name))
                         && (!client_metadata.has_string_field(nmos::experimental::fields::client_secret)))
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Missing client_secret";
@@ -1489,8 +1506,9 @@ namespace nmos
                     // check client_secret existence for confidential client
                     if (client_metadata.has_string_field(nmos::experimental::fields::token_endpoint_auth_method))
                     {
-                        if ((nmos::experimental::fields::token_endpoint_auth_method(client_metadata) != web::http::oauth2::experimental::token_endpoint_auth_methods::none.name)
-                            && (nmos::experimental::fields::token_endpoint_auth_method(client_metadata) != web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt.name)
+                        if (((nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic.name)
+                            || (nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_post.name)
+                            || (nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_jwt.name))
                             && (!client_metadata.has_string_field(nmos::experimental::fields::client_secret)))
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Missing client_secret";
@@ -1499,8 +1517,9 @@ namespace nmos
                     }
                     else
                     {
-                        if ((web::http::oauth2::experimental::token_endpoint_auth_methods::none != token_endpoint_auth_method)
-                            && (web::http::oauth2::experimental::token_endpoint_auth_methods::private_key_jwt != token_endpoint_auth_method)
+                        if (((web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic == token_endpoint_auth_method)
+                            || (web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_post == token_endpoint_auth_method)
+                            || (web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_jwt == token_endpoint_auth_method))
                             && (!client_metadata.has_string_field(nmos::experimental::fields::client_secret)))
                         {
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "Missing client_secret";
@@ -1632,7 +1651,7 @@ namespace nmos
                         request_authorization_code(make_authorization_code_uri(authorization_endpoint, client_id, redirct_uri, web::http::oauth2::experimental::response_types::code, scopes, code_challenge_methods_supported, authorization_state.state, authorization_state.code_verifier));
                     });
 
-                    // wait until received access token, or timeout
+                    // wait for the access token
                     const auto& authorization_code_flow_max = nmos::experimental::fields::authorization_code_flow_max(settings);
                     if (authorization_code_flow_max > -1)
                     {

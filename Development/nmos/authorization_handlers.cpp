@@ -181,22 +181,28 @@ namespace nmos
         }
 
         // construct callback to start the authorization code flow request on a browser
-        // it is required for OAuth client which is using the Authorization Code Flow to obtain the token
+        // it is required for those OAuth client which is using the Authorization Code Flow to obtain the access token
+        // note: as it is not easy to specify the 'content-type' used in the browser programmatically, this can be easily
+        // fixed by installing a browser header modifier
+        // such extension e.g. ModHeader can be used to add the missing 'content-type' header accordingly
+        // for Windows https://chrome.google.com/webstore/detail/modheader-modify-http-hea/idgpnmonknjnojddfkpgkljpfnnfcklj
+        // for Linux   https://addons.mozilla.org/en-GB/firefox/addon/modheader-firefox/
         request_authorization_code_handler make_request_authorization_code_handler(slog::base_gate& gate)
         {
             return[&gate](const web::uri& authorization_code_uri)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Open a browser to start the authorization code flow: " << authorization_code_uri.to_string();
 
+                std::string browser_cmd;
 #if defined(_WIN32) && !defined(__cplusplus_winrt)
-                ShellExecuteA(NULL, "open", utility::us2s(authorization_code_uri.to_string()).c_str(), NULL, NULL, SW_SHOWNORMAL);
+                browser_cmd = "start \"\" \"" + utility::us2s(authorization_code_uri.to_string()) + "\"";
 #else
-                auto browser_cmd(U("xdg-open \"") + authorization_code_uri.to_string() + U("\""));
+                browser_cmd = "xdg-open \"" + utility::us2s(authorization_code_uri.to_string()) + "\"";
+#endif
                 if (0 > system(browser_cmd.c_str()))
                 {
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Failed to open a browser to start the authorization code flow";
                 }
-#endif
             };
         }
 

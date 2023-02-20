@@ -144,6 +144,7 @@ namespace nmos
             const web::uri authapi_jwks_response_schema_uri = make_schema_uri(tag, _XPLATSTR("jwks_response.json"));
             const web::uri authapi_register_client_error_response_uri = make_schema_uri(tag, _XPLATSTR("register_client_error_response.json"));
             const web::uri authapi_register_client_response_uri = make_schema_uri(tag, _XPLATSTR("register_client_response.json"));
+            const web::uri authapi_token_error_response_uri = make_schema_uri(tag, _XPLATSTR("token_error_response.json"));
             const web::uri authapi_token_response_schema_uri = make_schema_uri(tag, _XPLATSTR("token_response.json"));
             const web::uri authapi_token_schema_schema_uri = make_schema_uri(tag, _XPLATSTR("token_schema.json"));
         }
@@ -344,6 +345,7 @@ namespace nmos
                 { make_schema_uri(v1_0::tag, _XPLATSTR("jwks_schema.json")), make_schema(v1_0::jwks_schema) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("register_client_error_response.json")), make_schema(v1_0::register_client_error_response) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("register_client_response.json")), make_schema(v1_0::register_client_response) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("token_error_response.json")), make_schema(v1_0::token_error_response) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("token_response.json")), make_schema(v1_0::token_response) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("token_schema.json")), make_schema(v1_0::token_schema) }
             };
@@ -435,6 +437,11 @@ namespace nmos
         web::uri make_authapi_register_client_response_uri(const nmos::api_version& version)
         {
             return is10_schemas::v1_0::authapi_register_client_response_uri;
+        }
+
+        web::uri make_authapi_token_error_response_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_token_error_response_uri;
         }
 
         web::uri make_authapi_token_schema_schema_uri(const nmos::api_version& version)

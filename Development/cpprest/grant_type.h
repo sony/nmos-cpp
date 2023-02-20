@@ -26,12 +26,7 @@ namespace web
                     const grant_type device_code{ U("urn:ietf:params:oauth:grant-type:device_code") };
                 }
 
-                inline utility::string_t make_grant(const grant_type& grant)
-                {
-                    return grant.name;
-                }
-
-                inline grant_type parse_grant(const utility::string_t& grant)
+                inline grant_type to_grant_type(const utility::string_t& grant)
                 {
                     if (grant_types::authorization_code.name == grant) { return grant_types::authorization_code; }
                     if (grant_types::implicit.name == grant) { return grant_types::implicit; }

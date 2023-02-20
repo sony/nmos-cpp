@@ -790,6 +790,7 @@ if(MSVC)
 endif()
 
 set(NMOS_CPP_CPPREST_HEADERS
+    cpprest/access_token_error.h
     cpprest/api_router.h
     cpprest/basic_utils.h
     cpprest/client_type.h

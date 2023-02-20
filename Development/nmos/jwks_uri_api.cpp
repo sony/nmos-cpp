@@ -33,8 +33,6 @@ namespace nmos
             {
                 using web::json::array;
 
-                // hmm, for now new "kid" key ID is used for every request, may be it should only be updated after key has changed
-
                 auto keys = value::array();
                 std::vector<string_t> rsa_private_keys;
                 with_read_lock(model.mutex, [&model, &rsa_private_keys, load_rsa_private_keys]

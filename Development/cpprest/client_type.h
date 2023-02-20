@@ -19,18 +19,6 @@ namespace web
                     const client_type confidential_client{ U("confidential_client") };
                     const client_type public_client{ U("public_client") };
                 }
-
-                inline utility::string_t make_client_type(const client_type& type)
-                {
-                    return type.name;
-                }
-
-                inline client_type parse_client_type(const utility::string_t& type)
-                {
-                    if (client_types::confidential_client.name == type) { return client_types::confidential_client; }
-                    if (client_types::public_client.name == type) { return client_types::public_client; }
-                    return{};
-                }
             }
         }
     }
