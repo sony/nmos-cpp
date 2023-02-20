@@ -723,6 +723,24 @@ namespace nmos
             );
         }
 
+        // insert extmap if specified
+        for (const auto& extmap_entry : sdp_params.extmap)
+        {
+            // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
+            // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+            web::json::push_back(
+                session_attributes, value_of({
+                    { sdp::fields::name, sdp::attributes::extmap },
+                    { sdp::fields::value, value_of({
+                        { sdp::fields::local_id, extmap_entry.local_id },
+                        { extmap_entry.direction != sdp::direction{} ? sdp::fields::direction.key : U(""), extmap_entry.direction.name },
+                        { sdp::fields::uri, extmap_entry.uri },
+                        { !extmap_entry.ext_attributes.empty() ? sdp::fields::extensionattributes.key : U(""), extmap_entry.ext_attributes },
+                    }, keep_order) }
+                }, keep_order)
+            );
+        }
+
         // insert hkep if specified
         for (const auto& hkep_attr : sdp_params.hkep)
         {
@@ -784,7 +802,7 @@ namespace nmos
     }
 
     // Construct SDP parameters for "video/raw", with sensible defaults for unspecified fields
-    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::hkep_t>& hkep)
+    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap, const std::vector<sdp_parameters::hkep_t>& hkep)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -819,11 +837,11 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
 
-        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk, hkep };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk, extmap, hkep };
     }
 
     // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
-    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::hkep_t>& hkep)
+    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap, const std::vector<sdp_parameters::hkep_t>& hkep)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -836,11 +854,11 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
 
-        return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk, hkep };
+        return{ session_name, sdp::media_types::audio, rtpmap, fmtp, {}, params.packet_time, {}, {}, media_stream_ids, ts_refclk, extmap, hkep };
     }
 
     // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
-    sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
+    sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -860,11 +878,11 @@ namespace nmos
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
         if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
 
-        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk, extmap };
     }
 
     // Construct SDP parameters for "video/SMPTE2022-6", with sensible defaults for unspecified fields
-    sdp_parameters make_video_SMPTE2022_6_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk)
+    sdp_parameters make_video_SMPTE2022_6_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap)
     {
         // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encoding parameters>]
         // See https://tools.ietf.org/html/rfc4566#section-6
@@ -876,7 +894,7 @@ namespace nmos
         if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
         if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });
 
-        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk };
+        return{ session_name, sdp::media_types::video, rtpmap, fmtp, {}, {}, {}, {}, media_stream_ids, ts_refclk, extmap };
     }
 
     media_type get_media_type(const sdp_parameters& sdp_params)
@@ -1138,6 +1156,42 @@ namespace nmos
             for (const auto& mid : sdp::fields::mids(value))
             {
                 sdp_params.group.media_stream_ids.push_back(mid.as_string());
+            }
+        }
+
+        // RTP Header Extensions
+        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        {
+            auto isExtmap = [](const web::json::value& nv)
+            {
+                return sdp::fields::name(nv) == sdp::attributes::extmap;
+            };
+            auto iter = session_attributes.begin();
+            while ((iter = std::find_if(iter, session_attributes.end(), isExtmap)) != session_attributes.end())
+            {
+                const auto& extmap = sdp::fields::value(*iter);
+
+                const auto& local_id = sdp::fields::local_id(extmap);
+                const auto& uri = sdp::fields::uri(extmap);
+
+                if (extmap.has_field(sdp::fields::direction) && extmap.has_field(sdp::fields::extensionattributes))
+                {
+                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, sdp::direction(sdp::fields::direction(extmap)), uri, sdp::fields::extensionattributes(extmap)));
+                }
+                else if (extmap.has_field(sdp::fields::direction))
+                {
+                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, sdp::direction(sdp::fields::direction(extmap)), uri));
+                }
+                else if (extmap.has_field(sdp::fields::extensionattributes))
+                {
+                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, uri, sdp::fields::extensionattributes(extmap)));
+                }
+                else
+                {
+                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, uri));
+                }
+
+                iter++;
             }
         }
 

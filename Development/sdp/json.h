@@ -146,6 +146,9 @@ namespace sdp
 
         // See VSF TR-10-5 Section 10
         const utility::string_t hkep{ U("hkep") };
+
+        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        const utility::string_t extmap{ U("extmap") };
     }
 
     namespace fields
@@ -203,6 +206,12 @@ namespace sdp
         // See VSF TR-10-5 Section 10
         const web::json::field_as_string node_id{ U("node_id") };
         const web::json::field_as_string port_id{ U("port_id") };
+
+        // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
+        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        const web::json::field<uint64_t> local_id{ U("local_id") };
+        const web::json::field_as_string direction{ U("direction") }; // see sdp::direction
+        const web::json::field_as_string extensionattributes{ U("extensionattributes") };
     }
 
     // make a named value (useful for attributes)
@@ -306,6 +315,16 @@ namespace sdp
         const address_type IP4{ U("IP4") };
         // IPv6
         const address_type IP6{ U("IP6") };
+    }
+
+    // Direction
+    DEFINE_STRING_ENUM(direction)
+    namespace directions
+    {
+        const direction recvonly{ U("recvonly") };
+        const direction sendrecv{ U("sendrecv") };
+        const direction sendonly{ U("sendonly") };
+        const direction inactive{ U("inactive") };
     }
 }
 

@@ -716,6 +716,28 @@ namespace sdp
                     string_converter // sorry, cannot summon the energy
                 },
                 {
+                    sdp::attributes::extmap,
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += number_converter.format(v.at(sdp::fields::local_id));
+                            if (v.has_field(sdp::fields::direction)) s += "/" + string_converter.format(v.at(sdp::fields::direction));
+                            s += " " + string_converter.format(v.at(sdp::fields::uri));
+                            if (v.has_field(sdp::fields::extensionattributes)) s += " " + string_converter.format(v.at(sdp::fields::extensionattributes));
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = (!s.empty() && ' ' == s.front()) ? 1 : 0;
+                            v[sdp::fields::local_id] = number_converter.parse(substr_find(s, pos, bst::regex{ R"([ \/])" }));
+                            if (s.at(pos - 1) == '/') v[sdp::fields::direction] = string_converter.parse(substr_find(s, pos, " "));
+                            v[sdp::fields::uri] = string_converter.parse(substr_find(s, pos, " "));
+                            if (std::string::npos != pos) v[sdp::fields::extensionattributes] = string_converter.parse(substr_find(s, pos));
+                            return v;
+                        }
+                    }
+                },
+                {
                     sdp::attributes::hkep,
                     {
                         [](const web::json::value& v) {

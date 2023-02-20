@@ -245,6 +245,23 @@ namespace nmos
             {}
         } mediaclk;
 
+        // RTP Header Extensions
+        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        struct extmap_t
+        {
+            uint64_t local_id;
+            sdp::direction direction;
+            utility::string_t uri;
+            utility::string_t ext_attributes;
+
+            extmap_t() : local_id() {}
+            extmap_t(uint64_t local_id, const utility::string_t& uri): local_id(local_id), uri(uri) {}
+            extmap_t(uint64_t local_id, const sdp::direction& direction, const utility::string_t& uri): local_id(local_id), direction(direction), uri(uri) {}
+            extmap_t(uint64_t local_id, const utility::string_t& uri, const utility::string_t& ext_attributes): local_id(local_id), uri(uri), ext_attributes(ext_attributes) {}
+            extmap_t(uint64_t local_id, const sdp::direction& direction, const utility::string_t& uri, const utility::string_t& ext_attributes): local_id(local_id), direction(direction), uri(uri), ext_attributes(ext_attributes) {}
+        };
+        std::vector<sdp_parameters::extmap_t> extmap;
+
         // HKEP Signalling
         // See VSF TR-10-5 Section 10
         struct hkep_t
@@ -262,7 +279,7 @@ namespace nmos
         sdp_parameters() : packet_time(), max_packet_time(), framerate() {}
 
         // construct SDP parameters with sensible defaults for unspecified fields
-        sdp_parameters(const utility::string_t& session_name, const sdp::media_type& media_type, const rtpmap_t& rtpmap, const fmtp_t& fmtp = {}, uint64_t bandwidth = {}, double packet_time = {}, double max_packet_time = {}, double framerate = {}, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<hkep_t>& hkep = {})
+        sdp_parameters(const utility::string_t& session_name, const sdp::media_type& media_type, const rtpmap_t& rtpmap, const fmtp_t& fmtp = {}, uint64_t bandwidth = {}, double packet_time = {}, double max_packet_time = {}, double framerate = {}, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {}, const std::vector<hkep_t>& hkep = {})
             : origin(U("-"), sdp::ntp_now() >> 32)
             , session_name(session_name)
             , connection_data(32)
@@ -278,6 +295,7 @@ namespace nmos
             , fmtp(fmtp)
             , ts_refclk(ts_refclk)
             , mediaclk(sdp::mediaclk_sources::direct, U("0"))
+            , extmap(extmap)
             , hkep(hkep)
         {}
 
@@ -288,16 +306,16 @@ namespace nmos
         typedef video_SMPTE2022_6_parameters mux_t;
 
         // deprecated, use make_video_raw_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<hkep_t>& hkep = {});
+        sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {}, const std::vector<hkep_t>& hkep = {});
 
         // deprecated, use make_audio_L_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<hkep_t>& hkep = {});
+        sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {}, const std::vector<hkep_t>& hkep = {});
 
         // deprecated, use make_video_smpte291_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
+        sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {});
 
         // deprecated, use make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
+        sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {});
     };
 
     // "<sdp_params.media_type>/<sdp_params.rtpmap.encoding_name>"
@@ -517,70 +535,70 @@ namespace nmos
     // Construct additional "video/raw" parameters from the IS-04 resources, using default values for unspecified items
     video_raw_parameters make_video_raw_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<sdp::type_parameter> tp);
     // Construct SDP parameters for "video/raw", with sensible defaults for unspecified fields
-    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {});
+    sdp_parameters make_video_raw_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {});
     // Get additional "video/raw" parameters from the SDP parameters
     video_raw_parameters get_video_raw_parameters(const sdp_parameters& sdp_params);
 
     // Construct additional "audio/L" parameters from the IS-04 resources, using default values for unspecified items
     audio_L_parameters make_audio_L_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<double> packet_time);
     // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
-    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {});
+    sdp_parameters make_audio_L_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {});
     // Get additional "audio/L" parameters from the SDP parameters
     audio_L_parameters get_audio_L_parameters(const sdp_parameters& sdp_params);
 
     // Construct additional "video/smpte291" parameters from the IS-04 resources, using default values for unspecified items
     video_smpte291_parameters make_video_smpte291_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<nmos::vpid_code> vpid_code, bst::optional<sdp::transmission_model> tm = bst::nullopt);
     // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
-    sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {});
+    sdp_parameters make_video_smpte291_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {});
     // Get additional "video/smpte291" parameters from the SDP parameters
     video_smpte291_parameters get_video_smpte291_parameters(const sdp_parameters& sdp_params);
 
     // Construct additional "video/SMPTE2022-6" parameters from the IS-04 resources, using default values for unspecified items
     video_SMPTE2022_6_parameters make_video_SMPTE2022_6_parameters(const web::json::value& node, const web::json::value& source, const web::json::value& flow, const web::json::value& sender, bst::optional<sdp::type_parameter> tp);
     // Construct SDP parameters for "video/SMPTE2022-6", with sensible defaults for unspecified fields
-    sdp_parameters make_video_SMPTE2022_6_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {});
+    sdp_parameters make_video_SMPTE2022_6_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {});
     // Get additional "video/SMPTE2022-6" parameters from the SDP parameters
     video_SMPTE2022_6_parameters get_video_SMPTE2022_6_parameters(const sdp_parameters& sdp_params);
 
     // Construct SDP parameters for "video/raw", with sensible defaults for unspecified fields
-    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {})
+    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_raw_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {})
     {
-        return make_video_raw_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk, hkep);
+        return make_video_raw_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk, extmap, hkep);
     }
     // Construct SDP parameters for "audio/L", with sensible defaults for unspecified fields
-    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {})
+    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const audio_L_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {}, const std::vector<sdp_parameters::hkep_t>& hkep = {})
     {
-        return make_audio_L_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk, hkep);
+        return make_audio_L_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk, extmap, hkep);
     }
     // Construct SDP parameters for "video/smpte291", with sensible defaults for unspecified fields
-    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {})
+    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_smpte291_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {})
     {
-        return make_video_smpte291_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk);
+        return make_video_smpte291_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk, extmap);
     }
     // Construct SDP parameters for "video/SMPTE2022-6", with sensible defaults for unspecified fields
-    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {})
+    inline sdp_parameters make_sdp_parameters(const utility::string_t& session_name, const video_SMPTE2022_6_parameters& params, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<sdp_parameters::ts_refclk_t>& ts_refclk = {}, const std::vector<sdp_parameters::extmap_t>& extmap = {})
     {
-        return make_video_SMPTE2022_6_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk);
+        return make_video_SMPTE2022_6_sdp_parameters(session_name, params, payload_type, media_stream_ids, ts_refclk, extmap);
     }
 
     // deprecated, use make_video_raw_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::hkep_t>& hkep)
-        : sdp_parameters(make_sdp_parameters(session_name, video, payload_type, media_stream_ids, ts_refclk, hkep))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap, const std::vector<sdp_parameters::hkep_t>& hkep)
+        : sdp_parameters(make_sdp_parameters(session_name, video, payload_type, media_stream_ids, ts_refclk, extmap, hkep))
     {}
 
     // deprecated, use make_audio_L_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::hkep_t>& hkep)
-        : sdp_parameters(make_sdp_parameters(session_name, audio, payload_type, media_stream_ids, ts_refclk, hkep))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap, const std::vector<sdp_parameters::hkep_t>& hkep)
+        : sdp_parameters(make_sdp_parameters(session_name, audio, payload_type, media_stream_ids, ts_refclk, extmap, hkep))
     {}
 
     // deprecated, use make_video_smpte291_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
-        : sdp_parameters(make_sdp_parameters(session_name, data, payload_type, media_stream_ids, ts_refclk))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap)
+        : sdp_parameters(make_sdp_parameters(session_name, data, payload_type, media_stream_ids, ts_refclk, extmap))
     {}
 
     // deprecated, use make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
-        : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap)
+        : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk, extmap))
     {}
 
     // Helper functions for implementing format-specific functions

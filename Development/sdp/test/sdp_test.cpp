@@ -14,6 +14,10 @@ o=- 3745911798 3745911798 IN IP4 192.168.9.142
 s=Example Sender 1 (Video)
 t=0 0
 a=group:DUP PRIMARY SECONDARY
+a=extmap:1 http://example.com/082005/ext.htm#ttime
+a=extmap:2/sendrecv http://example.com/082005/ext.htm#xmeta short
+a=extmap:3/sendonly http://example.com/082005/ext.htm#xmeta
+a=extmap:4 http://example.com/082005/ext.htm#ttime SHORT
 a=hkep:9000 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
 a=hkep:9001 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
 m=video 50020 RTP/AVP 96
@@ -120,6 +124,38 @@ a=mid:SECONDARY
                         U("PRIMARY"),
                         U("SECONDARY")
                     }) }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 1 },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#ttime") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 2 },
+                    { sdp::fields::direction, sdp::directions::sendrecv.name },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#xmeta") },
+                    { sdp::fields::extensionattributes, U("short") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 3 },
+                    { sdp::fields::direction, sdp::directions::sendonly.name },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#xmeta") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 4 },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#ttime") },
+                    { sdp::fields::extensionattributes, U("SHORT") }
                 }, keep_order) },
             }, keep_order),
             web::json::value_of({
