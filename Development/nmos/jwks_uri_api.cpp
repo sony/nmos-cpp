@@ -25,7 +25,7 @@ namespace nmos
 
             jwks_api.support(U("/x-authorization/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("callback/"), U("jwks/") }, req, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("jwks/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
