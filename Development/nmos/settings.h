@@ -416,7 +416,7 @@ namespace nmos
             const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic")};
 
             // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration
-            const web::json::field_as_integer_or jwks_uri_port{ U("jwks_uri_port"), 3219 };
+            const web::json::field_as_integer_or jwks_uri_port{ U("jwks_uri_port"), 3218 };
 
             // validate_openid_client [node]: boolean value, false (bypass openid connect client validation), or true (do not bypass, the default behaviour)
             const web::json::field_as_bool_or validate_openid_client{ U("validate_openid_client"), true };

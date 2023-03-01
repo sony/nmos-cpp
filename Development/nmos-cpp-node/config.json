@@ -327,7 +327,7 @@
     //"token_endpoint_auth_method": "client_secret_basic",
 
     // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration
-    //"jwks_uri_port": 3219,
+    //"jwks_uri_port": 3218,
 
     // validate_openid_client [node]: boolean value, false (bypass openid connect client validation), or true (do not bypass, the default behaviour)
     //"validate_openid_client": true,
