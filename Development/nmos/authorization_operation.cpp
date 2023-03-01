@@ -1641,6 +1641,9 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization code flow for scope: '" << nmos::experimental::details::make_scope(scopes) << "'";
 
+                auto access_token_received = false;
+                auto authorization_flow = nmos::experimental::authorization_state::request_code;
+
                 // start the authorization code grant workflow, the authorization URI is required to
                 // be loaded in the web browser to kick start the authorization code grant workflow
                 if (request_authorization_code)
@@ -1656,17 +1659,46 @@ namespace nmos
                     if (authorization_code_flow_max > -1)
                     {
                         // wait access token with timeout
-                        if (!model.wait_for(lock, std::chrono::seconds(authorization_code_flow_max), [&] { return shutdown || nmos::experimental::authorization_state::failed == authorization_state.authorization_flow || nmos::experimental::authorization_state::access_token_received == authorization_state.authorization_flow; }))
+                        if (!model.wait_for(lock, std::chrono::seconds(authorization_code_flow_max), [&] {
+                            authorization_flow = with_read_lock(authorization_state.mutex, [&] { return authorization_state.authorization_flow; });
+                            return shutdown || nmos::experimental::authorization_state::failed == authorization_flow || nmos::experimental::authorization_state::access_token_received == authorization_flow; }))
                         {
                             // authorization code workflow timeout
                             authorization_service_error = true;
                             slog::log<slog::severities::error>(gate, SLOG_FLF) << "authorization code workflow timeout";
                         }
+                        else if (nmos::experimental::authorization_state::access_token_received == authorization_flow)
+                        {
+                            // access token received
+                            access_token_received = true;
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "access token received";
+                        }
+                        else
+                        {
+                            // authorization code workflow failure
+                            authorization_service_error = true;
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "authorization code workflow failure";
+                        }
                     }
                     else
                     {
                         // wait access token without timeout
-                        condition.wait(lock, [&] { return shutdown || nmos::experimental::authorization_state::failed == authorization_state.authorization_flow || nmos::experimental::authorization_state::access_token_received == authorization_state.authorization_flow; });
+                        condition.wait(lock, [&] {
+                            authorization_flow = with_read_lock(authorization_state.mutex, [&] { return authorization_state.authorization_flow; });
+                            return shutdown || nmos::experimental::authorization_state::failed == authorization_flow || nmos::experimental::authorization_state::access_token_received == authorization_flow; });
+
+                        if (nmos::experimental::authorization_state::access_token_received == authorization_flow)
+                        {
+                            // access token received
+                            access_token_received = true;
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "access token received";
+                        }
+                        else
+                        {
+                            // authorization code workflow failure
+                            authorization_service_error = true;
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "authorization code workflow failure";
+                        }
                     }
                 }
                 else
@@ -1678,7 +1710,7 @@ namespace nmos
 
                 model.notify();
 
-                return !authorization_service_error && nmos::experimental::authorization_state::access_token_received == authorization_state.authorization_flow;
+                return !authorization_service_error && access_token_received;
             }
 
             // fetch the bearer access token for the required scope(s) to access the protected APIs
