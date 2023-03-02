@@ -113,7 +113,7 @@ if [[ "${config_auth}" == "True" ]]; then
 else
   echo "Running non-Auth tests"
   auth=false
-  # 6 test cases per API under test
+  # 7 test cases per API under test
   (( expected_disabled_IS_04_01+=7 ))
   (( expected_disabled_IS_04_03+=7 ))
   (( expected_disabled_IS_05_01+=7 ))
