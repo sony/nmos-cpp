@@ -4,6 +4,16 @@
 {
     // Custom settings for the example node implementation
 
+    // node_tags, device_tags: used in resource tags fields
+    // "Each tag has a single key, but MAY have multiple values."
+    // See https://specs.amwa.tv/is-04/releases/v1.3.2/docs/APIs_-_Common_Keys.html#tags
+    // {
+    //     "tag_1": [ "tag_1_value_1", "tag_1_value_2" ],
+    //     "tag_2": [ "tag_2_value_1" ]
+    // }
+    //"node_tags": {},
+    //"device_tags": {},
+
     // how_many: provides for very basic testing of a node with many sub-resources of each type
     //"how_many": 4,
 

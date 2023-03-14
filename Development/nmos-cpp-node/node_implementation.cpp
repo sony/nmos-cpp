@@ -56,6 +56,16 @@ namespace impl
     // custom settings for the example node implementation
     namespace fields
     {
+        // node_tags, device_tags: used in resource tags fields
+        // "Each tag has a single key, but MAY have multiple values."
+        // See https://specs.amwa.tv/is-04/releases/v1.3.2/docs/APIs_-_Common_Keys.html#tags
+        // {
+        //     "tag_1": [ "tag_1_value_1", "tag_1_value_2" ],
+        //     "tag_2": [ "tag_2_value_1" ]
+        // }
+        const web::json::field_as_value_or node_tags{ U("node_tags"), web::json::value::object() };
+        const web::json::field_as_value_or device_tags{ U("device_tags"), web::json::value::object() };
+
         // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
 
@@ -295,6 +305,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     // example node
     {
         auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
+        node.data[nmos::fields::tags] = impl::fields::node_tags(model.settings);
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) throw node_implementation_init_exception();
     }
 
@@ -338,7 +349,9 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
         if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, how_many));
         auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, receiver_ports, how_many);
-        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) throw node_implementation_init_exception();
+        auto device = nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings);
+        device.data[nmos::fields::tags] = impl::fields::device_tags(model.settings);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(device), gate)) throw node_implementation_init_exception();
     }
 
     // example sources, flows and senders
@@ -710,9 +723,12 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         }
     }
 
-    // example audio inputs
+    // example channelmapping resources demonstrating a range of input/output capabilities
+    // see https://github.com/sony/nmos-cpp/issues/111#issuecomment-740613137
 
-    for (int index = 0; index < how_many; ++index)
+    // example audio inputs
+    const bool channelmapping_receivers = 0 <= nmos::fields::channelmapping_port(model.settings) && rtp_receiver_ports.end() != boost::range::find(rtp_receiver_ports, impl::ports::audio);
+    for (int index = 0; channelmapping_receivers && index < how_many; ++index)
     {
         const auto stri = utility::conversions::details::to_string_t(index);
 
@@ -735,8 +751,8 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example audio outputs
-
-    for (int index = 0; index < how_many; ++index)
+    const bool channelmapping_senders = 0 <= nmos::fields::channelmapping_port(model.settings) && rtp_sender_ports.end() != boost::range::find(rtp_sender_ports, impl::ports::audio);
+    for (int index = 0; channelmapping_senders && index < how_many; ++index)
     {
         const auto stri = utility::conversions::details::to_string_t(index);
 
@@ -757,9 +773,11 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
-    // example non-IP audio input
     const int input_block_size = 8;
     const int input_block_count = 8;
+
+    // example non-IP audio input
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("inputA");
 
@@ -783,7 +801,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example outputs to some audio gizmo
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("outputX");
 
@@ -812,7 +830,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example source for some audio gizmo
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto source_id = impl::make_id(seed_id, nmos::types::source, impl::ports::audio, how_many);
 
@@ -828,7 +846,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example inputs from some audio gizmo
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("inputX");
 
@@ -853,7 +871,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     }
 
     // example non-ST 2110-30 audio output
-
+    if (0 <= nmos::fields::channelmapping_port(model.settings))
     {
         const auto id = U("outputB");
 
@@ -905,7 +923,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
             const nmos::events_number temp(175.0 + std::abs(nmos::tai_now().seconds % 100 - 50), 10);
             // i.e. 17.5-22.5 C
 
-            for (int index = 0; index < how_many; ++index)
+            for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
             {
                 for (const auto& port : ws_sender_ports)
                 {
