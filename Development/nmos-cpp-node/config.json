@@ -50,6 +50,9 @@
     // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
     //"smpte2022_7": false,
 
+    // edid_support: controls whether inputs and output have EDID support
+    //"edid_support": false,
+
     // Configuration settings and defaults for logging
 
     // error_log [registry, node]: filename for the error log or an empty string to write to stderr

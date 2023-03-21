@@ -109,6 +109,9 @@ namespace impl
 
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+
+        // edid_support: controls whether inputs and output have EDID support
+        const web::json::field_as_bool_or edid_support{ U("edid_support"), false };
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
@@ -255,6 +258,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     const auto video_type = nmos::media_type{ impl::fields::video_type(model.settings) };
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
+    const auto edid_support = impl::fields::edid_support(model.settings);
 
     // for now, some typical values for video/jxsv, based on VSF TR-08:2022
     // see https://vsf.tv/download/technical_recommendations/VSF_TR-08_2022-04-20.pdf
@@ -913,7 +917,9 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             sender_ids.push_back(impl::make_id(seed_id, nmos::types::sender, port, index));
         }
 
-        auto input = nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, bst::nullopt, sender_ids, model.settings);
+        auto input = edid_support
+            ? nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, bst::nullopt, sender_ids, model.settings)
+            : nmos::experimental::make_streamcompatibility_input(input_id, true, sender_ids, model.settings);
         impl::set_label_description(input, impl::ports::mux, 0); // The single Input consumes both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) return;
 
@@ -960,7 +966,9 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             receiver_ids.push_back(impl::make_id(seed_id, nmos::types::receiver, port, index));
         }
 
-        auto output = nmos::experimental::make_streamcompatibility_output(output_id, false, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings);
+        auto output = edid_support
+            ? nmos::experimental::make_streamcompatibility_output(output_id, true, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings)
+            : nmos::experimental::make_streamcompatibility_output(output_id, true, receiver_ids, model.settings);
         impl::set_label_description(output, impl::ports::mux, 0); // The single Output produces both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(output), gate)) return;
 
@@ -1648,7 +1656,7 @@ namespace impl
 // into the server instance for the NMOS Node.
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
-    return nmos::experimental::node_implementation()
+    auto node_implementation = nmos::experimental::node_implementation()
         .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
         .on_load_dh_param(nmos::make_load_dh_param_handler(model.settings, gate))
         .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
@@ -1663,8 +1671,15 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_put_handler(gate))
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
-        .on_set_effective_edid(make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate))
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
         .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator());
+
+    if (impl::fields::edid_support(model.settings))
+    {
+        node_implementation
+            .on_set_effective_edid(make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate)); // may be omitted if not required
+    }
+
+    return node_implementation;
 }
