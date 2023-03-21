@@ -30,27 +30,8 @@ namespace nmos
             using web::json::value_of;
             using web::json::value_from_elements;
 
-            std::unordered_set<utility::string_t> parameter_constraints{
-                nmos::caps::meta::label.key,
-                nmos::caps::meta::preference.key,
-                nmos::caps::meta::enabled.key,
-                nmos::caps::format::media_type.key,
-                nmos::caps::format::grain_rate.key,
-                nmos::caps::format::frame_width.key,
-                nmos::caps::format::frame_height.key,
-                nmos::caps::format::interlace_mode.key,
-                nmos::caps::format::colorspace.key,
-                nmos::caps::format::color_sampling.key,
-                nmos::caps::format::component_depth.key,
-                nmos::caps::format::channel_count.key,
-                nmos::caps::format::sample_rate.key,
-                nmos::caps::format::sample_depth.key
-            };
-
-            parameter_constraints.insert(param_constraints.begin(), param_constraints.end());
-
             auto supported_param_constraints = value_of({
-                { nmos::fields::parameter_constraints, value_from_elements(parameter_constraints) },
+                { nmos::fields::parameter_constraints, value_from_elements(param_constraints) },
             });
 
             auto data = value_of({

@@ -923,12 +923,34 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         impl::set_label_description(input, impl::ports::mux, 0); // The single Input consumes both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) return;
 
-        for (const auto& sender_id : sender_ids)
+        const std::vector<utility::string_t> video_parameter_constraints{
+            nmos::caps::meta::label.key,
+            nmos::caps::meta::preference.key,
+            nmos::caps::meta::enabled.key,
+            nmos::caps::format::media_type.key,
+            nmos::caps::format::grain_rate.key,
+            nmos::caps::format::frame_width.key,
+            nmos::caps::format::frame_height.key,
+            nmos::caps::format::interlace_mode.key,
+            nmos::caps::format::colorspace.key,
+            nmos::caps::format::color_sampling.key,
+            nmos::caps::format::component_depth.key
+        };
+
+        const std::vector<utility::string_t> audio_parameter_constraints{
+            nmos::caps::meta::label.key,
+            nmos::caps::meta::preference.key,
+            nmos::caps::meta::enabled.key,
+            nmos::caps::format::media_type.key,
+            nmos::caps::format::channel_count.key,
+            nmos::caps::format::sample_rate.key,
+            nmos::caps::format::sample_depth.key
+        };
+
+        for (const auto& port : { impl::ports::video, impl::ports::audio })
         {
-            // Add "packet_time" to the list of Parameter Constraints supported by these Senders
-            const std::vector<utility::string_t> supported_param_constraints{
-                nmos::caps::transport::packet_time.key
-            };
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            const auto& supported_param_constraints = port == impl::ports::video ? video_parameter_constraints : audio_parameter_constraints;
             auto streamcompatibility_sender = nmos::experimental::make_streamcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
             if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) return;
         }
@@ -1431,11 +1453,18 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
 }
 
 // Example Stream Compatibility Management API callback to update Active Constraints of a Sender
-nmos::experimental::details::streamcompatibility_active_constraints_put_handler make_node_implementation_streamcompatibility_active_constraints_handler(slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_active_constraints_put_handler make_node_implementation_streamcompatibility_active_constraints_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
     using web::json::value_of;
 
-    auto sender_capabilities = value_of({
+    const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
+    const auto how_many = impl::fields::how_many(model.settings);
+    const auto video_sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video }, how_many);
+    const auto audio_sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::audio }, how_many);
+
+    // Each Constraint Set in Sender Caps should contain all parameter constraints from /constraints/supported except for "meta"
+    // and parameter constraints that are not applicable to this Sender
+    auto video_sender_capabilities = value_of({
         value_of({
             { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
             { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
@@ -1462,8 +1491,22 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
         })
     });
 
-    return [&gate, sender_capabilities](const nmos::id& sender_id, const web::json::value& active_constraints) -> bool
+    auto audio_sender_capabilities = value_of({
+        value_of({
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(8).name, nmos::media_types::audio_L(16).name, nmos::media_types::audio_L(20).name, nmos::media_types::audio_L(24).name }) },
+            { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ (int)impl::channels_repeat.size() }) },
+            { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ nmos::rational{48000, 1} }) },
+            { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 8, 16, 20, 24 }) }
+        })
+    });
+
+    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::id& sender_id, const web::json::value& active_constraints) -> bool
     {
+        const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
+        const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
+
+        const auto& sender_capabilities = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found for " + sender_id);
+
         const auto& constraint_sets = nmos::fields::constraint_sets(active_constraints).as_array();
         for (const auto& constraint_set : constraint_sets)
         {
@@ -1671,7 +1714,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_put_handler(gate))
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
-        .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(gate))
+        .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
         .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator());
 
