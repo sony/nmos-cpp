@@ -1459,8 +1459,8 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
 
     const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
     const auto how_many = impl::fields::how_many(model.settings);
-    const auto video_sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video }, how_many);
-    const auto audio_sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::audio }, how_many);
+    const auto video_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::video, how_many);
+    const auto audio_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::audio, how_many);
 
     // Each Constraint Set in Sender Caps should contain all parameter constraints from /constraints/supported except for "meta"
     // and parameter constraints that are not applicable to this Sender
@@ -1505,7 +1505,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
         const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
         const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
 
-        const auto& sender_capabilities = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found for " + sender_id);
+        const auto& sender_capabilities = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found");
 
         const auto& constraint_sets = nmos::fields::constraint_sets(active_constraints).as_array();
         for (const auto& constraint_set : constraint_sets)
