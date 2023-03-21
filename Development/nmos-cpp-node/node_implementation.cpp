@@ -1513,7 +1513,8 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
             {
-                if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set))
+                if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set, true) || // the Constraint Set makes Sender Constraint Set's constraints narrower
+                    nmos::experimental::is_constraint_subset(constraint_set, sender_caps_constraint_set)) // the Constraint Set is wider than the Sender Constraint Set so the latter is always compliant
                 {
                     return true;
                 }
@@ -1722,6 +1723,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
     {
         node_implementation
             .on_set_effective_edid(make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate)); // may be omitted if not required
+
     }
 
     return node_implementation;

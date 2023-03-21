@@ -93,12 +93,21 @@ namespace nmos
 
         // Constraint Set B is a subset of Constraint Set A if all Parameter Constraints of Constraint Set A are present in Constraint Set B, and for each Parameter Constraint
         // that is present in both, the Parameter Constraint of Constraint Set B is a subconstraint of the Parameter Constraint of Constraint Set A.
-        bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset)
+        bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset, bool merge)
         {
             using web::json::value;
 
             const auto& param_constraints_set = constraint_set.as_object();
-            const auto& param_constraints_subset = constraint_subset.as_object();
+            auto param_constraints_subset = constraint_subset.as_object();
+
+            if (merge)
+            {
+                param_constraints_subset = param_constraints_set;
+                std::for_each(constraint_subset.as_object().begin(), constraint_subset.as_object().end(), [&param_constraints_subset](const std::pair<utility::string_t, value>& subconstraint)
+                {
+                    param_constraints_subset[subconstraint.first] = subconstraint.second;
+                });
+            }
 
             return param_constraints_set.end() == std::find_if_not(param_constraints_set.begin(), param_constraints_set.end(), [&param_constraints_subset](const std::pair<utility::string_t, value>& constraint)
             {

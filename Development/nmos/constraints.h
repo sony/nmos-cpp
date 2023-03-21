@@ -14,7 +14,7 @@ namespace nmos
     namespace experimental
     {
         bool is_subconstraint(const web::json::value& constraint, const web::json::value& subconstraint);
-        bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset);
+        bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset, bool merge = false);
     }
 }
 
