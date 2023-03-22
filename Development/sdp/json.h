@@ -147,7 +147,7 @@ namespace sdp
         // See VSF TR-10-5 Section 10
         const utility::string_t hkep{ U("hkep") };
 
-        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        // See https://tools.ietf.org/html/rfc5285#section-5
         const utility::string_t extmap{ U("extmap") };
     }
 
@@ -208,7 +208,7 @@ namespace sdp
         const web::json::field_as_string port_id{ U("port_id") };
 
         // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
-        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        // See https://tools.ietf.org/html/rfc5285#section-5
         const web::json::field<uint64_t> local_id{ U("local_id") };
         const web::json::field_as_string direction{ U("direction") }; // see sdp::direction
         const web::json::field_as_string extensionattributes{ U("extensionattributes") };

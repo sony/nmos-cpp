@@ -246,7 +246,7 @@ namespace nmos
         } mediaclk;
 
         // RTP Header Extensions
-        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        // See https://tools.ietf.org/html/rfc5285#section-5
         struct extmap_t
         {
             uint64_t local_id;

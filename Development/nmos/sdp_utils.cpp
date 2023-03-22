@@ -727,7 +727,7 @@ namespace nmos
         for (const auto& extmap_entry : sdp_params.extmap)
         {
             // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
-            // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+            // See https://tools.ietf.org/html/rfc5285#section-5
             web::json::push_back(
                 session_attributes, value_of({
                     { sdp::fields::name, sdp::attributes::extmap },
@@ -1160,55 +1160,46 @@ namespace nmos
         }
 
         // RTP Header Extensions
-        // See https://www.rfc-editor.org/rfc/rfc5285#section-5
+        // See https://tools.ietf.org/html/rfc5285#section-5
         {
-            auto isExtmap = [](const web::json::value& nv)
+            sdp_params.extmap = boost::copy_range<std::vector<sdp_parameters::extmap_t>>(session_attributes | boost::adaptors::filtered([](const web::json::value& nv)
             {
                 return sdp::fields::name(nv) == sdp::attributes::extmap;
-            };
-            auto iter = session_attributes.begin();
-            while ((iter = std::find_if(iter, session_attributes.end(), isExtmap)) != session_attributes.end())
+            }) | boost::adaptors::transformed([](const web::json::value& nv)
             {
-                const auto& extmap = sdp::fields::value(*iter);
+                const auto& extmap = sdp::fields::value(nv);
 
                 const auto& local_id = sdp::fields::local_id(extmap);
                 const auto& uri = sdp::fields::uri(extmap);
 
                 if (extmap.has_field(sdp::fields::direction) && extmap.has_field(sdp::fields::extensionattributes))
                 {
-                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, sdp::direction(sdp::fields::direction(extmap)), uri, sdp::fields::extensionattributes(extmap)));
+                    return sdp_parameters::extmap_t(local_id, sdp::direction(sdp::fields::direction(extmap)), uri, sdp::fields::extensionattributes(extmap));
                 }
                 else if (extmap.has_field(sdp::fields::direction))
                 {
-                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, sdp::direction(sdp::fields::direction(extmap)), uri));
+                    return sdp_parameters::extmap_t(local_id, sdp::direction(sdp::fields::direction(extmap)), uri);
                 }
                 else if (extmap.has_field(sdp::fields::extensionattributes))
                 {
-                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, uri, sdp::fields::extensionattributes(extmap)));
-                }
-                else
-                {
-                    sdp_params.extmap.push_back(sdp_parameters::extmap_t(local_id, uri));
+                    return sdp_parameters::extmap_t(local_id, uri, sdp::fields::extensionattributes(extmap));
                 }
 
-                iter++;
-            }
+                return sdp_parameters::extmap_t(local_id, uri);
+            }));
         }
 
         // HKEP Signalling
         // See VSF TR-10-5 Section 10
         {
-            auto isHkep = [](const web::json::value& nv)
+            sdp_params.hkep = boost::copy_range<std::vector<sdp_parameters::hkep_t>>(session_attributes | boost::adaptors::filtered([](const web::json::value& nv)
             {
                 return sdp::fields::name(nv) == sdp::attributes::hkep;
-            };
-            auto iter = session_attributes.begin();
-            while ((iter = std::find_if(iter, session_attributes.end(), isHkep)) != session_attributes.end())
+            }) | boost::adaptors::transformed([](const web::json::value& nv)
             {
-                const auto& hkep = sdp::fields::value(*iter);
-                sdp_params.hkep.push_back(sdp_parameters::hkep_t{ sdp::fields::port(hkep), sdp::fields::node_id(hkep), sdp::fields::port_id(hkep) });
-                iter++;
-            }
+                const auto& hkep = sdp::fields::value(nv);
+                return sdp_parameters::hkep_t{ sdp::fields::port(hkep), sdp::fields::unicast_address(hkep), sdp::fields::node_id(hkep), sdp::fields::port_id(hkep) };
+            }));
         }
 
         // Media Descriptions
