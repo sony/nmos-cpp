@@ -267,11 +267,12 @@ namespace nmos
         struct hkep_t
         {
             uint64_t port;
+            utility::string_t unicast_address;
             utility::string_t node_id;
             utility::string_t port_id;
 
             hkep_t() : port() {}
-            hkep_t(uint64_t port, const utility::string_t& node_id, const utility::string_t& port_id) : port(port), node_id(node_id), port_id(port_id) {}
+            hkep_t(uint64_t port, const utility::string_t& unicast_address, const utility::string_t& node_id, const utility::string_t& port_id) : port(port), unicast_address(unicast_address), node_id(node_id), port_id(port_id) {}
         };
         std::vector<sdp_parameters::hkep_t> hkep; // "The SDP transport file may contain multiple "hkep" session attributes"
 

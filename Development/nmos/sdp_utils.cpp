@@ -752,8 +752,8 @@ namespace nmos
                     { sdp::fields::value, value_of({
                         { sdp::fields::port, hkep_attr.port },
                         { sdp::fields::network_type, sdp::network_types::internet.name },
-                        { sdp::fields::address_type, details::get_address_type_multicast(origin_address).first.name },
-                        { sdp::fields::unicast_address, origin_address },
+                        { sdp::fields::address_type, details::get_address_type_multicast(hkep_attr.unicast_address).first.name },
+                        { sdp::fields::unicast_address, hkep_attr.unicast_address },
                         { sdp::fields::node_id, hkep_attr.node_id },
                         { sdp::fields::port_id, hkep_attr.port_id },
                     }, keep_order) }
