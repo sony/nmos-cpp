@@ -728,8 +728,8 @@ namespace sdp
                         },
                         [](const std::string& s) {
                             auto v = web::json::value::object(keep_order);
-                            size_t pos = (!s.empty() && ' ' == s.front()) ? 1 : 0;
-                            v[sdp::fields::local_id] = number_converter.parse(substr_find(s, pos, bst::regex{ R"([ \/])" }));
+                            size_t pos = 0;
+                            v[sdp::fields::local_id] = number_converter.parse(substr_find(s, pos, bst::regex{ R"(\D)" }));
                             if (s.at(pos - 1) == '/') v[sdp::fields::direction] = string_converter.parse(substr_find(s, pos, " "));
                             v[sdp::fields::uri] = string_converter.parse(substr_find(s, pos, " "));
                             if (std::string::npos != pos) v[sdp::fields::extensionattributes] = string_converter.parse(substr_find(s, pos));
@@ -739,29 +739,14 @@ namespace sdp
                 },
                 {
                     sdp::attributes::hkep,
-                    {
-                        [](const web::json::value& v) {
-                            std::string s;
-                            s += number_converter.format(v.at(sdp::fields::port));
-                            s += " " + string_converter.format(v.at(sdp::fields::network_type));
-                            s += " " + string_converter.format(v.at(sdp::fields::address_type));
-                            s += " " + string_converter.format(v.at(sdp::fields::unicast_address));
-                            s += " " + string_converter.format(v.at(sdp::fields::node_id));
-                            s += " " + string_converter.format(v.at(sdp::fields::port_id));
-                            return s;
-                        },
-                        [](const std::string& s) {
-                            auto v = web::json::value::object(keep_order);
-                            size_t pos = (!s.empty() && ' ' == s.front()) ? 1 : 0;
-                            v[sdp::fields::port] = number_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::network_type] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::address_type] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::unicast_address] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::node_id] = string_converter.parse(substr_find(s, pos, " "));
-                            v[sdp::fields::port_id] = string_converter.parse(substr_find(s, pos));
-                            return v;
-                        }
-                    }
+                    object_converter({
+                        { sdp::fields::port, number_converter },
+                        { sdp::fields::network_type, string_converter },
+                        { sdp::fields::address_type, string_converter },
+                        { sdp::fields::unicast_address, string_converter },
+                        { sdp::fields::node_id, string_converter },
+                        { sdp::fields::port_id, string_converter },
+                    })
                 }
             };
         }
