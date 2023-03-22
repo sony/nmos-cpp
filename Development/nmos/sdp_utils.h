@@ -306,16 +306,16 @@ namespace nmos
         typedef video_SMPTE2022_6_parameters mux_t;
 
         // deprecated, use make_video_raw_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {}, const std::vector<hkep_t>& hkep = {});
+        sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
 
         // deprecated, use make_audio_L_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {}, const std::vector<hkep_t>& hkep = {});
+        sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
 
         // deprecated, use make_video_smpte291_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {});
+        sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
 
         // deprecated, use make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
-        sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {}, const std::vector<extmap_t>& extmap = {});
+        sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids = {}, const std::vector<ts_refclk_t>& ts_refclk = {});
     };
 
     // "<sdp_params.media_type>/<sdp_params.rtpmap.encoding_name>"
@@ -582,23 +582,23 @@ namespace nmos
     }
 
     // deprecated, use make_video_raw_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap, const std::vector<sdp_parameters::hkep_t>& hkep)
-        : sdp_parameters(make_sdp_parameters(session_name, video, payload_type, media_stream_ids, ts_refclk, extmap, hkep))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const video_t& video, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
+        : sdp_parameters(make_sdp_parameters(session_name, video, payload_type, media_stream_ids, ts_refclk))
     {}
 
     // deprecated, use make_audio_L_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap, const std::vector<sdp_parameters::hkep_t>& hkep)
-        : sdp_parameters(make_sdp_parameters(session_name, audio, payload_type, media_stream_ids, ts_refclk, extmap, hkep))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const audio_t& audio, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
+        : sdp_parameters(make_sdp_parameters(session_name, audio, payload_type, media_stream_ids, ts_refclk))
     {}
 
     // deprecated, use make_video_smpte291_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap)
-        : sdp_parameters(make_sdp_parameters(session_name, data, payload_type, media_stream_ids, ts_refclk, extmap))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const data_t& data, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
+        : sdp_parameters(make_sdp_parameters(session_name, data, payload_type, media_stream_ids, ts_refclk))
     {}
 
     // deprecated, use make_video_SMPTE2022_6_sdp_parameters or equivalent overload of make_sdp_parameters
-    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk, const std::vector<sdp_parameters::extmap_t>& extmap)
-        : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk, extmap))
+    inline sdp_parameters::sdp_parameters(const utility::string_t& session_name, const mux_t& mux, uint64_t payload_type, const std::vector<utility::string_t>& media_stream_ids, const std::vector<ts_refclk_t>& ts_refclk)
+        : sdp_parameters(make_sdp_parameters(session_name, mux, payload_type, media_stream_ids, ts_refclk))
     {}
 
     // Helper functions for implementing format-specific functions
