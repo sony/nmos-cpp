@@ -27,7 +27,9 @@ namespace nmos
     {
         namespace details
         {
+            // returns Sender's "state" and "debug" values
             typedef std::function<std::pair<nmos::sender_state, utility::string_t>(const web::json::value& transport_file, const nmos::resource& sender, const nmos::resource& flow, const nmos::resource& source, const web::json::array& constraint_sets)> streamcompatibility_sender_validator;
+
             typedef std::function<bool(const nmos::resource& resource, const web::json::value& constraint_set)> resource_constraints_matcher;
             typedef std::function<bool(const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets)> transport_file_constraint_sets_matcher;
             typedef std::function<bool(const web::json::array& constraint_sets, const sdp_parameters& sdp_params)> sdp_constraint_sets_matcher;

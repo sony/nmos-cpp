@@ -805,7 +805,17 @@ namespace nmos
                                 {
                                     if (active_constraints_handler)
                                     {
-                                        can_adhere = active_constraints_handler(resourceId, data);
+                                        try
+                                        {
+                                            active_constraints_handler(resourceId, data);
+                                        }
+                                        catch(const std::logic_error& e)
+                                        {
+                                            can_adhere = false;
+
+                                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this sender can't adhere to these Constraints";
+                                            set_error_reply(res, status_codes::UnprocessableEntity, e);
+                                        }
                                     }
                                 }
 
@@ -813,11 +823,6 @@ namespace nmos
                                 {
                                     details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(data), effective_edid_setter);
                                     set_reply(res, status_codes::OK, data);
-                                }
-                                else
-                                {
-                                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this sender can't adhere to these Constraints";
-                                    set_error_reply(res, status_codes::UnprocessableEntity);
                                 }
                             }
                             else

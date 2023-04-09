@@ -1505,7 +1505,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
         })
     });
 
-    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::id& sender_id, const web::json::value& active_constraints) -> bool
+    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::id& sender_id, const web::json::value& active_constraints)
     {
         const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
         const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
@@ -1521,12 +1521,12 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
                 if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set, true) || // the Constraint Set makes Sender Constraint Set's constraints narrower
                     nmos::experimental::is_constraint_subset(constraint_set, sender_caps_constraint_set)) // the Constraint Set is wider than the Sender Constraint Set so the latter is always compliant
                 {
-                    return true;
+                    return;
                 }
             }
         }
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
-        return false;
+        throw std::logic_error("sender capabilities are " + sender_capabilities.serialize());
     };
 }
 
