@@ -83,8 +83,8 @@ namespace nmos
         }
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        // bind socket to a specific network interface, only supporting Linux and Boost.Asio
-#if !defined(_WIN32)
+        // bind socket to a specific network interface, only supporting Linux
+#if defined(linux) || defined(__linux) || defined(__linux__)
         inline bool bind_to_device(const utility::string_t& interface_name, bool secure, void* native_handle)
         {
             int socket_fd;
@@ -108,7 +108,7 @@ namespace nmos
                 }
                 socket_fd = socket->lowest_layer().native_handle();
             }
-            // SO_BINDTODEVICE not defined in windows
+            // SO_BINDTODEVICE not defined in windows & mac
             return (setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, utility::us2s(interface_name).c_str(), interface_name.length()) == 0);
         }
 #endif
@@ -126,7 +126,7 @@ namespace nmos
             {
                 if (!interface_name.empty())
                 {
-#if !defined(_WIN32)
+#if defined(linux) || defined(__linux) || defined(__linux__)
                     if (!bind_to_device(interface_name, secure, native_handle))
                     {
                         char error[1024];
@@ -154,7 +154,7 @@ namespace nmos
             {
                 if (!interface_name.empty())
                 {
-#if !defined(_WIN32)
+#if defined(linux) || defined(__linux) || defined(__linux__)
                     if (!bind_to_device(interface_name, secure, native_handle))
                     {
                         char error[1024];
