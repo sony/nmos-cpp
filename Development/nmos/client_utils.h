@@ -11,10 +11,16 @@ namespace slog { class base_gate; }
 // Utility types, constants and functions for implementing NMOS REST API clients
 namespace nmos
 {
+    // construct client config based on settings and specified secure flag, e.g. using the specified proxy and the OCSP client
+    // with the remaining options defaulted, e.g. request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, bool secure, slog::base_gate& gate);
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted, e.g. request timeout
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
 
+    // construct client config based on settings and specified secure flag, e.g. using the specified proxy
+    // with the remaining options defaulted
+    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, bool secure, slog::base_gate& gate);
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);

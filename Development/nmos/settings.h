@@ -52,6 +52,9 @@ namespace nmos
     {
         // Get HTTP Strict-Transport-Security settings
         bst::optional<web::http::experimental::hsts> get_hsts(const settings& settings);
+
+        // Get server IP address of the network interface for binding the server connections
+        utility::string_t get_server_address(const settings& settings);
     }
 
     // Get a summary of the build configuration, including versions of dependencies
@@ -239,6 +242,13 @@ namespace nmos
             const web::json::field_as_integer_or admin_port{ U("admin_port"), 3208 };
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3208 };
             const web::json::field_as_integer_or schemas_port{ U("schemas_port"), 3208 };
+
+            // client_address [registry, node]: IP address of the network interface to bind client connections for Linux
+            // only supprting HTTP/HTTPS client connections, no ws/wss support yet
+            const web::json::field_as_string_or client_address{ U("client_address"), U("") };
+
+            // server_address [registry, node]: IP address of the network interface to bind server connections
+            const web::json::field_as_string_or server_address{ U("server_address"), U("") };
 
             // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
 

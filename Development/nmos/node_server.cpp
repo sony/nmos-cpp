@@ -35,6 +35,8 @@ namespace nmos
 
             const auto hsts = nmos::experimental::get_hsts(node_model.settings);
 
+            const auto server_address = nmos::experimental::get_server_address(node_model.settings);
+
             // Configure the Settings API
 
             const host_port settings_address(nmos::experimental::fields::settings_address(node_model.settings), nmos::experimental::fields::settings_port(node_model.settings));
@@ -70,8 +72,8 @@ namespace nmos
 
             for (auto& api_router : node_server.api_routers)
             {
-                // default empty string means the wildcard address
-                const auto& host = !api_router.first.first.empty() ? api_router.first.first : web::http::experimental::listener::host_wildcard;
+                // empty string and empty server IP address means the wildcard address
+                const auto& host = !api_router.first.first.empty() ? api_router.first.first : !server_address.empty() ? server_address : web::http::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
                 node_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, node_model.settings), api_router.second, http_config, hsts, gate));
@@ -84,8 +86,8 @@ namespace nmos
 
             for (auto& ws_handler : node_server.ws_handlers)
             {
-                // default empty string means the wildcard address
-                const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : web::websockets::experimental::listener::host_wildcard;
+                // empty string and empty server IP address means the wildcard address
+                const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : !server_address.empty() ? server_address : web::websockets::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
                 node_server.ws_listeners.push_back(nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, node_model.settings), ws_handler.second.first, websocket_config, gate));

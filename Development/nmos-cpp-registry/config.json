@@ -109,6 +109,13 @@
     //"mdns_port": 3208,
     //"schemas_port": 3208,
 
+    // client_address [registry, node]: IP address of the network interface to bind client connections for Linux
+    // only supprting HTTP/HTTPS client connections, no ws/wss support yet
+    //"client_address": "",
+
+    // server_address [registry, node]: IP address of the network interface to bind server connections
+    //"server_address": "",
+
     // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
 
     //"settings_address": "127.0.0.1",

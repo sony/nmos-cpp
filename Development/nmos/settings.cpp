@@ -1,6 +1,7 @@
 #include "nmos/settings.h"
 
 #include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>
@@ -54,8 +55,14 @@ namespace nmos
                 }
             }
 
+            // if the "server_address" settings is presented, use it for the node's "api endpoints" and "href", and device's "controls href"
+            const auto server_address = experimental::get_server_address(settings);
+            if (!server_address.empty())
+            {
+                web::json::insert(settings, std::make_pair(nmos::fields::host_address, server_address));
+            }
             // if the "host_address" setting was omitted, use the first of the "host_addresses"
-            if (settings.has_field(nmos::fields::host_addresses))
+            else if (settings.has_field(nmos::fields::host_addresses))
             {
                 web::json::insert(settings, std::make_pair(nmos::fields::host_address, nmos::fields::host_addresses(settings)[0]));
             }
@@ -151,7 +158,12 @@ namespace nmos
         {
             hosts.push_back(get_host_name(settings));
         }
-        if (0 != (mode & nmos::experimental::href_mode_addresses))
+        const auto server_address = experimental::get_server_address(settings);
+        if (!server_address.empty())
+        {
+            hosts.push_back(server_address);
+        }
+        else if (0 != (mode & nmos::experimental::href_mode_addresses))
         {
             const auto at_least_one_host_address = web::json::value_of({ web::json::value::string(nmos::fields::host_address(settings)) });
             const auto& host_addresses = settings.has_field(nmos::fields::host_addresses) ? nmos::fields::host_addresses(settings) : at_least_one_host_address.as_array();
@@ -188,6 +200,28 @@ namespace nmos
             if (nmos::experimental::fields::server_secure(settings) && nmos::experimental::fields::hsts_max_age(settings) > 0)
                 return web::http::experimental::hsts{ (uint32_t)nmos::experimental::fields::hsts_max_age(settings), nmos::experimental::fields::hsts_include_sub_domains(settings) };
             return bst::nullopt;
+        }
+
+        // Get server IP address of the interface to bind server connections
+        utility::string_t get_server_address(const settings& settings)
+        {
+            const auto server_address = nmos::experimental::fields::server_address(settings);
+            if (!server_address.empty())
+            {
+                // verify the server address match one of the interface addresses
+                const auto interfaces = web::hosts::experimental::host_interfaces();
+
+                auto find_interface = [&]()
+                {
+                    return boost::range::find_if(interfaces, [&](const web::hosts::experimental::host_interface& interface)
+                    {
+                        return interface.addresses.end() != boost::range::find(interface.addresses, server_address);
+                    });
+                };
+                const auto interface = find_interface();
+                if (interfaces.end() != interface) { return server_address; }
+            }
+            return {};
         }
     }
 
