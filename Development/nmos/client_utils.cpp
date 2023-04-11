@@ -117,7 +117,7 @@ namespace nmos
         {
             // get the associated network interface name from IP address
             const auto interface_name = get_interface_name(client_address);
-            if (interface_name.empty())
+            if (!client_address.empty() && interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the HTTP client connection";
             }
@@ -145,7 +145,7 @@ namespace nmos
         {
             // get the associated network interface name from IP address
             const auto interface_name = get_interface_name(client_address);
-            if (interface_name.empty())
+            if (!client_address.empty() && interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the websocket client connection";
             }
