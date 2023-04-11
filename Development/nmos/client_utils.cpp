@@ -87,7 +87,7 @@ namespace nmos
 #if !defined(_WIN32)
         inline bool bind_to_device(const utility::string_t& interface_name, bool secure, void* native_handle)
         {
-            boost::asio::basic_socket<boost::asio::ip::tcp, boost::asio::any_io_executor>::native_handle_type socket_fd;
+            int socket_fd;
             if (secure)
             {
                 auto socket = (boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>*)native_handle;
