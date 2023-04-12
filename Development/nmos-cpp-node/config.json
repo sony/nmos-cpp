@@ -192,7 +192,7 @@
     //"logging_port": 5106,
 
     // client_address [registry, node]: IP address of the network interface to bind client connections for Linux
-    // only supprting HTTP/HTTPS client connections, no ws/wss support yet
+    // only supporting HTTP/HTTPS client connections, no ws/wss support yet
     //"client_address": "",
 
     // server_address [registry, node]: IP address of the network interface to bind server connections
