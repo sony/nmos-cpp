@@ -244,7 +244,7 @@ namespace nmos
             const web::json::field_as_integer_or schemas_port{ U("schemas_port"), 3208 };
 
             // client_address [registry, node]: IP address of the network interface to bind client connections for Linux
-            // only supprting HTTP/HTTPS client connections, no ws/wss support yet
+            // only supporting HTTP/HTTPS client connections, no ws/wss support yet
             const web::json::field_as_string_or client_address{ U("client_address"), U("") };
 
             // server_address [registry, node]: IP address of the network interface to bind server connections
