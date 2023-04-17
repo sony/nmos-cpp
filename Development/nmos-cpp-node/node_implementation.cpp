@@ -1526,7 +1526,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
             }
         }
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
-        throw std::logic_error("sender capabilities are " + sender_capabilities.serialize());
+        throw std::logic_error("sender capabilities are " + utility::us2s(sender_capabilities.serialize()));
     };
 }
 
