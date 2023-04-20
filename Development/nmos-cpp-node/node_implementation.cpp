@@ -1480,41 +1480,39 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
     const auto video_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::video, how_many);
     const auto audio_sender_ids = impl::make_ids(seed_id, nmos::types::sender, impl::ports::audio, how_many);
 
-    // Each Constraint Set in Sender Caps should contain all parameter constraints from /constraints/supported except for "meta"
-    // and parameter constraints that are not applicable to this Sender
+    const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
+    const auto frame_width = impl::fields::frame_width(model.settings);
+    const auto frame_height = impl::fields::frame_height(model.settings);
+    const auto color_sampling = impl::fields::color_sampling(model.settings);
+    const auto interlace_mode = impl::get_interlace_mode(model.settings);
+    const auto colorspace = impl::fields::colorspace(model.settings);
+    const auto transfer_characteristic = impl::fields::transfer_characteristic(model.settings);
+    const auto component_depth = impl::fields::component_depth(model.settings);
+    const auto video_type = impl::fields::video_type(model.settings);
+    const auto channel_count = impl::fields::channel_count(model.settings);
+
+    // Each Constraint Set in Sender Caps should contain all parameter constraints from Sender's /constraints/supported
     auto video_sender_capabilities = value_of({
         value_of({
-            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
-            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
-            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
-            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
-            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
-            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
-            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
-            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
-            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
-            { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
-        }),
-        value_of({
-            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
-            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25, nmos::rates::rate29_97 }) },
-            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 3840 }) },
-            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 2160 }) },
-            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
-            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
-            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
-            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
-            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({}, 8, 12) },
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ video_type }) },
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ frame_width }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ frame_height }) },
+            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ color_sampling }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ interlace_mode.name }) },
+            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ colorspace }) },
+            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ transfer_characteristic }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ component_depth }) },
             { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
         })
     });
 
     auto audio_sender_capabilities = value_of({
         value_of({
-            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(8).name, nmos::media_types::audio_L(16).name, nmos::media_types::audio_L(20).name, nmos::media_types::audio_L(24).name }) },
-            { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ (int)impl::channels_repeat.size() }) },
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(24).name }) },
+            { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ channel_count }) },
             { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ nmos::rational{48000, 1} }) },
-            { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 8, 16, 20, 24 }) }
+            { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 24 }) }
         })
     });
 
@@ -1531,8 +1529,11 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
             {
-                if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set, true) || // the Constraint Set makes Sender Constraint Set's constraints narrower
-                    nmos::experimental::is_constraint_subset(constraint_set, sender_caps_constraint_set)) // the Constraint Set is wider than the Sender Constraint Set so the latter is always compliant
+                // the Constraint Set makes Sender Constraint Set's constraints narrower
+                // or
+                // the Constraint Set is wider than the Sender Constraint Set so the latter is always compliant
+                if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set, true) ||
+                    nmos::experimental::is_constraint_subset(constraint_set, sender_caps_constraint_set))
                 {
                     return;
                 }
