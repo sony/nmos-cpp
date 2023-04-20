@@ -175,7 +175,7 @@ namespace nmos
                             auto connection_receiver = find_resource(connection_resources, connection_receiver_id_type);
                             if (connection_resources.end() == connection_receiver) throw std::logic_error("Matching IS-05 receiver not found");
 
-                            auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_staged(connection_receiver->data));
+                            const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
 
                             if (validate_receiver)
                             {
