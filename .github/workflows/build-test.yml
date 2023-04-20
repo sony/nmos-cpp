@@ -93,7 +93,7 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan
+        pip install conan~=1.47
         conan config set general.revisions_enabled=1
 
     - name: install cmake
@@ -600,7 +600,7 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan
+        pip install conan~=1.47
         conan config set general.revisions_enabled=1
 
     - name: install cmake
