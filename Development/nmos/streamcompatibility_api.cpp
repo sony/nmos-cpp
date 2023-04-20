@@ -784,14 +784,14 @@ namespace nmos
                     const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
                     const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sender };
-                    auto resource = find_resource(resources, id_type);
-                    if (resources.end() != resource)
+                    auto streamcompatibility_sender = find_resource(resources, id_type);
+                    if (resources.end() != streamcompatibility_sender)
                     {
-                        auto& endpoint_active_constraints = nmos::fields::endpoint_active_constraints(resource->data);
+                        auto& endpoint_active_constraints = nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data);
 
                         if (!nmos::fields::temporarily_locked(endpoint_active_constraints))
                         {
-                            const auto supported_param_constraints = boost::copy_range<std::unordered_set<utility::string_t>>(nmos::fields::parameter_constraints(nmos::fields::supported_param_constraints(resource->data)) | boost::adaptors::transformed([](const web::json::value& param_constraint)
+                            const auto supported_param_constraints = boost::copy_range<std::unordered_set<utility::string_t>>(nmos::fields::parameter_constraints(nmos::fields::supported_param_constraints(streamcompatibility_sender->data)) | boost::adaptors::transformed([](const web::json::value& param_constraint)
                             {
                                 return std::unordered_set<utility::string_t>::value_type{ param_constraint.as_string() };
                             }));
@@ -808,7 +808,7 @@ namespace nmos
                                     {
                                         try
                                         {
-                                            active_constraints_handler(resourceId, data);
+                                            active_constraints_handler(*streamcompatibility_sender, data);
                                         }
                                         catch(const std::logic_error& e)
                                         {

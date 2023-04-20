@@ -11,6 +11,7 @@
 namespace nmos
 {
     struct node_model;
+    struct resource;
 
     namespace experimental
     {
@@ -28,7 +29,7 @@ namespace nmos
             // it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
             // or std::logic_error, which will be mapped to a 422 Unprocessible Entity status code with NMOS error "debug" information including the exception message
             // or std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
-            typedef std::function<void(const nmos::id& sender_id, const web::json::value& constraint_sets)> streamcompatibility_active_constraints_put_handler;
+            typedef std::function<void(const nmos::resource& streamcompatibility_sender, const web::json::value& constraint_sets)> streamcompatibility_active_constraints_put_handler;
 
             // a streamcompatibility_effective_edid_setter updates the specified Effective EDID for the specified IS-11 input
             // effective EDID of the input is updated when either Active Constraints of a Sender associated with this input are updated

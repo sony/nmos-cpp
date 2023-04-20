@@ -1515,8 +1515,9 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
         })
     });
 
-    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::id& sender_id, const web::json::value& active_constraints)
+    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::resource& streamcompatibility_sender, const web::json::value& active_constraints)
     {
+        const auto sender_id = streamcompatibility_sender.id;
         const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
         const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
 
