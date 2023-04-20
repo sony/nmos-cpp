@@ -1732,7 +1732,11 @@ namespace impl
 // into the server instance for the NMOS Node.
 nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
 {
-    auto node_implementation = nmos::experimental::node_implementation()
+    const auto set_effective_edid = impl::fields::edid_support(model.settings)
+        ? make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate)
+        : nmos::experimental::details::streamcompatibility_effective_edid_setter{};
+
+    return nmos::experimental::node_implementation()
         .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
         .on_load_dh_param(nmos::make_load_dh_param_handler(model.settings, gate))
         .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
@@ -1747,16 +1751,8 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_put_handler(gate))
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
+        .on_set_effective_edid(set_effective_edid) // may be omitted if not required
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
         .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator(gate));
-
-    if (impl::fields::edid_support(model.settings))
-    {
-        node_implementation
-            .on_set_effective_edid(make_node_implementation_streamcompatibility_effective_edid_setter(model.streamcompatibility_resources, gate)); // may be omitted if not required
-
-    }
-
-    return node_implementation;
 }
