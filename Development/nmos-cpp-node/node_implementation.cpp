@@ -1393,22 +1393,21 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 
 // Example Stream Compatibility Management API Base EDID update callback to perform application-specific operations to apply updated Base EDID
 // (e.g. providing the implementation with a parsed version of Base EDID)
-nmos::experimental::details::streamcompatibility_base_edid_put_handler make_node_implementation_streamcompatibility_base_edid_put_handler(slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_base_edid_handler make_node_implementation_streamcompatibility_base_edid_handler(slog::base_gate& gate)
 {
-    return [&gate](const nmos::id& input_id, const utility::string_t& base_edid, bst::optional<web::json::value>& base_edid_properties)
+    return [&gate](const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid, web::json::value& base_edid_properties)
     {
-        base_edid_properties = bst::nullopt;
+        base_edid_properties = web::json::value::null();
 
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for Input " << input_id;
-    };
-}
+        if (base_edid.has_value())
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for Input " << input_id;
+        }
+        else
+        {
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID deleted for Input " << input_id;
+        }
 
-// Example Stream Compatibility Management API Base EDID delete callback to perform application-specific operations on the Base EDID deletion
-nmos::experimental::details::streamcompatibility_base_edid_delete_handler make_node_implementation_streamcompatibility_base_edid_delete_handler(slog::base_gate& gate)
-{
-    return [&gate](const nmos::id& input_id)
-    {
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID deleted for Input " << input_id;
     };
 }
 
@@ -1749,8 +1748,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_put_handler(gate))
-        .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
+        .on_base_edid_changed(make_node_implementation_streamcompatibility_base_edid_handler(gate))
         .on_set_effective_edid(set_effective_edid) // may be omitted if not required
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient

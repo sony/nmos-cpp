@@ -61,8 +61,7 @@ namespace nmos
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
-            node_implementation& on_base_edid_changed(nmos::experimental::details::streamcompatibility_base_edid_put_handler base_edid_changed) { this->base_edid_changed = std::move(base_edid_changed); return *this; }
-            node_implementation& on_base_edid_deleted(nmos::experimental::details::streamcompatibility_base_edid_delete_handler base_edid_deleted) { this->base_edid_deleted = std::move(base_edid_deleted); return *this; }
+            node_implementation& on_base_edid_changed(nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed) { this->base_edid_changed = std::move(base_edid_changed); return *this; }
             node_implementation& on_set_effective_edid(nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid) { this->set_effective_edid = std::move(set_effective_edid); return *this; }
             node_implementation& on_active_constraints_changed(nmos::experimental::details::streamcompatibility_active_constraints_put_handler active_constraints_changed) { this->active_constraints_changed = std::move(active_constraints_changed); return *this; }
             node_implementation& on_validate_sender_resources_against_active_constraints(nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources) { this->validate_sender_resources = std::move(validate_sender_resources); return *this; }
@@ -97,8 +96,7 @@ namespace nmos
 
             nmos::ocsp_response_handler get_ocsp_response;
 
-            nmos::experimental::details::streamcompatibility_base_edid_put_handler base_edid_changed;
-            nmos::experimental::details::streamcompatibility_base_edid_delete_handler base_edid_deleted;
+            nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed;
             nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
             nmos::experimental::details::streamcompatibility_active_constraints_put_handler active_constraints_changed;
             nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources;

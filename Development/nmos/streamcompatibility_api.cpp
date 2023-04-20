@@ -176,9 +176,9 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_put_handler base_edid_put_handler, details::streamcompatibility_base_edid_delete_handler base_edid_delete_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_put_handler base_edid_put_handler, details::streamcompatibility_base_edid_delete_handler base_edid_delete_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -203,12 +203,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, base_edid_put_handler, base_edid_delete_handler, effective_edid_setter, active_constraints_handler, gate));
+            streamcompatibility_api.mount(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_streamcompatibility_api(model, base_edid_handler, effective_edid_setter, active_constraints_handler, gate));
 
             return streamcompatibility_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_put_handler base_edid_put_handler, details::streamcompatibility_base_edid_delete_handler base_edid_delete_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -595,7 +595,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, base_edid_put_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::PUT, [&model, base_edid_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
@@ -613,16 +613,16 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            bst::optional<web::json::value> base_edid_properties = bst::nullopt;
+                            web::json::value base_edid_properties = web::json::value::null();
 
                             const auto request_body = req.content_ready().get().extract_vector().get();
                             const utility::string_t base_edid{ request_body.begin(), request_body.end() };
 
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID update is requested for " << id_type << " with file size " << base_edid.size();
 
-                            if (base_edid_put_handler)
+                            if (base_edid_handler)
                             {
-                                base_edid_put_handler(resourceId, base_edid, base_edid_properties);
+                                base_edid_handler(resourceId, base_edid, base_edid_properties);
                             }
 
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
@@ -639,9 +639,9 @@ namespace nmos
                             // Update Base EDID in streamcompatibility_resources
                             modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp](nmos::resource& input)
                             {
-                                if (base_edid_properties)
+                                if (!base_edid_properties.is_null())
                                 {
-                                    input.data[nmos::fields::base_edid_properties] = *base_edid_properties;
+                                    input.data[nmos::fields::base_edid_properties] = base_edid_properties;
                                 }
 
                                 input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid);
@@ -687,7 +687,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::DEL, [&model, base_edid_delete_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::inputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/base/?"), methods::DEL, [&model, base_edid_handler, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
@@ -707,9 +707,10 @@ namespace nmos
                         {
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID deletion is requested for " << id_type;
 
-                            if (base_edid_delete_handler)
+                            if (base_edid_handler)
                             {
-                                base_edid_delete_handler(resourceId);
+                                web::json::value tmp;
+                                base_edid_handler(resourceId, bst::nullopt, tmp);
                             }
 
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
