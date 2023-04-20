@@ -1399,7 +1399,7 @@ nmos::experimental::details::streamcompatibility_base_edid_handler make_node_imp
     {
         base_edid_properties = web::json::value::null();
 
-        if (base_edid.has_value())
+        if (base_edid)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Base EDID updated for Input " << input_id;
         }
