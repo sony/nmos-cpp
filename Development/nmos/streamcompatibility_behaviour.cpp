@@ -33,42 +33,6 @@ namespace nmos
             }));
         }
 
-        std::pair<nmos::receiver_state, utility::string_t> validate_receiver_resources(const web::json::value& transport_file_, const web::json::value& receiver)
-        {
-            nmos::receiver_state receiver_state;
-            utility::string_t receiver_state_debug;
-
-            if (!transport_file_.is_null() && !transport_file_.as_object().empty())
-            {
-                const auto transport_file = nmos::details::get_transport_type_data(transport_file_);
-                if (nmos::media_types::application_sdp.name != transport_file.first)
-                {
-                    throw std::runtime_error("unknown transport file type");
-                }
-
-                const auto session_description = sdp::parse_session_description(utility::us2s(transport_file.second));
-                auto sdp_params = nmos::parse_session_description(session_description).first;
-
-                receiver_state = nmos::receiver_states::compliant_stream;
-
-                try
-                {
-                    validate_sdp_parameters(receiver, sdp_params);
-                }
-                catch (const std::runtime_error& e)
-                {
-                    receiver_state = nmos::receiver_states::non_compliant_stream;
-                    receiver_state_debug = utility::conversions::to_string_t(e.what());
-                }
-            }
-            else
-            {
-                receiver_state = nmos::receiver_states::unknown;
-            }
-
-            return { receiver_state, receiver_state_debug };
-        }
-
         void streamcompatibility_behaviour_thread(nmos::node_model& model, details::streamcompatibility_sender_validator validate_sender_resources, details::streamcompatibility_receiver_validator validate_receiver, slog::base_gate& gate)
         {
             using web::json::value;
@@ -215,7 +179,7 @@ namespace nmos
 
                             if (validate_receiver)
                             {
-                                std::tie(receiver_state, receiver_state_debug) = validate_receiver(transport_file, receiver->data);
+                                std::tie(receiver_state, receiver_state_debug) = validate_receiver(transport_file, *receiver, *connection_receiver);
                             }
 
                             if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)

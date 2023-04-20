@@ -1570,12 +1570,10 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     };
 }
 
-nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator()
+nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator(slog::base_gate& gate)
 {
-    // this example uses the default receiver validator explicitly
-    return &nmos::experimental::validate_receiver_resources;
+    return nmos::experimental::make_streamcompatibility_receiver_validator(make_node_implementation_transport_file_parser(), gate);
 }
-
 
 namespace impl
 {
@@ -1735,7 +1733,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_base_edid_deleted(make_node_implementation_streamcompatibility_base_edid_delete_handler(gate))
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
-        .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator());
+        .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator(gate));
 
     if (impl::fields::edid_support(model.settings))
     {

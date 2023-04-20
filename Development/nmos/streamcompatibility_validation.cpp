@@ -97,7 +97,6 @@ namespace nmos
                 if (!web::json::empty(constraint_sets))
                 {
                     bool constrained = true;
-
                     auto source_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_resource_constraint_set(source, constraint_set); });
                     auto flow_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_resource_constraint_set(flow, constraint_set); });
                     auto sender_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_resource_constraint_set(sender, constraint_set); });
@@ -117,6 +116,38 @@ namespace nmos
                 }
 
                 return { sender_state, {} };
+            };
+        }
+
+        details::streamcompatibility_receiver_validator make_streamcompatibility_receiver_validator(const nmos::transport_file_parser& parse_and_validate_transport_file, slog::base_gate& gate)
+        {
+            return [parse_and_validate_transport_file, &gate](const web::json::value& transport_file_, const nmos::resource& receiver, const nmos::resource& connection_receiver) -> std::pair<nmos::receiver_state, utility::string_t>
+            {
+                nmos::receiver_state receiver_state;
+                utility::string_t receiver_state_debug;
+
+                if (!transport_file_.is_null() && !transport_file_.as_object().empty())
+                {
+                    const auto transport_file = nmos::details::get_transport_type_data(transport_file_);
+
+                    receiver_state = nmos::receiver_states::compliant_stream;
+
+                    try
+                    {
+                        parse_and_validate_transport_file(receiver, connection_receiver, transport_file.first, transport_file.second, gate);
+                    }
+                    catch (const std::runtime_error& e)
+                    {
+                        receiver_state = nmos::receiver_states::non_compliant_stream;
+                        receiver_state_debug = utility::conversions::to_string_t(e.what());
+                    }
+                }
+                else
+                {
+                    receiver_state = nmos::receiver_states::unknown;
+                }
+
+                return { receiver_state, receiver_state_debug };
             };
         }
     }

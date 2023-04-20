@@ -29,6 +29,8 @@ namespace nmos
         {
             // returns Sender's "state" and "debug" values
             typedef std::function<std::pair<nmos::sender_state, utility::string_t>(const web::json::value& transport_file, const nmos::resource& sender, const nmos::resource& flow, const nmos::resource& source, const web::json::array& constraint_sets)> streamcompatibility_sender_validator;
+            // returns Receiver's "state" and "debug" values
+            typedef std::function<std::pair<nmos::receiver_state, utility::string_t>(const web::json::value& transport_file, const nmos::resource& receiver, const nmos::resource& connection_receiver)> streamcompatibility_receiver_validator;
 
             typedef std::function<bool(const nmos::resource& resource, const web::json::value& constraint_set)> resource_constraints_matcher;
             typedef std::function<bool(const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets)> transport_file_constraint_sets_matcher;
@@ -87,6 +89,7 @@ namespace nmos
         nmos::details::connection_resource_patch_validator make_connection_streamcompatibility_validator(nmos::node_model& model);
 
         details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator(const details::resource_constraints_matcher& resource_matcher, const details::transport_file_constraint_sets_matcher& transport_file_matcher);
+        details::streamcompatibility_receiver_validator make_streamcompatibility_receiver_validator(const nmos::transport_file_parser& parse_and_validate_transport_file, slog::base_gate& gate);
         bool match_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set);
         details::transport_file_constraint_sets_matcher make_streamcompatibility_sdp_constraint_sets_matcher(const details::sdp_constraint_sets_matcher& match_sdp_parameters_constraint_sets);
     }
