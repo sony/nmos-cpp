@@ -27,8 +27,7 @@ namespace web
     // Check if the URI is secure
     inline bool get_secure(const web::uri& uri)
     {
-        const auto scheme = uri.scheme();
-        return (scheme == uri_schemes::wss || scheme == uri_schemes::https);
+        return uri_schemes::https == uri.scheme() || uri_schemes::wss == uri.scheme();
     }
 }
 
