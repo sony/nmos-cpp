@@ -61,25 +61,14 @@ namespace nmos
             };
         }
 #endif
-        // get the associated network interface name from the IP address
-        inline utility::string_t get_interface_name(const utility::string_t& address)
+        // get the associated network interface name from an IP address
+        inline utility::string_t get_interface_name(const utility::string_t& address, const std::vector<web::hosts::experimental::host_interface>& host_interfaces = web::hosts::experimental::host_interfaces())
         {
-            utility::string_t interface_name;
-            if (!address.empty())
+            const auto interface = boost::range::find_if(interfaces, [&](const web::hosts::experimental::host_interface& interface)
             {
-                const auto interfaces = web::hosts::experimental::host_interfaces();
-
-                auto find_interface = [&]()
-                {
-                    return boost::range::find_if(interfaces, [&](const web::hosts::experimental::host_interface& interface)
-                    {
-                        return interface.addresses.end() != boost::range::find(interface.addresses, address);
-                    });
-                };
-                const auto interface = find_interface();
-                if (interfaces.end() != interface) { interface_name = interface->name; }
-            }
-            return interface_name;
+                return interface.addresses.end() != boost::range::find(interface.addresses, address);
+            });
+            return interfaces.end() != interface ? interface->name : utility::string_t{};
         }
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
