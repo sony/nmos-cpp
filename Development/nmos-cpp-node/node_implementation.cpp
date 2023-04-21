@@ -1529,11 +1529,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
             {
-                // the Constraint Set makes Sender Constraint Set's constraints narrower
-                // or
-                // the Constraint Set is wider than the Sender Constraint Set so the latter is always compliant
-                if (nmos::experimental::is_constraint_subset(sender_caps_constraint_set, constraint_set, true) ||
-                    nmos::experimental::is_constraint_subset(constraint_set, sender_caps_constraint_set))
+                if (!nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set, true).is_null())
                 {
                     return;
                 }
