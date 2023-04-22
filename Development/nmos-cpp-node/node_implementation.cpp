@@ -1443,17 +1443,16 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
         const auto streamcompatibility_input = find_resource(streamcompatibility_resources, id_type);
         if (streamcompatibility_resources.end() != streamcompatibility_input)
         {
-            for (const auto& sender_id : nmos::fields::senders(streamcompatibility_input->data))
+            for (const auto& sender_id_ : nmos::fields::senders(streamcompatibility_input->data))
             {
-                const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id.as_string(), nmos::types::sender };
+                const auto sender_id = sender_id_.as_string();
+                const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
                 const auto streamcompatibility_sender = find_resource(streamcompatibility_resources, sender_id_type);
                 if (streamcompatibility_resources.end() != streamcompatibility_sender)
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Intersection of Sender Caps and Active Constraints for Sender " << sender_id << " is";
-                    for (const auto& item : nmos::fields::intersection_of_caps_and_constraints(streamcompatibility_sender->data).as_array())
-                    {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << item;
-                    }
+                    slog::log<slog::severities::info>(gate, SLOG_FLF)
+                        << "Intersection of Sender Caps and Active Constraints for Sender " << sender_id << " is "
+                        << utility::us2s(nmos::fields::intersection_of_caps_and_constraints(streamcompatibility_sender->data).serialize());
                 }
             }
 
