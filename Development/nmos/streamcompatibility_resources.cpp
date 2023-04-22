@@ -41,6 +41,7 @@ namespace nmos
                 { nmos::fields::inputs, value_from_elements(inputs) },
                 { nmos::fields::supported_param_constraints, supported_param_constraints },
                 { nmos::fields::status, value_of({ { nmos::fields::state, nmos::sender_states::unconstrained.name } }) },
+                { nmos::fields::intersection_of_caps_and_constraints, value::array() }
             });
 
             return{ is11_versions::v1_0, types::sender, std::move(data), id, false };

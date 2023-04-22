@@ -1440,20 +1440,39 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
         bst::optional<utility::string_t> base_edid = bst::nullopt;
 
         const std::pair<nmos::id, nmos::type> id_type{ input_id, nmos::types::input };
-        auto resource = find_resource(streamcompatibility_resources, id_type);
-        if (streamcompatibility_resources.end() != resource)
+        const auto streamcompatibility_input = find_resource(streamcompatibility_resources, id_type);
+        if (streamcompatibility_resources.end() != streamcompatibility_input)
         {
-            auto& edid_endpoint = nmos::fields::endpoint_base_edid(resource->data);
+            for (const auto& sender_id : nmos::fields::senders(streamcompatibility_input->data))
+            {
+                const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id.as_string(), nmos::types::sender };
+                const auto streamcompatibility_sender = find_resource(streamcompatibility_resources, sender_id_type);
+                if (streamcompatibility_resources.end() != streamcompatibility_sender)
+                {
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Intersection of Sender Caps and Active Constraints for Sender " << sender_id << " is";
+                    for (const auto& item : nmos::fields::intersection_of_caps_and_constraints(streamcompatibility_sender->data).as_array())
+                    {
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << item;
+                    }
+                }
+            }
+
+            const auto& edid_endpoint = nmos::fields::endpoint_base_edid(streamcompatibility_input->data);
 
             if (!edid_endpoint.is_null())
             {
-                auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
+                const auto& edid_binary = nmos::fields::edid_binary(edid_endpoint);
 
                 if (!edid_binary.is_null())
                 {
                     base_edid = edid_binary.as_string();
                 }
             }
+        }
+        else
+        {
+            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Requested " << id_type << " not found";
+            return;
         }
 
         if (base_edid)
@@ -1515,28 +1534,41 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
         })
     });
 
-    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::resource& streamcompatibility_sender, const web::json::value& active_constraints)
+    return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::resource& streamcompatibility_sender, const web::json::value& active_constraints, web::json::value& intersection)
     {
-        const auto sender_id = streamcompatibility_sender.id;
+        const auto& sender_id = streamcompatibility_sender.id;
         const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
         const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
 
-        const auto& sender_capabilities = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found");
-
+        const auto& sender_capabilities_ = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found");
+        const auto& sender_capabilities = sender_capabilities_.as_array();
         const auto& constraint_sets = nmos::fields::constraint_sets(active_constraints).as_array();
+
+        std::vector<web::json::value> v(constraint_sets.size() * sender_capabilities.size());
+        auto iter = v.begin();
+
         for (const auto& constraint_set : constraint_sets)
         {
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
-            for (const auto& sender_caps_constraint_set : sender_capabilities.as_array())
+            for (const auto& sender_caps_constraint_set : sender_capabilities)
             {
-                if (!nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set, true).is_null())
+                const auto intersection = nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set, true);
+                if (!intersection.is_null())
                 {
-                    return;
+                    *iter++ = std::move(intersection);
                 }
             }
         }
+
+        v.resize(iter - v.begin());
+        if (!v.empty())
+        {
+            intersection = value_from_elements(v);
+            return;
+        }
+
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
-        throw std::logic_error("sender capabilities are " + utility::us2s(sender_capabilities.serialize()));
+        throw std::logic_error("sender capabilities are " + utility::us2s(sender_capabilities_.serialize()));
     };
 }
 

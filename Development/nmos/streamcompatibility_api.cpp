@@ -120,7 +120,7 @@ namespace nmos
             }
 
             // it's expected that write lock is already catched for the model and IS-11 sender exists
-            void set_active_constraints(nmos::node_model& model, const nmos::id& sender_id, const web::json::value& constraints, const streamcompatibility_effective_edid_setter& effective_edid_setter)
+            void set_active_constraints(nmos::node_model& model, const nmos::id& sender_id, const web::json::value& constraints, const web::json::value& intersection, const streamcompatibility_effective_edid_setter& effective_edid_setter)
             {
                 const std::pair<nmos::id, nmos::type> sender_id_type{ sender_id, nmos::types::sender };
                 auto resource = find_resource(model.streamcompatibility_resources, sender_id_type);
@@ -154,8 +154,9 @@ namespace nmos
                 utility::string_t updated_timestamp;
 
                 // Update Active Constraints in streamcompatibility_resources
-                modify_resource(model.streamcompatibility_resources, sender_id, [&constraints, &updated_timestamp](nmos::resource& sender)
+                modify_resource(model.streamcompatibility_resources, sender_id, [&constraints, &intersection, &updated_timestamp](nmos::resource& sender)
                 {
+                    sender.data[nmos::fields::intersection_of_caps_and_constraints] = intersection;
                     sender.data[nmos::fields::endpoint_active_constraints] = make_streamcompatibility_active_constraints_endpoint(constraints);
 
                     updated_timestamp = nmos::make_version();
@@ -801,6 +802,7 @@ namespace nmos
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type;
 
                                 bool can_adhere = true;
+                                web::json::value intersection = web::json::value::array();
 
                                 if (!web::json::empty(nmos::fields::constraint_sets(data).as_array()))
                                 {
@@ -808,7 +810,7 @@ namespace nmos
                                     {
                                         try
                                         {
-                                            active_constraints_handler(*streamcompatibility_sender, data);
+                                            active_constraints_handler(*streamcompatibility_sender, data, intersection);
                                         }
                                         catch(const std::logic_error& e)
                                         {
@@ -822,7 +824,7 @@ namespace nmos
 
                                 if (can_adhere)
                                 {
-                                    details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(data), effective_edid_setter);
+                                    details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(data), intersection, effective_edid_setter);
                                     set_reply(res, status_codes::OK, data);
                                 }
                             }
@@ -859,18 +861,19 @@ namespace nmos
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sender };
-                auto resource = find_resource(resources, id_type);
-                if (resources.end() != resource)
+                const auto streamcompatibility_sender = find_resource(resources, id_type);
+
+                if (resources.end() != streamcompatibility_sender)
                 {
-                    auto& endpoint_active_constraints = nmos::fields::endpoint_active_constraints(resource->data);
+                    const auto& endpoint_active_constraints = nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data);
 
                     if (!nmos::fields::temporarily_locked(endpoint_active_constraints))
                     {
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active Constraints deletion is requested for " << id_type;
 
-                        auto data = web::json::value::array();
-                        details::set_active_constraints(model, resourceId, data, effective_edid_setter);
-                        set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(resource->data)));
+                        const auto empty_array = web::json::value::array();
+                        details::set_active_constraints(model, resourceId, empty_array, empty_array, effective_edid_setter);
+                        set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data)));
                     }
                     else
                     {
