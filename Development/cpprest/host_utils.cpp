@@ -5,6 +5,7 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/algorithm.hpp>
 #include "cpprest/asyncrt_utils.h" // for utility::conversions
 
 #if defined(_WIN32)
@@ -327,6 +328,16 @@ namespace web
                     addresses.push_back(utility::conversions::to_string_t(re.endpoint().address().to_string()));
                 }
                 return addresses; // empty if host_name cannot be resolved
+            }
+
+            // get the associated network interface name from an IP address
+            utility::string_t get_interface_name(const utility::string_t& address, const std::vector<web::hosts::experimental::host_interface>& host_interfaces)
+            {
+                const auto interface = boost::range::find_if(host_interfaces, [&](const web::hosts::experimental::host_interface& interface)
+                {
+                    return interface.addresses.end() != boost::range::find(interface.addresses, address);
+                });
+                return host_interfaces.end() != interface ? interface->name : utility::string_t {};
             }
         }
     }

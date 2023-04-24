@@ -6,7 +6,6 @@
 #include "boost/asio.hpp"
 #endif
 #include "boost/asio/ssl/set_cipher_list.hpp"
-#include "boost/range/algorithm.hpp"
 #include "cpprest/host_utils.h"
 #endif
 #include "cpprest/basic_utils.h"
@@ -61,15 +60,6 @@ namespace nmos
             };
         }
 #endif
-        // get the associated network interface name from an IP address
-        inline utility::string_t get_interface_name(const utility::string_t& address, const std::vector<web::hosts::experimental::host_interface>& host_interfaces = web::hosts::experimental::host_interfaces())
-        {
-            const auto interface = boost::range::find_if(interfaces, [&](const web::hosts::experimental::host_interface& interface)
-            {
-                return interface.addresses.end() != boost::range::find(interface.addresses, address);
-            });
-            return interfaces.end() != interface ? interface->name : utility::string_t{};
-        }
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         // bind socket to a specific network interface, only supporting Linux
@@ -105,7 +95,7 @@ namespace nmos
         inline std::function<void(web::http::client::native_handle)> make_client_nativehandle_options(const utility::string_t& client_address, bool secure, slog::base_gate& gate)
         {
             // get the associated network interface name from IP address
-            const auto interface_name = get_interface_name(client_address);
+            const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
             if (!client_address.empty() && interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the HTTP client connection";
@@ -133,7 +123,7 @@ namespace nmos
         inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(const utility::string_t& client_address, bool secure, slog::base_gate& gate)
         {
             // get the associated network interface name from IP address
-            const auto interface_name = get_interface_name(client_address);
+            const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
             if (!client_address.empty() && interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the websocket client connection";
