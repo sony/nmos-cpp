@@ -17,7 +17,7 @@ include(${CMAKE_CURRENT_BINARY_DIR}/conan.cmake)
 # it would be nice to output a message if its a more recent version than tested, like:
 # "Found Conan version 99.99 that is higher than the current tested version: " ${CONAN_VERSION_CUR})
 set(CONAN_VERSION_MIN "1.47.0")
-set(CONAN_VERSION_CUR "1.53.0")
+set(CONAN_VERSION_CUR "1.59.0")
 conan_check(VERSION ${CONAN_VERSION_MIN} REQUIRED)
 
 set(NMOS_CPP_CONAN_BUILD_LIBS "missing" CACHE STRING "Semicolon separated list of libraries to build rather than download")
