@@ -63,7 +63,7 @@ namespace nmos
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         // bind socket to a specific network interface, only supporting Linux
-#if defined(linux) || defined(__linux) || defined(__linux__)
+#if defined(__linux__)
         inline bool bind_to_device(const utility::string_t& interface_name, bool secure, void* native_handle)
         {
             int socket_fd;
@@ -105,7 +105,7 @@ namespace nmos
             {
                 if (!interface_name.empty())
                 {
-#if defined(linux) || defined(__linux) || defined(__linux__)
+#if defined(__linux__)
                     if (!bind_to_device(interface_name, secure, native_handle))
                     {
                         char error[1024];
@@ -133,7 +133,7 @@ namespace nmos
             {
                 if (!interface_name.empty())
                 {
-#if defined(linux) || defined(__linux) || defined(__linux__)
+#if defined(__linux__)
                     if (!bind_to_device(interface_name, secure, native_handle))
                     {
                         char error[1024];
