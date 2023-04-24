@@ -183,7 +183,7 @@ namespace nmos
         if (secure) config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
         if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_ca_certificates, gate));
-#ifdef CPPRESTSDK_BIND_WEBSOCKET_CLIENT
+#ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
         config.set_nativehandle_options(details::make_ws_client_nativehandle_options(nmos::experimental::fields::client_address(settings), secure, gate));
 #endif
 #endif
