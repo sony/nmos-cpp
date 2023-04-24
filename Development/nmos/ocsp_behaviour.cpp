@@ -346,7 +346,7 @@ namespace nmos
                 if (!state.client)
                 {
                     const auto ocsp_uri = ocsp_uris.front();
-                    state.client.reset(new web::http::client::http_client(ocsp_uri, make_ocsp_client_config(model.settings, state.load_ca_certificates, get_secure(ocsp_uri), gate)));
+                    state.client.reset(new web::http::client::http_client(ocsp_uri, make_ocsp_client_config(model.settings, state.load_ca_certificates, is_secure(ocsp_uri), gate)));
                 }
 
                 auto token = cancellation_source.get_token();

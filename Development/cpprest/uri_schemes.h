@@ -25,7 +25,7 @@ namespace web
     inline utility::string_t ws_scheme(bool secure) { return secure ? uri_schemes::wss : uri_schemes::ws; }
 
     // Check if the URI is secure
-    inline bool get_secure(const web::uri& uri)
+    inline bool is_secure(const web::uri& uri)
     {
         return uri_schemes::https == uri.scheme() || uri_schemes::wss == uri.scheme();
     }
