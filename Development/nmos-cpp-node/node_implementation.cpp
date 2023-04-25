@@ -1540,7 +1540,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
         if (web::json::empty(constraint_sets))
         {
             intersection = web::json::value::array();
-            return;
+            return true;
         }
 
         const auto& sender_id = streamcompatibility_sender.id;
@@ -1567,12 +1567,14 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
         }
 
         v.resize(iter - v.begin());
-        if (!v.empty())
+        if (v.empty())
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
+            return false;
         }
 
         intersection = value_from_elements(v);
+        return true;
     };
 }
 

@@ -806,9 +806,7 @@ namespace nmos
 
                                 if (active_constraints_handler)
                                 {
-                                    active_constraints_handler(*streamcompatibility_sender, data, intersection);
-
-                                    if (web::json::empty(intersection))
+                                    if (!active_constraints_handler(*streamcompatibility_sender, data, intersection))
                                     {
                                         can_adhere = false;
 
@@ -866,11 +864,13 @@ namespace nmos
                     {
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active Constraints deletion is requested for " << id_type;
 
-                        const auto empty_array = web::json::value::array();
+                        const auto active_constraints = web::json::value_of({
+                            { nmos::fields::constraint_sets, web::json::value::array() }
+                        });
                         web::json::value intersection = web::json::value::array();
 
-                        active_constraints_handler(*streamcompatibility_sender, empty_array, intersection);
-                        details::set_active_constraints(model, resourceId, empty_array, empty_array, effective_edid_setter);
+                        active_constraints_handler(*streamcompatibility_sender, active_constraints, intersection);
+                        details::set_active_constraints(model, resourceId, nmos::fields::constraint_sets(active_constraints), intersection, effective_edid_setter);
 
                         set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data)));
                     }
