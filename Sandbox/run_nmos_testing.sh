@@ -123,6 +123,7 @@ else
   (( expected_disabled_IS_07_02+=21 ))
   (( expected_disabled_IS_08_01+=7 ))
   (( expected_disabled_IS_08_02+=14 ))
+  (( expected_disabled_IS_11_01+=21 ))
   # test_33, test_33_1
   (( expected_disabled_IS_04_02+=16 ))
   (( expected_disabled_IS_09_01+=7 ))
