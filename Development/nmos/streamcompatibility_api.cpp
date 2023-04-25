@@ -177,9 +177,9 @@ namespace nmos
             }
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -209,7 +209,7 @@ namespace nmos
             return streamcompatibility_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -804,21 +804,16 @@ namespace nmos
                                 bool can_adhere = true;
                                 web::json::value intersection = web::json::value::array();
 
-                                if (!web::json::empty(nmos::fields::constraint_sets(data).as_array()))
+                                if (active_constraints_handler)
                                 {
-                                    if (active_constraints_handler)
-                                    {
-                                        try
-                                        {
-                                            active_constraints_handler(*streamcompatibility_sender, data, intersection);
-                                        }
-                                        catch(const std::logic_error& e)
-                                        {
-                                            can_adhere = false;
+                                    active_constraints_handler(*streamcompatibility_sender, data, intersection);
 
-                                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this sender can't adhere to these Constraints";
-                                            set_error_reply(res, status_codes::UnprocessableEntity, e);
-                                        }
+                                    if (web::json::empty(intersection))
+                                    {
+                                        can_adhere = false;
+
+                                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Active Constraints update is requested for " << id_type << " but this sender can't adhere to these Constraints";
+                                        set_error_reply(res, status_codes::UnprocessableEntity);
                                     }
                                 }
 
@@ -852,7 +847,7 @@ namespace nmos
                 });
             });
 
-            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::DEL, [&model, effective_edid_setter, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            streamcompatibility_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/active/?"), methods::DEL, [&model, effective_edid_setter, active_constraints_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.write_lock();
@@ -872,7 +867,11 @@ namespace nmos
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Active Constraints deletion is requested for " << id_type;
 
                         const auto empty_array = web::json::value::array();
+                        web::json::value intersection = web::json::value::array();
+
+                        active_constraints_handler(*streamcompatibility_sender, empty_array, intersection);
                         details::set_active_constraints(model, resourceId, empty_array, empty_array, effective_edid_setter);
+
                         set_reply(res, status_codes::OK, nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data)));
                     }
                     else

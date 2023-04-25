@@ -1488,7 +1488,7 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
 }
 
 // Example Stream Compatibility Management API callback to update Active Constraints of a Sender
-nmos::experimental::details::streamcompatibility_active_constraints_put_handler make_node_implementation_streamcompatibility_active_constraints_handler(const nmos::node_model& model, slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_active_constraints_handler make_node_implementation_streamcompatibility_active_constraints_handler(const nmos::node_model& model, slog::base_gate& gate)
 {
     using web::json::value_of;
 
@@ -1535,13 +1535,20 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
 
     return [&gate, video_sender_capabilities, audio_sender_capabilities, video_sender_ids, audio_sender_ids](const nmos::resource& streamcompatibility_sender, const web::json::value& active_constraints, web::json::value& intersection)
     {
+        const auto& constraint_sets = nmos::fields::constraint_sets(active_constraints).as_array();
+
+        if (web::json::empty(constraint_sets))
+        {
+            intersection = web::json::value::array();
+            return;
+        }
+
         const auto& sender_id = streamcompatibility_sender.id;
         const bool video_found = video_sender_ids.end() != boost::range::find(video_sender_ids, sender_id);
         const bool audio_found = audio_sender_ids.end() != boost::range::find(audio_sender_ids, sender_id);
 
         const auto& sender_capabilities_ = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found");
         const auto& sender_capabilities = sender_capabilities_.as_array();
-        const auto& constraint_sets = nmos::fields::constraint_sets(active_constraints).as_array();
 
         std::vector<web::json::value> v(constraint_sets.size() * sender_capabilities.size());
         auto iter = v.begin();
@@ -1562,12 +1569,10 @@ nmos::experimental::details::streamcompatibility_active_constraints_put_handler 
         v.resize(iter - v.begin());
         if (!v.empty())
         {
-            intersection = value_from_elements(v);
-            return;
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
         }
 
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
-        throw std::logic_error("sender capabilities are " + utility::us2s(sender_capabilities_.serialize()));
+        intersection = value_from_elements(v);
     };
 }
 

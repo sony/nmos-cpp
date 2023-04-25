@@ -24,12 +24,11 @@ namespace nmos
             // when DELETE, this callback should not throw exceptions, as the Base EDID will already have been changed and those changes will not be rolled back
             typedef std::function<void(const nmos::id& input_id, const bst::optional<utility::string_t>& base_edid, web::json::value& base_edid_properties)> streamcompatibility_base_edid_handler;
 
-            // a streamcompatibility_active_constraints_put_handler is a notification that the Active Constraints for the specified IS-11 sender has changed
+            // a streamcompatibility_active_constraints_handler is a notification that the Active Constraints for the specified IS-11 sender has changed (PUT or DELETEd)
             // it can be used to perform any final validation of the specified Active Constraints
             // it may throw web::json::json_exception, which will be mapped to a 400 Bad Request status code with NMOS error "debug" information including the exception message
-            // or std::logic_error, which will be mapped to a 422 Unprocessible Entity status code with NMOS error "debug" information including the exception message
             // or std::runtime_error, which will be mapped to a 500 Internal Error status code with NMOS error "debug" information including the exception message
-            typedef std::function<void(const nmos::resource& streamcompatibility_sender, const web::json::value& constraint_sets, web::json::value& intersection)> streamcompatibility_active_constraints_put_handler;
+            typedef std::function<void(const nmos::resource& streamcompatibility_sender, const web::json::value& constraint_sets, web::json::value& intersection)> streamcompatibility_active_constraints_handler;
 
             // a streamcompatibility_effective_edid_setter updates the specified Effective EDID for the specified IS-11 input
             // effective EDID of the input is updated when either Active Constraints of a Sender associated with this input are updated
@@ -38,7 +37,7 @@ namespace nmos
             typedef std::function<void(const nmos::id& input_id, boost::variant<utility::string_t, web::uri>& effective_edid, bst::optional<web::json::value>& effective_edid_properties)> streamcompatibility_effective_edid_setter;
         }
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_put_handler active_constraints_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate);
     }
 }
 
