@@ -88,7 +88,8 @@ namespace nmos
                 socket_fd = socket->lowest_layer().native_handle();
             }
             // SO_BINDTODEVICE not defined in windows & mac
-            return (setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, utility::us2s(interface_name).c_str(), interface_name.length()) == 0);
+            const auto interface_name_ = utility::us2s(interface_name);
+            return setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, interface_name_.data(), interface_name_.length()) == 0;
         }
 #endif
 
