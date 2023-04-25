@@ -99,22 +99,22 @@ namespace nmos
             if (!client_address.empty() && interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the HTTP client connection";
+
+                // no-op
+                return [](web::http::client::native_handle) {};
             }
 
             return [interface_name, secure, &gate](web::http::client::native_handle native_handle)
             {
-                if (!interface_name.empty())
-                {
 #if defined(__linux__)
-                    if (!bind_to_device(interface_name, secure, native_handle))
-                    {
-                        char error[1024];
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind HTTP client connection to " << interface_name << ", bind_to_device reported error : " << strerror_r(errno, error, sizeof(error));
-                    }
-#else
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bind HTTP client connection to " << interface_name << " not supported";
-#endif
+                if (!bind_to_device(interface_name, secure, native_handle))
+                {
+                    char error[1024];
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind HTTP client connection to " << interface_name << ", bind_to_device reported error : " << strerror_r(errno, error, sizeof(error));
                 }
+#else
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bind HTTP client connection to " << interface_name << " not supported";
+#endif
             };
         }
 
@@ -127,22 +127,22 @@ namespace nmos
             if (!client_address.empty() && interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the websocket client connection";
+
+                // no-op
+                return [](web::websockets::client::native_handle) {};
             }
 
             return [interface_name, secure, &gate](web::websockets::client::native_handle native_handle)
             {
-                if (!interface_name.empty())
-                {
 #if defined(__linux__)
-                    if (!bind_to_device(interface_name, secure, native_handle))
-                    {
-                        char error[1024];
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind websocket client connection to " << interface_name << ", bind_to_device reported error : " << strerror_r(errno, error, sizeof(error));
-                    }
-#else
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bind websocket client connection to " << interface_name << " not supported";
-#endif
+                if (!bind_to_device(interface_name, secure, native_handle))
+                {
+                    char error[1024];
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind websocket client connection to " << interface_name << ", bind_to_device reported error : " << strerror_r(errno, error, sizeof(error));
                 }
+#else
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bind websocket client connection to " << interface_name << " not supported";
+#endif
             };
         }
 #endif
