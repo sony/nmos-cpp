@@ -15,9 +15,10 @@
     set -x
     root_dir=`pwd`
 
-    # Install AMWA NMOS Testing Tool
-    git clone https://github.com/AMWA-TV/nmos-testing.git
+    # Install AMWA NMOS Testing Tool (gwgeorgea instead of AMWA-TV until IS-11 tests are merged)
+    git clone https://github.com/gwgeorgea/nmos-testing.git
     cd nmos-testing
+    git checkout is-11-initial-tests-general-senders-outputs-receivers_
 
     # Configure the Testing Tool so all APIs are tested with TLS
     printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
@@ -146,7 +147,7 @@
       # nmos-cpp-node doesn't currently support advertising hostnames to Avahi
       avahi-publish -a -R nmos-api.local ${{ env.HOST_IP_ADDRESS }} &
     fi
-    
+
     ${{ env.GITHUB_WORKSPACE_BASH }}/Sandbox/run_nmos_testing.sh "$run_python" ${domain} ${root_dir}/build/nmos-cpp-node ${root_dir}/build/nmos-cpp-registry results badges $GITHUB_STEP_SUMMARY ${{ env.HOST_IP_ADDRESS }} "${{ env.GITHUB_COMMIT }}-${{ env.BUILD_NAME }}-"
 
     if [[ "${{ runner.os }}" == "Linux" ]]; then
