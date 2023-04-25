@@ -35,7 +35,7 @@ namespace nmos
 
             const auto hsts = nmos::experimental::get_hsts(node_model.settings);
 
-            const auto server_address = nmos::experimental::get_server_address(node_model.settings);
+            const auto server_address = nmos::experimental::fields::server_address(node_model.settings);
 
             // Configure the Settings API
 

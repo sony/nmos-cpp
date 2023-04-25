@@ -45,7 +45,7 @@ namespace nmos
 
             const auto hsts = nmos::experimental::get_hsts(registry_model.settings);
 
-            const auto server_address = nmos::experimental::get_server_address(registry_model.settings);
+            const auto server_address = nmos::experimental::fields::server_address(registry_model.settings);
 
             // Configure the DNS-SD Browsing API
 
