@@ -1,7 +1,7 @@
 #include "nmos/constraints.h"
 
 #include <algorithm>
-#include <map>
+#include <set>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -15,46 +15,30 @@ namespace nmos
 {
     namespace experimental
     {
-        bool constraint_comp(const web::json::value& lhs, const web::json::value& rhs)
+        namespace detail
         {
-            if (nmos::is_rational(lhs) && nmos::is_rational(rhs))
+            bool constraint_value_less(const web::json::value& lhs, const web::json::value& rhs)
             {
-                if (nmos::parse_rational(lhs) < nmos::parse_rational(rhs))
+                if (nmos::is_rational(lhs) && nmos::is_rational(rhs))
                 {
-                    return true;
+                    if (nmos::parse_rational(lhs) < nmos::parse_rational(rhs))
+                    {
+                        return true;
+                    }
+                    return false;
                 }
+                return lhs < rhs;
             }
-            else if (lhs.is_integer() && rhs.is_integer())
-            {
-                if (lhs.as_number().to_int64() < rhs.as_number().to_int64())
-                {
-                    return true;
-                }
-            }
-            else if (lhs.is_double() && rhs.is_double())
-            {
-                if (lhs.as_double() < rhs.as_double())
-                {
-                    return true;
-                }
-            }
-            else if (lhs.is_string() && rhs.is_string())
-            {
-                if (lhs.as_string() < rhs.as_string())
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
-        web::json::value get_intersection(const web::json::array& lhs, const web::json::array& rhs)
+        web::json::value get_intersection(const web::json::array& lhs_, const web::json::array& rhs_)
         {
+            std::set<web::json::value, decltype(&detail::constraint_value_less)> lhs(lhs_.begin(), lhs_.end(), &detail::constraint_value_less);
+            std::set<web::json::value, decltype(&detail::constraint_value_less)> rhs(rhs_.begin(), rhs_.end(), &detail::constraint_value_less);
+
             std::vector<web::json::value> v(std::min(lhs.size(), rhs.size()));
 
-            // "Arrays are used for ordered elements."
-            // https://json-schema.org/understanding-json-schema/reference/array.html
-            const auto it = std::set_intersection(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), v.begin(), constraint_comp);
+            const auto it = std::set_intersection(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), v.begin(), detail::constraint_value_less);
             v.resize(it - v.begin());
 
             return web::json::value_from_elements(v);
@@ -89,7 +73,7 @@ namespace nmos
             // "minimum"
             if (lhs.has_field(nmos::fields::constraint_minimum) && rhs.has_field(nmos::fields::constraint_minimum))
             {
-                result[nmos::fields::constraint_minimum] = std::max(nmos::fields::constraint_minimum(lhs), nmos::fields::constraint_minimum(rhs), constraint_comp);
+                result[nmos::fields::constraint_minimum] = std::max(nmos::fields::constraint_minimum(lhs), nmos::fields::constraint_minimum(rhs), detail::constraint_value_less);
             }
             else if (lhs.has_field(nmos::fields::constraint_minimum))
             {
@@ -103,7 +87,7 @@ namespace nmos
             // "maximum"
             if (lhs.has_field(nmos::fields::constraint_maximum) && rhs.has_field(nmos::fields::constraint_maximum))
             {
-                result[nmos::fields::constraint_maximum] = std::min(nmos::fields::constraint_maximum(lhs), nmos::fields::constraint_maximum(rhs), constraint_comp);
+                result[nmos::fields::constraint_maximum] = std::min(nmos::fields::constraint_maximum(lhs), nmos::fields::constraint_maximum(rhs), detail::constraint_value_less);
             }
             else if (lhs.has_field(nmos::fields::constraint_maximum))
             {
@@ -117,7 +101,7 @@ namespace nmos
             // "min" > "max"
             if (result.has_field(nmos::fields::constraint_minimum) && result.has_field(nmos::fields::constraint_maximum))
             {
-                if (!constraint_comp(nmos::fields::constraint_minimum(result), nmos::fields::constraint_maximum(result)))
+                if (detail::constraint_value_less(nmos::fields::constraint_maximum(result), nmos::fields::constraint_minimum(result)))
                 {
                     return web::json::value::null();
                 }
@@ -136,13 +120,10 @@ namespace nmos
                 }
             }
 
-            // no "min"/"max" and "enum" is empty
-            if (result.has_field(nmos::fields::constraint_enum) && (!result.has_field(nmos::fields::constraint_minimum) && !result.has_field(nmos::fields::constraint_maximum)))
+            // "enum" is empty
+            if (result.has_field(nmos::fields::constraint_enum) && web::json::empty(nmos::fields::constraint_enum(result)))
             {
-                if (0 == nmos::fields::constraint_enum(result).as_array().size())
-                {
-                    return web::json::value::null();
-                }
+                return web::json::value::null();
             }
 
             return result;
@@ -224,12 +205,9 @@ namespace nmos
                 const auto& constraint_min = nmos::fields::constraint_minimum(constraint);
                 const auto& subconstraint_min = nmos::fields::constraint_minimum(subconstraint);
 
-                if (constraint_min != subconstraint_min)
+                if (detail::constraint_value_less(subconstraint_min, constraint_min))
                 {
-                    if (!constraint_comp(constraint_min, subconstraint_min))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
             if (constraint.has_field(nmos::fields::constraint_maximum) && subconstraint.has_field(nmos::fields::constraint_maximum))
@@ -237,7 +215,7 @@ namespace nmos
                 const auto& constraint_max = nmos::fields::constraint_maximum(constraint);
                 const auto& subconstraint_max = nmos::fields::constraint_maximum(subconstraint);
 
-                if (constraint_comp(constraint_max, subconstraint_max))
+                if (detail::constraint_value_less(constraint_max, subconstraint_max))
                 {
                     return false;
                 }
@@ -256,21 +234,12 @@ namespace nmos
 
         // Constraint Set B is a subset of Constraint Set A if all Parameter Constraints of Constraint Set A are present in Constraint Set B, and for each Parameter Constraint
         // that is present in both, the Parameter Constraint of Constraint Set B is a subconstraint of the Parameter Constraint of Constraint Set A.
-        bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset, bool merge_left_to_right)
+        bool is_constraint_subset(const web::json::value& constraint_set, const web::json::value& constraint_subset)
         {
             using web::json::value;
 
             const auto& param_constraints_set = constraint_set.as_object();
-            auto param_constraints_subset = constraint_subset.as_object();
-
-            if (merge_left_to_right)
-            {
-                param_constraints_subset = param_constraints_set;
-                std::for_each(constraint_subset.as_object().begin(), constraint_subset.as_object().end(), [&param_constraints_subset](const std::pair<utility::string_t, value>& subconstraint)
-                {
-                    param_constraints_subset[subconstraint.first] = subconstraint.second;
-                });
-            }
+            const auto& param_constraints_subset = constraint_subset.as_object();
 
             return param_constraints_set.end() == std::find_if_not(param_constraints_set.begin(), param_constraints_set.end(), [&param_constraints_subset](const std::pair<utility::string_t, value>& constraint)
             {

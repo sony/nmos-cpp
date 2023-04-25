@@ -8,6 +8,28 @@
 #include "bst/test/test.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testJsonComparator)
+{
+    {
+        using nmos::experimental::detail::constraint_value_less;
+
+        const auto a = nmos::make_caps_rational_constraint({}, nmos::rates::rate25, nmos::rates::rate30);
+        const auto b = nmos::make_caps_rational_constraint({}, nmos::rates::rate25, nmos::rates::rate29_97);
+
+        BST_REQUIRE(constraint_value_less(nmos::fields::constraint_minimum(a), nmos::fields::constraint_maximum(a)));
+        BST_REQUIRE(constraint_value_less(nmos::fields::constraint_minimum(a), nmos::fields::constraint_maximum(b)));
+        BST_REQUIRE(constraint_value_less(nmos::fields::constraint_minimum(b), nmos::fields::constraint_maximum(a)));
+        BST_REQUIRE(constraint_value_less(nmos::fields::constraint_minimum(b), nmos::fields::constraint_maximum(b)));
+
+        BST_REQUIRE(!constraint_value_less(nmos::fields::constraint_minimum(a), nmos::fields::constraint_minimum(b)));
+        BST_REQUIRE(!constraint_value_less(nmos::fields::constraint_maximum(a), nmos::fields::constraint_maximum(b)));
+
+        BST_REQUIRE(!constraint_value_less(nmos::fields::constraint_minimum(b), nmos::fields::constraint_minimum(a)));
+        BST_REQUIRE(constraint_value_less(nmos::fields::constraint_maximum(b), nmos::fields::constraint_maximum(a)));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSimpleCase)
 {
     {
@@ -231,7 +253,7 @@ BST_TEST_CASE(testConstraintSetIntersection)
             { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
             { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
             { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
-            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_psf.name, nmos::interlace_modes::interlaced_tff.name }) },
             { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
             { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
             { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) },
@@ -276,7 +298,7 @@ BST_TEST_CASE(testConstraintSetIntersectionMerge)
             { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
             { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
             { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
-            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_psf.name, nmos::interlace_modes::interlaced_tff.name }) },
             { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
             { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
             { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) },
