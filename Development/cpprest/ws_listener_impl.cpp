@@ -313,6 +313,7 @@ namespace web
                                 if (!init)
                                 {
                                     server.init_asio();
+                                    server.set_reuse_addr(true);
                                     init = true;
                                 }
                                 else
