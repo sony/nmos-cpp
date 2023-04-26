@@ -577,6 +577,8 @@ jobs:
         apt-get install -y software-properties-common
         apt-get --allow-unauthenticated update -q
         apt-get --allow-unauthenticated install -y curl g++ git make patch zlib1g-dev libssl-dev bsdmainutils dnsutils unzip
+        # ubuntu-14.04 ca-certificates are out of date
+        git config --global http.sslVerify false
         curl -sS https://www.python.org/ftp/python/3.6.9/Python-3.6.9.tar.xz | tar -xJ
         cd Python-3.6.9
         ./configure

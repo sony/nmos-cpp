@@ -109,16 +109,25 @@
     //"mdns_port": 3208,
     //"schemas_port": 3208,
 
-    // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+    // addresses [registry, node]: IP addresses on which to listen for each API, or empty string for the wildcard address
+
+    // server_address [registry, node]: if specified, this becomes the default address on which to listen for each API instead of the wildcard address
+    //"server_address": "",
+
+    // addresses [registry, node]: IP addresses on which to listen for specific APIs
 
     //"settings_address": "127.0.0.1",
     //"logging_address": "",
 
-    // addresses [registry]: addresses on which to listen for each API, or empty string for the wildcard address
+    // addresses [registry]: IP addresses on which to listen for specific APIs
 
     //"admin_address": "",
     //"mdns_address": "",
     //"schemas_address": "",
+
+    // client_address [registry, node]: IP address of the network interface to bind client connections
+    // for now, only supporting HTTP/HTTPS client connections on Linux
+    //"client_address": "",
 
     // query_ws_paging_default/query_ws_paging_limit [registry]: default/maximum number of events per message when using the Query WebSocket API (a client may request a lower limit)
     //"query_ws_paging_default": 10,
