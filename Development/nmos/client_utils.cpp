@@ -2,8 +2,8 @@
 
 // cf. preprocessor conditions in nmos::details::make_client_ssl_context_callback and nmos::details::make_client_nativehandle_options
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-#if !defined(_WIN32)
-#include "boost/asio.hpp"
+#if defined(__linux__)
+#include <boost/asio/ip/tcp.hpp>
 #endif
 #include "boost/asio/ssl/set_cipher_list.hpp"
 #include "cpprest/host_utils.h"
@@ -62,11 +62,13 @@ namespace nmos
 #endif
 
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        // bind socket to a specific network interface, only supporting Linux
-#if defined(__linux__)
-        inline bool bind_to_device(const utility::string_t& interface_name, bool secure, void* native_handle)
+        // bind socket to a specific network interface
+        // for now, only supporting Linux because SO_BINDTODEVICE is not defined on Windows and Mac
+        inline void bind_to_device(const utility::string_t& interface_name, bool secure, void* native_handle)
         {
+#if defined(__linux__)
             int socket_fd;
+            // hmm, frustrating that native_handle type has been erased so we need secure flag
             if (secure)
             {
                 auto socket = (boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>*)native_handle;
@@ -87,35 +89,38 @@ namespace nmos
                 }
                 socket_fd = socket->lowest_layer().native_handle();
             }
-            // SO_BINDTODEVICE not defined in windows & mac
             const auto interface_name_ = utility::us2s(interface_name);
-            return setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, interface_name_.data(), interface_name_.length()) == 0;
-        }
+            if (0 != setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, interface_name_.data(), interface_name_.length()))
+            {
+                char error[1024];
+                throw std::runtime_error(strerror_r(errno, error, sizeof(error)));
+            }
+#else
+            throw std::logic_error("unsupported");
 #endif
+        }
 
         inline std::function<void(web::http::client::native_handle)> make_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
         {
+            if (client_address.empty()) return {};
             // get the associated network interface name from IP address
             const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
-            if (!client_address.empty() && interface_name.empty())
+            if (interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the HTTP client connection";
-
-                // no-op
-                return [](web::http::client::native_handle) {};
+                return {};
             }
 
             return [interface_name, secure, &gate](web::http::client::native_handle native_handle)
             {
-#if defined(__linux__)
-                if (!bind_to_device(interface_name, secure, native_handle))
+                try
                 {
-                    char error[1024];
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind HTTP client connection to " << interface_name << ", bind_to_device reported error : " << strerror_r(errno, error, sizeof(error));
+                    bind_to_device(interface_name, secure, native_handle);
                 }
-#else
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bind HTTP client connection to " << interface_name << " not supported";
-#endif
+                catch (const std::exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind HTTP client connection to " << interface_name << ": " << e.what();
+                }
             };
         }
 
@@ -123,27 +128,25 @@ namespace nmos
         // The current version of the C++ REST SDK 2.10.18 does not provide the callback to enable the custom websocket setting
         inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
         {
+            if (client_address.empty()) return {};
             // get the associated network interface name from IP address
             const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
-            if (!client_address.empty() && interface_name.empty())
+            if (interface_name.empty())
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the websocket client connection";
-
-                // no-op
-                return [](web::websockets::client::native_handle) {};
+                return {};
             }
 
             return [interface_name, secure, &gate](web::websockets::client::native_handle native_handle)
             {
-#if defined(__linux__)
-                if (!bind_to_device(interface_name, secure, native_handle))
+                try
                 {
-                    char error[1024];
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind websocket client connection to " << interface_name << ", bind_to_device reported error : " << strerror_r(errno, error, sizeof(error));
+                    bind_to_device(interface_name, secure, native_handle);
                 }
-#else
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Bind websocket client connection to " << interface_name << " not supported";
-#endif
+                catch (const std::exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind websocket client connection to " << interface_name << ": " << e.what();
+                }
             };
         }
 #endif
