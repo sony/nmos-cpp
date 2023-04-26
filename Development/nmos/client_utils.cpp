@@ -93,7 +93,7 @@ namespace nmos
         }
 #endif
 
-        inline std::function<void(web::http::client::native_handle)> make_client_nativehandle_options(const utility::string_t& client_address, bool secure, slog::base_gate& gate)
+        inline std::function<void(web::http::client::native_handle)> make_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
         {
             // get the associated network interface name from IP address
             const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
@@ -121,7 +121,7 @@ namespace nmos
 
 #ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
         // The current version of the C++ REST SDK 2.10.18 does not provide the callback to enable the custom websocket setting
-        inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(const utility::string_t& client_address, bool secure, slog::base_gate& gate)
+        inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
         {
             // get the associated network interface name from IP address
             const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
@@ -151,9 +151,9 @@ namespace nmos
 #endif
     }
 
-    // construct client config based on settings and specified secure flag, e.g. using the specified proxy, and the OCSP client
+    // construct client config based on specified secure flag and settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
-    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, bool secure, slog::base_gate& gate)
+    web::http::client::http_client_config make_http_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
         web::http::client::http_client_config config;
         const auto proxy = proxy_uri(settings);
@@ -161,22 +161,22 @@ namespace nmos
         if (secure) config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) && !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings, load_ca_certificates, gate));
-        config.set_nativehandle_options(details::make_client_nativehandle_options(nmos::experimental::fields::client_address(settings), secure, gate));
+        config.set_nativehandle_options(details::make_client_nativehandle_options(secure, nmos::experimental::fields::client_address(settings), gate));
 #endif
 
         return config;
     }
 
-    // construct client config based on settings, e.g. using the specified proxy
+    // construct client config based on settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
-        return make_http_client_config(settings, load_ca_certificates, nmos::experimental::fields::client_secure(settings), gate);
+        return make_http_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
     }
 
-    // construct client config based on settings and specified secure flag, e.g. using the specified proxy
+    // construct client config based on specified secure flag and settings, e.g. using the specified proxy
     // with the remaining options defaulted
-    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, bool secure, slog::base_gate& gate)
+    web::websockets::client::websocket_client_config make_websocket_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
         web::websockets::client::websocket_client_config config;
         const auto proxy = proxy_uri(settings);
@@ -185,7 +185,7 @@ namespace nmos
 #if !defined(_WIN32) || !defined(__cplusplus_winrt)
         if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_ca_certificates, gate));
 #ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
-        config.set_nativehandle_options(details::make_ws_client_nativehandle_options(nmos::experimental::fields::client_address(settings), secure, gate));
+        config.set_nativehandle_options(details::make_ws_client_nativehandle_options(secure, nmos::experimental::fields::client_address(settings), gate));
 #endif
 #endif
 
@@ -196,7 +196,7 @@ namespace nmos
     // with the remaining options defaulted
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
-        return make_websocket_client_config(settings, load_ca_certificates, nmos::experimental::fields::client_secure(settings), gate);
+        return make_websocket_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
     }
 
     // make a request with logging

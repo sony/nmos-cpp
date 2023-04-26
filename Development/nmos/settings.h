@@ -52,9 +52,6 @@ namespace nmos
     {
         // Get HTTP Strict-Transport-Security settings
         bst::optional<web::http::experimental::hsts> get_hsts(const settings& settings);
-
-        // Get server IP address of the network interface for binding the server connections
-        utility::string_t get_server_address(const settings& settings);
     }
 
     // Get a summary of the build configuration, including versions of dependencies
@@ -243,12 +240,17 @@ namespace nmos
             const web::json::field_as_integer_or mdns_port{ U("mdns_port"), 3208 };
             const web::json::field_as_integer_or schemas_port{ U("schemas_port"), 3208 };
 
-            // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+            // addresses [registry, node]: IP addresses on which to listen for each API, or empty string for the wildcard address
+
+            // server_address [registry, node]: if specified, this becomes the default address on which to listen for each API instead of the wildcard address
+            const web::json::field_as_string_or server_address{ U("server_address"), U("") };
+
+            // addresses [registry, node]: IP addresses on which to listen for specific APIs
 
             const web::json::field_as_string_or settings_address{ U("settings_address"), U("") };
             const web::json::field_as_string_or logging_address{ U("logging_address"), U("") };
 
-            // addresses [registry]: addresses on which to listen for each API, or empty string for the wildcard address
+            // addresses [registry]: IP addresses on which to listen for specific APIs
 
             const web::json::field_as_string_or admin_address{ U("admin_address"), U("") };
             const web::json::field_as_string_or mdns_address{ U("mdns_address"), U("") };
@@ -257,9 +259,6 @@ namespace nmos
             // client_address [registry, node]: IP address of the network interface to bind client connections
             // for now, only supporting HTTP/HTTPS client connections on Linux
             const web::json::field_as_string_or client_address{ U("client_address"), U("") };
-
-            // server_address [registry, node]: IP address of the network interface to bind server connections
-            const web::json::field_as_string_or server_address{ U("server_address"), U("") };
 
             // query_ws_paging_default/query_ws_paging_limit [registry]: default/maximum number of events per message when using the Query WebSocket API (a client may request a lower limit)
             const web::json::field_as_integer_or query_ws_paging_default{ U("query_ws_paging_default"), 10 };

@@ -191,7 +191,12 @@
     //"settings_port": 3209,
     //"logging_port": 5106,
 
-    // addresses [registry, node]: addresses on which to listen for each API, or empty string for the wildcard address
+    // addresses [registry, node]: IP addresses on which to listen for each API, or empty string for the wildcard address
+
+    // server_address [registry, node]: if specified, this becomes the default address on which to listen for each API instead of the wildcard address
+    //"server_address": "",
+
+    // addresses [registry, node]: IP addresses on which to listen for specific APIs
 
     //"settings_address": "127.0.0.1",
     //"logging_address": "",
@@ -199,9 +204,6 @@
     // client_address [registry, node]: IP address of the network interface to bind client connections
     // for now, only supporting HTTP/HTTPS client connections on Linux
     //"client_address": "",
-
-    // server_address [registry, node]: IP address of the network interface to bind server connections
-    //"server_address": "",
 
     // logging_limit [registry, node]: maximum number of log events cached for the Logging API
     //"logging_limit": 1234,

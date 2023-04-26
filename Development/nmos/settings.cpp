@@ -1,7 +1,6 @@
 #include "nmos/settings.h"
 
 #include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>

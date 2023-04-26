@@ -1,7 +1,6 @@
 #ifndef CPPREST_URI_SCHEMES_H
 #define CPPREST_URI_SCHEMES_H
 
-#include "cpprest/base_uri.h"
 #include "cpprest/details/basic_types.h"
 
 namespace web
@@ -24,10 +23,9 @@ namespace web
     inline utility::string_t http_scheme(bool secure) { return secure ? uri_schemes::https : uri_schemes::http; }
     inline utility::string_t ws_scheme(bool secure) { return secure ? uri_schemes::wss : uri_schemes::ws; }
 
-    // Check if the URI is secure
-    inline bool is_secure(const web::uri& uri)
+    inline bool is_secure_uri_scheme(const utility::string_t& scheme)
     {
-        return uri_schemes::https == uri.scheme() || uri_schemes::wss == uri.scheme();
+        return uri_schemes::https == scheme || uri_schemes::wss == scheme;
     }
 }
 

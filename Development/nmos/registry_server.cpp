@@ -113,7 +113,7 @@ namespace nmos
 
             for (auto& api_router : registry_server.api_routers)
             {
-                // empty string and empty server IP address means the wildcard address
+                // if IP address isn't specified for this router, use default server address or wildcard address
                 const auto& host = !api_router.first.first.empty() ? api_router.first.first : !server_address.empty() ? server_address : web::http::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
@@ -127,7 +127,7 @@ namespace nmos
 
             for (auto& ws_handler : registry_server.ws_handlers)
             {
-                //empty string and empty server IP address means the wildcard address
+                // if IP address isn't specified for this router, use default server address or wildcard address
                 const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : !server_address.empty() ? server_address : web::websockets::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address

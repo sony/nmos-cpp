@@ -5,7 +5,8 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm/find.hpp>
+#include <boost/range/algorithm/find_if.hpp>
 #include "cpprest/asyncrt_utils.h" // for utility::conversions
 
 #if defined(_WIN32)
@@ -337,7 +338,7 @@ namespace web
                 {
                     return interface.addresses.end() != boost::range::find(interface.addresses, address);
                 });
-                return host_interfaces.end() != interface ? interface->name : utility::string_t {};
+                return host_interfaces.end() != interface ? interface->name : utility::string_t{};
             }
         }
     }

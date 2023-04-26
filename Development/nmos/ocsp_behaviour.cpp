@@ -142,9 +142,9 @@ namespace nmos
 
     namespace details
     {
-        web::http::client::http_client_config make_ocsp_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, bool secure, slog::base_gate& gate)
+        web::http::client::http_client_config make_ocsp_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
         {
-            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), secure, gate);
+            auto config = nmos::make_http_client_config(secure, settings, std::move(load_ca_certificates), gate);
             config.set_timeout(std::chrono::seconds(nmos::experimental::fields::ocsp_request_max(settings)));
             return config;
         }
@@ -346,7 +346,8 @@ namespace nmos
                 if (!state.client)
                 {
                     const auto ocsp_uri = ocsp_uris.front();
-                    state.client.reset(new web::http::client::http_client(ocsp_uri, make_ocsp_client_config(model.settings, state.load_ca_certificates, is_secure(ocsp_uri), gate)));
+                    const auto secure = web::is_secure_uri_scheme(ocsp_uri.scheme());
+                    state.client.reset(new web::http::client::http_client(ocsp_uri, make_ocsp_client_config(secure, model.settings, state.load_ca_certificates, gate)));
                 }
 
                 auto token = cancellation_source.get_token();
