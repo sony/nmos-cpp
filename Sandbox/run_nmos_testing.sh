@@ -124,8 +124,6 @@ else
   (( expected_disabled_IS_08_01+=7 ))
   (( expected_disabled_IS_08_02+=14 ))
   (( expected_disabled_IS_11_01+=21 ))
-  # auto_connection_21
-  (( expected_disabled_IS_11_01+=1 ))
   # test_33, test_33_1
   (( expected_disabled_IS_04_02+=16 ))
   (( expected_disabled_IS_09_01+=7 ))
@@ -197,7 +195,7 @@ do_run_test IS-08-02 $expected_disabled_IS_08_02 --host "${host}" "${host}" --po
 
 do_run_test IS-09-02 $expected_disabled_IS_09_02 --host "${host}" null --port 0 0 --version null v1.0
 
-do_run_test IS-11-01 $expected_disabled_IS_11_01 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.0 v1.3 v1.1 --ignore auto_connection_21
+do_run_test IS-11-01 $expected_disabled_IS_11_01 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.0 v1.3 v1.1
 
 # Run Registry tests (leave Node running)
 "${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params}}" > ${results_dir}/registryoutput 2>&1 &
