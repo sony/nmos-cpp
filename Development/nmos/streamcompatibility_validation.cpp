@@ -91,7 +91,7 @@ namespace nmos
 
         details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator(const details::resource_constraints_matcher& match_resource_constraint_set, const details::transport_file_constraint_sets_matcher& match_transport_file_constraint_sets)
         {
-            return [match_resource_constraint_set, match_transport_file_constraint_sets](const web::json::value& transport_file, const nmos::resource& sender, const nmos::resource& flow, const nmos::resource& source, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
+            return [match_resource_constraint_set, match_transport_file_constraint_sets](const nmos::resource& source, const nmos::resource& flow, const nmos::resource& sender, const nmos::resource& connection_sender, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
             {
                 nmos::sender_state sender_state;
 
@@ -103,6 +103,8 @@ namespace nmos
                     auto sender_found = std::find_if(constraint_sets.begin(), constraint_sets.end(), [&](const web::json::value& constraint_set) { return match_resource_constraint_set(sender, constraint_set); });
 
                     constrained = constraint_sets.end() != source_found && constraint_sets.end() != flow_found && constraint_sets.end() != sender_found;
+
+                    const auto& transport_file = nmos::fields::endpoint_transportfile(connection_sender.data);
 
                     if (!transport_file.is_null() && !transport_file.as_object().empty())
                     {

@@ -1588,17 +1588,17 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
 
     // this example uses a custom sender resources validator to handle video/jxsv in addition to the core media types
     // (if this callback is specified, an 'empty' std::function is not allowed)
-    return [validate_video_jxsv_sender_resources, validate_sender_resources](const web::json::value& transport_file, const nmos::resource& sender, const nmos::resource& flow, const nmos::resource& source, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
+    return [validate_video_jxsv_sender_resources, validate_sender_resources](const nmos::resource& source, const nmos::resource& flow, const nmos::resource& sender, const nmos::resource& connection_sender, const web::json::array& constraint_sets) -> std::pair<nmos::sender_state, utility::string_t>
     {
         if (nmos::media_types::video_jxsv.name == nmos::fields::media_type(flow.data))
         {
-            std::pair<nmos::sender_state, utility::string_t> res = validate_video_jxsv_sender_resources(transport_file, sender, flow, source, constraint_sets);
+            std::pair<nmos::sender_state, utility::string_t> res = validate_video_jxsv_sender_resources(source, flow, sender, connection_sender, constraint_sets);
             return res;
         }
         else
         {
             // validate core media types, i.e., "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
-            return validate_sender_resources(transport_file, sender, flow, source, constraint_sets);
+            return validate_sender_resources(source, flow, sender, connection_sender, constraint_sets);
         }
     };
 }

@@ -93,12 +93,11 @@ namespace nmos
                             if (sender_state != nmos::sender_states::no_essence && sender_state != nmos::sender_states::awaiting_essence)
                             {
                                 const auto& constraint_sets = nmos::fields::constraint_sets(nmos::fields::active_constraint_sets(nmos::fields::endpoint_active_constraints(streamcompatibility_sender->data))).as_array();
-                                auto& transport_file = nmos::fields::endpoint_transportfile(connection_sender->data);
 
                                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is being validated with its Flow, Source and transport file";
                                 if (validate_sender_resources)
                                 {
-                                    std::tie(sender_state, sender_state_debug) = validate_sender_resources(transport_file, *sender, *flow, *source, constraint_sets);
+                                    std::tie(sender_state, sender_state_debug) = validate_sender_resources(*source, *flow, *sender, *connection_sender, constraint_sets);
                                 }
                             }
 
