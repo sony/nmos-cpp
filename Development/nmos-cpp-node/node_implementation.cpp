@@ -190,6 +190,19 @@ namespace impl
     const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
     const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
     const auto catcall = nmos::event_types::named_enum(nmos::event_types::number, U("caterwaul"));
+
+    const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
+    {
+        if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
+        {
+            nmos::validate_video_jxsv_sdp_parameters(receiver, sdp_params);
+        }
+        else
+        {
+            // validate core media types, i.e., "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
+            nmos::validate_sdp_parameters(receiver, sdp_params);
+        }
+    };
 }
 
 // forward declarations for node_implementation_thread
@@ -1146,19 +1159,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
     // (if this callback is specified, an 'empty' std::function is not allowed)
     return [](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
     {
-        const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
-        {
-            if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
-            {
-                nmos::validate_video_jxsv_sdp_parameters(receiver, sdp_params);
-            }
-            else
-            {
-                // validate core media types, i.e., "video/raw", "audio/L", "video/smpte291" and "video/SMPTE2022-6"
-                nmos::validate_sdp_parameters(receiver, sdp_params);
-            }
-        };
-        return nmos::details::parse_rtp_transport_file(validate_sdp_parameters, receiver, connection_receiver, transport_file_type, transport_file_data, gate);
+        return nmos::details::parse_rtp_transport_file(impl::validate_sdp_parameters, receiver, connection_receiver, transport_file_type, transport_file_data, gate);
     };
 }
 
@@ -1603,9 +1604,17 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     };
 }
 
-nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator(slog::base_gate& gate)
+nmos::experimental::details::streamcompatibility_receiver_validator make_node_implementation_streamcompatibility_receiver_validator()
 {
-    return nmos::experimental::make_streamcompatibility_receiver_validator(make_node_implementation_transport_file_parser(), gate);
+    // this example uses a custom transport file validator to handle video/jxsv in addition to the core media types
+    const auto transport_file_validator = std::bind(
+        nmos::experimental::details::validate_rtp_transport_file,
+        impl::validate_sdp_parameters,
+        std::placeholders::_1,
+        std::placeholders::_2,
+        std::placeholders::_3
+    );
+    return nmos::experimental::make_streamcompatibility_receiver_validator(transport_file_validator);
 }
 
 namespace impl
@@ -1770,5 +1779,5 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_set_effective_edid(set_effective_edid) // may be omitted if not required
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
-        .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator(gate));
+        .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator());
 }

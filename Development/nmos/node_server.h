@@ -46,6 +46,7 @@ namespace nmos
             node_implementation()
                 : parse_transport_file(&nmos::parse_rtp_transport_file)
                 , validate_sender_resources(make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets)))
+                , validate_receiver(make_streamcompatibility_receiver_validator(&nmos::experimental::validate_rtp_transport_file))
             {}
 
             node_implementation& on_load_server_certificates(nmos::load_server_certificates_handler load_server_certificates) { this->load_server_certificates = std::move(load_server_certificates); return *this; }

@@ -1,5 +1,6 @@
 #include "nmos/streamcompatibility_validation.h"
 
+#include "nmos/connection_api.h"
 #include "nmos/json_fields.h"
 #include "nmos/model.h"
 #include "nmos/resource.h"
@@ -26,6 +27,26 @@ namespace nmos
                 });
             }
 
+        }
+
+        void validate_rtp_transport_file(const nmos::resource& receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data)
+        {
+            return details::validate_rtp_transport_file(&validate_sdp_parameters, receiver, transport_file_type, transport_file_data);
+        }
+
+        void details::validate_rtp_transport_file(nmos::details::sdp_parameters_validator validate_sdp_parameters, const nmos::resource& receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data)
+        {
+            if (transport_file_type != nmos::media_types::application_sdp.name)
+            {
+                throw std::runtime_error("unexpected type: " + utility::us2s(transport_file_type));
+            }
+
+            const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
+            auto sdp_transport_params = nmos::parse_session_description(session_description);
+
+            // Validate transport file according to the IS-04 receiver
+
+            validate_sdp_parameters(receiver.data, sdp_transport_params.first);
         }
 
         // "At any time if State of an active Sender becomes active_constraints_violation, the Sender MUST become inactive.
@@ -122,9 +143,9 @@ namespace nmos
             };
         }
 
-        details::streamcompatibility_receiver_validator make_streamcompatibility_receiver_validator(const nmos::transport_file_parser& parse_and_validate_transport_file, slog::base_gate& gate)
+        details::streamcompatibility_receiver_validator make_streamcompatibility_receiver_validator(const details::transport_file_validator& validate_transport_file)
         {
-            return [parse_and_validate_transport_file, &gate](const web::json::value& transport_file_, const nmos::resource& receiver, const nmos::resource& connection_receiver) -> std::pair<nmos::receiver_state, utility::string_t>
+            return [validate_transport_file](const nmos::resource& receiver, const web::json::value& transport_file_) -> std::pair<nmos::receiver_state, utility::string_t>
             {
                 nmos::receiver_state receiver_state = nmos::receiver_states::unknown;
                 utility::string_t receiver_state_debug;
@@ -138,11 +159,10 @@ namespace nmos
 
                         try
                         {
-                            parse_and_validate_transport_file(receiver, connection_receiver, transport_file.first, transport_file.second, gate);
+                            validate_transport_file(receiver, transport_file.first, transport_file.second);
                         }
                         catch (const std::runtime_error& e)
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Validation of receiver " << receiver.id << " failed with " << e.what();
                             receiver_state = nmos::receiver_states::non_compliant_stream;
                             receiver_state_debug = utility::conversions::to_string_t(e.what());
                         }

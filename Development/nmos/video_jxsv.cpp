@@ -344,24 +344,21 @@ namespace nmos
         return constraint_sets.end() != found;
     }
 
-    namespace experimental
+    bool experimental::match_video_jxsv_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set)
     {
-        bool match_video_jxsv_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set)
+        const std::map<nmos::type, nmos::experimental::parameter_constraints> resource_parameter_constraints
         {
-            const std::map<nmos::type, nmos::experimental::parameter_constraints> resource_parameter_constraints
-            {
-                { nmos::types::source,  nmos::experimental::source_parameter_constraints },
-                { nmos::types::flow,    nmos::experimental::video_jxsv_flow_parameter_constraints },
-                { nmos::types::sender,  nmos::experimental::video_jxsv_sender_parameter_constraints }
-            };
-
-            if (0 == resource_parameter_constraints.count(resource.type))
-            {
-                throw std::logic_error("wrong resource type");
-            }
-
-            return nmos::experimental::detail::match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
+            { nmos::types::source,  nmos::experimental::source_parameter_constraints },
+            { nmos::types::flow,    nmos::experimental::video_jxsv_flow_parameter_constraints },
+            { nmos::types::sender,  nmos::experimental::video_jxsv_sender_parameter_constraints }
         };
+
+        if (0 == resource_parameter_constraints.count(resource.type))
+        {
+            throw std::logic_error("wrong resource type");
+        }
+
+        return nmos::experimental::detail::match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
     }
 
     // See https://specs.amwa.tv/bcp-006-01/branches/v1.0-dev/docs/NMOS_With_JPEG_XS.html#flows

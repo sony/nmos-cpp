@@ -178,7 +178,7 @@ namespace nmos
 
                             if (validate_receiver)
                             {
-                                std::tie(receiver_state, receiver_state_debug) = validate_receiver(transport_file, *receiver, *connection_receiver);
+                                std::tie(receiver_state, receiver_state_debug) = validate_receiver(*receiver, transport_file);
                             }
 
                             if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)

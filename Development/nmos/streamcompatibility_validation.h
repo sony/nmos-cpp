@@ -30,12 +30,21 @@ namespace nmos
             // returns Sender's "state" and "debug" values
             typedef std::function<std::pair<nmos::sender_state, utility::string_t>(const nmos::resource& source, const nmos::resource& flow, const nmos::resource& sender, const nmos::resource& connection_sender, const web::json::array& constraint_sets)> streamcompatibility_sender_validator;
             // returns Receiver's "state" and "debug" values
-            typedef std::function<std::pair<nmos::receiver_state, utility::string_t>(const web::json::value& transport_file, const nmos::resource& receiver, const nmos::resource& connection_receiver)> streamcompatibility_receiver_validator;
+            typedef std::function<std::pair<nmos::receiver_state, utility::string_t>(const nmos::resource& receiver, const web::json::value& transport_file)> streamcompatibility_receiver_validator;
+
+            typedef std::function<void(const nmos::resource& receiver, const utility::string_t& transportfile_type, const utility::string_t& transportfile_data)> transport_file_validator;
 
             typedef std::function<bool(const nmos::resource& resource, const web::json::value& constraint_set)> resource_constraints_matcher;
             typedef std::function<bool(const std::pair<utility::string_t, utility::string_t>& transport_file, const web::json::array& constraint_sets)> transport_file_constraint_sets_matcher;
             typedef std::function<bool(const web::json::array& constraint_sets, const sdp_parameters& sdp_params)> sdp_constraint_sets_matcher;
+
+            // Validate the specified transport file for the specified receiver using the specified validator
+            void validate_rtp_transport_file(nmos::details::sdp_parameters_validator validate_sdp_parameters, const nmos::resource& receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data);
         }
+
+        // Validate the specified transport file for the specified receiver using the default validator
+        // (this is the default transport file validator)
+        void validate_rtp_transport_file(const nmos::resource& receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data);
 
         typedef std::map<utility::string_t, std::function<bool(const web::json::value& resource, const web::json::value& con)>> parameter_constraints;
 
@@ -89,7 +98,7 @@ namespace nmos
         nmos::details::connection_resource_patch_validator make_connection_streamcompatibility_validator(nmos::node_model& model);
 
         details::streamcompatibility_sender_validator make_streamcompatibility_sender_resources_validator(const details::resource_constraints_matcher& resource_matcher, const details::transport_file_constraint_sets_matcher& transport_file_matcher);
-        details::streamcompatibility_receiver_validator make_streamcompatibility_receiver_validator(const nmos::transport_file_parser& parse_and_validate_transport_file, slog::base_gate& gate);
+        details::streamcompatibility_receiver_validator make_streamcompatibility_receiver_validator(const details::transport_file_validator& validate_transport_file);
         bool match_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set);
         details::transport_file_constraint_sets_matcher make_streamcompatibility_sdp_constraint_sets_matcher(const details::sdp_constraint_sets_matcher& match_sdp_parameters_constraint_sets);
     }
