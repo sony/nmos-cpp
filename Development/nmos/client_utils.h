@@ -12,12 +12,18 @@ namespace slog { class base_gate; }
 // Utility types, constants and functions for implementing NMOS REST API clients
 namespace nmos
 {
-    // construct client config based on settings, e.g. using the specified proxy
+    // construct client config based on specified secure flag and settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. request timeout
+    web::http::client::http_client_config make_http_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
+    // construct client config based on settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate);
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, slog::base_gate& gate);
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
 
+    // construct client config based on specified secure flag and settings, e.g. using the specified proxy
+    // with the remaining options defaulted
+    web::websockets::client::websocket_client_config make_websocket_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
     // construct client config based on settings, e.g. using the specified proxy
     // with the remaining options defaulted
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_token_handler get_authorization_bearer_token, slog::base_gate& gate);

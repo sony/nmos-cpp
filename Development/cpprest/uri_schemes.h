@@ -22,6 +22,11 @@ namespace web
 
     inline utility::string_t http_scheme(bool secure) { return secure ? uri_schemes::https : uri_schemes::http; }
     inline utility::string_t ws_scheme(bool secure) { return secure ? uri_schemes::wss : uri_schemes::ws; }
+
+    inline bool is_secure_uri_scheme(const utility::string_t& scheme)
+    {
+        return uri_schemes::https == scheme || uri_schemes::wss == scheme;
+    }
 }
 
 #endif
