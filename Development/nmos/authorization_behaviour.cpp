@@ -91,7 +91,7 @@ namespace nmos
                     {
                         slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieved authorization clients: " << utility::us2s(auth_clients.serialize()) << " from non-volatile memory";
 
-                        for (const auto auth_client : auth_clients.as_array())
+                        for (const auto& auth_client : auth_clients.as_array())
                         {
                             nmos::experimental::update_client_metadata(authorization_state, auth_client.at(nmos::experimental::fields::authorization_server_uri).as_string(), nmos::experimental::fields::client_metadata(auth_client));
                         }

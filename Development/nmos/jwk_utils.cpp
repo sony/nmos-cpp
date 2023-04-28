@@ -325,7 +325,7 @@ namespace nmos
             {
                 using ssl::experimental::BIO_ptr;
 
-                for (const auto private_key_ : private_keys)
+                for (const auto& private_key_ : private_keys)
                 {
                     const std::string buffer{ utility::us2s(private_key_) };
                     BIO_ptr bio(BIO_new_mem_buf((void*)buffer.c_str(), (int)buffer.length()), &BIO_free);
