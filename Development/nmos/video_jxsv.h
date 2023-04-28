@@ -417,6 +417,8 @@ namespace nmos
             { nmos::caps::transport::st2110_21_sender_type, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_string_constraint(nmos::fields::st2110_21_sender_type(sender), con); } },
             { nmos::caps::transport::bit_rate, [](const web::json::value& sender, const web::json::value& con) { return nmos::match_integer_constraint(nmos::fields::bit_rate(sender), con); } }
         };
+
+        bool match_video_jxsv_resource_parameters_constraint_set(const nmos::resource& resource, const web::json::value& constraint_set);
     }
 }
 

@@ -1583,24 +1583,7 @@ nmos::experimental::details::streamcompatibility_sender_validator make_node_impl
     using nmos::experimental::make_streamcompatibility_sender_resources_validator;
     using nmos::experimental::make_streamcompatibility_sdp_constraint_sets_matcher;
 
-    const auto video_jxsv_sender_resources_matcher = [](const nmos::resource& resource, const web::json::value& constraint_set) -> bool
-    {
-        const std::map<nmos::type, nmos::experimental::parameter_constraints> resource_parameter_constraints
-        {
-            { nmos::types::source,  nmos::experimental::source_parameter_constraints },
-            { nmos::types::flow,    nmos::experimental::video_jxsv_flow_parameter_constraints },
-            { nmos::types::sender,  nmos::experimental::video_jxsv_sender_parameter_constraints }
-        };
-
-        if (0 == resource_parameter_constraints.count(resource.type))
-        {
-            throw std::logic_error("wrong resource type");
-        }
-
-        return nmos::experimental::detail::match_resource_parameters_constraint_set(resource_parameter_constraints.at(resource.type), resource.data, constraint_set);
-    };
-
-    const auto validate_video_jxsv_sender_resources = make_streamcompatibility_sender_resources_validator(video_jxsv_sender_resources_matcher, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_video_jxsv_sdp_parameters_constraint_sets));
+    const auto validate_video_jxsv_sender_resources = make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_video_jxsv_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_video_jxsv_sdp_parameters_constraint_sets));
     const auto validate_sender_resources = make_streamcompatibility_sender_resources_validator(&nmos::experimental::match_resource_parameters_constraint_set, make_streamcompatibility_sdp_constraint_sets_matcher(&nmos::match_sdp_parameters_constraint_sets));
 
     // this example uses a custom sender resources validator to handle video/jxsv in addition to the core media types
