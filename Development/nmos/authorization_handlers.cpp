@@ -199,7 +199,7 @@ namespace nmos
 #else
                 browser_cmd = "xdg-open \"" + utility::us2s(authorization_code_uri.to_string()) + "\"";
 #endif
-                system(browser_cmd.c_str());
+                std::ignore = system(browser_cmd.c_str());
 
                 // TODO: process Authorization Server error response
                 // notify authorization_code_flow in the authorization_behaviour thread
