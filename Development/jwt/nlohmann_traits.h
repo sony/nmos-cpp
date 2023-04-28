@@ -74,6 +74,11 @@ namespace jwt
                     }
                 }
 
+                static int64_t as_integer(const json &val)
+                {
+                    return as_int(val);
+                }
+
                 static bool as_bool(const json &val)
                 {
                     if (val.type() != json::value_t::boolean)
@@ -81,6 +86,11 @@ namespace jwt
                         throw std::bad_cast();
                     }
                     return val.get<bool>();
+                }
+
+                static bool as_boolean(const json &val)
+                {
+                    return as_bool(val);
                 }
 
                 static double as_number(const json &val)

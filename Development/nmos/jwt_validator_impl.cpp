@@ -65,7 +65,7 @@ namespace nmos
                                 validator.allow_algorithm(jwt::algorithm::rs512(utility::us2s(pubkey.at(U("pem")).as_string())));
                                 validators.push_back(validator);
                             }
-                            catch (const jwt::rsa_exception&)
+                            catch (const jwt::error::rsa_exception&)
                             {
                                 // hmm, maybe log the error?
                             }

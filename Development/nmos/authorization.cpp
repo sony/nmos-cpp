@@ -81,7 +81,7 @@ namespace nmos
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "missing access token";
                 return{ authorization_error::without_authentication, "missing access token" };
             }
-            
+
             try
             {
                 // extract the token issuer from the token
@@ -96,7 +96,7 @@ namespace nmos
 #endif
                 return{ authorization_error::failed, e.what() };
             }
-            
+
             // find the relevent issuer's public keys to validate the token
             std::string error;
             auto issuer = issuers.find(token_issuer);
@@ -124,7 +124,7 @@ namespace nmos
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys";
 #else
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys; access_token: " << access_token;
-#endif                    
+#endif
                 }
                 catch (const insufficient_scope_exception& e)
                 {
