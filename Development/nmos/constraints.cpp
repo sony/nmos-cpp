@@ -129,54 +129,57 @@ namespace nmos
             return result;
         }
 
-        web::json::value get_constraint_set_intersection(const web::json::value& lhs, const web::json::value& rhs, bool merge_left_to_right)
+        web::json::value get_constraint_set_intersection(const web::json::value& lhs_, const web::json::value& rhs_)
         {
             using web::json::value;
             using web::json::value_from_elements;
 
-            const auto& lhs_param_constraints = lhs.as_object();
-            auto rhs_param_constraints = rhs.as_object();
+            const auto& lhs = lhs_.as_object();
+            const auto& rhs = rhs_.as_object();
 
-            if (merge_left_to_right)
+            auto result = value::object();
+
+            auto lhs_iter = lhs.begin();
+            auto rhs_iter = rhs.begin();
+
+            while (lhs_iter != lhs.end() || rhs_iter != rhs.end())
             {
-                rhs_param_constraints = lhs_param_constraints;
-                std::for_each(rhs.as_object().begin(), rhs.as_object().end(), [&rhs_param_constraints](const std::pair<utility::string_t, value>& rhs_constraint)
+                if (lhs_iter != lhs.end() && rhs_iter != rhs.end())
                 {
-                    rhs_param_constraints[rhs_constraint.first] = rhs_constraint.second;
-                });
-            }
-
-            const auto common_param_constraints = get_intersection(
-                value_from_elements(lhs_param_constraints | boost::adaptors::filtered([](const std::pair<utility::string_t, value>& constraint) { return !boost::algorithm::starts_with(constraint.first, U("urn:x-nmos:cap:meta:")); }) | boost::adaptors::transformed([](const std::pair<utility::string_t, value>& constraint) { return constraint.first; })).as_array(),
-                value_from_elements(rhs_param_constraints | boost::adaptors::filtered([](const std::pair<utility::string_t, value>& constraint) { return !boost::algorithm::starts_with(constraint.first, U("urn:x-nmos:cap:meta:")); }) | boost::adaptors::transformed([](const std::pair<utility::string_t, value>& constraint) { return constraint.first; })).as_array()
-            ).as_array();
-
-            if (0 == common_param_constraints.size())
-            {
-                return value::null();
-            }
-
-            try
-            {
-                value result;
-
-                std::for_each(common_param_constraints.begin(), common_param_constraints.end(), [&result, &lhs_param_constraints, &rhs_param_constraints](const web::json::value& constraint_name_)
-                {
-                    const auto& constraint_name = constraint_name_.as_string();
-                    const web::json::value intersection = get_constraint_intersection(lhs_param_constraints.at(constraint_name), rhs_param_constraints.at(constraint_name));
-                    if (intersection.is_null())
+                    if (lhs_iter->first < rhs_iter->first)
                     {
-                        throw std::runtime_error(utility::us2s(constraint_name) + " gives empty intersection");
+                        result[lhs_iter->first] = lhs_iter->second;
+                        lhs_iter++;
                     }
-                    result[constraint_name] = intersection;
-                });
+                    else if (lhs_iter->first > rhs_iter->first)
+                    {
+                        result[rhs_iter->first] = rhs_iter->second;
+                        rhs_iter++;
+                    }
+                    else
+                    {
+                        const value intersection = get_constraint_intersection(lhs_iter->second, rhs_iter->second);
+                        if (intersection.is_null())
+                        {
+                            return value::null();
+                        }
+                        result[lhs_iter->first] = intersection;
+                        lhs_iter++; rhs_iter++;
+                    }
+                }
+                else if (lhs_iter == lhs.end())
+                {
+                    result[rhs_iter->first] = rhs_iter->second;
+                    rhs_iter++;
+                }
+                else if (rhs_iter == rhs.end())
+                {
+                    result[lhs_iter->first] = lhs_iter->second;
+                    lhs_iter++;
+                }
+            }
 
-                return result;
-            }
-            catch (const std::runtime_error& e)
-            {
-                return value::null();
-            }
+            return result;
         }
 
         // Constraint B is a subconstraint of Constraint A if:

@@ -1558,7 +1558,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
             if (!nmos::caps::meta::enabled(constraint_set)) continue;
             for (const auto& sender_caps_constraint_set : sender_capabilities)
             {
-                const auto intersection = nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set, true);
+                const auto intersection = nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set);
                 if (!intersection.is_null())
                 {
                     *iter++ = std::move(intersection);

@@ -215,7 +215,7 @@ BST_TEST_CASE(testEnumRationalConstraintIntersection)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testConstraintSetIntersection)
+BST_TEST_CASE(testConstraintSetIntersectionSameParamConstraints)
 {
     {
         using web::json::value_of;
@@ -265,7 +265,7 @@ BST_TEST_CASE(testConstraintSetIntersection)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testConstraintSetIntersectionMerge)
+BST_TEST_CASE(testConstraintSetIntersection)
 {
     {
         using web::json::value_of;
@@ -305,6 +305,81 @@ BST_TEST_CASE(testConstraintSetIntersectionMerge)
             { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
         });
 
-        BST_REQUIRE_EQUAL(get_constraint_set_intersection(a, b, true), c);
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(a, b), c);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testConstraintSetIntersectionUniqueParamConstraints)
+{
+    {
+        using web::json::value_of;
+        using nmos::experimental::get_constraint_set_intersection;
+
+        const auto a = value_of({
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
+            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
+            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
+            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
+            { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
+        });
+
+        const auto b = value_of({
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) }
+        });
+
+        const auto c = value_of({
+            { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::video_raw.name }) },
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::colorspace, nmos::make_caps_string_constraint({ sdp::colorimetries::BT2020.name, sdp::colorimetries::BT709.name }) },
+            { nmos::caps::format::transfer_characteristic, nmos::make_caps_string_constraint({ sdp::transfer_characteristic_systems::SDR.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) },
+            { nmos::caps::transport::st2110_21_sender_type, nmos::make_caps_string_constraint({ sdp::type_parameters::type_N.name }) }
+        });
+
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(a, b), c);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testConstraintSetIntersectionOfEmpties)
+{
+    {
+        using web::json::value_of;
+        using nmos::experimental::get_constraint_set_intersection;
+
+        const auto a = web::json::value::object();
+
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(a, a), a);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testConstraintSetIntersectionOfEmptyAndNonEmpty)
+{
+    {
+        using web::json::value_of;
+        using nmos::experimental::get_constraint_set_intersection;
+
+        const auto a = web::json::value::object();
+
+        const auto b = value_of({
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) }
+        });
+
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(a, b), b);
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(b, a), b);
     }
 }
