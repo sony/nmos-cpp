@@ -340,10 +340,10 @@ jobs:
         set -x
         root_dir=`pwd`
 
-        # Install AMWA NMOS Testing Tool (gwgeorgea instead of AMWA-TV until IS-11 tests are merged)
-        git clone https://github.com/gwgeorgea/nmos-testing.git
+        # Install AMWA NMOS Testing Tool (is-11 instead of master until IS-11 tests are merged)
+        git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
-        git checkout is-11-initial-tests-general-senders-outputs-receivers_
+        git checkout is-11
 
         # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
@@ -848,10 +848,10 @@ jobs:
         set -x
         root_dir=`pwd`
 
-        # Install AMWA NMOS Testing Tool (gwgeorgea instead of AMWA-TV until IS-11 tests are merged)
-        git clone https://github.com/gwgeorgea/nmos-testing.git
+        # Install AMWA NMOS Testing Tool (is-11 instead of master until IS-11 tests are merged)
+        git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
-        git checkout is-11-initial-tests-general-senders-outputs-receivers_
+        git checkout is-11
 
         # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
