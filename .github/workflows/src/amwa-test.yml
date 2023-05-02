@@ -28,6 +28,7 @@
       hostname=nmos-api.local
     else
       hostname=api.testsuite.nmos.tv
+    fi
     printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
 
     # Download testssl
