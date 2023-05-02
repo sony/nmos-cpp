@@ -110,6 +110,15 @@ fi
 if [[ "${config_auth}" == "True" ]]; then
   echo "Running Auth tests"
   auth=true
+  common_params+=",\
+  \"server_authorization\":true\
+  "
+  node_params=",\
+  \"client_authorization\":true,\
+  \"authorization_flow\":\"client_credentials\",\
+  \"authorization_scopes\":[\"registration\"],\
+  \"token_endpoint_auth_method\":\"private_key_jwt\"\
+  "
 else
   echo "Running non-Auth tests"
   auth=false
@@ -127,7 +136,7 @@ else
   (( expected_disabled_IS_09_01+=7 ))
 fi
 
-"${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &
+"${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params} ${node_params}}" > ${results_dir}/nodeoutput 2>&1 &
 NODE_PID=$!
 
 function do_run_test() {

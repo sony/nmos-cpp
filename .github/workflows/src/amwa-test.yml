@@ -19,10 +19,16 @@
     git clone https://github.com/AMWA-TV/nmos-testing.git
     cd nmos-testing
 
-    # Configure the Testing Tool so all APIs are tested with TLS
-    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+    # Configure the Testing Tool so all APIs are tested with TLS and authorization
+    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\n" > nmostesting/UserConfig.py
     # Set the DNS-SD mode
     printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
+    # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
+    if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+      hostname=nmos-api.local
+    else
+      hostname=api.testsuite.nmos.tv
+    printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
 
     # Download testssl
     cd testssl
