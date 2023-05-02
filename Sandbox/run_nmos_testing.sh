@@ -119,6 +119,8 @@ if [[ "${config_auth}" == "True" ]]; then
   \"authorization_scopes\":[\"registration\"],\
   \"token_endpoint_auth_method\":\"private_key_jwt\"\
   "
+  # 7 test cases test_06 to test_12
+  (( expected_disabled_IS_09_01+=7 ))
 else
   echo "Running non-Auth tests"
   auth=false
