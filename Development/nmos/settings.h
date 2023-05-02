@@ -411,6 +411,7 @@ namespace nmos
             const web::json::field_as_string_or authorization_flow{ U("authorization_flow"), U("authorization_code") };
 
             // authorization_redirect_port [node]: redirect URL port for listening authorization code, used for client registration
+            // see http_port
             const web::json::field_as_integer_or authorization_redirect_port{ U("authorization_redirect_port"), 3218 };
 
             // initial_access_token [node]: initial access token giving access to the client registration endpoint for non-opened registration
@@ -425,6 +426,7 @@ namespace nmos
             const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic")};
 
             // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration
+            // see http_port
             const web::json::field_as_integer_or jwks_uri_port{ U("jwks_uri_port"), 3218 };
 
             // validate_openid_client [node]: boolean value, false (bypass openid connect client validation), or true (do not bypass, the default behaviour)
