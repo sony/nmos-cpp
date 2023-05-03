@@ -113,7 +113,6 @@ int main(int argc, char* argv[])
 
 // only implement communication with Authorization server if IS-10 is required
 // cf. preprocessor conditions in nmos::make_registration_api, nmos::make_query_api, make_query_ws_validate_handler
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         nmos::experimental::authorization_state authorization_state;
         if (nmos::experimental::fields::server_authorization(registry_model.settings))
         {
@@ -121,7 +120,6 @@ int main(int argc, char* argv[])
                 .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(registry_model, authorization_state, gate))
                 .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(registry_model, authorization_state, gate));
         }
-#endif
 
         // Set up the registry server
 
@@ -151,14 +149,12 @@ int main(int argc, char* argv[])
 #endif
 
 // only implement communication with Authorization server if IS-10 is required
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         if (nmos::experimental::fields::server_authorization(registry_model.settings))
         {
             auto load_ca_certificates = registry_implementation.load_ca_certificates;
             registry_server.thread_functions.push_back([&, load_ca_certificates] { authorization_behaviour_thread(registry_model, authorization_state, load_ca_certificates, {}, {}, {}, {}, gate); });
             registry_server.thread_functions.push_back([&, load_ca_certificates] { authorization_token_issuer_thread(registry_model, authorization_state, load_ca_certificates, gate); });
         }
-#endif
 
         // Open the API ports and start up registry management
 

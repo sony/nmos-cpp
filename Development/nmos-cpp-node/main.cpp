@@ -117,7 +117,6 @@ int main(int argc, char* argv[])
 
 // only implement communication with Authorization server if IS-10 is required
 // cf. preprocessor conditions in nmos::make_node_api, nmos::make_connection_api, nmos::make_events_api, nmos::make_channelmapping_api, make_events_ws_validate_handler
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         nmos::experimental::authorization_state authorization_state;
         if (nmos::experimental::fields::server_authorization(node_model.settings))
         {
@@ -125,8 +124,6 @@ int main(int argc, char* argv[])
                 .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(node_model, authorization_state, gate))
                 .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(node_model, authorization_state, gate));
         }
-#endif
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         if (nmos::experimental::fields::client_authorization(node_model.settings))
         {
             node_implementation
@@ -137,7 +134,6 @@ int main(int argc, char* argv[])
                 .on_load_rsa_private_keys(nmos::make_load_rsa_private_keys_handler(node_model.settings, gate)) // may be omitted, only required for OAuth client which is using Private Key JWT as the requested authentication method for the token endpoint
                 .on_request_authorization_code(nmos::experimental::make_request_authorization_code_handler(gate)); // may be omitted, only required for OAuth client which is using the Authorization Code Flow to obtain the access token
         }
-#endif
 
         // Set up the node server
 
@@ -159,7 +155,6 @@ int main(int argc, char* argv[])
 #endif
 
 // only implement communication with Authorization server if IS-10 is required
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
         if (nmos::experimental::fields::client_authorization(node_model.settings))
         {
             std::map<nmos::host_port, web::http::experimental::listener::api_router> api_routers;
@@ -209,7 +204,6 @@ int main(int argc, char* argv[])
                 }
             }
         }
-#endif
 
         if (!nmos::experimental::fields::http_trace(node_model.settings))
         {
@@ -222,7 +216,6 @@ int main(int argc, char* argv[])
         }
 
 // only implement communication with Authorization server if IS-10 is required
-#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         if (nmos::experimental::fields::client_authorization(node_model.settings) || nmos::experimental::fields::server_authorization(node_model.settings))
         {
             // IS-10 client registration, fetch access token, and fetch authorization server token public key
@@ -244,7 +237,6 @@ int main(int argc, char* argv[])
                 node_server.thread_functions.push_back([&, load_ca_certificates] { nmos::experimental::authorization_token_issuer_thread(node_model, authorization_state, load_ca_certificates, gate); });
             }
         }
-#endif
 
         // Open the API ports and start up node operation (including the DNS-SD advertisements)
 
