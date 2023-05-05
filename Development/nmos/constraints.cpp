@@ -142,40 +142,46 @@ namespace nmos
             auto lhs_iter = lhs.begin();
             auto rhs_iter = rhs.begin();
 
+            const auto insert_if_not_meta = [](value& j, web::json::object::const_iterator property) {
+                if (!boost::algorithm::starts_with(property->first, U("urn:x-nmos:cap:meta:")))
+                {
+                    j[property->first] = property->second;
+                }
+            };
+
             while (lhs_iter != lhs.end() || rhs_iter != rhs.end())
             {
                 if (lhs_iter != lhs.end() && rhs_iter != rhs.end())
                 {
                     if (lhs_iter->first < rhs_iter->first)
                     {
-                        result[lhs_iter->first] = lhs_iter->second;
-                        lhs_iter++;
+                        insert_if_not_meta(result, lhs_iter++);
                     }
                     else if (lhs_iter->first > rhs_iter->first)
                     {
-                        result[rhs_iter->first] = rhs_iter->second;
-                        rhs_iter++;
+                        insert_if_not_meta(result, rhs_iter++);
                     }
                     else
                     {
-                        const value intersection = get_constraint_intersection(lhs_iter->second, rhs_iter->second);
-                        if (intersection.is_null())
+                        if (!boost::algorithm::starts_with(lhs_iter->first, U("urn:x-nmos:cap:meta:")))
                         {
-                            return value::null();
+                            const value intersection = get_constraint_intersection(lhs_iter->second, rhs_iter->second);
+                            if (intersection.is_null())
+                            {
+                                return value::null();
+                            }
+                            result[lhs_iter->first] = intersection;
                         }
-                        result[lhs_iter->first] = intersection;
                         lhs_iter++; rhs_iter++;
                     }
                 }
                 else if (lhs_iter == lhs.end())
                 {
-                    result[rhs_iter->first] = rhs_iter->second;
-                    rhs_iter++;
+                    insert_if_not_meta(result, rhs_iter++);
                 }
                 else if (rhs_iter == rhs.end())
                 {
-                    result[lhs_iter->first] = lhs_iter->second;
-                    lhs_iter++;
+                    insert_if_not_meta(result, lhs_iter++);
                 }
             }
 

@@ -383,3 +383,41 @@ BST_TEST_CASE(testConstraintSetIntersectionOfEmptyAndNonEmpty)
         BST_REQUIRE_EQUAL(get_constraint_set_intersection(b, a), b);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testConstraintSetIntersectionMeta)
+{
+    {
+        using web::json::value_of;
+        using nmos::experimental::get_constraint_set_intersection;
+
+        const auto a = value_of({
+            { nmos::caps::meta::label, U("test1") },
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_psf.name, nmos::interlace_modes::interlaced_tff.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) }
+        });
+
+        const auto b = value_of({
+            { nmos::caps::meta::label, U("test2") },
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) }
+        });
+
+        const auto c = value_of({
+            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::rates::rate25 }) },
+            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
+            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
+            { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint({ nmos::interlace_modes::interlaced_psf.name, nmos::interlace_modes::interlaced_tff.name }) },
+            { nmos::caps::format::component_depth, nmos::make_caps_integer_constraint({ 10 }) }
+        });
+
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(a, b), c);
+        BST_REQUIRE_EQUAL(get_constraint_set_intersection(b, a), c);
+    }
+}
