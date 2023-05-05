@@ -11,7 +11,7 @@
 BST_TEST_CASE(testJsonComparator)
 {
     {
-        using nmos::experimental::detail::constraint_value_less;
+        using nmos::experimental::details::constraint_value_less;
 
         const auto a = nmos::make_caps_rational_constraint({}, nmos::rates::rate25, nmos::rates::rate30);
         const auto b = nmos::make_caps_rational_constraint({}, nmos::rates::rate25, nmos::rates::rate29_97);

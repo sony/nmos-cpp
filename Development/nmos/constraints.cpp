@@ -15,7 +15,7 @@ namespace nmos
 {
     namespace experimental
     {
-        namespace detail
+        namespace details
         {
             bool constraint_value_less(const web::json::value& lhs, const web::json::value& rhs)
             {
@@ -33,12 +33,12 @@ namespace nmos
 
         web::json::value get_intersection(const web::json::array& lhs_, const web::json::array& rhs_)
         {
-            std::set<web::json::value, decltype(&detail::constraint_value_less)> lhs(lhs_.begin(), lhs_.end(), &detail::constraint_value_less);
-            std::set<web::json::value, decltype(&detail::constraint_value_less)> rhs(rhs_.begin(), rhs_.end(), &detail::constraint_value_less);
+            std::set<web::json::value, decltype(&details::constraint_value_less)> lhs(lhs_.begin(), lhs_.end(), &details::constraint_value_less);
+            std::set<web::json::value, decltype(&details::constraint_value_less)> rhs(rhs_.begin(), rhs_.end(), &details::constraint_value_less);
 
             std::vector<web::json::value> v(std::min(lhs.size(), rhs.size()));
 
-            const auto it = std::set_intersection(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), v.begin(), detail::constraint_value_less);
+            const auto it = std::set_intersection(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), v.begin(), details::constraint_value_less);
             v.resize(it - v.begin());
 
             return web::json::value_from_elements(v);
@@ -73,7 +73,7 @@ namespace nmos
             // "minimum"
             if (lhs.has_field(nmos::fields::constraint_minimum) && rhs.has_field(nmos::fields::constraint_minimum))
             {
-                result[nmos::fields::constraint_minimum] = std::max(nmos::fields::constraint_minimum(lhs), nmos::fields::constraint_minimum(rhs), detail::constraint_value_less);
+                result[nmos::fields::constraint_minimum] = std::max(nmos::fields::constraint_minimum(lhs), nmos::fields::constraint_minimum(rhs), details::constraint_value_less);
             }
             else if (lhs.has_field(nmos::fields::constraint_minimum))
             {
@@ -87,7 +87,7 @@ namespace nmos
             // "maximum"
             if (lhs.has_field(nmos::fields::constraint_maximum) && rhs.has_field(nmos::fields::constraint_maximum))
             {
-                result[nmos::fields::constraint_maximum] = std::min(nmos::fields::constraint_maximum(lhs), nmos::fields::constraint_maximum(rhs), detail::constraint_value_less);
+                result[nmos::fields::constraint_maximum] = std::min(nmos::fields::constraint_maximum(lhs), nmos::fields::constraint_maximum(rhs), details::constraint_value_less);
             }
             else if (lhs.has_field(nmos::fields::constraint_maximum))
             {
@@ -101,7 +101,7 @@ namespace nmos
             // "min" > "max"
             if (result.has_field(nmos::fields::constraint_minimum) && result.has_field(nmos::fields::constraint_maximum))
             {
-                if (detail::constraint_value_less(nmos::fields::constraint_maximum(result), nmos::fields::constraint_minimum(result)))
+                if (details::constraint_value_less(nmos::fields::constraint_maximum(result), nmos::fields::constraint_minimum(result)))
                 {
                     return web::json::value::null();
                 }
@@ -208,7 +208,7 @@ namespace nmos
                 const auto& constraint_min = nmos::fields::constraint_minimum(constraint);
                 const auto& subconstraint_min = nmos::fields::constraint_minimum(subconstraint);
 
-                if (detail::constraint_value_less(subconstraint_min, constraint_min))
+                if (details::constraint_value_less(subconstraint_min, constraint_min))
                 {
                     return false;
                 }
@@ -218,7 +218,7 @@ namespace nmos
                 const auto& constraint_max = nmos::fields::constraint_maximum(constraint);
                 const auto& subconstraint_max = nmos::fields::constraint_maximum(subconstraint);
 
-                if (detail::constraint_value_less(constraint_max, subconstraint_max))
+                if (details::constraint_value_less(constraint_max, subconstraint_max))
                 {
                     return false;
                 }

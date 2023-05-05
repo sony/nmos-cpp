@@ -13,7 +13,7 @@ namespace nmos
 {
     namespace experimental
     {
-        namespace detail
+        namespace details
         {
             bool constraint_value_less(const web::json::value& lhs, const web::json::value& rhs);
         }
