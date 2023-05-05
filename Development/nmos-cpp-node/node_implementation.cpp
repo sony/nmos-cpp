@@ -1551,8 +1551,7 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
         const auto& sender_capabilities_ = video_found ? video_sender_capabilities : audio_found ? audio_sender_capabilities : throw std::logic_error("No Sender Capabilities found");
         const auto& sender_capabilities = sender_capabilities_.as_array();
 
-        std::vector<web::json::value> v(constraint_sets.size() * sender_capabilities.size());
-        auto iter = v.begin();
+        std::vector<web::json::value> v;
 
         for (const auto& constraint_set : constraint_sets)
         {
@@ -1562,12 +1561,11 @@ nmos::experimental::details::streamcompatibility_active_constraints_handler make
                 const auto intersection = nmos::experimental::get_constraint_set_intersection(sender_caps_constraint_set, constraint_set);
                 if (!intersection.is_null())
                 {
-                    *iter++ = std::move(intersection);
+                    v.push_back(intersection);
                 }
             }
         }
 
-        v.resize(iter - v.begin());
         if (v.empty())
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " doesn't support proposed Active Constraints";
