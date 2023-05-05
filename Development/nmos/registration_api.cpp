@@ -282,7 +282,15 @@ namespace nmos
                 const bool valid_version = creating || unchanged || nmos::fields::version(data) > nmos::fields::version(resource->data);
                 valid = valid && valid_version;
 
-                if (!valid_type)
+                // check received request isn't being processed out of order
+                const auto received_time = req.headers().find(details::received_time);
+                const auto received = req.headers().end() != received_time ? nmos::parse_version(received_time->second) : nmos::tai{};
+                const bool valid_received = creating || received == nmos::tai{} || received > resource->received;
+                valid = valid && valid_received;
+
+                if (!valid_received)
+                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Registration requested for " << id_type << " at " << nmos::make_version(resource->received) << " processed before request received at " << nmos::make_version(received);
+                else if (!valid_type)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration requested for " << id_type << " would modify type from " << resource->type.name;
                 else if (!valid_api_version)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration requested for " << id_type << " would modify API version from " << nmos::make_api_version(resource->version);
@@ -399,6 +407,7 @@ namespace nmos
                     if (creating)
                     {
                         nmos::resource created_resource{ version, type, data, false };
+                        created_resource.received = received;
 
                         set_reply(res, status_codes::Created, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(created_resource));
@@ -410,8 +419,9 @@ namespace nmos
                         set_reply(res, status_codes::OK, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
 
-                        modify_resource(resources, id, [&data](nmos::resource& resource)
+                        modify_resource(resources, id, [&received, &data](nmos::resource& resource)
                         {
+                            resource.received = received;
                             resource.data = data;
                         });
                     }
@@ -423,6 +433,10 @@ namespace nmos
 
                     slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
                     model.notify();
+                }
+                else if (!valid_received)
+                {
+                    set_reply(res, status_codes::InternalError);
                 }
                 else if (!valid_api_version)
                 {
@@ -585,10 +599,19 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
+            auto resource = find_resource(resources, id_type);
             if (resources.end() != resource)
             {
-                if (resource->version == version)
+                // check received request isn't being processed out of order
+                const auto received_time = req.headers().find(details::received_time);
+                const auto received = req.headers().end() != received_time ? nmos::parse_version(received_time->second) : nmos::tai{};
+                if (received != nmos::tai{} && received < resource->received)
+                {
+                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Registration deletion requested for " << id_type << " at " << nmos::make_version(resource->received) << " processed before request received at " << nmos::make_version(received);
+                    set_reply(res, status_codes::InternalError);
+                }
+                else if (resource->version == version)
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Deleting resource: " << resourceId;
 
