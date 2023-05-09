@@ -101,6 +101,9 @@ namespace nmos
         // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is09_versions{ U("is09_versions") }; // when omitted, nmos::is09_versions::all is used
 
+        // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is12_versions{ U("is12_versions") }; // when omitted, nmos::is12_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
@@ -136,6 +139,7 @@ namespace nmos
         const web::json::field_as_integer_or channelmapping_port{ U("channelmapping_port"), 3215 };
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
+        const web::json::field_as_integer_or control_protocol_ws_port{ U("control_protocol_ws_port"), 3218 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
         const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };

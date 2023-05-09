@@ -66,6 +66,8 @@ namespace nmos
                 const auto http_port = nmos::fields::http_port(settings);
                 // can't share a port between an http_listener and a websocket_listener, so use next higher port
                 const auto ws_port = http_port + 1;
+                // can't share a port between the events ws and the control protocol ws
+                const auto ncp_ws_port = ws_port + 1;
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::query_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::query_ws_port, ws_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::fields::registration_port, http_port));
@@ -81,6 +83,7 @@ namespace nmos
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::mdns_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::schemas_port, http_port));
+                if (!registry) web::json::insert(settings, std::make_pair(nmos::fields::control_protocol_ws_port, ncp_ws_port));
             }
         }
     }

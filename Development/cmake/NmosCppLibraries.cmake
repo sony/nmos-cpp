@@ -757,6 +757,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
+    nmos/control_protocol_ws_api.cpp
     nmos/did_sdid.cpp
     nmos/events_api.cpp
     nmos/events_resources.cpp
@@ -828,6 +829,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
+    nmos/control_protocol_ws_api.h
     nmos/device_type.h
     nmos/did_sdid.h
     nmos/event_type.h
@@ -846,6 +848,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/is07_versions.h
     nmos/is08_versions.h
     nmos/is09_versions.h
+    nmos/is12_versions.h
     nmos/json_fields.h
     nmos/json_schema.h
     nmos/lldp_handler.h
