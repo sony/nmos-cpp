@@ -811,6 +811,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
+    nmos/asset.h
     nmos/capabilities.h
     nmos/certificate_handlers.h
     nmos/certificate_settings.h
