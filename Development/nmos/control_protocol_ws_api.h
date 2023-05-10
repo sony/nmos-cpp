@@ -8,8 +8,6 @@ namespace slog
     class base_gate;
 }
 
-// Events API websocket implementation
-// See https://specs.amwa.tv/is-07/releases/v1.0.1/docs/5.2._Transport_-_Websocket.html
 namespace nmos
 {
     struct node_model;
