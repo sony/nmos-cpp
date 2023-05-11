@@ -101,6 +101,9 @@
     // is09_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
     //"is09_versions": ["v1.0"],
 
+    // is13_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is13_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
