@@ -133,10 +133,10 @@ namespace nmos
     {
         web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
         {
-            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-rwnode/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-13/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
         }
 
-        // See https://github.com/AMWA-TV/nmos-rwnode/blob/v1.0-dev/APIs/schemas/
+        // See https://github.com/AMWA-TV/is-13/blob/v1.0-dev/APIs/schemas/
         namespace v1_0
         {
             using namespace nmos::is13_schemas::v1_0_dev;

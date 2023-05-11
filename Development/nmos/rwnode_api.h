@@ -9,7 +9,7 @@ namespace slog
 }
 
 // Read/Write Node API implementation
-// See https://specs.amwa.tv/is-rwnode/branches/v1.0-dev/APIs/ReadWriteNodeAPI.html
+// See https://specs.amwa.tv/is-13/branches/v1.0-dev/APIs/ReadWriteNodeAPI.html
 namespace nmos
 {
     struct model;
