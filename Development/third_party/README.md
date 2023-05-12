@@ -18,5 +18,7 @@ Third-party source files used by the nmos-cpp libraries
   The JSON Schema files used for validation of Channel Mapping API requests and responses
 - [is-09](is-09)  
   The JSON Schema files used for validation of System API requests and responses
+- [is-13](is-13)  
+  The JSON Schema files used for validation of Read/Write Node API requests and responses
 - [WpdPack](WpdPack)  
   Libraries and header files from the [WinPcap](https://www.winpcap.org/) Developer's Pack
