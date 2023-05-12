@@ -29,10 +29,19 @@ namespace nmos
 
     // Helper functions for the Read/Write Node API callbacks
 
-    // this function merges the patch with few additional constraints, i.e. label, description and all tags are read/write except Group Hint and Asset Distinguishing Information
+    namespace details
+    {
+        void merge_rwnode_patch(web::json::value& value, const web::json::value& patch);
+    }
+
+    // this function merges the patch into the value with few additional constraints
+    // i.e. label, description and all tags are read/write except Group Hint and Asset Distinguishing Information
     // when reset using null, tags are removed, and label and description are set to the empty string
     // (this is the default patch merger)
-    void merge_rwnode_patch(const nmos::resource& resource, web::json::value& value, const web::json::value& patch, slog::base_gate& gate);
+    inline void merge_rwnode_patch(const nmos::resource& resource, web::json::value& value, const web::json::value& patch, slog::base_gate& gate)
+    {
+        details::merge_rwnode_patch(value, patch);
+    }
 }
 
 #endif

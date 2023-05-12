@@ -72,45 +72,39 @@ namespace nmos
             return boost::algorithm::starts_with(key, U("urn:x-nmos:tag:asset:"))
                 || boost::algorithm::starts_with(key, U("urn:x-nmos:tag:grouphint/"));
         }
-    }
 
-    // this function merges the patch with few additional constraints, i.e. label, description and all tags are read/write except Group Hint and Asset Distinguishing Information
-    // when reset using null, tags are removed, and label and description are set to the empty string
-    // (this is the default patch merger)
-    void merge_rwnode_patch(const nmos::resource& resource, web::json::value& value, const web::json::value& patch, slog::base_gate& gate)
-    {
-        // reject changes to read-ony tags
-
-        if (patch.has_object_field(nmos::fields::tags))
+        void merge_rwnode_patch(web::json::value& value, const web::json::value& patch)
         {
-            const auto& tags = nmos::fields::tags(patch);
-            auto patch_readonly = std::find_if(tags.begin(), tags.end(), [](const std::pair<utility::string_t, web::json::value>& field)
+            // reject changes to read-ony tags
+
+            if (patch.has_object_field(nmos::fields::tags))
             {
-                return details::is_read_only_tag(field.first);
-            });
-            if (tags.end() != patch_readonly) throw std::runtime_error("cannot patch read-only tag: " + utility::us2s(patch_readonly->first));
+                const auto& tags = nmos::fields::tags(patch);
+                auto patch_readonly = std::find_if(tags.begin(), tags.end(), [](const std::pair<utility::string_t, web::json::value>& field)
+                {
+                    return is_read_only_tag(field.first);
+                });
+                if (tags.end() != patch_readonly) throw std::runtime_error("cannot patch read-only tag: " + utility::us2s(patch_readonly->first));
+            }
+
+            // save existing read-only tags
+
+            auto readonly_tags = web::json::value_from_fields(nmos::fields::tags(value) | boost::adaptors::filtered([](const std::pair<utility::string_t, web::json::value>& field)
+            {
+                return is_read_only_tag(field.first);
+            }));
+
+            // apply patch
+
+            web::json::merge_patch(value, patch, true);
+
+            // apply defaults to properties that have been reset
+
+            web::json::insert(value, std::make_pair(nmos::fields::label, U("")));
+            web::json::insert(value, std::make_pair(nmos::fields::description, U("")));
+            web::json::insert(value, std::make_pair(nmos::fields::tags, readonly_tags));
         }
 
-        // save existing read-only tags
-
-        auto readonly_tags = web::json::value_from_fields(nmos::fields::tags(value) | boost::adaptors::filtered([](const std::pair<utility::string_t, web::json::value>& field)
-        {
-            return details::is_read_only_tag(field.first);
-        }));
-
-        // apply patch
-
-        web::json::merge_patch(value, patch, true);
-
-        // apply defaults to properties that have been reset
-
-        web::json::insert(value, std::make_pair(nmos::fields::label, U("")));
-        web::json::insert(value, std::make_pair(nmos::fields::description, U("")));
-        web::json::insert(value, std::make_pair(nmos::fields::tags, readonly_tags));
-    }
-
-    namespace details
-    {
         void assign_rwnode_patch(web::json::value& value, web::json::value&& patch)
         {
             if (value.has_string_field(nmos::fields::label)) value[nmos::fields::label] = std::move(patch.at(nmos::fields::label));
