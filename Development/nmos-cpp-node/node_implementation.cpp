@@ -56,6 +56,16 @@ namespace impl
     // custom settings for the example node implementation
     namespace fields
     {
+        // node_tags, device_tags: used in resource tags fields
+        // "Each tag has a single key, but MAY have multiple values."
+        // See https://specs.amwa.tv/is-04/releases/v1.3.2/docs/APIs_-_Common_Keys.html#tags
+        // {
+        //     "tag_1": [ "tag_1_value_1", "tag_1_value_2" ],
+        //     "tag_2": [ "tag_2_value_1" ]
+        // }
+        const web::json::field_as_value_or node_tags{ U("node_tags"), web::json::value::object() };
+        const web::json::field_as_value_or device_tags{ U("device_tags"), web::json::value::object() };
+
         // how_many: provides for very basic testing of a node with many sub-resources of each type
         const web::json::field_as_integer_or how_many{ U("how_many"), 1 };
 
@@ -295,6 +305,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     // example node
     {
         auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
+        node.data[nmos::fields::tags] = impl::fields::node_tags(model.settings);
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(node), gate)) throw node_implementation_init_exception();
     }
 
@@ -338,7 +349,9 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, how_many);
         if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, how_many));
         auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, receiver_ports, how_many);
-        if (!insert_resource_after(delay_millis, model.node_resources, nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings), gate)) throw node_implementation_init_exception();
+        auto device = nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings);
+        device.data[nmos::fields::tags] = impl::fields::device_tags(model.settings);
+        if (!insert_resource_after(delay_millis, model.node_resources, std::move(device), gate)) throw node_implementation_init_exception();
     }
 
     // example sources, flows and senders

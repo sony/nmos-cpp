@@ -113,18 +113,18 @@ if [[ "${config_auth}" == "True" ]]; then
 else
   echo "Running non-Auth tests"
   auth=false
-  # 6 test cases per API under test
-  (( expected_disabled_IS_04_01+=6 ))
-  (( expected_disabled_IS_04_03+=6 ))
-  (( expected_disabled_IS_05_01+=6 ))
-  (( expected_disabled_IS_05_02+=12 ))
-  (( expected_disabled_IS_07_01+=6 ))
-  (( expected_disabled_IS_07_02+=18 ))
-  (( expected_disabled_IS_08_01+=6 ))
-  (( expected_disabled_IS_08_02+=12 ))
+  # 7 test cases per API under test
+  (( expected_disabled_IS_04_01+=7 ))
+  (( expected_disabled_IS_04_03+=7 ))
+  (( expected_disabled_IS_05_01+=7 ))
+  (( expected_disabled_IS_05_02+=14 ))
+  (( expected_disabled_IS_07_01+=7 ))
+  (( expected_disabled_IS_07_02+=21 ))
+  (( expected_disabled_IS_08_01+=7 ))
+  (( expected_disabled_IS_08_02+=14 ))
   # test_33, test_33_1
-  (( expected_disabled_IS_04_02+=14 ))
-  (( expected_disabled_IS_09_01+=6 ))
+  (( expected_disabled_IS_04_02+=16 ))
+  (( expected_disabled_IS_09_01+=7 ))
 fi
 
 "${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &

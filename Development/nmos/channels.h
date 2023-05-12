@@ -113,6 +113,7 @@ namespace nmos
 
     // See SMPTE ST 2110-30:2017 Section 6.2.2 Channel Order Convention
     utility::string_t make_fmtp_channel_order(const std::vector<channel_symbol>& channels);
+    std::vector<nmos::channel_symbol> parse_fmtp_channel_order(const utility::string_t& channel_order);
 }
 
 #endif
