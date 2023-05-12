@@ -22,14 +22,14 @@ BST_TEST_CASE(testMergeRwnodePatch)
 
     // empty patch
     {
-        auto merged{ source };
+        auto merged(source);
         nmos::details::merge_rwnode_patch(merged, value::object());
         BST_REQUIRE_EQUAL(source, merged);
     }
 
     // reset everything
     {
-        auto merged{ source };
+        auto merged(source);
         nmos::details::merge_rwnode_patch(merged, value_of({
             { nmos::fields::label, {} },
             { nmos::fields::description, {} },
@@ -46,7 +46,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
 
     // try to reset read-only tag
     {
-        auto merged{ source };
+        auto merged(source);
         BST_REQUIRE_THROW(nmos::details::merge_rwnode_patch(merged, value_of({
             { nmos::fields::tags, value_of({
                 { nmos::fields::group_hint, {} }
@@ -56,7 +56,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
 
     // try to update read-only tag
     {
-        auto merged{ source };
+        auto merged(source);
         BST_REQUIRE_THROW(nmos::details::merge_rwnode_patch(merged, value_of({
             { nmos::fields::tags, value_of({
                 { nmos::fields::group_hint, value_of({ nmos::make_group_hint({ U("qux"), U("quux") }) }) }
@@ -66,7 +66,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
 
     // add and remove tags
     {
-        auto merged{ source };
+        auto merged(source);
         nmos::details::merge_rwnode_patch(merged, value_of({
             { nmos::fields::tags, value_of({
                 { U("foo"), {} },
@@ -85,7 +85,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
 
     // change label, description and tags
     {
-        auto merged{ source };
+        auto merged(source);
         nmos::details::merge_rwnode_patch(merged, value_of({
             { nmos::fields::label, U("woof") },
             { nmos::fields::description, U("bark") },
