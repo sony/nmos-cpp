@@ -212,8 +212,8 @@ namespace sdp
         // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
         // See https://tools.ietf.org/html/rfc5285#section-5
         const web::json::field<uint64_t> local_id{ U("local_id") };
-        const web::json::field_as_string direction{ U("direction") }; // see sdp::direction
-        const web::json::field_as_string extensionattributes{ U("extensionattributes") };
+        const web::json::field_as_string_or direction{ U("direction"), {} }; // see sdp::direction
+        const web::json::field_as_string_or extensionattributes{ U("extensionattributes"), {} };
     }
 
     // make a named value (useful for attributes)

@@ -31,23 +31,7 @@ namespace nmos
 
         extmap parse_extmap(const web::json::value& extmap)
         {
-            const auto& local_id = sdp::fields::local_id(extmap);
-            const auto& uri = sdp::fields::uri(extmap);
-
-            if (extmap.has_field(sdp::fields::direction) && extmap.has_field(sdp::fields::extensionattributes))
-            {
-                return{ local_id, sdp::direction(sdp::fields::direction(extmap)), uri, sdp::fields::extensionattributes(extmap) };
-            }
-            else if (extmap.has_field(sdp::fields::direction))
-            {
-                return{ local_id, sdp::direction(sdp::fields::direction(extmap)), uri };
-            }
-            else if (extmap.has_field(sdp::fields::extensionattributes))
-            {
-                return{ local_id, uri, sdp::fields::extensionattributes(extmap) };
-            }
-
-            return{ local_id, uri };
+            return{ sdp::fields::local_id(extmap), sdp::direction(sdp::fields::direction(extmap)), sdp::fields::uri(extmap), sdp::fields::extensionattributes(extmap) };
         }
 
         web::json::value make_hkep(const hkep& hkep)
