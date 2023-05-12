@@ -226,12 +226,6 @@ BST_TEST_CASE(testSdpParametersRoundtrip)
 o=- 1643910985 1643910985 IN IP4 192.0.2.0
 s=SDP Example
 t=0 0
-a=extmap:1 http://example.com/082005/ext.htm#ttime
-a=extmap:2/sendrecv http://example.com/082005/ext.htm#xmeta short
-a=extmap:3/sendrecv http://example.com/082005/ext.htm#xmeta
-a=extmap:4 http://example.com/082005/ext.htm#ttime SHORT
-a=hkep:9000 IN IP4 192.0.2.0 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
-a=hkep:9001 IN IP4 192.0.2.0 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
 m=video 5000 RTP/AVP 96
 c=IN IP4 233.252.0.0/32
 a=source-filter: incl IN IP4 233.252.0.0 192.0.2.0
