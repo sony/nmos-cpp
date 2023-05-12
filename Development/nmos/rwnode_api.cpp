@@ -1,5 +1,6 @@
 #include "nmos/rwnode_api.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
@@ -10,9 +11,9 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_rwnode_api(nmos::model& model, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_rwnode_api(nmos::model& model, nmos::rwnode_patch_merger merge_patch, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_rwnode_api(nmos::model& model, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_rwnode_api(nmos::model& model, nmos::rwnode_patch_merger merge_patch, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -37,9 +38,19 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.mount(U("/x-nmos/") + nmos::patterns::rwnode_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_rwnode_api(model, gate));
+        rwnode_api.mount(U("/x-nmos/") + nmos::patterns::rwnode_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_rwnode_api(model, std::move(merge_patch), gate));
 
         return rwnode_api;
+    }
+
+    web::json::value make_rwnode_patch(const nmos::resource& resource)
+    {
+        using web::json::value_of;
+        return value_of({
+            { nmos::fields::label, resource.data.at(nmos::fields::label) },
+            { nmos::fields::description, resource.data.at(nmos::fields::description) },
+            { nmos::fields::tags, resource.data.at(nmos::fields::tags) }
+        });
     }
 
     web::json::value make_rwnode_response(const nmos::resource& resource)
@@ -54,15 +65,90 @@ namespace nmos
         });
     }
 
-    void merge_rwnode_request(web::json::value& value, const web::json::value& patch)
+    namespace details
     {
-        web::json::merge_patch(value, patch, true);
-        web::json::insert(value, std::make_pair(nmos::fields::label, U("")));
-        web::json::insert(value, std::make_pair(nmos::fields::description, U("")));
-        web::json::insert(value, std::make_pair(nmos::fields::tags, web::json::value::object()));
+        bool is_read_only_tag(const utility::string_t& key)
+        {
+            return boost::algorithm::starts_with(key, U("urn:x-nmos:tag:asset:"))
+                || boost::algorithm::starts_with(key, U("urn:x-nmos:tag:grouphint/"));
+        }
     }
 
-    web::http::experimental::listener::api_router make_unmounted_rwnode_api(nmos::model& model, slog::base_gate& gate_)
+    // this function merges the patch with few additional constraints, i.e. label, description and all tags are read/write except Group Hint and Asset Distinguishing Information
+    // when reset using null, tags are removed, and label and description are set to the empty string
+    // (this is the default patch merger)
+    void merge_rwnode_patch(const nmos::resource& resource, web::json::value& value, const web::json::value& patch, slog::base_gate& gate)
+    {
+        // reject changes to read-ony tags
+
+        if (patch.has_object_field(nmos::fields::tags))
+        {
+            const auto& tags = nmos::fields::tags(patch);
+            auto patch_readonly = std::find_if(tags.begin(), tags.end(), [](const std::pair<utility::string_t, web::json::value>& field)
+            {
+                return details::is_read_only_tag(field.first);
+            });
+            if (tags.end() != patch_readonly) throw std::runtime_error("cannot patch read-only tag: " + utility::us2s(patch_readonly->first));
+        }
+
+        // save existing read-only tags
+
+        auto readonly_tags = web::json::value_from_fields(nmos::fields::tags(value) | boost::adaptors::filtered([](const std::pair<utility::string_t, web::json::value>& field)
+        {
+            return details::is_read_only_tag(field.first);
+        }));
+
+        // apply patch
+
+        web::json::merge_patch(value, patch, true);
+
+        // apply defaults to properties that have been reset
+
+        web::json::insert(value, std::make_pair(nmos::fields::label, U("")));
+        web::json::insert(value, std::make_pair(nmos::fields::description, U("")));
+        web::json::insert(value, std::make_pair(nmos::fields::tags, readonly_tags));
+    }
+
+    namespace details
+    {
+        void assign_rwnode_patch(web::json::value& value, web::json::value&& patch)
+        {
+            if (value.has_string_field(nmos::fields::label)) value[nmos::fields::label] = std::move(patch.at(nmos::fields::label));
+            if (value.has_string_field(nmos::fields::description)) value[nmos::fields::description] = std::move(patch.at(nmos::fields::description));
+            if (value.has_object_field(nmos::fields::tags)) value[nmos::fields::tags] = std::move(patch.at(nmos::fields::tags));
+        }
+
+        void handle_rwnode_patch(nmos::resources& resources, const nmos::resource& resource, const web::json::value& patch, const nmos::rwnode_patch_merger& merge_patch, slog::base_gate& gate)
+        {
+            auto merged = nmos::make_rwnode_patch(resource);
+            try
+            {
+                if (merge_patch)
+                {
+                    merge_patch(resource, merged, patch, gate);
+                }
+                else
+                {
+                    nmos::merge_rwnode_patch(resource, merged, patch, gate);
+                }
+            }
+            catch (const web::json::json_exception& e)
+            {
+                throw std::logic_error(e.what());
+            }
+            catch (const std::runtime_error& e)
+            {
+                throw std::logic_error(e.what());
+            }
+            modify_resource(resources, resource.id, [&merged](nmos::resource& resource)
+            {
+                resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+                details::assign_rwnode_patch(resource.data, std::move(merged));
+            });
+        }
+    }
+
+    web::http::experimental::listener::api_router make_unmounted_rwnode_api(nmos::model& model, nmos::rwnode_patch_merger merge_patch, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -107,11 +193,11 @@ namespace nmos
             boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_rwnodeapi_resource_core_patch_request_schema_uri))
         };
 
-        rwnode_api.support(U("/self/?"), methods::PATCH, [&model, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        rwnode_api.support(U("/self/?"), methods::PATCH, [&model, validator, merge_patch, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
 
-            return details::extract_json(req, gate).then([&model, &validator, req, res, parameters, gate](value body) mutable
+            return details::extract_json(req, gate).then([&model, &validator, merge_patch, req, res, parameters, gate](value body) mutable
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
@@ -125,11 +211,7 @@ namespace nmos
                 {
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Patching self resource: " << resource->id;
 
-                    modify_resource(resources, resource->id, [&body](nmos::resource& resource)
-                    {
-                        resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                        nmos::merge_rwnode_request(resource.data, body);
-                    });
+                    details::handle_rwnode_patch(resources, *resource, body, merge_patch, gate);
 
                     set_reply(res, status_codes::OK, nmos::make_rwnode_response(*resource));
 
@@ -196,11 +278,11 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::PATCH, [&model, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        rwnode_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::PATCH, [&model, validator, merge_patch, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
 
-            return details::extract_json(req, gate).then([&model, &validator, req, res, parameters, gate](value body) mutable
+            return details::extract_json(req, gate).then([&model, &validator, merge_patch, req, res, parameters, gate](value body) mutable
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
@@ -218,11 +300,7 @@ namespace nmos
                 {
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Patching " << id_type;
 
-                    modify_resource(resources, resource->id, [&body](nmos::resource& resource)
-                    {
-                        resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                        nmos::merge_rwnode_request(resource.data, body);
-                    });
+                    details::handle_rwnode_patch(resources, *resource, body, merge_patch, gate);
 
                     set_reply(res, status_codes::OK, nmos::make_rwnode_response(*resource));
 

@@ -9,6 +9,7 @@
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
+#include "nmos/rwnode_api.h"
 
 namespace nmos
 {
@@ -56,6 +57,7 @@ namespace nmos
             node_implementation& on_connection_activated(nmos::connection_activation_handler connection_activated) { this->connection_activated = std::move(connection_activated); return *this; }
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
+            node_implementation& on_merge_rwnode_patch(nmos::rwnode_patch_merger merge_rwnode_patch) { this->merge_rwnode_patch = std::move(merge_rwnode_patch); return *this; }
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
@@ -84,6 +86,8 @@ namespace nmos
             nmos::details::channelmapping_output_map_validator validate_map;
 
             nmos::channelmapping_activation_handler channelmapping_activated;
+
+            nmos::rwnode_patch_merger merge_rwnode_patch;
 
             nmos::ocsp_response_handler get_ocsp_response;
         };
