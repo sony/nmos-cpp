@@ -119,11 +119,11 @@ namespace nmos
             {
                 if (merge_patch)
                 {
-                    merge_patch(resource, merged, patch, gate);
+                    merge_patch(resource, merged, patch);
                 }
                 else
                 {
-                    nmos::merge_rwnode_patch(resource, merged, patch, gate);
+                    nmos::merge_rwnode_patch(resource, merged, patch);
                 }
             }
             catch (const web::json::json_exception& e)

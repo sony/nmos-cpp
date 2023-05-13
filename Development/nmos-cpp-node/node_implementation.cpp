@@ -1269,6 +1269,17 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
+// Example Read/Write Node API patch callback to update resource labels, descriptions and tags
+nmos::rwnode_patch_merger make_node_implementation_rwnode_patch_merger(slog::base_gate& gate)
+{
+    return [&gate](const nmos::resource& resource, web::json::value& value, const web::json::value& patch)
+    {
+        const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Updating " << id_type;
+        nmos::details::merge_rwnode_patch(value, patch);
+    };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1422,5 +1433,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
-        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
+        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
+        .on_merge_rwnode_patch(make_node_implementation_rwnode_patch_merger(gate)); // may be omitted if not required
 }
