@@ -137,6 +137,7 @@ namespace nmos
         const web::json::field_as_integer_or events_port{ U("events_port"), 3216 };
         const web::json::field_as_integer_or events_ws_port{ U("events_ws_port"), 3217 };
         const web::json::field_as_integer_or channelmapping_port{ U("channelmapping_port"), 3215 };
+        const web::json::field_as_integer_or rwnode_port{ U("rwnode_port"), 3212 };
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
 

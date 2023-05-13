@@ -5,6 +5,7 @@
 #include "nmos/clock_name.h"
 #include "nmos/clock_ref_type.h"
 #include "nmos/is04_versions.h"
+#include "nmos/is13_versions.h"
 #include "nmos/resource.h"
 
 namespace nmos
@@ -41,7 +42,25 @@ namespace nmos
 
         data[U("caps")] = value::object();
 
-        data[U("services")] = value::array();
+        if (0 <= nmos::fields::rwnode_port(settings))
+        {
+            for (const auto& version : nmos::is13_versions::from_settings(settings))
+            {
+                auto rwnode_uri = web::uri_builder()
+                    .set_scheme(nmos::http_scheme(settings))
+                    .set_port(nmos::fields::rwnode_port(settings))
+                    .set_path(U("/x-nmos/rwnode/") + make_api_version(version));
+                auto type = U("urn:x-nmos:service:rw-node/") + make_api_version(version);
+
+                for (const auto& host : hosts)
+                {
+                    web::json::push_back(data[U("services")], value_of({
+                        { U("href"), rwnode_uri.set_host(host).to_uri().to_string() },
+                        { U("type"), type }
+                    }));
+                }
+            }
+        }
 
         data[U("clocks")] = !web::json::empty(clocks) ? clocks : value::array();
 
