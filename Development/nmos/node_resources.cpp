@@ -41,6 +41,8 @@ namespace nmos
 
         const auto hosts = nmos::get_hosts(settings);
 
+        data[U("controls")] = value::array();
+
         if (0 <= nmos::fields::connection_port(settings))
         {
             for (const auto& version : nmos::is05_versions::from_settings(settings))

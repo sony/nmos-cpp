@@ -42,6 +42,8 @@ namespace nmos
 
         data[U("caps")] = value::object();
 
+        data[U("services")] = value::array();
+
         if (0 <= nmos::fields::rwnode_port(settings))
         {
             for (const auto& version : nmos::is13_versions::from_settings(settings))
