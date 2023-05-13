@@ -17,7 +17,7 @@ namespace nmos
         inline std::set<api_version> from_settings(const nmos::settings& settings)
         {
             return settings.has_field(nmos::fields::is13_versions)
-                ? boost::copy_range<std::set<api_version>>(nmos::fields::is04_versions(settings) | boost::adaptors::transformed([](const web::json::value& v) { return nmos::parse_api_version(v.as_string()); }))
+                ? boost::copy_range<std::set<api_version>>(nmos::fields::is13_versions(settings) | boost::adaptors::transformed([](const web::json::value& v) { return nmos::parse_api_version(v.as_string()); }))
                 : nmos::is13_versions::all;
         }
     }
