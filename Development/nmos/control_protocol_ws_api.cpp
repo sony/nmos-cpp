@@ -1,5 +1,6 @@
 #include "nmos/control_protocol_ws_api.h"
 
+#include "nmos/model.h"
 #include "nmos/slog.h"
 
 namespace nmos
@@ -30,6 +31,7 @@ namespace nmos
         return [&model, &websockets, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
+            auto lock = model.write_lock();
 
             const auto& ws_ncp_path = connection_uri.path();
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Opening websocket connection to: " << ws_ncp_path;
@@ -49,6 +51,7 @@ namespace nmos
         return [&model, &websockets, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, web::websockets::websocket_close_status close_status, const utility::string_t& close_reason)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
+            auto lock = model.write_lock();
 
             const auto& ws_ncp_path = connection_uri.path();
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Closing websocket connection to: " << ws_ncp_path << " [" << (int)close_status << ": " << close_reason << "]";
@@ -68,7 +71,9 @@ namespace nmos
         return [&model, &websockets, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
-           // theoretically blocking, but in fact not
+            auto lock = model.read_lock();
+
+            // theoretically blocking, but in fact not
             auto msg = msg_.extract_string().get();
 
             const auto& ws_ncp_path = connection_uri.path();
