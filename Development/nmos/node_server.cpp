@@ -93,6 +93,7 @@ namespace nmos
             websocket_config.set_log_callback(nmos::make_slog_logging_callback(gate));
 
             size_t event_ws_pos{ 0 };
+            bool found_event_ws{ false };
             for (auto& ws_handler : node_server.ws_handlers)
             {
                 // if IP address isn't specified for this router, use default server address or wildcard address
@@ -101,7 +102,11 @@ namespace nmos
                 // hmm, this should probably also take account of the address
                 node_server.ws_listeners.push_back(nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, node_model.settings), ws_handler.second.first, websocket_config, gate));
 
-                event_ws_pos = (ws_handler.first.second == events_ws_port) ? event_ws_pos : ++event_ws_pos;
+                if (!found_event_ws)
+                {
+                    if (ws_handler.first.second == events_ws_port) { found_event_ws = true; }
+                    else { ++event_ws_pos; }
+                }
             }
 
             auto& events_ws_listener = node_server.ws_listeners.at(event_ws_pos);
