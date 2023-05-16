@@ -155,4 +155,52 @@ namespace nmos
 
         return channel_order.str();
     }
+
+    // See SMPTE ST 2110-30:2017 Section 6.2.2 Channel Order Convention
+    std::vector<nmos::channel_symbol> parse_fmtp_channel_order(const utility::string_t& channel_order)
+    {
+        std::vector<nmos::channel_symbol> channels;
+
+        const auto first = channel_order.data();
+        const auto last = first + channel_order.size();
+        auto it = first;
+
+        // check prefix
+
+        static const auto prefix = U("SMPTE2110.(");
+        auto pit = &prefix[0];
+        while (it != last && *pit != U('\0') && *it == *pit) ++it, ++pit;
+        if (*pit != U('\0')) return {};
+
+        // parse comma-separated channel group symbols
+
+        while (true)
+        {
+            const auto git = it;
+            while (it != last && *it != U(')') && *it != U(',')) ++it;
+            if (it == last) return {};
+
+            const channel_group_symbol symbol(utility::string_t(git, it));
+
+            // hm, does not handle 22.2 Surround ('222'), SDI audio group ('SGRP') or Undefined ('U01' to 'U64')
+            auto group = std::find_if(details::channel_groups.begin(), details::channel_groups.end(),
+                [&](const std::pair<std::vector<channel_symbol>, channel_group_symbol>& group)
+            {
+                return symbol == group.second;
+            });
+            if (details::channel_groups.end() == group) return {};
+            channels.insert(channels.end(), group->first.begin(), group->first.end());
+
+            if (*it == U(')')) break;
+            ++it;
+        }
+
+        // check suffix
+
+        if (it == last) return {};
+        ++it;
+        if (it != last) return {};
+
+        return channels;
+    }
 }

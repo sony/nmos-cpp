@@ -167,6 +167,9 @@ namespace nmos
 
     namespace details
     {
+        const utility::string_t received_time{ U("X-Received-Time") };
+        const utility::string_t actual_method{ U("X-Actual-Method") };
+
         // exception to skip other route handlers and then send the response (see add_api_finally_handler)
         struct to_api_finally_handler {};
 

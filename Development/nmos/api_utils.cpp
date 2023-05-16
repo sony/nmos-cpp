@@ -473,9 +473,6 @@ namespace nmos
             };
         }
 
-        static const utility::string_t received_time{ U("X-Received-Time") };
-        static const utility::string_t actual_method{ U("X-Actual-Method") };
-
         // make handler to set appropriate response headers, and error response body if indicated
         web::http::experimental::listener::route_handler make_api_finally_handler(slog::base_gate& gate)
         {

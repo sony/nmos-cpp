@@ -914,6 +914,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
+    nmos/asset.h
     nmos/authorization.h
     nmos/authorization_handlers.h
     nmos/authorization_redirect_api.h
