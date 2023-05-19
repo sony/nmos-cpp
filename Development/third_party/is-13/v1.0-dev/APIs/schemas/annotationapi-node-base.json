@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "description": "Describes the Read/Write Node API base resource",
-  "title": "Read/Write Node API base resource",
+  "description": "Describes the Annotation API node resource",
+  "title": "Annotation API node resource",
   "items": {
     "type": "string",
     "enum": [

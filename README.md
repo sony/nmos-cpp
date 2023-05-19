@@ -10,7 +10,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-07 NMOS Event & Tally Specification](https://specs.amwa.tv/is-07/)
 - [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://specs.amwa.tv/is-08/)
 - [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
-- [AMWA IS-13 NMOS Read/Write Node Specification](https://specs.amwa.tv/is-13/)
+- [AMWA IS-13 NMOS Annotation Specification](https://specs.amwa.tv/is-13/)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-002-02 NMOS Asset Distinguishing Information](https://specs.amwa.tv/bcp-002-02/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)

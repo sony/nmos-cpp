@@ -10,7 +10,7 @@
       "type": ["null", "string"]
     },
     "description": {
-      "description": "Detailed description of the resource. Set to null to restore default label.",
+      "description": "Detailed description of the resource. Set to null to restore default description.",
       "type": ["null", "string"]
     },
     "tags": {

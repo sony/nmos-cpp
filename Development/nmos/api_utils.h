@@ -50,8 +50,8 @@ namespace nmos
 		const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
-        // IS-13 Read/Write Node API
-        const route_pattern rwnode_api = make_route_pattern(U("api"), U("rwnode"));
+        // IS-13 Annotation API
+        const route_pattern annotation_api = make_route_pattern(U("api"), U("annotation"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));

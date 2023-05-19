@@ -142,7 +142,7 @@ namespace nmos
             using namespace nmos::is13_schemas::v1_0_dev;
             const utility::string_t tag(_XPLATSTR("v1.0-dev"));
 
-            const web::uri rwnodeapi_resource_core_patch_request_uri = make_schema_uri(tag, _XPLATSTR("resource_core_patch.json"));
+            const web::uri annotationapi_resource_core_patch_request_uri = make_schema_uri(tag, _XPLATSTR("resource_core_patch.json"));
         }
     }
 }
@@ -413,9 +413,9 @@ namespace nmos
             return is08_schemas::v1_0::map_activations_post_request_uri;
         }
 
-        web::uri make_rwnodeapi_resource_core_patch_request_schema_uri(const nmos::api_version& version)
+        web::uri make_annotationapi_resource_core_patch_request_schema_uri(const nmos::api_version& version)
         {
-            return is13_schemas::v1_0::rwnodeapi_resource_core_patch_request_uri;
+            return is13_schemas::v1_0::annotationapi_resource_core_patch_request_uri;
         }
 
         // load the json schema for the specified base URI

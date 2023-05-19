@@ -9,11 +9,12 @@ namespace nmos
     {
         namespace v1_0_dev
         {
+            extern const char* annotationapi_base;
+            extern const char* annotationapi_node_base;
             extern const char* error;
             extern const char* resource_core;
             extern const char* resource_core_patch;
             extern const char* resource_cores;
-            extern const char* rwnodeapi_base;
         }
     }
 }

@@ -29,7 +29,7 @@ namespace nmos
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version);
 
-        web::uri make_rwnodeapi_resource_core_patch_request_schema_uri(const nmos::api_version& version);
+        web::uri make_annotationapi_resource_core_patch_request_schema_uri(const nmos::api_version& version);
 
         // load the json schema for the specified base URI
         web::json::value load_json_schema(const web::uri& id);

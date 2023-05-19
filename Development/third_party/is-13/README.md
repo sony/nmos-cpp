@@ -1,6 +1,6 @@
-# AMWA IS-13 NMOS Read/Write Node Specification
+# AMWA IS-13 NMOS Annotation Specification
 
-This directory contains files from the [AMWA IS-13 NMOS Read/Write Node Specification](https://github.com/AMWA-TV/is-rwnode), in particular tagged versions of the JSON schemas used by the API specifications.
+This directory contains files from the [AMWA IS-13 NMOS Annotation Specification](https://github.com/AMWA-TV/is-13), in particular tagged versions of the JSON schemas used by the API specifications.
 
 Original source code:
 

@@ -1,12 +1,12 @@
 // The first "test" is of course whether the header compiles standalone
-#include "nmos/rwnode_api.h"
+#include "nmos/annotation_api.h"
 
 #include "bst/test/test.h"
 #include "nmos/group_hint.h"
 #include "nmos/json_fields.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testMergeRwnodePatch)
+BST_TEST_CASE(testMergeAnnotationPatch)
 {
     using web::json::value;
     using web::json::value_of;
@@ -23,14 +23,14 @@ BST_TEST_CASE(testMergeRwnodePatch)
     // empty patch
     {
         auto merged(source);
-        nmos::details::merge_rwnode_patch(merged, value::object());
+        nmos::details::merge_annotation_patch(merged, value::object());
         BST_REQUIRE_EQUAL(source, merged);
     }
 
     // reset everything
     {
         auto merged(source);
-        nmos::details::merge_rwnode_patch(merged, value_of({
+        nmos::details::merge_annotation_patch(merged, value_of({
             { nmos::fields::label, {} },
             { nmos::fields::description, {} },
             { nmos::fields::tags, {} }
@@ -47,7 +47,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
     // try to reset read-only tag
     {
         auto merged(source);
-        BST_REQUIRE_THROW(nmos::details::merge_rwnode_patch(merged, value_of({
+        BST_REQUIRE_THROW(nmos::details::merge_annotation_patch(merged, value_of({
             { nmos::fields::tags, value_of({
                 { nmos::fields::group_hint, {} }
             }) }
@@ -57,7 +57,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
     // try to update read-only tag
     {
         auto merged(source);
-        BST_REQUIRE_THROW(nmos::details::merge_rwnode_patch(merged, value_of({
+        BST_REQUIRE_THROW(nmos::details::merge_annotation_patch(merged, value_of({
             { nmos::fields::tags, value_of({
                 { nmos::fields::group_hint, value_of({ nmos::make_group_hint({ U("qux"), U("quux") }) }) }
             }) }
@@ -67,7 +67,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
     // add and remove tags
     {
         auto merged(source);
-        nmos::details::merge_rwnode_patch(merged, value_of({
+        nmos::details::merge_annotation_patch(merged, value_of({
             { nmos::fields::tags, value_of({
                 { U("foo"), {} },
                 { U("bar"), value_of({ U("woof"), U("bark") }) },
@@ -86,7 +86,7 @@ BST_TEST_CASE(testMergeRwnodePatch)
     // change label, description and tags
     {
         auto merged(source);
-        nmos::details::merge_rwnode_patch(merged, value_of({
+        nmos::details::merge_annotation_patch(merged, value_of({
             { nmos::fields::label, U("woof") },
             { nmos::fields::description, U("bark") },
             { nmos::fields::tags, value_of({

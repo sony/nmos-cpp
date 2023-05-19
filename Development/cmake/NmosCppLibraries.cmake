@@ -695,11 +695,12 @@ set(NMOS_IS13_SCHEMAS_HEADERS
 set(NMOS_IS13_V1_0_TAG v1.0-dev)
 
 set(NMOS_IS13_V1_0_SCHEMAS_JSON
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/annotationapi-base.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/annotationapi-node-base.json
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/error.json
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_core.json
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_core_patch.json
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_cores.json
-    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/rwnodeapi-base.json
     )
 
 set(NMOS_IS13_SCHEMAS_JSON_MATCH "third_party/is-13/([^/]+)/APIs/schemas/([^;]+)\\.json")
@@ -813,6 +814,7 @@ set(NMOS_CPP_CPPREST_DETAILS_HEADERS
 set(NMOS_CPP_NMOS_SOURCES
     nmos/activation_utils.cpp
     nmos/admin_ui.cpp
+    nmos/annotation_api.cpp
     nmos/api_downgrade.cpp
     nmos/api_utils.cpp
     nmos/capabilities.cpp
@@ -864,7 +866,6 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/registry_server.cpp
     nmos/resource.cpp
     nmos/resources.cpp
-    nmos/rwnode_api.cpp
     nmos/schemas_api.cpp
     nmos/sdp_utils.cpp
     nmos/server.cpp
@@ -879,6 +880,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/activation_mode.h
     nmos/activation_utils.h
     nmos/admin_ui.h
+    nmos/annotation_api.h
     nmos/api_downgrade.h
     nmos/api_utils.h
     nmos/api_version.h
@@ -958,7 +960,6 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/registry_server.h
     nmos/resource.h
     nmos/resources.h
-    nmos/rwnode_api.h
     nmos/schemas_api.h
     nmos/sdp_utils.h
     nmos/server.h

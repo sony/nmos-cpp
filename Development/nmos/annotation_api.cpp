@@ -1,4 +1,4 @@
-#include "nmos/rwnode_api.h"
+#include "nmos/annotation_api.h"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/adaptor/filtered.hpp>
@@ -11,39 +11,39 @@
 
 namespace nmos
 {
-    web::http::experimental::listener::api_router make_unmounted_rwnode_api(nmos::model& model, nmos::rwnode_patch_merger merge_patch, slog::base_gate& gate);
+    web::http::experimental::listener::api_router make_unmounted_annotation_api(nmos::model& model, nmos::annotation_patch_merger merge_patch, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_rwnode_api(nmos::model& model, nmos::rwnode_patch_merger merge_patch, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_annotation_api(nmos::model& model, nmos::annotation_patch_merger merge_patch, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
-        api_router rwnode_api;
+        api_router annotation_api;
 
-        rwnode_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+        annotation_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("x-nmos/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+        annotation_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("rwnode/") }, req, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("annotation/") }, req, res));
             return pplx::task_from_result(true);
         });
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is13_versions::from_settings(model.settings); });
-        rwnode_api.support(U("/x-nmos/") + nmos::patterns::rwnode_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
+        annotation_api.support(U("/x-nmos/") + nmos::patterns::annotation_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body(nmos::make_api_version_sub_routes(versions), req, res));
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.mount(U("/x-nmos/") + nmos::patterns::rwnode_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_rwnode_api(model, std::move(merge_patch), gate));
+        annotation_api.mount(U("/x-nmos/") + nmos::patterns::annotation_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_annotation_api(model, std::move(merge_patch), gate));
 
-        return rwnode_api;
+        return annotation_api;
     }
 
-    web::json::value make_rwnode_patch(const nmos::resource& resource)
+    web::json::value make_annotation_patch(const nmos::resource& resource)
     {
         using web::json::value_of;
         return value_of({
@@ -53,7 +53,7 @@ namespace nmos
         });
     }
 
-    web::json::value make_rwnode_response(const nmos::resource& resource)
+    web::json::value make_annotation_response(const nmos::resource& resource)
     {
         using web::json::value_of;
         return value_of({
@@ -73,7 +73,7 @@ namespace nmos
                 || boost::algorithm::starts_with(key, U("urn:x-nmos:tag:grouphint/"));
         }
 
-        void merge_rwnode_patch(web::json::value& value, const web::json::value& patch)
+        void merge_annotation_patch(web::json::value& value, const web::json::value& patch)
         {
             // reject changes to read-ony tags
 
@@ -105,16 +105,16 @@ namespace nmos
             web::json::insert(value, std::make_pair(nmos::fields::tags, readonly_tags));
         }
 
-        void assign_rwnode_patch(web::json::value& value, web::json::value&& patch)
+        void assign_annotation_patch(web::json::value& value, web::json::value&& patch)
         {
             if (value.has_string_field(nmos::fields::label)) value[nmos::fields::label] = std::move(patch.at(nmos::fields::label));
             if (value.has_string_field(nmos::fields::description)) value[nmos::fields::description] = std::move(patch.at(nmos::fields::description));
             if (value.has_object_field(nmos::fields::tags)) value[nmos::fields::tags] = std::move(patch.at(nmos::fields::tags));
         }
 
-        void handle_rwnode_patch(nmos::resources& resources, const nmos::resource& resource, const web::json::value& patch, const nmos::rwnode_patch_merger& merge_patch, slog::base_gate& gate)
+        void handle_annotation_patch(nmos::resources& resources, const nmos::resource& resource, const web::json::value& patch, const nmos::annotation_patch_merger& merge_patch, slog::base_gate& gate)
         {
-            auto merged = nmos::make_rwnode_patch(resource);
+            auto merged = nmos::make_annotation_patch(resource);
             try
             {
                 if (merge_patch)
@@ -123,7 +123,7 @@ namespace nmos
                 }
                 else
                 {
-                    nmos::merge_rwnode_patch(resource, merged, patch);
+                    nmos::merge_annotation_patch(resource, merged, patch);
                 }
             }
             catch (const web::json::json_exception& e)
@@ -137,28 +137,34 @@ namespace nmos
             modify_resource(resources, resource.id, [&merged](nmos::resource& resource)
             {
                 resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
-                details::assign_rwnode_patch(resource.data, std::move(merged));
+                details::assign_annotation_patch(resource.data, std::move(merged));
             });
         }
     }
 
-    web::http::experimental::listener::api_router make_unmounted_rwnode_api(nmos::model& model, nmos::rwnode_patch_merger merge_patch, slog::base_gate& gate_)
+    web::http::experimental::listener::api_router make_unmounted_annotation_api(nmos::model& model, nmos::annotation_patch_merger merge_patch, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
-        api_router rwnode_api;
+        api_router annotation_api;
 
         // check for supported API version
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is13_versions::from_settings(model.settings); });
-        rwnode_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
+        annotation_api.support(U(".*"), details::make_api_version_handler(versions, gate_));
 
-        rwnode_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+        annotation_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
+        {
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("node/") }, req, res));
+            return pplx::task_from_result(true);
+        });
+
+        annotation_api.support(U("/node/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("self/"), U("devices/"), U("sources/"), U("flows/"), U("senders/"), U("receivers/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.support(U("/self/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        annotation_api.support(U("/node/self/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
@@ -168,12 +174,12 @@ namespace nmos
             if (resources.end() != resource)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Returning self resource: " << resource->id;
-                set_reply(res, status_codes::OK, nmos::make_rwnode_response(*resource));
+                set_reply(res, status_codes::OK, nmos::make_annotation_response(*resource));
             }
             else
             {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "Self resource not found!";
-                set_reply(res, status_codes::InternalError); // rather than Not Found, since the Read/Write Node API doesn't allow a 404 response
+                set_reply(res, status_codes::InternalError); // rather than Not Found, since the Annotation API doesn't allow a 404 response
             }
 
             return pplx::task_from_result(true);
@@ -182,10 +188,10 @@ namespace nmos
         const web::json::experimental::json_validator validator
         {
             nmos::experimental::load_json_schema,
-            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_rwnodeapi_resource_core_patch_request_schema_uri))
+            boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_annotationapi_resource_core_patch_request_schema_uri))
         };
 
-        rwnode_api.support(U("/self/?"), methods::PATCH, [&model, validator, merge_patch, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        annotation_api.support(U("/node/self/?"), methods::PATCH, [&model, validator, merge_patch, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
 
@@ -193,7 +199,7 @@ namespace nmos
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-                validator.validate(body, experimental::make_rwnodeapi_resource_core_patch_request_schema_uri(version));
+                validator.validate(body, experimental::make_annotationapi_resource_core_patch_request_schema_uri(version));
 
                 auto lock = model.write_lock();
                 auto& resources = model.node_resources;
@@ -203,23 +209,23 @@ namespace nmos
                 {
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Patching self resource: " << resource->id;
 
-                    details::handle_rwnode_patch(resources, *resource, body, merge_patch, gate);
+                    details::handle_annotation_patch(resources, *resource, body, merge_patch, gate);
 
-                    set_reply(res, status_codes::OK, nmos::make_rwnode_response(*resource));
+                    set_reply(res, status_codes::OK, nmos::make_annotation_response(*resource));
 
                     model.notify();
                 }
                 else
                 {
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Self resource not found!";
-                    set_reply(res, status_codes::InternalError); // rather than Not Found, since the Read/Write Node API doesn't allow a 404 response
+                    set_reply(res, status_codes::InternalError); // rather than Not Found, since the Annotation API doesn't allow a 404 response
                 }
 
                 return true;
             });
         });
 
-        rwnode_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        annotation_api.support(U("/node/") + nmos::patterns::subresourceType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
@@ -235,7 +241,7 @@ namespace nmos
                 web::json::serialize_array(resources
                     | boost::adaptors::filtered(match)
                     | boost::adaptors::transformed(
-                        [&count](const nmos::resources::value_type& resource) { ++count; return nmos::make_rwnode_response(resource); }
+                        [&count](const nmos::resources::value_type& resource) { ++count; return nmos::make_annotation_response(resource); }
                     )),
                 web::http::details::mime_types::application_json);
 
@@ -244,7 +250,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        annotation_api.support(U("/node/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
             auto lock = model.read_lock();
@@ -258,7 +264,7 @@ namespace nmos
             if (resources.end() != resource)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Returning " << id_type;
-                set_reply(res, status_codes::OK, nmos::make_rwnode_response(*resource));
+                set_reply(res, status_codes::OK, nmos::make_annotation_response(*resource));
             }
             else
             {
@@ -268,7 +274,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        rwnode_api.support(U("/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::PATCH, [&model, validator, merge_patch, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        annotation_api.support(U("/node/") + nmos::patterns::subresourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::PATCH, [&model, validator, merge_patch, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
             nmos::api_gate gate(gate_, req, parameters);
 
@@ -276,7 +282,7 @@ namespace nmos
             {
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
 
-                validator.validate(body, experimental::make_rwnodeapi_resource_core_patch_request_schema_uri(version));
+                validator.validate(body, experimental::make_annotationapi_resource_core_patch_request_schema_uri(version));
 
                 auto lock = model.write_lock();
                 auto& resources = model.node_resources;
@@ -290,9 +296,9 @@ namespace nmos
                 {
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Patching " << id_type;
 
-                    details::handle_rwnode_patch(resources, *resource, body, merge_patch, gate);
+                    details::handle_annotation_patch(resources, *resource, body, merge_patch, gate);
 
-                    set_reply(res, status_codes::OK, nmos::make_rwnode_response(*resource));
+                    set_reply(res, status_codes::OK, nmos::make_annotation_response(*resource));
 
                     model.notify();
                 }
@@ -305,6 +311,6 @@ namespace nmos
             });
         });
 
-        return rwnode_api;
+        return annotation_api;
     }
 }
