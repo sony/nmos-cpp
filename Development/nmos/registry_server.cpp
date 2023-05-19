@@ -45,6 +45,8 @@ namespace nmos
 
             const auto hsts = nmos::experimental::get_hsts(registry_model.settings);
 
+            const auto server_address = nmos::experimental::fields::server_address(registry_model.settings);
+
             // Configure the DNS-SD Browsing API
 
             const host_port mdns_address(nmos::experimental::fields::mdns_address(registry_model.settings), nmos::experimental::fields::mdns_port(registry_model.settings));
@@ -111,8 +113,8 @@ namespace nmos
 
             for (auto& api_router : registry_server.api_routers)
             {
-                // default empty string means the wildcard address
-                const auto& host = !api_router.first.first.empty() ? api_router.first.first : web::http::experimental::listener::host_wildcard;
+                // if IP address isn't specified for this router, use default server address or wildcard address
+                const auto& host = !api_router.first.first.empty() ? api_router.first.first : !server_address.empty() ? server_address : web::http::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
                 registry_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, registry_model.settings), api_router.second, http_config, hsts, gate));
@@ -125,8 +127,8 @@ namespace nmos
 
             for (auto& ws_handler : registry_server.ws_handlers)
             {
-                // default empty string means the wildcard address
-                const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : web::websockets::experimental::listener::host_wildcard;
+                // if IP address isn't specified for this router, use default server address or wildcard address
+                const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : !server_address.empty() ? server_address : web::websockets::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
                 registry_server.ws_listeners.push_back(nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, registry_model.settings), ws_handler.second.first, websocket_config, gate));

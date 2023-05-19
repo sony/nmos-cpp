@@ -66,6 +66,8 @@ namespace nmos
         // see https://specs.amwa.tv/is-04/releases/v1.2.0/docs/2.5._APIs_-_Query_Parameters.html#pagination
         tai created;
         tai updated;
+        // when the most recently applied request was received
+        tai received;
 
         // see https://specs.amwa.tv/is-04/releases/v1.2.0/docs/4.1._Behaviour_-_Registration.html#heartbeating
         mutable details::copyable_atomic<nmos::health> health;
