@@ -164,8 +164,6 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
-
             auto resource = nmos::find_self_resource(resources);
             if (resources.end() != resource)
             {
@@ -227,7 +225,6 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
 
             const auto match = [&](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
@@ -238,7 +235,7 @@ namespace nmos
                 web::json::serialize_array(resources
                     | boost::adaptors::filtered(match)
                     | boost::adaptors::transformed(
-                        [&count, &version](const nmos::resources::value_type& resource) { ++count; return nmos::make_rwnode_response(resource); }
+                        [&count](const nmos::resources::value_type& resource) { ++count; return nmos::make_rwnode_response(resource); }
                     )),
                 web::http::details::mime_types::application_json);
 
@@ -253,7 +250,6 @@ namespace nmos
             auto lock = model.read_lock();
             auto& resources = model.node_resources;
 
-            const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
             const string_t resourceType = parameters.at(nmos::patterns::subresourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
