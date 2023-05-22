@@ -111,7 +111,9 @@ if [[ "${config_auth}" == "True" ]]; then
   echo "Running Auth tests"
   auth=true
   common_params+=",\
-  \"server_authorization\":true\
+  \"label\":\"nmos-cpp\",\
+  \"server_authorization\":true,\
+  \"service_unavailable_retry_after\":10\
   "
   node_params=",\
   \"client_authorization\":true,\
