@@ -169,6 +169,7 @@ function do_run_test() {
           ;;
   *)      echo "Fail" | tee ${badges_dir}/${suite}.txt
           echo "${suite} :x:" >> ${summary_path}
+          cat ${output_file}
           ;;
   esac
 }
