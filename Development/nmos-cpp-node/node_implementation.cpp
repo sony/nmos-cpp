@@ -122,6 +122,12 @@ namespace impl
 
         // edid_support: controls whether inputs and output have EDID support
         const web::json::field_as_bool_or edid_support{ U("edid_support"), false };
+
+        // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
+        const web::json::field_as_integer_or streamcompatibility_index{ U("streamcompatibility_index"), 1 };
+
+        // volatile_status_of_sender: specifies whether Status of Sender voluntarily changes (for demo purposes)
+        const web::json::field_as_bool_or volatile_status_of_sender{ U("volatile_status_of_sender"), false };
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
@@ -282,6 +288,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     const auto channel_count = impl::fields::channel_count(model.settings);
     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
     const auto edid_support = impl::fields::edid_support(model.settings);
+    const auto streamcompatibility_index = impl::fields::streamcompatibility_index(model.settings);
 
     // for now, some typical values for video/jxsv, based on VSF TR-08:2022
     // see https://vsf.tv/download/technical_recommendations/VSF_TR-08_2022-04-20.pdf
@@ -939,14 +946,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
         const auto input_id = impl::make_id(seed_id, nmos::types::input);
-
-        // Associate the last created video and audio Senders with this Input
-        std::vector<nmos::id> sender_ids;
-        int index = how_many - 1;
-        for (const auto& port : { impl::ports::video, impl::ports::audio })
-        {
-            sender_ids.push_back(impl::make_id(seed_id, nmos::types::sender, port, index));
-        }
+        const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio }, streamcompatibility_index);
 
         auto input = edid_support
             ? nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, bst::nullopt, sender_ids, model.settings)
@@ -980,7 +980,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
 
         for (const auto& port : { impl::ports::video, impl::ports::audio })
         {
-            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, streamcompatibility_index);
             const auto& supported_param_constraints = port == impl::ports::video ? video_parameter_constraints : audio_parameter_constraints;
             auto streamcompatibility_sender = nmos::experimental::make_streamcompatibility_sender(sender_id, { input_id }, supported_param_constraints);
             if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(streamcompatibility_sender), gate)) return;
@@ -1010,14 +1010,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
         const auto output_id = impl::make_id(seed_id, nmos::types::output);
-
-        // Associate the last created video and audio Receivers with this Output
-        std::vector<nmos::id> receiver_ids;
-        int index = how_many - 1;
-        for (const auto& port : { impl::ports::video, impl::ports::audio })
-        {
-            receiver_ids.push_back(impl::make_id(seed_id, nmos::types::receiver, port, index));
-        }
+        const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, { impl::ports::video, impl::ports::audio }, streamcompatibility_index);
 
         auto output = edid_support
             ? nmos::experimental::make_streamcompatibility_output(output_id, true, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings)
@@ -1042,6 +1035,9 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
     const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
     const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
 
+    const auto streamcompatibility_index = impl::fields::streamcompatibility_index(model.settings);
+    const auto update_sender = impl::fields::volatile_status_of_sender(model.settings);
+
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 
     nmos::details::seed_generator events_seeder;
@@ -1049,10 +1045,10 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
 
     auto cancellation_source = pplx::cancellation_token_source();
     auto token = cancellation_source.get_token();
-    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, events_engine, &gate, token]
+    auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, streamcompatibility_index, update_sender, events_engine, &gate, token]
     {
         const auto event_interval = std::uniform_real_distribution<>(0.5, 5.0)(*events_engine);
-        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, events_engine, &gate]
+        return pplx::complete_after(std::chrono::milliseconds(std::chrono::milliseconds::rep(1000 * event_interval)), token).then([&model, seed_id, how_many, ws_sender_ports, streamcompatibility_index, update_sender, events_engine, &gate]
         {
             auto lock = model.write_lock();
 
@@ -1094,6 +1090,25 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
             }
 
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Temperature updated: " << temp.scaled_value() << " (" << impl::temperature_Celsius.name << ")";
+
+            if (update_sender)
+            {
+                const auto streamcompatibility_video_sender_id = impl::make_id(seed_id, nmos::types::sender, impl::ports::video, streamcompatibility_index);
+                const auto states_of_sender = { U("no_essence"), U("awaiting_essence"), U("constrained") };
+                const auto& state_of_sender = *(states_of_sender.begin() + (std::min)(std::geometric_distribution<size_t>()(*events_engine), states_of_sender.size() - 1));
+
+                modify_resource(model.streamcompatibility_resources, streamcompatibility_video_sender_id, [&](nmos::resource& resource)
+                {
+                    resource.data[nmos::fields::status] = web::json::value_of({ { nmos::fields::state, state_of_sender } });
+                });
+
+                modify_resource(model.node_resources, streamcompatibility_video_sender_id, [&](nmos::resource& resource)
+                {
+                    resource.data[nmos::fields::version] = web::json::value::string(nmos::make_version());
+                });
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Status of Sender " << streamcompatibility_video_sender_id << " updated: " << state_of_sender;
+            }
 
             model.notify();
 

@@ -33,6 +33,52 @@ namespace nmos
             }));
         }
 
+        nmos::receiver_state update_status_of_receiver(nmos::node_model& model, const nmos::id& receiver_id, const details::streamcompatibility_receiver_validator& validate_receiver, slog::base_gate& gate)
+        {
+            using web::json::value;
+
+            auto& node_resources = model.node_resources;
+            auto& connection_resources = model.connection_resources;
+            auto& streamcompatibility_resources = model.streamcompatibility_resources;
+
+            const std::pair<nmos::id, nmos::type> receiver_id_type{ receiver_id, nmos::types::receiver };
+
+            auto node_receiver = find_resource(node_resources, receiver_id_type);
+            if (node_resources.end() == node_receiver) throw std::logic_error("Matching IS-04 receiver not found");
+
+            auto connection_receiver = find_resource(connection_resources, receiver_id_type);
+            if (connection_resources.end() == connection_receiver) throw std::logic_error("Matching IS-05 receiver not found");
+
+            auto streamcompatibility_receiver = find_resource(streamcompatibility_resources, receiver_id_type);
+            if (streamcompatibility_resources.end() == streamcompatibility_receiver) throw std::logic_error("Matching IS-11 receiver not found");
+
+            nmos::receiver_state receiver_state(nmos::receiver_states::unknown);
+            utility::string_t receiver_state_debug;
+
+            const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
+
+            if (validate_receiver)
+            {
+                std::tie(receiver_state, receiver_state_debug) = validate_receiver(*node_receiver, transport_file);
+            }
+
+            if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)
+            {
+                modify_resource(streamcompatibility_resources, receiver_id, [&receiver_state, &receiver_state_debug, &gate](nmos::resource& receiver)
+                {
+                    nmos::fields::status(receiver.data)[nmos::fields::state] = value::string(receiver_state.name);
+                    if (!receiver_state_debug.empty())
+                    {
+                        nmos::fields::status(receiver.data)[nmos::fields::debug] = value::string(receiver_state_debug);
+                    }
+                });
+
+                update_version(node_resources, receiver_id, nmos::make_version());
+            }
+
+            return receiver_state;
+        }
+
         void streamcompatibility_behaviour_thread(nmos::node_model& model, details::streamcompatibility_sender_validator validate_sender_resources, details::streamcompatibility_receiver_validator validate_receiver, slog::base_gate& gate)
         {
             using web::json::value;
@@ -157,48 +203,13 @@ namespace nmos
                         auto receiver = find_resource(node_resources, receiver_id_type);
                         if (node_resources.end() == receiver) throw std::logic_error("Matching IS-04 receiver not found");
 
-                        updated = most_recent_update < nmos::fields::version(nmos::fields::caps(receiver->data));
+                        updated = most_recent_update < nmos::fields::version(receiver->data);
 
                         if (updated)
                         {
-                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Receiver " << receiver_id << " has been updated recently and Receiver State is being updated as well";
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Receiver " << receiver_id << " has been updated recently and Status of Receiver is being updated as well";
 
-                            const std::pair<nmos::id, nmos::type> streamcompatibility_receiver_id_type{ receiver_id, nmos::types::receiver };
-                            auto streamcompatibility_receiver = find_resource(streamcompatibility_resources, streamcompatibility_receiver_id_type);
-                            if (streamcompatibility_resources.end() == streamcompatibility_receiver) throw std::logic_error("Matching IS-11 receiver not found");
-
-                            nmos::receiver_state receiver_state(nmos::receiver_states::unknown);
-                            utility::string_t receiver_state_debug;
-
-                            const std::pair<nmos::id, nmos::type> connection_receiver_id_type{ receiver_id, nmos::types::receiver };
-                            auto connection_receiver = find_resource(connection_resources, connection_receiver_id_type);
-                            if (connection_resources.end() == connection_receiver) throw std::logic_error("Matching IS-05 receiver not found");
-
-                            const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
-
-                            if (validate_receiver)
-                            {
-                                std::tie(receiver_state, receiver_state_debug) = validate_receiver(*receiver, transport_file);
-                            }
-
-                            if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)
-                            {
-                                utility::string_t updated_timestamp;
-
-                                modify_resource(streamcompatibility_resources, receiver_id, [&receiver_state, &receiver_state_debug, &updated_timestamp, &gate](nmos::resource& receiver)
-                                {
-                                    nmos::fields::status(receiver.data)[nmos::fields::state] = web::json::value::string(receiver_state.name);
-                                    if (!receiver_state_debug.empty())
-                                    {
-                                        nmos::fields::status(receiver.data)[nmos::fields::debug] = web::json::value::string(receiver_state_debug);
-                                    }
-
-                                    updated_timestamp = nmos::make_version();
-                                    receiver.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
-                                });
-
-                                update_version(node_resources, receiver_id, updated_timestamp);
-                            }
+                            nmos::receiver_state receiver_state = update_status_of_receiver(model, receiver_id, validate_receiver, gate);
 
                             if (receiver_state == nmos::receiver_states::non_compliant_stream)
                             {
@@ -221,7 +232,7 @@ namespace nmos
                     }
                     catch (const std::exception& e)
                     {
-                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Updating receiver status for " << receiver_id << " raised exception: " << e.what();
+                        slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Updating Status of Receiver for " << receiver_id << " raised exception: " << e.what();
                         continue;
                     }
                 }
