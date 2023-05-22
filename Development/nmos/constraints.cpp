@@ -110,14 +110,23 @@ namespace nmos
             // "enum" matches "min"/"max"
             if (result.has_field(nmos::fields::constraint_enum) && (result.has_field(nmos::fields::constraint_minimum) || result.has_field(nmos::fields::constraint_maximum)))
             {
-                result[nmos::fields::constraint_enum] = get_intersection(nmos::fields::constraint_enum(result).as_array(), result);
-                for (const auto& keyword : { nmos::fields::constraint_minimum, nmos::fields::constraint_maximum })
+                const auto remove_keywords = [](web::json::value constraint, const std::vector<web::json::field_as_value>& keywords)
                 {
-                    if (result.has_field(keyword))
+                    for (const auto& keyword : keywords)
                     {
-                        result.erase(keyword);
+                        if (constraint.has_field(keyword))
+                        {
+                            constraint.erase(keyword);
+                        }
                     }
-                }
+                    return constraint;
+                };
+
+                result[nmos::fields::constraint_enum] = get_intersection(nmos::fields::constraint_enum(result).as_array(), remove_keywords(result, { nmos::fields::constraint_enum }));
+
+                // "The Parameter Constraint is satisfied if all of the constraints expressed by the Constraint Keywords are satisfied."
+                // After "enum" lost any values out of [min, max], the Parameter Constraint can be simplified by removing "min" and "max"
+                result = remove_keywords(result, { nmos::fields::constraint_minimum, nmos::fields::constraint_maximum });
             }
 
             // "enum" is empty
