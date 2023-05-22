@@ -774,7 +774,7 @@ namespace nmos
 
                     if (methods::OPTIONS == req.method()) return pplx::task_from_result(true);
 
-                    const auto audience = with_read_lock(model.mutex, [&] { const auto& settings = model.settings; return nmos::get_host_name(settings); });
+                    const auto audience = with_read_lock(model.mutex, [&] { return nmos::get_host_name(model.settings); });
                     auto error = with_write_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &gate_]
                     {
                         return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, authorization_state.token_issuer, gate_);
@@ -784,8 +784,9 @@ namespace nmos
                     {
                         // set error repsonse
                         auto realm = web::http::get_host_port(req).first;
-                        if (realm.empty()) { realm = nmos::get_host(model.settings); }
-                        set_error_reply(res, realm, error);
+                        if (realm.empty()) { realm = with_read_lock(model.mutex, [&] { return nmos::get_host(model.settings); }); }
+                        const auto retry_after = with_read_lock(model.mutex, [&] { return nmos::experimental::fields::service_unavailable_retry_after(model.settings); });
+                        set_error_reply(res, realm, retry_after, error);
 
                         // if error was deal to no matching keys, trigger a re-fetch to obtain public keys from the token issuer
                         if (error.value == nmos::experimental::authorization_error::no_matching_keys)
@@ -812,7 +813,7 @@ namespace nmos
                 };
             }
 
-            void set_error_reply(web::http::http_response& res, const utility::string_t& realm, const nmos::experimental::authorization_error& error)
+            void set_error_reply(web::http::http_response& res, const utility::string_t& realm, int retry_after, const nmos::experimental::authorization_error& error)
             {
                 using namespace web::http;
 
@@ -847,7 +848,7 @@ namespace nmos
                 else if (error.value == nmos::experimental::authorization_error::no_matching_keys)
                 {
                     status_code = status_codes::ServiceUnavailable;
-                    res.headers().add(web::http::header_names::retry_after, 5); //hmm, may be a shorter retry time?
+                    res.headers().add(web::http::header_names::retry_after, retry_after);
                 }
 
                 nmos::set_error_reply(res, status_code, utility::s2us(error.message));

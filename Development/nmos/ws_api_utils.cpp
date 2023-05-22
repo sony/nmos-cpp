@@ -28,7 +28,8 @@ namespace nmos
                         auto realm = web::http::get_host_port(request).first;
                         if (realm.empty()) { realm = nmos::get_host(settings); }
                         web::http::http_response res;
-                        nmos::experimental::details::set_error_reply(res, realm, error);
+                        const auto retry_after = nmos::experimental::fields::service_unavailable_retry_after(settings);
+                        nmos::experimental::details::set_error_reply(res, realm, retry_after, error);
                         request.reply(res);
 
                         // if error was deal to no matching keys, trigger authorization_token_issuer_thread to fetch public keys from the token issuer

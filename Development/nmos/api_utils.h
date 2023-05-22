@@ -213,7 +213,7 @@ namespace nmos
             web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, slog::base_gate& gate);
 
             // set error response
-            void set_error_reply(web::http::http_response& res, const utility::string_t& realm, const nmos::experimental::authorization_error& error);
+            void set_error_reply(web::http::http_response& res, const utility::string_t& realm, int retry_after, const nmos::experimental::authorization_error& error);
         }
     }
 }
