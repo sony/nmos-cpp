@@ -114,7 +114,7 @@ namespace nmos
                     }
                     else
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << " against " << utility::us2s(issuer->first.to_string()) << " public keys";
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "no " << utility::us2s(issuer->first.to_string()) << " public keys to validate access token";
                     }
                 }
                 catch (const no_matching_keys_exception& e)
