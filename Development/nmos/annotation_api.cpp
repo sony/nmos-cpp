@@ -67,29 +67,35 @@ namespace nmos
 
     namespace details
     {
+        // BCP-002-01 Group Hint tag and BCP-002-02 Asset Distinguishing Information tags are read-only
+        // all other tags are read/write
         bool is_read_only_tag(const utility::string_t& key)
         {
             return boost::algorithm::starts_with(key, U("urn:x-nmos:tag:asset:"))
                 || boost::algorithm::starts_with(key, U("urn:x-nmos:tag:grouphint/"));
         }
 
-        void merge_annotation_patch(web::json::value& value, const web::json::value& patch)
+        const web::json::field_as_string_or default_label{ nmos::fields::label.key, U("") };
+        const web::json::field_as_string_or default_description{ nmos::fields::description.key, U("") };
+        const web::json::field_as_value_or default_tags{ nmos::fields::tags.key, web::json::value::object() };
+
+        void merge_annotation_patch(web::json::value& value, const web::json::value& patch, annotation_tag_predicate is_read_only_tag, const web::json::value& default_value)
         {
             // reject changes to read-ony tags
 
             if (patch.has_object_field(nmos::fields::tags))
             {
                 const auto& tags = nmos::fields::tags(patch);
-                auto patch_readonly = std::find_if(tags.begin(), tags.end(), [](const std::pair<utility::string_t, web::json::value>& field)
+                auto patch_readonly = std::find_if(tags.begin(), tags.end(), [&](const std::pair<utility::string_t, web::json::value>& field)
                 {
                     return is_read_only_tag(field.first);
                 });
                 if (tags.end() != patch_readonly) throw std::runtime_error("cannot patch read-only tag: " + utility::us2s(patch_readonly->first));
             }
 
-            // save existing read-only tags
+            // save existing read-only tags (so that read-only tags don't need to be included in default_value)
 
-            auto readonly_tags = web::json::value_from_fields(nmos::fields::tags(value) | boost::adaptors::filtered([](const std::pair<utility::string_t, web::json::value>& field)
+            auto readonly_tags = web::json::value_from_fields(nmos::fields::tags(value) | boost::adaptors::filtered([&](const std::pair<utility::string_t, web::json::value>& field)
             {
                 return is_read_only_tag(field.first);
             }));
@@ -100,16 +106,21 @@ namespace nmos
 
             // apply defaults to properties that have been reset
 
-            web::json::insert(value, std::make_pair(nmos::fields::label, U("")));
-            web::json::insert(value, std::make_pair(nmos::fields::description, U("")));
+            web::json::insert(value, std::make_pair(nmos::fields::label, details::default_label(default_value)));
+            web::json::insert(value, std::make_pair(nmos::fields::description, details::default_description(default_value)));
             web::json::insert(value, std::make_pair(nmos::fields::tags, readonly_tags));
+            auto& tags = value.at(nmos::fields::tags);
+            for (const auto& default_tag : details::default_tags(default_value).as_object())
+            {
+                web::json::insert(tags, default_tag);
+            }
         }
 
         void assign_annotation_patch(web::json::value& value, web::json::value&& patch)
         {
-            if (value.has_string_field(nmos::fields::label)) value[nmos::fields::label] = std::move(patch.at(nmos::fields::label));
-            if (value.has_string_field(nmos::fields::description)) value[nmos::fields::description] = std::move(patch.at(nmos::fields::description));
-            if (value.has_object_field(nmos::fields::tags)) value[nmos::fields::tags] = std::move(patch.at(nmos::fields::tags));
+            if (patch.has_string_field(nmos::fields::label)) value[nmos::fields::label] = std::move(patch.at(nmos::fields::label));
+            if (patch.has_string_field(nmos::fields::description)) value[nmos::fields::description] = std::move(patch.at(nmos::fields::description));
+            if (patch.has_object_field(nmos::fields::tags)) value[nmos::fields::tags] = std::move(patch.at(nmos::fields::tags));
         }
 
         void handle_annotation_patch(nmos::resources& resources, const nmos::resource& resource, const web::json::value& patch, const nmos::annotation_patch_merger& merge_patch, slog::base_gate& gate)

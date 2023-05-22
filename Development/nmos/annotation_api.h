@@ -31,13 +31,19 @@ namespace nmos
 
     namespace details
     {
-        void merge_annotation_patch(web::json::value& value, const web::json::value& patch);
+        typedef std::function<bool(const utility::string_t& name)> annotation_tag_predicate;
+
+        // BCP-002-01 Group Hint tag and BCP-002-02 Asset Distinguishing Information tags are read-only
+        // all other tags are read/write
+        bool is_read_only_tag(const utility::string_t& name);
+
+        // this function merges the patch into the value with few additional constraints
+        // when any fields are reset using null, default values are applied if specified or
+        // read-write tags are removed, and label and description are set to the empty string
+        void merge_annotation_patch(web::json::value& value, const web::json::value& patch, annotation_tag_predicate is_read_only_tag = &nmos::details::is_read_only_tag, const web::json::value& default_value = {});
     }
 
-    // this function merges the patch into the value with few additional constraints
-    // i.e. label, description and all tags are read/write except Group Hint and Asset Distinguishing Information
-    // when reset using null, tags are removed, and label and description are set to the empty string
-    // (this is the default patch merger)
+    // this is the default patch merger
     inline void merge_annotation_patch(const nmos::resource& resource, web::json::value& value, const web::json::value& patch)
     {
         details::merge_annotation_patch(value, patch);
