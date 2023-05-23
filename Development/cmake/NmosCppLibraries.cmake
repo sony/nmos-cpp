@@ -700,7 +700,7 @@ set(NMOS_IS13_V1_0_SCHEMAS_JSON
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/error.json
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_core.json
     third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_core_patch.json
-    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource_cores.json
+    third_party/is-13/${NMOS_IS13_V1_0_TAG}/APIs/schemas/resource-list.json
     )
 
 set(NMOS_IS13_SCHEMAS_JSON_MATCH "third_party/is-13/([^/]+)/APIs/schemas/([^;]+)\\.json")

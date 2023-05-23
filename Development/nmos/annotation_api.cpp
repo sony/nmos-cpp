@@ -248,13 +248,28 @@ namespace nmos
 
             size_t count = 0;
 
-            set_reply(res, status_codes::OK,
-                web::json::serialize_array(resources
-                    | boost::adaptors::filtered(match)
-                    | boost::adaptors::transformed(
-                        [&count](const nmos::resources::value_type& resource) { ++count; return nmos::make_annotation_response(resource); }
-                    )),
-                web::http::details::mime_types::application_json);
+            // experimental extension, to support human-readable HTML rendering of NMOS responses
+            if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+            {
+                set_reply(res, status_codes::OK,
+                    web::json::serialize_array(resources
+                        | boost::adaptors::filtered(match)
+                        | boost::adaptors::transformed(
+                            [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }
+                        )),
+                    web::http::details::mime_types::application_json);
+            }
+            else
+            {
+                set_reply(res, status_codes::OK,
+                    web::json::serialize_array(resources
+                        | boost::adaptors::filtered(match)
+                        | boost::adaptors::transformed(
+                            [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }
+                        )
+                    ),
+                    web::http::details::mime_types::application_json);
+            }
 
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << count << " matching " << resourceType;
 

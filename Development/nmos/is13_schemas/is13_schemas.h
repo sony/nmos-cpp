@@ -14,7 +14,7 @@ namespace nmos
             extern const char* error;
             extern const char* resource_core;
             extern const char* resource_core_patch;
-            extern const char* resource_cores;
+            extern const char* resource_list;
         }
     }
 }
