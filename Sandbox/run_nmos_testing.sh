@@ -188,6 +188,8 @@ function do_run_test() {
 }
 
 if $secure; then
+  ping "${host}" -c 3
+  ping "${host_ip}" -c 3
   do_run_test BCP-003-01 $expected_disabled_BCP_003_01 --host "${host}" --port 1080 --version v1.0
 fi
 
