@@ -190,7 +190,7 @@ namespace nmos
 
         // For now, only the default payload format is covered.
         //std::vector<std::pair<rtpmap_t, fmtp_t>> alternative_rtpmap_fmtp;
-        
+
         // Timestamp Reference Clock Source Signalling ("a=ts-refclk:")
         // See https://tools.ietf.org/html/rfc7273#section-4
         struct ts_refclk_t
