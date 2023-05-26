@@ -342,6 +342,9 @@ jobs:
         set -x
         root_dir=`pwd`
 
+        # Install hexdump
+        sudo apt-get install -f bsdmainutils
+
         # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
@@ -859,6 +862,9 @@ jobs:
         |
         set -x
         root_dir=`pwd`
+
+        # Install hexdump
+        sudo apt-get install -f bsdmainutils
 
         # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
