@@ -327,23 +327,17 @@ jobs:
 
     - name: install wsl
       if: runner.os == 'Windows'
-      run: |
-        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
-        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
-        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
-        cd ubuntu-1804
-        .\ubuntu1804.exe install --root
+      uses: Vampire/setup-wsl@v2
+      with:
+        distribution: Ubuntu-18.04
 
     - name: AMWA test suite
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'wsl-bash' || 'bash' }}
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       run:
         |
         set -x
         root_dir=`pwd`
-
-        # Install hexdump
-        apt-get install -f bsdmainutils
 
         # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
@@ -848,23 +842,17 @@ jobs:
 
     - name: install wsl
       if: runner.os == 'Windows'
-      run: |
-        & curl -L https://aka.ms/wsl-ubuntu-1804 -o ubuntu-1804.appx
-        Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
-        Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
-        cd ubuntu-1804
-        .\ubuntu1804.exe install --root
+      uses: Vampire/setup-wsl@v2
+      with:
+        distribution: Ubuntu-18.04
 
     - name: AMWA test suite
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'wsl-bash' || 'bash' }}
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       run:
         |
         set -x
         root_dir=`pwd`
-
-        # Install hexdump
-        apt-get install -f bsdmainutils
 
         # Install AMWA NMOS Testing Tool
         git clone https://github.com/AMWA-TV/nmos-testing.git
