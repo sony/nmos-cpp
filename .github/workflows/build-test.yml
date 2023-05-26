@@ -332,7 +332,7 @@ jobs:
         distribution: Ubuntu-18.04
 
     - name: AMWA test suite
-      shell: ${{ env.RUNNER_OS == 'Windows' && 'wsl-bash {0}' || 'bash' }}
+      shell: wsl-bash {0}
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       run:
         |
@@ -847,7 +847,7 @@ jobs:
         distribution: Ubuntu-18.04
 
     - name: AMWA test suite
-      shell: ${{ env.RUNNER_OS == 'Windows' && 'wsl-bash {0}' || 'bash' }}
+      shell: wsl-bash {0}
       working-directory: ${{ env.RUNNER_WORKSPACE }}
       run:
         |
