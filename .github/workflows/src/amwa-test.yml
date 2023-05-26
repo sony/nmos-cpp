@@ -5,7 +5,7 @@
     distribution: Ubuntu-18.04
 
 - name: AMWA test suite
-  shell: ${{ runner.os == 'Windows' && 'wsl-bash' || 'bash' }}
+  shell: ${{ runner.os == 'Windows' && 'wsl-bash {0}' || 'bash' }}
   working-directory: ${{ env.RUNNER_WORKSPACE }}
   run:
     |
