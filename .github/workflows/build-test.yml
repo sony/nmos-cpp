@@ -387,7 +387,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install python3-pip
           # run test suite directly
-          sudo pip install --upgrade -r requirements.txt
+          pip install -r requirements.txt
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
           run_python="sudo python"
@@ -911,7 +911,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install python3-pip
           # run test suite directly
-          sudo pip install --upgrade -r requirements.txt
+          pip install -r requirements.txt
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
           run_python="sudo python"
