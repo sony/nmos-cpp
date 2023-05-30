@@ -382,7 +382,7 @@ jobs:
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
           run_python="sudo python"
-        else if [[ "${{ runner.os }}" == "Windows" ]]; then
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
           # install python3 and pip
           sudo apt install python3 python3-pip
           # run test suite directly
@@ -905,7 +905,7 @@ jobs:
           # install SDPoker
           npm install -g git+https://git@github.com/AMWA-TV/sdpoker.git
           run_python="sudo python"
-        else if [[ "${{ runner.os }}" == "Windows" ]]; then
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
           # install python3 and pip
           sudo apt install python3 python3-pip
           # run test suite directly
