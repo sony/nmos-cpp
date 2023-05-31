@@ -58,7 +58,9 @@
     elif [[ "${{ runner.os }}" == "Windows" ]]; then
       # install pip
       sudo apt update
-      sudo apt install python3-pip
+      export NEEDRESTART_MODE=a
+      export DEBIAN_FRONTEND=noninteractive
+      sudo apt-get -y install python3-pip
       # run test suite directly
       pip install -r requirements.txt
       # install SDPoker
