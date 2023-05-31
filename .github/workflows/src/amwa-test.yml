@@ -57,9 +57,9 @@
       run_python="sudo python"
     elif [[ "${{ runner.os }}" == "Windows" ]]; then
       # install pip
+      sudo NEEDRESTART_MODE=a
+      sudo DEBIAN_FRONTEND=noninteractive
       sudo apt update
-      export NEEDRESTART_MODE=a
-      export DEBIAN_FRONTEND=noninteractive
       sudo apt-get -y install python3-pip
       # run test suite directly
       pip install -r requirements.txt
