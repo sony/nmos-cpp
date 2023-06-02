@@ -338,6 +338,7 @@ jobs:
       run:
         |
         set -x
+        wsl --version
         root_dir=`pwd`
 
         # Install AMWA NMOS Testing Tool
@@ -847,6 +848,7 @@ jobs:
       run:
         |
         set -x
+        wsl --version
         root_dir=`pwd`
 
         # Install AMWA NMOS Testing Tool
