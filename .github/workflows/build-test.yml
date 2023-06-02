@@ -332,7 +332,9 @@ jobs:
         Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
         Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
         cd ubuntu-1804
+        where.exe bash
         .\ubuntu1804.exe install --root
+        where.exe bash
 
     - name: AMWA test suite
       shell: bash
@@ -340,7 +342,6 @@ jobs:
       run:
         |
         set -x
-        wsl --version
         root_dir=`pwd`
 
         # Install AMWA NMOS Testing Tool
@@ -851,7 +852,9 @@ jobs:
         Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
         Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
         cd ubuntu-1804
+        where.exe bash
         .\ubuntu1804.exe install --root
+        where.exe bash
 
     - name: AMWA test suite
       shell: bash
@@ -859,7 +862,6 @@ jobs:
       run:
         |
         set -x
-        wsl --version
         root_dir=`pwd`
 
         # Install AMWA NMOS Testing Tool
