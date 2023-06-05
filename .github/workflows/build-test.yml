@@ -359,15 +359,13 @@ jobs:
           hostname=api.testsuite.nmos.tv
         fi
         printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+        printf 'CONFIG.TEST_SSL_BASH = C:\Windows\System32\bash.exe\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
         curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         cd ..
-
-        # Check testssl version
-        bash testssl/testssl.sh -v
-        
+       
         # Create output directories
         mkdir results
         mkdir badges
