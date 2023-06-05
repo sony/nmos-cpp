@@ -365,6 +365,9 @@ jobs:
         curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         cd ..
 
+        # Check testssl version
+        bash testssl/testssl.sh -v
+        
         # Create output directories
         mkdir results
         mkdir badges
