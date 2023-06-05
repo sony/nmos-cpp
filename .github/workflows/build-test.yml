@@ -359,7 +359,7 @@ jobs:
           hostname=api.testsuite.nmos.tv
         fi
         printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
-        printf 'CONFIG.TEST_SSL_BASH = C:\Windows\System32\bash.exe\n' >> nmostesting/UserConfig.py
+        printf 'CONFIG.TEST_SSL_BASH = "C:\Windows\System32\bash.exe"\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
