@@ -332,9 +332,7 @@ jobs:
         Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
         Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
         cd ubuntu-1804
-        where.exe bash
         .\ubuntu1804.exe install --root
-        where.exe bash
 
     - name: AMWA test suite
       shell: bash
@@ -359,13 +357,13 @@ jobs:
           hostname=api.testsuite.nmos.tv
         fi
         printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
-        printf 'CONFIG.TEST_SSL_BASH = "C:\Windows\System32\bash.exe"\n' >> nmostesting/UserConfig.py
+        printf 'CONFIG.TEST_SSL_BASH = "C:/Windows/System32/bash.exe"\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
         curl -L https://github.com/drwetter/testssl.sh/archive/v3.0.7.tar.gz -s | tar -xvzf - --strip-components=1 > /dev/null
         cd ..
-       
+
         # Create output directories
         mkdir results
         mkdir badges
@@ -853,9 +851,7 @@ jobs:
         Rename-Item .\ubuntu-1804.appx .\ubuntu-1804.zip
         Expand-Archive .\ubuntu-1804.zip .\ubuntu-1804
         cd ubuntu-1804
-        where.exe bash
         .\ubuntu1804.exe install --root
-        where.exe bash
 
     - name: AMWA test suite
       shell: bash
@@ -880,6 +876,7 @@ jobs:
           hostname=api.testsuite.nmos.tv
         fi
         printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+        printf 'CONFIG.TEST_SSL_BASH = "C:/Windows/System32/bash.exe"\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
