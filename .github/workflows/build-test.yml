@@ -357,7 +357,6 @@ jobs:
           hostname=api.testsuite.nmos.tv
         fi
         printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
-        printf 'CONFIG.TEST_SSL_BASH = "C:/Windows/System32/bash.exe"\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
@@ -396,6 +395,9 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # check dig
+            dig -v
+
             certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
             certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
             certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
@@ -876,7 +878,6 @@ jobs:
           hostname=api.testsuite.nmos.tv
         fi
         printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
-        printf 'CONFIG.TEST_SSL_BASH = "C:/Windows/System32/bash.exe"\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
@@ -915,6 +916,9 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # check dig
+            dig -v
+
             certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
             certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
             certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
