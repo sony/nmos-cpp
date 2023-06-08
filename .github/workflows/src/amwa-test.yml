@@ -69,8 +69,8 @@
 
     if [[ "${{ runner.os }}" == "Windows" ]]; then
         # install dig
-        apt update
-        DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
+        bash apt update
+        bash DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
 
         # install certificates
         certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
