@@ -396,8 +396,8 @@ jobs:
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
             # install dig
-            sudo apt update
-            sudo DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
+            apt update
+            DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
 
             # install certificates
             certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
@@ -919,8 +919,8 @@ jobs:
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
             # install dig
-            sudo apt update
-            sudo DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
+            apt update
+            DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
 
             # install certificates
             certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
