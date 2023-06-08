@@ -68,9 +68,11 @@
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
     if [[ "${{ runner.os }}" == "Windows" ]]; then
-        # check dig
-        dig -v
+        # install dig
+        sudo apt update
+        sudo DEBIAN_FRONTEND=noninteractive apt-get -y install dnsutils
 
+        # install certificates
         certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
         certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
         certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
