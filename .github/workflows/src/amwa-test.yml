@@ -69,7 +69,7 @@
 
     if [[ "${{ runner.os }}" == "Windows" ]]; then
         # install dig
-        bash apt-get install dig
+        wsl bash -c "sudo apt-get install -y dnsutils"
 
         # install certificates
         certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
