@@ -148,13 +148,26 @@ NODE_PID=$!
 
 
 if [[ "${config_dns_sd_mode}" == "multicast" ]]; then
-  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "1 $IP4"
   sleep 1
-  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "2 $IP4"
   sleep 2
-  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "3 $IP4"
   sleep 4
-  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "4 $IP4"
+  sleep 8
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "5 $IP4"
+  sleep 16
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "6 $IP4"
+  sleep 32
+  IP4=$(dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d')
+  echo "7 $IP4"  
 fi
 
 
