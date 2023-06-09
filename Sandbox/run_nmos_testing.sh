@@ -146,6 +146,19 @@ fi
 "${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params} ${node_params}}" > ${results_dir}/nodeoutput 2>&1 &
 NODE_PID=$!
 
+
+if [[ "${config_dns_sd_mode}" == "multicast" ]]; then
+  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  sleep 1
+  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  sleep 2
+  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+  sleep 4
+  dig -r @224.0.0.251 -p 5353 +short -t a +notcp nmos-api.local 2>/dev/null | sed '/^;;/d'
+fi
+
+
+
 function do_run_test() {
   suite=$1
   echo "Running $suite"
