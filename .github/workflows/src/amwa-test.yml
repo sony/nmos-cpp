@@ -68,21 +68,26 @@
     pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
     if [[ "${{ runner.os }}" == "Windows" ]]; then
-        # install certificates
-        certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
-        certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
-        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
-        certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+      if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+          # due to unable to perform hostname to ip lookups, "--ip" option is used to overcome this issue while doing the BCP-003-01 test 
+          printf '\n\ndef new_BCP00301test_01(self, test):\n    """TLS Protocols"""\n    hostname = self.apis[SECURE_API_KEY]["hostname"]\n    tls_data = self.perform_test_ssl(test, ["-p", "--ip={}".format(socket.gethostbyname(hostname))])\n    if tls_data is None:\n        return test.DISABLED("Unable to test. See the console for further information.")\n    else:\n        for report in tls_data:\n            if report["id"] in ["SSLv2", "SSLv3", "TLS1", "TLS1_1"] and "not offered" not in report["finding"]:\n                return test.FAIL("Protocol {} must not be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_2"] and not report["finding"].startswith("offered"):\n                return test.FAIL("Protocol {} must be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_3"] and not report["finding"].startswith("offered"):\n                return test.OPTIONAL("Protocol {} should be offered".format(report["id"].replace("_", ".")),\n                                     "https://specs.amwa.tv/bcp-003-01/branches/{}"\n                                     "/docs/Secure_Communication.html#tls-versions"\n                                     .format(self.apis[SECURE_API_KEY]["spec_branch"]))\n        return test.PASS()\n\n\nBCP00301Test.test_01 = new_BCP00301test_01\n' >> nmostesting/suites/BCP00301Test.py
+      fi
 
-        # RSA
-        netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-        # ECDSA
-        #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+      # install certificates
+      certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+      certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+      certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+      certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-        # RSA
-        netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-        # ECDSA
-        #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+      # RSA
+      netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+      # ECDSA
+      #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+
+      # RSA
+      netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+      # ECDSA
+      #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
     fi
 
     if [[ "${{ runner.os }}" == "macOS" ]]; then
