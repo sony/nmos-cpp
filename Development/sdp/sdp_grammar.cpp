@@ -44,6 +44,14 @@ namespace sdp
             return v.as_number(), web::json::visit(web::json::basic_ostream_visitor<char>(os), v), os.str();
         }
         inline web::json::value s2jn(const std::string& s) { auto v = web::json::value::parse(utility::s2us(s)); return v.as_number(), v; }
+        inline web::json::value
+        s2jn_no_leading_zero(const std::string& s)
+        {
+            // strip leading zeroes as they are not valid json and parse will throw,
+            // but they are allowed for sdp fields like session-id
+            auto str = regex_replace(s, std::regex("^(-?)(0+)(0|[1-9])", std::regex::extended), "$1$3");
+            auto v = web::json::value::parse(utility::s2us(str)); return v.as_number(), v;
+        }
 
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)
         // set pos to the end of the delimiter
@@ -70,6 +78,7 @@ namespace sdp
         const converter string_converter{ js2s, s2js };
 
         const converter number_converter{ jn2s, s2jn };
+        const converter js_number_converter{ jn2s, s2jn_no_leading_zero };
 
         // <key>[<separator><value>]
         converter key_value_converter(char separator, const std::pair<utility::string_t, converter>& key_converter, const std::pair<utility::string_t, converter>& value_converter)
@@ -265,8 +274,8 @@ namespace sdp
             'o',
             object_converter({
                 { sdp::fields::user_name, string_converter },
-                { sdp::fields::session_id, number_converter },
-                { sdp::fields::session_version, number_converter },
+                { sdp::fields::session_id, js_number_converter },
+                { sdp::fields::session_version, js_number_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
                 { sdp::fields::unicast_address, string_converter }
