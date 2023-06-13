@@ -64,7 +64,7 @@
     //"edid_support": false,
 
     // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
-    //"streamcompatibility_index": 1,
+    //"streamcompatibility_index": 0,
 
     // volatile_status_of_sender: specifies whether Status of Sender voluntarily changes (for demo purposes)
     //"volatile_status_of_sender": false,

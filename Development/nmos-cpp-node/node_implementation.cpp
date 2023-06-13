@@ -124,7 +124,7 @@ namespace impl
         const web::json::field_as_bool_or edid_support{ U("edid_support"), false };
 
         // streamcompatibility_index: specifies index of video/audio sender/receiver for marking as IS-11 compatible
-        const web::json::field_as_integer_or streamcompatibility_index{ U("streamcompatibility_index"), 1 };
+        const web::json::field_as_integer_or streamcompatibility_index{ U("streamcompatibility_index"), 0 };
 
         // volatile_status_of_sender: specifies whether Status of Sender voluntarily changes (for demo purposes)
         const web::json::field_as_bool_or volatile_status_of_sender{ U("volatile_status_of_sender"), false };
@@ -946,7 +946,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
         const auto input_id = impl::make_id(seed_id, nmos::types::input);
-        const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio }, streamcompatibility_index);
+        const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio });
 
         auto input = edid_support
             ? nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, bst::nullopt, sender_ids, model.settings)
@@ -1010,7 +1010,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
 
         const auto output_id = impl::make_id(seed_id, nmos::types::output);
-        const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, { impl::ports::video, impl::ports::audio }, streamcompatibility_index);
+        const auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, { impl::ports::video, impl::ports::audio });
 
         auto output = edid_support
             ? nmos::experimental::make_streamcompatibility_output(output_id, true, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings)
