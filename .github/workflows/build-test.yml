@@ -347,16 +347,17 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\n" > nmostesting/UserConfig.py
+        # printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
-        if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
-          hostname=nmos-api.local
-        else
-          hostname=api.testsuite.nmos.tv
-        fi
-        printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+        # if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+        #   hostname=nmos-api.local
+        # else
+        #   hostname=api.testsuite.nmos.tv
+        # fi
+        # printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
 
         # Download testssl
         cd testssl
@@ -395,12 +396,11 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-          if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
-            # due to unable to perform hostname to ip lookups, "--ip" option is used to overcome this issue while doing the BCP-003-01 test 
-            printf '\n\ndef new_BCP00301test_01(self, test):\n    """TLS Protocols"""\n    hostname = self.apis[SECURE_API_KEY]["hostname"]\n    tls_data = self.perform_test_ssl(test, ["-p", "--ip={}".format(socket.gethostbyname(hostname))])\n    if tls_data is None:\n        return test.DISABLED("Unable to test. See the console for further information.")\n    else:\n        for report in tls_data:\n            if report["id"] in ["SSLv2", "SSLv3", "TLS1", "TLS1_1"] and "not offered" not in report["finding"]:\n                return test.FAIL("Protocol {} must not be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_2"] and not report["finding"].startswith("offered"):\n                return test.FAIL("Protocol {} must be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_3"] and not report["finding"].startswith("offered"):\n                return test.OPTIONAL("Protocol {} should be offered".format(report["id"].replace("_", ".")),\n                                     "https://specs.amwa.tv/bcp-003-01/branches/{}"\n                                     "/docs/Secure_Communication.html#tls-versions"\n                                     .format(self.apis[SECURE_API_KEY]["spec_branch"]))\n        return test.PASS()\n\n\nBCP00301Test.test_01 = new_BCP00301test_01\n' >> nmostesting/suites/BCP00301Test.py
-
-            cat nmostesting/suites/BCP00301Test.py
-          fi
+          # if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+          #   # due to unable to perform hostname to ip lookups, "--ip" option is used to overcome this issue while doing the BCP-003-01 test 
+          #   printf '\n\ndef new_BCP00301test_01(self, test):\n    """TLS Protocols"""\n    hostname = self.apis[SECURE_API_KEY]["hostname"]\n    tls_data = self.perform_test_ssl(test, ["-p", "--ip={}".format(socket.gethostbyname(hostname))])\n    if tls_data is None:\n        return test.DISABLED("Unable to test. See the console for further information.")\n    else:\n        for report in tls_data:\n            if report["id"] in ["SSLv2", "SSLv3", "TLS1", "TLS1_1"] and "not offered" not in report["finding"]:\n                return test.FAIL("Protocol {} must not be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_2"] and not report["finding"].startswith("offered"):\n                return test.FAIL("Protocol {} must be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_3"] and not report["finding"].startswith("offered"):\n                return test.OPTIONAL("Protocol {} should be offered".format(report["id"].replace("_", ".")),\n                                     "https://specs.amwa.tv/bcp-003-01/branches/{}"\n                                     "/docs/Secure_Communication.html#tls-versions"\n                                     .format(self.apis[SECURE_API_KEY]["spec_branch"]))\n        return test.PASS()\n\n\nBCP00301Test.test_01 = new_BCP00301test_01\n' >> nmostesting/suites/BCP00301Test.py
+          #   cat nmostesting/suites/BCP00301Test.py
+          # fi
 
           # install certificates
           certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
