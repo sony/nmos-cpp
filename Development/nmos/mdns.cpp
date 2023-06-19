@@ -296,7 +296,7 @@ namespace nmos
 
             inline std::string service_base_name(const nmos::service_type& service, const nmos::settings& settings)
             {
-                return nmos::fields::service_name_prefix(settings) + "_" + service_api(service);
+                return utility::us2s(nmos::fields::service_name_prefix(settings)) + "_" + service_api(service);
             }
 
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
