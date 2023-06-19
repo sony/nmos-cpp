@@ -110,7 +110,7 @@ namespace nmos
         // IS-09 System API does not use authorization
         // See https://github.com/AMWA-TV/is-09/issues/21
         if (nmos::service_types::system == service) return false;
-       
+
         const auto client_authorization = false;
         return client_authorization;
     }
@@ -294,9 +294,9 @@ namespace nmos
                 return{};
             }
 
-            inline std::string service_base_name(const nmos::service_type& service)
+            inline std::string service_base_name(const nmos::service_type& service, const nmos::settings& settings)
             {
-                return "nmos-cpp_" + service_api(service);
+                return nmos::fields::service_name_prefix(settings) + "_" + service_api(service);
             }
 
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
@@ -312,7 +312,7 @@ namespace nmos
         {
             // this just serves as an example of a possible service naming strategy
             // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
-            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+            return boost::algorithm::replace_all_copy(details::service_base_name(service, settings) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
         // helper function for registering addresses when the host name is explicitly configured
@@ -695,7 +695,7 @@ namespace nmos
             // use a short timeout that's long enough to ensure the daemon's cache is exhausted
             // when no cancellation token is specified
             const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
-            
+
             return resolve_service(discovery, mode, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::seconds(timeout), token);
         }
     }
