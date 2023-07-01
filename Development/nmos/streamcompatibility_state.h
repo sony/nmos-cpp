@@ -23,6 +23,7 @@ namespace nmos
     namespace output_states
     {
         const output_state no_signal{ U("no_signal") };
+        const output_state default_signal{ U("default_signal") };
         const output_state signal_present{ U("signal_present") };
     }
 
