@@ -698,8 +698,6 @@ set(NMOS_IS11_V1_0_SCHEMAS_JSON
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints_active.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints_supported.json
-    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edid.json
-    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edid_timing.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/empty_constraints_active.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/error.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input-edid-base.json

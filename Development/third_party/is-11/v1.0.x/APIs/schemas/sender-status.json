@@ -12,9 +12,13 @@
         "unconstrained",
         "constrained",
         "active_constraints_violation",
-        "no_signal",
-        "awaiting_signal"
+        "no_essence",
+        "awaiting_essence"
       ]
+    },
+    "debug": {
+      "description": "Debug information which may give additional information on the state",
+      "type": "string"
     }
   }
 }

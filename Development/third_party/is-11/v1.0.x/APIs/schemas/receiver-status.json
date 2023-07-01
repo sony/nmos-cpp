@@ -13,6 +13,10 @@
         "compliant_stream",
         "non_compliant_stream"
       ]
+    },
+    "debug": {
+      "description": "Debug information which may give additional information on the state",
+      "type": "string"
     }
   }
 }
