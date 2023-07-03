@@ -237,13 +237,14 @@ namespace nmos
         const web::json::field_as_array outputs{ U("outputs") };
         const web::json::field_as_bool temporarily_locked{ U("temporarily_locked") };
 
-        // for properties
+        // for input/output properties
         const web::json::field_as_bool connected{ U("connected") };
         const web::json::field_as_bool edid_support{ U("edid_support") };
         const web::json::field_as_bool base_edid_support{ U("base_edid_support") };
         const web::json::field_as_object base_edid_properties{ U("base_edid") };
         const web::json::field_as_object effective_edid_properties{ U("effective_edid") };
         const web::json::field_as_object edid_properties{ U("edid") };
+        const web::json::field_as_bool adjust_to_caps{ U("adjust_to_caps") };
 
         // for sender
         const web::json::field_as_value endpoint_active_constraints{ U("endpoint_active_constraints") }; // object

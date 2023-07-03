@@ -139,6 +139,10 @@ namespace nmos
             }
 
             data[nmos::fields::base_edid_support] = value::boolean(base_edid_support);
+            if (base_edid_support)
+            {
+                data[nmos::fields::adjust_to_caps] = value::boolean(false);
+            }
             data[nmos::fields::senders] = value_from_elements(senders);
             data[nmos::fields::status] = value_of({ { nmos::fields::state, nmos::input_states::signal_present.name } });
 

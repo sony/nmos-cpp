@@ -606,6 +606,21 @@ namespace nmos
 
                 const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::input };
                 auto resource = find_resource(resources, id_type);
+
+                // Extract "adjust_to_caps" query parameter
+
+                bool adjust_to_caps = false;
+
+                const auto query_params = web::json::value_from_query((req.request_uri().query()));
+                if (query_params.has_field(nmos::fields::adjust_to_caps))
+                {
+                    const auto& query_adjust_to_caps = query_params.at(nmos::fields::adjust_to_caps).as_string();
+                    if (query_adjust_to_caps == "true" || query_adjust_to_caps == "1")
+                    {
+                        adjust_to_caps = true;
+                    }
+                }
+
                 if (resources.end() != resource)
                 {
                     auto& endpoint_base_edid = nmos::fields::endpoint_base_edid(resource->data);
@@ -638,7 +653,7 @@ namespace nmos
                             utility::string_t updated_timestamp;
 
                             // Update Base EDID in streamcompatibility_resources
-                            modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp](nmos::resource& input)
+                            modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp, adjust_to_caps](nmos::resource& input)
                             {
                                 if (!base_edid_properties.is_null())
                                 {
@@ -646,6 +661,7 @@ namespace nmos
                                 }
 
                                 input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid);
+                                input.data[nmos::fields::adjust_to_caps] = value::boolean(adjust_to_caps);
 
                                 updated_timestamp = nmos::make_version();
                                 input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
