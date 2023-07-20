@@ -10,7 +10,7 @@
     "constraint_sets": {
       "type": "array",
       "items": {
-        "$ref": "https://github.com/AMWA-TV/bcp-004-01/raw/v1.0.x/APIs/schemas/constraint_set.json"
+        "$ref": "constraint_set.json"
       }
     }
   }

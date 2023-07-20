@@ -4,7 +4,7 @@
   "description": "Describes an Input",
   "title": "Input resource",
   "allOf": [
-    { "$ref": "https://raw.githubusercontent.com/AMWA-TV/nmos-discovery-registration/v1.3.1/APIs/schemas/resource_core.json" },
+    { "$ref": "resource_core.json" },
     {
       "type": "object",
       "required": [

@@ -352,7 +352,14 @@ namespace nmos
             return
             {
                 // v1.0
-                { make_schema_uri(v1_0::tag, _XPLATSTR("constraints_active.json")), make_schema(v1_0::constraints_active) }
+                { make_schema_uri(v1_0::tag, _XPLATSTR("constraints_active.json")), make_schema(v1_0::constraints_active) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("constraint_set.json")), make_schema(v1_0::constraint_set) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_boolean.json")), make_schema(v1_0::param_constraint_boolean) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_integer.json")), make_schema(v1_0::param_constraint_integer) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint.json")), make_schema(v1_0::param_constraint) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_number.json")), make_schema(v1_0::param_constraint_number) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_rational.json")), make_schema(v1_0::param_constraint_rational) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_string.json")), make_schema(v1_0::param_constraint_string) },
             };
         }
 

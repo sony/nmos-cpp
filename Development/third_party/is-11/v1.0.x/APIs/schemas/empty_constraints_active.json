@@ -9,7 +9,7 @@
     "constraint_sets": {
       "type": "array",
       "items": {
-        "$ref": "https://raw.githubusercontent.com/AMWA-TV/nmos-receiver-capabilities/v1.0.0/APIs/schemas/constraint_set.json"
+        "$ref": "constraint_set.json"
       },
       "minItems": 0,
       "maxItems": 0

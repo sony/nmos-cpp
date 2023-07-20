@@ -697,6 +697,7 @@ set(NMOS_IS11_V1_0_TAG v1.0.x)
 set(NMOS_IS11_V1_0_SCHEMAS_JSON
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints_active.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints-base.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraint_set.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/constraints_supported.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/empty_constraints_active.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/error.json
@@ -704,8 +705,15 @@ set(NMOS_IS11_V1_0_SCHEMAS_JSON
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/input-output-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/output.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_boolean.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_integer.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_number.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_rational.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/param_constraint_string.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/receiver-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/receiver-status.json
+    third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource_core.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource-list.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-base.json
     third_party/is-11/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-status.json
