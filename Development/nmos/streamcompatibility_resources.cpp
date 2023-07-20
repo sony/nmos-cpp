@@ -118,7 +118,7 @@ namespace nmos
             return{ is11_versions::v1_0, types::input, std::move(data), id, false };
         }
 
-        nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, bool base_edid_support, const boost::variant<utility::string_t, web::uri>& effective_edid, const bst::optional<web::json::value>& effective_edid_properties, const std::vector<nmos::id>& senders, const nmos::settings& settings)
+        nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, bool base_edid_support, const boost::variant<utility::string_t, web::uri>& effective_edid, const std::vector<nmos::id>& senders, const nmos::settings& settings)
         {
             using web::json::value;
             using web::json::value_from_elements;
@@ -132,11 +132,6 @@ namespace nmos
             }
 
             data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
-
-            if (effective_edid_properties)
-            {
-                data[nmos::fields::effective_edid_properties] = *effective_edid_properties;
-            }
 
             data[nmos::fields::base_edid_support] = value::boolean(base_edid_support);
             if (base_edid_support)
@@ -161,7 +156,7 @@ namespace nmos
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };
         }
 
-        nmos::resource make_streamcompatibility_output(const nmos::id& id, const nmos::id& device_id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const bst::optional<web::json::value>& edid_properties, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
+        nmos::resource make_streamcompatibility_output(const nmos::id& id, const nmos::id& device_id, bool connected, const bst::optional<boost::variant<utility::string_t, web::uri>>& edid, const std::vector<nmos::id>& receivers, const nmos::settings& settings)
         {
             using web::json::value_from_elements;
             using web::json::value_of;
@@ -173,11 +168,6 @@ namespace nmos
             if (edid)
             {
                 data[nmos::fields::endpoint_edid] = boost::apply_visitor(edid_file_visitor(), *edid);
-            }
-
-            if (edid_properties)
-            {
-                data[nmos::fields::edid_properties] = *edid_properties;
             }
 
             return{ is11_versions::v1_0, types::output, std::move(data), id, false };

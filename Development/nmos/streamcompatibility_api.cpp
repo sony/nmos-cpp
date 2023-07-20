@@ -94,20 +94,14 @@ namespace nmos
             void update_effective_edid(nmos::node_model& model, const streamcompatibility_effective_edid_setter& effective_edid_setter, const utility::string_t resource_id)
             {
                 boost::variant<utility::string_t, web::uri> effective_edid;
-                bst::optional<web::json::value> effective_edid_properties = bst::nullopt;
 
-                effective_edid_setter(resource_id, effective_edid, effective_edid_properties);
+                effective_edid_setter(resource_id, effective_edid);
 
                 utility::string_t updated_timestamp;
 
-                modify_resource(model.streamcompatibility_resources, resource_id, [&effective_edid, &effective_edid_properties, &updated_timestamp](nmos::resource& input)
+                modify_resource(model.streamcompatibility_resources, resource_id, [&effective_edid, &updated_timestamp](nmos::resource& input)
                 {
                     input.data[nmos::fields::endpoint_effective_edid] = boost::apply_visitor(edid_file_visitor(), effective_edid);
-
-                    if (effective_edid_properties)
-                    {
-                        input.data[nmos::fields::effective_edid_properties] = *effective_edid_properties;
-                    }
 
                     updated_timestamp = nmos::make_version();
                     input.data[nmos::fields::version] = web::json::value::string(updated_timestamp);
@@ -629,8 +623,6 @@ namespace nmos
                     {
                         if (!nmos::fields::temporarily_locked(endpoint_base_edid))
                         {
-                            web::json::value base_edid_properties = web::json::value::null();
-
                             const auto request_body = req.content_ready().get().extract_vector().get();
                             const utility::string_t base_edid{ request_body.begin(), request_body.end() };
 
@@ -638,7 +630,7 @@ namespace nmos
 
                             if (base_edid_handler)
                             {
-                                base_edid_handler(resourceId, base_edid, base_edid_properties);
+                                base_edid_handler(resourceId, base_edid);
                             }
 
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
@@ -653,13 +645,8 @@ namespace nmos
                             utility::string_t updated_timestamp;
 
                             // Update Base EDID in streamcompatibility_resources
-                            modify_resource(resources, resourceId, [&base_edid, &base_edid_properties, &updated_timestamp, adjust_to_caps](nmos::resource& input)
+                            modify_resource(resources, resourceId, [&base_edid, &updated_timestamp, adjust_to_caps](nmos::resource& input)
                             {
-                                if (!base_edid_properties.is_null())
-                                {
-                                    input.data[nmos::fields::base_edid_properties] = base_edid_properties;
-                                }
-
                                 input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_edid_endpoint(base_edid);
                                 input.data[nmos::fields::adjust_to_caps] = value::boolean(adjust_to_caps);
 
@@ -726,8 +713,7 @@ namespace nmos
 
                             if (base_edid_handler)
                             {
-                                web::json::value tmp;
-                                base_edid_handler(resourceId, bst::nullopt, tmp);
+                                base_edid_handler(resourceId, bst::nullopt);
                             }
 
                             // Pre-check for resources existence before Base EDID modified and effective_edid_setter executed
