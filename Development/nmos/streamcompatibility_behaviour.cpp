@@ -74,6 +74,10 @@ namespace nmos
                     {
                         nmos::fields::status(receiver.data)[nmos::fields::debug] = value::string(receiver_state_debug);
                     }
+                    else if (!nmos::fields::debug(nmos::fields::status(receiver.data)).empty())
+                    {
+                        nmos::fields::status(receiver.data).erase(nmos::fields::debug);
+                    }
                 });
 
                 update_version(node_resources, receiver_id, nmos::make_version());
@@ -160,6 +164,10 @@ namespace nmos
                                     if (!sender_state_debug.empty())
                                     {
                                         nmos::fields::status(sender.data)[nmos::fields::debug] = web::json::value::string(sender_state_debug);
+                                    }
+                                    else if (!nmos::fields::debug(nmos::fields::status(sender.data)).empty())
+                                    {
+                                        nmos::fields::status(sender.data).erase(nmos::fields::debug);
                                     }
 
                                     updated_timestamp = nmos::make_version();
