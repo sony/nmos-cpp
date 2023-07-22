@@ -55,11 +55,14 @@ namespace nmos
             nmos::receiver_state receiver_state(nmos::receiver_states::unknown);
             utility::string_t receiver_state_debug;
 
-            const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
-
-            if (validate_receiver)
+            if (nmos::fields::master_enable(nmos::fields::endpoint_active(connection_receiver->data)))
             {
-                std::tie(receiver_state, receiver_state_debug) = validate_receiver(*node_receiver, transport_file);
+                const auto& transport_file = nmos::fields::transport_file(nmos::fields::endpoint_active(connection_receiver->data));
+
+                if (validate_receiver)
+                {
+                    std::tie(receiver_state, receiver_state_debug) = validate_receiver(*node_receiver, transport_file);
+                }
             }
 
             if (nmos::fields::state(nmos::fields::status(streamcompatibility_receiver->data)) != receiver_state.name)
