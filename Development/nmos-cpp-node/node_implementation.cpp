@@ -1466,6 +1466,9 @@ nmos::experimental::details::streamcompatibility_effective_edid_setter make_node
                 }
             }
 
+            bool adjust_to_caps = nmos::fields::adjust_to_caps(streamcompatibility_input->data);
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "adjust_to_caps is " << adjust_to_caps;
+
             const auto& edid_endpoint = nmos::fields::endpoint_base_edid(streamcompatibility_input->data);
 
             if (!edid_endpoint.is_null())

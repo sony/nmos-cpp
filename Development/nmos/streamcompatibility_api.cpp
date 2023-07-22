@@ -609,7 +609,7 @@ namespace nmos
                 if (query_params.has_field(nmos::fields::adjust_to_caps))
                 {
                     const auto& query_adjust_to_caps = query_params.at(nmos::fields::adjust_to_caps).as_string();
-                    if (query_adjust_to_caps == "true" || query_adjust_to_caps == "1")
+                    if (query_adjust_to_caps == U("true") || query_adjust_to_caps == U("1"))
                     {
                         adjust_to_caps = true;
                     }
