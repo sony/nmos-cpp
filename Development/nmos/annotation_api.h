@@ -9,7 +9,7 @@ namespace slog
 }
 
 // Annotation API implementation
-// See https://specs.amwa.tv/is-13/branches/v1.0-dev/APIs/ReadWriteNodeAPI.html
+// See https://specs.amwa.tv/is-13/branches/v1.0-dev/APIs/AnnotationAPI.html
 namespace nmos
 {
     struct model;
