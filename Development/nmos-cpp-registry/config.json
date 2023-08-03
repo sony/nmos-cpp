@@ -43,6 +43,9 @@
     //"discovery_backoff_max": 30,
     //"discovery_backoff_factor": 1.5,
 
+    // service_name_prefix [registry, node]: used as a prefix in the advertised service names ("<prefix>_<api>_<host>:<port>", e.g. "nmos-cpp_node_127-0-0-1:3212")
+    //"service_name_prefix": "nmos-cpp"
+
     // port numbers [registry, node]: ports to which clients should connect for each API
 
     // http_port [registry, node]: if specified, this becomes the default port for each HTTP API and the next higher port becomes the default for each WebSocket API

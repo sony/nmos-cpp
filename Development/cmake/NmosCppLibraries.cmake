@@ -871,6 +871,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/resource.cpp
     nmos/resources.cpp
     nmos/schemas_api.cpp
+    nmos/sdp_attributes.cpp
     nmos/sdp_utils.cpp
     nmos/server.cpp
     nmos/server_utils.cpp
@@ -966,6 +967,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/resource.h
     nmos/resources.h
     nmos/schemas_api.h
+    nmos/sdp_attributes.h
     nmos/sdp_utils.h
     nmos/server.h
     nmos/server_utils.h
