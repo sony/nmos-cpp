@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Property changed event data structure",
+  "title": "Property changed event data",
+  "properties": {
+    "propertyId": {
+      "type": "object",
+      "description": "Property ID structure",
+      "required": [
+        "level",
+        "index"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "description": "Level component of the property ID",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "index": {
+          "type": "integer",
+          "description": "Index component of the property ID",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "changeType": {
+      "type": "integer",
+      "description": "Event change type numeric value. Must include the numeric values for NcPropertyChangeType",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "value": {
+      "type": [
+        "string",
+        "number",
+        "object",
+        "array",
+        "boolean",
+        "null"
+      ],
+      "description": "Property value as described in the MS-05-02 Class definition or in a private Class definition"
+    },
+    "sequenceItemIndex": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Index of sequence item if the property is a sequence"
+    }
+  },
+  "required": [
+    "propertyId",
+    "changeType",
+    "value",
+    "sequenceItemIndex"
+  ]
+}

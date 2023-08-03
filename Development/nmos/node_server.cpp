@@ -94,6 +94,8 @@ namespace nmos
 
             size_t event_ws_pos{ 0 };
             bool found_event_ws{ false };
+            size_t control_protocol_ws_pos{ 0 };
+            bool found_control_protocol_ws{ false };
             for (auto& ws_handler : node_server.ws_handlers)
             {
                 // if IP address isn't specified for this router, use default server address or wildcard address
@@ -107,9 +109,16 @@ namespace nmos
                     if (ws_handler.first.second == events_ws_port) { found_event_ws = true; }
                     else { ++event_ws_pos; }
                 }
+
+                if (!found_control_protocol_ws)
+                {
+                    if (ws_handler.first.second == control_protocol_ws_port) { found_control_protocol_ws = true; }
+                    else { ++control_protocol_ws_pos; }
+                }
             }
 
             auto& events_ws_listener = node_server.ws_listeners.at(event_ws_pos);
+            auto& control_protocol_ws_listener = node_server.ws_listeners.at(control_protocol_ws_pos);
 
             // Set up node operation (including the DNS-SD advertisements)
 
@@ -124,7 +133,8 @@ namespace nmos
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },
-                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); }
+                [&, channelmapping_activated] { nmos::channelmapping_activation_thread(node_model, channelmapping_activated, gate); },
+                [&] { nmos::send_control_protocol_ws_messages_thread(control_protocol_ws_listener, node_model, control_protocol_ws_api.second, gate); }
             });
 
             auto system_changed = node_implementation.system_changed;

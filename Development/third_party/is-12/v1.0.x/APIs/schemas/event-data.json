@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Event data structure",
+  "title": "Event data",
+  "oneOf": [
+    {
+      "$ref": "property-changed-event-data.json"
+    }
+  ]
+}

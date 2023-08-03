@@ -26,6 +26,8 @@ namespace nmos
             nmos::make_control_protocol_ws_message_handler(model, websockets, gate)
         };
     }
+
+    void send_control_protocol_ws_messages_thread(web::websockets::experimental::listener::websocket_listener& listener, nmos::node_model& model, nmos::websockets& websockets, slog::base_gate& gate_);
 }
 
 #endif
