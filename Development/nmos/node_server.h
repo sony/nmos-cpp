@@ -6,6 +6,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/connection_api.h"
 #include "nmos/connection_activation.h"
+#include "nmos/control_protocol_handlers.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
 #include "nmos/ocsp_response_handler.h"
@@ -24,7 +25,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response)
+            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, nmos::get_control_protocol_classes_handler get_control_protocol_classes)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -36,6 +37,7 @@ namespace nmos
                 , set_transportfile(std::move(set_transportfile))
                 , connection_activated(std::move(connection_activated))
                 , get_ocsp_response(std::move(get_ocsp_response))
+                , get_control_protocol_classes(std::move(get_control_protocol_classes))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -57,6 +59,7 @@ namespace nmos
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
+            node_implementation& on_get_control_classes(nmos::get_control_protocol_classes_handler get_control_protocol_classes) { this->get_control_protocol_classes = std::move(get_control_protocol_classes); return* this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -86,6 +89,8 @@ namespace nmos
             nmos::channelmapping_activation_handler channelmapping_activated;
 
             nmos::ocsp_response_handler get_ocsp_response;
+
+            nmos::get_control_protocol_classes_handler get_control_protocol_classes;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

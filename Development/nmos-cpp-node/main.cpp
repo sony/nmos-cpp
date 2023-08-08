@@ -10,6 +10,8 @@
 #include "nmos/server.h"
 #include "node_implementation.h"
 
+#include "nmos/control_protocol_state.h"
+
 int main(int argc, char* argv[])
 {
     // Construct our data models including mutexes to protect them
@@ -106,6 +108,9 @@ int main(int argc, char* argv[])
             node_implementation.on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
         }
 #endif
+
+        nmos::experimental::control_protocol_state control_protocol_state;
+        node_implementation.on_get_control_classes(nmos::make_get_control_protocol_classes_handler(control_protocol_state, gate));
 
         // Set up the node server
 
