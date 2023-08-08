@@ -636,6 +636,453 @@ namespace nmos
             return value::array();
         }
 
+        web::json::value make_nc_object_class()
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(U("NcObject class descriptor")), nc_object_class_id, U("NcObject"), value::null(), make_nc_object_properties(), make_nc_object_methods(), make_nc_object_events());
+        }
+
+        web::json::value make_nc_block_class()
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(U("NcBlock class descriptor")), nc_block_class_id, U("NcBlock"), value::null(), make_nc_block_properties(), make_nc_block_methods(), make_nc_block_events());
+        }
+
+        web::json::value make_nc_worker_class()
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(U("NcWorker class descriptor")), nc_worker_class_id, U("NcWorker"), value::null(), make_nc_worker_properties(), make_nc_worker_methods(), make_nc_worker_events());
+        }
+
+        web::json::value make_nc_manager_class()
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(U("NcManager class descriptor")), nc_manager_class_id, U("NcManager"), value::null(), make_nc_manager_properties(), make_nc_manager_methods(), make_nc_manager_events());
+        }
+
+        web::json::value make_nc_device_manager_class()
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(U("NcDeviceManager class descriptor")), nc_device_manager_class_id, U("NcDeviceManager"), value::string(U("DeviceManager")), make_nc_device_manager_properties(), make_nc_device_manager_methods(), make_nc_device_manager_events());
+        }
+
+        web::json::value make_nc_class_manager_class()
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(U("NcClassManager class descriptor")), nc_class_manager_class_id, U("NcClassManager"), value::string(U("ClassManager")), make_nc_class_manager_properties(), make_nc_class_manager_methods(), make_nc_class_manager_events());
+        }
+
+        web::json::value make_nc_class_id_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Sequence of class ID fields")), U("NcClassId"), value::null(), U("NcInt32"), true);
+        }
+
+        web::json::value make_nc_oid_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Object id")), U("NcOid"), value::null(), U("NcUint32"), false);
+        }
+
+        web::json::value make_nc_touchpoint_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Context namespace")), nmos::fields::nc::context_namespace, value::string(U("NcString")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Base touchpoint class")), U("NcTouchpoint"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_element_id_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Level of the element")), nmos::fields::nc::level, value::string(U("NcUint16")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Index of the element")), nmos::fields::nc::index, value::string(U("NcUint16")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Class element id which contains the level and index")), U("NcElementId"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_property_id_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_descriptor_struct(value::string(U("Property id which contains the level and index")), U("NcPropertyId"), value::null(), value::array(), value::string(U("NcElementId")));
+        }
+
+        web::json::value make_nc_property_contraints_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("The id of the property being constrained")), nmos::fields::nc::property_id, value::string(U("NcPropertyId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Optional default value")), nmos::fields::nc::default_value, value::null(), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Property constraints class")), U("NcPropertyConstraints"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_method_result_property_value_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Getter method value for the associated property")), nmos::fields::nc::value, value::null(), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Result when invoking the getter method associated with a property")), U("NcMethodResultPropertyValue"), value::null(), fields, value::string(U("NcMethodResult")));
+        }
+
+        web::json::value make_nc_method_status_datatype()
+        {
+            using web::json::value;
+
+            auto items = value::array();
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Method call was successful")), U("Ok"), 200));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Method call was successful but targeted property is deprecated")), U("PropertyDeprecated"), 298));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Method call was successful but method is deprecated")), U("MethodDeprecated"), 299));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Badly-formed command (e.g. the incoming command has invalid message encoding and cannot be parsed by the underlying protocol)")), U("BadCommandFormat"), 400));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Client is not authorized")), U("Unauthorized"), 401));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Command addresses a nonexistent object")), U("BadOid"), 404));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Attempt to change read-only state")), U("Readonly"), 405));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Method call is invalid in current operating context (e.g. attempting to invoke a method when the object is disabled)")), U("InvalidRequest"), 406));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("There is a conflict with the current state of the device")), U("Conflict"), 409));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Something was too big")), U("BufferOverflow"), 413));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Index is outside the available range")), U("IndexOutOfBounds"), 414));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Method parameter does not meet expectations (e.g. attempting to invoke a method with an invalid type for one of its parameters)")), U("ParameterError"), 417));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Addressed object is locked")), U("Locked"), 423));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Internal device error")), U("DeviceError"), 500));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Addressed method is not implemented by the addressed object")), U("MethodNotImplemented"), 501));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Addressed property is not implemented by the addressed object")), U("PropertyNotImplemented"), 502));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("The device is not ready to handle any commands")), U("NotReady"), 503));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Method call did not finish within the allotted time")), U("Timeout"), 504));
+            return make_nc_datatype_descriptor_enum(value::string(U("Method invokation status")), U("NcMethodStatus"), value::null(), items);
+        }
+
+        web::json::value make_nc_method_result_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Status for the invoked method")), nmos::fields::nc::status, value::string(U("NcMethodStatus")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Base result of the invoked method")), U("NcMethodResult"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_id_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Identity handler")), U("NcId"), value::null(), U("NcUint32"), false);
+        }
+
+        web::json::value make_nc_method_result_id_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Id result value")), nmos::fields::nc::value, value::string(U("NcId")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Id method result")), U("NcMethodResultId"), value::null(), fields, value::string(U("NcMethodResult")));
+        }
+
+        web::json::value make_method_result_length_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Length result value")), nmos::fields::nc::value, value::string(U("NcUint32")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Length method result")), U("NcMethodResultLength"), value::null(), fields, value::string(U("NcMethodResult")));
+        }
+
+        web::json::value make_nc_property_change_type_datatype()
+        {
+            using web::json::value;
+
+            auto items = value::array();
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Current value changed")), U("ValueChanged"), 0));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Sequence item added")), U("SequenceItemAdded"), 1));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Sequence item changed")), U("SequenceItemChanged"), 2));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Sequence item removed")), U("SequenceItemRemoved"), 3));
+            return make_nc_datatype_descriptor_enum(value::string(U("Type of property change")), U("NcPropertyChangeType"), value::null(), items);
+        }
+
+        web::json::value make_nc_property_changed_event_data_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("The id of the property that changed")), nmos::fields::nc::property_id, value::string(U("NcPropertyId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Information regarding the change type")), nmos::fields::nc::change_type, value::string(U("NcPropertyChangeType")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Property-type specific value")), nmos::fields::nc::value, value::null(), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Index of sequence item if the property is a sequence")), nmos::fields::nc::sequence_item_index, value::string(U("NcId")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Payload of property-changed event")), U("NcPropertyChangedEventData"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Optional user facing description")), nmos::fields::nc::description, value::string(U("NcString")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Base descriptor")), U("NcDescriptor"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_block_member_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Role of member in its containing block")), nmos::fields::nc::role, value::string(U("NcString")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("OID of member")), nmos::fields::nc::oid, value::string(U("NcOid")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff member's OID is hardwired into device")), nmos::fields::nc::constant_oid, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Class ID")), nmos::fields::nc::class_id, value::string(U("NcClassId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("User label")), nmos::fields::nc::user_label, value::string(U("NcString")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Containing block's OID")), nmos::fields::nc::owner, value::string(U("NcOid")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Descriptor which is specific to a block member")), U("NcBlockMemberDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_method_result_block_member_descriptors_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Block member descriptors method result value")), nmos::fields::nc::value, value::string(U("NcBlockMemberDescriptor")), false, true, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Method result containing block member descriptors as the value")), U("NcMethodResultBlockMemberDescriptors"), value::null(), fields, value::string(U("NcMethodResult")));
+        }
+
+        web::json::value make_nc_version_code_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Version code in semantic versioning format")), U("NcVersionCode"), value::null(), U("NcString"), false);
+        }
+
+        web::json::value make_nc_organization_id_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Unique 24-bit organization id")), U("NcOrganizationId"), value::null(), U("NcInt32"), false);
+        }
+
+        web::json::value make_nc_uri_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Uniform resource identifier")), U("NcUri"), value::null(), U("NcString"), false);
+        }
+
+        web::json::value make_nc_manufacturer_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Manufacturer's name")), nmos::fields::nc::name, value::string(U("NcString")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("IEEE OUI or CID of manufacturer")), nmos::fields::nc::organization_id, value::string(U("NcOrganizationId")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("URL of the manufacturer's website")), nmos::fields::nc::website, value::string(U("NcUri")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Manufacturer descriptor")), U("NcManufacturer"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_uuid_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("UUID")), U("NcUuid"), value::null(), U("NcString"), false);
+        }
+
+        web::json::value make_nc_product_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Product name")), nmos::fields::nc::name, value::string(U("NcString")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Manufacturer's unique key to product - model number, SKU, etc")), nmos::fields::nc::key, value::string(U("NcString")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Manufacturer's product revision level code")), nmos::fields::nc::revision_level, value::string(U("NcString")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Brand name under which product is sold")), nmos::fields::nc::brand_name, value::string(U("NcString")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Unique UUID of product (not product instance)")), nmos::fields::nc::uuid, value::string(U("NcUuid")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Text description of product")), nmos::fields::nc::description, value::string(U("NcString")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Product descriptor")), U("NcProduct"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_device_generic_state_datatype()
+        {
+            using web::json::value;
+
+            auto items = value::array();
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Unknown")), U("Unknown"), 0));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Normal operation")), U("NormalOperation"), 1));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Device is initializing")), U("Initializing"), 2));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Device is performing a software or firmware update")), U("Updating"), 3));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Device is experiencing a licensing error")), U("LicensingError"), 4));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Device is experiencing an internal error")), U("InternalError"), 5));
+            return make_nc_datatype_descriptor_enum(value::string(U("Device generic operational state")), U("NcDeviceGenericState"), value::null(), items);
+        }
+
+        web::json::value make_nc_device_operational_state_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Generic operational state")), nmos::fields::nc::generic_state, value::string(U("NcDeviceGenericState")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Specific device details")), nmos::fields::nc::device_specific_details, value::string(U("NcString")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Device operational state")), U("NcDeviceOperationalState"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_reset_cause_datatype()
+        {
+            using web::json::value;
+
+            auto items = value::array();
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Unknown")), U("Unknown"), 0));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Power on")), U("PowerOn"), 1));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Internal error")), U("InternalError"), 2));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Upgrade")), U("Upgrade"), 3));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Controller request")), U("ControllerRequest"), 4));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Manual request from the front panel")), U("ManualReset"), 5));
+            return make_nc_datatype_descriptor_enum(value::string(U("Reset cause enum")), U("NcResetCause"), value::null(), items);
+        }
+
+        web::json::value make_nc_name_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_typedef(value::string(U("Programmatically significant name, alphanumerics + underscore, no spaces")), U("NcName"), value::null(), U("NcString"), false);
+        }
+
+        web::json::value make_nc_property_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Property id with level and index")), nmos::fields::nc::id, value::string(U("NcPropertyId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of property")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of property's datatype. Can only ever be null if the type is any")), nmos::fields::nc::type_name, value::string(U("NcName")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is read-only")), nmos::fields::nc::is_read_only, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is nullable")), nmos::fields::nc::is_nullable, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is a sequence")), nmos::fields::nc::is_sequence, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is marked as deprecated")), nmos::fields::nc::is_deprecated, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Optional constraints on top of the underlying data type")), nmos::fields::nc::constraints, value::string(U("NcParameterConstraints")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class property")), U("NcPropertyDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_parameter_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of parameter")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of parameter's datatype. Can only ever be null if the type is any")), nmos::fields::nc::type_name, value::string(U("NcName")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is nullable")), nmos::fields::nc::is_nullable, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is a sequence")), nmos::fields::nc::is_sequence, value::string(U("NcBoolean")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Optional constraints on top of the underlying data type")), nmos::fields::nc::constraints, value::string(U("NcParameterConstraints")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a method parameter")), U("NcParameterDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_method_id_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_descriptor_struct(value::string(U("Method id which contains the level and index")), U("NcMethodId"), value::null(), value::array(), value::string(U("NcElementId")));
+        }
+
+        web::json::value make_nc_method_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Method id with level and index")), nmos::fields::nc::id, value::string(U("NcMethodId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of method")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of method result's datatype")), nmos::fields::nc::result_datatype, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Parameter descriptors if any")), nmos::fields::nc::parameters, value::string(U("NcParameterDescriptor")), false, true, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is marked as deprecated")), nmos::fields::nc::is_deprecated, value::string(U("NcBoolean")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class method")), U("NcMethodDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_event_id_datatype()
+        {
+            using web::json::value;
+
+            return make_nc_datatype_descriptor_struct(value::string(U("Event id which contains the level and index")), U("NcEventId"), value::null(), value::array(), value::string(U("NcElementId")));
+        }
+
+        web::json::value make_nc_event_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Event id with level and index")), nmos::fields::nc::id, value::string(U("NcEventId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of event")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of event data's datatype")), nmos::fields::nc::event_datatype, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("TRUE iff property is marked as deprecated")), nmos::fields::nc::is_deprecated, value::string(U("NcBoolean")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class event")), U("NcEventDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_class_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Identity of the class")), nmos::fields::nc::class_id, value::string(U("NcClassId")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Name of the class")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Role if the class has fixed role (manager classes)")), nmos::fields::nc::fixed_role, value::string(U("NcString")), true, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Property descriptors")), nmos::fields::nc::properties, value::string(U("NcPropertyDescriptor")), false, true, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Method descriptors")), nmos::fields::nc::methods, value::string(U("NcMethodDescriptor")), false, true, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Event descriptors")), nmos::fields::nc::events, value::string(U("NcEventDescriptor")), false, true, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class")), U("NcClassDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_parameter_constraints_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Default value")), nmos::fields::nc::default_value, value::null(), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Abstract parameter constraints class")), U("NcParameterConstraints"), value::null(), fields, value::null());
+        }
+
+        web::json::value make_nc_datatype_type_datatype()
+        {
+            using web::json::value;
+
+            auto items = value::array();
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Primitive datatype")), U("Primitive"), 0));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Simple alias of another datatype")), U("Typedef"), 1));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Data structure")), U("Struct"), 2));
+            web::json::push_back(items, make_nc_enum_item_descriptor(value::string(U("Enum datatype")), U("Enum"), 3));
+            return make_nc_datatype_descriptor_enum(value::string(U("Datatype type")), U("NcDatatypeType"), value::null(), items);
+        }
+
+        web::json::value make_nc_datatype_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Datatype name")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Type: Primitive, Typedef, Struct, Enum")), nmos::fields::nc::type, value::string(U("NcDatatypeType")), false, false, value::null()));
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Optional constraints on top of the underlying data type")), nmos::fields::nc::constraints, value::string(U("NcParameterConstraints")), true, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Base datatype descriptor")), U("NcDatatypeDescriptor"), value::null(), fields, value::string(U("NcDescriptor")));
+        }
+
+        web::json::value make_nc_method_result_class_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Class descriptor method result value")), nmos::fields::nc::value, value::string(U("NcClassDescriptor")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Method result containing a class descriptor as the value")), U("NcMethodResultClassDescriptor"), value::null(), fields, value::string(U("NcMethodResult")));
+        }
+
+        web::json::value make_nc_method_result_datatype_descriptor_datatype()
+        {
+            using web::json::value;
+
+            auto fields = value::array();
+            web::json::push_back(fields, make_nc_field_descriptor(value::string(U("Datatype descriptor method result value")), nmos::fields::nc::value, value::string(U("NcDatatypeDescriptor")), false, false, value::null()));
+            return make_nc_datatype_descriptor_struct(value::string(U("Method result containing a datatype descriptor as the value")), U("NcMethodResultDatatypeDescriptor"), value::null(), fields, value::string(U("NcMethodResult")));
+        }
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
         web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {
@@ -704,149 +1151,64 @@ namespace nmos
 
             auto data = make_nc_manager(nc_class_manager_class_id, oid, true, owner, U("ClassManager"), user_label);
 
-            // load the minimal control classes
+            // minimal control classes
             data[nmos::fields::nc::control_classes] = value::array();
             auto& control_classes = data[nmos::fields::nc::control_classes];
 
             // NcObject control class
-            web::json::push_back(control_classes, details::make_nc_class_descriptor(value::string(U("NcObject class descriptor")), nc_object_class_id, U("NcObject"), value::null(), make_nc_object_properties(), make_nc_object_methods(), make_nc_object_events()));
+            web::json::push_back(control_classes, make_nc_object_class());
             // NcBlock control class
-            web::json::push_back(control_classes, details::make_nc_class_descriptor(value::string(U("NcBlock class descriptor")), nc_block_class_id, U("NcBlock"), value::null(), make_nc_block_properties(), make_nc_block_methods(), make_nc_block_events()));
+            web::json::push_back(control_classes, make_nc_block_class());
             // NcWorker control class
-            web::json::push_back(control_classes, details::make_nc_class_descriptor(value::string(U("NcWorker class descriptor")), nc_worker_class_id, U("NcWorker"), value::null(), make_nc_worker_properties(), make_nc_worker_methods(), make_nc_worker_events()));
+            web::json::push_back(control_classes, make_nc_worker_class());
             // NcManager control class
-            web::json::push_back(control_classes, details::make_nc_class_descriptor(value::string(U("NcManager class descriptor")), nc_manager_class_id, U("NcManager"), value::null(), make_nc_manager_properties(), make_nc_manager_methods(), make_nc_manager_events()));
+            web::json::push_back(control_classes, make_nc_manager_class());
             // NcDeviceManager control class
-            web::json::push_back(control_classes, details::make_nc_class_descriptor(value::string(U("NcDeviceManager class descriptor")), nc_device_manager_class_id, U("NcDeviceManager"), value::string(U("DeviceManager")), make_nc_device_manager_properties(), make_nc_device_manager_methods(), make_nc_device_manager_events()));
+            web::json::push_back(control_classes, make_nc_device_manager_class());
             // NcClassManager control class
-            web::json::push_back(control_classes, details::make_nc_class_descriptor(value::string(U("NcClassManager class descriptor")), nc_class_manager_class_id, U("NcClassManager"), value::string(U("ClassManager")), make_nc_class_manager_properties(), make_nc_class_manager_methods(), make_nc_class_manager_events()));
+            web::json::push_back(control_classes, make_nc_class_manager_class());
 
-            // load the minimal datatypes
+            // minimal datatypes
             data[nmos::fields::nc::datatypes] = value::array();
             auto& datatypes = data[nmos::fields::nc::datatypes];
 
             // NcObject datatypes
             // NcClassId
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Sequence of class ID fields")), U("NcClassId"), value::null(), U("NcInt32"), true));
+            web::json::push_back(datatypes, make_nc_class_id_datatype());
             // NcOid
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Object id")), U("NcOid"), value::null(), U("NcUint32"), false));
+            web::json::push_back(datatypes, make_nc_oid_datatype());
             // NcTouchpoint
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Context namespace")), nmos::fields::nc::context_namespace, value::string(U("NcString")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Base touchpoint class")), U("NcTouchpoint"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_touchpoint_datatype());
             // NcElementId
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Level of the element")), nmos::fields::nc::level, value::string(U("NcUint16")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Index of the element")), nmos::fields::nc::index, value::string(U("NcUint16")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Class element id which contains the level and index")), U("NcElementId"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_element_id_datatype());
             // NcPropertyId
-            {
-                auto fields = value::array();
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Property id which contains the level and index")), U("NcPropertyId"), value::null(), fields, value::string(U("NcElementId"))));
-            }
+            web::json::push_back(datatypes, make_nc_property_id_datatype());
             // NcPropertyConstraints
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("The id of the property being constrained")), nmos::fields::nc::property_id, value::string(U("NcPropertyId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Optional default value")), nmos::fields::nc::default_value, value::null(), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Property constraints class")), U("NcPropertyConstraints"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_property_contraints_datatype());
             // NcMethodResultPropertyValue
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Getter method value for the associated property")), nmos::fields::nc::value, value::null(), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Result when invoking the getter method associated with a property")), U("NcMethodResultPropertyValue"), value::null(), fields, value::string(U("NcMethodResult"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_result_property_value_datatype());
             // NcMethodStatus
-            {
-                auto items = value::array();
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Method call was successful")), U("Ok"), 200));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Method call was successful but targeted property is deprecated")), U("PropertyDeprecated"), 298));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Method call was successful but method is deprecated")), U("MethodDeprecated"), 299));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Badly-formed command (e.g. the incoming command has invalid message encoding and cannot be parsed by the underlying protocol)")), U("BadCommandFormat"), 400));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Client is not authorized")), U("Unauthorized"), 401));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Command addresses a nonexistent object")), U("BadOid"), 404));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Attempt to change read-only state")), U("Readonly"), 405));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Method call is invalid in current operating context (e.g. attempting to invoke a method when the object is disabled)")), U("InvalidRequest"), 406));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("There is a conflict with the current state of the device")), U("Conflict"), 409));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Something was too big")), U("BufferOverflow"), 413));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Index is outside the available range")), U("IndexOutOfBounds"), 414));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Method parameter does not meet expectations (e.g. attempting to invoke a method with an invalid type for one of its parameters)")), U("ParameterError"), 417));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Addressed object is locked")), U("Locked"), 423));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Internal device error")), U("DeviceError"), 500));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Addressed method is not implemented by the addressed object")), U("MethodNotImplemented"), 501));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Addressed property is not implemented by the addressed object")), U("PropertyNotImplemented"), 502));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("The device is not ready to handle any commands")), U("NotReady"), 503));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Method call did not finish within the allotted time")), U("Timeout"), 504));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_enum(value::string(U("Method invokation status")), U("NcMethodStatus"), value::null(), items));
-            }
+            web::json::push_back(datatypes, make_nc_method_status_datatype());
             // NcMethodResult
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Status for the invoked method")), nmos::fields::nc::status, value::string(U("NcMethodStatus")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Base result of the invoked method")), U("NcMethodResult"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_method_result_datatype());
             // NcId
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Identity handler")), U("NcId"), value::null(), U("NcUint32"), false));
+            web::json::push_back(datatypes, make_nc_id_datatype());
             // NcMethodResultId
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Id result value")), nmos::fields::nc::value, value::string(U("NcId")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Id method result")), U("NcMethodResultId"), value::null(), fields, value::string(U("NcMethodResult"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_result_id_datatype());
             // NcMethodResultLength
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Length result value")), nmos::fields::nc::value, value::string(U("NcUint32")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Length method result")), U("NcMethodResultLength"), value::null(), fields, value::string(U("NcMethodResult"))));
-            }
+            web::json::push_back(datatypes, make_method_result_length_datatype());
             // NcPropertyChangeType
-            {
-                auto items = value::array();
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Current value changed")), U("ValueChanged"), 0));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Sequence item added")), U("SequenceItemAdded"), 1));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Sequence item changed")), U("SequenceItemChanged"), 2));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Sequence item removed")), U("SequenceItemRemoved"), 3));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_enum(value::string(U("Type of property change")), U("NcPropertyChangeType"), value::null(), items));
-            }
+            web::json::push_back(datatypes, make_nc_property_change_type_datatype());
             // NcPropertyChangedEventData
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("The id of the property that changed")), nmos::fields::nc::property_id, value::string(U("NcPropertyId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Information regarding the change type")), nmos::fields::nc::change_type, value::string(U("NcPropertyChangeType")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Property-type specific value")), nmos::fields::nc::value, value::null(), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Index of sequence item if the property is a sequence")), nmos::fields::nc::sequence_item_index, value::string(U("NcId")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Payload of property-changed event")), U("NcPropertyChangedEventData"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_property_changed_event_data_datatype());
 
             // NcBlock datatypes
             // NcDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Optional user facing description")), nmos::fields::nc::description, value::string(U("NcString")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Base descriptor")), U("NcDescriptor"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_descriptor_datatype());
             // NcBlockMemberDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Role of member in its containing block")), nmos::fields::nc::role, value::string(U("NcString")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("OID of member")), nmos::fields::nc::oid, value::string(U("NcOid")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff member's OID is hardwired into device")), nmos::fields::nc::constant_oid, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Class ID")), nmos::fields::nc::class_id, value::string(U("NcClassId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("User label")), nmos::fields::nc::user_label, value::string(U("NcString")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Containing block's OID")), nmos::fields::nc::owner, value::string(U("NcOid")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor which is specific to a block member")), U("NcBlockMemberDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_block_member_descriptor_datatype());
             // NcMethodResultBlockMemberDescriptors
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Block member descriptors method result value")), nmos::fields::nc::value, value::string(U("NcBlockMemberDescriptor")), false, true, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Method result containing block member descriptors as the value")), U("NcMethodResultBlockMemberDescriptors"), value::null(), fields, value::string(U("NcMethodResult"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_result_block_member_descriptors_datatype());
 
             // NcWorker has no datatypes
 
@@ -854,163 +1216,51 @@ namespace nmos
 
             // NcDeviceManager datatypes
             // NcVersionCode
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Version code in semantic versioning format")), U("NcVersionCode"), value::null(), U("NcString"), false));
+            web::json::push_back(datatypes, make_nc_version_code_datatype());
             // NcOrganizationId
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Unique 24-bit organization id")), U("NcOrganizationId"), value::null(), U("NcInt32"), false));
+            web::json::push_back(datatypes, make_nc_organization_id_datatype());
             // NcUri
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Uniform resource identifier")), U("NcUri"), value::null(), U("NcString"), false));
+            web::json::push_back(datatypes, make_nc_uri_datatype());
             // NcManufacturer
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Manufacturer's name")), nmos::fields::nc::name, value::string(U("NcString")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("IEEE OUI or CID of manufacturer")), nmos::fields::nc::organization_id, value::string(U("NcOrganizationId")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("URL of the manufacturer's website")), nmos::fields::nc::website, value::string(U("NcUri")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Manufacturer descriptor")), U("NcManufacturer"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_manufacturer_datatype());
             // NcUuid
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("UUID")), U("NcUuid"), value::null(), U("NcString"), false));
+            web::json::push_back(datatypes, make_nc_uuid_datatype());
             // NcProduct
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Product name")), nmos::fields::nc::name, value::string(U("NcString")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Manufacturer's unique key to product - model number, SKU, etc")), nmos::fields::nc::key, value::string(U("NcString")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Manufacturer's product revision level code")), nmos::fields::nc::revision_level, value::string(U("NcString")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Brand name under which product is sold")), nmos::fields::nc::brand_name, value::string(U("NcString")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Unique UUID of product (not product instance)")), nmos::fields::nc::uuid, value::string(U("NcUuid")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Text description of product")), nmos::fields::nc::description, value::string(U("NcString")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Product descriptor")), U("NcProduct"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_product_datatype());
             // NcDeviceGenericState
-            {
-                auto items = value::array();
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Unknown")), U("Unknown"), 0));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Normal operation")), U("NormalOperation"), 1));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Device is initializing")), U("Initializing"), 2));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Device is performing a software or firmware update")), U("Updating"), 3));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Device is experiencing a licensing error")), U("LicensingError"), 4));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Device is experiencing an internal error")), U("InternalError"), 5));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_enum(value::string(U("Device generic operational state")), U("NcDeviceGenericState"), value::null(), items));
-            }
+            web::json::push_back(datatypes, make_nc_device_generic_state_datatype());
             // NcDeviceOperationalState
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Generic operational state")), nmos::fields::nc::generic_state, value::string(U("NcDeviceGenericState")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Specific device details")), nmos::fields::nc::device_specific_details, value::string(U("NcString")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Device operational state")), U("NcDeviceOperationalState"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_device_operational_state_datatype());
             // NcResetCause
-            {
-                auto items = value::array();
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Unknown")), U("Unknown"), 0));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Power on")), U("PowerOn"), 1));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Internal error")), U("InternalError"), 2));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Upgrade")), U("Upgrade"), 3));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Controller request")), U("ControllerRequest"), 4));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Manual request from the front panel")), U("ManualReset"), 5));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_enum(value::string(U("Reset cause enum")), U("NcResetCause"), value::null(), items));
-            }
+            web::json::push_back(datatypes, make_nc_reset_cause_datatype());
 
             // NcClassManager datatypes
             // NcName
-            web::json::push_back(datatypes, details::make_nc_datatype_typedef(value::string(U("Programmatically significant name, alphanumerics + underscore, no spaces")), U("NcName"), value::null(), U("NcString"), false));
+            web::json::push_back(datatypes, make_nc_name_datatype());
             // NcPropertyDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Property id with level and index")), nmos::fields::nc::id, value::string(U("NcPropertyId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of property")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of property's datatype. Can only ever be null if the type is any")), nmos::fields::nc::type_name, value::string(U("NcName")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is read-only")), nmos::fields::nc::is_read_only, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is nullable")), nmos::fields::nc::is_nullable, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is a sequence")), nmos::fields::nc::is_sequence, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is marked as deprecated")), nmos::fields::nc::is_deprecated, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Optional constraints on top of the underlying data type")), nmos::fields::nc::constraints, value::string(U("NcParameterConstraints")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class property")), U("NcPropertyDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_property_descriptor_datatype());
             // NcMethodId
-            {
-                auto fields = value::array();
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Method id which contains the level and index")), U("NcMethodId"), value::null(), fields, value::string(U("NcElementId"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_id_datatype());
             // NcParameterDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of parameter")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of parameter's datatype. Can only ever be null if the type is any")), nmos::fields::nc::type_name, value::string(U("NcName")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is nullable")), nmos::fields::nc::is_nullable, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is a sequence")), nmos::fields::nc::is_sequence, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Optional constraints on top of the underlying data type")), nmos::fields::nc::constraints, value::string(U("NcParameterConstraints")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a method parameter")), U("NcParameterDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_parameter_descriptor_datatype());
             // NcMethodDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Method id with level and index")), nmos::fields::nc::id, value::string(U("NcMethodId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of method")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of method result's datatype")), nmos::fields::nc::result_datatype, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Parameter descriptors if any")), nmos::fields::nc::parameters, value::string(U("NcParameterDescriptor")), false, true, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is marked as deprecated")), nmos::fields::nc::is_deprecated, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class method")), U("NcMethodDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_descriptor_datatype());
             // NcEventId
-            {
-                auto fields = value::array();
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Event id which contains the level and index")), U("NcEventId"), value::null(), fields, value::string(U("NcElementId"))));
-            }
+            web::json::push_back(datatypes, make_nc_event_id_datatype());
             // NcEventDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Event id with level and index")), nmos::fields::nc::id, value::string(U("NcEventId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of event")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of event data's datatype")), nmos::fields::nc::event_datatype, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("TRUE iff property is marked as deprecated")), nmos::fields::nc::is_deprecated, value::string(U("NcBoolean")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class event")), U("NcEventDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_event_descriptor_datatype());
             // NcClassDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Identity of the class")), nmos::fields::nc::class_id, value::string(U("NcClassId")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Name of the class")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Role if the class has fixed role (manager classes)")), nmos::fields::nc::fixed_role, value::string(U("NcString")), true, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Property descriptors")), nmos::fields::nc::properties, value::string(U("NcPropertyDescriptor")), false, true, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Method descriptors")), nmos::fields::nc::methods, value::string(U("NcMethodDescriptor")), false, true, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Event descriptors")), nmos::fields::nc::events, value::string(U("NcEventDescriptor")), false, true, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class")), U("NcClassDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_class_descriptor_datatype());
             // NcParameterConstraints
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Default value")), nmos::fields::nc::default_value, value::null(), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Abstract parameter constraints class")), U("NcParameterConstraints"), value::null(), fields, value::null()));
-            }
+            web::json::push_back(datatypes, make_nc_parameter_constraints_datatype());
             // NcDatatypeType
-            {
-                auto items = value::array();
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Primitive datatype")), U("Primitive"), 0));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Simple alias of another datatype")), U("Typedef"), 1));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Data structure")), U("Struct"), 2));
-                web::json::push_back(items, details::make_nc_enum_item_descriptor(value::string(U("Enum datatype")), U("Enum"), 3));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_enum(value::string(U("Datatype type")), U("NcDatatypeType"), value::null(), items));
-            }
+            web::json::push_back(datatypes, make_nc_datatype_type_datatype());
             // NcDatatypeDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Datatype name")), nmos::fields::nc::name, value::string(U("NcName")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Type: Primitive, Typedef, Struct, Enum")), nmos::fields::nc::type, value::string(U("NcDatatypeType")), false, false, value::null()));
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Optional constraints on top of the underlying data type")), nmos::fields::nc::constraints, value::string(U("NcParameterConstraints")), true, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Base datatype descriptor")), U("NcDatatypeDescriptor"), value::null(), fields, value::string(U("NcDescriptor"))));
-            }
+            web::json::push_back(datatypes, make_nc_datatype_descriptor_datatype());
             // NcMethodResultClassDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Class descriptor method result value")), nmos::fields::nc::value, value::string(U("NcClassDescriptor")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Method result containing a class descriptor as the value")), U("NcMethodResultClassDescriptor"), value::null(), fields, value::string(U("NcMethodResult"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_result_class_descriptor_datatype());
             // NcMethodResultDatatypeDescriptor
-            {
-                auto fields = value::array();
-                web::json::push_back(fields, details::make_nc_field_descriptor(value::string(U("Datatype descriptor method result value")), nmos::fields::nc::value, value::string(U("NcDatatypeDescriptor")), false, false, value::null()));
-                web::json::push_back(datatypes, details::make_nc_datatype_descriptor_struct(value::string(U("Method result containing a datatype descriptor as the value")), U("NcMethodResultDatatypeDescriptor"), value::null(), fields, value::string(U("NcMethodResult"))));
-            }
+            web::json::push_back(datatypes, make_nc_method_result_datatype_descriptor_datatype());
 
             return data;
         }
