@@ -70,7 +70,7 @@ namespace nmos
                 { nmos::fields::nc::message_type, type },
                 { nmos::fields::nc::responses, responses }
             });
-        };
+        }
 
         // error message
         // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#error-messages
@@ -83,7 +83,7 @@ namespace nmos
                 { nmos::fields::nc::status, method_result.status},
                 { nmos::fields::nc::error_message, error_message }
             });
-        };
+        }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
         web::json::value make_nc_class_id(const nc_class_id& class_id)
@@ -390,67 +390,6 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
-        web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
-        {
-            using web::json::value;
-
-            const auto id = utility::conversions::details::to_string_t(oid);
-//            auto data = make_resource_core(id, user_label.is_null() ? U("") : user_label.as_string(), {});
-            value data;
-            data[nmos::fields::id] = value::string(id); // required for nmos::resource
-            data[nmos::fields::nc::class_id] = make_nc_class_id(class_id);
-            data[nmos::fields::nc::oid] = oid;
-            data[nmos::fields::nc::constant_oid] = value::boolean(constant_oid);
-            data[nmos::fields::nc::owner] = owner;
-            data[nmos::fields::nc::role] = value::string(role);
-            data[nmos::fields::nc::user_label] = user_label;
-            data[nmos::fields::nc::touchpoints] = touchpoints;
-            data[nmos::fields::nc::runtime_property_constraints] = runtime_property_constraints;
-
-            return data;
-        };
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
-        web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members)
-        {
-            using web::json::value;
-
-            auto data = details::make_nc_object(class_id, oid, constant_oid, owner, role, user_label, touchpoints, runtime_property_constraints);
-            data[nmos::fields::nc::enabled] = value::boolean(enabled);
-            data[nmos::fields::nc::members] = members;
-
-            return data;
-        }
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
-        web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
-        {
-            return make_nc_object(class_id, oid, constant_oid, owner, role, user_label, touchpoints, runtime_property_constraints);
-        }
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
-        web::json::value make_nc_device_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
-            const web::json::value& manufacturer, const web::json::value& product, const utility::string_t& serial_number,
-            const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause)
-        {
-            using web::json::value;
-
-            auto data = details::make_nc_manager(nc_device_manager_class_id, oid, true, owner, U("DeviceManager"), user_label, touchpoints, runtime_property_constraints);
-            data[nmos::fields::nc::nc_version] = value::string(U("v1.0"));
-            data[nmos::fields::nc::manufacturer] = manufacturer;
-            data[nmos::fields::nc::product] = product;
-            data[nmos::fields::nc::serial_number] = value::string(serial_number);
-            data[nmos::fields::nc::user_inventory_code] = user_inventory_code;
-            data[nmos::fields::nc::device_name] = device_name;
-            data[nmos::fields::nc::device_role] = device_role;
-            data[nmos::fields::nc::operational_state] = operational_state;
-            data[nmos::fields::nc::reset_cause] = reset_cause;
-            data[nmos::fields::nc::message] = value::null();
-
-            return data;
-        }
-
         web::json::value make_nc_object_properties()
         {
             using web::json::value;
@@ -480,8 +419,8 @@ namespace nmos
             }
             {
                 auto parameters = value::array();
-                web::json::push_back(parameters,make_nc_parameter_descriptor(value::string(U("Property id")), nmos::fields::nc::id, value::string(U("NcPropertyId")), false, false, value::null()));
-                web::json::push_back(parameters,make_nc_parameter_descriptor(value::string(U("Property value")), nmos::fields::nc::value, value::null(), true, false, value::null()));
+                web::json::push_back(parameters, make_nc_parameter_descriptor(value::string(U("Property id")), nmos::fields::nc::id, value::string(U("NcPropertyId")), false, false, value::null()));
+                web::json::push_back(parameters, make_nc_parameter_descriptor(value::string(U("Property value")), nmos::fields::nc::value, value::null(), true, false, value::null()));
                 web::json::push_back(methods, make_nc_method_descriptor(value::string(U("Set property value")), make_nc_method_id(1, 2), U("Set"), U("NcMethodResult"), parameters, false));
             }
             {
@@ -695,6 +634,67 @@ namespace nmos
             using web::json::value;
 
             return value::array();
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
+        web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
+        {
+            using web::json::value;
+
+            const auto id = utility::conversions::details::to_string_t(oid);
+//            auto data = make_resource_core(id, user_label.is_null() ? U("") : user_label.as_string(), {});
+            value data;
+            data[nmos::fields::id] = value::string(id); // required for nmos::resource
+            data[nmos::fields::nc::class_id] = make_nc_class_id(class_id);
+            data[nmos::fields::nc::oid] = oid;
+            data[nmos::fields::nc::constant_oid] = value::boolean(constant_oid);
+            data[nmos::fields::nc::owner] = owner;
+            data[nmos::fields::nc::role] = value::string(role);
+            data[nmos::fields::nc::user_label] = user_label;
+            data[nmos::fields::nc::touchpoints] = touchpoints;
+            data[nmos::fields::nc::runtime_property_constraints] = runtime_property_constraints;
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
+        web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members)
+        {
+            using web::json::value;
+
+            auto data = details::make_nc_object(class_id, oid, constant_oid, owner, role, user_label, touchpoints, runtime_property_constraints);
+            data[nmos::fields::nc::enabled] = value::boolean(enabled);
+            data[nmos::fields::nc::members] = members;
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
+        web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
+        {
+            return make_nc_object(class_id, oid, constant_oid, owner, role, user_label, touchpoints, runtime_property_constraints);
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+        web::json::value make_nc_device_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
+            const web::json::value& manufacturer, const web::json::value& product, const utility::string_t& serial_number,
+            const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause)
+        {
+            using web::json::value;
+
+            auto data = details::make_nc_manager(nc_device_manager_class_id, oid, true, owner, U("DeviceManager"), user_label, touchpoints, runtime_property_constraints);
+            data[nmos::fields::nc::nc_version] = value::string(U("v1.0"));
+            data[nmos::fields::nc::manufacturer] = manufacturer;
+            data[nmos::fields::nc::product] = product;
+            data[nmos::fields::nc::serial_number] = value::string(serial_number);
+            data[nmos::fields::nc::user_inventory_code] = user_inventory_code;
+            data[nmos::fields::nc::device_name] = device_name;
+            data[nmos::fields::nc::device_role] = device_role;
+            data[nmos::fields::nc::operational_state] = operational_state;
+            data[nmos::fields::nc::reset_cause] = reset_cause;
+            data[nmos::fields::nc::message] = value::null();
+
+            return data;
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager

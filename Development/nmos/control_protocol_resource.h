@@ -137,9 +137,6 @@ namespace nmos
 
         typedef std::map<web::json::value, utility::string_t> properties;
 
-//        typedef std::function<web::json::value(const properties& properties, int32_t handle, int32_t oid, const web::json::value& arguments)> method;
-//        typedef std::map<web::json::value, method> methods; // method_id vs method handler
-
         typedef std::function<web::json::value(const web::json::array& properties, int32_t handle, int32_t oid, const web::json::value& arguments)> method;
         typedef std::map<web::json::value, method> methods; // method_id vs method handler
 
@@ -267,23 +264,6 @@ namespace nmos
         // constraints can be null
         web::json::value make_nc_datatype_typedef(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints, const utility::string_t& parent_type, bool is_sequence);
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
-        web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
-        web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members);
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
-        web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null());
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
-        web::json::value make_nc_device_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
-            const web::json::value& manufacturer, const web::json::value& product, const utility::string_t& serial_number,
-            const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause);
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-        web::json::value make_nc_class_manager(details::nc_oid oid, nc_oid owner, const web::json::value& user_label);
-
         // make the core classes proprties/methods/events
         web::json::value make_nc_object_properties();
         web::json::value make_nc_object_methods();
@@ -303,6 +283,23 @@ namespace nmos
         web::json::value make_nc_class_manager_properties();
         web::json::value make_nc_class_manager_methods();
         web::json::value make_nc_class_manager_events();
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
+        web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
+        web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
+        web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null());
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+        web::json::value make_nc_device_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
+            const web::json::value& manufacturer, const web::json::value& product, const utility::string_t& serial_number,
+            const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
+        web::json::value make_nc_class_manager(details::nc_oid oid, nc_oid owner, const web::json::value& user_label);
     }
 }
 
