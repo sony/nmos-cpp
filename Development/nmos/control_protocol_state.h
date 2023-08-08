@@ -23,7 +23,7 @@ namespace nmos
             // mutex to be used to protect the members from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
 
-            control_classes control_classes;
+            experimental::control_classes control_classes;
 
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
