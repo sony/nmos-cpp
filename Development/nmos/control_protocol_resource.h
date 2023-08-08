@@ -44,6 +44,7 @@ namespace nmos
                 invalid_request = 406,          // Method call is invalid in current operating context
                 conflict = 409,                 // There is a conflict with the current state of the device
                 buffer_overflow = 413,          // Something was too big
+                index_out_of_bounds = 414,      // Index is outside the available range
                 parameter_error = 417,          // Method parameter does not meet expectations
                 locked = 423,                   // Addressed object is locked
                 device_error = 500,             // Internal device error
