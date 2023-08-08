@@ -15,14 +15,12 @@
         "level": {
           "type": "integer",
           "description": "Level component of the property ID",
-          "minimum": 0,
-          "maximum": 65535
+          "minimum": 1
         },
         "index": {
           "type": "integer",
           "description": "Index component of the property ID",
-          "minimum": 1,
-          "maximum": 65535
+          "minimum": 1
         }
       }
     },

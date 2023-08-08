@@ -28,8 +28,7 @@
               "oid": {
                 "type": "integer",
                 "description": "Emitter object id",
-                "minimum": 1,
-                "maximum": 65535
+                "minimum": 1
               },
               "eventId": {
                 "type": "object",
@@ -42,14 +41,12 @@
                   "level": {
                     "type": "integer",
                     "description": "Level component of the event ID",
-                    "minimum": 0,
-                    "maximum": 65535
+                    "minimum": 1
                   },
                   "index": {
                     "type": "integer",
                     "description": "Index component of the event ID",
-                    "minimum": 1,
-                    "maximum": 65535
+                    "minimum": 1
                   }
                 }
               },
