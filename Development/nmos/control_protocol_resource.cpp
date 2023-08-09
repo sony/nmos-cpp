@@ -60,6 +60,13 @@ namespace nmos
             });
         }
 
+        web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result, uint32_t value_)
+        {
+            using web::json::value;
+
+            return make_control_protocol_response(handle, method_result, value(value_));
+        }
+
         // message response
         // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#command-message-type
         web::json::value make_control_protocol_message_response(nc_message_type::type type, const web::json::value& responses)

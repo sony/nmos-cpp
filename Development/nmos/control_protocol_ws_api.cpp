@@ -278,7 +278,7 @@ namespace nmos
 
                         resource.updated = strictly_increasing_update(resources);
                     });
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, data.as_array().size() - 1);
+                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size() - 1));
                 }
 
                 // resource not found for the given oid
