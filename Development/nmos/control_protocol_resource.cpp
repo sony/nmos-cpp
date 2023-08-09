@@ -7,7 +7,7 @@ namespace nmos
 {
     namespace details
     {
-        web::json::value make_control_protocol_result(const nc_method_result& method_result)
+        web::json::value make_nc_method_result(const nc_method_result& method_result)
         {
             using web::json::value_of;
 
@@ -16,16 +16,16 @@ namespace nmos
             });
         }
 
-        web::json::value make_control_protocol_error_result(const nc_method_result& method_result, const utility::string_t& error_message)
+        web::json::value make_nc_method_result_error(const nc_method_result& method_result, const utility::string_t& error_message)
         {
-            auto result = make_control_protocol_result(method_result);
+            auto result = make_nc_method_result(method_result);
             if (!error_message.empty()) { result[nmos::fields::nc::error_message] = web::json::value::string(error_message); }
             return result;
         }
 
-        web::json::value make_control_protocol_result(const nc_method_result& method_result, const web::json::value& value)
+        web::json::value make_nc_method_result(const nc_method_result& method_result, const web::json::value& value)
         {
-            auto result = make_control_protocol_result(method_result);
+            auto result = make_nc_method_result(method_result);
             result[nmos::fields::nc::value] = value;
             return result;
         }
@@ -36,7 +36,7 @@ namespace nmos
 
             return value_of({
                 { nmos::fields::nc::handle, handle },
-                { nmos::fields::nc::result, make_control_protocol_error_result(method_result, error_message) }
+                { nmos::fields::nc::result, make_nc_method_result_error(method_result, error_message) }
             });
         }
 
@@ -46,7 +46,7 @@ namespace nmos
 
             return value_of({
                 { nmos::fields::nc::handle, handle },
-                { nmos::fields::nc::result, make_control_protocol_result(method_result) }
+                { nmos::fields::nc::result, make_nc_method_result(method_result) }
             });
         }
 
@@ -56,7 +56,7 @@ namespace nmos
 
             return value_of({
                 { nmos::fields::nc::handle, handle },
-                { nmos::fields::nc::result, make_control_protocol_result(method_result, value) }
+                { nmos::fields::nc::result, make_nc_method_result(method_result, value) }
             });
         }
 

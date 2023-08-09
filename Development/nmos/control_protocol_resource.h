@@ -141,14 +141,14 @@ namespace nmos
         typedef std::function<web::json::value(const web::json::array& properties, int32_t handle, int32_t oid, const web::json::value& arguments)> method;
         typedef std::map<web::json::value, method> methods; // method_id vs method handler
 
-        web::json::value make_control_protocol_result(const nc_method_result& method_result);
-        web::json::value make_control_protocol_error_result(const nc_method_result& method_result, const utility::string_t& error_message);
-
-        web::json::value make_control_protocol_result(const nc_method_result& method_result, const web::json::value& value);
         web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message);
 
         web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result);
 
+        // value can be
+        // sequence<NcBlockMemberDescriptor>
+        // NcClassDescriptor
+        // NcDatatypeDescriptor
         web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result, const web::json::value& value);
 
         // message response
