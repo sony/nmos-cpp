@@ -1,6 +1,8 @@
 #include "nmos/control_protocol_ws_api.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/range/join.hpp>
+#include "bst/regex.h"
 #include "cpprest/json_validator.h"
 #include "cpprest/regex_utils.h"
 #include "nmos/api_utils.h"
@@ -380,7 +382,7 @@ namespace nmos
                                     return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
                                 }
                             }
-                            return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, data.as_array().size());
+                            return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size()));
                         }
                         else
                         {
@@ -417,6 +419,7 @@ namespace nmos
                     // hmm, If recurse is set to true, nested members is to be retrieved
                     const auto& recurse = nmos::fields::nc::recurse(arguments);
 
+                    // return the descriptors of members of the block
                     return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, resource->data.at(nmos::fields::nc::members));
                 }
 
@@ -444,7 +447,7 @@ namespace nmos
                         return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty path to do FindMembersByPath"));
                     }
 
-                    value nc_block_member_descriptor;
+                    auto nc_block_member_descriptors = value::array();
 
                     for (const auto& role : path)
                     {
@@ -459,14 +462,13 @@ namespace nmos
 
                             if (members.end() != member_found)
                             {
-                                nc_block_member_descriptor = *member_found;
+                                web::json::push_back(nc_block_member_descriptors, *member_found);
 
-                                // use oid to look for next resource
+                                // use oid to look for the next resource
                                 resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::oid(*member_found))));
                             }
                             else
                             {
-                                // should
                                 // no role
                                 utility::stringstream_t ss;
                                 ss << U("role: ") << role.as_string() << U(" not found to do FindMembersByPath");
@@ -475,13 +477,12 @@ namespace nmos
                         }
                         else
                         {
-                            // should
                             // no members
                             return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, U("no members to do FindMembersByPath"));
                         }
                     }
 
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, nc_block_member_descriptor);
+                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, nc_block_member_descriptors);
                 }
 
                 // resource not found for the given oid
