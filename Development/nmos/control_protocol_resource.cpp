@@ -102,10 +102,10 @@ namespace nmos
             return nc_class_id;
         }
 
-        nc_class_id parse_nc_class_id(const web::json::value& class_id_)
+        nc_class_id parse_nc_class_id(const web::json::array& class_id_)
         {
             nc_class_id class_id;
-            for (auto& element : class_id_.as_array())
+            for (auto& element : class_id_)
             {
                 class_id.push_back(element.as_integer());
             }

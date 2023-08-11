@@ -162,7 +162,7 @@ namespace nmos
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
         web::json::value make_nc_class_id(const nc_class_id& class_id);
-        nc_class_id parse_nc_class_id(const web::json::value& class_id);
+        nc_class_id parse_nc_class_id(const web::json::array& class_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
         web::json::value make_nc_element_id(uint16_t level, uint16_t index);
