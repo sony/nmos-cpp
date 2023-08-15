@@ -1,7 +1,5 @@
 #include "nmos/control_protocol_handlers.h"
 
-#include "cpprest/basic_utils.h"
-#include "nmos/control_protocol_state.h"
 #include "nmos/slog.h"
 
 namespace nmos
@@ -18,28 +16,28 @@ namespace nmos
         };
     }
 
-    get_control_protocol_class_handler make_get_control_protocol_class_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
-    {
-        return [&](const details::nc_class_id& class_id)
-        {
-            using web::json::value;
+    //get_control_protocol_class_handler make_get_control_protocol_class_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    //{
+    //    return [&](const details::nc_class_id& class_id)
+    //    {
+    //        using web::json::value;
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrieve control class from cache";
+    //        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrieve control class from cache";
 
-            auto lock = control_protocol_state.read_lock();
+    //        auto lock = control_protocol_state.read_lock();
 
-            auto class_id_data = details::make_nc_class_id(class_id);
+    //        auto class_id_data = details::make_nc_class_id(class_id);
 
-            auto& control_classes = control_protocol_state.control_classes;
-            auto found = control_classes.find(class_id_data);
-            if (control_classes.end() != found)
-            {
-                return found->second;
-            }
+    //        auto& control_classes = control_protocol_state.control_classes;
+    //        auto found = control_classes.find(class_id_data);
+    //        if (control_classes.end() != found)
+    //        {
+    //            return found->second;
+    //        }
 
-            return experimental::control_class{ value::array(), value::array(), value::array() };
-        };
-    }
+    //        return experimental::control_class{ value::array(), value::array(), value::array() };
+    //    };
+    //}
 
     add_control_protocol_class_handler make_add_control_protocol_class_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
@@ -59,6 +57,18 @@ namespace nmos
 
             control_classes[class_id_data] = control_class;
             return true;
+        };
+    }
+
+    get_control_protocol_datatypes_handler make_get_control_protocol_datatypes_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        return [&]()
+        {
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Retrieve all datatypes from cache";
+
+            auto lock = control_protocol_state.read_lock();
+
+            return control_protocol_state.datatypes;
         };
     }
 }

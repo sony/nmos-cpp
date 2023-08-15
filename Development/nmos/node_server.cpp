@@ -72,7 +72,7 @@ namespace nmos
             const auto& control_protocol_ws_port = nmos::fields::control_protocol_ws_port(node_model.settings);
             if (control_protocol_ws_port == events_ws_port) throw std::runtime_error("Same port used for events and control protocol websockets are not supported");
             auto& control_protocol_ws_api = node_server.ws_handlers[{ {}, control_protocol_ws_port }];
-            control_protocol_ws_api.first = nmos::make_control_protocol_ws_api(node_model, control_protocol_ws_api.second, node_implementation.get_control_protocol_classes, gate);
+            control_protocol_ws_api.first = nmos::make_control_protocol_ws_api(node_model, control_protocol_ws_api.second, node_implementation.get_control_protocol_classes, node_implementation.get_control_protocol_datatypes, gate);
 
             // Set up the listeners for each HTTP API port
 

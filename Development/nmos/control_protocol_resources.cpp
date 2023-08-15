@@ -26,8 +26,8 @@ namespace nmos
             manufacturer, product, serial_number, value::null(), device_name, device_role, operational_state, details::nc_reset_cause::Unknown);
 
         // add NcDeviceManager block_member_descriptor to root block members
-        web::json::push_back(root_block_data[nmos::fields::nc::members], details::make_nc_block_member_descriptor(
-            description, nmos::fields::nc::role(data), oid, nmos::fields::nc::constant_oid(data), data.at(nmos::fields::nc::class_id), user_label, owner));
+        web::json::push_back(root_block_data[nmos::fields::nc::members],
+            details::make_nc_block_member_descriptor(description, nmos::fields::nc::role(data), oid, nmos::fields::nc::constant_oid(data), data.at(nmos::fields::nc::class_id), user_label, owner));
 
         return{ is12_versions::v1_0, types::nc_device_manager, std::move(data), true };
     }
@@ -42,7 +42,7 @@ namespace nmos
         const auto user_label = value::string(U("Class manager"));
         const auto description = value::string(U("The class manager offers access to control class and data type descriptors"));
 
-        auto data = details::make_nc_class_manager(oid, owner, user_label);
+        auto data = details::make_nc_class_manager(oid, owner, user_label, value::null(), value::null());
 
         // add NcClassManager block_member_descriptor to root block members
         web::json::push_back(root_block_data[nmos::fields::nc::members],

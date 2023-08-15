@@ -1,6 +1,7 @@
 #include "nmos/control_protocol_resource.h"
 
 //#include "nmos/resource.h"
+#include "nmos/control_protocol_state.h"  // for nmos::experimental::control_classes definitions
 #include "nmos/json_fields.h"
 
 namespace nmos
@@ -90,26 +91,6 @@ namespace nmos
                 { nmos::fields::nc::status, method_result.status},
                 { nmos::fields::nc::error_message, error_message }
             });
-        }
-
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
-        web::json::value make_nc_class_id(const nc_class_id& class_id)
-        {
-            using web::json::value;
-
-            auto nc_class_id = value::array();
-            for (const auto class_id_item : class_id) { web::json::push_back(nc_class_id, class_id_item); }
-            return nc_class_id;
-        }
-
-        nc_class_id parse_nc_class_id(const web::json::array& class_id_)
-        {
-            nc_class_id class_id;
-            for (auto& element : class_id_)
-            {
-                class_id.push_back(element.as_integer());
-            }
-            return class_id;
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
@@ -795,7 +776,7 @@ namespace nmos
             return make_nc_datatype_descriptor_struct(value::string(U("Id method result")), U("NcMethodResultId"), value::null(), fields, value::string(U("NcMethodResult")));
         }
 
-        web::json::value make_method_result_length_datatype()
+        web::json::value make_nc_method_result_length_datatype()
         {
             using web::json::value;
 
@@ -1152,11 +1133,11 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-        web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label)
+        web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {
             using web::json::value;
 
-            auto data = make_nc_manager(nc_class_manager_class_id, oid, true, owner, U("ClassManager"), user_label);
+            auto data = make_nc_manager(nc_class_manager_class_id, oid, true, owner, U("ClassManager"), user_label, touchpoints, runtime_property_constraints);
 
             // minimal control classes
             data[nmos::fields::nc::control_classes] = value::array();
@@ -1203,7 +1184,7 @@ namespace nmos
             // NcMethodResultId
             web::json::push_back(datatypes, make_nc_method_result_id_datatype());
             // NcMethodResultLength
-            web::json::push_back(datatypes, make_method_result_length_datatype());
+            web::json::push_back(datatypes, make_nc_method_result_length_datatype());
             // NcPropertyChangeType
             web::json::push_back(datatypes, make_nc_property_change_type_datatype());
             // NcPropertyChangedEventData

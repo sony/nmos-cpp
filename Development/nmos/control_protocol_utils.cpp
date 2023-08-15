@@ -4,10 +4,9 @@
 #include <boost/algorithm/string/find.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include "cpprest/json_utils.h"
+#include "nmos/control_protocol_resource.h" // for nc_object_class_id, nc_manager_class_id, nc_device_manager_class_id, nc_class_manager_class_id
 #include "nmos/json_fields.h"
 #include "nmos/resources.h"
-
-#include "nmos/control_protocol_resource.h" // for nc_class_id
 
 namespace nmos
 {

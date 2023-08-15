@@ -55,7 +55,7 @@ namespace nmos
 
             // NcObject methods implementation
             // Get property value
-            const auto get = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto get = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -71,8 +71,7 @@ namespace nmos
                     {
                         return property_id == nmos::fields::nc::id(property);
                     });
-
-                    if (property_found != properties.end())
+                    if (properties.end() != property_found)
                     {
                         return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(*property_found)));
                     }
@@ -89,7 +88,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Set property value
-            const auto set = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto set = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -105,7 +104,7 @@ namespace nmos
                     {
                         return property_id == nmos::fields::nc::id(property);
                     });
-                    if (property_found != properties.end())
+                    if (properties.end() != property_found)
                     {
                         if (nmos::fields::nc::is_read_only(*property_found))
                         {
@@ -139,7 +138,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Get sequence item
-            const auto get_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto get_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -155,8 +154,7 @@ namespace nmos
                     {
                         return property_id == nmos::fields::nc::id(property);
                     });
-
-                    if (property_found != properties.end())
+                    if (properties.end() != property_found)
                     {
                         if (!nmos::fields::nc::is_sequence(*property_found))
                         {
@@ -191,7 +189,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Set sequence item
-            const auto set_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto set_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -208,32 +206,39 @@ namespace nmos
                     {
                         return property_id == nmos::fields::nc::id(property);
                     });
-
-                    if (!nmos::fields::nc::is_sequence(*property_found))
+                    if (properties.end() != property_found)
                     {
-                        // property is not a sequence
-                        utility::stringstream_t ss;
-                        ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do SetSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
-                    }
-
-                    auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
-
-                    if (!data.is_null() && data.as_array().size() > (size_t)index)
-                    {
-                        resources.modify(resource, [&](nmos::resource& resource)
+                        if (!nmos::fields::nc::is_sequence(*property_found))
                         {
-                            resource.data[nmos::fields::nc::name(*property_found)][index] = val;
+                            // property is not a sequence
+                            utility::stringstream_t ss;
+                            ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do SetSequenceItem");
+                            return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        }
 
-                            resource.updated = strictly_increasing_update(resources);
-                        });
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                        auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
+
+                        if (!data.is_null() && data.as_array().size() > (size_t)index)
+                        {
+                            resources.modify(resource, [&](nmos::resource& resource)
+                            {
+                                resource.data[nmos::fields::nc::name(*property_found)][index] = val;
+
+                                resource.updated = strictly_increasing_update(resources);
+                            });
+                            return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                        }
+
+                        // out of bound
+                        utility::stringstream_t ss;
+                        ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do SetSequenceItem");
+                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
                     }
 
-                    // out of bound
+                    // unknown property
                     utility::stringstream_t ss;
-                    ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do SetSequenceItem");
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
+                    ss << U("unknown property: ") << property_id.serialize() << U(" to do SetSequenceItem");
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
                 }
 
                 // resource not found for the given oid
@@ -242,7 +247,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Add item to sequence
-            const auto add_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto add_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -258,26 +263,33 @@ namespace nmos
                     {
                         return property_id == nmos::fields::nc::id(property);
                     });
-
-                    if (!nmos::fields::nc::is_sequence(*property_found))
+                    if (properties.end() != property_found)
                     {
-                        // property is not a sequence
-                        utility::stringstream_t ss;
-                        ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do AddSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        if (!nmos::fields::nc::is_sequence(*property_found))
+                        {
+                            // property is not a sequence
+                            utility::stringstream_t ss;
+                            ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do AddSequenceItem");
+                            return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        }
+
+                        auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
+
+                        resources.modify(resource, [&](nmos::resource& resource)
+                        {
+                            auto& sequence = resource.data[nmos::fields::nc::name(*property_found)];
+                            if (data.is_null()) { sequence = value::array(); }
+                            web::json::push_back(sequence, val);
+
+                            resource.updated = strictly_increasing_update(resources);
+                        });
+                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size() - 1));
                     }
 
-                    auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
-
-                    resources.modify(resource, [&](nmos::resource& resource)
-                    {
-                        auto& sequence = resource.data[nmos::fields::nc::name(*property_found)];
-                        if (data.is_null()) { sequence = value::array(); }
-                        web::json::push_back(sequence, val);
-
-                        resource.updated = strictly_increasing_update(resources);
-                    });
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size() - 1));
+                    // unknown property
+                    utility::stringstream_t ss;
+                    ss << U("unknown property: ") << property_id.serialize() << U(" to do AddSequenceItem");
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
                 }
 
                 // resource not found for the given oid
@@ -286,7 +298,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Delete sequence item
-            const auto remove_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto remove_sequence_item = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -302,33 +314,40 @@ namespace nmos
                     {
                         return property_id == nmos::fields::nc::id(property);
                     });
-
-                    if (!nmos::fields::nc::is_sequence(*property_found))
+                    if (properties.end() != property_found)
                     {
-                        // property is not a sequence
-                        utility::stringstream_t ss;
-                        ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do RemoveSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
-                    }
-
-                    auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
-
-                    if (!data.is_null() && data.as_array().size() > (size_t)index)
-                    {
-                        resources.modify(resource, [&](nmos::resource& resource)
+                        if (!nmos::fields::nc::is_sequence(*property_found))
                         {
-                            auto& sequence = resource.data[nmos::fields::nc::name(*property_found)].as_array();
-                            sequence.erase(index);
+                            // property is not a sequence
+                            utility::stringstream_t ss;
+                            ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do RemoveSequenceItem");
+                            return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        }
 
-                            resource.updated = strictly_increasing_update(resources);
-                        });
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                        auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
+
+                        if (!data.is_null() && data.as_array().size() > (size_t)index)
+                        {
+                            resources.modify(resource, [&](nmos::resource& resource)
+                            {
+                                auto& sequence = resource.data[nmos::fields::nc::name(*property_found)].as_array();
+                                sequence.erase(index);
+
+                                resource.updated = strictly_increasing_update(resources);
+                            });
+                            return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                        }
+
+                        // out of bound
+                        utility::stringstream_t ss;
+                        ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do RemoveSequenceItem");
+                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
                     }
 
-                    // out of bound
+                    // unknown property
                     utility::stringstream_t ss;
-                    ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do RemoveSequenceItem");
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
+                    ss << U("unknown property: ") << property_id.serialize() << U(" to do RemoveSequenceItem");
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
                 }
 
                 // resource not found for the given oid
@@ -337,7 +356,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Get sequence length
-            const auto get_sequence_length = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto get_sequence_length = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -355,39 +374,37 @@ namespace nmos
 
                     if (property_found != properties.end())
                     {
-                        if (nmos::fields::nc::is_sequence(*property_found))
-                        {
-                            auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
-
-                            if (nmos::fields::nc::is_nullable(*property_found))
-                            {
-                                // can be null
-                                if (data.is_null())
-                                {
-                                    // null
-                                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, value::null());
-                                }
-                            }
-                            else
-                            {
-                                // cannot be null
-                                if (data.is_null())
-                                {
-                                    // null
-                                    utility::stringstream_t ss;
-                                    ss << U("property: ") << property_id.serialize() << " is a null sequence to do GetSequenceLength";
-                                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
-                                }
-                            }
-                            return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size()));
-                        }
-                        else
+                        if (!nmos::fields::nc::is_sequence(*property_found))
                         {
                             // property is not a sequence
                             utility::stringstream_t ss;
-                            ss << U("property: ") << property_id.serialize() << " is not a sequence to do GetSequenceLength";
+                            ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceLength");
                             return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
                         }
+
+                        auto& data = resource->data.at(nmos::fields::nc::name(*property_found));
+
+                        if (nmos::fields::nc::is_nullable(*property_found))
+                        {
+                            // can be null
+                            if (data.is_null())
+                            {
+                                // null
+                                return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, value::null());
+                            }
+                        }
+                        else
+                        {
+                            // cannot be null
+                            if (data.is_null())
+                            {
+                                // null
+                                utility::stringstream_t ss;
+                                ss << U("property: ") << property_id.serialize() << " is a null sequence to do GetSequenceLength";
+                                return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                            }
+                        }
+                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size()));
                     }
 
                     // unknown property
@@ -404,16 +421,16 @@ namespace nmos
 
             // NcBlock methods implementation
             // Gets descriptors of members of the block
-            const auto get_member_descriptors = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments)
+            const auto get_member_descriptors = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
-                const auto& recurse = nmos::fields::nc::recurse(arguments); // If recurse is set to true, nested members is to be retrieved
-
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 auto& resources = model.control_protocol_resources;
                 auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                 if (resources.end() != resource)
                 {
+                    const auto& recurse = nmos::fields::nc::recurse(arguments); // If recurse is set to true, nested members is to be retrieved
+
                     auto descriptors = value::array();
                     nmos::get_member_descriptors(resources, nmos::find_resource(resources, utility::s2us(std::to_string(oid))), recurse, descriptors.as_array());
 
@@ -426,12 +443,11 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Finds member(s) by path
-            const auto find_members_by_path = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments)
+            const auto find_members_by_path = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 auto& resources = model.control_protocol_resources;
-
                 auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                 if (resources.end() != resource)
                 {
@@ -488,7 +504,7 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Finds members with given role name or fragment
-            const auto find_members_by_role = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments)
+            const auto find_members_by_role = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 const auto& role = nmos::fields::nc::role(arguments); // Role text to search for
                 const auto& case_sensitive = nmos::fields::nc::case_sensitive(arguments); // Signals if the comparison should be case sensitive
@@ -520,11 +536,17 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
             // Finds members with given class id
-            const auto find_members_by_class_id = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments)
+            const auto find_members_by_class_id = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
                 const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
                 const auto& include_derived = nmos::fields::nc::include_derived(arguments); // If TRUE it will also include derived class descriptors
                 const auto& recurse = nmos::fields::nc::recurse(arguments); // TRUE to search nested blocks
+
+                if (class_id.empty())
+                {
+                    // empty class_id
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty classId to do FindMembersByClassId"));
+                }
 
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -533,12 +555,6 @@ namespace nmos
                 auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                 if (resources.end() != resource)
                 {
-                    if (class_id.empty())
-                    {
-                        // empty class_id
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty classId to do FindMembersByClassId"));
-                    }
-
                     auto descriptors = value::array();
                     nmos::find_members_by_class_id(resources, nmos::find_resource(resources, utility::s2us(std::to_string(oid))), class_id, include_derived, recurse, descriptors.as_array());
 
@@ -553,13 +569,131 @@ namespace nmos
 
             // NcClassManager methods implementation
             // Get a single class descriptor
-            const auto get_control_class = [&model](const web::json::array& properties, int32_t handle, int32_t oid, const value& arguments)
+            const auto get_control_class = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
             {
-                // hmm, todo
+                const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+                const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
+
+                if (class_id.empty())
+                {
+                    // empty class_id
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty classId to do GetControlClass"));
+                }
+
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
+                auto& resources = model.control_protocol_resources;
+
+                auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                if (resources.end() != resource)
+                {
+                    auto class_found = control_classes.find(make_nc_class_id(class_id));
+
+                    if (control_classes.end() != class_found)
+                    {
+                        auto id = class_id;
+
+                        auto description = class_found->second.description;
+                        auto name = class_found->second.name;
+                        auto fixed_role = class_found->second.fixed_role;
+                        auto properties = class_found->second.properties;
+                        auto methods = class_found->second.methods;
+                        auto events = class_found->second.events;
+
+                        id.pop_back();
+
+                        if (include_inherited)
+                        {
+                            while (!id.empty())
+                            {
+                                auto found = control_classes.find(make_nc_class_id(id));
+                                if (control_classes.end() != found)
+                                {
+                                    for (const auto& property : found->second.properties.as_array()) { web::json::push_back(properties, property); }
+                                    for (const auto& method : found->second.methods.as_array()) { web::json::push_back(methods, method); }
+                                    for (const auto& event : found->second.events.as_array()) { web::json::push_back(events, event); }
+                                }
+                                id.pop_back();
+                            }
+                        }
+                        auto descriptor = details::make_nc_class_descriptor(description, class_id, name, fixed_role, properties, methods, events);
+
+                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptor);
+                    }
+
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("classId not found"));
+                }
 
                 // resource not found for the given oid
                 utility::stringstream_t ss;
-                ss << U("unknown oid: ") << oid << U(" to get control class");
+                ss << U("unknown oid: ") << oid << U(" to do GetControlClass");
+                return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
+            };
+            // Get a single datatype descriptor
+            const auto get_datatype = [&model](const web::json::array&, int32_t handle, int32_t oid, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            {
+                const auto& name = nmos::fields::nc::name(arguments); // name of datatype
+                const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
+
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
+                auto& resources = model.control_protocol_resources;
+
+                auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                if (resources.end() != resource)
+                {
+                    if (name.empty())
+                    {
+                        // empty name
+                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty name to do GetDatatype"));
+                    }
+
+                    auto datatype_found = datatypes.find(name);
+
+                    if (datatypes.end() != datatype_found)
+                    {
+                        auto descriptor = datatype_found->second.descriptor;
+
+                        if (include_inherited)
+                        {
+                            const auto& type = nmos::fields::nc::type(descriptor);
+                            if(details::nc_datatype_type::Struct == type)
+                            {
+                                auto descriptor_ = descriptor;
+
+                                for (;;)
+                                {
+                                    const auto& parent_type = descriptor_.at(nmos::fields::nc::parent_type);
+                                    if (!parent_type.is_null())
+                                    {
+                                        auto datatype_found_ = datatypes.find(parent_type.as_string());
+                                        if (datatypes.end() != datatype_found_)
+                                        {
+                                            descriptor_ = datatype_found_->second.descriptor;
+                                            const auto& fields = nmos::fields::nc::fields(descriptor_);
+                                            for (const auto& field : fields)
+                                            {
+                                                web::json::push_back(descriptor.at(nmos::fields::nc::fields), field);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptor);
+                    }
+
+                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("name not found"));
+                }
+
+                // resource not found for the given oid
+                utility::stringstream_t ss;
+                ss << U("unknown oid: ") << oid << U(" to do GetDatatype");
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
             };
 
@@ -599,23 +733,23 @@ namespace nmos
 
             // NcClassManager methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-            //nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 1 } })] = get_control_class;
-            //nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 2 } })] = get_datatype;
+            nc_class_manager_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 1 } })] = get_control_class;
+            nc_class_manager_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 2 } })] = get_datatype;
 
             value properties = value::array(); // combined base classes nc_property_descriptor(s) for the required class_id
             details::methods methods; // list of combined base classes method handlers
 
-            auto found_class = control_classes.find(make_nc_class_id(class_id_));
-            if (control_classes.end() != found_class)
+            auto class_found = control_classes.find(make_nc_class_id(class_id_));
+            if (control_classes.end() != class_found)
             {
                 // hmm, update the array of properties, will be updated the list of method handlers
                 auto insert_properties = [&properties, &control_classes](const nc_class_id& class_id_)
                 {
                     auto class_id = make_nc_class_id(class_id_);
-                    auto found = control_classes.find(class_id);
-                    if (control_classes.end() != found)
+                    auto class_id_found = control_classes.find(class_id);
+                    if (control_classes.end() != class_id_found)
                     {
-                        auto& nc_class_properties = found->second.properties.as_array();
+                        auto& nc_class_properties = class_id_found->second.properties.as_array();
                         for (auto& nc_class_property : nc_class_properties)
                         {
                             web::json::push_back(properties, nc_class_property);
@@ -637,7 +771,7 @@ namespace nmos
                     {
                         methods.insert(nc_block_method_handlers.begin(), nc_block_method_handlers.end());
                     }
-                    else if (details::nc_device_manager_class_id == class_id)
+                    else if (details::nc_manager_class_id == class_id)
                     {
                         methods.insert(nc_manager_method_handlers.begin(), nc_manager_method_handlers.end());
                     }
@@ -797,11 +931,11 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_classes_handler get_control_protocol_classes, slog::base_gate& gate_)
+    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_classes_handler get_control_protocol_classes, nmos::get_control_protocol_datatypes_handler get_control_protocol_datatypes, slog::base_gate& gate_)
     {
         using web::json::value;
 
-        return [&model, &websockets, get_control_protocol_classes, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
+        return [&model, &websockets, get_control_protocol_classes, get_control_protocol_datatypes, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
 
@@ -867,11 +1001,11 @@ namespace nmos
                                         auto& methods = properties_methods.second;
 
                                         // find the relevent method handler to execute
-                                        auto method = methods.find(method_id);
-                                        if (method != methods.end())
+                                        auto method_found = methods.find(method_id);
+                                        if (method_found != methods.end())
                                         {
                                             // execute the relevant method handler, then accumulating up their response to reponses
-                                            web::json::push_back(responses, method->second(properties.as_array(), handle, oid, arguments));
+                                            web::json::push_back(responses, method_found->second(properties.as_array(), handle, oid, arguments, get_control_protocol_classes(), get_control_protocol_datatypes()));
                                         }
                                         else
                                         {
