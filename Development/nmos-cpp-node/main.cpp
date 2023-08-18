@@ -110,8 +110,11 @@ int main(int argc, char* argv[])
 #endif
 
         nmos::experimental::control_protocol_state control_protocol_state;
-        node_implementation.on_get_control_classes(nmos::make_get_control_protocol_classes_handler(control_protocol_state, gate));
-        node_implementation.on_get_control_datatypes(nmos::make_get_control_protocol_datatypes_handler(control_protocol_state, gate));
+        if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
+        {
+            node_implementation.on_get_control_classes(nmos::make_get_control_protocol_classes_handler(control_protocol_state, gate));
+            node_implementation.on_get_control_datatypes(nmos::make_get_control_protocol_datatypes_handler(control_protocol_state, gate));
+        }
 
         // Set up the node server
 

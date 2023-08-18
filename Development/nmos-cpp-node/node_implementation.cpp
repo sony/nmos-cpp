@@ -897,16 +897,19 @@ void node_implementation_init(nmos::node_model& model, const nmos::experimental:
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
-    // example root block
-    auto root_block = nmos::make_root_block();
-    // example device manager
-    auto device_manager = nmos::make_device_manager(2, root_block, model.settings);
-    if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(device_manager), gate)) throw node_implementation_init_exception();
-    // example class manager
-    auto class_manager = nmos::make_class_manager(3, root_block, control_protocol_state);
-    if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(class_manager), gate)) throw node_implementation_init_exception();
-    // insert root block to model
-    if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(root_block), gate)) throw node_implementation_init_exception();
+    if (0 <= nmos::fields::control_protocol_ws_port(model.settings))
+    {
+        // example root block
+        auto root_block = nmos::make_root_block();
+        // example device manager
+        auto device_manager = nmos::make_device_manager(2, root_block, model.settings);
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(device_manager), gate)) throw node_implementation_init_exception();
+        // example class manager
+        auto class_manager = nmos::make_class_manager(3, root_block, control_protocol_state);
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(class_manager), gate)) throw node_implementation_init_exception();
+        // insert root block to model
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(root_block), gate)) throw node_implementation_init_exception();
+    }
 }
 
 void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
