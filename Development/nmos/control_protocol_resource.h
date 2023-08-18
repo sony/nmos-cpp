@@ -1,10 +1,8 @@
 #ifndef NMOS_CONTROL_PROTOCOL_RESOURCE_H
 #define NMOS_CONTROL_PROTOCOL_RESOURCE_H
 
-#include <map>
 #include "cpprest/json_utils.h"
 #include "nmos/control_protocol_class_id.h"
-#include "nmos/control_protocol_state.h" // for nmos::experimental::control_classes definitions
 
 namespace web
 {
@@ -16,6 +14,11 @@ namespace web
 
 namespace nmos
 {
+    namespace experimental
+    {
+        struct control_protocol_state;
+    }
+
     namespace details
     {
         namespace nc_message_type
@@ -106,40 +109,66 @@ namespace nmos
         {
             enum cause
             {
-                Unknown = 0,            // 0 Unknown
-                Power_on = 1,           // 1 Power on
-                InternalError = 2,      // 2 Internal error
-                Upgrade = 3,            // 3 Upgrade
-                Controller_request = 4, // 4 Controller request
-                ManualReset = 5         // 5 Manual request from the front panel
+                Unknown = 0,            // Unknown
+                Power_on = 1,           // Power on
+                InternalError = 2,      // Internal error
+                Upgrade = 3,            // Upgrade
+                Controller_request = 4, // Controller request
+                ManualReset = 5         // Manual request from the front panel
             };
         }
 
-        // see https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncid
+        // NcConnectionStatus
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
+        namespace nc_connection_status
+        {
+            enum status
+            {
+                Undefined = 0,          // This is the value when there is no receiver
+                Connected = 1,          // Connected to a stream
+                Disconnected = 2,       // Not connected to a stream
+                ConnectionError = 3     // A connection error was encountered
+            };
+        }
+
+        // NcPayloadStatus
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
+        namespace nc_payload_status
+        {
+            enum status
+            {
+                Undefined = 0,                  // This is the value when there's no connection.
+                PayloadOK = 1,                  // Payload is being received without errors and is the correct type
+                PayloadFormatUnsupported = 2,   // Payload is being received but is of an unsupported type
+                PayloadError = 3                // A payload error was encountered
+            };
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncid
         typedef uint32_t nc_id;
 
-        // see https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncoid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncoid
         typedef uint32_t nc_oid;
 
-        // see https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncuri
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncuri
         typedef utility::string_t nc_uri;
 
-        // see https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncuuid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncuuid
         typedef utility::string_t nc_uuid;
 
-        // see https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
         const nc_class_id nc_object_class_id({ 1 });
         const nc_class_id nc_block_class_id({ 1, 1 });
         const nc_class_id nc_worker_class_id({ 1, 2 });
         const nc_class_id nc_manager_class_id({ 1, 3 });
         const nc_class_id nc_device_manager_class_id({ 1, 3, 1 });
         const nc_class_id nc_class_manager_class_id({ 1, 3, 2 });
+        const nc_class_id nc_ident_beacon_class_id({ 1, 2, 2 });
+        const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 3 });
+        const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
 
-        // see https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nctouchpoint
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nctouchpoint
         typedef utility::string_t nc_touch_point;
-
-        typedef std::function<web::json::value(const web::json::array& properties, int32_t handle, int32_t oid, const web::json::value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)> method;
-        typedef std::map<web::json::value, method> methods; // method_id vs method handler
 
         web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message);
 
@@ -212,7 +241,7 @@ namespace nmos
         // description can be null
         // type_name can be null
         // constraints can be null
-        web::json::value make_nc_field_descriptor(const web::json::value& description, const utility::string_t& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints);
+        web::json::value make_nc_field_descriptor(const web::json::value& description, const utility::string_t& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethoddescriptor
         // description can be null
@@ -223,7 +252,7 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncparameterdescriptor
         // description can be null
         // type_name can be null
-        web::json::value make_nc_parameter_descriptor(const web::json::value& description, const utility::string_t& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints);
+        web::json::value make_nc_parameter_descriptor(const web::json::value& description, const utility::string_t& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertydescriptor
         // description can be null
@@ -231,96 +260,217 @@ namespace nmos
         // type_name can be null
         // constraints can be null
         web::json::value make_nc_property_descriptor(const web::json::value& description, const web::json::value& id, const utility::string_t& name, const web::json::value& type_name,
-            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints);
+            bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptor
         // description can be null
         // constraints can be null
-        web::json::value make_nc_datatype_descriptor(const web::json::value& description, const utility::string_t& name, nc_datatype_type::type type, const web::json::value& constraints);
+        web::json::value make_nc_datatype_descriptor(const web::json::value& description, const utility::string_t& name, nc_datatype_type::type type, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorenum
         // description can be null
         // constraints can be null
         // items: sequence<NcEnumItemDescriptor>
-        web::json::value make_nc_datatype_descriptor_enum(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints, const web::json::value& items);
+        web::json::value make_nc_datatype_descriptor_enum(const web::json::value& description, const utility::string_t& name, const web::json::value& items, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorprimitive
         // description can be null
         // constraints can be null
-        web::json::value make_nc_datatype_descriptor_primitive(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints);
+        web::json::value make_nc_datatype_descriptor_primitive(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorstruct
         // description can be null
         // constraints can be null
         // fields: sequence<NcFieldDescriptor>
         // parent_type can be null
-        web::json::value make_nc_datatype_descriptor_struct(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints, const web::json::value& fields, const web::json::value& parent_type);
+        web::json::value make_nc_datatype_descriptor_struct(const web::json::value& description, const utility::string_t& name, const web::json::value& fields, const web::json::value& parent_type, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptortypedef
         // description can be null
         // constraints can be null
-        web::json::value make_nc_datatype_typedef(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints, const utility::string_t& parent_type, bool is_sequence);
+        web::json::value make_nc_datatype_typedef(const web::json::value& description, const utility::string_t& name, bool is_sequence, const utility::string_t& parent_type, const web::json::value& constraints = web::json::value::null());
 
-        // make the core control classes proprties/methods/events
+        // Control class models
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/#control-class-models-for-branch-v10-dev
+        //
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.html
+        web::json::value make_nc_object_class();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.1.html
+        web::json::value make_nc_block_class();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.2.html
+        web::json::value make_nc_worker_class();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.3.html
+        web::json::value make_nc_manager_class();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.3.1.html
+        web::json::value make_nc_device_manager_class();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.3.2.html
+        web::json::value make_nc_class_manager_class();
+
+        // control classes proprties/methods/events
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
         web::json::value make_nc_object_properties();
         web::json::value make_nc_object_methods();
         web::json::value make_nc_object_events();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
         web::json::value make_nc_block_properties();
         web::json::value make_nc_block_methods();
         web::json::value make_nc_block_events();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncworker
         web::json::value make_nc_worker_properties();
         web::json::value make_nc_worker_methods();
         web::json::value make_nc_worker_events();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
         web::json::value make_nc_manager_properties();
         web::json::value make_nc_manager_methods();
         web::json::value make_nc_manager_events();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
         web::json::value make_nc_device_manager_properties();
         web::json::value make_nc_device_manager_methods();
         web::json::value make_nc_device_manager_events();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
         web::json::value make_nc_class_manager_properties();
         web::json::value make_nc_class_manager_methods();
         web::json::value make_nc_class_manager_events();
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        web::json::value make_nc_receiver_monitor_properties();
+        web::json::value make_nc_receiver_monitor_methods();
+        web::json::value make_nc_receiver_monitor_events();
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
+        web::json::value make_nc_receiver_monitor_protected_properties();
+        web::json::value make_nc_receiver_monitor_protected_methods();
+        web::json::value make_nc_receiver_monitor_protected_events();
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
+        web::json::value make_nc_ident_beacon_properties();
+        web::json::value make_nc_ident_beacon_methods();
+        web::json::value make_nc_ident_beacon_events();
 
-        // make the core datatypes
-        web::json::value make_nc_class_id_datatype();
-        web::json::value make_nc_oid_datatype();
-        web::json::value make_nc_touchpoint_datatype();
-        web::json::value make_nc_element_id_datatype();
-        web::json::value make_nc_property_id_datatype();
-        web::json::value make_nc_property_contraints_datatype();
-        web::json::value make_nc_method_result_property_value_datatype();
-        web::json::value make_nc_method_status_datatype();
-        web::json::value make_nc_method_result_datatype();
-        web::json::value make_nc_id_datatype();
-        web::json::value make_nc_method_result_id_datatype();
-        web::json::value make_nc_method_result_length_datatype();
-        web::json::value make_nc_property_change_type_datatype();
-        web::json::value make_nc_property_changed_event_data_datatype();
-        web::json::value make_nc_descriptor_datatype();
+        // Datatype models
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/#datatype-models-for-branch-v10-dev
+        //
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcBlockMemberDescriptor.html
         web::json::value make_nc_block_member_descriptor_datatype();
-        web::json::value make_nc_method_result_block_member_descriptors_datatype();
-        web::json::value make_nc_version_code_datatype();
-        web::json::value make_nc_organization_id_datatype();
-        web::json::value make_nc_uri_datatype();
-        web::json::value make_nc_manufacturer_datatype();
-        web::json::value make_nc_uuid_datatype();
-        web::json::value make_nc_product_datatype();
-        web::json::value make_nc_device_generic_state_datatype();
-        web::json::value make_nc_device_operational_state_datatype();
-        web::json::value make_nc_reset_cause_datatype();
-        web::json::value make_nc_name_datatype();
-        web::json::value make_nc_property_descriptor_datatype();
-        web::json::value make_nc_parameter_descriptor_datatype();
-        web::json::value make_nc_method_id_datatype();
-        web::json::value make_nc_method_descriptor_datatype();
-        web::json::value make_nc_event_id_datatype();
-        web::json::value make_nc_event_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcClassDescriptor.html
         web::json::value make_nc_class_descriptor_datatype();
-        web::json::value make_nc_parameter_constraints_datatype();
-        web::json::value make_nc_datatype_type_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcClassId.html
+        web::json::value make_nc_class_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptor.html
         web::json::value make_nc_datatype_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorEnum.html
+        web::json::value make_nc_datatype_descriptor_enum_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorPrimitive.html
+        web::json::value make_nc_datatype_descriptor_primitive_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorStruct.html
+        web::json::value make_nc_datatype_descriptor_struct_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorTypeDef.html
+        web::json::value make_nc_datatype_descriptor_type_def_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeType.html
+        web::json::value make_nc_datatype_type_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDescriptor.html
+        web::json::value make_nc_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDeviceGenericState.html
+        web::json::value make_nc_device_generic_state_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDeviceOperationalState.html
+        web::json::value make_nc_device_operational_state_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcElementId.html
+        web::json::value make_nc_element_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcEnumItemDescriptor.html
+        web::json::value make_nc_enum_item_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcEventDescriptor.html
+        web::json::value make_nc_event_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcEventId.html
+        web::json::value make_nc_event_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcFieldDescriptor.html
+        web::json::value make_nc_field_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcId.html
+        web::json::value make_nc_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcManufacturer.html
+        web::json::value make_nc_manufacturer_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodDescriptor.html
+        web::json::value make_nc_method_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodId.html
+        web::json::value make_nc_method_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResult.html
+        web::json::value make_nc_method_result_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultBlockMemberDescriptors.html
+        web::json::value make_nc_method_result_block_member_descriptors_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultClassDescriptor.html
         web::json::value make_nc_method_result_class_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultDatatypeDescriptor.html
         web::json::value make_nc_method_result_datatype_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultError.html
+        web::json::value make_nc_method_result_error_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultId.html
+        web::json::value make_nc_method_result_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultLength.html
+        web::json::value make_nc_method_result_length_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultPropertyValue.html
+        web::json::value make_nc_method_result_property_value_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodStatus.html
+        web::json::value make_nc_method_status_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcName.html
+        web::json::value make_nc_name_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcOid.html
+        web::json::value make_nc_oid_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcOrganizationId.html
+        web::json::value make_nc_organization_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterConstraints.html
+        web::json::value make_nc_parameter_constraints_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterConstraintsNumber.html
+        web::json::value make_nc_parameter_constraints_number_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterConstraintsString.html
+        web::json::value make_nc_parameter_constraints_string_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterDescriptor.html
+        web::json::value make_nc_parameter_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcProduct.html
+        web::json::value make_nc_product_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyChangeType.html
+        web::json::value make_nc_property_change_type_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyChangedEventData.html
+        web::json::value make_nc_property_changed_event_data_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyConstraints.html
+        web::json::value make_nc_property_contraints_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyConstraintsNumber.html
+        web::json::value make_nc_property_constraints_number_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyConstraintsString.html
+        web::json::value make_nc_property_constraints_string_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyDescriptor.html
+        web::json::value make_nc_property_descriptor_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyId.html
+        web::json::value make_nc_property_id_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcRegex.html
+        web::json::value make_nc_regex_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcResetCause.html
+        web::json::value make_nc_reset_cause_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcRolePath.html
+        web::json::value make_nc_role_path_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTimeInterval.html
+        web::json::value make_nc_time_interval_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpoint.html
+        web::json::value make_nc_touchpoint_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointNmos.html
+        web::json::value make_nc_touchpoint_nmos_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointNmosChannelMapping.html
+        web::json::value make_nc_touchpoint_nmos_channel_mapping_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointResource.html
+        web::json::value make_nc_touchpoint_resource_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointResourceNmos.html
+        web::json::value make_nc_touchpoint_resource_nmos_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointResourceNmosChannelMapping.html
+        web::json::value make_nc_touchpoint_resource_nmos_channel_mapping_datatype();
+        // See // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcUri.html
+        web::json::value make_nc_uri_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcUuid.html
+        web::json::value make_nc_uuid_datatype();
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcVersionCode.html
+        web::json::value make_nc_version_code_datatype();
+
+        // Monitoring datatypes
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
+        //
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
+        web::json::value make_nc_connection_status_datatype();
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
+        web::json::value make_nc_payload_status_datatype();
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
         web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
@@ -337,7 +487,7 @@ namespace nmos
             const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-        web::json::value make_nc_class_manager(details::nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
+        web::json::value make_nc_class_manager(details::nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const nmos::experimental::control_protocol_state& control_protocol_state);
     }
 }
 

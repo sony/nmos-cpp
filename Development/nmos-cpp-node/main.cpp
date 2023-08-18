@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 
         // Add the underlying implementation, which will set up the node resources, etc.
 
-        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
+        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
 
 // only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config

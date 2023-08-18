@@ -13,17 +13,28 @@ namespace nmos
             // setup the core control classes
             control_classes =
             {
+                // Control class models
+                // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/#control-class-models-for-branch-v10-dev
                 { details::make_nc_class_id(details::nc_object_class_id), { value::string(U("NcObject class descriptor")), details::nc_object_class_id, U("NcObject"), value::null(), details::make_nc_object_properties(), details::make_nc_object_methods(), details::make_nc_object_events() } },
                 { details::make_nc_class_id(details::nc_block_class_id), { value::string(U("NcBlock class descriptor")), details::nc_block_class_id, U("NcBlock"), value::null(), details::make_nc_block_properties(), details::make_nc_block_methods(), details::make_nc_block_events() } },
                 { details::make_nc_class_id(details::nc_worker_class_id), { value::string(U("NcWorker class descriptor")), details::nc_worker_class_id, U("NcWorker"), value::null(), details::make_nc_worker_properties(), details::make_nc_worker_methods(), details::make_nc_worker_events() } },
                 { details::make_nc_class_id(details::nc_manager_class_id), { value::string(U("NcManager class descriptor")), details::nc_manager_class_id, U("NcManager"), value::null(), details::make_nc_manager_properties(), details::make_nc_manager_methods(), details::make_nc_manager_events() } },
                 { details::make_nc_class_id(details::nc_device_manager_class_id), { value::string(U("NcDeviceManager class descriptor")), details::nc_device_manager_class_id, U("NcDeviceManager"), value::string(U("DeviceManager")), details::make_nc_device_manager_properties(), details::make_nc_device_manager_methods(), details::make_nc_device_manager_events() } },
-                { details::make_nc_class_id(details::nc_class_manager_class_id), { value::string(U("NcClassManager class descriptor")), details::nc_class_manager_class_id, U("NcClassManager"), value::string(U("ClassManager")), details::make_nc_class_manager_properties(), details::make_nc_class_manager_methods(), details::make_nc_class_manager_events() } }
+                { details::make_nc_class_id(details::nc_class_manager_class_id), { value::string(U("NcClassManager class descriptor")), details::nc_class_manager_class_id, U("NcClassManager"), value::string(U("ClassManager")), details::make_nc_class_manager_properties(), details::make_nc_class_manager_methods(), details::make_nc_class_manager_events() } },
+                // identification beacon model
+                // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
+                { details::make_nc_class_id(details::nc_ident_beacon_class_id), { value::string(U("NcIdentBeacon class descriptor")), details::nc_ident_beacon_class_id, U("NcIdentBeacon"), value::null(), details::make_nc_ident_beacon_properties(), details::make_nc_ident_beacon_methods(), details::make_nc_ident_beacon_events() } },
+                // Monitoring
+                // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+                { details::make_nc_class_id(details::nc_receiver_monitor_class_id), { value::string(U("NcReceiverMonitor class descriptor")), details::nc_receiver_monitor_class_id, U("NcReceiverMonitor"), value::null(), details::make_nc_receiver_monitor_properties(), details::make_nc_receiver_monitor_methods(), details::make_nc_receiver_monitor_events() } },
+                { details::make_nc_class_id(details::nc_receiver_monitor_protected_class_id), { value::string(U("NcReceiverMonitorProtected class descriptor")), details::nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), value::null(), details::make_nc_receiver_monitor_protected_properties(), details::make_nc_receiver_monitor_protected_methods(), details::make_nc_receiver_monitor_protected_events() } }
             };
 
             // setup the core datatypes
             datatypes =
             {
+                // Dataype models
+                // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/#datatype-models-for-branch-v10-dev
                 { U("NcClassId"), {details::make_nc_class_id_datatype()} },
                 { U("NcOid"), {details::make_nc_oid_datatype()} },
                 { U("NcTouchpoint"), {details::make_nc_touchpoint_datatype()} },
@@ -62,7 +73,30 @@ namespace nmos
                 { U("NcDatatypeType"), {details::make_nc_datatype_type_datatype()} },
                 { U("NcDatatypeDescriptor"), {details::make_nc_datatype_descriptor_datatype()} },
                 { U("NcMethodResultClassDescriptor"), {details::make_nc_method_result_class_descriptor_datatype()} },
-                { U("NcMethodResultDatatypeDescriptor"), {details::make_nc_method_result_datatype_descriptor_datatype()} }
+                { U("NcMethodResultDatatypeDescriptor"), {details::make_nc_method_result_datatype_descriptor_datatype()} },
+                { U("NcMethodResultError"), {details::make_nc_method_result_error_datatype()} },
+                { U("NcDatatypeDescriptorEnum"), {details::make_nc_datatype_descriptor_enum_datatype()} },
+                { U("NcDatatypeDescriptorPrimitive"), {details::make_nc_datatype_descriptor_primitive_datatype()} },
+                { U("NcDatatypeDescriptorStruct"), {details::make_nc_datatype_descriptor_struct_datatype()} },
+                { U("NcDatatypeDescriptorTypeDef"), {details::make_nc_datatype_descriptor_type_def_datatype()} },
+                { U("NcEnumItemDescriptor"), {details::make_nc_enum_item_descriptor_datatype()} },
+                { U("NcFieldDescriptor"), {details::make_nc_field_descriptor_datatype()} },
+                { U("NcPropertyConstraintsNumber"), {details::make_nc_property_constraints_number_datatype()} },
+                { U("NcPropertyConstraintsString"), {details::make_nc_property_constraints_string_datatype()} },
+                { U("NcRegex"), {details::make_nc_regex_datatype()} },
+                { U("NcRolePath"), {details::make_nc_role_path_datatype()} },
+                { U("NcParameterConstraintsNumber"), {details::make_nc_parameter_constraints_number_datatype()} },
+                { U("NcParameterConstraintsString"), {details::make_nc_parameter_constraints_string_datatype()} },
+                { U("NcTimeInterval"), {details::make_nc_time_interval_datatype()} },
+                { U("NcTouchpointNmos"), {details::make_nc_touchpoint_nmos_datatype()} },
+                { U("NcTouchpointNmosChannelMapping"), {details::make_nc_touchpoint_nmos_channel_mapping_datatype()} },
+                { U("NcTouchpointResource"), {details::make_nc_touchpoint_resource_datatype()} },
+                { U("NcTouchpointResourceNmos"), {details::make_nc_touchpoint_resource_nmos_datatype()} },
+                { U("NcTouchpointResourceNmosChannelMapping"), {details::make_nc_touchpoint_resource_nmos_channel_mapping_datatype()} },
+                // Monitoring
+                // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
+                { U("NcConnectionStatus"), {details::make_nc_connection_status_datatype()} },
+                { U("NcPayloadStatus"), {details::make_nc_payload_status_datatype()} }
             };
         }
     }

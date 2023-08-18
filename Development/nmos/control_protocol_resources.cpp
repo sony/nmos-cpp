@@ -33,7 +33,7 @@ namespace nmos
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-    nmos::resource make_class_manager(details::nc_oid oid, nmos::resource& root_block)
+    nmos::resource make_class_manager(details::nc_oid oid, nmos::resource& root_block, const nmos::experimental::control_protocol_state& control_protocol_state)
     {
         using web::json::value;
 
@@ -42,7 +42,7 @@ namespace nmos
         const auto user_label = value::string(U("Class manager"));
         const auto description = value::string(U("The class manager offers access to control class and data type descriptors"));
 
-        auto data = details::make_nc_class_manager(oid, owner, user_label, value::null(), value::null());
+        auto data = details::make_nc_class_manager(oid, owner, user_label, value::null(), value::null(), control_protocol_state);
 
         // add NcClassManager block_member_descriptor to root block members
         web::json::push_back(root_block_data[nmos::fields::nc::members],

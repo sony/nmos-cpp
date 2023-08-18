@@ -22,6 +22,7 @@
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/control_protocol_resources.h"
+#include "nmos/control_protocol_state.h"
 #include "nmos/events_resources.h"
 #include "nmos/format.h"
 #include "nmos/group_hint.h"
@@ -187,7 +188,7 @@ namespace impl
 }
 
 // forward declarations for node_implementation_thread
-void node_implementation_init(nmos::node_model& model, slog::base_gate& gate);
+void node_implementation_init(nmos::node_model& model, const nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
@@ -197,13 +198,13 @@ struct node_implementation_init_exception {};
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
 // starts background tasks to emit regular events from the temperature event source, and then waits for shutdown.
-void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
+void node_implementation_thread(nmos::node_model& model, const nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate_)
 {
     nmos::details::omanip_gate gate{ gate_, nmos::stash_category(impl::categories::node_implementation) };
 
     try
     {
-        node_implementation_init(model, gate);
+        node_implementation_init(model, control_protocol_state, gate);
         node_implementation_run(model, gate);
     }
     catch (const node_implementation_init_exception&)
@@ -233,7 +234,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
     }
 }
 
-void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
+void node_implementation_init(nmos::node_model& model, const nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
 {
     using web::json::value;
     using web::json::value_from_elements;
@@ -902,7 +903,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
     auto device_manager = nmos::make_device_manager(2, root_block, model.settings);
     if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(device_manager), gate)) throw node_implementation_init_exception();
     // example class manager
-    auto class_manager = nmos::make_class_manager(3, root_block);
+    auto class_manager = nmos::make_class_manager(3, root_block, control_protocol_state);
     if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(class_manager), gate)) throw node_implementation_init_exception();
     // insert root block to model
     if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(root_block), gate)) throw node_implementation_init_exception();

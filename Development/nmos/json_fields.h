@@ -316,6 +316,20 @@ namespace nmos
             const web::json::field_as_integer change_type{ U("changeType") }; // NcPropertyChangeType
             const web::json::field_as_integer sequence_item_index{ U("sequenceItemIndex") }; // NcId, can be null
             const web::json::field_as_value property_id{ U("propertyId") };
+            const web::json::field_as_integer maximum{ U("maximum") };
+            const web::json::field_as_integer minimum{ U("minimum") };
+            const web::json::field_as_integer step{ U("step") };
+            const web::json::field_as_integer max_characters{ U("maxCharacters") };
+            const web::json::field_as_string pattern{ U("pattern") };
+            const web::json::field_as_value resource{ U("resource") };
+            const web::json::field_as_string resource_type{ U("resourceType") };
+            const web::json::field_as_string io_id{ U("ioId") };
+            const web::json::field_as_integer connection_status{ U("connectionStatus") }; // NcConnectionStatus
+            const web::json::field_as_string connection_status_message{ U("connectionStatusMessage") };
+            const web::json::field_as_integer payload_status{ U("payloadStatus") }; // NcPayloadStatus
+            const web::json::field_as_string payload_status_message{ U("payloadStatusMessage") };
+            const web::json::field_as_bool signal_protection_status{ U("signalProtectionStatus") };
+            const web::json::field_as_bool active{ U("active") };
         }
 
         // NMOS Parameter Registers

@@ -5,6 +5,7 @@
 #include "cpprest/json_utils.h"
 #include "nmos/control_protocol_class_id.h"  // for nmos::details::nc_class_id definitions
 #include "nmos/mutex.h"
+#include "nmos/resources.h"
 
 namespace nmos
 {
@@ -20,27 +21,6 @@ namespace nmos
             web::json::value properties;  // array of nc_property_descriptor
             web::json::value methods; // array of nc_method_descriptor
             web::json::value events;  // array of nc_event_descriptor
-
-            //control_class(details::nc_class_id class_id, utility::string_t name, web::json::value fixed_role, web::json::value properties, web::json::value methods, web::json::value events)
-            //    : description(web::json::value::null())
-            //    , class_id(std::move(class_id))
-            //    , name(std::move(name))
-            //    , fixed_role(std::move(fixed_role))
-            //    , properties(std::move(properties))
-            //    , methods(std::move(methods))
-            //    , events(std::move(events))
-            //{}
-
-            //control_class(const utility::string_t& description, details::nc_class_id class_id, utility::string_t name, web::json::value fixed_role, web::json::value properties, web::json::value methods, web::json::value events)
-            //    : description(web::json::value::string(description))
-            //    , class_id(std::move(class_id))
-            //    , name(std::move(name))
-            //    , fixed_role(std::move(fixed_role))
-            //    , properties(std::move(properties))
-            //    , methods(std::move(methods))
-            //    , events(std::move(events))
-            //{}
-
         };
 
         struct datatype // NcDatatypeDescriptorEnum/NcDatatypeDescriptorPrimitive/NcDatatypeDescriptorStruct/NcDatatypeDescriptorTypeDef
@@ -52,6 +32,10 @@ namespace nmos
         typedef std::map<web::json::value, control_class> control_classes;
         // nc_name vs datatype
         typedef std::map<utility::string_t, datatype> datatypes;
+
+        // methods defnitions
+        typedef std::function<web::json::value(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, const control_classes& control_classes, const datatypes& datatypes)> method;
+        typedef std::map<web::json::value, method> methods; // method_id vs method handler
 
         struct control_protocol_state
         {

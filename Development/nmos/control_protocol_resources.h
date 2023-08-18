@@ -7,11 +7,16 @@
 
 namespace nmos
 {
+    namespace experimental
+    {
+        struct control_protocol_state;
+    }
+
     struct resource;
 
     nmos::resource make_device_manager(details::nc_oid oid, nmos::resource& root_block, const nmos::settings& settings);
 
-    nmos::resource make_class_manager(details::nc_oid oid, nmos::resource& root_block);
+    nmos::resource make_class_manager(details::nc_oid oid, nmos::resource& root_block, const nmos::experimental::control_protocol_state& control_protocol_state);
 
     nmos::resource make_root_block();
 }
