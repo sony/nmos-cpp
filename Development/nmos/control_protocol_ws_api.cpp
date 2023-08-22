@@ -82,12 +82,13 @@ namespace nmos
 
             // NcObject methods implementation
             // Get property value
-            const auto get = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto get = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
-                // where arguments is the property id = (level, index)
                 const auto& property_id = nmos::fields::nc::id(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get property: " << property_id.to_string();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -102,12 +103,14 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
             };
             // Set property value
-            const auto set = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto set = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& val = nmos::fields::nc::value(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set property: " << property_id.to_string() << " value: " << val.to_string();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -139,12 +142,14 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
             };
             // Get sequence item
-            const auto get_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto get_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& index = nmos::fields::nc::index(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence item: " << property_id.to_string() << " index: " << index;
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -177,13 +182,15 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
             };
             // Set sequence item
-            const auto set_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto set_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& index = nmos::fields::nc::index(arguments);
                 const auto& val = nmos::fields::nc::value(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set sequence item: " << property_id.to_string() << " index: " << index << " value: " << val.to_string();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -222,12 +229,14 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
             };
             // Add item to sequence
-            const auto add_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto add_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& val = nmos::fields::nc::value(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Add sequence item: " << property_id.to_string() << " value: " << val.to_string();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -260,12 +269,14 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
             };
             // Delete sequence item
-            const auto remove_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto remove_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& index = nmos::fields::nc::index(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Remove sequence item: " << property_id.to_string() << " index: " << index;
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -305,11 +316,13 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
             };
             // Get sequence length
-            const auto get_sequence_length = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto get_sequence_length = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence length: " << property_id.to_string();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -355,12 +368,14 @@ namespace nmos
             };
 
             // NcBlock methods implementation
-            // Gets descriptors of members of the block
-            const auto get_member_descriptors = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            // Get descriptors of members of the block
+            const auto get_member_descriptors = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 const auto& recurse = nmos::fields::nc::recurse(arguments); // If recurse is set to true, nested members is to be retrieved
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get descriptors of members of the block: " << "recurse: " << recurse;
 
                 auto descriptors = value::array();
                 nmos::get_member_descriptors(resources, resource, recurse, descriptors.as_array());
@@ -368,12 +383,14 @@ namespace nmos
                 return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptors);
             };
             // Finds member(s) by path
-            const auto find_members_by_path = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto find_members_by_path = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 // Relative path to search for (MUST not include the role of the block targeted by oid)
-                const auto& path = nmos::fields::nc::path(arguments);
+                const auto& path = arguments.at(nmos::fields::nc::path);
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find member(s) by path: " << "path: " << path.to_string();
 
                 if (0 == path.size())
                 {
@@ -382,21 +399,22 @@ namespace nmos
                 }
 
                 auto nc_block_member_descriptors = value::array();
+                value nc_block_member_descriptor;
 
-                for (const auto& role : path)
+                for (const auto& role : path.as_array())
                 {
                     // look for the role in members
                     if (resource->data.has_field(nmos::fields::nc::members))
                     {
                         auto& members = nmos::fields::nc::members(resource->data);
                         auto member_found = std::find_if(members.begin(), members.end(), [&](const web::json::value& nc_block_member_descriptor)
-                            {
-                                return role.as_string() == nmos::fields::nc::role(nc_block_member_descriptor);
-                            });
+                        {
+                            return role.as_string() == nmos::fields::nc::role(nc_block_member_descriptor);
+                        });
 
                         if (members.end() != member_found)
                         {
-                            web::json::push_back(nc_block_member_descriptors, *member_found);
+                            nc_block_member_descriptor = *member_found;
 
                             // use oid to look for the next resource
                             resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::oid(*member_found))));
@@ -416,17 +434,20 @@ namespace nmos
                     }
                 }
 
+                web::json::push_back(nc_block_member_descriptors, nc_block_member_descriptor);
                 return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, nc_block_member_descriptors);
             };
             // Finds members with given role name or fragment
-            const auto find_members_by_role = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto find_members_by_role = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
                 const auto& role = nmos::fields::nc::role(arguments); // Role text to search for
                 const auto& case_sensitive = nmos::fields::nc::case_sensitive(arguments); // Signals if the comparison should be case sensitive
                 const auto& match_whole_string = nmos::fields::nc::match_whole_string(arguments); // TRUE to only return exact matches
                 const auto& recurse = nmos::fields::nc::recurse(arguments); // TRUE to search nested blocks
 
-                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find members with given role name or fragment: " << "role: " << role;
 
                 if (role.empty())
                 {
@@ -440,11 +461,15 @@ namespace nmos
                 return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptors);
             };
             // Finds members with given class id
-            const auto find_members_by_class_id = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto find_members_by_class_id = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
                 const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
                 const auto& include_derived = nmos::fields::nc::include_derived(arguments); // If TRUE it will also include derived class descriptors
                 const auto& recurse = nmos::fields::nc::recurse(arguments); // TRUE to search nested blocks
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find members with given class id: " << "class_id: " << details::make_nc_class_id(class_id).to_string();
 
                 if (class_id.empty())
                 {
@@ -462,10 +487,12 @@ namespace nmos
 
             // NcClassManager methods implementation
             // Get a single class descriptor
-            const auto get_control_class = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto get_control_class = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
                 const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
+
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single class descriptor: " << "class_id: " << details::make_nc_class_id(class_id).to_string();
 
                 if (class_id.empty())
                 {
@@ -512,12 +539,14 @@ namespace nmos
                 return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("classId not found"));
             };
             // Get a single datatype descriptor
-            const auto get_datatype = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes& datatypes)
+            const auto get_datatype = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes& datatypes, slog::base_gate& gate)
             {
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
                 const auto& name = nmos::fields::nc::name(arguments); // name of datatype
                 const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
 
-                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single datatype descriptor: " << "name: " << name;
 
                 if (name.empty())
                 {
@@ -844,7 +873,7 @@ namespace nmos
                                         if (method)
                                         {
                                             // execute the relevant method handler, then accumulating up their response to reponses
-                                            web::json::push_back(responses, method(resources, resource, handle, arguments, get_control_protocol_classes(), get_control_protocol_datatypes()));
+                                            web::json::push_back(responses, method(resources, resource, handle, arguments, get_control_protocol_classes(), get_control_protocol_datatypes(), gate));
                                         }
                                         else
                                         {
