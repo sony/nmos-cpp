@@ -1437,6 +1437,17 @@ namespace nmos
             return data;
         }
 
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncworker
+        web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled)
+        {
+            using web::json::value;
+
+            auto data = details::make_nc_object(class_id, oid, constant_oid, owner, role, user_label, touchpoints, runtime_property_constraints);
+            data[nmos::fields::nc::enabled] = value::boolean(enabled);
+
+            return data;
+        }
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
         web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {
@@ -1451,7 +1462,7 @@ namespace nmos
             using web::json::value;
 
             auto data = details::make_nc_manager(nc_device_manager_class_id, oid, true, owner, U("DeviceManager"), user_label, touchpoints, runtime_property_constraints);
-            data[nmos::fields::nc::nc_version] = value::string(U("v1.0"));
+            data[nmos::fields::nc::nc_version] = value::string(U("v1.0.0"));
             data[nmos::fields::nc::manufacturer] = manufacturer;
             data[nmos::fields::nc::product] = product;
             data[nmos::fields::nc::serial_number] = value::string(serial_number);

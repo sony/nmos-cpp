@@ -23,6 +23,7 @@
 #include "nmos/connection_events_activation.h"
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
+#include "nmos/control_protocol_utils.h"
 #include "nmos/events_resources.h"
 #include "nmos/format.h"
 #include "nmos/group_hint.h"
@@ -45,6 +46,10 @@
 #include "nmos/transport.h"
 #include "nmos/video_jxsv.h"
 #include "sdp/sdp.h"
+
+// hmm, for IS-12 gain control
+#include "nmos/resource.h"
+#include "nmos/is12_versions.h"
 
 // example node implementation details
 namespace impl
@@ -188,7 +193,7 @@ namespace impl
 }
 
 // forward declarations for node_implementation_thread
-void node_implementation_init(nmos::node_model& model, const nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
 void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
@@ -198,7 +203,7 @@ struct node_implementation_init_exception {};
 // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
 // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
 // starts background tasks to emit regular events from the temperature event source, and then waits for shutdown.
-void node_implementation_thread(nmos::node_model& model, const nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate_)
+void node_implementation_thread(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate_)
 {
     nmos::details::omanip_gate gate{ gate_, nmos::stash_category(impl::categories::node_implementation) };
 
@@ -234,7 +239,7 @@ void node_implementation_thread(nmos::node_model& model, const nmos::experimenta
     }
 }
 
-void node_implementation_init(nmos::node_model& model, const nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
 {
     using web::json::value;
     using web::json::value_from_elements;
@@ -897,17 +902,70 @@ void node_implementation_init(nmos::node_model& model, const nmos::experimental:
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
+    // example of using control protocol
     if (0 <= nmos::fields::control_protocol_ws_port(model.settings))
     {
+        // example to create a custom Gain control class
+        const auto gain_control_class_id = nmos::details::make_nc_class_id(nmos::details::nc_worker_class_id, 0, { 1 });
+        const web::json::field_as_number gain_value{ U("gainValue") };
+        auto make_gain_control_properties = [&gain_value]()
+        {
+            auto properties = value::array();
+            web::json::push_back(properties, nmos::details::make_nc_property_descriptor(value::string(U("Gain value")), nmos::details::make_nc_property_id(3, 1), gain_value, value::string(U("NcFloat32")), false, false, false, false));
+            return properties;
+        };
+        nmos::experimental::control_class gain_control_class = { value::string(U("Gain control class descriptor")), gain_control_class_id, U("GainControl"), value::null(), make_gain_control_properties(), value::array(), value::array()};
+        control_protocol_state.control_classes[nmos::details::make_nc_class_id(gain_control_class_id)] = gain_control_class;
+        // helper function to create Gain control instance
+        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::details::nc_oid oid, nmos::details::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, float gain = 0, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null())
+        {
+            auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true);
+            data[gain_value] = value::number(gain);
+            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+        };
+
         // example root block
         auto root_block = nmos::make_root_block();
+
+        nmos::details::nc_oid oid{ 2 };
         // example device manager
-        auto device_manager = nmos::make_device_manager(2, root_block, model.settings);
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(device_manager), gate)) throw node_implementation_init_exception();
+        auto device_manager = nmos::make_device_manager(oid++, root_block, model.settings);
+
         // example class manager
-        auto class_manager = nmos::make_class_manager(3, root_block, control_protocol_state);
+        auto class_manager = nmos::make_class_manager(oid++, root_block, control_protocol_state);
+
+        // example stereo gain
+        const auto& root_block_oid = nmos::fields::nc::oid(root_block.data);
+        const auto stereo_gain_oid = oid++;
+        // add master-gain and channel-gain
+        auto stereo_gain = nmos::make_block(stereo_gain_oid, root_block_oid, U("stereo-gain"), U("Stereo gain"));
+
+        // example channel gain
+        const auto channel_gain_oid = oid++;
+        // example left/right gains
+        auto left_gain = make_gain_control(oid++, channel_gain_oid, U("left-gain"), U("Left gain"));
+        auto right_gain = make_gain_control(oid++, channel_gain_oid, U("right-gain"), U("Right gain"));
+        // add left-gain and right-gain to channel gain
+        auto channel_gain = nmos::make_block(channel_gain_oid, stereo_gain_oid, U("channel-gain"), U("Channel gain"));
+        nmos::add_member_to_block(U("Left channel gain"), left_gain.data, channel_gain.data);
+        nmos::add_member_to_block(U("Right channel gain"), right_gain.data, channel_gain.data);
+
+        // example master-gain
+        auto master_gain = make_gain_control(oid++, channel_gain_oid, U("master-gain"), U("Master gain"));
+        // add master-gain and channel-gain to stereo-gain
+        nmos::add_member_to_block(U("Master gain block"), master_gain.data, stereo_gain.data);
+        nmos::add_member_to_block(U("Channel gain block"), channel_gain.data, stereo_gain.data);
+        // add stereo-gain to root-block
+        nmos::add_member_to_block(U("Stereo gain block"), stereo_gain.data, root_block.data);
+
+        // insert resources to model
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(left_gain), gate)) throw node_implementation_init_exception();
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(right_gain), gate)) throw node_implementation_init_exception();
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(master_gain), gate)) throw node_implementation_init_exception();
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(channel_gain), gate)) throw node_implementation_init_exception();
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(stereo_gain), gate)) throw node_implementation_init_exception();
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(device_manager), gate)) throw node_implementation_init_exception();
         if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(class_manager), gate)) throw node_implementation_init_exception();
-        // insert root block to model
         if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(root_block), gate)) throw node_implementation_init_exception();
     }
 }

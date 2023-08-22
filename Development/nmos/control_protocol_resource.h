@@ -95,12 +95,12 @@ namespace nmos
         {
             enum state
             {
-                Unknown = 0,            // Unknown
-                NormalOperation = 1,    // Normal operation
-                Initializing = 2,       // Device is initializing
-                Updating = 3,           // Device is performing a software or firmware update
-                LicensingError = 4,     // Device is experiencing a licensing error
-                InternalError = 5       // Device is experiencing an internal error
+                unknown = 0,            // Unknown
+                normal_operation = 1,    // Normal operation
+                initializing = 2,       // Device is initializing
+                updating = 3,           // Device is performing a software or firmware update
+                licensing_error = 4,     // Device is experiencing a licensing error
+                internal_error = 5       // Device is experiencing an internal error
             };
         }
 
@@ -109,12 +109,12 @@ namespace nmos
         {
             enum cause
             {
-                Unknown = 0,            // Unknown
-                Power_on = 1,           // Power on
-                InternalError = 2,      // Internal error
-                Upgrade = 3,            // Upgrade
-                Controller_request = 4, // Controller request
-                ManualReset = 5         // Manual request from the front panel
+                unknown = 0,            // Unknown
+                power_on = 1,           // Power on
+                internal_error = 2,      // Internal error
+                upgrade = 3,            // Upgrade
+                controller_request = 4, // Controller request
+                manual_reset = 5         // Manual request from the front panel
             };
         }
 
@@ -124,10 +124,10 @@ namespace nmos
         {
             enum status
             {
-                Undefined = 0,          // This is the value when there is no receiver
-                Connected = 1,          // Connected to a stream
-                Disconnected = 2,       // Not connected to a stream
-                ConnectionError = 3     // A connection error was encountered
+                undefined = 0,          // This is the value when there is no receiver
+                connected = 1,          // Connected to a stream
+                disconnected = 2,       // Not connected to a stream
+                connection_error = 3     // A connection error was encountered
             };
         }
 
@@ -137,10 +137,10 @@ namespace nmos
         {
             enum status
             {
-                Undefined = 0,                  // This is the value when there's no connection.
-                PayloadOK = 1,                  // Payload is being received without errors and is the correct type
-                PayloadFormatUnsupported = 2,   // Payload is being received but is of an unsupported type
-                PayloadError = 3                // A payload error was encountered
+                undefined = 0,                  // This is the value when there's no connection.
+                payload_ok = 1,                  // Payload is being received without errors and is the correct type
+                payload_format_unsupported = 2,   // Payload is being received but is of an unsupported type
+                payloadError = 3                // A payload error was encountered
             };
         }
 
@@ -477,6 +477,9 @@ namespace nmos
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
         web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncworker
+        web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
         web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
