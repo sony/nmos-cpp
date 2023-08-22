@@ -7,6 +7,8 @@
 #include "nmos/mutex.h"
 #include "nmos/resources.h"
 
+namespace slog { class base_gate; }
+
 namespace nmos
 {
     namespace experimental
@@ -34,7 +36,7 @@ namespace nmos
         typedef std::map<utility::string_t, datatype> datatypes;
 
         // methods defnitions
-        typedef std::function<web::json::value(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, const control_classes& control_classes, const datatypes& datatypes)> method;
+        typedef std::function<web::json::value(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, const control_classes& control_classes, const datatypes& datatypes, slog::base_gate& gate)> method;
         typedef std::map<web::json::value, method> methods; // method_id vs method handler
 
         struct control_protocol_state
