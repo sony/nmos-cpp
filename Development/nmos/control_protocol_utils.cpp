@@ -42,6 +42,14 @@ namespace nmos
         {
             return is_control_class(nc_class_manager_class_id, class_id);
         }
+
+        nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const nc_class_id& suffix)
+        {
+            nc_class_id class_id = prefix;
+            class_id.push_back(authority_key);
+            class_id.insert(class_id.end(), suffix.begin(), suffix.end());
+            return class_id;
+        }
     }
 
     void get_member_descriptors(const resources& resources, resources::iterator resource, bool recurse, web::json::array& descriptors)
