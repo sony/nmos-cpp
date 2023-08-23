@@ -820,9 +820,8 @@ namespace nmos
             const auto& ws_ncp_path = connection_uri.path();
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Received websocket message: " << msg << " on connection: " << ws_ncp_path;
 
-            // hmm todo: extract the version from the ws_ncp_path
-            const nmos::api_version version = is12_versions::v1_0;
-            //const nmos::api_version version = nmos::parse_api_version(ws_ncp_path(nmos::patterns::version.name));
+            // extract the control protocol api version from the ws_ncp_path
+            const auto version = nmos::parse_api_version(web::uri::split_path(ws_ncp_path).back());
 
             auto websocket = websockets.right.find(connection_id);
             if (websockets.right.end() != websocket)
