@@ -5,6 +5,7 @@
 #include "cpprest/regex_utils.h"
 #include "nmos/api_utils.h"
 #include "nmos/control_protocol_resources.h"
+#include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_utils.h"
 #include "nmos/is12_versions.h"
@@ -56,7 +57,7 @@ namespace nmos
 
             while (!class_id.empty())
             {
-                auto class_found = control_classes.find(make_nc_class_id(class_id));
+                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
                 if (control_classes.end() != class_found)
                 {
                     auto& properties = class_found->second.properties.as_array();
@@ -88,19 +89,19 @@ namespace nmos
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get property: " << property_id.to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get property: " << property_id.serialize();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
                 if (!property.is_null())
                 {
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(property)));
+                    return make_control_protocol_response(handle, { nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(property)));
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << U(" to do Get");
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
             // Set property value
             const auto set = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -110,7 +111,7 @@ namespace nmos
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& val = nmos::fields::nc::value(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set property: " << property_id.to_string() << " value: " << val.to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set property: " << property_id.serialize() << " value: " << val.serialize();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -118,13 +119,13 @@ namespace nmos
                 {
                     if (nmos::fields::nc::is_read_only(property))
                     {
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::read_only });
+                        return make_control_protocol_response(handle, { nc_method_status::read_only });
                     }
 
                     if ((val.is_null() && !nmos::fields::nc::is_nullable(property))
                         || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
                     {
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::parameter_error });
+                        return make_control_protocol_response(handle, { nc_method_status::parameter_error });
                     }
 
                     resources.modify(resource, [&](nmos::resource& resource)
@@ -133,13 +134,13 @@ namespace nmos
 
                         resource.updated = strictly_increasing_update(resources);
                     });
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                    return make_control_protocol_response(handle, { nc_method_status::ok });
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << " to do Set";
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
             // Get sequence item
             const auto get_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -149,7 +150,7 @@ namespace nmos
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& index = nmos::fields::nc::index(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence item: " << property_id.to_string() << " index: " << index;
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence item: " << property_id.serialize() << " index: " << index;
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -160,26 +161,26 @@ namespace nmos
                         // property is not a sequence
                         utility::stringstream_t ss;
                         ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                     }
 
                     auto& data = resource->data.at(nmos::fields::nc::name(property));
 
                     if (!data.is_null() && data.as_array().size() > (size_t)index)
                     {
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, data.at(index));
+                        return make_control_protocol_response(handle, { nc_method_status::ok }, data.at(index));
                     }
 
                     // out of bound
                     utility::stringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do GetSequenceItem");
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
+                    return make_control_protocol_error_response(handle, { nc_method_status::index_out_of_bounds }, ss.str());
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << U(" to do GetSequenceItem");
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
             // Set sequence item
             const auto set_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -190,7 +191,7 @@ namespace nmos
                 const auto& index = nmos::fields::nc::index(arguments);
                 const auto& val = nmos::fields::nc::value(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set sequence item: " << property_id.to_string() << " index: " << index << " value: " << val.to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -201,7 +202,7 @@ namespace nmos
                         // property is not a sequence
                         utility::stringstream_t ss;
                         ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do SetSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                     }
 
                     auto& data = resource->data.at(nmos::fields::nc::name(property));
@@ -214,19 +215,19 @@ namespace nmos
 
                             resource.updated = strictly_increasing_update(resources);
                         });
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                        return make_control_protocol_response(handle, { nc_method_status::ok });
                     }
 
                     // out of bound
                     utility::stringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do SetSequenceItem");
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
+                    return make_control_protocol_error_response(handle, { nc_method_status::index_out_of_bounds }, ss.str());
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << U(" to do SetSequenceItem");
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
             // Add item to sequence
             const auto add_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -236,7 +237,7 @@ namespace nmos
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& val = nmos::fields::nc::value(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Add sequence item: " << property_id.to_string() << " value: " << val.to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -247,7 +248,7 @@ namespace nmos
                         // property is not a sequence
                         utility::stringstream_t ss;
                         ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do AddSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                     }
 
                     auto& data = resource->data.at(nmos::fields::nc::name(property));
@@ -260,13 +261,13 @@ namespace nmos
 
                         resource.updated = strictly_increasing_update(resources);
                     });
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size() - 1));
+                    return make_control_protocol_response(handle, { nc_method_status::ok }, uint32_t(data.as_array().size() - 1));
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << U(" to do AddSequenceItem");
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
             // Delete sequence item
             const auto remove_sequence_item = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -276,7 +277,7 @@ namespace nmos
                 const auto& property_id = nmos::fields::nc::id(arguments);
                 const auto& index = nmos::fields::nc::index(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Remove sequence item: " << property_id.to_string() << " index: " << index;
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Remove sequence item: " << property_id.serialize() << " index: " << index;
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -287,7 +288,7 @@ namespace nmos
                         // property is not a sequence
                         utility::stringstream_t ss;
                         ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do RemoveSequenceItem");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                     }
 
                     auto& data = resource->data.at(nmos::fields::nc::name(property));
@@ -295,25 +296,25 @@ namespace nmos
                     if (!data.is_null() && data.as_array().size() > (size_t)index)
                     {
                         resources.modify(resource, [&](nmos::resource& resource)
-                            {
-                                auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
-                                sequence.erase(index);
+                        {
+                            auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
+                            sequence.erase(index);
 
-                                resource.updated = strictly_increasing_update(resources);
-                            });
-                        return details::make_control_protocol_response(handle, { details::nc_method_status::ok });
+                            resource.updated = strictly_increasing_update(resources);
+                        });
+                        return make_control_protocol_response(handle, { nc_method_status::ok });
                     }
 
                     // out of bound
                     utility::stringstream_t ss;
                     ss << U("property: ") << property_id.serialize() << U(" is outside the available range to do RemoveSequenceItem");
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::index_out_of_bounds }, ss.str());
+                    return make_control_protocol_error_response(handle, { nc_method_status::index_out_of_bounds }, ss.str());
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << U(" to do RemoveSequenceItem");
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
             // Get sequence length
             const auto get_sequence_length = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -322,7 +323,7 @@ namespace nmos
 
                 const auto& property_id = nmos::fields::nc::id(arguments);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence length: " << property_id.to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence length: " << property_id.serialize();
 
                 // find the relevant nc_property_descriptor
                 const auto& property = find_property(property_id, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), control_classes);
@@ -333,7 +334,7 @@ namespace nmos
                         // property is not a sequence
                         utility::stringstream_t ss;
                         ss << U("property: ") << property_id.serialize() << U(" is not a sequence to do GetSequenceLength");
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                        return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                     }
 
                     auto& data = resource->data.at(nmos::fields::nc::name(property));
@@ -344,7 +345,7 @@ namespace nmos
                         if (data.is_null())
                         {
                             // null
-                            return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, value::null());
+                            return make_control_protocol_response(handle, { nc_method_status::ok }, value::null());
                         }
                     }
                     else
@@ -355,16 +356,16 @@ namespace nmos
                             // null
                             utility::stringstream_t ss;
                             ss << U("property: ") << property_id.serialize() << " is a null sequence to do GetSequenceLength";
-                            return details::make_control_protocol_error_response(handle, { details::nc_method_status::invalid_request }, ss.str());
+                            return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                         }
                     }
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, uint32_t(data.as_array().size()));
+                    return make_control_protocol_response(handle, { nc_method_status::ok }, uint32_t(data.as_array().size()));
                 }
 
                 // unknown property
                 utility::stringstream_t ss;
                 ss << U("unknown property: ") << property_id.serialize() << " to do GetSequenceLength";
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::property_not_implemented }, ss.str());
+                return make_control_protocol_error_response(handle, { nc_method_status::property_not_implemented }, ss.str());
             };
 
             // NcBlock methods implementation
@@ -380,7 +381,7 @@ namespace nmos
                 auto descriptors = value::array();
                 nmos::get_member_descriptors(resources, resource, recurse, descriptors.as_array());
 
-                return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptors);
+                return make_control_protocol_response(handle, { nc_method_status::ok }, descriptors);
             };
             // Finds member(s) by path
             const auto find_members_by_path = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -390,12 +391,12 @@ namespace nmos
                 // Relative path to search for (MUST not include the role of the block targeted by oid)
                 const auto& path = arguments.at(nmos::fields::nc::path);
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find member(s) by path: " << "path: " << path.to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find member(s) by path: " << "path: " << path.serialize();
 
                 if (0 == path.size())
                 {
                     // empty path
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty path to do FindMembersByPath"));
+                    return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty path to do FindMembersByPath"));
                 }
 
                 auto nc_block_member_descriptors = value::array();
@@ -424,18 +425,18 @@ namespace nmos
                             // no role
                             utility::stringstream_t ss;
                             ss << U("role: ") << role.as_string() << U(" not found to do FindMembersByPath");
-                            return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str());
+                            return make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, ss.str());
                         }
                     }
                     else
                     {
                         // no members
-                        return details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, U("no members to do FindMembersByPath"));
+                        return make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, U("no members to do FindMembersByPath"));
                     }
                 }
 
                 web::json::push_back(nc_block_member_descriptors, nc_block_member_descriptor);
-                return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, nc_block_member_descriptors);
+                return make_control_protocol_response(handle, { nc_method_status::ok }, nc_block_member_descriptors);
             };
             // Finds members with given role name or fragment
             const auto find_members_by_role = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
@@ -452,29 +453,29 @@ namespace nmos
                 if (role.empty())
                 {
                     // empty role
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty role to do FindMembersByRole"));
+                    return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty role to do FindMembersByRole"));
                 }
 
                 auto descriptors = value::array();
                 nmos::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, descriptors.as_array());
 
-                return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptors);
+                return make_control_protocol_response(handle, { nc_method_status::ok }, descriptors);
             };
             // Finds members with given class id
             const auto find_members_by_class_id = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
-                const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+                const auto& class_id = parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
                 const auto& include_derived = nmos::fields::nc::include_derived(arguments); // If TRUE it will also include derived class descriptors
                 const auto& recurse = nmos::fields::nc::recurse(arguments); // TRUE to search nested blocks
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find members with given class id: " << "class_id: " << details::make_nc_class_id(class_id).to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Find members with given class id: " << "class_id: " << nmos::details::make_nc_class_id(class_id).serialize();
 
                 if (class_id.empty())
                 {
                     // empty class_id
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty classId to do FindMembersByClassId"));
+                    return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty classId to do FindMembersByClassId"));
                 }
 
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
@@ -482,27 +483,27 @@ namespace nmos
                 auto descriptors = value::array();
                 nmos::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors.as_array());
 
-                return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptors);
+                return make_control_protocol_response(handle, { nc_method_status::ok }, descriptors);
             };
 
             // NcClassManager methods implementation
             // Get a single class descriptor
             const auto get_control_class = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
-                const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
+                const auto& class_id = parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
                 const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single class descriptor: " << "class_id: " << details::make_nc_class_id(class_id).to_string();
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single class descriptor: " << "class_id: " << nmos::details::make_nc_class_id(class_id).serialize();
 
                 if (class_id.empty())
                 {
                     // empty class_id
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty classId to do GetControlClass"));
+                    return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty classId to do GetControlClass"));
                 }
 
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
-                auto class_found = control_classes.find(make_nc_class_id(class_id));
+                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
 
                 if (control_classes.end() != class_found)
                 {
@@ -521,7 +522,7 @@ namespace nmos
                     {
                         while (!id.empty())
                         {
-                            auto found = control_classes.find(make_nc_class_id(id));
+                            auto found = control_classes.find(nmos::details::make_nc_class_id(id));
                             if (control_classes.end() != found)
                             {
                                 for (const auto& property : found->second.properties.as_array()) { web::json::push_back(properties, property); }
@@ -533,10 +534,10 @@ namespace nmos
                     }
                     auto descriptor = details::make_nc_class_descriptor(description, class_id, name, fixed_role, properties, methods, events);
 
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptor);
+                    return make_control_protocol_response(handle, { nc_method_status::ok }, descriptor);
                 }
 
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("classId not found"));
+                return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("classId not found"));
             };
             // Get a single datatype descriptor
             const auto get_datatype = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes& datatypes, slog::base_gate& gate)
@@ -551,7 +552,7 @@ namespace nmos
                 if (name.empty())
                 {
                     // empty name
-                    return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("empty name to do GetDatatype"));
+                    return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty name to do GetDatatype"));
                 }
 
                 auto datatype_found = datatypes.find(name);
@@ -563,7 +564,7 @@ namespace nmos
                     if (include_inherited)
                     {
                         const auto& type = nmos::fields::nc::type(descriptor);
-                        if (details::nc_datatype_type::Struct == type)
+                        if (nc_datatype_type::Struct == type)
                         {
                             auto descriptor_ = descriptor;
 
@@ -591,10 +592,10 @@ namespace nmos
                         }
                     }
 
-                    return details::make_control_protocol_response(handle, { details::nc_method_status::ok }, descriptor);
+                    return make_control_protocol_response(handle, { nc_method_status::ok }, descriptor);
                 }
 
-                return details::make_control_protocol_error_response(handle, { details::nc_method_status::parameter_error }, U("name not found"));
+                return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("name not found"));
             };
 
             // method handlers for the different classes
@@ -640,16 +641,16 @@ namespace nmos
             // hmm, todo, custom class and assoicated methods will need to be inserted within follwoing table!
             const std::map<web::json::value, nmos::experimental::methods> methods =
             {
-                { details::make_nc_class_id(details::nc_object_class_id), nc_object_method_handlers },
-                { details::make_nc_class_id(details::nc_block_class_id), nc_block_method_handlers },
-                { details::make_nc_class_id(details::nc_class_manager_class_id), nc_class_manager_method_handlers }
+                { nmos::details::make_nc_class_id(nc_object_class_id), nc_object_method_handlers },
+                { nmos::details::make_nc_class_id(nc_block_class_id), nc_block_method_handlers },
+                { nmos::details::make_nc_class_id(nc_class_manager_class_id), nc_class_manager_method_handlers }
             };
 
             auto class_id = class_id_;
 
             while (!class_id.empty())
             {
-                auto subset_methods_found = methods.find(make_nc_class_id(class_id));
+                auto subset_methods_found = methods.find(nmos::details::make_nc_class_id(class_id));
 
                 if (methods.end() != subset_methods_found)
                 {
@@ -711,7 +712,7 @@ namespace nmos
                 const auto ws_href = web::uri_builder()
                     .set_scheme(web::ws_scheme(secure))
                     .set_host(nmos::get_host(model.settings))
-                    .set_port(nmos::fields::events_ws_port(model.settings))
+                    .set_port(nmos::fields::control_protocol_ws_port(model.settings))
                     .set_path(ws_ncp_path)
                     .to_uri();
 
@@ -844,7 +845,7 @@ namespace nmos
                             const auto msg_type = nmos::fields::nc::message_type(message);
                             switch (msg_type)
                             {
-                            case details::nc_message_type::command:
+                            case nc_message_type::command:
                             {
                                 // validate command-message
                                 details::validate_controlprotocolapi_command_message_schema(version, message);
@@ -865,7 +866,7 @@ namespace nmos
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
                                     {
-                                        auto class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
+                                        auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevent method handler to execute
                                         auto method = details::find_method(method_id, class_id, get_control_protocol_classes());
@@ -879,7 +880,7 @@ namespace nmos
                                             utility::stringstream_t ss;
                                             ss << U("unsupported method id: ") << method_id.serialize();
                                             web::json::push_back(responses,
-                                                details::make_control_protocol_error_response(handle, { details::nc_method_status::method_not_implemented }, ss.str()));
+                                                make_control_protocol_error_response(handle, { nc_method_status::method_not_implemented }, ss.str()));
                                         }
                                     }
                                     else
@@ -888,7 +889,7 @@ namespace nmos
                                         utility::stringstream_t ss;
                                         ss << U("unknown oid: ") << oid;
                                         web::json::push_back(responses,
-                                            details::make_control_protocol_error_response(handle, { details::nc_method_status::bad_oid }, ss.str()));
+                                            make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, ss.str()));
                                     }
                                 }
 
@@ -896,13 +897,13 @@ namespace nmos
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
                                     web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                        details::make_control_protocol_message_response(details::nc_message_type::command_response, responses));
+                                        make_control_protocol_message_response(nc_message_type::command_response, responses));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
                             }
                             break;
-                            case details::nc_message_type::subscription:
+                            case nc_message_type::subscription:
                             {
                                 // hmm, todo...
                             }
@@ -920,7 +921,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    details::make_control_protocol_error_message({ details::nc_method_status::bad_command_format }, utility::s2us(e.what())));
+                                    make_control_protocol_error_message({ nc_method_status::bad_command_format }, utility::s2us(e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -932,8 +933,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    details::make_control_protocol_error_message({ details::nc_method_status::bad_command_format },
-                                        utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
+                                    make_control_protocol_error_message({ nc_method_status::bad_command_format }, utility::s2us(std::string("Unexpected exception while handing control protocol command : ") + e.what())));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });
@@ -945,8 +945,7 @@ namespace nmos
                             resources.modify(grain, [&](nmos::resource& grain)
                             {
                                 web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                    details::make_control_protocol_error_message({ details::nc_method_status::bad_command_format },
-                                        U("Unexpected unknown exception while handing control protocol command")));
+                                    make_control_protocol_error_message({ nc_method_status::bad_command_format }, U("Unexpected unknown exception while handing control protocol command")));
 
                                 grain.updated = strictly_increasing_update(resources);
                             });

@@ -23,7 +23,7 @@ namespace nmos
 
     // callback to add user control protocol class
     // this callback should not throw exceptions
-    typedef std::function<bool(const details::nc_class_id& class_id, const experimental::control_class& control_class)> add_control_protocol_class_handler;
+    typedef std::function<bool(const nc_class_id& class_id, const experimental::control_class& control_class)> add_control_protocol_class_handler;
 
     // callback to retrieve all control protocol datatypes
     // this callback should not throw exceptions

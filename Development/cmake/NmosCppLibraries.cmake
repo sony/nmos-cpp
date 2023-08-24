@@ -831,7 +831,6 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
-    nmos/control_protocol_class_id.cpp
     nmos/control_protocol_handlers.cpp
     nmos/control_protocol_resource.cpp
     nmos/control_protocol_resources.cpp
@@ -911,11 +910,11 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
-    nmos/control_protocol_class_id.h
     nmos/control_protocol_handlers.h
     nmos/control_protocol_resource.h
     nmos/control_protocol_resources.h
     nmos/control_protocol_state.h
+    nmos/control_protocol_typedefs.h
     nmos/control_protocol_utils.h
     nmos/control_protocol_ws_api.h
     nmos/device_type.h

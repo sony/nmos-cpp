@@ -1,5 +1,6 @@
 #include "nmos/control_protocol_handlers.h"
 
+#include "nmos/control_protocol_resource.h"
 #include "nmos/slog.h"
 
 namespace nmos
@@ -18,7 +19,7 @@ namespace nmos
 
     add_control_protocol_class_handler make_add_control_protocol_class_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return [&](const details::nc_class_id& class_id, const experimental::control_class& control_class)
+        return [&](const nc_class_id& class_id, const experimental::control_class& control_class)
         {
             slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Add control class to cache";
 

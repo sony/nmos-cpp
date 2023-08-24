@@ -4,7 +4,8 @@
 #include <boost/algorithm/string/find.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include "cpprest/json_utils.h"
-#include "nmos/control_protocol_resource.h" // for nc_object_class_id, nc_manager_class_id, nc_device_manager_class_id, nc_class_manager_class_id
+#include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_typedefs.h"
 #include "nmos/json_fields.h"
 #include "nmos/resources.h"
 
@@ -22,34 +23,34 @@ namespace nmos
             }
             return control_class_id == class_id;
         }
+    }
 
-        bool is_nc_block(const nc_class_id& class_id)
-        {
-            return is_control_class(nc_object_class_id, class_id);
-        }
+    bool is_nc_block(const nc_class_id& class_id)
+    {
+        return details::is_control_class(nc_object_class_id, class_id);
+    }
 
-        bool is_nc_manager(const nc_class_id& class_id)
-        {
-            return is_control_class(nc_manager_class_id, class_id);
-        }
+    bool is_nc_manager(const nc_class_id& class_id)
+    {
+        return details::is_control_class(nc_manager_class_id, class_id);
+    }
 
-        bool is_nc_device_manager(const nc_class_id& class_id)
-        {
-            return is_control_class(nc_device_manager_class_id, class_id);
-        }
+    bool is_nc_device_manager(const nc_class_id& class_id)
+    {
+        return details::is_control_class(nc_device_manager_class_id, class_id);
+    }
 
-        bool is_nc_class_manager(const nc_class_id& class_id)
-        {
-            return is_control_class(nc_class_manager_class_id, class_id);
-        }
+    bool is_nc_class_manager(const nc_class_id& class_id)
+    {
+        return details::is_control_class(nc_class_manager_class_id, class_id);
+    }
 
-        nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const nc_class_id& suffix)
-        {
-            nc_class_id class_id = prefix;
-            class_id.push_back(authority_key);
-            class_id.insert(class_id.end(), suffix.begin(), suffix.end());
-            return class_id;
-        }
+    nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const nc_class_id& suffix)
+    {
+        nc_class_id class_id = prefix;
+        class_id.push_back(authority_key);
+        class_id.insert(class_id.end(), suffix.begin(), suffix.end());
+        return class_id;
     }
 
     void get_member_descriptors(const resources& resources, resources::iterator resource, bool recurse, web::json::array& descriptors)
@@ -69,7 +70,7 @@ namespace nmos
                 // get members on all NcBlock(s)
                 for (const auto& member : members)
                 {
-                    if (details::is_nc_block(details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                    if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
@@ -119,7 +120,7 @@ namespace nmos
                 // do role match on all NcBlock(s)
                 for (const auto& member : members)
                 {
-                    if (details::is_nc_block(details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                    if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
@@ -131,7 +132,7 @@ namespace nmos
         }
     }
 
-    void find_members_by_class_id(const resources& resources, resources::iterator resource, const details::nc_class_id& class_id_, bool include_derived, bool recurse, web::json::array& descriptors)
+    void find_members_by_class_id(const resources& resources, resources::iterator resource, const nc_class_id& class_id_, bool include_derived, bool recurse, web::json::array& descriptors)
     {
         auto find_members_by_matching_class_id = [&](const web::json::array& members)
         {
@@ -139,7 +140,7 @@ namespace nmos
 
             auto match = [&](const web::json::value& descriptor)
             {
-                const auto& class_id = details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
+                const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(descriptor));
 
                 if (include_derived) { return !boost::find_first(class_id, class_id_).empty(); }
                 else { return class_id == class_id_; }
@@ -163,7 +164,7 @@ namespace nmos
                 // do class_id match on all NcBlock(s)
                 for (const auto& member : members)
                 {
-                    if (details::is_nc_block(details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                    if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
