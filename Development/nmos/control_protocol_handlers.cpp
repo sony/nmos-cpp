@@ -25,15 +25,13 @@ namespace nmos
 
             auto lock = control_protocol_state.write_lock();
 
-            auto class_id_data = details::make_nc_class_id(class_id);
-
             auto& control_classes = control_protocol_state.control_classes;
-            if (control_classes.end() == control_classes.find(class_id_data))
+            if (control_classes.end() == control_classes.find(class_id))
             {
                 return false;
             }
 
-            control_classes[class_id_data] = control_class;
+            control_classes[class_id] = control_class;
             return true;
         };
     }

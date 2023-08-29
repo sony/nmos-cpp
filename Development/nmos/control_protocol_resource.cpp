@@ -42,9 +42,13 @@ namespace nmos
             });
         }
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
-        web::json::value make_nc_element_id(const nc_element_id& element_id)
+        web::json::value make_nc_element_id(const nc_element_id& id)
         {
-            return make_nc_element_id(element_id.level, element_id.index);
+            return make_nc_element_id(id.level, id.index);
+        }
+        nc_element_id parse_nc_element_id(const web::json::value& id)
+        {
+            return { uint16_t(nmos::fields::nc::level(id)), uint16_t(nmos::fields::nc::index(id)) };
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventid
@@ -52,17 +56,29 @@ namespace nmos
         {
             return make_nc_element_id(id);
         }
+        nc_event_id parse_nc_event_id(const web::json::value& id)
+        {
+            return parse_nc_element_id(id);
+        }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethodid
         web::json::value make_nc_method_id(const nc_method_id& id)
         {
             return make_nc_element_id(id);
         }
+        nc_event_id parse_nc_method_id(const web::json::value& id)
+        {
+            return parse_nc_element_id(id);
+        }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertyid
         web::json::value make_nc_property_id(const nc_property_id& id)
         {
             return make_nc_element_id(id);
+        }
+        nc_event_id parse_nc_property_id(const web::json::value& id)
+        {
+            return parse_nc_element_id(id);
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid

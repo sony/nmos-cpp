@@ -131,6 +131,16 @@ namespace nmos
     {
         uint16_t level;
         uint16_t index;
+
+        nc_element_id(uint16_t level, uint16_t index)
+            : level(level)
+            , index(index)
+        {}
+
+        auto tied() const -> decltype(std::tie(level, index)) { return std::tie(level, index); }
+        friend bool operator==(const nc_element_id& lhs, const nc_element_id& rhs) { return lhs.tied() == rhs.tied(); }
+        friend bool operator!=(const nc_element_id& lhs, const nc_element_id& rhs) { return !(lhs == rhs); }
+        friend bool operator<(const nc_element_id& lhs, const nc_element_id& rhs) { return lhs.tied() < rhs.tied(); }
     };
 
     // NcEventId

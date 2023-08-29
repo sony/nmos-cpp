@@ -85,19 +85,19 @@ namespace nmos
             {
                 // Control class models
                 // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/#control-class-models-for-branch-v10-dev
-                { nmos::details::make_nc_class_id(nc_object_class_id), make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), to_vector(make_nc_object_properties()), to_vector(make_nc_object_methods()), to_vector(make_nc_object_events())) },
-                { nmos::details::make_nc_class_id(nc_block_class_id), make_control_class(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"), to_vector(make_nc_block_properties()), to_vector(make_nc_block_methods()), to_vector(make_nc_block_events())) },
-                { nmos::details::make_nc_class_id(nc_worker_class_id), make_control_class(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"), to_vector(make_nc_worker_properties()), to_vector(make_nc_worker_methods()), to_vector(make_nc_worker_events())) },
-                { nmos::details::make_nc_class_id(nc_manager_class_id), make_control_class(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"),to_vector(make_nc_manager_properties()), to_vector(make_nc_manager_methods()), to_vector(make_nc_manager_events())) },
-                { nmos::details::make_nc_class_id(nc_device_manager_class_id), make_control_class(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"), to_vector(make_nc_device_manager_properties()), to_vector(make_nc_device_manager_methods()), to_vector(make_nc_device_manager_events())) },
-                { nmos::details::make_nc_class_id(nc_class_manager_class_id), make_control_class(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), to_vector(make_nc_class_manager_properties()), to_vector(make_nc_class_manager_methods()), to_vector(make_nc_class_manager_events())) },
+                { nc_object_class_id, make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), to_vector(make_nc_object_properties()), to_vector(make_nc_object_methods()), to_vector(make_nc_object_events())) },
+                { nc_block_class_id, make_control_class(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"), to_vector(make_nc_block_properties()), to_vector(make_nc_block_methods()), to_vector(make_nc_block_events())) },
+                { nc_worker_class_id, make_control_class(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"), to_vector(make_nc_worker_properties()), to_vector(make_nc_worker_methods()), to_vector(make_nc_worker_events())) },
+                { nc_manager_class_id, make_control_class(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"),to_vector(make_nc_manager_properties()), to_vector(make_nc_manager_methods()), to_vector(make_nc_manager_events())) },
+                { nc_device_manager_class_id, make_control_class(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"), to_vector(make_nc_device_manager_properties()), to_vector(make_nc_device_manager_methods()), to_vector(make_nc_device_manager_events())) },
+                { nc_class_manager_class_id, make_control_class(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), to_vector(make_nc_class_manager_properties()), to_vector(make_nc_class_manager_methods()), to_vector(make_nc_class_manager_events())) },
                 // identification beacon model
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
-                { nmos::details::make_nc_class_id(nc_ident_beacon_class_id), make_control_class(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), to_vector(make_nc_ident_beacon_properties()), to_vector(make_nc_ident_beacon_methods()), to_vector(make_nc_ident_beacon_events())) },
+                { nc_ident_beacon_class_id, make_control_class(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), to_vector(make_nc_ident_beacon_properties()), to_vector(make_nc_ident_beacon_methods()), to_vector(make_nc_ident_beacon_events())) },
                 // Monitoring
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-                { nmos::details::make_nc_class_id(nc_receiver_monitor_class_id), make_control_class(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), to_vector(make_nc_receiver_monitor_properties()), to_vector(make_nc_receiver_monitor_methods()), to_vector(make_nc_receiver_monitor_events())) },
-                { nmos::details::make_nc_class_id(nc_receiver_monitor_protected_class_id), make_control_class(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), to_vector(make_nc_receiver_monitor_protected_properties()), to_vector(make_nc_receiver_monitor_protected_methods()), to_vector(make_nc_receiver_monitor_protected_events())) }
+                { nc_receiver_monitor_class_id, make_control_class(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), to_vector(make_nc_receiver_monitor_properties()), to_vector(make_nc_receiver_monitor_methods()), to_vector(make_nc_receiver_monitor_events())) },
+                { nc_receiver_monitor_protected_class_id, make_control_class(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), to_vector(make_nc_receiver_monitor_protected_properties()), to_vector(make_nc_receiver_monitor_protected_methods()), to_vector(make_nc_receiver_monitor_protected_events())) }
             };
 
             // setup the core datatypes
@@ -173,23 +173,19 @@ namespace nmos
         // insert control class, false if class already presented
         bool control_protocol_state::insert(const experimental::control_class& control_class)
         {
-            const auto& class_id = nmos::details::make_nc_class_id(control_class.class_id);
-
             auto lock = write_lock();
 
-            if (control_classes.end() == control_classes.find(class_id))
+            if (control_classes.end() == control_classes.find(control_class.class_id))
             {
-                control_classes[nmos::details::make_nc_class_id(control_class.class_id)] = control_class;
+                control_classes[control_class.class_id] = control_class;
                 return true;
             }
             return false;
         }
 
         // erase control class of the given class id, false if the required class not found
-        bool control_protocol_state::erase(nc_class_id class_id_)
+        bool control_protocol_state::erase(nc_class_id class_id)
         {
-            const auto& class_id = nmos::details::make_nc_class_id(class_id_);
-
             auto lock = write_lock();
 
             if (control_classes.end() != control_classes.find(class_id))

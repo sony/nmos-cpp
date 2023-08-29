@@ -24,18 +24,20 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
         //web::json::value make_nc_element_id(uint16_t level, uint16_t index);
         web::json::value make_nc_element_id(const nc_element_id& element_id);
+        nc_element_id parse_nc_element_id(const web::json::value& element_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventid
         //web::json::value make_nc_event_id(uint16_t level, uint16_t index);
         web::json::value make_nc_event_id(const nc_event_id& event_id);
+        nc_event_id parse_nc_event_id(const web::json::value& event_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethodid
-        //web::json::value make_nc_method_id(uint16_t level, uint16_t index);
-        web::json::value make_nc_method_id(const nc_method_id& event_id);
+        web::json::value make_nc_method_id(const nc_method_id& method_id);
+        nc_method_id parse_nc_method_id(const web::json::value& method_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertyid
-        //web::json::value make_nc_property_id(uint16_t level, uint16_t index);
-        web::json::value make_nc_property_id(const nc_property_id& event_id);
+        web::json::value make_nc_property_id(const nc_property_id& property_id);
+        nc_property_id parse_nc_property_id(const web::json::value& property_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
         web::json::value make_nc_class_id(const nc_class_id& class_id);

@@ -57,7 +57,8 @@ namespace nmos
 
             while (!class_id.empty())
             {
-                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
+//                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
+                auto class_found = control_classes.find(class_id);
                 if (control_classes.end() != class_found)
                 {
                     auto& properties = class_found->second.properties.as_array();
@@ -76,7 +77,8 @@ namespace nmos
         }
 
         // hmm, change method_id to struct, and bring in method handlers via the control_classes
-        nmos::experimental::method find_method(const web::json::value& method_id, const nc_class_id& class_id_, const nmos::experimental::control_classes& control_classes)
+//        nmos::experimental::method find_method(const web::json::value& method_id, const nc_class_id& class_id_, const nmos::experimental::control_classes& control_classes)
+        nmos::experimental::method find_method(const nc_method_id& method_id, const nc_class_id& class_id_, const nmos::experimental::control_classes& control_classes)
         {
             using web::json::value;
             using web::json::value_of;
@@ -503,7 +505,8 @@ namespace nmos
 
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
-                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
+//                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
+                auto class_found = control_classes.find(class_id);
 
                 if (control_classes.end() != class_found)
                 {
@@ -522,7 +525,8 @@ namespace nmos
                     {
                         while (!id.empty())
                         {
-                            auto found = control_classes.find(nmos::details::make_nc_class_id(id));
+//                            auto found = control_classes.find(nmos::details::make_nc_class_id(id));
+                            auto found = control_classes.find(id);
                             if (control_classes.end() != found)
                             {
                                 for (const auto& property : found->second.properties.as_array()) { web::json::push_back(properties, property); }
@@ -608,6 +612,7 @@ namespace nmos
 
             // NcObject methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
+/*
             nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 1 } })] = get;
             nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 2 } })] = set;
             nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 3 } })] = get_sequence_item;
@@ -615,13 +620,27 @@ namespace nmos
             nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 5 } })] = add_sequence_item;
             nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 6 } })] = remove_sequence_item;
             nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 7 } })] = get_sequence_length;
+*/
+            nc_object_method_handlers[{1, 1}] = get;
+            nc_object_method_handlers[{1, 2}] = set;
+            nc_object_method_handlers[{1, 3}] = get_sequence_item;
+            nc_object_method_handlers[{1, 4}] = set_sequence_item;
+            nc_object_method_handlers[{1, 5}] = add_sequence_item;
+            nc_object_method_handlers[{1, 6}] = remove_sequence_item;
+            nc_object_method_handlers[{1, 7}] = get_sequence_length;
 
             // NcBlock methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
+/*
             nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 1 } })] = get_member_descriptors;
             nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 2 } })] = find_members_by_path;
             nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 3 } })] = find_members_by_role;
             nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 4 } })] = find_members_by_class_id;
+*/
+            nc_block_method_handlers[{2, 1}] = get_member_descriptors;
+            nc_block_method_handlers[{2, 2}] = find_members_by_path;
+            nc_block_method_handlers[{2, 3}] = find_members_by_role;
+            nc_block_method_handlers[{2, 4}] = find_members_by_class_id;
 
             // NcWorker has no extended method
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncworker
@@ -634,29 +653,34 @@ namespace nmos
 
             // NcClassManager methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
+/*
             nc_class_manager_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 1 } })] = get_control_class;
             nc_class_manager_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 2 } })] = get_datatype;
+*/
+            nc_class_manager_method_handlers[{3, 1}] = get_control_class;
+            nc_class_manager_method_handlers[{3, 2}] = get_datatype;
 
             // class id vs method handlers
             // hmm, todo, custom class and assoicated methods will need to be inserted within follwoing table!
-            const std::map<web::json::value, nmos::experimental::methods> methods =
+            const std::map<nmos::nc_class_id, nmos::experimental::methods> methods =
             {
-                { nmos::details::make_nc_class_id(nc_object_class_id), nc_object_method_handlers },
-                { nmos::details::make_nc_class_id(nc_block_class_id), nc_block_method_handlers },
-                { nmos::details::make_nc_class_id(nc_class_manager_class_id), nc_class_manager_method_handlers }
+                { nc_object_class_id, nc_object_method_handlers },
+                { nc_block_class_id, nc_block_method_handlers },
+                { nc_class_manager_class_id, nc_class_manager_method_handlers }
             };
+
 
             auto class_id = class_id_;
 
             while (!class_id.empty())
             {
-                auto subset_methods_found = methods.find(nmos::details::make_nc_class_id(class_id));
+                auto class_id_methods_found = methods.find(class_id);
 
-                if (methods.end() != subset_methods_found)
+                if (methods.end() != class_id_methods_found)
                 {
-                    auto& subset_methods = subset_methods_found->second;
-                    auto method_found = subset_methods.find(method_id);
-                    if (subset_methods.end() != method_found)
+                    auto& class_id_methods = class_id_methods_found->second;
+                    auto method_found = class_id_methods.find(method_id);
+                    if (class_id_methods.end() != method_found)
                     {
                         return method_found->second;
                     }
@@ -858,7 +882,7 @@ namespace nmos
                                     const auto oid = nmos::fields::nc::oid(cmd);
 
                                     // get methodId
-                                    const auto& method_id = nmos::fields::nc::method_id(cmd);
+                                    const auto& method_id = nmos::details::parse_nc_method_id(nmos::fields::nc::method_id(cmd));
 
                                     // get arguments
                                     const auto& arguments = nmos::fields::nc::arguments(cmd);
@@ -878,7 +902,7 @@ namespace nmos
                                         else
                                         {
                                             utility::stringstream_t ss;
-                                            ss << U("unsupported method id: ") << method_id.serialize();
+                                            ss << U("unsupported method id: ") << nmos::fields::nc::method_id(cmd).serialize();
                                             web::json::push_back(responses,
                                                 make_control_protocol_error_response(handle, { nc_method_status::method_not_implemented }, ss.str()));
                                         }
