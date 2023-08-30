@@ -57,7 +57,6 @@ namespace nmos
 
             while (!class_id.empty())
             {
-//                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
                 auto class_found = control_classes.find(class_id);
                 if (control_classes.end() != class_found)
                 {
@@ -76,8 +75,6 @@ namespace nmos
             return value::null();
         }
 
-        // hmm, change method_id to struct, and bring in method handlers via the control_classes
-//        nmos::experimental::method find_method(const web::json::value& method_id, const nc_class_id& class_id_, const nmos::experimental::control_classes& control_classes)
         nmos::experimental::method find_method(const nc_method_id& method_id, const nc_class_id& class_id_, const nmos::experimental::control_classes& control_classes)
         {
             using web::json::value;
@@ -490,7 +487,7 @@ namespace nmos
 
             // NcClassManager methods implementation
             // Get a single class descriptor
-            const auto get_control_class = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
+            const auto get_control_class = [](nmos::resources&, nmos::resources::iterator, int32_t handle, const value& arguments, const nmos::experimental::control_classes& control_classes, const nmos::experimental::datatypes&, slog::base_gate& gate)
             {
                 const auto& class_id = parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
                 const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
@@ -505,16 +502,15 @@ namespace nmos
 
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
-//                auto class_found = control_classes.find(nmos::details::make_nc_class_id(class_id));
                 auto class_found = control_classes.find(class_id);
 
                 if (control_classes.end() != class_found)
                 {
                     auto id = class_id;
 
-                    auto description = class_found->second.description;
-                    auto name = class_found->second.name;
-                    auto fixed_role = class_found->second.fixed_role;
+                    auto& description = class_found->second.description;
+                    auto& name = class_found->second.name;
+                    auto& fixed_role = class_found->second.fixed_role;
                     auto properties = class_found->second.properties;
                     auto methods = class_found->second.methods;
                     auto events = class_found->second.events;
@@ -525,7 +521,6 @@ namespace nmos
                     {
                         while (!id.empty())
                         {
-//                            auto found = control_classes.find(nmos::details::make_nc_class_id(id));
                             auto found = control_classes.find(id);
                             if (control_classes.end() != found)
                             {
@@ -544,7 +539,7 @@ namespace nmos
                 return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("classId not found"));
             };
             // Get a single datatype descriptor
-            const auto get_datatype = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes& datatypes, slog::base_gate& gate)
+            const auto get_datatype = [](nmos::resources&, nmos::resources::iterator, int32_t handle, const value& arguments, const nmos::experimental::control_classes&, const nmos::experimental::datatypes& datatypes, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -612,15 +607,6 @@ namespace nmos
 
             // NcObject methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
-/*
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 1 } })] = get;
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 2 } })] = set;
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 3 } })] = get_sequence_item;
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 4 } })] = set_sequence_item;
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 5 } })] = add_sequence_item;
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 6 } })] = remove_sequence_item;
-            nc_object_method_handlers[value_of({ { nmos::fields::nc::level, 1 }, { nmos::fields::nc::index, 7 } })] = get_sequence_length;
-*/
             nc_object_method_handlers[{1, 1}] = get;
             nc_object_method_handlers[{1, 2}] = set;
             nc_object_method_handlers[{1, 3}] = get_sequence_item;
@@ -631,12 +617,6 @@ namespace nmos
 
             // NcBlock methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
-/*
-            nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 1 } })] = get_member_descriptors;
-            nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 2 } })] = find_members_by_path;
-            nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 3 } })] = find_members_by_role;
-            nc_block_method_handlers[value_of({ { nmos::fields::nc::level, 2 }, { nmos::fields::nc::index, 4 } })] = find_members_by_class_id;
-*/
             nc_block_method_handlers[{2, 1}] = get_member_descriptors;
             nc_block_method_handlers[{2, 2}] = find_members_by_path;
             nc_block_method_handlers[{2, 3}] = find_members_by_role;
@@ -653,10 +633,6 @@ namespace nmos
 
             // NcClassManager methods
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-/*
-            nc_class_manager_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 1 } })] = get_control_class;
-            nc_class_manager_method_handlers[value_of({ { nmos::fields::nc::level, 3 }, { nmos::fields::nc::index, 2 } })] = get_datatype;
-*/
             nc_class_manager_method_handlers[{3, 1}] = get_control_class;
             nc_class_manager_method_handlers[{3, 2}] = get_datatype;
 
@@ -678,11 +654,15 @@ namespace nmos
 
                 if (methods.end() != class_id_methods_found)
                 {
-                    auto& class_id_methods = class_id_methods_found->second;
-                    auto method_found = class_id_methods.find(method_id);
-                    if (class_id_methods.end() != method_found)
+                    auto& method_id_methods = class_id_methods_found->second;
+                    auto method_found = method_id_methods.find(method_id);
+                    if (method_id_methods.end() != method_found)
                     {
                         return method_found->second;
+                    }
+                    else
+                    {
+                        //control_classes.
                     }
                 }
                 class_id.pop_back();
@@ -890,7 +870,7 @@ namespace nmos
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
                                     {
-                                        auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
+                                        const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevent method handler to execute
                                         auto method = details::find_method(method_id, class_id, get_control_protocol_classes());
