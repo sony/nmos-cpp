@@ -5,7 +5,7 @@
 #include <boost/iterator/filter_iterator.hpp>
 #include "cpprest/json_utils.h"
 #include "nmos/control_protocol_resource.h"
-#include "nmos/control_protocol_typedefs.h"
+#include "nmos/control_protocol_state.h"
 #include "nmos/json_fields.h"
 #include "nmos/resources.h"
 
@@ -25,27 +25,59 @@ namespace nmos
         }
     }
 
+    // is the given class_id a NcBlock
     bool is_nc_block(const nc_class_id& class_id)
     {
         return details::is_control_class(nc_object_class_id, class_id);
     }
 
+    // is the given class_id a NcManager
     bool is_nc_manager(const nc_class_id& class_id)
     {
         return details::is_control_class(nc_manager_class_id, class_id);
     }
 
+    // is the given class_id a NcDeviceManager
     bool is_nc_device_manager(const nc_class_id& class_id)
     {
         return details::is_control_class(nc_device_manager_class_id, class_id);
     }
 
+    // is the given class_id a NcClassManager
     bool is_nc_class_manager(const nc_class_id& class_id)
     {
         return details::is_control_class(nc_class_manager_class_id, class_id);
     }
 
-    nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const nc_class_id& suffix)
+    // find control class property (NcPropertyDescriptor)
+    web::json::value find_property(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_handler get_control_protocol_class)
+    {
+        using web::json::value;
+
+        auto class_id = class_id_;
+
+        while (!class_id.empty())
+        {
+            const auto& control_class = get_control_protocol_class(class_id);
+            auto& properties = control_class.properties.as_array();
+            if (properties.size())
+            {
+                for (const auto& property : properties)
+                {
+                    if (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property)))
+                    {
+                        return property;
+                    }
+                }
+            }
+            class_id.pop_back();
+        }
+
+        return value::null();
+    }
+
+    // construct NcClassId
+    nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix)
     {
         nc_class_id class_id = prefix;
         class_id.push_back(authority_key);
@@ -53,6 +85,7 @@ namespace nmos
         return class_id;
     }
 
+    // get descriptors of members of the block
     void get_member_descriptors(const resources& resources, resources::iterator resource, bool recurse, web::json::array& descriptors)
     {
         if (resource->data.has_field(nmos::fields::nc::members))
@@ -82,6 +115,7 @@ namespace nmos
         }
     }
 
+    // find members with given role name or fragment
     void find_members_by_role(const resources& resources, resources::iterator resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& descriptors)
     {
         auto find_members_by_matching_role = [&](const web::json::array& members)
@@ -132,6 +166,7 @@ namespace nmos
         }
     }
 
+    // find members with given class id
     void find_members_by_class_id(const resources& resources, resources::iterator resource, const nc_class_id& class_id_, bool include_derived, bool recurse, web::json::array& descriptors)
     {
         auto find_members_by_matching_class_id = [&](const web::json::array& members)

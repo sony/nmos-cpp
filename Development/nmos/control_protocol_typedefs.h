@@ -159,6 +159,10 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncid
     typedef uint32_t nc_id;
 
+    // NcName
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncname
+    typedef utility::string_t nc_name;
+
     // NcOid
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncoid
     typedef uint32_t nc_oid;

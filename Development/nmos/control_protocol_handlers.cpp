@@ -1,19 +1,26 @@
 #include "nmos/control_protocol_handlers.h"
 
 #include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_state.h"
 #include "nmos/slog.h"
 
 namespace nmos
 {
-    get_control_protocol_classes_handler make_get_control_protocol_classes_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    get_control_protocol_class_handler make_get_control_protocol_class_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return [&]()
+        return [&](const nc_class_id& class_id)
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve all control classes from cache";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve control class of class_id: " << nmos::details::make_nc_class_id(class_id).serialize() << " from cache";
 
             auto lock = control_protocol_state.read_lock();
 
-            return control_protocol_state.control_classes;
+            auto& control_classes = control_protocol_state.control_classes;
+            auto found = control_classes.find(class_id);
+            if (control_classes.end() != found)
+            {
+                return found->second;
+            }
+            return nmos::experimental::control_class{};
         };
     }
 
@@ -36,15 +43,40 @@ namespace nmos
         };
     }
 
-    get_control_protocol_datatypes_handler make_get_control_protocol_datatypes_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    get_control_protocol_datatype_handler make_get_control_protocol_datatype_handler(nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
     {
-        return [&]()
+        return [&](const nmos::nc_name& name)
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve all datatypes from cache";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve datatype of name: " << name << " from cache";
 
             auto lock = control_protocol_state.read_lock();
 
-            return control_protocol_state.datatypes;
+            auto found = control_protocol_state.datatypes.find(name);
+            if (control_protocol_state.datatypes.end() != found)
+            {
+                return found->second;
+            }
+            return nmos::experimental::datatype{};
+        };
+    }
+
+    get_control_protocol_methods_handler make_get_control_protocol_methods_handler(experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
+    {
+        return [&]()
+        {
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve all method handlers from cache";
+
+            std::map<nmos::nc_class_id, experimental::methods> methods;
+
+            auto lock = control_protocol_state.read_lock();
+
+            auto& control_classes = control_protocol_state.control_classes;
+
+            for (const auto& control_class : control_classes)
+            {
+                methods[control_class.first] = control_class.second.method_handlers;
+            }
+            return methods;
         };
     }
 }

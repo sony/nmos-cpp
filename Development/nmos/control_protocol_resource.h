@@ -70,78 +70,78 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassdescriptor
         // description can be null
         // fixedRole can be null
-        web::json::value make_nc_class_descriptor(const web::json::value& description, const nc_class_id& class_id, const utility::string_t& name, const web::json::value& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events);
-        web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const web::json::value& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events);
+        web::json::value make_nc_class_descriptor(const web::json::value& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events);
+        web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncenumitemdescriptor
         // description can be null
-        web::json::value make_nc_enum_item_descriptor(const web::json::value& description, const utility::string_t& name, uint16_t val);
-        web::json::value make_nc_enum_item_descriptor(const utility::string_t& description, const utility::string_t& name, uint16_t val);
+        web::json::value make_nc_enum_item_descriptor(const web::json::value& description, const nc_name& name, uint16_t val);
+        web::json::value make_nc_enum_item_descriptor(const utility::string_t& description, const nc_name& name, uint16_t val);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventdescriptor
         // description can be null
         // id = make_nc_event_id(level, index)
-        web::json::value make_nc_event_descriptor(const web::json::value& description, const nc_event_id& id, const utility::string_t& name, const utility::string_t& event_datatype, bool is_deprecated);
-        web::json::value make_nc_event_descriptor(const utility::string_t& description, const nc_event_id& id, const utility::string_t& name, const utility::string_t& event_datatype, bool is_deprecated);
+        web::json::value make_nc_event_descriptor(const web::json::value& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated);
+        web::json::value make_nc_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncfielddescriptor
         // description can be null
         // type_name can be null
         // constraints can be null
-        web::json::value make_nc_field_descriptor(const web::json::value& description, const utility::string_t& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
-        web::json::value make_nc_field_descriptor(const utility::string_t& description, const utility::string_t& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_field_descriptor(const web::json::value& description, const nc_name& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_field_descriptor(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethoddescriptor
         // description can be null
         // id = make_nc_method_id(level, index)
         // sequence<NcParameterDescriptor> parameters
-        web::json::value make_nc_method_descriptor(const web::json::value& description, const nc_method_id& id, const utility::string_t& name, const utility::string_t& result_datatype, const web::json::value& parameters, bool is_deprecated);
-        web::json::value make_nc_method_descriptor(const utility::string_t& description, const nc_method_id& id, const utility::string_t& name, const utility::string_t& result_datatype, const web::json::value& parameters, bool is_deprecated);
+        web::json::value make_nc_method_descriptor(const web::json::value& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const web::json::value& parameters, bool is_deprecated);
+        web::json::value make_nc_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const web::json::value& parameters, bool is_deprecated);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncparameterdescriptor
         // description can be null
         // type_name can be null
-        web::json::value make_nc_parameter_descriptor(const web::json::value& description, const utility::string_t& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
-        web::json::value make_nc_parameter_descriptor(const utility::string_t& description, const utility::string_t& name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
-        web::json::value make_nc_parameter_descriptor(const utility::string_t& description, const utility::string_t& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_parameter_descriptor(const web::json::value& description, const nc_name& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_parameter_descriptor(const utility::string_t& description, const nc_name& name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_parameter_descriptor(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertydescriptor
         // description can be null
         // id = make_nc_property_id(level, index);
         // type_name can be null
         // constraints can be null
-        web::json::value make_nc_property_descriptor(const web::json::value& description, const nc_property_id& id, const utility::string_t& name, const web::json::value& type_name,
+        web::json::value make_nc_property_descriptor(const web::json::value& description, const nc_property_id& id, const nc_name& name, const web::json::value& type_name,
             bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints = web::json::value::null());
-        web::json::value make_nc_property_descriptor(const utility::string_t& description, const nc_property_id& id, const utility::string_t& name, const utility::string_t& type_name,
+        web::json::value make_nc_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name,
             bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptor
         // description can be null
         // constraints can be null
-        web::json::value make_nc_datatype_descriptor(const web::json::value& description, const utility::string_t& name, nc_datatype_type::type type, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_datatype_descriptor(const web::json::value& description, const nc_name& name, nc_datatype_type::type type, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorenum
         // description can be null
         // constraints can be null
         // items: sequence<NcEnumItemDescriptor>
-        web::json::value make_nc_datatype_descriptor_enum(const web::json::value& description, const utility::string_t& name, const web::json::value& items, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_datatype_descriptor_enum(const web::json::value& description, const nc_name& name, const web::json::value& items, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorprimitive
         // description can be null
         // constraints can be null
-        web::json::value make_nc_datatype_descriptor_primitive(const web::json::value& description, const utility::string_t& name, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_datatype_descriptor_primitive(const web::json::value& description, const nc_name& name, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorstruct
         // description can be null
         // constraints can be null
         // fields: sequence<NcFieldDescriptor>
         // parent_type can be null
-        web::json::value make_nc_datatype_descriptor_struct(const web::json::value& description, const utility::string_t& name, const web::json::value& fields, const web::json::value& parent_type, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_datatype_descriptor_struct(const web::json::value& description, const nc_name& name, const web::json::value& fields, const web::json::value& parent_type, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptortypedef
         // description can be null
         // constraints can be null
-        web::json::value make_nc_datatype_typedef(const web::json::value& description, const utility::string_t& name, bool is_sequence, const utility::string_t& parent_type, const web::json::value& constraints = web::json::value::null());
+        web::json::value make_nc_datatype_typedef(const web::json::value& description, const nc_name& name, bool is_sequence, const utility::string_t& parent_type, const web::json::value& constraints = web::json::value::null());
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
         web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);

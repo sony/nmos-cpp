@@ -909,8 +909,22 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example to create a non-standard Gain control class
         const auto gain_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 1 });
         const web::json::field_as_number gain_value{ U("gainValue") };
+        // Gain control class properties
         std::vector<web::json::value> gain_control_properties = { nmos::experimental::make_control_class_property(U("Gain value"), { 3, 1 }, gain_value, U("NcFloat32")) };
-        auto gain_control_class = nmos::experimental::make_control_class(U("Gain control class descriptor"), gain_control_class_id, U("GainControl"), gain_control_properties, {}, {});
+        // Gain control class method example
+        auto example_method = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+        {
+            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method";
+            return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+        };
+        // Gain control class methods
+        std::vector<std::pair<web::json::value, nmos::experimental::method>> gain_control_methods =
+        {
+            { nmos::experimental::make_control_class_method(U("This is an example method"), {3, 1}, U("ExampleMethod"), U("NcMethodResult"), {}, false), example_method }
+        };
+        // create Gain control class
+        auto gain_control_class = nmos::experimental::make_control_class(U("Gain control class descriptor"), gain_control_class_id, U("GainControl"), gain_control_properties, gain_control_methods, {});
+        // insert Gain control class to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
         control_protocol_state.insert(gain_control_class);
         // helper function to create Gain control instance
         auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, float gain = 0.0, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null())

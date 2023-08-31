@@ -3,9 +3,9 @@
 
 #include <map>
 #include "cpprest/json_utils.h"
+#include "nmos/control_protocol_handlers.h"
 #include "nmos/control_protocol_typedefs.h"
 #include "nmos/mutex.h"
-#include "nmos/resources.h"
 
 namespace slog { class base_gate; }
 
@@ -20,9 +20,11 @@ namespace nmos
             utility::string_t name;
             web::json::value fixed_role;
 
-            web::json::value properties; // array of nc_property_descriptor
-            web::json::value methods; // array of nc_method_descriptor
-            web::json::value events;  // array of nc_event_descriptor
+            web::json::value properties = web::json::value::array(); // array of NcPropertyDescriptor
+            web::json::value methods = web::json::value::array(); // array of NcMethodDescriptor
+            web::json::value events = web::json::value::array();  // array of NcEventDescriptor
+
+            nmos::experimental::methods method_handlers; // map of method handlers which are associated to this control_class (class_id), but not including its base class
         };
 
         struct datatype // NcDatatypeDescriptorEnum/NcDatatypeDescriptorPrimitive/NcDatatypeDescriptorStruct/NcDatatypeDescriptorTypeDef
@@ -30,14 +32,8 @@ namespace nmos
             web::json::value descriptor;
         };
 
-        // nc_class_id vs control_class
         typedef std::map<nmos::nc_class_id, control_class> control_classes;
-        // nc_name vs datatype
-        typedef std::map<utility::string_t, datatype> datatypes;
-
-        // methods defnitions
-        typedef std::function<web::json::value(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, const control_classes& control_classes, const datatypes& datatypes, slog::base_gate& gate)> method;
-        typedef std::map<nmos::nc_method_id, method> methods; // method_id vs method handler
+        typedef std::map<nmos::nc_name, datatype> datatypes;
 
         struct control_protocol_state
         {
@@ -79,10 +75,11 @@ namespace nmos
         // create control class property
         web::json::value make_control_class_property(const utility::string_t& description, const nc_property_id& id, const utility::string_t& name, const utility::string_t& type_name,
             bool is_read_only = false, bool is_nullable = false, bool is_sequence = false, bool is_deprecated = false, const web::json::value& constraints = web::json::value::null());
+
         // create control class with fixed role
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<web::json::value>& methods, const std::vector<web::json::value>& events);
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events);
         // create control class with no fixed role
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const std::vector<web::json::value>& properties, const std::vector<web::json::value>& methods, const std::vector<web::json::value>& events);
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events);
     }
 }
 
