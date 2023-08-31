@@ -14,7 +14,7 @@ namespace nmos
             //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
             //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
             //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods_, const std::vector<web::json::value>& events_)
+            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods_, const std::vector<web::json::value>& events_)
             {
                 using web::json::value;
 
@@ -38,7 +38,7 @@ namespace nmos
         //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events)
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
@@ -49,7 +49,7 @@ namespace nmos
         //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events)
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
@@ -57,19 +57,19 @@ namespace nmos
         }
 
         // create control class property
-        web::json::value make_control_class_property(const utility::string_t& description, const nc_property_id& id, const utility::string_t& name, const utility::string_t& type_name, bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
+        web::json::value make_control_class_property(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
         {
             return nmos::details::make_nc_property_descriptor(description, id, name, type_name, is_read_only, is_nullable, is_sequence, is_deprecated, constraints);
         }
 
         // create control class method parameter
-        web::json::value make_control_class_method_parameter(const utility::string_t& description, const utility::string_t& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints)
+        web::json::value make_control_class_method_parameter(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints)
         {
             return nmos::details::make_nc_parameter_descriptor(description, name, type_name, is_nullable, is_sequence, constraints);
         }
 
         // create control class method
-        web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const utility::string_t& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters_, bool is_deprecated)
+        web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters_, bool is_deprecated)
         {
             using web::json::value;
 
@@ -80,7 +80,7 @@ namespace nmos
         }
 
         // create control class event
-        web::json::value make_control_class_event(const utility::string_t& description, const nc_event_id& id, const utility::string_t& name, const utility::string_t& event_datatype, bool is_deprecated)
+        web::json::value make_control_class_event(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated)
         {
             return nmos::details::make_nc_event_descriptor(description, id, name, event_datatype, is_deprecated);
         }

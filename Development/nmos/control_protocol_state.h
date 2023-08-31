@@ -17,7 +17,7 @@ namespace nmos
         {
             web::json::value description;
             nmos::nc_class_id class_id;
-            utility::string_t name;
+            nmos::nc_name name;
             web::json::value fixed_role;
 
             web::json::value properties = web::json::value::array(); // array of NcPropertyDescriptor
@@ -25,6 +25,21 @@ namespace nmos
             web::json::value events = web::json::value::array();  // array of NcEventDescriptor
 
             nmos::experimental::methods method_handlers; // map of method handlers which are associated to this control_class (class_id), but not including its base class
+
+            control_class()
+                : class_id({ 0 })
+            {}
+
+            control_class(web::json::value description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value properties, web::json::value methods, web::json::value events, nmos::experimental::methods method_handlers)
+                : description(std::move(description))
+                , class_id(std::move(class_id))
+                , name(std::move(name))
+                , fixed_role(std::move(fixed_role))
+                , properties(std::move(properties))
+                , methods(std::move(methods))
+                , events(std::move(events))
+                , method_handlers(std::move(method_handlers))
+            {}
         };
 
         struct datatype // NcDatatypeDescriptorEnum/NcDatatypeDescriptorPrimitive/NcDatatypeDescriptorStruct/NcDatatypeDescriptorTypeDef
@@ -62,24 +77,24 @@ namespace nmos
         // helper functions to create non-standard control class
         //
         // create control class method parameter
-        web::json::value make_control_class_method_parameter(const utility::string_t& description, const utility::string_t& name, const utility::string_t& type_name,
+        web::json::value make_control_class_method_parameter(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name,
             bool is_nullable = false, bool is_sequence = false, const web::json::value& constraints = web::json::value::null());
         // create control class method
-        web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const utility::string_t& name, const utility::string_t& result_datatype,
+        web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype,
             const std::vector<web::json::value>& parameters = {}, bool is_deprecated = false);
 
         // create control class event
-        web::json::value make_control_class_event(const utility::string_t& description, const nc_event_id& id, const utility::string_t& name, const utility::string_t& event_datatype,
+        web::json::value make_control_class_event(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype,
             bool is_deprecated = false);
 
         // create control class property
-        web::json::value make_control_class_property(const utility::string_t& description, const nc_property_id& id, const utility::string_t& name, const utility::string_t& type_name,
+        web::json::value make_control_class_property(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name,
             bool is_read_only = false, bool is_nullable = false, bool is_sequence = false, bool is_deprecated = false, const web::json::value& constraints = web::json::value::null());
 
         // create control class with fixed role
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events);
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events);
         // create control class with no fixed role
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const utility::string_t& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events);
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events);
     }
 }
 
