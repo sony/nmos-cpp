@@ -354,9 +354,9 @@ namespace nmos
                 {
                     auto& members = nmos::fields::nc::members(resource->data);
                     auto member_found = std::find_if(members.begin(), members.end(), [&](const web::json::value& nc_block_member_descriptor)
-                        {
-                            return role.as_string() == nmos::fields::nc::role(nc_block_member_descriptor);
-                        });
+                    {
+                        return role.as_string() == nmos::fields::nc::role(nc_block_member_descriptor);
+                    });
 
                     if (members.end() != member_found)
                     {
