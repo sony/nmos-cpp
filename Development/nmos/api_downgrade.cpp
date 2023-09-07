@@ -1033,12 +1033,12 @@ namespace nmos
     struct property
     {
         utility::string_t name;
-        web::json::value default;
+        web::json::value default_value;
         bool required;  // is required property
 
-        property(utility::string_t name, web::json::value default = web::json::value::null(), bool required = true)
+        property(utility::string_t name, web::json::value default_value = web::json::value::null(), bool required = true)
             : name(std::move(name))
-            , default(std::move(default))
+            , default_value(std::move(default_value))
             , required(std::move(required))
         {}
     };
@@ -1292,7 +1292,7 @@ namespace nmos
                             // if property required, i.e. obligatory
                             if (property.required)
                             {
-                                result[property.name] = property.default;
+                                result[property.name] = property.default_value;
                             }
                             else
                             {
