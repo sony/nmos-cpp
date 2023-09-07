@@ -88,7 +88,9 @@ namespace nmos
             const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
-                if (!nmos::fields::nc::is_sequence(property))
+                auto& data = resource->data.at(nmos::fields::nc::name(property));
+
+                if (!nmos::fields::nc::is_sequence(property) || data.is_null() || !data.is_array())
                 {
                     // property is not a sequence
                     utility::stringstream_t ss;
@@ -96,9 +98,7 @@ namespace nmos
                     return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                 }
 
-                auto& data = resource->data.at(nmos::fields::nc::name(property));
-
-                if (!data.is_null() && data.as_array().size() > (size_t)index)
+                if (data.as_array().size() > (size_t)index)
                 {
                     return make_control_protocol_response(handle, { nc_method_status::ok }, data.at(index));
                 }
@@ -130,7 +130,9 @@ namespace nmos
             const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
-                if (!nmos::fields::nc::is_sequence(property))
+                auto& data = resource->data.at(nmos::fields::nc::name(property));
+
+                if (!nmos::fields::nc::is_sequence(property) || data.is_null() || !data.is_array())
                 {
                     // property is not a sequence
                     utility::stringstream_t ss;
@@ -138,9 +140,7 @@ namespace nmos
                     return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                 }
 
-                auto& data = resource->data.at(nmos::fields::nc::name(property));
-
-                if (!data.is_null() && data.as_array().size() > (size_t)index)
+                if (data.as_array().size() > (size_t)index)
                 {
                     resources.modify(resource, [&](nmos::resource& resource)
                     {
@@ -220,7 +220,9 @@ namespace nmos
             const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
-                if (!nmos::fields::nc::is_sequence(property))
+                auto& data = resource->data.at(nmos::fields::nc::name(property));
+
+                if (!nmos::fields::nc::is_sequence(property) || data.is_null() || !data.is_array())
                 {
                     // property is not a sequence
                     utility::stringstream_t ss;
@@ -228,9 +230,7 @@ namespace nmos
                     return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                 }
 
-                auto& data = resource->data.at(nmos::fields::nc::name(property));
-
-                if (!data.is_null() && data.as_array().size() > (size_t)index)
+                if (data.as_array().size() > (size_t)index)
                 {
                     resources.modify(resource, [&](nmos::resource& resource)
                     {
