@@ -28,7 +28,7 @@ namespace nmos
     // is the given class_id a NcBlock
     bool is_nc_block(const nc_class_id& class_id)
     {
-        return details::is_control_class(nc_object_class_id, class_id);
+        return details::is_control_class(nc_block_class_id, class_id);
     }
 
     // is the given class_id a NcManager
