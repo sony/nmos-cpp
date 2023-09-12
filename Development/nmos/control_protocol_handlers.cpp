@@ -10,7 +10,7 @@ namespace nmos
     {
         return [&](const nc_class_id& class_id)
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve control class of class_id: " << nmos::details::make_nc_class_id(class_id).serialize() << " from cache";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve control protocol control class of class_id: " << nmos::details::make_nc_class_id(class_id).serialize() << " from cache";
 
             auto lock = control_protocol_state.read_lock();
 
@@ -28,7 +28,7 @@ namespace nmos
     {
         return [&](const nc_class_id& class_id, const experimental::control_class& control_class)
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Add control class to cache";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Add control protocol control class to cache";
 
             auto lock = control_protocol_state.write_lock();
 
@@ -47,7 +47,7 @@ namespace nmos
     {
         return [&](const nmos::nc_name& name)
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve datatype of name: " << name << " from cache";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve control protocol datatype of name: " << name << " from cache";
 
             auto lock = control_protocol_state.read_lock();
 
@@ -64,7 +64,7 @@ namespace nmos
     {
         return [&]()
         {
-            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve all method handlers from cache";
+            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieve all control protocol method handlers from cache";
 
             std::map<nmos::nc_class_id, experimental::methods> methods;
 
