@@ -909,30 +909,215 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // example to create a non-standard Gain control class
         const auto gain_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 1 });
         const web::json::field_as_number gain_value{ U("gainValue") };
-        // Gain control class properties
-        std::vector<web::json::value> gain_control_properties = { nmos::experimental::make_control_class_property(U("Gain value"), { 3, 1 }, gain_value, U("NcFloat32")) };
-        // Gain control class method example
-        auto example_method = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
         {
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method";
-            return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
-        };
-        // Gain control class methods
-        std::vector<std::pair<web::json::value, nmos::experimental::method>> gain_control_methods =
-        {
-            { nmos::experimental::make_control_class_method(U("This is an example method"), {3, 1}, U("ExampleMethod"), U("NcMethodResult"), {}, false), example_method }
-        };
-        // create Gain control class
-        auto gain_control_class = nmos::experimental::make_control_class(U("Gain control class descriptor"), gain_control_class_id, U("GainControl"), gain_control_properties, gain_control_methods, {});
-        // insert Gain control class to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
-        control_protocol_state.insert(gain_control_class);
-        // helper function to create Gain control instance
+            // Gain control class properties
+            std::vector<web::json::value> gain_control_properties = { nmos::experimental::make_control_class_property(U("Gain value"), { 3, 1 }, gain_value, U("NcFloat32")) };
+
+            // create Gain control class
+            auto gain_control_class = nmos::experimental::make_control_class(U("Gain control class descriptor"), gain_control_class_id, U("GainControl"), gain_control_properties);
+
+            // insert Gain control class to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
+            control_protocol_state.insert(gain_control_class);
+        }
+        // helper function to create Gain control
         auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, float gain = 0.0, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null())
         {
             auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
+
             return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
         };
+
+        // example to create a non-standard Example control class
+        const auto example_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 2 });
+        const web::json::field_as_number enum_property{ U("enumProperty") };
+        const web::json::field_as_string string_property{ U("stringProperty") };
+        const web::json::field_as_number number_property{ U("numberProperty") };
+        const web::json::field_as_bool boolean_property{ U("booleanProperty") };
+        const web::json::field_as_value object_property{ U("objectProperty") };
+        const web::json::field_as_number method_no_args_count{ U("methodNoArgsCount") };
+        const web::json::field_as_number method_simple_args_count{ U("methodSimpleArgsCount") };
+        const web::json::field_as_number method_object_arg_count{ U("methodObjectArgCount") };
+        const web::json::field_as_array string_sequence{ U("stringSequence") };
+        const web::json::field_as_array boolean_sequence{ U("booleanSequence") };
+        const web::json::field_as_array enum_sequence{ U("enumSequence") };
+        const web::json::field_as_array number_sequence{ U("numberSequence") };
+        const web::json::field_as_array object_sequence{ U("objectSequence") };
+        const web::json::field_as_number enum_arg{ U("enumArg") };
+        const web::json::field_as_string string_arg{ U("stringArg") };
+        const web::json::field_as_number number_arg{ U("numberArg") };
+        const web::json::field_as_bool boolean_arg{ U("booleanArg") };
+        const web::json::field_as_bool obj_arg{ U("objArg") };
+        enum example_enum
+        {
+            Undefined = 0,
+            Alpha = 1,
+            Beta = 2,
+            Gamma = 3
+        };
+
+        {
+            // Example control class properties
+            std::vector<web::json::value> example_control_properties = {
+                nmos::experimental::make_control_class_property(U("Example enum property"), { 3, 1 }, enum_property, U("ExampleEnum")),
+                // todo constraints
+                nmos::experimental::make_control_class_property(U("Example string property"), { 3, 2 }, string_property, U("NcString"), false, false, false, false, value::null()),
+                // todo constraints
+                nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, value::null()),
+                nmos::experimental::make_control_class_property(U("Example boolean property"), { 3, 4 }, boolean_property, U("NcBoolean")),
+                nmos::experimental::make_control_class_property(U("Example object property"), { 3, 5 }, object_property, U("ExampleDataType")),
+                nmos::experimental::make_control_class_property(U("Method no args invoke counter"), { 3, 6 }, method_no_args_count, U("NcUint64"), true),
+                nmos::experimental::make_control_class_property(U("Method simple args invoke counter"), { 3, 7 }, method_simple_args_count, U("NcUint64"), true),
+                nmos::experimental::make_control_class_property(U("Method obj arg invoke counter"), { 3, 8 }, method_object_arg_count, U("NcUint64"), true),
+                nmos::experimental::make_control_class_property(U("Example string sequence property"), { 3, 9 }, string_sequence, U("NcString"), false, false, true),
+                nmos::experimental::make_control_class_property(U("Example boolean sequence property"), { 3, 10 }, boolean_sequence, U("NcBoolean"), false, false, true),
+                nmos::experimental::make_control_class_property(U("Example enum sequence property"), { 3, 11 }, enum_sequence, U("ExampleEnum"), false, false, true),
+                nmos::experimental::make_control_class_property(U("Example number sequence property"), { 3, 12 }, number_sequence, U("NcUint64"), false, false, true),
+                nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 13 }, object_sequence, U("ExampleDataType"), false, false, true)
+            };
+
+            // Example control class method handlers
+            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
+                return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+            };
+            auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments";
+                return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+            };
+            auto example_method_with_object_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object arguments";
+                return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+            };
+            // Example control class methods
+            std::vector<std::pair<web::json::value, nmos::experimental::method>> example_control_methods =
+            {
+                { nmos::experimental::make_control_class_method(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false), example_method_with_no_args },
+                { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 2 }, U("MethodSimpleArgs"), U("NcMethodResult"),
+                    {
+                        nmos::details::make_nc_parameter_descriptor(U("Enum example argument"), enum_arg, U("ExampleEnum"), false, false, value::null()),
+                        nmos::details::make_nc_parameter_descriptor(U("String example argument"), string_arg, U("NcString"), false, false, value::null()), // todo constraints
+                        nmos::details::make_nc_parameter_descriptor(U("Number example argument"), number_arg, U("NcUint64"), false, false, value::null()), // todo constraints
+                        nmos::details::make_nc_parameter_descriptor(U("Boolean example argument"), boolean_arg, U("NcBoolean"), false, false, value::null())
+                    },
+                    false), example_method_with_simple_args
+                },
+                { nmos::experimental::make_control_class_method(U("Example method with object argument"), { 3, 3 }, U("MethodObjectArg"), U("NcMethodResult"),
+                    {
+                        nmos::details::make_nc_parameter_descriptor(U("Object example argument"), obj_arg, U("ExampleDataType"), false, false, value::null())
+                    },
+                    false), example_method_with_object_args
+                }
+            };
+
+            // create Example control class
+            auto example_control_class = nmos::experimental::make_control_class(U("Example control class descriptor"), example_control_class_id, U("ExampleControl"), example_control_properties, example_control_methods);
+
+            // insert Example control class to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
+            control_protocol_state.insert(example_control_class);
+
+            // create/insert Example datatypes to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
+            auto make_example_enum_datatype = [&]()
+            {
+                using web::json::value;
+
+                auto items = value::array();
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Undefined")), U("Undefined"), example_enum::Undefined));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Alphan")), U("Alpha"), example_enum::Alpha));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Beta")), U("Beta"), example_enum::Beta));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Gamma")), U("Gamma"), example_enum::Gamma));
+                return nmos::details::make_nc_datatype_descriptor_enum(value::string(U("Example enum datatype")), U("ExampleEnum"), items);
+            };
+            auto make_example_datatype_datatype = [&]()
+            {
+                using web::json::value;
+
+                auto fields = value::array();
+                web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("Enum property example")), enum_property, value::string(U("ExampleEnum")), false, false));
+                {
+                    value constraints = value::null(); // todo constraints
+                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("String property example")), string_property, value::string(U("NcString")), false, false, constraints));
+                }
+                {
+                    value constraints = value::null(); // todo constraints
+                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("Number property example")), number_property, value::string(U("NcUint64")), false, false, constraints));
+                }
+                web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("Boolean property example")), boolean_property, value::string(U("NcBoolean")), false, false));
+                return nmos::details::make_nc_datatype_descriptor_struct(value::string(U("Example data type")), U("ExampleDataType"), fields, value::null());
+            };
+            control_protocol_state.insert(nmos::experimental::datatype{ make_example_enum_datatype() });
+            control_protocol_state.insert(nmos::experimental::datatype{ make_example_datatype_datatype() });
+        }
+        // helper function to create Example datatype
+        auto make_example_datatype = [&](example_enum enum_property_, const utility::string_t& string_property_, uint64_t number_property_, bool boolean_property_)
+        {
+            using web::json::value_of;
+
+            return web::json::value_of({
+                { enum_property, enum_property_ },
+                { string_property, string_property_ },
+                { number_property, number_property_ },
+                { boolean_property, boolean_property_ }
+            });
+        };
+        // helper function to create Example control
+        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label,
+            example_enum enum_property_ = example_enum::Undefined,
+            const utility::string_t& string_property_ = U(""),
+            uint64_t number_property_ = 0,
+            bool boolean_property_ = true,
+            const value& object_property_ = value::null(),
+            uint64_t method_no_args_count_ = 0,
+            uint64_t method_simple_args_count_ = 0,
+            uint64_t method_object_arg_count_ = 0,
+            std::vector<utility::string_t> string_sequence_ = {},
+            std::vector<bool> boolean_sequence_ = {},
+            std::vector<example_enum> enum_sequence_ = {},
+            std::vector<uint64_t> number_sequence_ = {},
+            std::vector<value> object_sequence_ = {},
+            const value& touchpoints = value::null(), const value& runtime_property_constraints = value::null())
+        {
+            auto data = nmos::details::make_nc_worker(example_control_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true);
+            data[enum_property] = value::number(enum_property_);
+            data[string_property] = value::string(string_property_);
+            data[number_property] = value::number(number_property_);
+            data[boolean_property] = value::boolean(boolean_property_);
+            data[object_property] = object_property_;
+            data[method_no_args_count] = value::number(method_no_args_count_);
+            data[method_simple_args_count] = value::number(method_simple_args_count_);
+            data[method_object_arg_count] = value::number(method_object_arg_count_);
+            {
+                value sequence;
+                for (const auto& value_ : string_sequence_) { web::json::push_back(sequence, value::string(value_)); }
+                data[string_sequence] = sequence;
+            }
+            {
+                value sequence;
+                for (const auto& value_ : boolean_sequence_) { web::json::push_back(sequence, value::boolean(value_)); }
+                data[boolean_sequence] = sequence;
+            }
+            {
+                value sequence;
+                for (const auto& value_ : enum_sequence_) { web::json::push_back(sequence, value_); }
+                data[enum_sequence] = sequence;
+            }
+            {
+                value sequence;
+                for (const auto& value_ : number_sequence_) { web::json::push_back(sequence, value_); }
+                data[number_sequence] = sequence;
+            }
+            {
+                value sequence;
+                for (const auto& value_ : object_sequence_) { web::json::push_back(sequence, value_); }
+                data[object_sequence] = sequence;
+            }
+
+            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+        };
+
 
         // example root block
         auto root_block = nmos::make_root_block();
@@ -965,6 +1150,25 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         nmos::add_member(U("Master gain block"), master_gain, stereo_gain);
         nmos::add_member(U("Channel gain block"), channel_gain, stereo_gain);
 
+        // example example-control
+        auto example_control = make_example_control(++oid, nmos::root_block_oid, U("ExampleControl"), U("Example control worker"),
+            example_enum::Undefined,
+            U("test"),
+            3,
+            false,
+            make_example_datatype(example_enum::Undefined, U("default"), 5, false),
+            0,
+            0,
+            0,
+            { U("red"), U("blue"), U("green") },
+            { true, false },
+            { example_enum::Alpha, example_enum::Gamma },
+            { 0, 50, 80 },
+            { make_example_datatype(example_enum::Alpha, U("example"), 50, false), make_example_datatype(example_enum::Gamma, U("different"), 75, true) }
+        );
+
+        // add example-control to root-block
+        nmos::add_member(U("Example control worker"), example_control, root_block);
         // add stereo-gain to root-block
         nmos::add_member(U("Stereo gain block"), stereo_gain, root_block);
         // add class-manager to root-block
@@ -973,6 +1177,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         nmos::add_member(U("The device manager offers information about the product this device is representing"), device_manager, root_block);
 
         // insert resources to model
+        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(example_control), gate)) throw node_implementation_init_exception();
         if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(left_gain), gate)) throw node_implementation_init_exception();
         if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(right_gain), gate)) throw node_implementation_init_exception();
         if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(master_gain), gate)) throw node_implementation_init_exception();
