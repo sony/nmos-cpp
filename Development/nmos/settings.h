@@ -366,17 +366,17 @@ namespace nmos
             const web::json::field_as_integer_or ocsp_request_max{ U("ocsp_request_max"), 30 };
 
             // manufacturer_name [node]: the manufacturer name of the NcDeviceManager used for NMOS Control Protocol
-            // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
             const web::json::field_as_string_or manufacturer_name{ U("manufacturer_name"), U("") };
 
             // product_name/product_key/product_revision_level [node]: the product description of the NcDeviceManager used for NMOS Control Protocol
-            // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncproduct
+            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncproduct
             const web::json::field_as_string_or product_name{ U("product_name"), U("") };
             const web::json::field_as_string_or product_key{ U("product_key"), U("") };
             const web::json::field_as_string_or product_revision_level{ U("product_revision_level"), U("") };
 
             // serial_number [node]: the serial number of the NcDeviceManager used for NMOS Control Protocol
-            // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
             const web::json::field_as_string_or serial_number{ U("serial_number"), U("") };
         }
     }

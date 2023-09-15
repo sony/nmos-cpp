@@ -37,7 +37,7 @@ namespace nmos
         return details::make_block(1, value::null(), U("root"), U("Root"), value::null(), value::null(), value::array());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
     resource make_device_manager(nc_oid oid, const nmos::settings& settings)
     {
         using web::json::value;
@@ -56,7 +56,7 @@ namespace nmos
         return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     resource make_class_manager(nc_oid oid, const nmos::experimental::control_protocol_state& control_protocol_state)
     {
         using web::json::value;

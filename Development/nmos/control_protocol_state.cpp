@@ -116,7 +116,7 @@ namespace nmos
             control_classes =
             {
                 // Control class models
-                // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/#control-class-models-for-branch-v10-dev
+                // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/#control-class-models-for-branch-v10-dev
                 { nc_object_class_id, make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), to_vector(make_nc_object_properties()),
                     to_methods_vector(make_nc_object_methods(),
                     {
@@ -161,7 +161,7 @@ namespace nmos
             datatypes =
             {
                 // Dataype models
-                // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/#datatype-models-for-branch-v10-dev
+                // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/#datatype-models-for-branch-v10-dev
                 { U("NcClassId"), {make_nc_class_id_datatype()} },
                 { U("NcOid"), {make_nc_oid_datatype()} },
                 { U("NcTouchpoint"), {make_nc_touchpoint_datatype()} },

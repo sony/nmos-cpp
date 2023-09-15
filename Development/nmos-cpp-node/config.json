@@ -288,17 +288,17 @@
     //"ocsp_request_max": 30,
 
     // manufacturer_name [node]: the manufacturer name of the NcDeviceManager used for NMOS Control Protocol
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
     //"manufacturer_name": "",
 
     // product_name/product_key/product_revision_level [node]: the product description of the NcDeviceManager used for NMOS Control Protocol
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncproduct
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncproduct
     //"product_name": "",
     //"product_key": "",
     //"product_revision_level": "",
 
     // serial_number [node]: the serial number of the NcDeviceManager used for NMOS Control Protocol
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
     //"serial_number": "",
 
     "don't worry": "about trailing commas"

@@ -31,7 +31,7 @@ namespace nmos
             return result;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
         web::json::value make_nc_element_id(uint16_t level, uint16_t index)
         {
             using web::json::value_of;
@@ -41,7 +41,6 @@ namespace nmos
                 { nmos::fields::nc::index, index }
             });
         }
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
         web::json::value make_nc_element_id(const nc_element_id& id)
         {
             return make_nc_element_id(id.level, id.index);
@@ -51,7 +50,7 @@ namespace nmos
             return { uint16_t(nmos::fields::nc::level(id)), uint16_t(nmos::fields::nc::index(id)) };
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nceventid
         web::json::value make_nc_event_id(const nc_event_id& id)
         {
             return make_nc_element_id(id);
@@ -61,7 +60,7 @@ namespace nmos
             return parse_nc_element_id(id);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethodid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmethodid
         web::json::value make_nc_method_id(const nc_method_id& id)
         {
             return make_nc_element_id(id);
@@ -71,7 +70,7 @@ namespace nmos
             return parse_nc_element_id(id);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertyid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
         web::json::value make_nc_property_id(const nc_property_id& id)
         {
             return make_nc_element_id(id);
@@ -81,7 +80,7 @@ namespace nmos
             return parse_nc_element_id(id);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassid
         web::json::value make_nc_class_id(const nc_class_id& class_id)
         {
             using web::json::value;
@@ -100,7 +99,7 @@ namespace nmos
             return class_id;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanufacturer
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanufacturer
         web::json::value make_nc_manufacturer(const utility::string_t& name, const web::json::value& organization_id, const web::json::value& website)
         {
             using web::json::value_of;
@@ -112,7 +111,7 @@ namespace nmos
             });
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncproduct
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncproduct
         // brand_name can be null
         // uuid can be null
         // description can be null
@@ -131,7 +130,7 @@ namespace nmos
             });
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdeviceoperationalstate
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdeviceoperationalstate
         // device_specific_details can be null
         web::json::value make_nc_device_operational_state(nc_device_generic_state::state generic_state, const web::json::value& device_specific_details)
         {
@@ -143,7 +142,7 @@ namespace nmos
             });
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdescriptor
         // description can be null
         web::json::value make_nc_descriptor(const web::json::value& description)
         {
@@ -152,7 +151,7 @@ namespace nmos
             return value_of({ { nmos::fields::nc::description, description } });
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblockmemberdescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblockmemberdescriptor
         // description can be null
         // user_label can be null
         web::json::value make_nc_block_member_descriptor(const web::json::value& description, const utility::string_t& role, nc_oid oid, bool constant_oid, const nc_class_id& class_id, const web::json::value& user_label, nc_oid owner)
@@ -176,7 +175,7 @@ namespace nmos
             return make_nc_block_member_descriptor(value::string(description), role, oid, constant_oid, class_id, value::string(user_label), owner);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassdescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassdescriptor
         // description can be null
         // fixedRole can be null
         web::json::value make_nc_class_descriptor(const web::json::value& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events)
@@ -200,7 +199,7 @@ namespace nmos
             return make_nc_class_descriptor(value::string(description), class_id, name, fixed_role, properties, methods, events);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncenumitemdescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncenumitemdescriptor
         // description can be null
         web::json::value make_nc_enum_item_descriptor(const web::json::value& description, const nc_name& name, uint16_t val)
         {
@@ -219,7 +218,7 @@ namespace nmos
             return make_nc_enum_item_descriptor(value::string(description), name, val);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventdescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nceventdescriptor
         // description can be null
         // id = make_nc_event_id(level, index)
         web::json::value make_nc_event_descriptor(const web::json::value& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated)
@@ -241,7 +240,7 @@ namespace nmos
             return make_nc_event_descriptor(value::string(description), id, name, event_datatype, is_deprecated);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncfielddescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncfielddescriptor
         // description can be null
         // type_name can be null
         // constraints can be null
@@ -265,7 +264,7 @@ namespace nmos
             return make_nc_field_descriptor(value::string(description), name, value::string(type_name), is_nullable, is_sequence, constraints);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethoddescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmethoddescriptor
         // description can be null
         // id = make_nc_method_id(level, index)
         // sequence<NcParameterDescriptor> parameters
@@ -289,7 +288,7 @@ namespace nmos
             return make_nc_method_descriptor(value::string(description), id, name, result_datatype, parameters, is_deprecated);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncparameterdescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterdescriptor
         // description can be null
         // type_name can be null
         web::json::value make_nc_parameter_descriptor(const web::json::value& description, const nc_name& name, const web::json::value& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints)
@@ -318,7 +317,7 @@ namespace nmos
             return make_nc_parameter_descriptor(value::string(description), name, value::string(type_name), is_nullable, is_sequence, constraints);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertydescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertydescriptor
         // description can be null
         // constraints can be null
         web::json::value make_nc_property_descriptor(const web::json::value& description, const nc_property_id& id, const nc_name& name, const web::json::value& type_name,
@@ -346,7 +345,7 @@ namespace nmos
             return nmos::details::make_nc_property_descriptor(value::string(description), id, name, value::string(type_name), is_read_only, is_nullable, is_sequence, is_deprecated, constraints);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptor
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptor
         // description can be null
         // constraints can be null
         web::json::value make_nc_datatype_descriptor(const web::json::value& description, const nc_name& name, nc_datatype_type::type type, const web::json::value& constraints)
@@ -361,7 +360,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorenum
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptorenum
         // description can be null
         // constraints can be null
         // items: sequence<NcEnumItemDescriptor>
@@ -373,7 +372,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorprimitive
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptorprimitive
         // description can be null
         // constraints can be null
         web::json::value make_nc_datatype_descriptor_primitive(const web::json::value& description, const nc_name& name, const web::json::value& constraints)
@@ -381,7 +380,7 @@ namespace nmos
             return make_nc_datatype_descriptor(description, name, nc_datatype_type::Primitive, constraints);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptorstruct
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptorstruct
         // description can be null
         // constraints can be null
         // fields: sequence<NcFieldDescriptor>
@@ -395,7 +394,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdatatypedescriptortypedef
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptortypedef
         // description can be null
         // constraints can be null
         web::json::value make_nc_datatype_typedef(const web::json::value& description, const nc_name& name, bool is_sequence, const utility::string_t& parent_type, const web::json::value& constraints)
@@ -409,7 +408,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
         web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {
             using web::json::value;
@@ -430,7 +429,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock
         web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members)
         {
             using web::json::value;
@@ -442,7 +441,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncworker
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncworker
         web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled)
         {
             using web::json::value;
@@ -453,13 +452,13 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanager
         web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints)
         {
             return make_nc_object(class_id, oid, constant_oid, owner, role, user_label, touchpoints, runtime_property_constraints);
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
         web::json::value make_nc_device_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
             const web::json::value& manufacturer, const web::json::value& product, const utility::string_t& serial_number,
             const web::json::value& user_inventory_code, const web::json::value& device_name, const web::json::value& device_role, const web::json::value& operational_state, nc_reset_cause::cause reset_cause)
@@ -481,7 +480,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
         web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const nmos::experimental::control_protocol_state& control_protocol_state)
         {
             using web::json::value;
@@ -508,7 +507,7 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertychangedeventdata
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangedeventdata
         web::json::value make_nc_property_changed_event_data(const nc_property_changed_event_data& property_changed_event_data)
         {
             using web::json::value_of;
@@ -614,7 +613,7 @@ namespace nmos
         });
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     web::json::value make_nc_object_properties()
     {
         using web::json::value;
@@ -690,7 +689,7 @@ namespace nmos
         return events;
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncblock
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock
     web::json::value make_nc_block_properties()
     {
         using web::json::value;
@@ -741,7 +740,7 @@ namespace nmos
         return value::array();
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncworker
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncworker
     web::json::value make_nc_worker_properties()
     {
         using web::json::value;
@@ -764,7 +763,7 @@ namespace nmos
         return value::array();
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanager
     web::json::value make_nc_manager_properties()
     {
         using web::json::value;
@@ -784,7 +783,7 @@ namespace nmos
         return value::array();
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
     web::json::value make_nc_device_manager_properties()
     {
         using web::json::value;
@@ -816,7 +815,7 @@ namespace nmos
         return value::array();
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     web::json::value make_nc_class_manager_properties()
     {
         using web::json::value;
@@ -926,7 +925,7 @@ namespace nmos
         return value::array();
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.html
     web::json::value make_nc_object_class()
     {
         using web::json::value;
@@ -934,7 +933,7 @@ namespace nmos
         return details::make_nc_class_descriptor(value::string(U("NcObject class descriptor")), nc_object_class_id, U("NcObject"), value::null(), make_nc_object_properties(), make_nc_object_methods(), make_nc_object_events());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.1.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.1.html
     web::json::value make_nc_block_class()
     {
         using web::json::value;
@@ -942,7 +941,7 @@ namespace nmos
         return details::make_nc_class_descriptor(value::string(U("NcBlock class descriptor")), nc_block_class_id, U("NcBlock"), value::null(), make_nc_block_properties(), make_nc_block_methods(), make_nc_block_events());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.2.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.2.html
     web::json::value make_nc_worker_class()
     {
         using web::json::value;
@@ -950,7 +949,7 @@ namespace nmos
         return details::make_nc_class_descriptor(value::string(U("NcWorker class descriptor")), nc_worker_class_id, U("NcWorker"), value::null(), make_nc_worker_properties(), make_nc_worker_methods(), make_nc_worker_events());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.3.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.3.html
     web::json::value make_nc_manager_class()
     {
         using web::json::value;
@@ -958,7 +957,7 @@ namespace nmos
         return details::make_nc_class_descriptor(value::string(U("NcManager class descriptor")), nc_manager_class_id, U("NcManager"), value::null(), make_nc_manager_properties(), make_nc_manager_methods(), make_nc_manager_events());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.3.1.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.3.1.html
     web::json::value make_nc_device_manager_class()
     {
         using web::json::value;
@@ -966,7 +965,7 @@ namespace nmos
         return details::make_nc_class_descriptor(value::string(U("NcDeviceManager class descriptor")), nc_device_manager_class_id, U("NcDeviceManager"), value::string(U("DeviceManager")), make_nc_device_manager_properties(), make_nc_device_manager_methods(), make_nc_device_manager_events());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/1.3.2.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.3.2.html
     web::json::value make_nc_class_manager_class()
     {
         using web::json::value;
@@ -998,7 +997,7 @@ namespace nmos
         return details::make_nc_class_descriptor(value::string(U("NcReceiverMonitorProtected class descriptor")), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), value::null(), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcBlockMemberDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcBlockMemberDescriptor.html
     web::json::value make_nc_block_member_descriptor_datatype()
     {
         using web::json::value;
@@ -1013,7 +1012,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor which is specific to a block member")), U("NcBlockMemberDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcClassDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcClassDescriptor.html
     web::json::value make_nc_class_descriptor_datatype()
     {
         using web::json::value;
@@ -1028,7 +1027,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class")), U("NcClassDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcClassId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcClassId.html
     web::json::value make_nc_class_id_datatype()
     {
         using web::json::value;
@@ -1036,7 +1035,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Sequence of class ID fields")), U("NcClassId"), true, U("NcInt32"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDatatypeDescriptor.html
     web::json::value make_nc_datatype_descriptor_datatype()
     {
         using web::json::value;
@@ -1048,7 +1047,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Base datatype descriptor")), U("NcDatatypeDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorEnum.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDatatypeDescriptorEnum.html
     web::json::value make_nc_datatype_descriptor_enum_datatype()
     {
         using web::json::value;
@@ -1058,7 +1057,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Enum datatype descriptor")), U("NcDatatypeDescriptorEnum"), fields, value::string(U("NcDatatypeDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorPrimitive.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDatatypeDescriptorPrimitive.html
     web::json::value make_nc_datatype_descriptor_primitive_datatype()
     {
         using web::json::value;
@@ -1067,7 +1066,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Primitive datatype descriptor")), U("NcDatatypeDescriptorPrimitive"), fields, value::string(U("NcDatatypeDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorStruct.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDatatypeDescriptorStruct.html
     web::json::value make_nc_datatype_descriptor_struct_datatype()
     {
         using web::json::value;
@@ -1078,7 +1077,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Struct datatype descriptor")), U("NcDatatypeDescriptorStruct"), fields, value::string(U("NcDatatypeDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeDescriptorTypeDef.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDatatypeDescriptorTypeDef.html
     web::json::value make_nc_datatype_descriptor_type_def_datatype()
     {
         using web::json::value;
@@ -1089,7 +1088,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Type def datatype descriptor")), U("NcDatatypeDescriptorTypeDef"), fields, value::string(U("NcDatatypeDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDatatypeType.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDatatypeType.html
     web::json::value make_nc_datatype_type_datatype()
     {
         using web::json::value;
@@ -1102,7 +1101,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(value::string(U("Datatype type")), U("NcDatatypeType"), items);
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDescriptor.html
     web::json::value make_nc_descriptor_datatype()
     {
         using web::json::value;
@@ -1112,7 +1111,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Base descriptor")), U("NcDescriptor"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDeviceGenericState.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDeviceGenericState.html
     web::json::value make_nc_device_generic_state_datatype()
     {
         using web::json::value;
@@ -1127,7 +1126,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(value::string(U("Device generic operational state")), U("NcDeviceGenericState"), items);
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcDeviceOperationalState.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcDeviceOperationalState.html
     web::json::value make_nc_device_operational_state_datatype()
     {
         using web::json::value;
@@ -1138,7 +1137,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Device operational state")), U("NcDeviceOperationalState"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcElementId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcElementId.html
     web::json::value make_nc_element_id_datatype()
     {
         using web::json::value;
@@ -1149,7 +1148,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Class element id which contains the level and index")), U("NcElementId"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcEnumItemDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcEnumItemDescriptor.html
     web::json::value make_nc_enum_item_descriptor_datatype()
     {
         using web::json::value;
@@ -1160,7 +1159,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of an enum item")), U("NcEnumItemDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcEventDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcEventDescriptor.html
     web::json::value make_nc_event_descriptor_datatype()
     {
         using web::json::value;
@@ -1173,7 +1172,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class event")), U("NcEventDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcEventId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcEventId.html
     web::json::value make_nc_event_id_datatype()
     {
         using web::json::value;
@@ -1181,7 +1180,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Event id which contains the level and index")), U("NcEventId"), value::array(), value::string(U("NcElementId")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcFieldDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcFieldDescriptor.html
     web::json::value make_nc_field_descriptor_datatype()
     {
         using web::json::value;
@@ -1195,7 +1194,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a field of a struct")), U("NcFieldDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcId.html
     web::json::value make_nc_id_datatype()
     {
         using web::json::value;
@@ -1203,7 +1202,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Identity handler")), U("NcId"), false, U("NcUint32"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcManufacturer.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcManufacturer.html
     web::json::value make_nc_manufacturer_datatype()
     {
         using web::json::value;
@@ -1215,7 +1214,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Manufacturer descriptor")), U("NcManufacturer"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodDescriptor.html
     web::json::value make_nc_method_descriptor_datatype()
     {
         using web::json::value;
@@ -1229,7 +1228,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class method")), U("NcMethodDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodId.html
     web::json::value make_nc_method_id_datatype()
     {
         using web::json::value;
@@ -1237,7 +1236,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Method id which contains the level and index")), U("NcMethodId"), value::array(), value::string(U("NcElementId")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResult.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResult.html
     web::json::value make_nc_method_result_datatype()
     {
         using web::json::value;
@@ -1247,7 +1246,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Base result of the invoked method")), U("NcMethodResult"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultBlockMemberDescriptors.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultBlockMemberDescriptors.html
     web::json::value make_nc_method_result_block_member_descriptors_datatype()
     {
         using web::json::value;
@@ -1257,7 +1256,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Method result containing block member descriptors as the value")), U("NcMethodResultBlockMemberDescriptors"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultClassDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultClassDescriptor.html
     web::json::value make_nc_method_result_class_descriptor_datatype()
     {
         using web::json::value;
@@ -1267,7 +1266,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Method result containing a class descriptor as the value")), U("NcMethodResultClassDescriptor"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultDatatypeDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultDatatypeDescriptor.html
     web::json::value make_nc_method_result_datatype_descriptor_datatype()
     {
         using web::json::value;
@@ -1277,7 +1276,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Method result containing a datatype descriptor as the value")), U("NcMethodResultDatatypeDescriptor"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultError.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultError.html
     web::json::value make_nc_method_result_error_datatype()
     {
         using web::json::value;
@@ -1287,7 +1286,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Error result - to be used when the method call encounters an error")), U("NcMethodResultError"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultId.html
     web::json::value make_nc_method_result_id_datatype()
     {
         using web::json::value;
@@ -1297,7 +1296,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Id method result")), U("NcMethodResultId"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultLength.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultLength.html
     web::json::value make_nc_method_result_length_datatype()
     {
         using web::json::value;
@@ -1307,7 +1306,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Length method result")), U("NcMethodResultLength"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodResultPropertyValue.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodResultPropertyValue.html
     web::json::value make_nc_method_result_property_value_datatype()
     {
         using web::json::value;
@@ -1317,7 +1316,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Result when invoking the getter method associated with a property")), U("NcMethodResultPropertyValue"), fields, value::string(U("NcMethodResult")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcMethodStatus.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcMethodStatus.html
     web::json::value make_nc_method_status_datatype()
     {
         using web::json::value;
@@ -1344,7 +1343,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(value::string(U("Method invokation status")), U("NcMethodStatus"), items);
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcName.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcName.html
     web::json::value make_nc_name_datatype()
     {
         using web::json::value;
@@ -1352,7 +1351,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Programmatically significant name, alphanumerics + underscore, no spaces")), U("NcName"), false, U("NcString"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcOid.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcOid.html
     web::json::value make_nc_oid_datatype()
     {
         using web::json::value;
@@ -1360,7 +1359,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Object id")), U("NcOid"), false, U("NcUint32"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcOrganizationId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcOrganizationId.html
     web::json::value make_nc_organization_id_datatype()
     {
         using web::json::value;
@@ -1368,7 +1367,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Unique 24-bit organization id")), U("NcOrganizationId"), false, U("NcInt32"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterConstraints.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcParameterConstraints.html
     web::json::value make_nc_parameter_constraints_datatype()
     {
         using web::json::value;
@@ -1378,7 +1377,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Abstract parameter constraints class")), U("NcParameterConstraints"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterConstraintsNumber.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcParameterConstraintsNumber.html
     web::json::value make_nc_parameter_constraints_number_datatype()
     {
         using web::json::value;
@@ -1390,7 +1389,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Number parameter constraints class")), U("NcParameterConstraintsNumber"), fields, value::string(U("NcParameterConstraints")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterConstraintsString.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcParameterConstraintsString.html
     web::json::value make_nc_parameter_constraints_string_datatype()
     {
         using web::json::value;
@@ -1401,7 +1400,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("String parameter constraints class")), U("NcParameterConstraintsString"), fields, value::string(U("NcParameterConstraints")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcParameterDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcParameterDescriptor.html
     web::json::value make_nc_parameter_descriptor_datatype()
     {
         using web::json::value;
@@ -1415,7 +1414,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a method parameter")), U("NcParameterDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcProduct.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcProduct.html
     web::json::value make_nc_product_datatype()
     {
         using web::json::value;
@@ -1430,7 +1429,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Product descriptor")), U("NcProduct"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyChangeType.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyChangeType.html
     web::json::value make_nc_property_change_type_datatype()
     {
         using web::json::value;
@@ -1443,7 +1442,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(value::string(U("Type of property change")), U("NcPropertyChangeType"), items);
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyChangedEventData.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyChangedEventData.html
     web::json::value make_nc_property_changed_event_data_datatype()
     {
         using web::json::value;
@@ -1456,7 +1455,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Payload of property-changed event")), U("NcPropertyChangedEventData"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyConstraints.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyConstraints.html
     web::json::value make_nc_property_contraints_datatype()
     {
         using web::json::value;
@@ -1467,7 +1466,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Property constraints class")), U("NcPropertyConstraints"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyConstraintsNumber.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyConstraintsNumber.html
     web::json::value make_nc_property_constraints_number_datatype()
     {
         using web::json::value;
@@ -1479,7 +1478,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Number property constraints class")), U("NcPropertyConstraintsNumber"), fields, value::string(U("NcPropertyConstraints")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyConstraintsString.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyConstraintsString.html
     web::json::value make_nc_property_constraints_string_datatype()
     {
         using web::json::value;
@@ -1490,7 +1489,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("String property constraints class")), U("NcPropertyConstraintsString"), fields, value::string(U("NcPropertyConstraints")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyDescriptor.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyDescriptor.html
     web::json::value make_nc_property_descriptor_datatype()
     {
         using web::json::value;
@@ -1507,7 +1506,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Descriptor of a class property")), U("NcPropertyDescriptor"), fields, value::string(U("NcDescriptor")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcPropertyId.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcPropertyId.html
     web::json::value make_nc_property_id_datatype()
     {
         using web::json::value;
@@ -1515,7 +1514,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Property id which contains the level and index")), U("NcPropertyId"), value::array(), value::string(U("NcElementId")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcRegex.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcRegex.html
     web::json::value make_nc_regex_datatype()
     {
         using web::json::value;
@@ -1523,7 +1522,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Regex pattern")), U("NcRegex"), false, U("NcString"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcResetCause.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcResetCause.html
     web::json::value make_nc_reset_cause_datatype()
     {
         using web::json::value;
@@ -1538,7 +1537,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_enum(value::string(U("Reset cause enum")), U("NcResetCause"), items);
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcRolePath.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcRolePath.html
     web::json::value make_nc_role_path_datatype()
     {
         using web::json::value;
@@ -1546,7 +1545,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Role path")), U("NcRolePath"), true, U("NcString"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTimeInterval.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTimeInterval.html
     web::json::value make_nc_time_interval_datatype()
     {
         using web::json::value;
@@ -1554,7 +1553,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Time interval described in nanoseconds")), U("NcTimeInterval"), false, U("NcInt64"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpoint.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTouchpoint.html
     web::json::value make_nc_touchpoint_datatype()
     {
         using web::json::value;
@@ -1564,7 +1563,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Base touchpoint class")), U("NcTouchpoint"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointNmos.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTouchpointNmos.html
     web::json::value make_nc_touchpoint_nmos_datatype()
     {
         using web::json::value;
@@ -1574,7 +1573,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Touchpoint class for NMOS resources")), U("NcTouchpointNmos"), fields, value::string(U("NcTouchpoint")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointNmosChannelMapping.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTouchpointNmosChannelMapping.html
     web::json::value make_nc_touchpoint_nmos_channel_mapping_datatype()
     {
         using web::json::value;
@@ -1584,7 +1583,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Touchpoint class for NMOS IS-08 resources")), U("NcTouchpointNmosChannelMapping"), fields, value::string(U("NcTouchpoint")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointResource.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTouchpointResource.html
     web::json::value make_nc_touchpoint_resource_datatype()
     {
         using web::json::value;
@@ -1594,7 +1593,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Touchpoint resource class")), U("NcTouchpointResource"), fields, value::null());
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointResourceNmos.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTouchpointResourceNmos.html
     web::json::value make_nc_touchpoint_resource_nmos_datatype()
     {
         using web::json::value;
@@ -1604,7 +1603,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Touchpoint resource class for NMOS resources")), U("NcTouchpointResourceNmos"), fields, value::string(U("NcTouchpointResource")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcTouchpointResourceNmosChannelMapping.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcTouchpointResourceNmosChannelMapping.html
     web::json::value make_nc_touchpoint_resource_nmos_channel_mapping_datatype()
     {
         using web::json::value;
@@ -1614,7 +1613,7 @@ namespace nmos
         return details::make_nc_datatype_descriptor_struct(value::string(U("Touchpoint resource class for NMOS resources")), U("NcTouchpointResourceNmosChannelMapping"), fields, value::string(U("NcTouchpointResourceNmos")));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcUri.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcUri.html
     web::json::value make_nc_uri_datatype()
     {
         using web::json::value;
@@ -1622,7 +1621,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("Uniform resource identifier")), U("NcUri"), false, U("NcString"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcUuid.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcUuid.html
     web::json::value make_nc_uuid_datatype()
     {
         using web::json::value;
@@ -1630,7 +1629,7 @@ namespace nmos
         return details::make_nc_datatype_typedef(value::string(U("UUID")), U("NcUuid"), false, U("NcString"));
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/datatypes/NcVersionCode.html
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcVersionCode.html
     web::json::value make_nc_version_code_datatype()
     {
         using web::json::value;

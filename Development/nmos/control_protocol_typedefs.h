@@ -46,7 +46,7 @@ namespace nmos
         };
     }
 
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethodresult
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmethodresult
     struct nc_method_result
     {
         nc_method_status::status status;
@@ -119,7 +119,7 @@ namespace nmos
     }
 
     // NcElementId
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncelementid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
     struct nc_element_id
     {
         uint16_t level;
@@ -137,14 +137,14 @@ namespace nmos
     };
 
     // NcEventId
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nceventid
     typedef nc_element_id nc_event_id;
     // NcEventIds for NcObject
     // SEe https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     const nc_event_id nc_object_property_changed_event_id(1, 1);
 
     // NcMethodId
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethodid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmethodid
     typedef nc_element_id nc_method_id;
     // NcMethodIds for NcObject
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
@@ -167,7 +167,7 @@ namespace nmos
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
 
     // NcPropertyId
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertyid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
     typedef nc_element_id nc_property_id;
     // NcPropertyIds for NcObject
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
@@ -216,29 +216,29 @@ namespace nmos
     const nc_property_id nc_ident_beacon_active_property_id(3, 1);
 
     // NcId
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncid
     typedef uint32_t nc_id;
 
     // NcName
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncname
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncname
     typedef utility::string_t nc_name;
 
     // NcOid
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncoid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncoid
     typedef uint32_t nc_oid;
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
     const nc_oid root_block_oid{ 1 };
 
     // NcUri
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncuri
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncuri
     typedef utility::string_t nc_uri;
 
     // NcUuid
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncuuid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncuuid
     typedef utility::string_t nc_uuid;
 
     // NcClassId
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassid
     typedef std::vector<int32_t> nc_class_id;
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     const nc_class_id nc_object_class_id({ 1 });
@@ -260,11 +260,11 @@ namespace nmos
     const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
 
     // NcTouchpoint
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nctouchpoint
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint
     typedef utility::string_t nc_touch_point;
 
     // NcPropertyChangeType
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertychangetype
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangetype
     namespace nc_property_change_type
     {
         enum type
@@ -277,7 +277,7 @@ namespace nmos
     }
 
     // NcPropertyChangedEventData
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertychangedeventdata
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertychangedeventdata
     struct nc_property_changed_event_data
     {
         nc_property_id property_id;
