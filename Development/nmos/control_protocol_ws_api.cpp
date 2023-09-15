@@ -1,5 +1,6 @@
 #include "nmos/control_protocol_ws_api.h"
 
+#include <boost/algorithm/string/join.hpp>
 #include <boost/range/join.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
@@ -21,7 +22,7 @@ namespace nmos
             static const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
-                boost::copy_range<std::vector<web::uri>>(boost::join(boost::join(
+                boost::copy_range<std::vector<web::uri>>(boost::range::join(boost::range::join(
                     is12_versions::all | boost::adaptors::transformed(experimental::make_controlprotocolapi_base_message_schema_uri),
                     is12_versions::all | boost::adaptors::transformed(experimental::make_controlprotocolapi_command_message_schema_uri)),
                     is12_versions::all | boost::adaptors::transformed(experimental::make_controlprotocolapi_subscription_message_schema_uri)
@@ -121,7 +122,7 @@ namespace nmos
                 value data = value_of({
                     { nmos::fields::id, nmos::make_id() },
                     { nmos::fields::max_update_rate_ms, 0 },
-                    { nmos::fields::resource_path, U('/') + nmos::resourceType_from_type(nmos::types::source) },
+                    { nmos::fields::resource_path, U('/') + nmos::resourceType_from_type(nmos::types::nc_object) },
                     { nmos::fields::params, value_of({ { U("query.rql"), U("in(id,())") } }) },
                     { nmos::fields::persist, non_persistent },
                     { nmos::fields::secure, secure },
@@ -154,7 +155,7 @@ namespace nmos
 
                 websockets.insert({ id, connection_id });
 
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Creating websocket connection: " << id;
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Creating websocket connection: " << id << " to subscription: " << subscription->id;
 
                 slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying control protocol websockets thread"; // and anyone else who cares...
                 model.notify();
@@ -180,7 +181,7 @@ namespace nmos
 
                 if (resources.end() != grain)
                 {
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Deleting websocket connection";
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Deleting websocket connection: " << grain->id;
 
                     // subscriptions have a 1-1 relationship with the websocket connection and both should now be erased immediately
                     auto subscription = find_resource(resources, { nmos::fields::subscription_id(grain->data), nmos::types::subscription });
@@ -195,7 +196,6 @@ namespace nmos
                         // a grain without a subscription shouldn't be possible, but let's be tidy
                         erase_resource(resources, grain->id);
                     }
-                    //erase_resource(resources, grain->id);
                 }
 
                 websockets.right.erase(websocket);
@@ -208,6 +208,7 @@ namespace nmos
     web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_methods_handler get_control_protocol_methods, slog::base_gate& gate_)
     {
         using web::json::value;
+        using web::json::value_of;
 
         auto methods = get_control_protocol_methods();
 
@@ -296,11 +297,10 @@ namespace nmos
                                     }
                                 }
 
-                                // add command_response for the control protocol response thread to return to the client
+                                // add command_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data),
-                                        make_control_protocol_message_response(nc_message_type::command_response, responses));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_control_protocol_message_response(responses));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
@@ -308,11 +308,45 @@ namespace nmos
                             break;
                             case nc_message_type::subscription:
                             {
-                                // hmm, todo...
+                                // validate subscription-message
+                                details::validate_controlprotocolapi_subscription_message_schema(version, message);
+
+                                // subscribing to multiple OIDs, and filtering out invalid OIDs which cannot be subscribed to
+                                auto& subscriptions = nmos::fields::nc::subscriptions(message);
+                                value valid_subscriptions = value::array();
+                                for (const auto& subscription : subscriptions)
+                                {
+                                    const auto oid = subscription.as_integer();
+                                    auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
+                                    if (resources.end() != resource)
+                                    {
+                                        // only add the valid OIDs which can be subscribed to
+                                        web::json::push_back(valid_subscriptions, subscription);
+                                    }
+                                }
+
+                                // update the subscription
+                                modify_resource(resources, subscription->id, [&valid_subscriptions](nmos::resource& resource)
+                                {
+                                    auto rql_query = U("in(id,(") + boost::algorithm::join(valid_subscriptions.as_array() | boost::adaptors::transformed([](const value& v) { return U("string:") + utility::s2us(std::to_string(v.as_integer())); }), U(",")) + U("))");
+
+                                    resource.data[nmos::fields::params] = value_of({ { U("query.rql"), rql_query } });
+                                });
+
+                                // add subscription_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
+                                resources.modify(grain, [&](nmos::resource& grain)
+                                {
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_control_protocol_subscription_response(valid_subscriptions));
+
+                                    grain.updated = strictly_increasing_update(resources);
+                                });
+
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Received subscription command for " << valid_subscriptions.serialize();
+                                model.notify();
                             }
-                                break;
+                            break;
                             default:
-                                // unexpected message type
+                                // ignore unexpected message type
                                 break;
                             }
 

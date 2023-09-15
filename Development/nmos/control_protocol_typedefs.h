@@ -2,14 +2,7 @@
 #define NMOS_CONTROL_PROTOCOL_TYPEDEFS_H
 
 #include "cpprest/basic_utils.h"
-
-namespace web
-{
-    namespace json
-    {
-        class value;
-    }
-}
+#include "cpprest/json_utils.h"
 
 namespace nmos
 {
@@ -146,14 +139,81 @@ namespace nmos
     // NcEventId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nceventid
     typedef nc_element_id nc_event_id;
+    // NcEventIds for NcObject
+    // SEe https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
+    const nc_event_id nc_object_property_changed_event_id(1, 1);
 
     // NcMethodId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncmethodid
     typedef nc_element_id nc_method_id;
+    // NcMethodIds for NcObject
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
+    const nc_method_id nc_object_get_method_id(1, 1);
+    const nc_method_id nc_object_set_method_id(1, 2);
+    const nc_method_id nc_object_get_sequence_item_method_id(1, 3);
+    const nc_method_id nc_object_set_sequence_item_method_id(1, 4);
+    const nc_method_id nc_object_add_sequence_item_method_id(1, 5);
+    const nc_method_id nc_object_remove_sequence_item_method_id(1, 6);
+    const nc_method_id nc_object_get_sequence_length_method_id(1, 7);
+    // NcMethodIds for NcBlock
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock
+    const nc_method_id nc_block_get_member_descriptors_method_id(2, 1);
+    const nc_method_id nc_block_find_members_by_path_method_id(2, 2);
+    const nc_method_id nc_block_find_members_by_role_method_id(2, 3);
+    const nc_method_id nc_block_find_members_by_class_id_method_id(2, 4);
+    // NcMethodIds for NcClassManager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
+    const nc_method_id nc_class_manager_get_control_class_method_id(3, 1);
+    const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertyid
     typedef nc_element_id nc_property_id;
+    // NcPropertyIds for NcObject
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
+    const nc_property_id nc_object_class_id_property_id(1, 1);
+    const nc_property_id nc_object_oid_property_id(1, 2);
+    const nc_property_id nc_object_constant_oid_property_id(1, 3);
+    const nc_property_id nc_object_owner_property_id(1, 4);
+    const nc_property_id nc_object_role_property_id(1, 5);
+    const nc_property_id nc_object_user_label_property_id(1, 6);
+    const nc_property_id nc_object_touchpoints_property_id(1, 7);
+    const nc_property_id nc_object_runtime_property_constraints_property_id(1, 8);
+    // NcPropertyIds for NcBlock
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock
+    const nc_property_id nc_block_enabled_property_id(2, 1);
+    const nc_property_id nc_block_members_property_id(2, 2);
+    // NcPropertyIds for NcWorker
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncworker
+    const nc_property_id nc_worker_enabled_property_id(2, 1);
+    // NcPropertyIds for NcDeviceManager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
+    const nc_property_id nc_device_manager_nc_version_property_id(3, 1);
+    const nc_property_id nc_device_manager_manufacturer_property_id(3, 2);
+    const nc_property_id nc_device_manager_product_property_id(3, 3);
+    const nc_property_id nc_device_manager_serial_number_property_id(3, 4);
+    const nc_property_id nc_device_manager_user_inventory_code_property_id(3, 5);
+    const nc_property_id nc_device_manager_device_name_property_id(3, 6);
+    const nc_property_id nc_device_manager_device_role_property_id(3, 7);
+    const nc_property_id nc_device_manager_operational_state_property_id(3, 8);
+    const nc_property_id nc_device_manager_reset_cause_property_id(3, 9);
+    const nc_property_id nc_device_manager_message_property_id(3, 10);
+    // NcPropertyIds for NcClassManager
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
+    const nc_property_id nc_class_manager_control_classes_property_id(3, 1);
+    const nc_property_id nc_class_manager_datatypes_property_id(3, 2);
+    // NcPropertyids for NcReceiverMonitor
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+    const nc_property_id nc_receiver_monitor_connection_status_property_id(3, 1);
+    const nc_property_id nc_receiver_monitor_connection_status_message_property_id(3, 2);
+    const nc_property_id nc_receiver_monitor_payload_status_property_id(3, 3);
+    const nc_property_id nc_receiver_monitor_payload_status_message_property_id(3, 4);
+    // NcPropertyids for NcReceiverMonitorProtected
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
+    const nc_property_id nc_receiver_monitor_protected_signal_protection_status_property_id(4, 1);
+    // NcPropertyids for NcIdentBeacon
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
+    const nc_property_id nc_ident_beacon_active_property_id(3, 1);
 
     // NcId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncid
@@ -166,6 +226,7 @@ namespace nmos
     // NcOid
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncoid
     typedef uint32_t nc_oid;
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
     const nc_oid root_block_oid{ 1 };
 
     // NcUri
@@ -179,19 +240,70 @@ namespace nmos
     // NcClassId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassid
     typedef std::vector<int32_t> nc_class_id;
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     const nc_class_id nc_object_class_id({ 1 });
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncblock
     const nc_class_id nc_block_class_id({ 1, 1 });
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncworker
     const nc_class_id nc_worker_class_id({ 1, 2 });
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanager
     const nc_class_id nc_manager_class_id({ 1, 3 });
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
     const nc_class_id nc_device_manager_class_id({ 1, 3, 1 });
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_class_id nc_class_manager_class_id({ 1, 3, 2 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     const nc_class_id nc_ident_beacon_class_id({ 1, 2, 2 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 3 });
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
     const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
 
     // NcTouchpoint
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#nctouchpoint
     typedef utility::string_t nc_touch_point;
+
+    // NcPropertyChangeType
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertychangetype
+    namespace nc_property_change_type
+    {
+        enum type
+        {
+            value_changed = 0,          // Current value changed
+            sequence_item_added = 1,    // Sequence item added
+            sequence_item_changed = 2,  // Sequence item changed
+            sequence_item_removed = 3   // Sequence item removed
+        };
+    }
+
+    // NcPropertyChangedEventData
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertychangedeventdata
+    struct nc_property_changed_event_data
+    {
+        nc_property_id property_id;
+        nc_property_change_type::type change_type;
+        web::json::value value;
+        web::json::value sequence_item_index; // nc_id, can be null
+
+        nc_property_changed_event_data(nc_property_id property_id, nc_property_change_type::type change_type, web::json::value value, nc_id sequence_item_index)
+            : property_id(std::move(property_id))
+            , change_type(change_type)
+            , value(std::move(value))
+            , sequence_item_index(sequence_item_index)
+        {}
+
+        nc_property_changed_event_data(nc_property_id property_id, nc_property_change_type::type change_type, web::json::value value)
+            : property_id(std::move(property_id))
+            , change_type(change_type)
+            , value(std::move(value))
+            , sequence_item_index(web::json::value::null())
+        {}
+
+        auto tied() const -> decltype(std::tie(property_id, change_type, value, sequence_item_index)) { return std::tie(property_id, change_type, value, sequence_item_index); }
+        friend bool operator==(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return lhs.tied() == rhs.tied(); }
+        friend bool operator!=(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return !(lhs == rhs); }
+        friend bool operator<(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return lhs.tied() < rhs.tied(); }
+    };
 }
 
 #endif

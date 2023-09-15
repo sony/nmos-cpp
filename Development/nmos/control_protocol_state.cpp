@@ -120,22 +120,22 @@ namespace nmos
                 { nc_object_class_id, make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), to_vector(make_nc_object_properties()),
                     to_methods_vector(make_nc_object_methods(),
                     {
-                        { {1, 1}, nmos::details::get },
-                        { {1, 2}, nmos::details::set },
-                        { {1, 3}, nmos::details::get_sequence_item },
-                        { {1, 4}, nmos::details::set_sequence_item },
-                        { {1, 5}, nmos::details::add_sequence_item },
-                        { {1, 6}, nmos::details::remove_sequence_item },
-                        { {1, 7}, nmos::details::get_sequence_length }
+                        { nc_object_get_method_id, nmos::details::get },
+                        { nc_object_set_method_id, nmos::details::set },
+                        { nc_object_get_sequence_item_method_id, nmos::details::get_sequence_item },
+                        { nc_object_set_sequence_item_method_id, nmos::details::set_sequence_item },
+                        { nc_object_add_sequence_item_method_id, nmos::details::add_sequence_item },
+                        { nc_object_remove_sequence_item_method_id, nmos::details::remove_sequence_item },
+                        { nc_object_get_sequence_length_method_id, nmos::details::get_sequence_length }
                     }),
                     to_vector(make_nc_object_events())) },
                 { nc_block_class_id, make_control_class(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"), to_vector(make_nc_block_properties()),
                     to_methods_vector(make_nc_block_methods(),
                     {
-                        { {2, 1}, nmos::details::get_member_descriptors },
-                        { {2, 2}, nmos::details::find_members_by_path },
-                        { {2, 3}, nmos::details::find_members_by_role },
-                        { {2, 4}, nmos::details::find_members_by_class_id }
+                        { nc_block_get_member_descriptors_method_id, nmos::details::get_member_descriptors },
+                        { nc_block_find_members_by_path_method_id, nmos::details::find_members_by_path },
+                        { nc_block_find_members_by_role_method_id, nmos::details::find_members_by_role },
+                        { nc_block_find_members_by_class_id_method_id, nmos::details::find_members_by_class_id }
                     }),
                     to_vector(make_nc_block_events())) },
                 { nc_worker_class_id, make_control_class(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"), to_vector(make_nc_worker_properties()), to_methods_vector(make_nc_worker_methods(), {}), to_vector(make_nc_worker_events())) },
@@ -144,8 +144,8 @@ namespace nmos
                 { nc_class_manager_class_id, make_control_class(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), to_vector(make_nc_class_manager_properties()),
                     to_methods_vector(make_nc_class_manager_methods(),
                     {
-                        { {3, 1}, nmos::details::get_control_class },
-                        { {3, 2}, nmos::details::get_datatype }
+                        { nc_class_manager_get_control_class_method_id, nmos::details::get_control_class },
+                        { nc_class_manager_get_datatype_method_id, nmos::details::get_datatype }
                     }),
                     to_vector(make_nc_class_manager_events())) },
                 // identification beacon model

@@ -2,6 +2,7 @@
 
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_utils.h"
+#include "nmos/query_utils.h"
 #include "nmos/resource.h"
 #include "nmos/is12_versions.h"
 
@@ -10,18 +11,18 @@ namespace nmos
     namespace details
     {
         // create block resource
-        nmos::resource make_block(nmos::nc_oid oid, const web::json::value& owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
+        resource make_block(nmos::nc_oid oid, const web::json::value& owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
         {
             using web::json::value;
 
             auto data = details::make_nc_block(nc_block_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true, members);
 
-            return{ is12_versions::v1_0, types::nc_block, std::move(data), true };
+            return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
         }
     }
 
     // create block resource
-    nmos::resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
+    resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
     {
         using web::json::value;
 
@@ -29,7 +30,7 @@ namespace nmos
     }
 
     // create Root block resource
-    nmos::resource make_root_block()
+    resource make_root_block()
     {
         using web::json::value;
 
@@ -37,7 +38,7 @@ namespace nmos
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncdevicemanager
-    nmos::resource make_device_manager(nc_oid oid, const nmos::settings& settings)
+    resource make_device_manager(nc_oid oid, const nmos::settings& settings)
     {
         using web::json::value;
 
@@ -52,11 +53,11 @@ namespace nmos
         auto data = details::make_nc_device_manager(oid, root_block_oid, user_label, value::null(), value::null(),
             manufacturer, product, serial_number, value::null(), device_name, device_role, operational_state, nc_reset_cause::unknown);
 
-        return{ is12_versions::v1_0, types::nc_device_manager, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncclassmanager
-    nmos::resource make_class_manager(nc_oid oid, const nmos::experimental::control_protocol_state& control_protocol_state)
+    resource make_class_manager(nc_oid oid, const nmos::experimental::control_protocol_state& control_protocol_state)
     {
         using web::json::value;
 
@@ -64,7 +65,7 @@ namespace nmos
 
         auto data = details::make_nc_class_manager(oid, root_block_oid, user_label, value::null(), value::null(), control_protocol_state);
 
-        return{ is12_versions::v1_0, types::nc_class_manager, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
     }
 
     // add to owner block member
@@ -79,5 +80,50 @@ namespace nmos
             details::make_nc_block_member_descriptor(child_description, nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
 
         return true;
+    }
+
+    // modify a resource, and insert notification event to all subscriptions
+    bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
+    {
+        auto found = resources.find(id);
+        if (resources.end() == found || !found->has_data()) return false;
+
+        auto pre = found->data;
+
+        // "If an exception is thrown by some user-provided operation, then the element pointed to by position is erased."
+        // This seems too surprising, despite the fact that it means that a modification may have been partially completed,
+        // so capture and rethrow.
+        // See https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/reference/ord_indices.html#modify
+        std::exception_ptr modifier_exception;
+
+        auto resource_updated = nmos::strictly_increasing_update(resources);
+        auto result = resources.modify(found, [&resource_updated, &modifier, &modifier_exception](resource& resource)
+        {
+            try
+            {
+                modifier(resource);
+            }
+            catch (...)
+            {
+                modifier_exception = std::current_exception();
+            }
+
+            // set the update timestamp
+            resource.updated = resource_updated;
+        });
+
+        if (result)
+        {
+            auto& modified = *found;
+
+            insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
+        }
+
+        if (modifier_exception)
+        {
+            std::rethrow_exception(modifier_exception);
+        }
+
+        return result;
     }
 }

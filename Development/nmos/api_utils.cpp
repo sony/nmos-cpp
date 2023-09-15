@@ -156,7 +156,8 @@ namespace nmos
             { U("receivers"), nmos::types::receiver },
             { U("subscriptions"), nmos::types::subscription },
             { U("inputs"), nmos::types::input },
-            { U("outputs"), nmos::types::output }
+            { U("outputs"), nmos::types::output },
+            { U("nc_object"), nmos::types::nc_object }
         };
         return types_from_resourceType.at(resourceType);
     }
@@ -175,7 +176,8 @@ namespace nmos
             { nmos::types::subscription, U("subscriptions") },
             { nmos::types::grain, {} }, // subscription websocket grains aren't exposed via the Query API
             { nmos::types::input, U("inputs") },
-            { nmos::types::output, U("outputs") }
+            { nmos::types::output, U("outputs") },
+            { nmos::types::nc_object, U("nc_object") }
         };
         return resourceTypes_from_type.at(type);
     }

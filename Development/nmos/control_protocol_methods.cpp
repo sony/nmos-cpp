@@ -2,6 +2,7 @@
 
 #include "cpprest/json_utils.h"
 #include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_utils.h"
 #include "nmos/json_fields.h"
@@ -25,7 +26,7 @@ namespace nmos
             const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
-                return make_control_protocol_response(handle, { nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(property)));
+                return make_control_protocol_message_response(handle, { nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(property)));
             }
 
             // unknown property
@@ -50,22 +51,25 @@ namespace nmos
             {
                 if (nmos::fields::nc::is_read_only(property))
                 {
-                    return make_control_protocol_response(handle, { nc_method_status::read_only });
+                    return make_control_protocol_message_response(handle, { nc_method_status::read_only });
                 }
 
                 if ((val.is_null() && !nmos::fields::nc::is_nullable(property))
                     || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
                 {
-                    return make_control_protocol_response(handle, { nc_method_status::parameter_error });
+                    return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                 }
 
-                resources.modify(resource, [&](nmos::resource& resource)
+                const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, { parse_nc_property_id(property_id), nc_property_change_type::type::value_changed, val });
+                const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
+
+                modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::name(property)] = val;
 
-                    resource.updated = strictly_increasing_update(resources);
-                });
-                return make_control_protocol_response(handle, { nc_method_status::ok });
+                }, notification_event);
+
+                return make_control_protocol_message_response(handle, { nc_method_status::ok });
             }
 
             // unknown property
@@ -100,7 +104,7 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    return make_control_protocol_response(handle, { nc_method_status::ok }, data.at(index));
+                    return make_control_protocol_message_response(handle, { nc_method_status::ok }, data.at(index));
                 }
 
                 // out of bound
@@ -142,13 +146,16 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    resources.modify(resource, [&](nmos::resource& resource)
+                    const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_changed, val, nc_id(index) });
+                    const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
+
+                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::nc::name(property)][index] = val;
 
-                        resource.updated = strictly_increasing_update(resources);
-                    });
-                    return make_control_protocol_response(handle, { nc_method_status::ok });
+                    }, notification_event);
+
+                    return make_control_protocol_message_response(handle, { nc_method_status::ok });
                 }
 
                 // out of bound
@@ -189,15 +196,19 @@ namespace nmos
 
                 auto& data = resource->data.at(nmos::fields::nc::name(property));
 
-                resources.modify(resource, [&](nmos::resource& resource)
+                const nc_id sequence_item_index = data.is_null() ? 0 : nc_id(data.as_array().size());
+                const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_added, val, sequence_item_index });
+                const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
+
+                modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)];
                     if (data.is_null()) { sequence = value::array(); }
                     web::json::push_back(sequence, val);
 
-                    resource.updated = strictly_increasing_update(resources);
-                });
-                return make_control_protocol_response(handle, { nc_method_status::ok }, uint32_t(data.as_array().size() - 1));
+                }, notification_event);
+
+                return make_control_protocol_message_response(handle, { nc_method_status::ok }, sequence_item_index);
             }
 
             // unknown property
@@ -232,14 +243,17 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    resources.modify(resource, [&](nmos::resource& resource)
+                    const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, data.as_array().at(index), nc_id(index)});
+                    const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
+
+                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
                         auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
                         sequence.erase(index);
 
-                        resource.updated = strictly_increasing_update(resources);
-                    });
-                    return make_control_protocol_response(handle, { nc_method_status::ok });
+                    }, notification_event);
+
+                    return make_control_protocol_message_response(handle, { nc_method_status::ok });
                 }
 
                 // out of bound
@@ -285,7 +299,7 @@ namespace nmos
                     if (data.is_null())
                     {
                         // null
-                        return make_control_protocol_response(handle, { nc_method_status::ok }, value::null());
+                        return make_control_protocol_message_response(handle, { nc_method_status::ok }, value::null());
                     }
                 }
                 else
@@ -299,7 +313,7 @@ namespace nmos
                         return make_control_protocol_error_response(handle, { nc_method_status::invalid_request }, ss.str());
                     }
                 }
-                return make_control_protocol_response(handle, { nc_method_status::ok }, uint32_t(data.as_array().size()));
+                return make_control_protocol_message_response(handle, { nc_method_status::ok }, uint32_t(data.as_array().size()));
             }
 
             // unknown property
@@ -323,7 +337,7 @@ namespace nmos
             auto descriptors = value::array();
             nmos::get_member_descriptors(resources, resource, recurse, descriptors.as_array());
 
-            return make_control_protocol_response(handle, { nc_method_status::ok }, descriptors);
+            return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptors);
         }
 
         // Finds member(s) by path
@@ -344,8 +358,8 @@ namespace nmos
                 return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty path to do FindMembersByPath"));
             }
 
-            auto nc_block_member_descriptors = value::array();
-            value nc_block_member_descriptor;
+            auto descriptors = value::array();
+            value descriptor;
 
             for (const auto& role : path.as_array())
             {
@@ -360,7 +374,7 @@ namespace nmos
 
                     if (members.end() != member_found)
                     {
-                        nc_block_member_descriptor = *member_found;
+                        descriptor = *member_found;
 
                         // use oid to look for the next resource
                         resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::fields::nc::oid(*member_found))));
@@ -380,8 +394,8 @@ namespace nmos
                 }
             }
 
-            web::json::push_back(nc_block_member_descriptors, nc_block_member_descriptor);
-            return make_control_protocol_response(handle, { nc_method_status::ok }, nc_block_member_descriptors);
+            web::json::push_back(descriptors, descriptor);
+            return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptors);
         }
 
         // Finds members with given role name or fragment
@@ -407,7 +421,7 @@ namespace nmos
             auto descriptors = value::array();
             nmos::find_members_by_role(resources, resource, role, match_whole_string, case_sensitive, recurse, descriptors.as_array());
 
-            return make_control_protocol_response(handle, { nc_method_status::ok }, descriptors);
+            return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptors);
         }
 
         // Finds members with given class id
@@ -434,7 +448,7 @@ namespace nmos
             auto descriptors = value::array();
             nmos::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors.as_array());
 
-            return make_control_protocol_response(handle, { nc_method_status::ok }, descriptors);
+            return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptors);
         }
 
         // NcClassManager methods implementation
@@ -482,7 +496,7 @@ namespace nmos
                 }
                 auto descriptor = details::make_nc_class_descriptor(description, class_id, name, fixed_role, properties, methods, events);
 
-                return make_control_protocol_response(handle, { nc_method_status::ok }, descriptor);
+                return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptor);
             }
 
             return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("classId not found"));
@@ -541,7 +555,7 @@ namespace nmos
                     }
                 }
 
-                return make_control_protocol_response(handle, { nc_method_status::ok }, descriptor);
+                return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptor);
             }
 
             return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("name not found"));

@@ -165,18 +165,25 @@ namespace nmos
     }
 
     // message response
-    // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#command-message-type
-    web::json::value make_control_protocol_message_response(nc_message_type::type type, const web::json::value& responses);
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-response-message-type
+    web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message);
+    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result);
+    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result, const web::json::value& value); // value can be sequence<NcBlockMemberDescriptor>, NcClassDescriptor, NcDatatypeDescriptor
+    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result, uint32_t value);
+    web::json::value make_control_protocol_message_response(const web::json::value& responses);
+
+    // subscription response
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#subscription-response-message-type
+    web::json::value make_control_protocol_subscription_response(const web::json::value& subscriptions);
+
+    // notification
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#notification-message-type
+    web::json::value make_control_protocol_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data);
+    web::json::value make_control_protocol_notification(const web::json::value& notifications);
 
     // error message
     // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#error-messages
     web::json::value make_control_protocol_error_message(const nc_method_result& method_result, const utility::string_t& error_message);
-
-    // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#command-response-message-type
-    web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message);
-    web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result);
-    web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result, const web::json::value& value); // value can be sequence<NcBlockMemberDescriptor>, NcClassDescriptor, NcDatatypeDescriptor
-    web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result, uint32_t value);
 
     // Control class models
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/models/classes/#control-class-models-for-branch-v10-dev

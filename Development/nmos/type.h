@@ -28,10 +28,13 @@ namespace nmos
         // to a subscription is managed as a sub-resource of the subscription
         const type grain{ U("grain") };
 
+        // the Control Protocol API resource type, see nmos/control_protcol_resources.h
+        const type nc_object{ U("nc_object") };
+
         // all types ordered so that sub-resource types appear after super-resource types
         // according to the guidelines on referential integrity
         // see https://specs.amwa.tv/is-04/releases/v1.2.1/docs/4.1._Behaviour_-_Registration.html#referential-integrity
-        const std::vector<type> all{ nmos::types::node, nmos::types::device, nmos::types::source, nmos::types::flow, nmos::types::sender, nmos::types::receiver, nmos::types::subscription, nmos::types::grain };
+        const std::vector<type> all{ nmos::types::node, nmos::types::device, nmos::types::source, nmos::types::flow, nmos::types::sender, nmos::types::receiver, nmos::types::subscription, nmos::types::grain, nmos::types::nc_object };
 
         // the Channel Mapping API resource types, see nmos/channelmapping_resources.h
         const type input{ U("input") };
@@ -39,13 +42,6 @@ namespace nmos
 
         // the System API global configuration resource type, see nmos/system_resources.h
         const type global{ U("global") };
-
-        // the Control Protocol API resource types, see nmos/control_protcol_resources.h
-        const type nc_block{ U("nc_block") };
-        const type nc_worker{ U("nc_worker") };
-        const type nc_manager{ U("nc_manager") };
-        const type nc_device_manager{ U("nc_device_manager") };
-        const type nc_class_manager{ U("nc_class_manager") };
     }
 }
 

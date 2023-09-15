@@ -925,7 +925,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
 
-            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
         };
 
         // example to create a non-standard Example control class
@@ -980,17 +980,17 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
-                return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
             auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments";
-                return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
             auto example_method_with_object_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object arguments";
-                return nmos::make_control_protocol_response(handle, { nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
             // Example control class methods
             std::vector<std::pair<web::json::value, nmos::experimental::method>> example_control_methods =
@@ -1026,7 +1026,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                 auto items = value::array();
                 web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Undefined")), U("Undefined"), example_enum::Undefined));
-                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Alphan")), U("Alpha"), example_enum::Alpha));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Alpha")), U("Alpha"), example_enum::Alpha));
                 web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Beta")), U("Beta"), example_enum::Beta));
                 web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Gamma")), U("Gamma"), example_enum::Gamma));
                 return nmos::details::make_nc_datatype_descriptor_enum(value::string(U("Example enum datatype")), U("ExampleEnum"), items);
@@ -1115,7 +1115,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 data[object_sequence] = sequence;
             }
 
-            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
         };
 
 
@@ -1204,6 +1204,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
     std::shared_ptr<std::default_random_engine> events_engine(new std::default_random_engine(events_seeder));
 
     auto cancellation_source = pplx::cancellation_token_source();
+
     auto token = cancellation_source.get_token();
     auto events = pplx::do_while([&model, seed_id, how_many, ws_sender_ports, events_engine, &gate, token]
     {
@@ -1263,6 +1264,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
     cancellation_source.cancel();
     // wait without the lock since it is also used by the background tasks
     nmos::details::reverse_lock_guard<nmos::read_lock> unlock{ lock };
+
     events.wait();
 }
 

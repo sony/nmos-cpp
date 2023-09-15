@@ -507,22 +507,102 @@ namespace nmos
 
             return data;
         }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncpropertychangedeventdata
+        web::json::value make_nc_property_changed_event_data(const nc_property_changed_event_data& property_changed_event_data)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::property_id, details::make_nc_property_id(property_changed_event_data.property_id) },
+                { nmos::fields::nc::change_type, property_changed_event_data.change_type },
+                { nmos::fields::nc::value, property_changed_event_data.value },
+                { nmos::fields::nc::sequence_item_index, property_changed_event_data.sequence_item_index }
+            });
+        }
     }
 
     // message response
-    // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#command-message-type
-    web::json::value make_control_protocol_message_response(nc_message_type::type type, const web::json::value& responses)
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-response-message-type
+    web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message)
     {
         using web::json::value_of;
 
         return value_of({
-            { nmos::fields::nc::message_type, type },
+            { nmos::fields::nc::handle, handle },
+            { nmos::fields::nc::result, details::make_nc_method_result_error(method_result, error_message) }
+        });
+    }
+    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::handle, handle },
+            { nmos::fields::nc::result, details::make_nc_method_result(method_result) }
+        });
+    }
+    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result, const web::json::value& value)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::handle, handle },
+            { nmos::fields::nc::result, details::make_nc_method_result(method_result, value) }
+        });
+    }
+    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result, uint32_t value_)
+    {
+        using web::json::value;
+
+        return make_control_protocol_message_response(handle, method_result, value(value_));
+    }
+    web::json::value make_control_protocol_message_response(const web::json::value& responses)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::message_type, nc_message_type::command_response },
             { nmos::fields::nc::responses, responses }
         });
     }
 
+    // subscription response
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#subscription-response-message-type
+    web::json::value make_control_protocol_subscription_response(const web::json::value& subscriptions)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::message_type, nc_message_type::subscription_response },
+            { nmos::fields::nc::subscriptions, subscriptions }
+        });
+    }
+
+    // notification
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#notification-message-type
+    web::json::value make_control_protocol_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::oid, oid },
+            { nmos::fields::nc::event_id, details::make_nc_event_id(event_id)},
+            { nmos::fields::nc::event_data, details::make_nc_property_changed_event_data(property_changed_event_data) }
+        });
+    }
+    web::json::value make_control_protocol_notification(const web::json::value& notifications)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::message_type, nc_message_type::notification },
+            { nmos::fields::nc::notifications, notifications }
+        });
+    }
+
     // error message
-    // See https://specs.amwa.tv/is-12/branches/v1.0-dev/docs/Protocol_messaging.html#error-messages
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#error-messages
     web::json::value make_control_protocol_error_message(const nc_method_result& method_result, const utility::string_t& error_message)
     {
         using web::json::value_of;
@@ -534,57 +614,20 @@ namespace nmos
         });
     }
 
-    web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message)
-    {
-        using web::json::value_of;
-
-        return value_of({
-            { nmos::fields::nc::handle, handle },
-            { nmos::fields::nc::result, details::make_nc_method_result_error(method_result, error_message) }
-        });
-    }
-
-    web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result)
-    {
-        using web::json::value_of;
-
-        return value_of({
-            { nmos::fields::nc::handle, handle },
-            { nmos::fields::nc::result, details::make_nc_method_result(method_result) }
-        });
-    }
-
-    web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result, const web::json::value& value)
-    {
-        using web::json::value_of;
-
-        return value_of({
-            { nmos::fields::nc::handle, handle },
-            { nmos::fields::nc::result, details::make_nc_method_result(method_result, value) }
-        });
-    }
-
-    web::json::value make_control_protocol_response(int32_t handle, const nc_method_result& method_result, uint32_t value_)
-    {
-        using web::json::value;
-
-        return make_control_protocol_response(handle, method_result, value(value_));
-    }
-
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0-dev/docs/Framework.html#ncobject
     web::json::value make_nc_object_properties()
     {
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), { 1, 1 }, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Object identifier"), { 1, 2 }, nmos::fields::nc::oid, U("NcOid"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), { 1, 3 }, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), { 1, 4 }, nmos::fields::nc::owner, U("NcOid"), true, true, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of object in the containing block"), { 1, 5 }, nmos::fields::nc::role, U("NcString"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Scribble strip"), { 1, 6 }, nmos::fields::nc::user_label, U("NcString"), false, true, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Touchpoints to other contexts"), { 1, 7 }, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Runtime property constraints"), { 1, 8 }, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Static value. All instances of the same class will have the same identity value"), nc_object_class_id_property_id, nmos::fields::nc::class_id, U("NcClassId"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Object identifier"), nc_object_oid_property_id, nmos::fields::nc::oid, U("NcOid"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff OID is hardwired into device"), nc_object_constant_oid_property_id, nmos::fields::nc::constant_oid, U("NcBoolean"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("OID of containing block. Can only ever be null for the root block"), nc_object_owner_property_id, nmos::fields::nc::owner, U("NcOid"), true, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of object in the containing block"), nc_object_role_property_id, nmos::fields::nc::role, U("NcString"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Scribble strip"), nc_object_user_label_property_id, nmos::fields::nc::user_label, U("NcString"), false, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Touchpoints to other contexts"), nc_object_touchpoints_property_id, nmos::fields::nc::touchpoints, U("NcTouchpoint"), true, true, true, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Runtime property constraints"), nc_object_runtime_property_constraints_property_id, nmos::fields::nc::runtime_property_constraints, U("NcPropertyConstraints"), true, true, true, false));
 
         return properties;
     }
@@ -596,43 +639,43 @@ namespace nmos
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get property value"), { 1, 1 }, U("Get"), U("NcMethodResultPropertyValue"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get property value"), nc_object_get_method_id, U("Get"), U("NcMethodResultPropertyValue"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property value"), nmos::fields::nc::value, true, false));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Set property value"), { 1, 2 }, U("Set"), U("NcMethodResult"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Set property value"), nc_object_set_method_id, U("Set"), U("NcMethodResult"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get sequence item"), { 1, 3 }, U("GetSequenceItem"), U("NcMethodResultPropertyValue"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get sequence item"), nc_object_get_sequence_item_method_id, U("GetSequenceItem"), U("NcMethodResultPropertyValue"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Set sequence item value"), { 1, 4 }, U("SetSequenceItem"), U("NcMethodResult"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Set sequence item value"), nc_object_set_sequence_item_method_id, U("SetSequenceItem"), U("NcMethodResult"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id,U("NcPropertyId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Value"), nmos::fields::nc::value, true, false));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Add item to sequence"), { 1, 5 }, U("AddSequenceItem"), U("NcMethodResultId"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Add item to sequence"), nc_object_add_sequence_item_method_id, U("AddSequenceItem"), U("NcMethodResultId"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Index of item in the sequence"), nmos::fields::nc::index, U("NcId"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Delete sequence item"), { 1, 6 }, U("RemoveSequenceItem"), U("NcMethodResult"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Delete sequence item"), nc_object_remove_sequence_item_method_id, U("RemoveSequenceItem"), U("NcMethodResult"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get sequence length"), { 1, 7 }, U("GetSequenceLength"), U("NcMethodResultLength"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get sequence length"), nc_object_get_sequence_length_method_id, U("GetSequenceLength"), U("NcMethodResultLength"), parameters, false));
         }
 
         return methods;
@@ -642,7 +685,7 @@ namespace nmos
         using web::json::value;
 
         auto events = value::array();
-        web::json::push_back(events, details::make_nc_event_descriptor(U("Property changed event"), { 1, 1 }, U("PropertyChanged"), U("NcPropertyChangedEventData"), false));
+        web::json::push_back(events, details::make_nc_event_descriptor(U("Property changed event"), nc_object_property_changed_event_id, U("PropertyChanged"), U("NcPropertyChangedEventData"), false));
 
         return events;
     }
@@ -653,8 +696,8 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE if block is functional"), { 2, 1 }, nmos::fields::nc::enabled, U("NcBoolean"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptors of this block's members"), { 2, 2 }, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE if block is functional"), nc_block_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptors of this block's members"), nc_block_members_property_id, nmos::fields::nc::members, U("NcBlockMemberDescriptor"), true, false, true, false));
 
         return properties;
     }
@@ -666,12 +709,12 @@ namespace nmos
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If recurse is set to true, nested members can be retrieved"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets descriptors of members of the block"), { 2, 1 }, U("GetMemberDescriptors"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Gets descriptors of members of the block"), nc_block_get_member_descriptors_method_id, U("GetMemberDescriptors"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Relative path to search for (MUST not include the role of the block targeted by oid)"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Finds member(s) by path"), { 2, 2 }, U("FindMembersByPath"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Finds member(s) by path"), nc_block_find_members_by_path_method_id, U("FindMembersByPath"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
         }
         {
             auto parameters = value::array();
@@ -679,14 +722,14 @@ namespace nmos
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Signals if the comparison should be case sensitive"), nmos::fields::nc::case_sensitive, U("NcBoolean"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("TRUE to only return exact matches"), nmos::fields::nc::match_whole_string, U("NcBoolean"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("TRUE to search nested blocks"), nmos::fields::nc::recurse, U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Finds members with given role name or fragment"), { 2, 3 }, U("FindMembersByRole"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Finds members with given role name or fragment"), nc_block_find_members_by_role_method_id, U("FindMembersByRole"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("Class id to search for"), nmos::fields::nc::class_id, U("NcClassId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If TRUE it will also include derived class descriptors"), nmos::fields::nc::include_derived, U("NcBoolean"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("TRUE to search nested blocks"), nmos::fields::nc::recurse,U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Finds members with given class id"), { 2, 4 }, U("FindMembersByClassId"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Finds members with given class id"), nc_block_find_members_by_class_id_method_id, U("FindMembersByClassId"), U("NcMethodResultBlockMemberDescriptors"), parameters, false));
         }
 
         return methods;
@@ -704,7 +747,7 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff worker is enabled"), { 2, 1 }, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("TRUE iff worker is enabled"), nc_worker_enabled_property_id, nmos::fields::nc::enabled, U("NcBoolean"), false, false, false, false));
 
         return properties;
     }
@@ -747,16 +790,16 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Version of MS-05-02 that this device uses"), { 3, 1 }, nmos::fields::nc::nc_version, U("NcVersionCode"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Manufacturer descriptor"), { 3, 2 }, nmos::fields::nc::manufacturer, U("NcManufacturer"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Product descriptor"), { 3, 3 }, nmos::fields::nc::product, U("NcProduct"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Serial number"), { 3, 4 }, nmos::fields::nc::serial_number, U("NcString"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Asset tracking identifier (user specified)"), { 3, 5 }, nmos::fields::nc::user_inventory_code, U("NcString"), false, true, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Name of this device in the application. Instance name, not product name"), { 3, 6 }, nmos::fields::nc::device_name, U("NcString"), false, true, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of this device in the application"), { 3, 7 }, nmos::fields::nc::device_role, U("NcString"), false, true, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Device operational state"), { 3, 8 }, nmos::fields::nc::operational_state, U("NcDeviceOperationalState"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Reason for most recent reset"), { 3, 9 }, nmos::fields::nc::reset_cause, U("NcResetCause"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Arbitrary message from dev to controller"), { 3, 10 }, nmos::fields::nc::message, U("NcString"), true, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Version of MS-05-02 that this device uses"), nc_device_manager_nc_version_property_id, nmos::fields::nc::nc_version, U("NcVersionCode"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Manufacturer descriptor"), nc_device_manager_manufacturer_property_id, nmos::fields::nc::manufacturer, U("NcManufacturer"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Product descriptor"), nc_device_manager_product_property_id, nmos::fields::nc::product, U("NcProduct"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Serial number"), nc_device_manager_serial_number_property_id, nmos::fields::nc::serial_number, U("NcString"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Asset tracking identifier (user specified)"), nc_device_manager_user_inventory_code_property_id, nmos::fields::nc::user_inventory_code, U("NcString"), false, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Name of this device in the application. Instance name, not product name"), nc_device_manager_device_name_property_id, nmos::fields::nc::device_name, U("NcString"), false, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Role of this device in the application"), nc_device_manager_device_role_property_id, nmos::fields::nc::device_role, U("NcString"), false, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Device operational state"), nc_device_manager_operational_state_property_id, nmos::fields::nc::operational_state, U("NcDeviceOperationalState"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Reason for most recent reset"), nc_device_manager_reset_cause_property_id, nmos::fields::nc::reset_cause, U("NcResetCause"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Arbitrary message from dev to controller"), nc_device_manager_message_property_id, nmos::fields::nc::message, U("NcString"), true, true, false, false));
 
         return properties;
     }
@@ -779,8 +822,8 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all control classes in the device (descriptors do not contain inherited elements)"), { 3, 1 }, nmos::fields::nc::control_classes, U("NcClassDescriptor"), true, false, true, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all data types in the device (descriptors do not contain inherited elements)"), { 3, 2 }, nmos::fields::nc::datatypes, U("NcDatatypeDescriptor"), true, false, true, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all control classes in the device (descriptors do not contain inherited elements)"), nc_class_manager_control_classes_property_id, nmos::fields::nc::control_classes, U("NcClassDescriptor"), true, false, true, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Descriptions of all data types in the device (descriptors do not contain inherited elements)"), nc_class_manager_datatypes_property_id, nmos::fields::nc::datatypes, U("NcDatatypeDescriptor"), true, false, true, false));
 
         return properties;
     }
@@ -793,13 +836,13 @@ namespace nmos
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("class ID"), nmos::fields::nc::class_id, U("NcClassId"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If set the descriptor would contain all inherited elements"), nmos::fields::nc::include_inherited, U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get a single class descriptor"), { 3, 1 }, U("GetControlClass"), U("NcMethodResultClassDescriptor"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get a single class descriptor"), nc_class_manager_get_control_class_method_id, U("GetControlClass"), U("NcMethodResultClassDescriptor"), parameters, false));
         }
         {
             auto parameters = value::array();
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("name of datatype"), nmos::fields::nc::name, U("NcName"), false, false, value::null()));
             web::json::push_back(parameters, details::make_nc_parameter_descriptor(U("If set the descriptor would contain all inherited elements"), nmos::fields::nc::include_inherited, U("NcBoolean"), false, false, value::null()));
-            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get a single datatype descriptor"), { 3, 2 }, U("GetDatatype"), U("NcMethodResultDatatypeDescriptor"), parameters, false));
+            web::json::push_back(methods, details::make_nc_method_descriptor(U("Get a single datatype descriptor"), nc_class_manager_get_datatype_method_id, U("GetDatatype"), U("NcMethodResultDatatypeDescriptor"), parameters, false));
         }
 
         return methods;
@@ -817,10 +860,10 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status property"), { 3, 1 }, nmos::fields::nc::connection_status, U("NcConnectionStatus"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status message property"), { 3, 2 }, nmos::fields::nc::connection_status_message, U("NcString"), true, true, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status property"), { 3, 3 }, nmos::fields::nc::payload_status, U("NcPayloadStatus"), true, false, false, false));
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status message property"), { 3, 4 }, nmos::fields::nc::payload_status_message, U("NcString"), true, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status property"), nc_receiver_monitor_connection_status_property_id, nmos::fields::nc::connection_status, U("NcConnectionStatus"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Connection status message property"), nc_receiver_monitor_connection_status_message_property_id, nmos::fields::nc::connection_status_message, U("NcString"), true, true, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status property"), nc_receiver_monitor_payload_status_property_id, nmos::fields::nc::payload_status, U("NcPayloadStatus"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Payload status message property"), nc_receiver_monitor_payload_status_message_property_id, nmos::fields::nc::payload_status_message, U("NcString"), true, true, false, false));
 
         return properties;
     }
@@ -843,7 +886,7 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicates if signal protection is active"), { 4, 1 }, nmos::fields::nc::signal_protection_status, U("NcBoolean"), true, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicates if signal protection is active"), nc_receiver_monitor_protected_signal_protection_status_property_id, nmos::fields::nc::signal_protection_status, U("NcBoolean"), true, false, false, false));
 
         return properties;
     }
@@ -866,7 +909,7 @@ namespace nmos
         using web::json::value;
 
         auto properties = value::array();
-        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicator active state"), { 3, 1 }, nmos::fields::nc::active, U("NcBoolean"), false, false, false, false));
+        web::json::push_back(properties, details::make_nc_property_descriptor(U("Indicator active state"), nc_ident_beacon_active_property_id, nmos::fields::nc::active, U("NcBoolean"), false, false, false, false));
 
         return properties;
     }
