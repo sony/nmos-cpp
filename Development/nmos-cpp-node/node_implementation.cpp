@@ -1025,28 +1025,28 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 using web::json::value;
 
                 auto items = value::array();
-                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Undefined")), U("Undefined"), example_enum::Undefined));
-                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Alpha")), U("Alpha"), example_enum::Alpha));
-                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Beta")), U("Beta"), example_enum::Beta));
-                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(value::string(U("Gamma")), U("Gamma"), example_enum::Gamma));
-                return nmos::details::make_nc_datatype_descriptor_enum(value::string(U("Example enum datatype")), U("ExampleEnum"), items);
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Undefined"), U("Undefined"), example_enum::Undefined));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Alpha"), U("Alpha"), example_enum::Alpha));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Beta"), U("Beta"), example_enum::Beta));
+                web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("Gamma"), U("Gamma"), example_enum::Gamma));
+                return nmos::details::make_nc_datatype_descriptor_enum(U("Example enum datatype"), U("ExampleEnum"), items, value::null());
             };
             auto make_example_datatype_datatype = [&]()
             {
                 using web::json::value;
 
                 auto fields = value::array();
-                web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("Enum property example")), enum_property, value::string(U("ExampleEnum")), false, false));
+                web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Enum property example"), enum_property, U("ExampleEnum"), false, false, value::null()));
                 {
                     value constraints = value::null(); // todo constraints
-                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("String property example")), string_property, value::string(U("NcString")), false, false, constraints));
+                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("String property example"), string_property, U("NcString"), false, false, constraints));
                 }
                 {
                     value constraints = value::null(); // todo constraints
-                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("Number property example")), number_property, value::string(U("NcUint64")), false, false, constraints));
+                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Number property example"), number_property, U("NcUint64"), false, false, constraints));
                 }
-                web::json::push_back(fields, nmos::details::make_nc_field_descriptor(value::string(U("Boolean property example")), boolean_property, value::string(U("NcBoolean")), false, false));
-                return nmos::details::make_nc_datatype_descriptor_struct(value::string(U("Example data type")), U("ExampleDataType"), fields, value::null());
+                web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Boolean property example"), boolean_property, U("NcBoolean"), false, false, value::null()));
+                return nmos::details::make_nc_datatype_descriptor_struct(U("Example data type"), U("ExampleDataType"), fields, value::null());
             };
             control_protocol_state.insert(nmos::experimental::datatype{ make_example_enum_datatype() });
             control_protocol_state.insert(nmos::experimental::datatype{ make_example_datatype_datatype() });
