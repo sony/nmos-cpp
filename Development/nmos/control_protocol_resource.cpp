@@ -520,6 +520,8 @@ namespace nmos
 
             auto data = make_nc_manager(nc_class_manager_class_id, oid, true, owner, U("ClassManager"), user_label, description, touchpoints, runtime_property_constraints);
 
+            auto lock = control_protocol_state.read_lock();
+
             // add control classes
             data[nmos::fields::nc::control_classes] = value::array();
             auto& control_classes = data[nmos::fields::nc::control_classes];
