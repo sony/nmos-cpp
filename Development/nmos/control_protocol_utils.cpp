@@ -7,6 +7,7 @@
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_state.h"
 #include "nmos/json_fields.h"
+#include "nmos/query_utils.h"
 #include "nmos/resources.h"
 
 namespace nmos
@@ -209,5 +210,62 @@ namespace nmos
                 }
             }
         }
+    }
+
+    // add block (NcBlock) to other block (NcBlock)
+    void push_back(nmos::resource& parent_block, const nmos::resource& child_block)
+    {
+        using web::json::value;
+
+        auto& parent = parent_block.data;
+        const auto& child = child_block.data;
+
+        web::json::push_back(parent[nmos::fields::nc::members],
+            details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
+    }
+
+    // modify a resource, and insert notification event to all subscriptions
+    bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
+    {
+        auto found = resources.find(id);
+        if (resources.end() == found || !found->has_data()) return false;
+
+        auto pre = found->data;
+
+        // "If an exception is thrown by some user-provided operation, then the element pointed to by position is erased."
+        // This seems too surprising, despite the fact that it means that a modification may have been partially completed,
+        // so capture and rethrow.
+        // See https://www.boost.org/doc/libs/1_68_0/libs/multi_index/doc/reference/ord_indices.html#modify
+        std::exception_ptr modifier_exception;
+
+        auto resource_updated = nmos::strictly_increasing_update(resources);
+        auto result = resources.modify(found, [&resource_updated, &modifier, &modifier_exception](resource& resource)
+        {
+            try
+            {
+                modifier(resource);
+            }
+            catch (...)
+            {
+                modifier_exception = std::current_exception();
+            }
+
+            // set the update timestamp
+            resource.updated = resource_updated;
+        });
+
+        if (result)
+        {
+            auto& modified = *found;
+
+            insert_notification_events(resources, modified.version, modified.downgrade_version, modified.type, pre, modified.data, notification_event);
+        }
+
+        if (modifier_exception)
+        {
+            std::rethrow_exception(modifier_exception);
+        }
+
+        return result;
     }
 }

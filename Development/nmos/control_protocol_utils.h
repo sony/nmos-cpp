@@ -32,6 +32,12 @@ namespace nmos
 
     // find members with given class id
     void find_members_by_class_id(const resources& resources, resources::iterator resource, const nc_class_id& class_id, bool include_derived, bool recurse, web::json::array& descriptors);
+
+    // add block (NcBlock) to other block (NcBlock)
+    void push_back(resource& parent_block, const resource& child_block);
+
+    // modify a resource, and insert notification event to all subscriptions
+    bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event);
 }
 
 #endif
