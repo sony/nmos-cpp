@@ -920,9 +920,9 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             control_protocol_state.insert(gain_control_class);
         }
         // helper function to create Gain control
-        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, float gain = 0.0, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null())
+        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, float gain = 0.0, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null())
         {
-            auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true);
+            auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
 
             return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
@@ -1064,7 +1064,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             });
         };
         // helper function to create Example control
-        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label,
+        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description,
             example_enum enum_property_ = example_enum::Undefined,
             const utility::string_t& string_property_ = U(""),
             uint64_t number_property_ = 0,
@@ -1080,7 +1080,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             std::vector<value> object_sequence_ = {},
             const value& touchpoints = value::null(), const value& runtime_property_constraints = value::null())
         {
-            auto data = nmos::details::make_nc_worker(example_control_class_id, oid, true, owner, role, value::string(user_label), touchpoints, runtime_property_constraints, true);
+            auto data = nmos::details::make_nc_worker(example_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[enum_property] = value::number(enum_property_);
             data[string_property] = value::string(string_property_);
             data[number_property] = value::number(number_property_);
@@ -1132,26 +1132,26 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         // example stereo gain
         const auto stereo_gain_oid = ++oid;
-        auto stereo_gain = nmos::make_block(stereo_gain_oid, nmos::root_block_oid, U("stereo-gain"), U("Stereo gain"));
+        auto stereo_gain = nmos::make_block(stereo_gain_oid, nmos::root_block_oid, U("stereo-gain"), U("Stereo gain"), U("Stereo gain block"));
 
         // example channel gain
         const auto channel_gain_oid = ++oid;
-        auto channel_gain = nmos::make_block(channel_gain_oid, stereo_gain_oid, U("channel-gain"), U("Channel gain"));
+        auto channel_gain = nmos::make_block(channel_gain_oid, stereo_gain_oid, U("channel-gain"), U("Channel gain"), U("Channel gain block"));
         // example left/right gains
-        auto left_gain = make_gain_control(++oid, channel_gain_oid, U("left-gain"), U("Left gain"));
-        auto right_gain = make_gain_control(++oid, channel_gain_oid, U("right-gain"), U("Right gain"));
+        auto left_gain = make_gain_control(++oid, channel_gain_oid, U("left-gain"), U("Left gain"), U("Left channel gain"));
+        auto right_gain = make_gain_control(++oid, channel_gain_oid, U("right-gain"), U("Right gain"), U("Right channel gain"));
         // add left-gain and right-gain to channel gain
-        nmos::add_member(U("Left channel gain"), left_gain, channel_gain);
-        nmos::add_member(U("Right channel gain"), right_gain, channel_gain);
+        nmos::push_back(channel_gain, left_gain);
+        nmos::push_back(channel_gain, right_gain);
 
         // example master-gain
-        auto master_gain = make_gain_control(++oid, channel_gain_oid, U("master-gain"), U("Master gain"));
-        // add master-gain and channel-gain to stereo-gain
-        nmos::add_member(U("Master gain block"), master_gain, stereo_gain);
-        nmos::add_member(U("Channel gain block"), channel_gain, stereo_gain);
+        auto master_gain = make_gain_control(++oid, channel_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"));
+        // add channel-gain and master-gain to stereo-gain
+        nmos::push_back(stereo_gain, channel_gain);
+        nmos::push_back(stereo_gain, master_gain);
 
         // example example-control
-        auto example_control = make_example_control(++oid, nmos::root_block_oid, U("ExampleControl"), U("Example control worker"),
+        auto example_control = make_example_control(++oid, nmos::root_block_oid, U("ExampleControl"), U("Example control worker"), U("Example control worker"),
             example_enum::Undefined,
             U("test"),
             3,
@@ -1168,13 +1168,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         );
 
         // add example-control to root-block
-        nmos::add_member(U("Example control worker"), example_control, root_block);
+        nmos::push_back(root_block, example_control);
         // add stereo-gain to root-block
-        nmos::add_member(U("Stereo gain block"), stereo_gain, root_block);
+        nmos::push_back(root_block, stereo_gain);
         // add class-manager to root-block
-        nmos::add_member(U("The class manager offers access to control class and data type descriptors"), class_manager, root_block);
+        nmos::push_back(root_block, class_manager);
         // add device-manager to root-block
-        nmos::add_member(U("The device manager offers information about the product this device is representing"), device_manager, root_block);
+        nmos::push_back(root_block, device_manager);
 
         // insert resources to model
         if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(example_control), gate)) throw node_implementation_init_exception();
