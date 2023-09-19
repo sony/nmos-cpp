@@ -213,15 +213,20 @@ namespace nmos
     }
 
     // add block (NcBlock) to other block (NcBlock)
-    void push_back(nmos::resource& parent_block, const nmos::resource& child_block)
+    bool push_back(resource& parent_block, const resource& child_block)
     {
         using web::json::value;
 
         auto& parent = parent_block.data;
         const auto& child = child_block.data;
 
-        web::json::push_back(parent[nmos::fields::nc::members],
-            details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
+        if (is_nc_block(details::parse_nc_class_id(nmos::fields::nc::class_id(parent))) )
+        {
+            web::json::push_back(parent[nmos::fields::nc::members],
+                details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
+            return true;
+        }
+        return false;
     }
 
     // modify a resource, and insert notification event to all subscriptions
