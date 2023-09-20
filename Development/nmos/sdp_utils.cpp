@@ -833,7 +833,7 @@ namespace nmos
             return sdp_parameters::fmtp_t::value_type{ sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid) };
         }));
         if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
-        if (!params.exactframerate) fmtp.push_back({ sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) });
+        if (params.exactframerate) fmtp.push_back({ sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) });
         if (!params.tm.empty()) fmtp.push_back({ sdp::fields::TM, params.tm.name });
         if (!params.ssn.empty()) fmtp.push_back({ sdp::fields::smpte_standard_number, params.ssn.name });
         if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });
