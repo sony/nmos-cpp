@@ -1,12 +1,13 @@
 // The first "test" is of course whether the header compiles standalone
 #include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_typedefs.h"
-#include "nmos/json_fields.h"
+#include "nmos/control_protocol_utils.h"
 
 #include "bst/test/test.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-BST_TEST_CASE(testNcObject)
+BST_TEST_CASE(testNcClassDescriptor)
 {
     using web::json::value_of;
     using web::json::value;
@@ -455,7 +456,7 @@ BST_TEST_CASE(testNcObject)
     BST_REQUIRE_EQUAL(nc_object_class, nc_object_class_);
 }
 
-BST_TEST_CASE(testNcBlockMemberDescriptor)
+BST_TEST_CASE(testNcDatatypeDescriptorStruct)
 {
     using web::json::value_of;
     using web::json::value;
@@ -532,7 +533,7 @@ BST_TEST_CASE(testNcBlockMemberDescriptor)
     BST_REQUIRE_EQUAL(nc_datatype_descriptor, nc_datatype_descriptor_);
 }
 
-BST_TEST_CASE(testNcClassId)
+BST_TEST_CASE(testNcDatatypeTypedef)
 {
     using web::json::value_of;
     using web::json::value;
@@ -552,7 +553,7 @@ BST_TEST_CASE(testNcClassId)
     BST_REQUIRE_EQUAL(nc_class_id, nc_class_id_);
 }
 
-BST_TEST_CASE(testNcDeviceGenericState)
+BST_TEST_CASE(testNcDatatypeDescriptorEnum)
 {
     using web::json::value_of;
     using web::json::value;
@@ -625,4 +626,77 @@ BST_TEST_CASE(testNcDatatypeDescriptorPrimitive)
     const auto test_primitive_ = nmos::details::make_nc_datatype_descriptor_primitive(U("Primitive datatype descriptor"), U("test_primitive"), value::null());
 
     BST_REQUIRE_EQUAL(test_primitive, test_primitive_);
+}
+
+BST_TEST_CASE(testNcClassId)
+{
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ 1, 2 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_block({ 1, 2, 0 }));
+    BST_REQUIRE(nmos::is_nc_block(nmos::nc_block_class_id));
+    BST_REQUIRE(nmos::is_nc_block(nmos::make_nc_class_id(nmos::nc_block_class_id, { 1 })));
+
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_worker({ 1, 1, 1 }));
+    BST_REQUIRE(nmos::is_nc_worker(nmos::nc_worker_class_id));
+    BST_REQUIRE(nmos::is_nc_worker(nmos::make_nc_class_id(nmos::nc_worker_class_id, { 1 })));
+
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_manager({ 1, 1, 1 }));
+    BST_REQUIRE(nmos::is_nc_manager(nmos::nc_manager_class_id));
+    BST_REQUIRE(nmos::is_nc_manager(nmos::make_nc_class_id(nmos::nc_manager_class_id, { 1 })));
+
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1, 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_device_manager({ 1, 3, 2 }));
+    BST_REQUIRE(nmos::is_nc_device_manager(nmos::nc_device_manager_class_id));
+    BST_REQUIRE(nmos::is_nc_device_manager(nmos::make_nc_class_id(nmos::nc_device_manager_class_id, { 1 })));
+
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1, 1, 1 }));
+    BST_REQUIRE_EQUAL(false, nmos::is_nc_class_manager({ 1, 3, 1 }));
+    BST_REQUIRE(nmos::is_nc_class_manager(nmos::nc_class_manager_class_id));
+    BST_REQUIRE(nmos::is_nc_class_manager(nmos::make_nc_class_id(nmos::nc_class_manager_class_id, { 1 })));
+}
+
+BST_TEST_CASE(testFindProperty)
+{
+    auto& nc_block_members_property_id = nmos::nc_block_members_property_id;
+    auto& nc_block_class_id = nmos::nc_block_class_id;
+    auto& nc_worker_class_id = nmos::nc_worker_class_id;
+    const auto invalid_property_id = nmos::nc_property_id(1000, 1000);
+    const auto invalid_class_id = nmos::nc_class_id({ 1000, 1000 });
+
+    nmos::experimental::control_protocol_state control_protocol_state;
+    auto get_control_protocol_class = nmos::make_get_control_protocol_class_handler(control_protocol_state);
+
+    {
+        // valid - find members property in NcBlock
+        auto property = nmos::find_property(nc_block_members_property_id, nc_block_class_id, get_control_protocol_class);
+        BST_REQUIRE(!property.is_null());
+    }
+    {
+        // invalid - find members property in NcWorker
+        auto property = nmos::find_property(nc_block_members_property_id, nc_worker_class_id, get_control_protocol_class);
+        BST_REQUIRE(property.is_null());
+    }
+    {
+        // invalid - find unknown propertry in NcBlock
+        auto property = nmos::find_property(invalid_property_id, nc_block_class_id, get_control_protocol_class);
+        BST_REQUIRE(property.is_null());
+    }
+    {
+        // invalid - find unknown property in unknown class
+        auto property = nmos::find_property(invalid_property_id, invalid_class_id, get_control_protocol_class);
+        BST_REQUIRE(property.is_null());
+    }
 }

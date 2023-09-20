@@ -45,16 +45,13 @@ namespace nmos
     typedef std::function<std::map<nmos::nc_class_id, experimental::methods>()> get_control_protocol_methods_handler;
 
     // construct callback to retrieve a specific control protocol class
-    get_control_protocol_class_handler make_get_control_protocol_class_handler(experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
-
-    // construct callback to add control protocol class
-    add_control_protocol_class_handler make_add_control_protocol_class_handler(experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+    get_control_protocol_class_handler make_get_control_protocol_class_handler(experimental::control_protocol_state& control_protocol_state);
 
     // construct callback to retrieve a specific datatype
-    get_control_protocol_datatype_handler make_get_control_protocol_datatype_handler(experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+    get_control_protocol_datatype_handler make_get_control_protocol_datatype_handler(experimental::control_protocol_state& control_protocol_state);
 
     // construct callback to retrieve all method handlers
-    get_control_protocol_methods_handler make_get_control_protocol_methods_handler(experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+    get_control_protocol_methods_handler make_get_control_protocol_methods_handler(experimental::control_protocol_state& control_protocol_state);
 }
 
 #endif

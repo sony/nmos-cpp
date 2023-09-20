@@ -29,6 +29,7 @@
 #include "nmos/format.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
+#include "nmos/is12_versions.h"  // for IS-12 gain control
 #ifdef HAVE_LLDP
 #include "nmos/lldp_manager.h"
 #endif
@@ -39,6 +40,7 @@
 #include "nmos/node_resources.h"
 #include "nmos/node_server.h"
 #include "nmos/random.h"
+#include "nmos/resource.h"  // for IS-12 gain control
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
 #include "nmos/st2110_21_sender_type.h"
@@ -47,10 +49,6 @@
 #include "nmos/transport.h"
 #include "nmos/video_jxsv.h"
 #include "sdp/sdp.h"
-
-// hmm, for IS-12 gain control
-#include "nmos/resource.h"
-#include "nmos/is12_versions.h"
 
 // example node implementation details
 namespace impl
@@ -903,7 +901,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
-    // example of using control protocol
+    // example of using IS-12 control protocol
     if (0 <= nmos::fields::control_protocol_ws_port(model.settings))
     {
         // example to create a non-standard Gain control class

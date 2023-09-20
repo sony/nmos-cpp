@@ -323,7 +323,7 @@ namespace nmos
         }
 
         // NcBlock methods implementation
-        // Get descriptors of members of the block
+        // Gets descriptors of members of the block
         web::json::value get_member_descriptors(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler, get_control_protocol_datatype_handler, slog::base_gate& gate)
         {
             // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...

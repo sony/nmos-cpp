@@ -32,6 +32,12 @@ namespace nmos
         return details::is_control_class(nc_block_class_id, class_id);
     }
 
+    // is the given class_id a NcWorker
+    bool is_nc_worker(const nc_class_id& class_id)
+    {
+        return details::is_control_class(nc_worker_class_id, class_id);
+    }
+
     // is the given class_id a NcManager
     bool is_nc_manager(const nc_class_id& class_id)
     {
@@ -48,6 +54,19 @@ namespace nmos
     bool is_nc_class_manager(const nc_class_id& class_id)
     {
         return details::is_control_class(nc_class_manager_class_id, class_id);
+    }
+
+    // construct NcClassId
+    nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix)
+    {
+        nc_class_id class_id = prefix;
+        class_id.push_back(authority_key);
+        class_id.insert(class_id.end(), suffix.begin(), suffix.end());
+        return class_id;
+    }
+    nc_class_id make_nc_class_id(const nc_class_id& prefix, const std::vector<int32_t>& suffix)
+    {
+        return make_nc_class_id(prefix, 0, suffix);
     }
 
     // find control class property (NcPropertyDescriptor)
@@ -77,23 +96,13 @@ namespace nmos
         return value::null();
     }
 
-    // construct NcClassId
-    nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix)
-    {
-        nc_class_id class_id = prefix;
-        class_id.push_back(authority_key);
-        class_id.insert(class_id.end(), suffix.begin(), suffix.end());
-        return class_id;
-    }
-
-    // get descriptors of members of the block
+    // get block member descriptors
     void get_member_descriptors(const resources& resources, resources::iterator resource, bool recurse, web::json::array& descriptors)
     {
         if (resource->data.has_field(nmos::fields::nc::members))
         {
             const auto& members = nmos::fields::nc::members(resource->data);
 
-            // hmm, maybe an easier way to apeend array to array
             for (const auto& member : members)
             {
                 web::json::push_back(descriptors, member);
