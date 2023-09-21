@@ -958,10 +958,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             // Example control class properties
             std::vector<web::json::value> example_control_properties = {
                 nmos::experimental::make_control_class_property(U("Example enum property"), { 3, 1 }, enum_property, U("ExampleEnum")),
-                // todo constraints
-                nmos::experimental::make_control_class_property(U("Example string property"), { 3, 2 }, string_property, U("NcString"), false, false, false, false, value::null()),
-                // todo constraints
-                nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, value::null()),
+                nmos::experimental::make_control_class_property(U("Example string property"), { 3, 2 }, string_property, U("NcString"), false, false, false, false, nmos::details::make_nc_parameter_constraints_string(10)),
+                nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, nmos::details::make_nc_parameter_constraints_number(1000, 0, 1)),
                 nmos::experimental::make_control_class_property(U("Example boolean property"), { 3, 4 }, boolean_property, U("NcBoolean")),
                 nmos::experimental::make_control_class_property(U("Example object property"), { 3, 5 }, object_property, U("ExampleDataType")),
                 nmos::experimental::make_control_class_property(U("Method no args invoke counter"), { 3, 6 }, method_no_args_count, U("NcUint64"), true),

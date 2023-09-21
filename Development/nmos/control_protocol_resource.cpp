@@ -1,5 +1,6 @@
 #include "nmos/control_protocol_resource.h"
 
+#include "cpprest/base_uri.h"
 #include "nmos/control_protocol_state.h"  // for nmos::experimental::control_classes definitions
 #include "nmos/json_fields.h"
 
@@ -109,6 +110,24 @@ namespace nmos
                 { nmos::fields::nc::website, website }
             });
         }
+        web::json::value make_nc_manufacturer(const utility::string_t& name, nc_organization_id organization_id, const web::uri& website)
+        {
+            using web::json::value;
+
+            return make_nc_manufacturer(name, organization_id, value::string(website.to_string()));
+        }
+        web::json::value make_nc_manufacturer(const utility::string_t& name, nc_organization_id organization_id)
+        {
+            using web::json::value;
+
+            return make_nc_manufacturer(name, organization_id, value::null());
+        }
+        web::json::value make_nc_manufacturer(const utility::string_t& name)
+        {
+            using web::json::value;
+
+            return make_nc_manufacturer(name, value::null(), value::null());
+        }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncproduct
         // brand_name can be null
@@ -127,6 +146,33 @@ namespace nmos
                 { nmos::fields::nc::uuid, uuid },
                 { nmos::fields::nc::description, description }
             });
+        }
+        web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level,
+            const utility::string_t& brand_name, const nc_uuid& uuid, const utility::string_t& description)
+        {
+            using web::json::value;
+
+            return make_nc_product(name, key, revision_level, value::string(brand_name), value::string(uuid), value::string(description));
+        }
+        web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level,
+            const utility::string_t& brand_name, const nc_uuid& uuid)
+        {
+            using web::json::value;
+
+            return make_nc_product(name, key, revision_level, value::string(brand_name), value::string(uuid), value::null());
+        }
+        web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level,
+            const utility::string_t& brand_name)
+        {
+            using web::json::value;
+
+            return make_nc_product(name, key, revision_level, value::string(brand_name), value::null(), value::null());
+        }
+        web::json::value make_nc_product(const utility::string_t& name, const utility::string_t& key, const utility::string_t& revision_level)
+        {
+            using web::json::value;
+
+            return make_nc_product(name, key, revision_level, value::null(), value::null(), value::null());
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdeviceoperationalstate
@@ -196,6 +242,18 @@ namespace nmos
             using web::json::value;
 
             return make_nc_class_descriptor(value::string(description), class_id, name, fixed_role, properties, methods, events);
+        }
+        web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events)
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(description), class_id, name, value::string(fixed_role), properties, methods, events);
+        }
+        web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& properties, const web::json::value& methods, const web::json::value& events)
+        {
+            using web::json::value;
+
+            return make_nc_class_descriptor(value::string(description), class_id, name, value::null(), properties, methods, events);
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncenumitemdescriptor
@@ -441,6 +499,149 @@ namespace nmos
             using web::json::value;
 
             return make_nc_datatype_typedef(value::string(description), name, is_sequence, parent_type, constraints);
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraints
+        web::json::value make_nc_property_constraints(const nc_property_id& property_id, const web::json::value& default_value)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::property_id, make_nc_property_id(property_id) },
+                { nmos::fields::nc::default_value, default_value }
+            });
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraintsnumber
+        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, const web::json::value& default_value, const web::json::value& maximum, const web::json::value& minimum, const web::json::value& step)
+        {
+            using web::json::value;
+
+            auto data = make_nc_property_constraints(property_id, default_value);
+            data[nmos::fields::nc::maximum] = maximum;
+            data[nmos::fields::nc::minimum] = minimum;
+            data[nmos::fields::nc::step] = step;
+
+            return data;
+        }
+        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t default_value, uint64_t maximum, uint64_t minimum, uint64_t step)
+        {
+            using web::json::value;
+
+            return make_nc_property_constraints_number(property_id, value(default_value), value(maximum), value(minimum), value(step));
+        }
+        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t maximum, uint64_t minimum, uint64_t step)
+        {
+            using web::json::value;
+
+            return make_nc_property_constraints_number(property_id, value::null(), maximum, minimum, step);
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraintsstring
+        web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, const web::json::value& default_value, const web::json::value& max_characters, const web::json::value& pattern)
+        {
+            using web::json::value;
+
+            auto data = make_nc_property_constraints(property_id, default_value);
+            data[nmos::fields::nc::max_characters] = max_characters;
+            data[nmos::fields::nc::pattern] = pattern;
+
+            return data;
+        }
+        web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, const utility::string_t& default_value, uint32_t max_characters, const nc_regex& pattern)
+        {
+            using web::json::value;
+
+            return make_nc_property_constraints_string(property_id, value::string(default_value), max_characters, value::string(pattern));
+        }
+        web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, uint32_t max_characters, const nc_regex& pattern)
+        {
+            using web::json::value;
+
+            return make_nc_property_constraints_string(property_id, value::null(), max_characters, value::string(pattern));
+        }
+        web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, uint32_t max_characters)
+        {
+            using web::json::value;
+
+            return make_nc_property_constraints_string(property_id, value::null(), max_characters, value::null());
+        }
+        web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, const nc_regex& pattern)
+        {
+            using web::json::value;
+
+            return make_nc_property_constraints_string(property_id, value::null(), value::null(), value::string(pattern));
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraints
+        web::json::value make_nc_parameter_constraints(const web::json::value& default_value)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::default_value, default_value }
+            });
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
+        web::json::value make_nc_parameter_constraints_number(const web::json::value& default_value, const web::json::value& maximum, const web::json::value& minimum, const web::json::value& step)
+        {
+            using web::json::value;
+
+            auto data = make_nc_parameter_constraints(default_value);
+            data[nmos::fields::nc::maximum] = maximum;
+            data[nmos::fields::nc::minimum] = minimum;
+            data[nmos::fields::nc::step] = step;
+
+            return data;
+        }
+        web::json::value make_nc_parameter_constraints_number(uint64_t default_value, uint64_t maximum, uint64_t minimum, uint64_t step)
+        {
+            using web::json::value;
+
+            return make_nc_parameter_constraints_number(value(default_value), value(maximum), value(minimum), value(step));
+        }
+        web::json::value make_nc_parameter_constraints_number(uint64_t maximum, uint64_t minimum, uint64_t step)
+        {
+            using web::json::value;
+
+            return make_nc_parameter_constraints_number(value::null(), maximum, minimum, step);
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
+        web::json::value make_nc_parameter_constraints_string(const web::json::value& default_value, const web::json::value& max_characters, const web::json::value& pattern)
+        {
+            using web::json::value;
+
+            auto data = make_nc_parameter_constraints(default_value);
+            data[nmos::fields::nc::max_characters] = max_characters;
+            data[nmos::fields::nc::pattern] = pattern;
+
+            return data;
+        }
+        web::json::value make_nc_parameter_constraints_string(const utility::string_t& default_value, uint32_t max_characters, const nc_regex& pattern)
+        {
+            using web::json::value;
+
+            return make_nc_parameter_constraints_string(value::string(default_value), max_characters, value::string(pattern));
+        }
+        web::json::value make_nc_parameter_constraints_string(uint32_t max_characters, const nc_regex& pattern)
+        {
+            using web::json::value;
+
+            return make_nc_parameter_constraints_string(value::null(), max_characters, value::string(pattern));
+        }
+        web::json::value make_nc_parameter_constraints_string(uint32_t max_characters)
+        {
+            using web::json::value;
+
+            return make_nc_parameter_constraints_string(value::null(), max_characters, value::null());
+        }
+        web::json::value make_nc_parameter_constraints_string(const nc_regex& pattern)
+        {
+            using web::json::value;
+
+            return make_nc_parameter_constraints_string(value::null(), value::null(), value::string(pattern));
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject

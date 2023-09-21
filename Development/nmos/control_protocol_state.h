@@ -15,7 +15,7 @@ namespace nmos
     {
         struct control_class // NcClassDescriptor
         {
-            web::json::value description;
+            utility::string_t description;
             nmos::nc_class_id class_id;
             nmos::nc_name name;
             web::json::value fixed_role;
@@ -30,7 +30,7 @@ namespace nmos
                 : class_id({ 0 })
             {}
 
-            control_class(web::json::value description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value properties, web::json::value methods, web::json::value events, nmos::experimental::methods method_handlers)
+            control_class(utility::string_t description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value properties, web::json::value methods, web::json::value events, nmos::experimental::methods method_handlers)
                 : description(std::move(description))
                 , class_id(std::move(class_id))
                 , name(std::move(name))

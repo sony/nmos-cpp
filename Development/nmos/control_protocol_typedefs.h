@@ -237,6 +237,14 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncuuid
     typedef utility::string_t nc_uuid;
 
+    // NcRegex
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncregex
+    typedef utility::string_t nc_regex;
+
+    // NcOrganizationId
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncorganizationid
+    typedef int32_t nc_organization_id;
+
     // NcClassId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassid
     typedef std::vector<int32_t> nc_class_id;

@@ -30,7 +30,7 @@ namespace nmos
                 web::json::value events = value::array();
                 for (const auto& event : events_) { web::json::push_back(events, event); }
 
-                return { value::string(description), class_id, name, fixed_role, properties, methods, events, method_handlers };
+                return { description, class_id, name, fixed_role, properties, methods, events, method_handlers };
             }
         }
         // create control class with fixed role
