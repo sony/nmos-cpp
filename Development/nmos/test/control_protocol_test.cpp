@@ -452,7 +452,7 @@ BST_TEST_CASE(testNcClassDescriptor)
             event_property_changed
         }) }
     });
-    const auto nc_object_class_ = nmos::details::make_nc_class_descriptor(U("NcObject class descriptor"), nmos::nc_object_class_id, U("NcObject"), value::null(), nmos::make_nc_object_properties(), nmos::make_nc_object_methods(), nmos::make_nc_object_events());
+    const auto nc_object_class_ = nmos::details::make_nc_class_descriptor(U("NcObject class descriptor"), nmos::nc_object_class_id, U("NcObject"), nmos::make_nc_object_properties(), nmos::make_nc_object_methods(), nmos::make_nc_object_events());
     BST_REQUIRE_EQUAL(nc_object_class, nc_object_class_);
 }
 

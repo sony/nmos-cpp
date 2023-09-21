@@ -455,6 +455,8 @@ namespace nmos
         // Get a single class descriptor
         web::json::value get_control_class(nmos::resources&, nmos::resources::iterator, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, slog::base_gate& gate)
         {
+            using web::json::value;
+
             const auto& class_id = parse_nc_class_id(nmos::fields::nc::class_id(arguments)); // Class id to search for
             const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
 
@@ -494,7 +496,9 @@ namespace nmos
                         inherited_class_id.pop_back();
                     }
                 }
-                auto descriptor = details::make_nc_class_descriptor(description, class_id, name, fixed_role, properties, methods, events);
+                const auto descriptor = fixed_role.is_null()
+                    ? details::make_nc_class_descriptor(description, class_id, name, properties, methods, events)
+                    : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), properties, methods, events);
 
                 return make_control_protocol_message_response(handle, { nc_method_status::ok }, descriptor);
             }

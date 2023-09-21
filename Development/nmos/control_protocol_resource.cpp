@@ -237,12 +237,6 @@ namespace nmos
 
             return data;
         }
-        web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events)
-        {
-            using web::json::value;
-
-            return make_nc_class_descriptor(value::string(description), class_id, name, fixed_role, properties, methods, events);
-        }
         web::json::value make_nc_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const web::json::value& properties, const web::json::value& methods, const web::json::value& events)
         {
             using web::json::value;
@@ -729,7 +723,10 @@ namespace nmos
             for (const auto& control_class : control_protocol_state.control_classes)
             {
                 auto& ctl_class = control_class.second;
-                web::json::push_back(control_classes, make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.fixed_role, ctl_class.properties, ctl_class.methods, ctl_class.events));
+                const auto class_description = ctl_class.fixed_role.is_null()
+                    ? make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.properties, ctl_class.methods, ctl_class.events)
+                    : make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.fixed_role.as_string(), ctl_class.properties, ctl_class.methods, ctl_class.events);
+                web::json::push_back(control_classes, class_description);
             }
 
             // add datatypes
@@ -1166,7 +1163,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), value::null(), make_nc_object_properties(), make_nc_object_methods(), make_nc_object_events());
+        return details::make_nc_class_descriptor(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), make_nc_object_properties(), make_nc_object_methods(), make_nc_object_events());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.1.html
@@ -1174,7 +1171,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"), value::null(), make_nc_block_properties(), make_nc_block_methods(), make_nc_block_events());
+        return details::make_nc_class_descriptor(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"), make_nc_block_properties(), make_nc_block_methods(), make_nc_block_events());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.2.html
@@ -1182,7 +1179,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"), value::null(), make_nc_worker_properties(), make_nc_worker_methods(), make_nc_worker_events());
+        return details::make_nc_class_descriptor(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"), make_nc_worker_properties(), make_nc_worker_methods(), make_nc_worker_events());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.3.html
@@ -1190,7 +1187,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"), value::null(), make_nc_manager_properties(), make_nc_manager_methods(), make_nc_manager_events());
+        return details::make_nc_class_descriptor(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"), make_nc_manager_properties(), make_nc_manager_methods(), make_nc_manager_events());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.3.1.html
@@ -1198,7 +1195,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), value::string(U("DeviceManager")), make_nc_device_manager_properties(), make_nc_device_manager_methods(), make_nc_device_manager_events());
+        return details::make_nc_class_descriptor(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"), make_nc_device_manager_properties(), make_nc_device_manager_methods(), make_nc_device_manager_events());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/1.3.2.html
@@ -1206,7 +1203,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), value::string(U("ClassManager")), make_nc_class_manager_properties(), make_nc_class_manager_methods(), make_nc_class_manager_events());
+        return details::make_nc_class_descriptor(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), make_nc_class_manager_properties(), make_nc_class_manager_methods(), make_nc_class_manager_events());
     }
 
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
@@ -1214,7 +1211,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), value::null(), make_nc_ident_beacon_properties(), make_nc_ident_beacon_methods(), make_nc_ident_beacon_events());
+        return details::make_nc_class_descriptor(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), make_nc_ident_beacon_properties(), make_nc_ident_beacon_methods(), make_nc_ident_beacon_events());
     }
 
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
@@ -1222,7 +1219,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), value::null(), make_nc_receiver_monitor_properties(), make_nc_receiver_monitor_methods(), make_nc_receiver_monitor_events());
+        return details::make_nc_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), make_nc_receiver_monitor_properties(), make_nc_receiver_monitor_methods(), make_nc_receiver_monitor_events());
     }
 
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
@@ -1230,7 +1227,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), value::null(), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
+        return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcBlockMemberDescriptor.html
