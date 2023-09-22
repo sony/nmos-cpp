@@ -591,7 +591,7 @@ jobs:
         # build and install python
         curl -sSk https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tar.xz | tar -xJ
         cd Python-3.11.5
-        ./configure -C --with-openssl=/usr/local/custom-openssl --with-openssl-rpath=auto --prefix=/usr/local/python-3.11.5
+        ./configure -C --with-openssl=/usr/local/custom-openssl --with-openssl-rpath=auto
         make -j8
         make install
         update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.11 3
@@ -1074,7 +1074,7 @@ jobs:
     - name: make badges
       run: |
         # combine badges from all builds, exclude macos-11
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11 ubuntu-14.04
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}
