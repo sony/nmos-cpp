@@ -588,6 +588,8 @@ jobs:
         make -j8
         make install_sw
         cd ..
+        # install ffi.h, which is required for python build
+        apt install libffi-dev
         # build and install python
         curl -sSk https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tar.xz | tar -xJ
         cd Python-3.11.5
