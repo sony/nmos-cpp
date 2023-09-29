@@ -8,6 +8,8 @@ namespace nmos
     {
         web::json::value get_authorization_server_metadata(const authorization_state& authorization_state, const web::uri& authorization_server_uri)
         {
+            auto lock = authorization_state.read_lock();
+
             const auto& issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
@@ -22,6 +24,8 @@ namespace nmos
 
         web::json::value get_client_metadata(const authorization_state& authorization_state, const web::uri& authorization_server_uri)
         {
+            auto lock = authorization_state.read_lock();
+
             const auto& issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
@@ -36,6 +40,8 @@ namespace nmos
 
         web::json::value get_jwks(const authorization_state& authorization_state, const web::uri& authorization_server_uri)
         {
+            auto lock = authorization_state.read_lock();
+
             const auto& issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
@@ -50,16 +56,18 @@ namespace nmos
 
         void update_authorization_server_metadata(authorization_state& authorization_state, const web::uri& authorization_server_uri, const web::json::value& authorization_server_metadata)
         {
+            auto lock = authorization_state.write_lock();
+
             auto issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
-                // update
+                // update the relevant issuer's metadata
                 auto& settings = issuer->second.settings;
                 settings[nmos::experimental::fields::authorization_server_metadata] = authorization_server_metadata;
             }
             else
             {
-                // insert
+                // insert a new issuer with metadata
                 authorization_state.issuers.insert(std::make_pair<web::uri, nmos::experimental::issuer>(
                     authorization_server_uri.to_string(),
                     { web::json::value_of({
@@ -77,16 +85,18 @@ namespace nmos
 
         void update_client_metadata(authorization_state& authorization_state, const web::uri& authorization_server_uri, const web::json::value& client_metadata)
         {
+            auto lock = authorization_state.write_lock();
+
             auto issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
-                // update
+                // update the relevant issuer's client_metadata
                 auto& settings = issuer->second.settings;
                 settings[nmos::experimental::fields::client_metadata] = client_metadata;
             }
             else
             {
-                // insert
+                // insert a new issuer with client_metadata
                 authorization_state.issuers.insert(std::make_pair<web::uri, nmos::experimental::issuer>(
                     authorization_server_uri.to_string(),
                     { web::json::value_of({
@@ -104,17 +114,20 @@ namespace nmos
 
         void update_jwks(authorization_state& authorization_state, const web::uri& authorization_server_uri, const web::json::value& jwks, const nmos::experimental::jwt_validator& jwt_validator)
         {
+            auto lock = authorization_state.write_lock();
+
             auto issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
-                // update
+                // update the relevant issuer's jwks
                 auto& settings = issuer->second.settings;
                 settings[nmos::experimental::fields::jwks] = jwks;
+                // update relevant issuer's jwt_validator, which was constructed by the jwks
                 issuer->second.jwt_validator = jwt_validator;
             }
             else
             {
-                // insert
+                // insert a new issuer with issuer's jwks and issuer's jwt_validator
                 authorization_state.issuers.insert(std::make_pair<web::uri, nmos::experimental::issuer>(
                     authorization_server_uri.to_string(),
                     { web::json::value_of({
@@ -131,6 +144,8 @@ namespace nmos
 
         void erase_client_metadata(authorization_state& authorization_state, const web::uri& authorization_server_uri)
         {
+            auto lock = authorization_state.write_lock();
+
             auto issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {
@@ -146,6 +161,8 @@ namespace nmos
 
         void erase_jwks(authorization_state& authorization_state, const web::uri& authorization_server_uri)
         {
+            auto lock = authorization_state.write_lock();
+
             auto issuer = authorization_state.issuers.find(authorization_server_uri);
             if (authorization_state.issuers.end() != issuer)
             {

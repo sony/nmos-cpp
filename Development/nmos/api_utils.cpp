@@ -777,6 +777,7 @@ namespace nmos
                     const auto audience = with_read_lock(model.mutex, [&] { return nmos::get_host_name(model.settings); });
                     auto error = with_write_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &gate_]
                     {
+                        // note: the validate_authorization will update the authorization_state.token_issuer, i.e. using with_write_lock to protected it
                         return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, authorization_state.token_issuer, gate_);
                     });
 
@@ -788,7 +789,7 @@ namespace nmos
                         const auto retry_after = with_read_lock(model.mutex, [&] { return nmos::experimental::fields::service_unavailable_retry_after(model.settings); });
                         set_error_reply(res, realm, retry_after, error);
 
-                        // if error was deal to no matching keys, trigger a re-fetch to obtain public keys from the token issuer
+                        // if error was deal to no matching keys, trigger a re-fetch to obtain public keys from the token issuer (authorization_state.token_issuer)
                         if (error.value == nmos::experimental::authorization_error::no_matching_keys)
                         {
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Authorization warning: " << error.message;

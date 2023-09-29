@@ -156,16 +156,14 @@ namespace nmos
 
                 utility::string_t state;
                 utility::string_t code_verifier;
-                web::json::value authorization_server_metadata;
-                web::json::value client_metadata;
                 with_write_lock(authorization_state.mutex, [&]
                 {
                     state = authorization_state.state;
                     code_verifier = authorization_state.code_verifier;
                     authorization_state.authorization_flow = authorization_state::request_code;
-                    authorization_server_metadata = get_authorization_server_metadata(authorization_state);
-                    client_metadata = get_client_metadata(authorization_state);
                 });
+                const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
+                const auto client_metadata = get_client_metadata(authorization_state);
 
                 web::uri token_endpoint;
                 web::http::client::http_client_config config;

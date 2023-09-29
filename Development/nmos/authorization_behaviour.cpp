@@ -83,20 +83,17 @@ namespace nmos
             // load authorization clients metadata to cache
             if (load_authorization_clients)
             {
-                with_write_lock(authorization_state.mutex, [&]
+                const auto auth_clients = load_authorization_clients();
+
+                if (!auth_clients.is_null() && auth_clients.is_array())
                 {
-                    const auto auth_clients = load_authorization_clients();
+                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieved authorization clients: " << utility::us2s(auth_clients.serialize()) << " from non-volatile memory";
 
-                    if (!auth_clients.is_null() && auth_clients.is_array())
+                    for (const auto& auth_client : auth_clients.as_array())
                     {
-                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Retrieved authorization clients: " << utility::us2s(auth_clients.serialize()) << " from non-volatile memory";
-
-                        for (const auto& auth_client : auth_clients.as_array())
-                        {
-                            nmos::experimental::update_client_metadata(authorization_state, auth_client.at(nmos::experimental::fields::authorization_server_uri).as_string(), nmos::experimental::fields::client_metadata(auth_client));
-                        }
+                        nmos::experimental::update_client_metadata(authorization_state, auth_client.at(nmos::experimental::fields::authorization_server_uri).as_string(), nmos::experimental::fields::client_metadata(auth_client));
                     }
-                });
+                }
             }
 
             bool authorization_service_error{ false };
@@ -138,8 +135,8 @@ namespace nmos
                 case request_authorization_server_metadata:
                     if (details::request_authorization_server_metadata(model, authorization_state, authorization_service_error, load_ca_certificates, gate))
                     {
-                        // reterive client metadat from cache
-                        const auto client_metadata = with_read_lock(authorization_state.mutex, [&] { return nmos::experimental::get_client_metadata(authorization_state); });
+                        // reterive client metadata from cache
+                        const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
 
                         // is it not a scopeless client (where scopeless client doesn't access any protected APIs, i.e. doesn't require to register to Authorization server)
                         if (with_read_lock(model.mutex, [&] { return details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings)).size(); }))
@@ -201,7 +198,6 @@ namespace nmos
                                         else
                                         {
                                             // remove client metadata from cache
-                                            auto lock = authorization_state.read_lock();
                                             nmos::experimental::erase_client_metadata(authorization_state);
 
                                             // client not known by the Authorization server, trigger client registration process

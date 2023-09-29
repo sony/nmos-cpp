@@ -245,8 +245,6 @@ namespace nmos
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make OAuth 2.0 config using bearer_token cache";
 
-                auto lock = authorization_state.read_lock();
-
                 const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
                 const auto client_metadata = get_client_metadata(authorization_state);
 

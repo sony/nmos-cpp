@@ -279,7 +279,7 @@ namespace nmos
             // make an asynchronously GET request on the Authorization API to fetch authorization server metadata
             pplx::task<web::json::value> request_authorization_server_metadata(web::http::client::http_client client, const std::set<nmos::experimental::scope>& scopes, const std::set<web::http::oauth2::experimental::grant_type>& grants, const web::http::oauth2::experimental::token_endpoint_auth_method& token_endpoint_auth_method, const nmos::api_version& version, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting authorization server metadata";
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting authorization server metadata at " << client.base_uri().to_string();
 
                 using namespace web::http;
 
@@ -392,7 +392,7 @@ namespace nmos
             // e.g. curl -X POST "https://authorization.server.example.com/register" -H "Content-Type: application/json" -d "{\"redirect_uris\": [\"https://client.example.com/callback/\"],\"client_name\": \"My Example Client\",\"client_uri\": \"https://client.example.com/details.html\",\"token_endpoint_auth_method\": \"client_secret_basic\",\"response_types\": [\"code\",\"token\"],\"scope\": \"registration query node connection\",\"grant_types\": [\"authorization_code\",\"refresh_token\",\"client_credentials\"],\"token_endpoint_auth_method\": \"client_secret_basic\"}"
             pplx::task<web::json::value> request_client_registration(web::http::client::http_client client, const utility::string_t& client_name, const std::vector<web::uri>& redirect_uris, const web::uri& client_uri, const std::set<web::http::oauth2::experimental::response_type>& response_types, const std::set<scope>& scopes, const std::set<web::http::oauth2::experimental::grant_type>& grants, const web::http::oauth2::experimental::token_endpoint_auth_method& token_endpoint_auth_method, const web::json::value& jwk, const web::uri& jwks_uri, const nmos::api_version& version, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting authorization client registration";
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting authorization client registration at " << client.base_uri().to_string();
 
                 using namespace web;
                 using namespace web::http;
@@ -474,7 +474,7 @@ namespace nmos
                     }
                 }
 
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Request to register client metadata: " << utility::us2s(metadata.serialize());
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Request to register client metadata: " << utility::us2s(metadata.serialize()) << " at " << client.base_uri().to_string();
 
                 return nmos::api_request(client, methods::POST, {}, metadata, gate, token).then([=, &gate](pplx::task<http_response> response_task)
                 {
@@ -509,7 +509,7 @@ namespace nmos
             // make an asynchronously GET request on the Authorization API to fetch the authorization JSON Web Keys (public keys)
             pplx::task<web::json::value> request_jwks(web::http::client::http_client client, const nmos::api_version& version, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting authorization jwks";
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting authorization jwks at " << client.base_uri().to_string();
 
                 using namespace web::http;
                 using oauth2::experimental::oauth2_exception;
@@ -557,7 +557,7 @@ namespace nmos
             // make an asynchronously GET request on the OpenID Connect Authorization API to fetch the client metdadata
             pplx::task<web::json::value> request_client_metadata_from_openid_connect(web::http::client::http_client client, const nmos::api_version& version, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting OpenID Connect client metadata";
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting OpenID Connect client metadata at " << client.base_uri().to_string();
 
                 using namespace web::http;
 
@@ -596,7 +596,7 @@ namespace nmos
             // see https://medium.com/@software_factotum/pkce-public-clients-and-refresh-token-d1faa4ef6965#:~:text=Refresh%20Token%20are%20credentials%20that,application%20needs%20additional%20access%20tokens.&text=Authorization%20Server%20may%20issue%20a,Client%20it%20was%20issued%20to.
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token(web::http::client::http_client client, const nmos::api_version& version, web::uri_builder& request_body_ub, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token";
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token at " << client.base_uri().to_string();
 
                 using namespace web::http;
                 using oauth2::details::oauth2_strings;
@@ -669,7 +669,7 @@ namespace nmos
             // make an asynchronously POST request on the Authorization API to fetch the bearer token using client_credentials grant
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_client_credentials(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using client_credentials grant";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using client_credentials grant at " << client.base_uri().to_string();
 
                 using web::http::oauth2::details::oauth2_strings;
 
@@ -682,7 +682,7 @@ namespace nmos
             // make an asynchronously POST request on the Authorization API to fetch the bearer token using client_credentials grant with private_key_jwt for client authentication
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_client_credentials_using_private_key_jwt(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& scope, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using client_credentials grant with private_key_jwt";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using client_credentials grant with private_key_jwt at " << client.base_uri().to_string();
 
                 using web::http::oauth2::details::oauth2_strings;
 
@@ -712,7 +712,7 @@ namespace nmos
             // make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_authorization_code(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& code, const utility::string_t& redirect_uri, const utility::string_t& code_verifier, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with code_verifier: " << utility::us2s(code_verifier);
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with code_verifier: " << utility::us2s(code_verifier) << " at " << client.base_uri().to_string();
 
                 auto ub = make_request_token_base_query(code, redirect_uri, code_verifier);
 
@@ -722,7 +722,7 @@ namespace nmos
             // make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token with private_key_jwt for client authentication
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_authorization_code_with_private_key_jwt(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& scope, const utility::string_t& code, const utility::string_t& redirect_uri, const utility::string_t& code_verifier, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with private_key_jwt and code_verifier: " << utility::us2s(code_verifier) << " and client_assertion: " << utility::us2s(client_assertion);
+                slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Exchanging authorization code: " << utility::us2s(code) << " for bearer token with private_key_jwt and code_verifier: " << utility::us2s(code_verifier) << " and client_assertion: " << utility::us2s(client_assertion) << " at " << client.base_uri().to_string();
 
                 auto ub = make_request_token_base_query(code, redirect_uri, code_verifier);
                 // use private_key_jwt client authentication
@@ -746,13 +746,7 @@ namespace nmos
             // make an asynchronously POST request on the Authorization API to fetch the bearer token using refresh_token grant
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_refresh_token(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& client_secret, const utility::string_t& scope, const utility::string_t& refresh_token, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using refresh_token grant";
-
-                //using web::http::oauth2::details::oauth2_strings;
-
-                //web::uri_builder ub;
-                //ub.append_query(oauth2_strings::grant_type, oauth2_strings::refresh_token, false);
-                //ub.append_query(oauth2_strings::refresh_token, web::uri::encode_data_string(refresh_token), false);
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using refresh_token grant at " << client.base_uri().to_string();
 
                 auto ub = make_request_token_base_query(refresh_token);
 
@@ -762,7 +756,7 @@ namespace nmos
             // make an asynchronously POST request on the Authorization API to fetch the bearer token using refresh_token grant with private_key_jwt for client authentication
             pplx::task<web::http::oauth2::experimental::oauth2_token> request_token_from_refresh_token_using_private_key_jwt(web::http::client::http_client client, const nmos::api_version& version, const utility::string_t& client_id, const utility::string_t& scope, const utility::string_t& refresh_token, const utility::string_t& client_assertion, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using refresh_token grant with private_key_jwt";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token using refresh_token grant with private_key_jwt at " << client.base_uri().to_string();
 
                 using web::http::oauth2::details::oauth2_strings;
 
@@ -895,19 +889,12 @@ namespace nmos
                     , immediate(immediate) {}
             };
 
-            // task to continous fetching bearer token in a time interval
-            pplx::task<void> request_token(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, token_shared_state& token_state, bool& authorization_service_error, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+            // task to continuously fetch the bearer token on a time interval until failure or cancellation
+            pplx::task<void> do_token_requests(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, token_shared_state& token_state, bool& authorization_service_error, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
                 const auto access_token_refresh_interval = nmos::experimental::fields::access_token_refresh_interval(model.settings);
-
-                web::json::value authorization_server_metadata{};
-                web::json::value client_metadata{};
-                with_read_lock(authorization_state.mutex, [&]
-                {
-                    authorization_server_metadata = nmos::experimental::get_authorization_server_metadata(authorization_state);
-                    client_metadata = nmos::experimental::get_client_metadata(authorization_state);
-                });
-
+                const auto authorization_server_metadata = nmos::experimental::get_authorization_server_metadata(authorization_state);
+                const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
                 const auto client_id = nmos::experimental::fields::client_id(client_metadata);
                 const auto client_secret = client_metadata.has_string_field(nmos::experimental::fields::client_secret) ? nmos::experimental::fields::client_secret(client_metadata) : U("");
                 const auto scope = nmos::experimental::fields::scope(client_metadata);
@@ -931,7 +918,7 @@ namespace nmos
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Requesting '" << utility::us2s(scope) << "' bearer token for about " << fetch_interval.count() << " seconds";
 
                     auto fetch_time = std::chrono::steady_clock::now();
-                    return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &model , &token_state, &gate]()
+                    return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &model, &token_state, &gate]()
                     {
                         // create client assertion using private key jwt
                         utility::string_t client_assertion;
@@ -1032,8 +1019,8 @@ namespace nmos
                 });
             }
 
-            // task to fetch public keys
-            pplx::task<void> request_public_keys(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, pubkeys_shared_state& pubkeys_state, bool& authorization_service_error, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
+            // task to continuously fetch the authorization server public keys on a time interval until failure or cancellation
+            pplx::task<void> do_public_keys_requests(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, pubkeys_shared_state& pubkeys_state, bool& authorization_service_error, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none())
             {
                 const auto fetch_interval_min(nmos::experimental::fields::fetch_authorization_public_keys_interval_min(model.settings));
                 const auto fetch_interval_max(nmos::experimental::fields::fetch_authorization_public_keys_interval_max(model.settings));
@@ -1050,12 +1037,12 @@ namespace nmos
                     {
                         fetch_interval = std::chrono::seconds((int)(std::uniform_real_distribution<>(fetch_interval_min, fetch_interval_max)(pubkeys_state.engine)));
                     }
-                    pubkeys_state.immediate = false;
+                    nmos::with_write_lock(authorization_state.mutex, [&] { pubkeys_state.immediate = false; });
 
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Requesting authorization public keys (jwks) for about " << fetch_interval.count() << " seconds";
 
                     auto fetch_time = std::chrono::steady_clock::now();
-                    return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &authorization_state, &pubkeys_state, &gate]() mutable
+                    return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &authorization_state, &pubkeys_state, &gate]() //mutable
                     {
                         auto lock = authorization_state.read_lock();
 
@@ -1063,9 +1050,17 @@ namespace nmos
 
                     }).then([&authorization_state, &pubkeys_state, &gate](web::json::value jwks_)
                     {
-                        auto lock = authorization_state.write_lock();
+                        web::uri issuer;
+                        bool one_shot{ false };
+                        nmos::api_version auth_version;
+                        nmos::with_read_lock(authorization_state.mutex, [&]
+                        {
+                            issuer = pubkeys_state.issuer;
+                            one_shot = pubkeys_state.one_shot;
+                            auth_version = pubkeys_state.version;
+                        });
 
-                        const auto& jwks = nmos::experimental::get_jwks(authorization_state, pubkeys_state.issuer);
+                        const auto jwks = nmos::experimental::get_jwks(authorization_state, issuer);
 
                         // are changes found in new set of jwks?
                         if(jwks != jwks_)
@@ -1085,35 +1080,34 @@ namespace nmos
                                 }
                                 catch (const jwk_exception& e)
                                 {
-                                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid jwk from " << utility::us2s(pubkeys_state.issuer.to_string()) << " JWK error: " << e.what();
+                                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid jwk from " << utility::us2s(issuer.to_string()) << " JWK error: " << e.what();
                                 }
                             }
 
                             // update jwks and jwt validator cache
                             if (pems.as_array().size())
                             {
-                                const auto auth_version = pubkeys_state.version;
-                                nmos::experimental::update_jwks(authorization_state, pubkeys_state.issuer, jwks_, nmos::experimental::jwt_validator(pems, [auth_version](const web::json::value& payload)
+                                nmos::experimental::update_jwks(authorization_state, issuer, jwks_, nmos::experimental::jwt_validator(pems, [auth_version](const web::json::value& payload)
                                 {
                                     // validate access token payload JSON
                                     authapi_validator().validate(payload, experimental::make_authapi_token_schema_schema_uri(auth_version)); // may throw json_exception
                                 }));
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys from " << utility::us2s(pubkeys_state.issuer.to_string());
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys from " << utility::us2s(issuer.to_string());
                             }
                             else
                             {
-                                nmos::experimental::erase_jwks(authorization_state, pubkeys_state.issuer);
+                                nmos::experimental::erase_jwks(authorization_state, issuer);
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list from " << utility::us2s(pubkeys_state.issuer.to_string());
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list from " << utility::us2s(issuer.to_string());
                             }
                         }
                         else
                         {
-                            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found from " << utility::us2s(pubkeys_state.issuer.to_string());
+                            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found from " << utility::us2s(issuer.to_string());
                         }
 
-                        return !pubkeys_state.one_shot;
+                        return !one_shot;
                     });
                 }).then([&](pplx::task<void> finally)
                 {
@@ -1123,7 +1117,7 @@ namespace nmos
                     {
                         finally.get();
 
-                        pubkeys_state.received = true;
+                        nmos::with_write_lock(authorization_state.mutex, [&] { pubkeys_state.received = true; });
                         authorization_service_error = false;
                     }
                     catch (const web::http::http_exception& e)
@@ -1180,16 +1174,10 @@ namespace nmos
                 pplx::cancellation_token_source cancellation_source;
                 pplx::task<void> request = pplx::task_from_result();
 
-                std::set<scope> scopes;
-                std::set<web::http::oauth2::experimental::grant_type> grants;
-                web::http::oauth2::experimental::token_endpoint_auth_method token_endpoint_auth_method;
-                with_read_lock(authorization_state.mutex, [&]
-                {
-                    const auto& client_metadata = nmos::experimental::get_client_metadata(authorization_state);
-                    scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
-                    grants = grant_types(client_metadata, grant_types_from_settings(model.settings));
-                    token_endpoint_auth_method = nmos::experimental::details::token_endpoint_auth_method(client_metadata, token_endpoint_auth_method_from_settings(model.settings));
-                });
+                const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
+                const auto scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
+                const auto grants = grant_types(client_metadata, grant_types_from_settings(model.settings));
+                const auto token_endpoint_auth_method = nmos::experimental::details::token_endpoint_auth_method(client_metadata, token_endpoint_auth_method_from_settings(model.settings));
 
                 for (;;)
                 {
@@ -1223,10 +1211,11 @@ namespace nmos
                     const auto auth_version = service.first.first;
                     request = details::request_authorization_server_metadata(*client, scopes, grants, token_endpoint_auth_method, auth_version, gate, token).then([&authorization_state](web::json::value metadata)
                     {
-                        auto lock = authorization_state.write_lock();
-
-                        // record the current authorization server
-                        authorization_state.authorization_server_uri = nmos::experimental::fields::issuer(metadata);
+                        // record the current connected authorization server uri
+                        with_write_lock(authorization_state.mutex, [&]
+                        {
+                            authorization_state.authorization_server_uri = nmos::experimental::fields::issuer(metadata);
+                        });
 
                         // cache the authorization server metadata
                         nmos::experimental::update_authorization_server_metadata(authorization_state, metadata);
@@ -1304,14 +1293,8 @@ namespace nmos
                 pplx::task<void> request = pplx::task_from_result();
 
                 bool registered(false);
-
-                web::json::value client_metadata{};
-                web::json::value authorization_server_metadata{};
-                with_read_lock(authorization_state.mutex, [&]
-                {
-                    client_metadata = nmos::experimental::get_client_metadata(authorization_state);
-                    authorization_server_metadata = nmos::experimental::get_authorization_server_metadata(authorization_state);
-                });
+                const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
+                const auto authorization_server_metadata = nmos::experimental::get_authorization_server_metadata(authorization_state);
 
                 // is client already registered to the Authorization server
                 if(client_metadata.is_null())
@@ -1378,12 +1361,9 @@ namespace nmos
                         client_metadata[nmos::experimental::fields::token_endpoint_auth_method] = web::json::value::string(token_endpoint_auth_method_from_settings(model.settings).name);
                     }
 
-                    // store client_credentials to cache
+                    // store client metadata to settings
                     // hmm, may store the only required fields
-                    with_write_lock(authorization_state.mutex, [&]
-                    {
-                        nmos::experimental::update_client_metadata(authorization_state, client_metadata);
-                    });
+                    nmos::experimental::update_client_metadata(authorization_state, client_metadata);
 
                     // do callback to safely store the client metadata
                     // Client metadata SHOULD be stored by the client in a safe, permission-restricted, location in non-volatile memory in case of a device restart to prevent duplicate registrations.
@@ -1492,7 +1472,7 @@ namespace nmos
                 }
 
                 const auto token_endpoint_auth_method = token_endpoint_auth_method_from_settings(model.settings);
-                const auto& authorization_server_metadata = with_read_lock(authorization_state.mutex, [&] { return get_authorization_server_metadata(authorization_state); });
+                const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
                 const auto& registration_endpoint = web::uri(nmos::experimental::fields::registration_endpoint(authorization_server_metadata));
                 const auto& issuer = nmos::experimental::fields::issuer(authorization_server_metadata);
                 const auto jwks_uri = make_jwks_uri(model.settings);
@@ -1548,10 +1528,7 @@ namespace nmos
 
                     // store client metadata to settings
                     // hmm, may store the only required fields
-                    with_write_lock(authorization_state.mutex, [&]
-                    {
-                        nmos::experimental::update_client_metadata(authorization_state, client_metadata);
-                    });
+                    nmos::experimental::update_client_metadata(authorization_state, client_metadata);
 
                     // hmm, do a callback allowing user to store the client credentials
                     // Client credentials SHOULD be stored by the client in a safe, permission-restricted, location in non-volatile memory in case of a device restart to prevent duplicate registrations. Client secrets SHOULD be encrypted before being stored to reduce the chance of client secret leaking.
@@ -1630,11 +1607,10 @@ namespace nmos
 
                 const auto& settings = model.settings;
 
-                const auto authorization_server_metadata = with_read_lock(authorization_state.mutex, [&] { return get_authorization_server_metadata(authorization_state); });
+                const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
                 const web::uri authorization_endpoint(nmos::experimental::fields::authorization_endpoint(authorization_server_metadata));
                 const auto code_challenge_methods_supported(nmos::experimental::fields::code_challenge_methods_supported(authorization_server_metadata));
-
-                const auto client_metadata = with_read_lock(authorization_state.mutex, [&] { return get_client_metadata(authorization_state); });
+                const auto client_metadata = get_client_metadata(authorization_state);
                 const auto client_id(nmos::experimental::fields::client_id(client_metadata));
                 const web::uri redirct_uri(nmos::experimental::fields::redirect_uris(client_metadata).size() ? nmos::experimental::fields::redirect_uris(client_metadata).at(0).as_string() : U(""));
                 const auto scopes = nmos::experimental::details::scopes(nmos::experimental::fields::scope(client_metadata));
@@ -1726,7 +1702,7 @@ namespace nmos
                 auto& condition = model.condition;
                 auto& shutdown = model.shutdown;
 
-                const auto authorization_server_metadata = with_read_lock(authorization_state.mutex, [&] { return get_authorization_server_metadata(authorization_state); });
+                const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
                 const web::uri jwks_uri(nmos::experimental::fields::jwks_uri(authorization_server_metadata));
                 const web::uri token_endpoint(nmos::experimental::fields::token_endpoint(authorization_server_metadata));
                 const auto& authorization_flow = nmos::experimental::fields::authorization_flow(model.settings);
@@ -1737,7 +1713,7 @@ namespace nmos
 
                 pplx::cancellation_token_source cancellation_source;
 
-                auto pubkeys_request(pplx::task_from_result());
+                auto pubkeys_requests(pplx::task_from_result());
 
                 with_write_lock(authorization_state.mutex, [&]
                 {
@@ -1747,13 +1723,13 @@ namespace nmos
                     pubkeys_state.issuer = nmos::experimental::fields::issuer(authorization_server_metadata);
                 });
 
-                auto bearer_token_request(pplx::task_from_result());
+                auto bearer_token_requests(pplx::task_from_result());
                 web::http::oauth2::experimental::oauth2_token bearer_token;
                 std::set<scope> scopes;
+                const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
                 nmos::with_read_lock(authorization_state.mutex, [&]
                 {
                     bearer_token = authorization_state.bearer_token.is_valid_access_token() ? authorization_state.bearer_token : web::http::oauth2::experimental::oauth2_token{};
-                    const auto& client_metadata = nmos::experimental::get_client_metadata(authorization_state);
                     scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
                 });
                 token_shared_state token_state(
@@ -1770,13 +1746,13 @@ namespace nmos
                 // start a background task to fetch public keys from authorization server
                 if (nmos::experimental::fields::server_authorization(model.settings))
                 {
-                    pubkeys_request = request_public_keys(model, authorization_state, authorization_state.pubkeys_state, authorization_service_error, gate, token);
+                    pubkeys_requests = do_public_keys_requests(model, authorization_state, authorization_state.pubkeys_state, authorization_service_error, gate, token);
                 }
 
                 // start a background task to fetch bearer access token from authorization server
                 if (nmos::experimental::fields::client_authorization(model.settings) && scopes.size())
                 {
-                    bearer_token_request = request_token(model, authorization_state, token_state, authorization_service_error, gate, token);
+                    bearer_token_requests = do_token_requests(model, authorization_state, token_state, authorization_service_error, gate, token);
                 }
 
                 // wait for the request because interactions with the Authorization API endpoint must be sequential
@@ -1785,8 +1761,8 @@ namespace nmos
                 cancellation_source.cancel();
                 // wait without the lock since it is also used by the background tasks
                 nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-                pubkeys_request.wait();
-                bearer_token_request.wait();
+                pubkeys_requests.wait();
+                bearer_token_requests.wait();
             }
 
             // make an asynchronously GET request over the Token Issuer to fetch issuer metadata
@@ -1798,7 +1774,6 @@ namespace nmos
 
                 bool authorization_service_error(false);
 
-                std::unique_ptr<web::http::client::http_client> client;
                 bool metadata_received(false);
 
                 pplx::cancellation_token_source cancellation_source;
@@ -1810,32 +1785,30 @@ namespace nmos
 
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization token issuer metadata fetch";
 
-                web::uri token_issuer;
-                std::set<scope> scopes;
-                std::set<web::http::oauth2::experimental::grant_type> grants;
-                web::http::oauth2::experimental::token_endpoint_auth_method token_endpoint_auth_method;
-                nmos::with_write_lock(authorization_state.mutex, [&]
+                const auto token_issuer = nmos::with_write_lock(authorization_state.mutex, [&]
                 {
                     authorization_state.fetch_token_issuer_pubkeys = false;
-                    token_issuer = authorization_state.token_issuer;
-
-                    const auto& client_metadata = nmos::experimental::get_client_metadata(authorization_state);
-                    scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
-                    grants = grant_types(client_metadata, grant_types_from_settings(model.settings));
-                    token_endpoint_auth_method = nmos::experimental::details::token_endpoint_auth_method(client_metadata, token_endpoint_auth_method_from_settings(model.settings));
+                    return authorization_state.token_issuer;
                 });
+                if (token_issuer.is_empty())
+                {
+                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "No authorization token's issuer to fetch server metadata";
+                    return false;
+                }
 
-                if (token_issuer.is_empty()) return false;
+                const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
+                const auto scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
+                const auto grants = grant_types(client_metadata, grant_types_from_settings(model.settings));
+                const auto token_endpoint_auth_method = nmos::experimental::details::token_endpoint_auth_method(client_metadata, token_endpoint_auth_method_from_settings(model.settings));
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using authorization token's issuer " << utility::us2s(token_issuer.to_string()) << " to fetch server metadata";
-                client.reset(new web::http::client::http_client(make_authorization_service_uri(token_issuer), make_authorization_http_client_config(model.settings, load_ca_certificates, gate)));
+
+                web::http::client::http_client client(make_authorization_service_uri(token_issuer), make_authorization_http_client_config(model.settings, load_ca_certificates, gate));
 
                 auto token = cancellation_source.get_token();
 
-                auto request = details::request_authorization_server_metadata(*client, scopes, grants, token_endpoint_auth_method, version(token_issuer), gate, token).then([&](web::json::value metadata)
+                auto request = details::request_authorization_server_metadata(client, scopes, grants, token_endpoint_auth_method, version(token_issuer), gate, token).then([&](web::json::value metadata)
                 {
-                    auto lock = authorization_state.write_lock();
-
                     // cache the issuer metadata
                     nmos::experimental::update_authorization_server_metadata(authorization_state, token_issuer, metadata);
 
@@ -1909,13 +1882,9 @@ namespace nmos
 
                 pplx::cancellation_token_source cancellation_source;
 
-                web::uri token_issuer;
-                web::uri jwks_uri;
-                with_read_lock(authorization_state.mutex, [&]
-                {
-                    token_issuer = authorization_state.token_issuer;
-                    jwks_uri = nmos::experimental::fields::jwks_uri(get_authorization_server_metadata(authorization_state, token_issuer));
-                });
+                const auto token_issuer = with_read_lock(authorization_state.mutex, [&] { return authorization_state.token_issuer; });
+                const auto jwks_uri = nmos::experimental::fields::jwks_uri(get_authorization_server_metadata(authorization_state, token_issuer));
+
                 auto authorization_version = version(token_issuer);
                 pubkeys_shared_state pubkeys_state(
                     { jwks_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate) },
@@ -1936,7 +1905,7 @@ namespace nmos
                 auto token = cancellation_source.get_token();
 
                 // start a one-shot background task to fetch public keys from the token issuer
-                auto pubkeys_request = request_public_keys(model, authorization_state, pubkeys_state, authorization_service_error, gate, token);
+                auto pubkeys_requests = do_public_keys_requests(model, authorization_state, pubkeys_state, authorization_service_error, gate, token);
 
                 // wait for the request because interactions with the Authorization API endpoint must be sequential
                 condition.wait(lock, [&] { return shutdown || authorization_service_error || pubkeys_state.received; });
@@ -1944,7 +1913,7 @@ namespace nmos
                 cancellation_source.cancel();
                 // wait without the lock since it is also used by the background tasks
                 nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-                pubkeys_request.wait();
+                pubkeys_requests.wait();
             }
         }
     }
