@@ -71,8 +71,6 @@
       if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
         # due to unable to perform hostname to ip lookups, "--ip" option is used to overcome this issue while doing the BCP-003-01 test 
         printf '\n\ndef new_BCP00301test_01(self, test):\n    """TLS Protocols"""\n    hostname = self.apis[SECURE_API_KEY]["hostname"]\n    tls_data = self.perform_test_ssl(test, ["-p", "--ip={}".format(socket.gethostbyname(hostname))])\n    if tls_data is None:\n        return test.DISABLED("Unable to test. See the console for further information.")\n    else:\n        for report in tls_data:\n            if report["id"] in ["SSLv2", "SSLv3", "TLS1", "TLS1_1"] and "not offered" not in report["finding"]:\n                return test.FAIL("Protocol {} must not be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_2"] and not report["finding"].startswith("offered"):\n                return test.FAIL("Protocol {} must be offered".format(report["id"].replace("_", ".")))\n            elif report["id"] in ["TLS1_3"] and not report["finding"].startswith("offered"):\n                return test.OPTIONAL("Protocol {} should be offered".format(report["id"].replace("_", ".")),\n                                     "https://specs.amwa.tv/bcp-003-01/branches/{}"\n                                     "/docs/Secure_Communication.html#tls-versions"\n                                     .format(self.apis[SECURE_API_KEY]["spec_branch"]))\n        return test.PASS()\n\n\nBCP00301Test.test_01 = new_BCP00301test_01\n' >> nmostesting/suites/BCP00301Test.py
-        
-        cat nmostesting/suites/BCP00301Test.py
       fi
 
       # install certificates
