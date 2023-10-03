@@ -112,7 +112,7 @@ if [[ "${config_auth}" == "True" ]]; then
   auth=true
   common_params+=",\
   \"server_authorization\":true,\
-  \"service_unavailable_retry_after\":15\
+  \"service_unavailable_retry_after\":25\
   "
   registry_params=",\
   \"label\":\"nmos-cpp-registry\"\
