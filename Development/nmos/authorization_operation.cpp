@@ -303,7 +303,7 @@ namespace nmos
 
                                 // hmm, verify Authorization server meeting the minimum client requirement
 
-                                // is the required response_types supported by Authorization server (response_types_supported)
+                                // is the required response_types supported by the Authorization server
                                 std::set<web::http::oauth2::experimental::response_type> response_types = { response_types::code };
                                 if (grants.end() != std::find_if(grants.begin(), grants.end(), [](const web::http::oauth2::experimental::grant_type& grant) { return grant_types::implicit == grant; }))
                                 {
@@ -325,9 +325,9 @@ namespace nmos
                                 }
 
                                 // scopes_supported is optional
-                                // is required scopes supported by Authorization server (scopes_supported)
                                 if (scopes.size() && metadata.has_array_field(nmos::experimental::fields::scopes_supported))
                                 {
+                                    // is the required scopes supported by the Authorization server
                                     const auto supported = std::all_of(scopes.begin(), scopes.end(), [&](const nmos::experimental::scope& scope)
                                     {
                                         const auto& scopes_supported = nmos::experimental::fields::scopes_supported(metadata);
@@ -342,9 +342,9 @@ namespace nmos
                                 }
 
                                 // grant_types_supported is optional
-                                // is required grants supported by Authorization server (grant_types_supported)
                                 if (grants.size() && metadata.has_array_field(nmos::experimental::fields::grant_types_supported))
                                 {
+                                    // is the required grants supported by the Authorization server
                                     const auto supported = std::all_of(grants.begin(), grants.end(), [&](const web::http::oauth2::experimental::grant_type& grant)
                                     {
                                         const auto& grants_supported = nmos::experimental::fields::grant_types_supported(metadata);
@@ -359,9 +359,9 @@ namespace nmos
                                 }
 
                                 // token_endpoint_auth_methods_supported is optional
-                                // is required token_endpoint_auth_method supported by Authorization server (token_endpoint_auth_methods_supported)
                                 if (metadata.has_array_field(nmos::experimental::fields::token_endpoint_auth_methods_supported))
                                 {
+                                    // is the required token_endpoint_auth_method supported by the Authorization server
                                     const auto& supported = nmos::experimental::fields::token_endpoint_auth_methods_supported(metadata);
                                     const auto found = std::find_if(supported.begin(), supported.end(), [&token_endpoint_auth_method](const web::json::value& token_endpoint_auth_method_) { return token_endpoint_auth_method_.as_string() == token_endpoint_auth_method.name; });
                                     if (supported.end() == found)
@@ -1038,11 +1038,10 @@ namespace nmos
                         fetch_interval = std::chrono::seconds((int)(std::uniform_real_distribution<>(fetch_interval_min, fetch_interval_max)(pubkeys_state.engine)));
                     }
                     nmos::with_write_lock(authorization_state.mutex, [&] { pubkeys_state.immediate = false; });
-
                     slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Requesting authorization public keys (jwks) for about " << fetch_interval.count() << " seconds";
 
                     auto fetch_time = std::chrono::steady_clock::now();
-                    return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &authorization_state, &pubkeys_state, &gate]() //mutable
+                    return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &authorization_state, &pubkeys_state, &gate]()
                     {
                         auto lock = authorization_state.read_lock();
 
@@ -1093,18 +1092,18 @@ namespace nmos
                                     authapi_validator().validate(payload, experimental::make_authapi_token_schema_schema_uri(auth_version)); // may throw json_exception
                                 }));
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys from " << utility::us2s(issuer.to_string());
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys for " << utility::us2s(issuer.to_string());
                             }
                             else
                             {
                                 nmos::experimental::erase_jwks(authorization_state, issuer);
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list from " << utility::us2s(issuer.to_string());
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list for " << utility::us2s(issuer.to_string());
                             }
                         }
                         else
                         {
-                            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found from " << utility::us2s(issuer.to_string());
+                            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found for " << utility::us2s(issuer.to_string());
                         }
 
                         return !one_shot;
@@ -1807,7 +1806,7 @@ namespace nmos
 
                 auto token = cancellation_source.get_token();
 
-                auto request = details::request_authorization_server_metadata(client, scopes, grants, token_endpoint_auth_method, version(token_issuer), gate, token).then([&](web::json::value metadata)
+                auto request = details::request_authorization_server_metadata(client, scopes, grants, token_endpoint_auth_method, version(token_issuer), gate, token).then([&, token_issuer](web::json::value metadata)
                 {
                     // cache the issuer metadata
                     nmos::experimental::update_authorization_server_metadata(authorization_state, token_issuer, metadata);
@@ -1872,7 +1871,7 @@ namespace nmos
             // make an asynchronously GET request over the Token Issuer to fetch public keys
             void request_token_issuer_public_keys(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
             {
-                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization token issuer's public keys";
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization token issuer's public keys fetch";
 
                 auto lock = model.write_lock();
                 auto& condition = model.condition;
