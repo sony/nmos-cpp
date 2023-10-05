@@ -78,8 +78,10 @@ namespace nmos
             {
                 const auto& settings = model.settings;
 
+                web::uri token_issuer;
+
                 authorization_state.write_lock();
-                const auto error = nmos::experimental::ws_validate_authorization(authorization_state.issuers, req, nmos::experimental::scopes::events, nmos::get_host_name(settings), authorization_state.token_issuer, gate_);
+                const auto error = nmos::experimental::ws_validate_authorization(authorization_state.issuers, req, nmos::experimental::scopes::events, nmos::get_host_name(settings), token_issuer, gate_);
                 if (error)
                 {
                     // set error repsonse
@@ -95,6 +97,7 @@ namespace nmos
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid websocket connection to: " << req.request_uri().path() << ": " << error.message;
                         authorization_state.fetch_token_issuer_pubkeys = true;
+                        authorization_state.token_issuer = token_issuer;
                         model.notify();
                     }
                     else

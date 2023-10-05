@@ -774,11 +774,12 @@ namespace nmos
 
                     if (methods::OPTIONS == req.method()) return pplx::task_from_result(true);
 
+                    web::uri token_issuer;
                     const auto audience = with_read_lock(model.mutex, [&] { return nmos::get_host_name(model.settings); });
-                    auto error = with_write_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &gate_]
+                    auto error = with_read_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &token_issuer, &gate_]
                     {
-                        // note: the validate_authorization will update the authorization_state.token_issuer, i.e. using with_write_lock to protected it
-                        return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, authorization_state.token_issuer, gate_);
+                        // note: the validate_authorization will update the token_issuer, i.e. using with_write_lock to protected it
+                        return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, token_issuer, gate_);
                     });
 
                     if (error)
@@ -794,9 +795,10 @@ namespace nmos
                         {
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Authorization warning: " << error.message;
 
-                            with_write_lock(authorization_state.mutex, [&authorization_state]
+                            with_write_lock(authorization_state.mutex, [&authorization_state, token_issuer]
                             {
                                 authorization_state.fetch_token_issuer_pubkeys = true;
+                                authorization_state.token_issuer = token_issuer;
                             });
 
                             auto lock = model.write_lock();
