@@ -345,7 +345,7 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -415,8 +415,6 @@ jobs:
           mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
           printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
           cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
-          # in AUTH mode macos could take up to 20+ seconds for obtaining the Authorization Server Public Keys
-          printf '\n\ndef run_noninteractive_tests_with_delay(args):\n    endpoints = []\n    for i in range(len(args.host)):\n        if args.host[i] == "null":\n            args.host[i] = None\n        if args.port[i] == 0:\n            args.port[i] = None\n        if args.version[i] == "null":\n            args.version[i] = None\n        selector = None\n        if len(args.selector) == len(args.host) and args.selector[i] != "null":\n            selector = args.selector[i]\n        endpoints.append(\n            {\n                "host": args.host[i],\n                "port": args.port[i],\n                "version": args.version[i],\n                "selector": selector,\n            }\n        )\n    try:\n        # in AUTH mode macOS could take up to 20+ seconds for obtaining the Authorization Server Public Keys\n        if CONFIG.ENABLE_AUTH:\n            time.sleep(30)\n        results = run_tests(args.suite, endpoints, [args.selection])\n        if args.output:\n            exit_code = write_test_results(results, endpoints, args)\n        else:\n            exit_code = print_test_results(results, endpoints, args)\n    except Exception as e:\n        print(" * ERROR: {}".format(str(e)))\n        exit_code = ExitCodes.ERROR\n    return exit_code\n\n\nrun_noninteractive_tests = run_noninteractive_tests_with_delay\n' >> nmostesting/NMOSTesting.py
         fi
 
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
@@ -876,7 +874,7 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -946,8 +944,6 @@ jobs:
           mv nmostesting/GenericTest.py nmostesting/GenericTest.py.old
           printf 'import socket\nold_getaddrinfo = socket.getaddrinfo\ndef new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):\n    return old_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)\nsocket.getaddrinfo = new_getaddrinfo\n' > nmostesting/GenericTest.py
           cat nmostesting/GenericTest.py.old >> nmostesting/GenericTest.py
-          # in AUTH mode macos could take up to 20+ seconds for obtaining the Authorization Server Public Keys
-          printf '\n\ndef run_noninteractive_tests_with_delay(args):\n    endpoints = []\n    for i in range(len(args.host)):\n        if args.host[i] == "null":\n            args.host[i] = None\n        if args.port[i] == 0:\n            args.port[i] = None\n        if args.version[i] == "null":\n            args.version[i] = None\n        selector = None\n        if len(args.selector) == len(args.host) and args.selector[i] != "null":\n            selector = args.selector[i]\n        endpoints.append(\n            {\n                "host": args.host[i],\n                "port": args.port[i],\n                "version": args.version[i],\n                "selector": selector,\n            }\n        )\n    try:\n        # in AUTH mode macOS could take up to 20+ seconds for obtaining the Authorization Server Public Keys\n        if CONFIG.ENABLE_AUTH:\n            time.sleep(30)\n        results = run_tests(args.suite, endpoints, [args.selection])\n        if args.output:\n            exit_code = write_test_results(results, endpoints, args)\n        else:\n            exit_code = print_test_results(results, endpoints, args)\n    except Exception as e:\n        print(" * ERROR: {}".format(str(e)))\n        exit_code = ExitCodes.ERROR\n    return exit_code\n\n\nrun_noninteractive_tests = run_noninteractive_tests_with_delay\n' >> nmostesting/NMOSTesting.py
         fi
 
         if [[ "${{ runner.os }}" == "Linux" && "${{ matrix.use_conan }}" == "false" ]]; then
