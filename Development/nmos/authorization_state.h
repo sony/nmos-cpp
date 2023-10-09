@@ -20,22 +20,19 @@ namespace nmos
             std::unique_ptr<web::http::client::http_client> client;
             nmos::api_version version;
             web::uri issuer;
-            bool one_shot; // how offen to fetch the public keys, where true = one-shot; false = loop based on time interval
             bool immediate; // true = do an immediate fetch; false = do time interval fetch
             bool received;
 
             pubkeys_shared_state()
                 : engine(seeder)
-                , one_shot(false)
                 , immediate(true)
                 , received(false) {}
 
-            pubkeys_shared_state(web::http::client::http_client client, nmos::api_version version, web::uri issuer, bool one_shot = false)
+            pubkeys_shared_state(web::http::client::http_client client, nmos::api_version version, web::uri issuer)//, bool one_shot = false)
                 : engine(seeder)
                 , client(std::unique_ptr<web::http::client::http_client>(new web::http::client::http_client(client)))
                 , version(std::move(version))
                 , issuer(std::move(issuer))
-                , one_shot(one_shot)
                 , immediate(true)
                 , received(false) {}
         };
@@ -72,9 +69,6 @@ namespace nmos
 
             // OAuth 2.0 bearer token to access authorizaton protected APIs
             web::http::oauth2::experimental::oauth2_token bearer_token;
-
-            // shared state for the public keys fetch
-            pubkeys_shared_state pubkeys_state;
 
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }

@@ -1032,7 +1032,7 @@ namespace nmos
                     if (nmos::with_read_lock(authorization_state.mutex, [&]
                     {
                         auto issuer = authorization_state.issuers.find(pubkeys_state.issuer.to_string());
-                        return ((authorization_state.issuers.end() != issuer) && !pubkeys_state.one_shot && !pubkeys_state.immediate);
+                        return ((authorization_state.issuers.end() != issuer) && !pubkeys_state.immediate);
                     }))
                     {
                         fetch_interval = std::chrono::seconds((int)(std::uniform_real_distribution<>(fetch_interval_min, fetch_interval_max)(pubkeys_state.engine)));
@@ -1043,23 +1043,11 @@ namespace nmos
                     auto fetch_time = std::chrono::steady_clock::now();
                     return pplx::complete_at(fetch_time + fetch_interval, token).then([=, &authorization_state, &pubkeys_state, &gate]()
                     {
-                        auto lock = authorization_state.read_lock();
-
                         return details::request_jwks(*pubkeys_state.client, pubkeys_state.version, gate, token);
 
                     }).then([&authorization_state, &pubkeys_state, &gate](web::json::value jwks_)
                     {
-                        web::uri issuer;
-                        bool one_shot{ false };
-                        nmos::api_version auth_version;
-                        nmos::with_read_lock(authorization_state.mutex, [&]
-                        {
-                            issuer = pubkeys_state.issuer;
-                            one_shot = pubkeys_state.one_shot;
-                            auth_version = pubkeys_state.version;
-                        });
-
-                        const auto jwks = nmos::experimental::get_jwks(authorization_state, issuer);
+                        const auto jwks = nmos::experimental::get_jwks(authorization_state, pubkeys_state.issuer);
 
                         // are changes found in new set of jwks?
                         if(jwks != jwks_)
@@ -1079,34 +1067,34 @@ namespace nmos
                                 }
                                 catch (const jwk_exception& e)
                                 {
-                                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid jwk from " << utility::us2s(issuer.to_string()) << " JWK error: " << e.what();
+                                    slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid jwk from " << utility::us2s(pubkeys_state.issuer.to_string()) << " JWK error: " << e.what();
                                 }
                             }
 
                             // update jwks and jwt validator cache
                             if (pems.as_array().size())
                             {
-                                nmos::experimental::update_jwks(authorization_state, issuer, jwks_, nmos::experimental::jwt_validator(pems, [auth_version](const web::json::value& payload)
+                                nmos::experimental::update_jwks(authorization_state, pubkeys_state.issuer, jwks_, nmos::experimental::jwt_validator(pems, [&pubkeys_state](const web::json::value& payload)
                                 {
                                     // validate access token payload JSON
-                                    authapi_validator().validate(payload, experimental::make_authapi_token_schema_schema_uri(auth_version)); // may throw json_exception
+                                    authapi_validator().validate(payload, experimental::make_authapi_token_schema_schema_uri(pubkeys_state.version)); // may throw json_exception
                                 }));
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys for " << utility::us2s(issuer.to_string());
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys for " << utility::us2s(pubkeys_state.issuer.to_string());
                             }
                             else
                             {
-                                nmos::experimental::erase_jwks(authorization_state, issuer);
+                                nmos::experimental::erase_jwks(authorization_state, pubkeys_state.issuer);
 
-                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list for " << utility::us2s(issuer.to_string());
+                                slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list for " << utility::us2s(pubkeys_state.issuer.to_string());
                             }
                         }
                         else
                         {
-                            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found for " << utility::us2s(issuer.to_string());
+                            slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found for " << utility::us2s(pubkeys_state.issuer.to_string());
                         }
 
-                        return !one_shot;
+                        return true;
                     });
                 }).then([&](pplx::task<void> finally)
                 {
@@ -1117,41 +1105,50 @@ namespace nmos
                         finally.get();
 
                         nmos::with_write_lock(authorization_state.mutex, [&] { pubkeys_state.received = true; });
+
                         authorization_service_error = false;
                     }
                     catch (const web::http::http_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request HTTP error: " << e.what() << " [" << e.error_code() << "]";
+
                         authorization_service_error = true;
                     }
                     catch (const web::json::json_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request JSON error: " << e.what();
+
                         authorization_service_error = true;
                     }
                     catch (const web::http::oauth2::experimental::oauth2_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request OAuth 2.0 error: " << e.what();
+
                         authorization_service_error = true;
                     }
                     catch (const jwk_exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request JWK error: " << e.what();
+
                         authorization_service_error = true;
                     }
                     catch (const std::exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request error: " << e.what();
+
                         authorization_service_error = true;
                     }
                     catch (const authorization_exception&)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request error";
+
                         authorization_service_error = true;
                     }
                     catch (...)
                     {
                         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Authorization API jwks request unexpected unknown exception";
+
+                        authorization_service_error = true;
                     }
 
                     model.notify();
@@ -1713,14 +1710,12 @@ namespace nmos
                 pplx::cancellation_token_source cancellation_source;
 
                 auto pubkeys_requests(pplx::task_from_result());
-
-                with_write_lock(authorization_state.mutex, [&]
+                pubkeys_shared_state pubkeys_state
                 {
-                    auto& pubkeys_state = authorization_state.pubkeys_state;
-                    pubkeys_state.client.reset(new web::http::client::http_client{ jwks_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate) });
-                    pubkeys_state.version = authorization_version;
-                    pubkeys_state.issuer = nmos::experimental::fields::issuer(authorization_server_metadata);
-                });
+                    { jwks_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate) },
+                    authorization_version,
+                    nmos::experimental::fields::issuer(authorization_server_metadata)
+                };
 
                 auto bearer_token_requests(pplx::task_from_result());
                 web::http::oauth2::experimental::oauth2_token bearer_token;
@@ -1745,7 +1740,7 @@ namespace nmos
                 // start a background task to fetch public keys from authorization server
                 if (nmos::experimental::fields::server_authorization(model.settings))
                 {
-                    pubkeys_requests = do_public_keys_requests(model, authorization_state, authorization_state.pubkeys_state, authorization_service_error, gate, token);
+                    pubkeys_requests = do_public_keys_requests(model, authorization_state, pubkeys_state, authorization_service_error, gate, token);
                 }
 
                 // start a background task to fetch bearer access token from authorization server
@@ -1764,7 +1759,7 @@ namespace nmos
                 bearer_token_requests.wait();
             }
 
-            // make an asynchronously GET request over the Token Issuer to fetch issuer metadata
+            // make an asynchronously GET request over the Token Issuer(authorization server) to fetch issuer metadata
             bool request_token_issuer_metadata(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
             {
                 auto lock = model.write_lock();
@@ -1780,9 +1775,9 @@ namespace nmos
                 // wait for the thread to be interrupted because of no matching public keys from the received token or because the server is being shut down
                 condition.wait(lock, [&] { return shutdown || nmos::with_read_lock(authorization_state.mutex, [&] { return authorization_state.fetch_token_issuer_pubkeys; }); });
 
-                if (shutdown) return false;
-
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization token issuer metadata fetch";
+
+                if (shutdown) return false;
 
                 const auto token_issuer = nmos::with_write_lock(authorization_state.mutex, [&]
                 {
@@ -1791,24 +1786,21 @@ namespace nmos
                 });
                 if (token_issuer.is_empty())
                 {
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "No authorization token's issuer to fetch server metadata";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "No authorization token's issuer to fetch server metadata";
                     return false;
                 }
+                web::http::client::http_client client(make_authorization_service_uri(token_issuer), make_authorization_http_client_config(model.settings, load_ca_certificates, gate));
 
                 const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
                 const auto scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
                 const auto grants = grant_types(client_metadata, grant_types_from_settings(model.settings));
                 const auto token_endpoint_auth_method = nmos::experimental::details::token_endpoint_auth_method(client_metadata, token_endpoint_auth_method_from_settings(model.settings));
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Using authorization token's issuer " << utility::us2s(token_issuer.to_string()) << " to fetch server metadata";
-
-                web::http::client::http_client client(make_authorization_service_uri(token_issuer), make_authorization_http_client_config(model.settings, load_ca_certificates, gate));
-
                 auto token = cancellation_source.get_token();
 
-                auto request = details::request_authorization_server_metadata(client, scopes, grants, token_endpoint_auth_method, version(token_issuer), gate, token).then([&, token_issuer](web::json::value metadata)
+                auto request = details::request_authorization_server_metadata(client, scopes, grants, token_endpoint_auth_method, version(token_issuer), gate, token).then([&authorization_state, token_issuer](web::json::value metadata)
                 {
-                    // cache the issuer metadata
+                    // cache the token issuer(authorization server) metadata
                     nmos::experimental::update_authorization_server_metadata(authorization_state, token_issuer, metadata);
 
                 }).then([&](pplx::task<void> finally)
@@ -1847,7 +1839,7 @@ namespace nmos
                     }
                     catch (...)
                     {
-                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Authorization API metadata request unexpected unknown exception";
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Authorization API metadata unexpected unknown exception";
 
                         authorization_service_error = true;
                     }
@@ -1865,11 +1857,11 @@ namespace nmos
                 nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
                 request.wait();
 
-                return !authorization_service_error && metadata_received;
+                return metadata_received;
             }
 
-            // make an asynchronously GET request over the Token Issuer to fetch public keys
-            void request_token_issuer_public_keys(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+            // make an asynchronously GET request over the Token Issuer(authorization server) to fetch public keys
+            bool request_token_issuer_public_keys(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization token issuer's public keys fetch";
 
@@ -1878,6 +1870,8 @@ namespace nmos
                 auto& shutdown = model.shutdown;
 
                 bool authorization_service_error(false);
+
+                bool jwks_received(false);
 
                 pplx::cancellation_token_source cancellation_source;
 
@@ -1888,31 +1882,127 @@ namespace nmos
                 pubkeys_shared_state pubkeys_state(
                     { jwks_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate) },
                     authorization_version,
-                    token_issuer,
-                    true
+                    token_issuer
                 );
-
-                // update the authorization_behaviour_thread's fetch public keys shared state, public keys are going to be fetched from this token issuer from now on
-                with_write_lock(authorization_state.mutex, [&]
-                {
-                    auto& pubkeys_state = authorization_state.pubkeys_state;
-                    pubkeys_state.client.reset(new web::http::client::http_client{ jwks_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate) });
-                    pubkeys_state.version = authorization_version;
-                    pubkeys_state.issuer = token_issuer;
-                });
 
                 auto token = cancellation_source.get_token();
 
-                // start a one-shot background task to fetch public keys from the token issuer
-                auto pubkeys_requests = do_public_keys_requests(model, authorization_state, pubkeys_state, authorization_service_error, gate, token);
+                auto request = details::request_jwks(*pubkeys_state.client, pubkeys_state.version, gate, token).then([&authorization_state, &pubkeys_state, &gate](web::json::value jwks_)
+                {
+                    const auto jwks = nmos::experimental::get_jwks(authorization_state, pubkeys_state.issuer);
+
+                    // are changes found in new set of jwks?
+                    if (jwks != jwks_)
+                    {
+                        // convert jwks to array of public keys
+                        auto pems = web::json::value::array();
+                        for (const auto& jwk : jwks_.as_array())
+                        {
+                            try
+                            {
+                                const auto pem = jwk_to_public_key(jwk); // can throw jwk_exception
+
+                                web::json::push_back(pems, web::json::value_of({
+                                    { U("jwk"), jwk },
+                                    { U("pem"), pem }
+                                }));
+                            }
+                            catch (const jwk_exception& e)
+                            {
+                                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid jwk from " << utility::us2s(pubkeys_state.issuer.to_string()) << " JWK error: " << e.what();
+                            }
+                        }
+
+                        // update jwks and jwt validator cache
+                        if (pems.as_array().size())
+                        {
+                            nmos::experimental::update_jwks(authorization_state, pubkeys_state.issuer, jwks_, nmos::experimental::jwt_validator(pems, [&pubkeys_state](const web::json::value& payload)
+                            {
+                                // validate access token payload JSON
+                                authapi_validator().validate(payload, experimental::make_authapi_token_schema_schema_uri(pubkeys_state.version)); // may throw json_exception
+                            }));
+
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "JSON Web Token validator updated using an new set of public keys for " << utility::us2s(pubkeys_state.issuer.to_string());
+                        }
+                        else
+                        {
+                            nmos::experimental::erase_jwks(authorization_state, pubkeys_state.issuer);
+
+                            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Clear JSON Web Token validator due to receiving an empty public key list for " << utility::us2s(pubkeys_state.issuer.to_string());
+                        }
+                    }
+                    else
+                    {
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "No public keys changes found for " << utility::us2s(pubkeys_state.issuer.to_string());
+                    }
+
+                }).then([&](pplx::task<void> finally)
+                {
+                    auto lock = model.write_lock(); // in order to update local state
+
+                    try
+                    {
+                        finally.get();
+
+                        jwks_received = true;
+                    }
+                    catch (const web::http::http_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request HTTP error: " << e.what() << " [" << e.error_code() << "]";
+
+                        authorization_service_error = true;
+                    }
+                    catch (const web::json::json_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request JSON error: " << e.what();
+
+                        authorization_service_error = true;
+                    }
+                    catch (const web::http::oauth2::experimental::oauth2_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request OAuth 2.0 error: " << e.what();
+
+                        authorization_service_error = true;
+                    }
+                    catch (const jwk_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request JWK error: " << e.what();
+
+                        authorization_service_error = true;
+                    }
+                    catch (const std::exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request error: " << e.what();
+
+                        authorization_service_error = true;
+                    }
+                    catch (const authorization_exception&)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API jwks request error";
+
+                        authorization_service_error = true;
+                    }
+                    catch (...)
+                    {
+                        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Authorization API jwks request unexpected unknown exception";
+
+                        authorization_service_error = true;
+                    }
+                });
+                request.then([&]
+                {
+                    condition.notify_all();
+                });
 
                 // wait for the request because interactions with the Authorization API endpoint must be sequential
-                condition.wait(lock, [&] { return shutdown || authorization_service_error || pubkeys_state.received; });
+                condition.wait(lock, [&] { return shutdown || authorization_service_error || jwks_received; });
 
                 cancellation_source.cancel();
                 // wait without the lock since it is also used by the background tasks
                 nmos::details::reverse_lock_guard<nmos::write_lock> unlock{ lock };
-                pubkeys_requests.wait();
+                request.wait();
+
+                return jwks_received;
             }
         }
     }

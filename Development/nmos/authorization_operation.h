@@ -68,11 +68,11 @@ namespace nmos
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
             void authorization_operation(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, load_rsa_private_keys_handler load_rsa_private_keys, bool immediate_token_fetch, slog::base_gate& gate);
 
-            // make an asynchronously GET request over the Token Issuer to fetch issuer metadata
+            // make an asynchronously GET request over the Token Issuer(authorization server) to fetch issuer metadata
             bool request_token_issuer_metadata(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
 
-            // make an asynchronously GET request over the Token Issuer to fetch public keys
-            void request_token_issuer_public_keys(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
+            // make an asynchronously GET request over the Token Issuer(authorization server) to fetch public keys
+            bool request_token_issuer_public_keys(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
         }
     }
 }
