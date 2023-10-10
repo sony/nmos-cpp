@@ -1,7 +1,7 @@
 #include "nmos/jwt_generator.h"
 
+#include <jwt-cpp/traits/nlohmann-json/traits.h>
 #include "cpprest/basic_utils.h"
-#include "jwt/nlohmann_traits.h"
 #include "nmos/id.h"
 #include "nmos/jwk_utils.h"
 
@@ -16,13 +16,13 @@ namespace nmos
             public:
                 static utility::string_t create_client_assertion(const utility::string_t& issuer, const utility::string_t& subject, const web::uri& audience, const std::chrono::seconds& token_lifetime, const utility::string_t& public_key, const utility::string_t& private_key, const utility::string_t& keyid)
                 {
-                    using namespace jwt::experimental::details;
+                    using namespace jwt::traits;
 
                     // use server private key to create client_assertion (JWT)
                     // where client_assertion MUST including iss, sub, aud, exp, and may including jti
                     // see https://tools.ietf.org/html/rfc7523#section-2.2
                     // see https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
-                    return utility::s2us(jwt::create<nlohmann_traits>()
+                    return utility::s2us(jwt::create<nlohmann_json>()
                         .set_issuer(utility::us2s(issuer))
                         .set_subject(utility::us2s(subject))
                         .set_audience(utility::us2s(audience.to_string()))

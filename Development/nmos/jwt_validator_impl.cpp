@@ -1,12 +1,12 @@
 #include "nmos/jwt_validator.h"
 
 #include <boost/algorithm/string.hpp>
+#include <jwt-cpp/traits/nlohmann-json/traits.h>
 #include "cpprest/basic_utils.h"
 #include "cpprest/http_msg.h"
 #include "cpprest/json.h"
 #include "cpprest/regex_utils.h"
 #include "cpprest/uri_schemes.h"
-#include "jwt/nlohmann_traits.h"
 #include "nmos/authorization_utils.h"
 #include "nmos/json_fields.h"
 
@@ -22,7 +22,7 @@ namespace nmos
                 explicit jwt_validator_impl(const web::json::value& pubkeys, token_validator token_validation)
                     : token_validation(token_validation)
                 {
-                    using namespace jwt::experimental::details;
+                    using namespace jwt::traits;
 
                     if (pubkeys.is_array())
                     {
@@ -59,7 +59,7 @@ namespace nmos
                                 if (U("RS512") != jwk.at(U("alg")).as_string()) continue;
                             }
 
-                            auto validator = jwt::verify<jwt::default_clock, nlohmann_traits>({});
+                            auto validator = jwt::verify<jwt::default_clock, nlohmann_json>({});
                             try
                             {
                                 validator.allow_algorithm(jwt::algorithm::rs512(utility::us2s(pubkey.at(U("pem")).as_string())));
@@ -75,10 +75,10 @@ namespace nmos
 
                 void validate_expiry(const utility::string_t& token) const
                 {
-                    using namespace jwt::experimental::details;
+                    using namespace jwt::traits;
 
                     // verify JWT is well formed
-                    auto decoded_token = jwt::decode<nlohmann_traits>(utility::us2s(token));
+                    auto decoded_token = jwt::decode<nlohmann_json>(utility::us2s(token));
 
                     for (const auto& validator : validators)
                     {
@@ -102,10 +102,10 @@ namespace nmos
 
                 void validate(const utility::string_t& token, const web::http::http_request& req, const scope& scope, const utility::string_t& audience) const
                 {
-                    using namespace jwt::experimental::details;
+                    using namespace jwt::traits;
 
                     // verify JWT is well formed
-                    auto decoded_token = jwt::decode<nlohmann_traits>(utility::us2s(token));
+                    auto decoded_token = jwt::decode<nlohmann_json>(utility::us2s(token));
 
                     // validate bearer token payload JSON
                     if (token_validation)
@@ -250,7 +250,7 @@ namespace nmos
                                         {
                                             if (x_nmos_scope_claim.contains(access_right))
                                             {
-                                                auto accessible_paths = jwt::basic_claim<nlohmann_traits>(x_nmos_scope_claim.at(access_right)).as_array();
+                                                auto accessible_paths = jwt::basic_claim<nlohmann_json>(x_nmos_scope_claim.at(access_right)).as_array();
                                                 for (auto& accessible_path : accessible_paths)
                                                 {
                                                     // construct path regex for regex comparison
@@ -375,10 +375,10 @@ namespace nmos
                 // may throw
                 static utility::string_t get_client_id(const utility::string_t& token)
                 {
-                    using namespace jwt::experimental::details;
+                    using namespace jwt::traits;
 
                     // verify JWT is well formed
-                    auto decoded_token = jwt::decode<nlohmann_traits>(utility::us2s(token));
+                    auto decoded_token = jwt::decode<nlohmann_json>(utility::us2s(token));
                     // token does not guarantee to have client_id
                     // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#client_id
                     if (decoded_token.has_payload_claim("client_id"))
@@ -403,10 +403,10 @@ namespace nmos
                 // may throw
                 static web::uri get_token_issuer(const utility::string_t& token)
                 {
-                    using namespace jwt::experimental::details;
+                    using namespace jwt::traits;
 
                     // verify JWT is well formed
-                    auto decoded_token = jwt::decode<nlohmann_traits>(utility::us2s(token));
+                    auto decoded_token = jwt::decode<nlohmann_json>(utility::us2s(token));
                     return utility::s2us(decoded_token.get_issuer());
                 }
 
@@ -424,7 +424,7 @@ namespace nmos
                 }
 
             private:
-                std::vector<jwt::verifier<jwt::default_clock, jwt::experimental::details::nlohmann_traits>> validators;
+                std::vector<jwt::verifier<jwt::default_clock, jwt::traits::nlohmann_json>> validators;
                 token_validator token_validation;
             };
         }

@@ -826,10 +826,6 @@ set(NMOS_CPP_JWK_HEADERS
     jwk/public_key_use.h
     )
 
-set(NMOS_CPP_JWT_HEADERS
-    jwt/nlohmann_traits.h
-    )
-
 set(NMOS_CPP_NMOS_SOURCES
     nmos/activation_utils.cpp
     nmos/admin_ui.cpp

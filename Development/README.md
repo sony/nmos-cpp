@@ -14,8 +14,6 @@ C++ source code and build files for the software
   Small general purpose utilties and header files to facilitate cross-platform development
 - [jwk](jwk)  
   An implementation of the conversion between JSON Web Key and public key
-- [jwt](jwt)  
-  Providing the nlohmann JSON traits for JSON Web Key support using jwt-cpp library
 - [lldp](lldp)  
   A simple API for LLDP and an implementation using the PCAP *pcap.h* API
 - [mdns](mdns)  
