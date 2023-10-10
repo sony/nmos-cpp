@@ -1,7 +1,7 @@
 #include "nmos/jwt_generator.h"
 
-#include <jwt-cpp/traits/nlohmann-json/traits.h>
 #include "cpprest/basic_utils.h"
+#include "jwt-cpp/traits/nlohmann-json/traits.h"
 #include "nmos/id.h"
 #include "nmos/jwk_utils.h"
 

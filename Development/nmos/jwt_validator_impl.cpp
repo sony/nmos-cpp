@@ -1,12 +1,12 @@
 #include "nmos/jwt_validator.h"
 
 #include <boost/algorithm/string.hpp>
-#include <jwt-cpp/traits/nlohmann-json/traits.h>
 #include "cpprest/basic_utils.h"
 #include "cpprest/http_msg.h"
 #include "cpprest/json.h"
 #include "cpprest/regex_utils.h"
 #include "cpprest/uri_schemes.h"
+#include "jwt-cpp/traits/nlohmann-json/traits.h"
 #include "nmos/authorization_utils.h"
 #include "nmos/json_fields.h"
 
@@ -107,7 +107,7 @@ namespace nmos
                     // verify JWT is well formed
                     auto decoded_token = jwt::decode<nlohmann_json>(utility::us2s(token));
 
-                    // validate bearer token payload JSON
+                    // do bearer token payload JSON validation
                     if (token_validation)
                     {
                         token_validation(web::json::value::parse(utility::s2us(decoded_token.get_payload())));
@@ -115,250 +115,254 @@ namespace nmos
 
                     std::vector<std::string> errors;
 
-                    if (validators.size())
+                    if (0 == validators.size())
                     {
-                        const auto validate_scope = !scope.name.empty();
+                        // no JWT validator to perform access token validation
+                        errors.push_back("no JWT validator to perform access token validation");
+                    }
 
-                        for (const auto& validator : validators)
+                    const auto validate_scope = !scope.name.empty();
+
+                    for (const auto& validator : validators)
+                    {
+                        try
                         {
-                            try
+                            // verify the signature & some common claims, such as exp, iat, nbf etc
+                            validator.verify(decoded_token);
+
+                            // common claims verified (i.e. validator/public key successfully verify the token's signature),
+                            // from this point onwards any error detected will be treated as failure
+
+                            // verify Registered Claims
+
+                            // iss (Identifies principal that issued the JWT)
+                            // The "iss" value is a case-sensitive string containing a StringOrURI value.
+                            // see https://tools.ietf.org/html/rfc7519#section-4.1.1
+                            // iss is not needed to validate as this token may be coming from an alternative Authorization server, which would have a different iss then the current in used Authorization server.
+
+                            // sub (Identifies the subject of the JWT)
+                            // hmm, not sure how to verify sub as it could be anything
+                            // see https://tools.ietf.org/html/rfc7519#section-4.1.2
+
+                            // aud (Identifies the recipients of the JWT)
+                            // This claim MUST be a JSON array containing the fully resolved domain names of the intended recipients, or a domain name containing
+                            // wild - card characters in order to target a subset of devices on a network. Such wild-carding of domain names is documented in RFC 4592.
+                            // If aud claim does not match the fully resolved domain name of the resource server, the Resource Server MUST reject the token.
+                            // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#aud
+                            // see https://tools.ietf.org/html/rfc7519#section-4.1.3
+
+                            auto verify_aud = [&decoded_token](const utility::string_t& audience_)
                             {
-                                // verify the signature & some common claims, such as exp, iat, nbf etc
-                                validator.verify(decoded_token);
-
-                                // common claims verified (i.e. validator/public key successfully verify the token's signature),
-                                // from this point onwards any error detected will be treated as failure
-
-                                // verify Registered Claims
-
-                                // iss (Identifies principal that issued the JWT)
-                                // The "iss" value is a case-sensitive string containing a StringOrURI value.
-                                // see https://tools.ietf.org/html/rfc7519#section-4.1.1
-                                // iss is not needed to validate as this token may be coming from an alternative Authorization server, which would have a different iss then the current in used Authorization server.
-
-                                // sub (Identifies the subject of the JWT)
-                                // hmm, not sure how to verify sub as it could be anything
-                                // see https://tools.ietf.org/html/rfc7519#section-4.1.2
-
-                                // aud (Identifies the recipients of the JWT)
-                                // This claim MUST be a JSON array containing the fully resolved domain names of the intended recipients, or a domain name containing
-                                // wild - card characters in order to target a subset of devices on a network. Such wild-carding of domain names is documented in RFC 4592.
-                                // If aud claim does not match the fully resolved domain name of the resource server, the Resource Server MUST reject the token.
-                                // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#aud
-                                // see https://tools.ietf.org/html/rfc7519#section-4.1.3
-
-                                auto verify_aud = [&decoded_token](const utility::string_t& audience_)
+                                auto strip_trailing_dot = [](const std::string& audience_)
                                 {
-                                    auto strip_trailing_dot = [](const std::string& audience_) {
-                                        auto audience = audience_;
-                                        if (!audience.empty() && U('.') == audience.back())
-                                        {
-                                            audience.pop_back();
-                                        }
-                                        return audience;
-                                    };
-
-                                    auto audience = strip_trailing_dot(utility::us2s(audience_));
-                                    std::vector<std::string> segments;
-                                    boost::split(segments, audience, boost::is_any_of("."));
-
-                                    const auto& auds = decoded_token.get_audience();
-                                    for (const auto& aud_ : auds)
+                                    auto audience = audience_;
+                                    if (!audience.empty() && U('.') == audience.back())
                                     {
-                                        // strip the scheme (https://) if presented
-                                        auto aud = strip_trailing_dot(aud_);
-                                        web::http::uri aud_uri(utility::s2us(aud));
-                                        if (!aud_uri.scheme().empty())
+                                        audience.pop_back();
+                                    }
+                                    return audience;
+                                };
+
+                                auto audience = strip_trailing_dot(utility::us2s(audience_));
+                                std::vector<std::string> segments;
+                                boost::split(segments, audience, boost::is_any_of("."));
+
+                                const auto& auds = decoded_token.get_audience();
+                                for (const auto& aud_ : auds)
+                                {
+                                    // strip the scheme (https://) if presented
+                                    auto aud = strip_trailing_dot(aud_);
+                                    web::http::uri aud_uri(utility::s2us(aud));
+                                    if (!aud_uri.scheme().empty())
+                                    {
+                                        aud = utility::us2s(aud_uri.host());
+                                    }
+
+                                    // is the audience an exact match to the token audience
+                                    if (audience == aud)
+                                    {
+                                        return true;
+                                    }
+
+                                    // do reverse segment matching between audience and token audience
+                                    std::vector<std::string> aud_segments;
+                                    boost::split(aud_segments, aud, boost::is_any_of("."));
+
+                                    if (segments.size() >= aud_segments.size() && aud_segments.size())
+                                    {
+                                        // token audience got to be in wildcard domain name format, leftmost is a "*" charcater
+                                        // if not it is not going to match
+                                        // see https://tools.ietf.org/html/rfc4592#section-2.1.1
+                                        if (aud_segments[0] != "*")
                                         {
-                                            aud = utility::us2s(aud_uri.host());
+                                            return false;
                                         }
 
-                                        // is the audience an exact match to the token audience
-                                        if (audience == aud)
+                                        // token audience is in wildcard domain name format
+                                        // let's do a segment to segment comparison between audience and token audience
+                                        bool matched{ true };
+                                        auto idx = aud_segments.size() - 1;
+                                        for (auto it = aud_segments.rbegin(); it != aud_segments.rend() && matched; ++it)
+                                        {
+                                            if (idx && *it != segments[idx--])
+                                            {
+                                                matched = false;
+                                            }
+                                        }
+                                        if (matched)
                                         {
                                             return true;
                                         }
+                                    }
+                                }
+                                return false;
+                            };
+                            if (!verify_aud(audience))
+                            {
+                                throw insufficient_scope_exception(utility::us2s(audience) + " not found in audience");
+                            }
 
-                                        // do reverse segment matching between audience and token audience
-                                        std::vector<std::string> aud_segments;
-                                        boost::split(aud_segments, aud, boost::is_any_of("."));
+                            // scope optional
+                            // If scope claim does not contain the expected scope, the Resource Server reject the token.
+                            // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#scope
+                            auto verify_scope = [&decoded_token](const nmos::experimental::scope& scope)
+                            {
+                                if (decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::scope)))
+                                {
+                                    const auto& scope_claim = decoded_token.get_payload_claim(utility::us2s(nmos::experimental::fields::scope));
+                                    const auto scopes_set = scopes(utility::s2us(scope_claim.as_string()));
+                                    return (scopes_set.end() != std::find(scopes_set.begin(), scopes_set.end(), scope));
+                                }
+                                return true;
+                            };
+                            if (validate_scope && !verify_scope(scope))
+                            {
+                                throw insufficient_scope_exception(utility::us2s(scope.name) + " not found in " + utility::us2s(nmos::experimental::fields::scope));
+                            }
 
-                                        if (segments.size() >= aud_segments.size() && aud_segments.size())
+                            // verify Private Claims
+
+                            // x-nmos-* (Contains information particular to the NMOS API the token is intended for)
+                            // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#x-nmos-
+                            auto verify_x_nmos_scope_claim = [&decoded_token, req](const std::string& x_nmos_scope_claim_, const std::string& path)
+                            {
+                                if (!decoded_token.has_payload_claim(x_nmos_scope_claim_)) { return false; }
+                                const auto x_nmos_scope_claim = decoded_token.get_payload_claim(x_nmos_scope_claim_).to_json();
+
+                                if (!x_nmos_scope_claim.is_null())
+                                {
+                                    auto accessible = [&x_nmos_scope_claim, req, &path](const std::string& access_right)
+                                    {
+                                        if (x_nmos_scope_claim.contains(access_right))
                                         {
-                                            // token audience got to be in wildcard domain name format, leftmost is a "*" charcater
-                                            // if not it is not going to match
-                                            // see https://tools.ietf.org/html/rfc4592#section-2.1.1
-                                            if (aud_segments[0] != "*")
+                                            auto accessible_paths = jwt::basic_claim<nlohmann_json>(x_nmos_scope_claim.at(access_right)).as_array();
+                                            for (auto& accessible_path : accessible_paths)
                                             {
-                                                return false;
-                                            }
+                                                // construct path regex for regex comparison
 
-                                            // token audience is in wildcard domain name format
-                                            // let's do a segment to segment comparison between audience and token audience
-                                            bool matched{ true };
-                                            auto idx = aud_segments.size() - 1;
-                                            for (auto it = aud_segments.rbegin(); it != aud_segments.rend() && matched; ++it)
-                                            {
-                                                if (idx && *it != segments[idx--])
+                                                auto acc_path = accessible_path.get<std::string>();
+                                                // replace any '*' => '.*'
+                                                boost::replace_all(acc_path, "*", ".*");
+                                                const bst::regex path_regex(acc_path);
+                                                if (bst::regex_match(path, path_regex))
                                                 {
-                                                    matched = false;
+                                                    return true;
                                                 }
                                             }
-                                            if (matched)
-                                            {
-                                                return true;
-                                            }
                                         }
-                                    }
-                                    return false;
-                                };
-                                if (!verify_aud(audience))
-                                {
-                                    throw insufficient_scope_exception(utility::us2s(audience) + " not found in audience");
-                                }
-
-                                // scope optional
-                                // If scope claim does not contain the expected scope, the Resource Server reject the token.
-                                // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#scope
-                                auto verify_scope = [&decoded_token](const nmos::experimental::scope& scope)
-                                {
-                                    if (decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::scope)))
-                                    {
-                                        const auto& scope_claim = decoded_token.get_payload_claim(utility::us2s(nmos::experimental::fields::scope));
-                                        const auto scopes_set = scopes(utility::s2us(scope_claim.as_string()));
-                                        return (scopes_set.end() != std::find(scopes_set.begin(), scopes_set.end(), scope));
-                                    }
-                                    return true;
-                                };
-                                if (validate_scope && !verify_scope(scope))
-                                {
-                                    throw insufficient_scope_exception(utility::us2s(scope.name) + " not found in " + utility::us2s(nmos::experimental::fields::scope));
-                                }
-
-                                // verify Private Claims
-
-                                // x-nmos-* (Contains information particular to the NMOS API the token is intended for)
-                                // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#x-nmos-
-                                auto verify_x_nmos_scope_claim = [&decoded_token, req](const std::string& x_nmos_scope_claim_, const std::string& path)
-                                {
-                                    if (!decoded_token.has_payload_claim(x_nmos_scope_claim_)) { return false; }
-                                    const auto x_nmos_scope_claim = decoded_token.get_payload_claim(x_nmos_scope_claim_).to_json();
-
-                                    if (!x_nmos_scope_claim.is_null())
-                                    {
-                                        auto accessible = [&x_nmos_scope_claim, req, &path](const std::string& access_right)
-                                        {
-                                            if (x_nmos_scope_claim.contains(access_right))
-                                            {
-                                                auto accessible_paths = jwt::basic_claim<nlohmann_json>(x_nmos_scope_claim.at(access_right)).as_array();
-                                                for (auto& accessible_path : accessible_paths)
-                                                {
-                                                    // construct path regex for regex comparison
-
-                                                    auto acc_path = accessible_path.get<std::string>();
-                                                    // replace any '*' => '.*'
-                                                    boost::replace_all(acc_path, "*", ".*");
-                                                    const bst::regex path_regex(acc_path);
-                                                    if (bst::regex_match(path, path_regex))
-                                                    {
-                                                        return true;
-                                                    }
-                                                }
-                                            }
-                                            return false;
-                                        };
-
-                                        // write accessible
-                                        if ((web::http::methods::POST == req.method())
-                                            || (web::http::methods::PUT == req.method())
-                                            || (web::http::methods::PATCH == req.method())
-                                            || (web::http::methods::DEL == req.method()))
-                                        {
-                                            return accessible("write");
-                                        }
-
-                                        // read accessible
-                                        if ((web::http::methods::OPTIONS == req.method())
-                                            || (web::http::methods::GET == req.method())
-                                            || (web::http::methods::HEAD == req.method()))
-                                        {
-                                            return accessible("read");
-                                        }
-                                    }
-                                    return false;
-                                };
-
-                                // verify the relevant x-nmos-* private claim
-                                if (validate_scope)
-                                {
-                                    const auto x_nmos_scope_claim = "x-nmos-" + utility::us2s(scope.name);
-
-                                    // extract <path> from /x-nmos/<api name, the scope name>/<api version>/<path>
-                                    auto extract_path = [req](const nmos::experimental::scope& scope)
-                                    {
-                                        const bst::regex search_regex("/x-nmos/" + utility::us2s(scope.name) + "/v[0-9]+\\.[0-9]");
-                                        const auto request_uri = utility::us2s(req.request_uri().to_string());
-
-                                        if (bst::regex_search(request_uri, search_regex))
-                                        {
-                                            auto path = bst::regex_replace(request_uri, search_regex, "");
-                                            if (path.size() && ('/' == path[0]))
-                                            {
-                                                return path.erase(0, 1);
-                                            }
-                                            else
-                                            {
-                                                return std::string{};
-                                            }
-                                        }
-                                        return std::string{};;
+                                        return false;
                                     };
-                                    const auto path = extract_path(scope);
 
-                                    if (path.empty())
+                                    // write accessible
+                                    if ((web::http::methods::POST == req.method())
+                                        || (web::http::methods::PUT == req.method())
+                                        || (web::http::methods::PATCH == req.method())
+                                        || (web::http::methods::DEL == req.method()))
                                     {
-                                        // The token MUST include either an x-nmos-* claim matching the API name, a scope matching the API name or both in order to obtain 'read' permission.
-                                        // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#path-validation
-
-                                        // if scope claim is presented, it has already verified eariler
-                                        if (!decoded_token.has_payload_claim(x_nmos_scope_claim) && !decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::scope)))
-                                        {
-                                            // missing both x-nmos private claim and scope claim
-                                            throw insufficient_scope_exception("missing claim x-nmos-" + utility::us2s(scope.name) + " and claim scope, " + utility::us2s(req.request_uri().to_string()) + " not accessible");
-                                        }
+                                        return accessible("write");
                                     }
-                                    else
-                                    {
-                                        // The token MUST include an x-nmos-* claim matching the API name and the path, in line with the method outlined in Tokens.
-                                        // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#path-validation
 
-                                        if (!verify_x_nmos_scope_claim(x_nmos_scope_claim, path))
-                                        {
-                                            throw insufficient_scope_exception("claim x-nmos-" + utility::us2s(scope.name) + " " + utility::us2s(req.request_uri().to_string()) + " not accessible");
-                                        }
+                                    // read accessible
+                                    if ((web::http::methods::OPTIONS == req.method())
+                                        || (web::http::methods::GET == req.method())
+                                        || (web::http::methods::HEAD == req.method()))
+                                    {
+                                        return accessible("read");
                                     }
                                 }
+                                return false;
+                            };
 
-                                // token validate successfully
-                                return;
-                            }
-                            catch (const insufficient_scope_exception&)
+                            // verify the relevant x-nmos-* private claim
+                            if (validate_scope)
                             {
-                                throw;
+                                const auto x_nmos_scope_claim = "x-nmos-" + utility::us2s(scope.name);
+
+                                // extract <path> from /x-nmos/<api name, the scope name>/<api version>/<path>
+                                auto extract_path = [req](const nmos::experimental::scope& scope)
+                                {
+                                    const bst::regex search_regex("/x-nmos/" + utility::us2s(scope.name) + "/v[0-9]+\\.[0-9]");
+                                    const auto request_uri = utility::us2s(req.request_uri().to_string());
+
+                                    if (bst::regex_search(request_uri, search_regex))
+                                    {
+                                        auto path = bst::regex_replace(request_uri, search_regex, "");
+                                        if (path.size() && ('/' == path[0]))
+                                        {
+                                            return path.erase(0, 1);
+                                        }
+                                        else
+                                        {
+                                            return std::string{};
+                                        }
+                                    }
+                                    return std::string{};;
+                                };
+                                const auto path = extract_path(scope);
+
+                                if (path.empty())
+                                {
+                                    // The token MUST include either an x-nmos-* claim matching the API name, a scope matching the API name or both in order to obtain 'read' permission.
+                                    // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#path-validation
+
+                                    // if scope claim is presented, it has already verified eariler
+                                    if (!decoded_token.has_payload_claim(x_nmos_scope_claim) && !decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::scope)))
+                                    {
+                                        // missing both x-nmos private claim and scope claim
+                                        throw insufficient_scope_exception("missing claim x-nmos-" + utility::us2s(scope.name) + " and claim scope, " + utility::us2s(req.request_uri().to_string()) + " not accessible");
+                                    }
+                                }
+                                else
+                                {
+                                    // The token MUST include an x-nmos-* claim matching the API name and the path, in line with the method outlined in Tokens.
+                                    // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#path-validation
+
+                                    if (!verify_x_nmos_scope_claim(x_nmos_scope_claim, path))
+                                    {
+                                        throw insufficient_scope_exception("claim x-nmos-" + utility::us2s(scope.name) + " " + utility::us2s(req.request_uri().to_string()) + " not accessible");
+                                    }
+                                }
                             }
-                            catch (const jwt::error::token_verification_exception& e)
-                            {
-                                throw std::invalid_argument(e.what());
-                            }
-                            catch (const jwt::error::signature_verification_exception& e)
-                            {
-                                // ignore, try next validator
-                                errors.push_back(e.what());
-                            }
+
+                            // token validate successfully
+                            return;
+                        }
+                        catch (const insufficient_scope_exception&)
+                        {
+                            throw;
+                        }
+                        catch (const jwt::error::token_verification_exception& e)
+                        {
+                            throw std::invalid_argument(e.what());
+                        }
+                        catch (const jwt::error::signature_verification_exception& e)
+                        {
+                            // ignore, try next validator
+                            errors.push_back(e.what());
                         }
                     }
 
-                    // reaching here, there must be no matching public key for the token
+                    // reaching here, there must be because no matching public key to validate the access token
 
                     // "Where a Resource Server has no matching public key for a given token, it SHOULD attempt to obtain the missing public key via the the token iss
                     // claim as specified in RFC 8414 section 3. In cases where the Resource Server needs to fetch a public key from a remote Authorization Server it

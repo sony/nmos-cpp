@@ -39,7 +39,7 @@ namespace nmos
             class jwt_validator_impl;
         }
 
-        // callback for validating bearer_token
+        // callback for JSON validating access token
         typedef std::function<void(const web::json::value& payload)> token_validator;
 
         class jwt_validator
