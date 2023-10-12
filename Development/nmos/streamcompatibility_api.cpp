@@ -44,7 +44,7 @@ namespace nmos
                         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Redirecting to EDID file for " << id_type;
 
                         set_reply(res, web::http::status_codes::TemporaryRedirect);
-                        res.headers().add(web::http::header_names::location, nmos::fields::edid_href(edid_endpoint));
+                        res.headers().add(web::http::header_names::location, nmos::fields::edid_href(edid_endpoint).as_string());
                     }
                     else
                     {
