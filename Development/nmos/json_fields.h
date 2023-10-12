@@ -288,10 +288,11 @@ namespace nmos
             const web::json::field_as_array keys{ U("keys") }; // use inside jwks
             const web::json::field_as_string software_id{ U("software_id") }; // OPTIONAL
             const web::json::field_as_string software_version{ U("software_version") }; // OPTIONAL
-            const web::json::field_as_string_or client_id{ U("client_id"),{} };
+            const web::json::field_as_string_or client_id{ U("client_id"), {} };
             const web::json::field_as_string client_secret{ U("client_secret") }; // OPTIONAL
             const web::json::field_as_integer client_id_issued_at{ U("client_id_issued_at") }; // OPTIONAL
             const web::json::field_as_integer_or client_secret_expires_at{ U("client_secret_expires_at"),0 };
+            const web::json::field_as_string azp{ U("azp") }; // OPTIONAL
             // OpenID Connect extension
             const web::json::field_as_string registration_client_uri{ U("registration_client_uri") }; // OPTIONAL
             const web::json::field_as_string registration_access_token{ U("registration_access_token") }; // OPTIONAL

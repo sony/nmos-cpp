@@ -235,9 +235,34 @@ namespace nmos
                                 }
                                 return true;
                             };
-                            if (validate_scope && !verify_scope(scope))
+                            if (!verify_scope(scope))
                             {
                                 throw insufficient_scope_exception(utility::us2s(scope.name) + " not found in " + utility::us2s(nmos::experimental::fields::scope));
+                            }
+
+                            // verify client_id and azp (optional)
+                            auto verify_client_id = [&decoded_token]()
+                            {
+                                const auto client_id_found = decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::client_id));
+                                const auto azp_found = decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::azp));
+
+                                if ((client_id_found && !azp_found) || (!client_id_found && azp_found))
+                                {
+                                    return true;
+                                }
+
+                                if (client_id_found &&
+                                    azp_found &&
+                                    decoded_token.get_payload_claim(utility::us2s(nmos::experimental::fields::client_id)).as_string() == decoded_token.get_payload_claim(utility::us2s(nmos::experimental::fields::azp)).as_string())
+                                {
+                                    return true;
+                                }
+
+                                return false;
+                            };
+                            if (!verify_client_id())
+                            {
+                                throw insufficient_scope_exception("missing client_id or azp, or client_id and azp are not matching");
                             }
 
                             // verify Private Claims
@@ -274,18 +299,13 @@ namespace nmos
                                     };
 
                                     // write accessible
-                                    if ((web::http::methods::POST == req.method())
-                                        || (web::http::methods::PUT == req.method())
-                                        || (web::http::methods::PATCH == req.method())
-                                        || (web::http::methods::DEL == req.method()))
+                                    if (is_write_method(req.method()))
                                     {
                                         return accessible("write");
                                     }
 
                                     // read accessible
-                                    if ((web::http::methods::OPTIONS == req.method())
-                                        || (web::http::methods::GET == req.method())
-                                        || (web::http::methods::HEAD == req.method()))
+                                    if (is_read_method(req.method()))
                                     {
                                         return accessible("read");
                                     }
@@ -298,15 +318,15 @@ namespace nmos
                             {
                                 const auto x_nmos_scope_claim = "x-nmos-" + utility::us2s(scope.name);
 
-                                // extract <path> from /x-nmos/<api name, the scope name>/<api version>/<path>
+                                // extract {path} from /x-nmos/{api name, the scope name}/{api version}/{path}
                                 auto extract_path = [req](const nmos::experimental::scope& scope)
                                 {
                                     const bst::regex search_regex("/x-nmos/" + utility::us2s(scope.name) + "/v[0-9]+\\.[0-9]");
-                                    const auto request_uri = utility::us2s(req.request_uri().to_string());
+                                    const auto relative_uri = utility::us2s(req.relative_uri().to_string());
 
-                                    if (bst::regex_search(request_uri, search_regex))
+                                    if (bst::regex_search(relative_uri, search_regex))
                                     {
-                                        auto path = bst::regex_replace(request_uri, search_regex, "");
+                                        auto path = bst::regex_replace(relative_uri, search_regex, "");
                                         if (path.size() && ('/' == path[0]))
                                         {
                                             return path.erase(0, 1);
@@ -322,24 +342,41 @@ namespace nmos
 
                                 if (path.empty())
                                 {
-                                    // The token MUST include either an x-nmos-* claim matching the API name, a scope matching the API name or both in order to obtain 'read' permission.
+                                    // "The token MUST include either an x-nmos-* claim matching the API name, a scope matching the API name or both in order to obtain 'read' permission."
                                     // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#path-validation
 
-                                    // if scope claim is presented, it has already verified eariler
-                                    if (!decoded_token.has_payload_claim(x_nmos_scope_claim) && !decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::scope)))
+                                    // "Presence of an x-nmos-* claim matching an NMOS API grants implicit read only access to some API base paths as specified in Resource Servers.
+                                    // The value of the claim is a JSON object, indicating access permissions for the API.An omitted x-nmos-* object indicates that no access is permitted
+                                    // to the namespace-identified API beyond what may be granted by the presence of a matching scope."
+                                    // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#x-nmos-
+                                    const auto x_nmos_scope_claim_found = decoded_token.has_payload_claim(x_nmos_scope_claim);
+                                    const auto scope_found = decoded_token.has_payload_claim(utility::us2s(nmos::experimental::fields::scope));
+                                    const auto is_read_request = is_read_method(req.method());
+
+                                    if (is_read_request)
                                     {
-                                        // missing both x-nmos private claim and scope claim
-                                        throw insufficient_scope_exception("missing claim x-nmos-" + utility::us2s(scope.name) + " and claim scope, " + utility::us2s(req.request_uri().to_string()) + " not accessible");
+                                        if (!x_nmos_scope_claim_found && !scope_found)
+                                        {
+                                            // missing both x-nmos private claim and scope claim
+                                            throw insufficient_scope_exception("missing claim x-nmos-" + utility::us2s(scope.name) + " and claim scope, " + utility::us2s(req.request_uri().to_string()) + " not accessible");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // invalid request method
+                                        throw insufficient_scope_exception("this is not a read request, " + utility::us2s(req.request_uri().to_string()) + " not accessible");
                                     }
                                 }
                                 else
                                 {
-                                    // The token MUST include an x-nmos-* claim matching the API name and the path, in line with the method outlined in Tokens.
+                                    // "The token MUST include an x-nmos-* claim matching the API name and the path, in line with the method outlined in Tokens."
                                     // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#path-validation
 
+                                    // "The value of each x-nmos-* claim is the access permissions object for the given user for that specific API."
+                                    // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#the-access-permissions-object
                                     if (!verify_x_nmos_scope_claim(x_nmos_scope_claim, path))
                                     {
-                                        throw insufficient_scope_exception("claim x-nmos-" + utility::us2s(scope.name) + " " + utility::us2s(req.request_uri().to_string()) + " not accessible");
+                                        throw insufficient_scope_exception("fail to verify claim " + x_nmos_scope_claim + ", " + utility::us2s(req.request_uri().to_string()) + " not accessible");
                                     }
                                 }
                             }
@@ -426,6 +463,21 @@ namespace nmos
                     }
                     return ss.str();
                 }
+
+                static bool is_write_method(const web::http::method& method)
+                {
+                    return ((web::http::methods::POST == method) ||
+                        (web::http::methods::PUT == method) ||
+                        (web::http::methods::PATCH == method) ||
+                        (web::http::methods::DEL == method));
+                };
+
+                static bool is_read_method (const web::http::method& method)
+                {
+                    return ((web::http::methods::OPTIONS == method) ||
+                        (web::http::methods::GET == method) ||
+                        (web::http::methods::HEAD == method));
+                };
 
             private:
                 std::vector<jwt::verifier<jwt::default_clock, jwt::traits::nlohmann_json>> validators;
