@@ -10,11 +10,14 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA IS-07 NMOS Event & Tally Specification](https://specs.amwa.tv/is-07/)
 - [AMWA IS-08 NMOS Audio Channel Mapping Specification](https://specs.amwa.tv/is-08/)
 - [AMWA IS-09 NMOS System Parameters Specification](https://specs.amwa.tv/is-09/) (originally defined in JT-NM TR-1001-1:2018 Annex A)
+- [AMWA IS-12 AMWA IS-12 NMOS Control Protocol](https://specs.amwa.tv/is-12/)
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-002-02 NMOS Asset Distinguishing Information](https://specs.amwa.tv/bcp-002-02/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
 - [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
 - [AMWA BCP-006-01 NMOS With JPEG XS](https://specs.amwa.tv/bcp-006-01/)
+- [AMWA MS-05-01 NMOS Control Architecture](https://specs.amwa.tv/ms-05-01/)
+- [AMWA MS-05-02 NMOS Control Framework](https://specs.amwa.tv/ms-05-02/)
 
 For more information about AMWA, NMOS and the Networked Media Incubator, please refer to <http://amwa.tv/>.
 
@@ -112,6 +115,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
+- Added support for the IS-12 NMOS Control Protocol
 - Added support for HSTS and OCSP stapling
 - Added support for BCP-006-01 v1.0-dev, which can be demonstrated with **nmos-cpp-node** by using `"video_type": "video/jxsv"`
 - Updates to the GitHub Actions build-test workflow for better coverage of platforms and to include unicast DNS-SD tests
