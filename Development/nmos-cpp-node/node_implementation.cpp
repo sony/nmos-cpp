@@ -300,6 +300,27 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         return success;
     };
 
+    // it is important that the model be locked before inserting, updating or deleting a resource
+    // and that the the node behaviour thread be notified after doing so
+    const auto insert_root_after = [&model, insert_resource_after](unsigned int milliseconds, nmos::control_protocol_resource& root, slog::base_gate& gate)
+    {
+        std::function<void(nmos::resources& resources, nmos::control_protocol_resource& resource)> insert_resources;
+
+        insert_resources = [&milliseconds, insert_resource_after, &insert_resources, &gate](nmos::resources& resources, nmos::control_protocol_resource& resource)
+        {
+            for (auto& resource_ : resource.resources)
+            {
+                insert_resources(resources, resource_);
+                if (!insert_resource_after(milliseconds, resources, std::move(resource_), gate)) throw node_implementation_init_exception();
+            }
+        };
+
+        auto& resources = model.control_protocol_resources;
+
+        insert_resources(resources, root);
+        if (!insert_resource_after(milliseconds, resources, std::move(root), gate)) throw node_implementation_init_exception();
+    };
+
     const auto resolve_auto = make_node_implementation_auto_resolver(model.settings);
     const auto set_transportfile = make_node_implementation_transportfile_setter(model.node_resources, model.settings);
 
@@ -923,7 +944,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
 
-            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
+            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
         };
 
         // example to create a non-standard Example control class
@@ -1111,7 +1132,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 data[object_sequence] = sequence;
             }
 
-            return nmos::resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
+            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
         };
 
 
@@ -1172,16 +1193,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         // add device-manager to root-block
         nmos::push_back(root_block, device_manager);
 
-        // insert resources to model
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(example_control), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(left_gain), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(right_gain), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(master_gain), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(channel_gain), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(stereo_gain), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(device_manager), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(class_manager), gate)) throw node_implementation_init_exception();
-        if (!insert_resource_after(delay_millis, model.control_protocol_resources, std::move(root_block), gate)) throw node_implementation_init_exception();
+        // insert control protocol resources to model
+        insert_root_after(delay_millis, root_block, gate);
     }
 }
 

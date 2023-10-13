@@ -3,6 +3,7 @@
 
 #include "cpprest/json_utils.h"
 #include "nmos/control_protocol_typedefs.h"
+#include "nmos/resource.h"
 
 namespace web
 {
@@ -11,6 +12,23 @@ namespace web
         class value;
     }
     class uri;
+}
+
+namespace nmos
+{
+    struct control_protocol_resource : resource
+    {
+        control_protocol_resource(api_version version, nmos::type type, web::json::value&& data, nmos::id id, bool never_expire)
+            : resource(version, type, std::move(data), id, never_expire)
+        {}
+
+        control_protocol_resource(api_version version, nmos::type type, web::json::value data, bool never_expire)
+            : resource(version, type, data, never_expire)
+        {}
+
+        // temporary storage to hold the resources until they are moved to the model resources
+        std::vector<control_protocol_resource> resources;
+    };
 }
 
 namespace nmos

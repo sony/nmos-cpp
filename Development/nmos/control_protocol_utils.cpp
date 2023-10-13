@@ -221,21 +221,20 @@ namespace nmos
         }
     }
 
-    // add block (NcBlock) to other block (NcBlock)
-    bool push_back(resource& parent_block, const resource& child_block)
+    // push control protocol resource into other control protocol NcBlock resource
+    void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource)
     {
         using web::json::value;
 
-        auto& parent = parent_block.data;
-        const auto& child = child_block.data;
+        auto& parent = nc_block_resource.data;
+        const auto& child = resource.data;
 
-        if (is_nc_block(details::parse_nc_class_id(nmos::fields::nc::class_id(parent))) )
-        {
-            web::json::push_back(parent[nmos::fields::nc::members],
-                details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
-            return true;
-        }
-        return false;
+        if (!is_nc_block(details::parse_nc_class_id(nmos::fields::nc::class_id(parent)))) throw std::logic_error("non-NcBlock cannot be nested");
+
+        web::json::push_back(parent[nmos::fields::nc::members],
+            details::make_nc_block_member_descriptor(nmos::fields::description(child), nmos::fields::nc::role(child), nmos::fields::nc::oid(child), nmos::fields::nc::constant_oid(child), details::parse_nc_class_id(nmos::fields::nc::class_id(child)), nmos::fields::nc::user_label(child), nmos::fields::nc::oid(parent)));
+
+        nc_block_resource.resources.push_back(resource);
     }
 
     // modify a resource, and insert notification event to all subscriptions

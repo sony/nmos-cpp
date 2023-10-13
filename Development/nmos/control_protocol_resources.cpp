@@ -10,7 +10,7 @@ namespace nmos
     namespace details
     {
         // create block resource
-        resource make_block(nmos::nc_oid oid, const web::json::value& owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
+        control_protocol_resource make_block(nmos::nc_oid oid, const web::json::value& owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
         {
             using web::json::value;
 
@@ -21,7 +21,7 @@ namespace nmos
     }
 
     // create block resource
-    resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
+    control_protocol_resource make_block(nc_oid oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const web::json::value& members)
     {
         using web::json::value;
 
@@ -29,7 +29,7 @@ namespace nmos
     }
 
     // create Root block resource
-    resource make_root_block()
+    control_protocol_resource make_root_block()
     {
         using web::json::value;
 
@@ -37,7 +37,7 @@ namespace nmos
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
-    resource make_device_manager(nc_oid oid, const nmos::settings& settings)
+    control_protocol_resource make_device_manager(nc_oid oid, const nmos::settings& settings)
     {
         using web::json::value;
 
@@ -55,7 +55,7 @@ namespace nmos
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
-    resource make_class_manager(nc_oid oid, const nmos::experimental::control_protocol_state& control_protocol_state)
+    control_protocol_resource make_class_manager(nc_oid oid, const nmos::experimental::control_protocol_state& control_protocol_state)
     {
         using web::json::value;
 
