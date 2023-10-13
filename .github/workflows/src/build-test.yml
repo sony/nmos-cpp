@@ -175,8 +175,8 @@ jobs:
 
     - name: make badges
       run: |
-        # combine badges from all builds, exclude macos-11 and ubuntu-14.04
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11 ubuntu-14.04
+        # combine badges from all builds, exclude macos-11
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}
