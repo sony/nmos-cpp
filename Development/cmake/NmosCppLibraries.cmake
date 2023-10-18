@@ -913,6 +913,8 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_resources.h
     nmos/control_protocol_handlers.h
     nmos/control_protocol_methods.h
+    nmos/control_protocol_nmos_channel_mapping_resource_type.h
+    nmos/control_protocol_nmos_resource_type.h
     nmos/control_protocol_resource.h
     nmos/control_protocol_resources.h
     nmos/control_protocol_state.h
