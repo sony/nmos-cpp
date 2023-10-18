@@ -42,8 +42,11 @@ namespace nmos
     // push control protocol resource into other control protocol NcBlock resource
     void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource);
 
-    // modify a resource, and insert notification event to all subscriptions
-    bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event);
+    // modify a control protocol resource, and insert notification event to all subscriptions
+    bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event);
+
+    // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
+    resources::const_iterator find_control_protocol_resource(resources& resources, const id& id);
 }
 
 #endif

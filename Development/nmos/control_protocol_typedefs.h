@@ -3,10 +3,13 @@
 
 #include "cpprest/basic_utils.h"
 #include "cpprest/json_utils.h"
+#include "nmos/control_protocol_nmos_channel_mapping_resource_type.h"
+#include "nmos/control_protocol_nmos_resource_type.h"
 
 namespace nmos
 {
-    namespace nc_message_type
+    // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html
+    namespace ncp_message_type
     {
         enum type
         {
@@ -20,6 +23,7 @@ namespace nmos
     }
 
     // Method invokation status
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmethodstatus
     namespace nc_method_status
     {
         enum status
@@ -42,7 +46,6 @@ namespace nmos
             property_not_implemented = 502, // Addressed property is not implemented by the addressed object
             not_ready = 503,                // The device is not ready to handle any commands
             timeout = 504,                  // Method call did not finish within the allotted time
-            property_version_error = 505    // Incompatible protocol version
         };
     }
 
@@ -53,6 +56,7 @@ namespace nmos
     };
 
     // Datatype type
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypetype
     namespace nc_datatype_type
     {
         enum type
@@ -65,6 +69,7 @@ namespace nmos
     }
 
     // Device generic operational state
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicegenericstate
     namespace nc_device_generic_state
     {
         enum state
@@ -79,6 +84,7 @@ namespace nmos
     }
 
     // Reset cause enum
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncresetcause
     namespace nc_reset_cause
     {
         enum cause
@@ -311,6 +317,62 @@ namespace nmos
         friend bool operator==(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return lhs.tied() == rhs.tied(); }
         friend bool operator!=(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return !(lhs == rhs); }
         friend bool operator<(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return lhs.tied() < rhs.tied(); }
+    };
+
+    // NcTouchpointResource
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointresource
+    struct nc_touchpoint_resource
+    {
+        utility::string_t resource_type;
+
+        nc_touchpoint_resource(const utility::string_t& resource_type)
+            : resource_type(resource_type)
+        {}
+
+        auto tied() const -> decltype(std::tie(resource_type)) { return std::tie(resource_type); }
+        friend bool operator==(const nc_touchpoint_resource& lhs, const nc_touchpoint_resource& rhs) { return lhs.tied() == rhs.tied(); }
+        friend bool operator!=(const nc_touchpoint_resource& lhs, const nc_touchpoint_resource& rhs) { return !(lhs == rhs); }
+        friend bool operator<(const nc_touchpoint_resource& lhs, const nc_touchpoint_resource& rhs) { return lhs.tied() < rhs.tied(); }
+    };
+
+    // NcTouchpointResourceNmos
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointresourcenmos
+    struct nc_touchpoint_resource_nmos : nc_touchpoint_resource
+    {
+        nc_uuid id;
+
+        nc_touchpoint_resource_nmos(const utility::string_t& resource_type, nc_uuid id)
+            : nc_touchpoint_resource(resource_type)
+            , id(id)
+        {}
+
+        nc_touchpoint_resource_nmos(const ncp_nmos_resource_type& resource_type, nc_uuid id)
+            : nc_touchpoint_resource(resource_type.name)
+            , id(id)
+        {}
+
+        auto tied() const -> decltype(std::tie(resource_type, id)) { return std::tie(resource_type, id); }
+        friend bool operator==(const nc_touchpoint_resource_nmos& lhs, const nc_touchpoint_resource_nmos& rhs) { return lhs.tied() == rhs.tied(); }
+        friend bool operator!=(const nc_touchpoint_resource_nmos& lhs, const nc_touchpoint_resource_nmos& rhs) { return !(lhs == rhs); }
+        friend bool operator<(const nc_touchpoint_resource_nmos& lhs, const nc_touchpoint_resource_nmos& rhs) { return lhs.tied() < rhs.tied(); }
+    };
+
+    // NcTouchpointResourceNmosChannelMapping
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointresourcenmoschannelmapping
+    struct nc_touchpoint_resource_nmos_channel_mapping : nc_touchpoint_resource_nmos
+    {
+        //ncp_nmos_channel_mapping_resource_type resource_type;
+        nc_uuid io_id;
+
+        nc_touchpoint_resource_nmos_channel_mapping(const ncp_nmos_channel_mapping_resource_type& resource_type, nc_uuid id, const utility::string_t& io_id)
+            : nc_touchpoint_resource_nmos(resource_type.name, id)
+            , io_id(io_id)
+        {}
+
+        auto tied() const -> decltype(std::tie(resource_type, id, io_id)) { return std::tie(resource_type, id, io_id); }
+        friend bool operator==(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return lhs.tied() == rhs.tied(); }
+        friend bool operator!=(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return !(lhs == rhs); }
+        friend bool operator<(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return lhs.tied() < rhs.tied(); }
     };
 }
 

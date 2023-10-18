@@ -40,7 +40,6 @@
 #include "nmos/node_resources.h"
 #include "nmos/node_server.h"
 #include "nmos/random.h"
-#include "nmos/resource.h"  // for IS-12 gain control
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
 #include "nmos/st2110_21_sender_type.h"
@@ -939,7 +938,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             control_protocol_state.insert(gain_control_class);
         }
         // helper function to create Gain control
-        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, float gain = 0.0, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null())
+        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), float gain = 0.0)
         {
             auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
@@ -1183,6 +1182,26 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             { 0, 50, 80 },
             { make_example_datatype(example_enum::Alpha, U("example"), 50, false), make_example_datatype(example_enum::Gamma, U("different"), 75, true) }
         );
+
+        // example receiver-monitor(s)
+        {
+            int count = 0;
+            for (int index = 0; index < how_many; ++index)
+            {
+                for (const auto& port : rtp_receiver_ports)
+                {
+                    const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
+
+                    utility::stringstream_t role;
+                    role << U("monitor-") << ++count;
+                    const auto& receiver = nmos::find_resource(model.node_resources, receiver_id);
+                    const auto receiver_monitor = nmos::make_receiver_monitor(++oid, nmos::root_block_oid, role.str(), nmos::fields::label(receiver->data), nmos::fields::description(receiver->data), value_of({ { nmos::details::make_nc_touchpoint_nmos({nmos::ncp_nmos_resource_types::receiver, receiver_id}) } }));
+
+                    // add receiver-monitor to root-block
+                    nmos::push_back(root_block, receiver_monitor);
+                }
+            }
+        }
 
         // add example-control to root-block
         nmos::push_back(root_block, example_control);
@@ -1545,13 +1564,17 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
     auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
+    // this example uses this callback to update IS-12 Receiver-Monitor connection status
+    auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
 
-    return [connection_events_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
 
         connection_events_activation_handler(resource, connection_resource);
+
+        receiver_monitor_connection_activation_handler(connection_resource);
     };
 }
 

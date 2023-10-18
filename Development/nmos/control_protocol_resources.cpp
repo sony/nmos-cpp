@@ -63,4 +63,19 @@ namespace nmos
 
         return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
     }
+
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+    control_protocol_resource make_receiver_monitor(nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
+        nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message)
+    {
+        using web::json::value;
+
+        auto data = nmos::details::make_nc_worker(nc_receiver_monitor_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
+        data[nmos::fields::nc::connection_status] = value::number(connection_status);
+        data[nmos::fields::nc::connection_status_message] = value::string(connection_status_message);
+        data[nmos::fields::nc::payload_status] = value::number(payload_status);
+        data[nmos::fields::nc::payload_status_message] = value::string(payload_status_message);
+
+        return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
+    }
 }

@@ -221,7 +221,7 @@ namespace nmos
         }
     }
 
-    // push control protocol resource into other control protocol NcBlock resource
+    // push a control protocol resource into other control protocol NcBlock resource
     void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource)
     {
         using web::json::value;
@@ -237,8 +237,8 @@ namespace nmos
         nc_block_resource.resources.push_back(resource);
     }
 
-    // modify a resource, and insert notification event to all subscriptions
-    bool modify_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
+    // modify a control protocol resource, and insert notification event to all subscriptions
+    bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
     {
         auto found = resources.find(id);
         if (resources.end() == found || !found->has_data()) return false;
@@ -280,5 +280,26 @@ namespace nmos
         }
 
         return result;
+    }
+
+    // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
+    resources::const_iterator find_control_protocol_resource(resources& resources, const id& resource_id)
+    {
+        return find_resource_if(resources, nmos::types::nc_object, [resource_id](const nmos::resource& resource)
+        {
+            auto& touchpoints = resource.data.at(nmos::fields::nc::touchpoints);
+            if (!touchpoints.is_null() && touchpoints.is_array())
+            {
+                auto& tps = touchpoints.as_array();
+                auto found_tp = std::find_if(tps.begin(), tps.end(), [resource_id](const web::json::value& touchpoint)
+                {
+                    auto& resource = nmos::fields::nc::resource(touchpoint);
+                    return (resource_id == nmos::fields::nc::id(resource).as_string()
+                        && nmos::ncp_nmos_resource_types::receiver.name == nmos::fields::nc::resource_type(resource));
+                });
+                return (tps.end() != found_tp);
+            }
+            return false;
+        });
     }
 }

@@ -150,6 +150,15 @@ namespace nmos
         web::json::value make_nc_parameter_constraints_string(uint32_t max_characters);
         web::json::value make_nc_parameter_constraints_string(const nc_regex& pattern);
 
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint
+        web::json::value make_nc_touchpoint(const utility::string_t& context_namespace);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointnmos
+        web::json::value make_nc_touchpoint_nmos(const nc_touchpoint_resource_nmos& resource);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointnmoschannelmapping
+        web::json::value make_nc_touchpoint_nmos_channel_mapping(const nc_touchpoint_resource_nmos_channel_mapping& resource);
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
         web::json::value make_nc_object(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
 

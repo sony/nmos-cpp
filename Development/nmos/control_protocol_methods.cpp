@@ -64,7 +64,7 @@ namespace nmos
                 const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
                 const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
 
-                modify_resource(resources, resource->id, [&](nmos::resource& resource)
+                modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::name(property)] = property_changed_event_data.value;
 
@@ -151,7 +151,7 @@ namespace nmos
                     const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
                     const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
 
-                    modify_resource(resources, resource->id, [&](nmos::resource& resource)
+                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::nc::name(property)][index] = property_changed_event_data.value;
 
@@ -203,7 +203,7 @@ namespace nmos
                 const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
                 const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
 
-                modify_resource(resources, resource->id, [&](nmos::resource& resource)
+                modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)];
                     if (data.is_null()) { sequence = value::array(); }
@@ -250,7 +250,7 @@ namespace nmos
                     const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
                     const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
 
-                    modify_resource(resources, resource->id, [&](nmos::resource& resource)
+                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
                         auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
                         sequence.erase(index);

@@ -605,8 +605,6 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
         web::json::value make_nc_parameter_constraints_string(const web::json::value& default_value, const web::json::value& max_characters, const web::json::value& pattern)
         {
-            using web::json::value;
-
             auto data = make_nc_parameter_constraints(default_value);
             data[nmos::fields::nc::max_characters] = max_characters;
             data[nmos::fields::nc::pattern] = pattern;
@@ -636,6 +634,66 @@ namespace nmos
             using web::json::value;
 
             return make_nc_parameter_constraints_string(value::null(), value::null(), value::string(pattern));
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointresource
+        web::json::value make_nc_touchpoint_resource(const nc_touchpoint_resource& resource)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::resource_type, resource.resource_type }
+            });
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointresourcenmos
+        web::json::value make_nc_touchpoint_resource_nmos(const nc_touchpoint_resource_nmos& resource)
+        {
+            using web::json::value;
+
+            auto data = make_nc_touchpoint_resource(resource);
+            data[nmos::fields::nc::id] = value::string(resource.id);
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointresourcenmoschannelmapping
+        web::json::value make_nc_touchpoint_resource_nmos_channel_mapping(const nc_touchpoint_resource_nmos_channel_mapping& resource)
+        {
+            using web::json::value;
+
+            auto data = make_nc_touchpoint_resource_nmos(resource);
+            data[nmos::fields::nc::io_id] = value::string(resource.io_id);
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint
+        web::json::value make_nc_touchpoint(const utility::string_t& context_namespace)
+        {
+            using web::json::value_of;
+
+            return value_of({
+                { nmos::fields::nc::context_namespace, context_namespace }
+            });
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointnmos
+        web::json::value make_nc_touchpoint_nmos(const nc_touchpoint_resource_nmos& resource)
+        {
+            auto data = make_nc_touchpoint(U("x-nmos"));
+            data[nmos::fields::nc::resource] = make_nc_touchpoint_resource_nmos(resource);
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpointnmoschannelmapping
+        web::json::value make_nc_touchpoint_nmos_channel_mapping(const nc_touchpoint_resource_nmos_channel_mapping& resource)
+        {
+            auto data = make_nc_touchpoint(U("x-nmos/channelmapping"));
+            data[nmos::fields::nc::resource] = make_nc_touchpoint_resource_nmos_channel_mapping(resource);
+
+            return data;
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
@@ -794,7 +852,7 @@ namespace nmos
         using web::json::value_of;
 
         return value_of({
-            { nmos::fields::nc::message_type, nc_message_type::command_response },
+            { nmos::fields::nc::message_type, ncp_message_type::command_response },
             { nmos::fields::nc::responses, responses }
         });
     }
@@ -806,7 +864,7 @@ namespace nmos
         using web::json::value_of;
 
         return value_of({
-            { nmos::fields::nc::message_type, nc_message_type::subscription_response },
+            { nmos::fields::nc::message_type, ncp_message_type::subscription_response },
             { nmos::fields::nc::subscriptions, subscriptions }
         });
     }
@@ -828,7 +886,7 @@ namespace nmos
         using web::json::value_of;
 
         return value_of({
-            { nmos::fields::nc::message_type, nc_message_type::notification },
+            { nmos::fields::nc::message_type, ncp_message_type::notification },
             { nmos::fields::nc::notifications, notifications }
         });
     }
@@ -840,7 +898,7 @@ namespace nmos
         using web::json::value_of;
 
         return value_of({
-            { nmos::fields::nc::message_type, nc_message_type::error },
+            { nmos::fields::nc::message_type, ncp_message_type::error },
             { nmos::fields::nc::status, method_result.status},
             { nmos::fields::nc::error_message, error_message }
         });

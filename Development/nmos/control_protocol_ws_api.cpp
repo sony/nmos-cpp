@@ -251,7 +251,7 @@ namespace nmos
                             const auto msg_type = nmos::fields::nc::message_type(message);
                             switch (msg_type)
                             {
-                            case nc_message_type::command:
+                            case ncp_message_type::command:
                             {
                                 // validate command-message
                                 details::validate_controlprotocolapi_command_message_schema(version, message);
@@ -308,7 +308,7 @@ namespace nmos
                                 });
                             }
                             break;
-                            case nc_message_type::subscription:
+                            case ncp_message_type::subscription:
                             {
                                 // validate subscription-message
                                 details::validate_controlprotocolapi_subscription_message_schema(version, message);

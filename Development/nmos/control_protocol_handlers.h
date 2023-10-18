@@ -30,7 +30,7 @@ namespace nmos
 
     // callback to retrieve a control protocol datatype
     // this callback should not throw exceptions
-    typedef std::function<experimental::datatype(const nmos::nc_name& name)> get_control_protocol_datatype_handler;
+    typedef std::function<experimental::datatype(const nc_name& name)> get_control_protocol_datatype_handler;
 
     namespace experimental
     {
@@ -52,6 +52,13 @@ namespace nmos
 
     // construct callback to retrieve all method handlers
     get_control_protocol_methods_handler make_get_control_protocol_methods_handler(experimental::control_protocol_state& control_protocol_state);
+
+    // a control_protocol_connection_activation_handler is a notification that the active parameters for the specified (IS-05) sender/connection_sender or receiver/connection_receiver have changed
+    // this callback should not throw exceptions
+    typedef std::function<void(const nmos::resource& connection_resource)> control_protocol_connection_activation_handler;
+
+    // construct callback for receiver monitor to process connection (de)activation
+    control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(nmos::resources& resources);
 }
 
 #endif
