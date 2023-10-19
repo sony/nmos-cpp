@@ -313,6 +313,13 @@ namespace nmos
             , sequence_item_index(web::json::value::null())
         {}
 
+        nc_property_changed_event_data(nc_property_id property_id, nc_property_change_type::type change_type, nc_id sequence_item_index)
+            : property_id(std::move(property_id))
+            , change_type(change_type)
+            , value(web::json::value::null())
+            , sequence_item_index(sequence_item_index)
+        {}
+
         auto tied() const -> decltype(std::tie(property_id, change_type, value, sequence_item_index)) { return std::tie(property_id, change_type, value, sequence_item_index); }
         friend bool operator==(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return lhs.tied() == rhs.tied(); }
         friend bool operator!=(const nc_property_changed_event_data& lhs, const nc_property_changed_event_data& rhs) { return !(lhs == rhs); }

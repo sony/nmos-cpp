@@ -60,15 +60,11 @@ namespace nmos
                     return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                 }
 
-                const nc_property_changed_event_data property_changed_event_data{ parse_nc_property_id(property_id), nc_property_change_type::type::value_changed, val };
-                const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
-                const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
-
                 modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
-                    resource.data[nmos::fields::nc::name(property)] = property_changed_event_data.value;
+                    resource.data[nmos::fields::nc::name(property)] = val;
 
-                }, notification_event);
+                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::value_changed, val } }));
 
                 return make_control_protocol_message_response(handle, { nc_method_status::ok });
             }
@@ -147,15 +143,11 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    const nc_property_changed_event_data property_changed_event_data{ parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_changed, val, nc_id(index) };
-                    const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
-                    const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
-
                     modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
-                        resource.data[nmos::fields::nc::name(property)][index] = property_changed_event_data.value;
+                        resource.data[nmos::fields::nc::name(property)][index] = val;
 
-                    }, notification_event);
+                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
 
                     return make_control_protocol_message_response(handle, { nc_method_status::ok });
                 }
@@ -199,17 +191,14 @@ namespace nmos
                 auto& data = resource->data.at(nmos::fields::nc::name(property));
 
                 const nc_id sequence_item_index = data.is_null() ? 0 : nc_id(data.as_array().size());
-                const nc_property_changed_event_data property_changed_event_data{ parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_added, val, sequence_item_index };
-                const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
-                const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
 
                 modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)];
                     if (data.is_null()) { sequence = value::array(); }
-                    web::json::push_back(sequence, property_changed_event_data.value);
+                    web::json::push_back(sequence, val);
 
-                }, notification_event);
+                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
 
                 return make_control_protocol_message_response(handle, { nc_method_status::ok }, sequence_item_index);
             }
@@ -246,16 +235,12 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    const nc_property_changed_event_data property_changed_event_data{ parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, data.as_array().at(index), nc_id(index) };
-                    const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(resource->data), nc_object_property_changed_event_id, property_changed_event_data);
-                    const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
-
                     modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
                         auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
                         sequence.erase(index);
 
-                    }, notification_event);
+                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index) } }));
 
                     return make_control_protocol_message_response(handle, { nc_method_status::ok });
                 }

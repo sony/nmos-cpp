@@ -870,6 +870,7 @@ namespace nmos
     }
 
     // notification
+    // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#notification-messages
     // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#notification-message-type
     web::json::value make_control_protocol_notification(nc_oid oid, const nc_event_id& event_id, const nc_property_changed_event_data& property_changed_event_data)
     {
@@ -881,7 +882,7 @@ namespace nmos
             { nmos::fields::nc::event_data, details::make_nc_property_changed_event_data(property_changed_event_data) }
         });
     }
-    web::json::value make_control_protocol_notification(const web::json::value& notifications)
+    web::json::value make_control_protocol_notification_message(const web::json::value& notifications)
     {
         using web::json::value_of;
 
@@ -889,6 +890,21 @@ namespace nmos
             { nmos::fields::nc::message_type, ncp_message_type::notification },
             { nmos::fields::nc::notifications, notifications }
         });
+    }
+
+    // property changed notification event
+    // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#the-propertychanged-event
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/NcObject.html#propertychanged-event
+    web::json::value make_propertry_changed_event(nc_oid oid, const std::vector<nc_property_changed_event_data>& property_changed_event_data_list)
+    {
+        using web::json::value;
+
+        auto notifications = value::array();
+        for (auto& property_changed_event_data : property_changed_event_data_list)
+        {
+            web::json::push_back(notifications, make_control_protocol_notification(oid, nc_object_property_changed_event_id, property_changed_event_data));
+        }
+        return make_control_protocol_notification_message(notifications);
     }
 
     // error message

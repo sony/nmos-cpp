@@ -65,20 +65,21 @@ namespace nmos
             {
                 // update receiver-monitor's connectionStatus propertry
 
-                auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
+                const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
+                const web::json::value val = active ? nc_connection_status::connected : nc_connection_status::disconnected;
 
-                nc_property_id property_id = nc_receiver_monitor_connection_status_property_id;
-                web::json::value val = active ? nc_connection_status::connected : nc_connection_status::disconnected;
-                const nc_property_changed_event_data property_changed_event_data{ property_id, nc_property_change_type::type::value_changed, val };
-                const auto notification = make_control_protocol_notification(nmos::fields::nc::oid(found->data), nc_object_property_changed_event_id, property_changed_event_data);
-                const auto notification_event = make_control_protocol_notification(web::json::value_of({ notification }));
+                // hmm, maybe updating connectionStatusMessage, payloadStatus, and payloadStatusMessage too
+
+                const auto propertry_changed_event = make_propertry_changed_event(nmos::fields::nc::oid(found->data),
+                    {
+                        { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, val }
+                    });
 
                 modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
                 {
-                    resource.data[nmos::fields::nc::connection_status] = property_changed_event_data.value;
-                    // hmm, maybe updating connectionStatusMessage, payloadStatus, and payloadStatusMessage too
+                    resource.data[nmos::fields::nc::connection_status] = val;
 
-                }, notification_event);
+                }, propertry_changed_event);
             }
         };
     }
