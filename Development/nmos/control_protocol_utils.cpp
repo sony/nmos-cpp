@@ -283,9 +283,9 @@ namespace nmos
     }
 
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
-    resources::const_iterator find_control_protocol_resource(resources& resources, const id& resource_id)
+    resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& resource_id)
     {
-        return find_resource_if(resources, nmos::types::nc_object, [resource_id](const nmos::resource& resource)
+        return find_resource_if(resources, type, [resource_id](const nmos::resource& resource)
         {
             auto& touchpoints = resource.data.at(nmos::fields::nc::touchpoints);
             if (!touchpoints.is_null() && touchpoints.is_array())

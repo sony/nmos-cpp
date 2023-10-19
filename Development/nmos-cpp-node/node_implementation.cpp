@@ -943,7 +943,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
 
-            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
+            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
         };
 
         // example to create a non-standard Example control class
@@ -1131,7 +1131,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 data[object_sequence] = sequence;
             }
 
-            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_object, std::move(data), true };
+            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
         };
 
 

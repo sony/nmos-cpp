@@ -16,7 +16,7 @@ namespace nmos
 
             auto data = details::make_nc_block(nc_block_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true, members);
 
-            return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
+            return{ is12_versions::v1_0, types::nc_block, std::move(data), true };
         }
     }
 
@@ -51,7 +51,7 @@ namespace nmos
         auto data = details::make_nc_device_manager(oid, root_block_oid, value::string(U("Device manager")), U("The device manager offers information about the product this device is representing"), value::null(), value::null(),
             manufacturer, product, serial_number, value::null(), device_name, device_role, operational_state, nc_reset_cause::unknown);
 
-        return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_device_manager, std::move(data), true };
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
@@ -61,7 +61,7 @@ namespace nmos
 
         auto data = details::make_nc_class_manager(oid, root_block_oid, value::string(U("Class manager")), U("The class manager offers access to control class and data type descriptors"), value::null(), value::null(), control_protocol_state);
 
-        return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_class_manager, std::move(data), true };
     }
 
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
@@ -76,6 +76,6 @@ namespace nmos
         data[nmos::fields::nc::payload_status] = value::number(payload_status);
         data[nmos::fields::nc::payload_status_message] = value::string(payload_status_message);
 
-        return{ is12_versions::v1_0, types::nc_object, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_receiver_monitor, std::move(data), true };
     }
 }

@@ -46,7 +46,7 @@ namespace nmos
     bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event);
 
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
-    resources::const_iterator find_control_protocol_resource(resources& resources, const id& id);
+    resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 }
 
 #endif

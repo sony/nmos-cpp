@@ -118,11 +118,13 @@ namespace nmos
                     .set_path(ws_ncp_path)
                     .to_uri();
 
+                const utility::string_t control_protocol_resource_path;
+
                 const bool non_persistent = false;
                 value data = value_of({
                     { nmos::fields::id, nmos::make_id() },
                     { nmos::fields::max_update_rate_ms, 0 },
-                    { nmos::fields::resource_path, U('/') + nmos::resourceType_from_type(nmos::types::nc_object) },
+                    { nmos::fields::resource_path, control_protocol_resource_path },
                     { nmos::fields::params, value_of({ { U("query.rql"), U("in(id,())") } }) },
                     { nmos::fields::persist, non_persistent },
                     { nmos::fields::secure, secure },
@@ -147,7 +149,6 @@ namespace nmos
 
                 const auto resource_path = nmos::fields::resource_path(subscription->data);
                 const auto topic = resource_path + U('/');
-                // source_id and flow_id are set per-message depending on the source, unlike Query WebSocket API
                 data[nmos::fields::message] = details::make_grain({}, {}, topic);
 
                 resource grain{ is12_versions::v1_0, nmos::types::grain, std::move(data), false };
