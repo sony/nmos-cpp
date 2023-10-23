@@ -5,7 +5,6 @@
 #include <boost/algorithm/string/erase.hpp>
 #include "cpprest/basic_utils.h"
 #include "cpprest/host_utils.h"
-#include "mdns/dns_sd_impl.h"
 #include "slog/all_in_one.h"
 
 namespace mdns_details
@@ -200,19 +199,6 @@ namespace mdns_details
         }
     }
 
-    struct address_result
-    {
-        address_result(const std::string& host_name, const std::string& ip_address, std::uint32_t ttl = 0, std::uint32_t interface_id = 0) : host_name(host_name), ip_address(ip_address), ttl(ttl), interface_id(interface_id) {}
-
-        std::string host_name;
-        std::string ip_address;
-        std::uint32_t ttl;
-        std::uint32_t interface_id;
-    };
-
-    // return true from the address result callback if the operation should be ended before its specified timeout once no more results are "imminent"
-    typedef std::function<bool(const address_result&)> address_handler;
-
 #ifdef HAVE_DNSSERVICEGETADDRINFO
     struct getaddrinfo_context
     {
@@ -344,7 +330,7 @@ namespace mdns_details
         return had_enough;
     }
 
-    static bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
+    bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
         const auto earliest_timeout_ = std::chrono::seconds(0);
 
@@ -446,30 +432,6 @@ namespace mdns
 {
     namespace details
     {
-        struct cancellation_guard
-        {
-            cancellation_guard(const pplx::cancellation_token& source)
-                : source(source)
-                , target(nullptr)
-            {
-                if (source.is_cancelable())
-                {
-                    DNSServiceCreateCancellationToken(&target);
-                    reg = source.register_callback([this] { DNSServiceCancel(target); });
-                }
-            }
-
-            ~cancellation_guard()
-            {
-                if (pplx::cancellation_token_registration{} != reg) source.deregister_callback(reg);
-                DNSServiceCancellationTokenDeallocate(target);
-            }
-
-            pplx::cancellation_token source;
-            DNSServiceCancellationToken target;
-            pplx::cancellation_token_registration reg;
-        };
-
         // hm, 'final' may be appropriate here rather than 'override'?
         class service_discovery_impl_ : public service_discovery_impl
         {
