@@ -341,7 +341,7 @@ namespace nmos
         // hm, TM not indicated in IS-04
         if (tm) params.tm = *tm;
 
-        params.ssn = params.tm.empty() ? sdp::smpte_standard_numbers::ST2110_40_2018 : sdp::smpte_standard_numbers::ST2110_40_2022;
+        params.ssn = params.tm.empty() ? sdp::smpte_standard_numbers::ST2110_40_2018 : sdp::smpte_standard_numbers::ST2110_40_2023;
 
         // hm, ST 2110-21 TROFF not indicated in IS-04 so omit this
         // hm, ST 2110-10 TSMODE and TSDELAY not indicated in IS-04 so omit these
