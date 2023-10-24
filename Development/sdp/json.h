@@ -497,7 +497,7 @@ namespace sdp
         // and https://tools.ietf.org/html/rfc3190
         const web::json::field_as_string channel_order{ U("channel-order") }; // "<convention>.<order>", e.g. "SMPTE2110.(ST)", see nmos/channels.h
 
-        // See SMPTE ST 2110-40:2022
+        // See SMPTE ST 2110-40:2023
         // and https://tools.ietf.org/html/rfc8331
         const web::json::field_as_string DID_SDID{ U("DID_SDID") }; // e.g. "{0x41,0x01}", see nmos::did_sdid
         const web::json::field<uint32_t> VPID_Code{ U("VPID_Code") }; // 1..255, see nmos::vpid_code
@@ -600,7 +600,7 @@ namespace sdp
     // SMPTE Standard Number
     // See SMPTE ST 2110-20:2022 Section 7.2 Required Media Type Parameters
     // and SMPTE ST 2110-22:2022 Section 7.2 Format-specific Parameters
-    // and SMPTE ST 2110-40:2022 Section 7 Session Description Protocol (SDP)
+    // and SMPTE ST 2110-40:2023 Section 7 Session Description Protocol (SDP)
     DEFINE_STRING_ENUM(smpte_standard_number)
     namespace smpte_standard_numbers
     {
@@ -617,9 +617,11 @@ namespace sdp
 
         const smpte_standard_number ST2110_40_2018{ U("ST2110-40:2018") };
         // "Senders implementing this standard shall signal the value ST2110-40:2018 unless they are signaling TM, in
-        // which case they shall signal the value ST2110-40:2022."
+        // which case they shall signal the value ST2110-40:2021."
         // Note that SSN was not actually specified in ST 2110-40:2018...
-        const smpte_standard_number ST2110_40_2022{ U("ST2110-40:2022") };
+        // ...and yes, the publication of the ST 2110-40 revision was delayed two calendar years but the SSN value
+        // has not thus far been corrected!
+        const smpte_standard_number ST2110_40_2023{ U("ST2110-40:2021") };
     }
 
     // TP (Media Type Parameter)
@@ -676,7 +678,7 @@ namespace sdp
     }
 
     // TM (Transmission Model)
-    // See SMPTE ST 2110-40:2022 Section 7 Session Description Protocol (SDP)
+    // See SMPTE ST 2110-40:2023 Section 7 Session Description Protocol (SDP)
     DEFINE_STRING_ENUM(transmission_model)
     namespace transmission_models
     {
