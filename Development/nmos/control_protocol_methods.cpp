@@ -36,7 +36,7 @@ namespace nmos
         }
 
         // Set property value
-        web::json::value set(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, slog::base_gate& gate)
+        web::json::value set(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
         {
             // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -46,7 +46,8 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set property: " << property_id.serialize() << " value: " << val.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
+            const auto property_id_ = parse_nc_property_id(property_id);
+            const auto& property = find_property(property_id_, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
                 if (nmos::fields::nc::is_read_only(property))
@@ -60,11 +61,21 @@ namespace nmos
                     return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                 }
 
+                // do constraints validation
+                if (!val.is_null())
+                {
+                    if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), get_datatype_constraints(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype)))
+                    {
+                        return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
+                    }
+                }
+
+                // update property
                 modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::name(property)] = val;
 
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::value_changed, val } }));
+                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::value_changed, val } }));
 
                 return make_control_protocol_message_response(handle, { nc_method_status::ok });
             }
@@ -117,7 +128,7 @@ namespace nmos
         }
 
         // Set sequence item
-        web::json::value set_sequence_item(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, slog::base_gate& gate)
+        web::json::value set_sequence_item(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
         {
             // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -128,7 +139,8 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
+            const auto property_id_ = parse_nc_property_id(property_id);
+            const auto& property = find_property(property_id_, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
                 auto& data = resource->data.at(nmos::fields::nc::name(property));
@@ -143,11 +155,18 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
+                    // do constraints validation
+                    if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), get_datatype_constraints(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype)))
+                    {
+                        return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
+                    }
+
+                    // update property
                     modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
                         resource.data[nmos::fields::nc::name(property)][index] = val;
 
-                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
+                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
 
                     return make_control_protocol_message_response(handle, { nc_method_status::ok });
                 }
@@ -165,7 +184,7 @@ namespace nmos
         }
 
         // Add item to sequence
-        web::json::value add_sequence_item(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, slog::base_gate& gate)
+        web::json::value add_sequence_item(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
         {
             // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -177,7 +196,8 @@ namespace nmos
             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize();
 
             // find the relevant nc_property_descriptor
-            const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
+            const auto property_id_ = parse_nc_property_id(property_id);
+            const auto& property = find_property(property_id_, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
                 if (!nmos::fields::nc::is_sequence(property))
@@ -192,13 +212,20 @@ namespace nmos
 
                 const nc_id sequence_item_index = data.is_null() ? 0 : nc_id(data.as_array().size());
 
+                // do constraints validation
+                if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), get_datatype_constraints(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype)))
+                {
+                    return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
+                }
+
+                // update property
                 modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                 {
                     auto& sequence = resource.data[nmos::fields::nc::name(property)];
                     if (data.is_null()) { sequence = value::array(); }
                     web::json::push_back(sequence, val);
 
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
+                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
 
                 return make_control_protocol_message_response(handle, { nc_method_status::ok }, sequence_item_index);
             }

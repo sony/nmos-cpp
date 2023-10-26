@@ -322,9 +322,9 @@ namespace nmos
             const web::json::field_as_integer change_type{ U("changeType") }; // NcPropertyChangeType
             const web::json::field_as_integer sequence_item_index{ U("sequenceItemIndex") }; // NcId
             const web::json::field_as_value property_id{ U("propertyId") };
-            const web::json::field_as_integer maximum{ U("maximum") };
-            const web::json::field_as_integer minimum{ U("minimum") };
-            const web::json::field_as_integer step{ U("step") };
+            const web::json::field_as_value maximum{ U("maximum") };
+            const web::json::field_as_value minimum{ U("minimum") };
+            const web::json::field_as_value step{ U("step") };
             const web::json::field_as_integer max_characters{ U("maxCharacters") };
             const web::json::field_as_string pattern{ U("pattern") };
             const web::json::field_as_value resource{ U("resource") };

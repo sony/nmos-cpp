@@ -507,28 +507,28 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraintsnumber
-        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, const web::json::value& default_value, const web::json::value& maximum, const web::json::value& minimum, const web::json::value& step)
+        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, const web::json::value& default_value, const web::json::value& minimum, const web::json::value& maximum, const web::json::value& step)
         {
             using web::json::value;
 
             auto data = make_nc_property_constraints(property_id, default_value);
-            data[nmos::fields::nc::maximum] = maximum;
             data[nmos::fields::nc::minimum] = minimum;
+            data[nmos::fields::nc::maximum] = maximum;
             data[nmos::fields::nc::step] = step;
 
             return data;
         }
-        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t default_value, uint64_t maximum, uint64_t minimum, uint64_t step)
+        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t default_value, uint64_t minimum, uint64_t maximum, uint64_t step)
         {
             using web::json::value;
 
-            return make_nc_property_constraints_number(property_id, value(default_value), value(maximum), value(minimum), value(step));
+            return make_nc_property_constraints_number(property_id, value(default_value), value(minimum), value(maximum), value(step));
         }
-        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t maximum, uint64_t minimum, uint64_t step)
+        web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t minimum, uint64_t maximum, uint64_t step)
         {
             using web::json::value;
 
-            return make_nc_property_constraints_number(property_id, value::null(), maximum, minimum, step);
+            return make_nc_property_constraints_number(property_id, value::null(), minimum, maximum, step);
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraintsstring
@@ -578,28 +578,28 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
-        web::json::value make_nc_parameter_constraints_number(const web::json::value& default_value, const web::json::value& maximum, const web::json::value& minimum, const web::json::value& step)
+        web::json::value make_nc_parameter_constraints_number(const web::json::value& default_value, const web::json::value& minimum, const web::json::value& maximum, const web::json::value& step)
         {
             using web::json::value;
 
             auto data = make_nc_parameter_constraints(default_value);
-            data[nmos::fields::nc::maximum] = maximum;
             data[nmos::fields::nc::minimum] = minimum;
+            data[nmos::fields::nc::maximum] = maximum;
             data[nmos::fields::nc::step] = step;
 
             return data;
         }
-        web::json::value make_nc_parameter_constraints_number(uint64_t default_value, uint64_t maximum, uint64_t minimum, uint64_t step)
+        web::json::value make_nc_parameter_constraints_number(uint64_t default_value, uint64_t minimum, uint64_t maximum, uint64_t step)
         {
             using web::json::value;
 
-            return make_nc_parameter_constraints_number(value(default_value), value(maximum), value(minimum), value(step));
+            return make_nc_parameter_constraints_number(value(default_value), value(minimum), value(maximum), value(step));
         }
-        web::json::value make_nc_parameter_constraints_number(uint64_t maximum, uint64_t minimum, uint64_t step)
+        web::json::value make_nc_parameter_constraints_number(uint64_t minimum, uint64_t maximum, uint64_t step)
         {
             using web::json::value;
 
-            return make_nc_parameter_constraints_number(value::null(), maximum, minimum, step);
+            return make_nc_parameter_constraints_number(value::null(), minimum, maximum, step);
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
@@ -710,7 +710,7 @@ namespace nmos
             data[nmos::fields::nc::role] = value::string(role);
             data[nmos::fields::nc::user_label] = user_label;
             data[nmos::fields::nc::touchpoints] = touchpoints;
-            data[nmos::fields::nc::runtime_property_constraints] = runtime_property_constraints;
+            data[nmos::fields::nc::runtime_property_constraints] = runtime_property_constraints; // level 2 runtime constraints. See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
 
             return data;
         }
@@ -1690,8 +1690,8 @@ namespace nmos
         using web::json::value;
 
         auto fields = value::array();
-        web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional maximum"), nmos::fields::nc::maximum, true, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional minimum"), nmos::fields::nc::minimum, true, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional maximum"), nmos::fields::nc::maximum, true, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional step"), nmos::fields::nc::step, true, false, value::null()));
         return details::make_nc_datatype_descriptor_struct(U("Number parameter constraints class"), U("NcParameterConstraintsNumber"), fields, U("NcParameterConstraints"), value::null());
     }
@@ -1779,8 +1779,8 @@ namespace nmos
         using web::json::value;
 
         auto fields = value::array();
-        web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional maximum"), nmos::fields::nc::maximum, true, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional minimum"), nmos::fields::nc::minimum, true, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional maximum"), nmos::fields::nc::maximum, true, false, value::null()));
         web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional step"), nmos::fields::nc::step, true, false, value::null()));
         return details::make_nc_datatype_descriptor_struct(U("Number property constraints class"), U("NcPropertyConstraintsNumber"), fields, U("NcPropertyConstraints"), value::null());
     }

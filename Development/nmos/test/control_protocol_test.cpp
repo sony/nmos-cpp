@@ -700,3 +700,69 @@ BST_TEST_CASE(testFindProperty)
         BST_REQUIRE(property.is_null());
     }
 }
+
+BST_TEST_CASE(testConstraints)
+{
+    using web::json::value_of;
+    using web::json::value;
+
+    const nmos::nc_property_id property_string_id{ 100, 1 };
+    const nmos::nc_property_id property_number_id{ 100, 2 };
+    const nmos::nc_property_id unknown_property_id{ 100, 3 };
+
+    const auto runtime_property_string_constraints = nmos::details::make_nc_property_constraints_string(property_string_id, 10, U("^[0-9]+$"));
+    const auto runtime_property_number_constraints = nmos::details::make_nc_property_constraints_number(property_number_id, 10, 1000, 1);
+
+    const auto runtime_property_constraints = value_of({
+        { runtime_property_string_constraints },
+        { runtime_property_number_constraints }
+    });
+
+    const auto property_string_constraints = nmos::details::make_nc_parameter_constraints_string(5, U("^[a-z]+$"));
+    const auto property_number_constraints = nmos::details::make_nc_parameter_constraints_number(50, 500, 5);
+
+    const auto datatype_string_constraints = nmos::details::make_nc_parameter_constraints_string(2, U("^[0-9a-z]+$"));
+    const auto datatype_number_constraints = nmos::details::make_nc_parameter_constraints_number(100, 250, 10);
+
+    // test get_runtime_property_constraints
+    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_string_id, runtime_property_constraints), runtime_property_string_constraints);
+    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_number_id, runtime_property_constraints), runtime_property_number_constraints);
+    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(unknown_property_id, runtime_property_constraints), value::null());
+
+    // string property constraints validation
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, datatype_string_constraints));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, datatype_string_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, datatype_string_constraints), false);
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("12345678901")), value::null(), value::null(), value::null()));
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("123456789A")), value::null(), value::null(), value::null()));
+
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("abcde")), value::null(), property_string_constraints, datatype_string_constraints));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcdef")), value::null(), property_string_constraints, datatype_string_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcd1")), value::null(), property_string_constraints, datatype_string_constraints), false);
+
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("1a")), value::null(), value::null(), datatype_string_constraints));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1a2")), value::null(), value::null(), datatype_string_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1*")), value::null(), value::null(), datatype_string_constraints), false);
+
+    // number property constraints validation
+    BST_REQUIRE(nmos::constraints_validation(10, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints));
+    BST_REQUIRE(nmos::constraints_validation(1000, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(9, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(1001, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(0.5, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints), false);
+    BST_REQUIRE(nmos::constraints_validation(9, value::null(), value::null(), value::null()));
+    BST_REQUIRE(nmos::constraints_validation(1001, value::null(), value::null(), value::null()));
+    BST_REQUIRE(nmos::constraints_validation(0.5, value::null(), value::null(), value::null()));
+
+    BST_REQUIRE(nmos::constraints_validation(50, value::null(), property_number_constraints, datatype_number_constraints));
+    BST_REQUIRE(nmos::constraints_validation(500, value::null(), property_number_constraints, datatype_number_constraints));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(45, value::null(), property_number_constraints, datatype_number_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(505, value::null(), property_number_constraints, datatype_number_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(499, value::null(), property_number_constraints, datatype_number_constraints), false);
+
+    BST_REQUIRE(nmos::constraints_validation(100, value::null(), value::null(), datatype_number_constraints));
+    BST_REQUIRE(nmos::constraints_validation(250, value::null(), value::null(), datatype_number_constraints));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(90, value::null(), value::null(), datatype_number_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(260, value::null(), value::null(), datatype_number_constraints), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(99, value::null(), value::null(), datatype_number_constraints), false);
+}

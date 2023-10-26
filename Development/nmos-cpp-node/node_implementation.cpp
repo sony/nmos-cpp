@@ -965,7 +965,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         const web::json::field_as_string string_arg{ U("stringArg") };
         const web::json::field_as_number number_arg{ U("numberArg") };
         const web::json::field_as_bool boolean_arg{ U("booleanArg") };
-        const web::json::field_as_bool obj_arg{ U("objArg") };
+        const web::json::field_as_value obj_arg{ U("objArg") };
         enum example_enum
         {
             Undefined = 0,
@@ -978,8 +978,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             // Example control class properties
             std::vector<web::json::value> example_control_properties = {
                 nmos::experimental::make_control_class_property(U("Example enum property"), { 3, 1 }, enum_property, U("ExampleEnum")),
+                // create "Example string property" with  level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
                 nmos::experimental::make_control_class_property(U("Example string property"), { 3, 2 }, string_property, U("NcString"), false, false, false, false, nmos::details::make_nc_parameter_constraints_string(10)),
-                nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, nmos::details::make_nc_parameter_constraints_number(1000, 0, 1)),
+                // create "Example numeric property" with  level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, nmos::details::make_nc_parameter_constraints_number(0, 1000, 1)),
                 nmos::experimental::make_control_class_property(U("Example boolean property"), { 3, 4 }, boolean_property, U("NcBoolean")),
                 nmos::experimental::make_control_class_property(U("Example object property"), { 3, 5 }, object_property, U("ExampleDataType")),
                 nmos::experimental::make_control_class_property(U("Method no args invoke counter"), { 3, 6 }, method_no_args_count, U("NcUint64"), true),
@@ -993,19 +995,43 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             };
 
             // Example control class method handlers
+            auto make_string_example_argument_constraints = []() {return nmos::details::make_nc_parameter_constraints_string(80); };
+            auto make_number_example_argument_constraints = []() {return nmos::details::make_nc_parameter_constraints_number(100, 1000, 1); };
+
             auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
+
                 return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
-            auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_simple_args = [&](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments";
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments:"
+                    << " enum_arg: "
+                    << enum_arg(arguments).to_int32()
+                    << " string_arg: "
+                    << string_arg(arguments)
+                    << " number_arg: "
+                    << number_arg(arguments).to_uint64()
+                    << " boolean_arg: "
+                    << boolean_arg(arguments);
+
+                // example to do method arguments constraints validation
+                const auto string_example_argument_constraints = make_string_example_argument_constraints();
+                if (!nmos::constraints_validation(arguments.at(string_arg), make_string_example_argument_constraints())
+                    || !nmos::constraints_validation(arguments.at(number_arg), make_number_example_argument_constraints()))
+                {
+                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
+                }
+
                 return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
-            auto example_method_with_object_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_object_args = [&](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object arguments";
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object argument:"
+                    << " obj_arg: "
+                    << obj_arg(arguments).serialize();
+
                 return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
             // Example control class methods
@@ -1015,8 +1041,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 2 }, U("MethodSimpleArgs"), U("NcMethodResult"),
                     {
                         nmos::details::make_nc_parameter_descriptor(U("Enum example argument"), enum_arg, U("ExampleEnum"), false, false, value::null()),
-                        nmos::details::make_nc_parameter_descriptor(U("String example argument"), string_arg, U("NcString"), false, false, value::null()), // todo constraints
-                        nmos::details::make_nc_parameter_descriptor(U("Number example argument"), number_arg, U("NcUint64"), false, false, value::null()), // todo constraints
+                        nmos::details::make_nc_parameter_descriptor(U("String example argument"), string_arg, U("NcString"), false, false, make_string_example_argument_constraints()), // e.g. include method property constraints
+                        nmos::details::make_nc_parameter_descriptor(U("Number example argument"), number_arg, U("NcUint64"), false, false, make_number_example_argument_constraints()), // e.g. include method property constraints
                         nmos::details::make_nc_parameter_descriptor(U("Boolean example argument"), boolean_arg, U("NcBoolean"), false, false, value::null())
                     },
                     false), example_method_with_simple_args
@@ -1054,12 +1080,16 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 auto fields = value::array();
                 web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Enum property example"), enum_property, U("ExampleEnum"), false, false, value::null()));
                 {
-                    value constraints = value::null(); // todo constraints
-                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("String property example"), string_property, U("NcString"), false, false, constraints));
+                    // level 0: datatype constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                    // use nmos::details::make_nc_parameter_constraints_string to create datatype constraints
+                    value datatype_constraints = value::null();
+                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("String property example"), string_property, U("NcString"), false, false, datatype_constraints));
                 }
                 {
-                    value constraints = value::null(); // todo constraints
-                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Number property example"), number_property, U("NcUint64"), false, false, constraints));
+                    // level 0: datatype constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                    // use nmos::details::make_nc_parameter_constraints_number to create datatype constraints
+                    value datatype_constraints = value::null();
+                    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Number property example"), number_property, U("NcUint64"), false, false, datatype_constraints));
                 }
                 web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Boolean property example"), boolean_property, U("NcBoolean"), false, false, value::null()));
                 return nmos::details::make_nc_datatype_descriptor_struct(U("Example data type"), U("ExampleDataType"), fields, value::null());
@@ -1080,7 +1110,9 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             });
         };
         // helper function to create Example control
-        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description,
+        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const value& touchpoints = value::null(),
+            const value& runtime_property_constraints = value::null(),  // level 2: runtime constraints. See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                                                                        // use of make_nc_property_constraints_stringand make_nc_property_constraints_number to create runtime constraints
             example_enum enum_property_ = example_enum::Undefined,
             const utility::string_t& string_property_ = U(""),
             uint64_t number_property_ = 0,
@@ -1093,8 +1125,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             std::vector<bool> boolean_sequence_ = {},
             std::vector<example_enum> enum_sequence_ = {},
             std::vector<uint64_t> number_sequence_ = {},
-            std::vector<value> object_sequence_ = {},
-            const value& touchpoints = value::null(), const value& runtime_property_constraints = value::null())
+            std::vector<value> object_sequence_ = {})
         {
             auto data = nmos::details::make_nc_worker(example_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[enum_property] = value::number(enum_property_);
@@ -1168,6 +1199,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
         // example example-control
         auto example_control = make_example_control(++oid, nmos::root_block_oid, U("ExampleControl"), U("Example control worker"), U("Example control worker"),
+            value::null(),
+            value::null(), // specify the level 2: runtime constraints, see https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                           // use of make_nc_property_constraints_string and make_nc_property_constraints_number to create runtime constraints
+                           // e.g.  value_of({
+                           //           { nmos::details::make_nc_property_constraints_string({3, 2}, 10) },
+                           //           { nmos::details::make_nc_property_constraints_number({3, 3}, 10, 100, 2) }
+                           //       }),
             example_enum::Undefined,
             U("test"),
             3,

@@ -8,6 +8,15 @@ namespace nmos
 {
     struct control_protocol_resource;
 
+    namespace details
+    {
+        // get the runtime property constraints of a given property_id
+        web::json::value get_runtime_property_constraints(const nc_property_id& property_id, const web::json::value& runtime_property_constraints_list);
+
+        // get the datatype property constraints of a given type_name
+        web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype);
+    }
+
     // is the given class_id a NcBlock
     bool is_nc_block(const nc_class_id& class_id);
 
@@ -47,6 +56,15 @@ namespace nmos
 
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
+
+    // constraints validation
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
+    bool constraints_validation(const web::json::value& value, const web::json::value& constraints);
+
+    // multiple levels of constraints validation
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+    bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const web::json::value& data_constraints);
 }
 
 #endif
