@@ -392,6 +392,10 @@ namespace
         {
             return pplx::task_from_result(false);
         }
+        pplx::task<bool> getaddrinfo(const mdns::address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
+        {
+            return pplx::task_from_result(false);
+        }
 
         slog::base_gate& gate;
     };
@@ -421,17 +425,7 @@ BST_TEST_CASE(testDnsGetAddrInfo)
 {
     test_gate gate;
 
-    auto cancellation_source = pplx::cancellation_token_source();
-    auto token = cancellation_source.get_token();
-
-    mdns::details::cancellation_guard guard(token);
-
-    std::string ip_address;
-    BST_REQUIRE(mdns_details::getaddrinfo([&](const mdns_details::address_result& result)
-    {
-        ip_address = result.ip_address;
-        return true;
-    }, "google-public-dns-a.google.com", 0, std::chrono::seconds(2), guard.target, gate));
-
-    BST_REQUIRE(ip_address == "8.8.8.8");
+    mdns::service_discovery discover(gate);
+    auto result = discover.getaddrinfo("google-public-dns-a.google.com").get();
+    BST_REQUIRE_EQUAL("8.8.8.8", result.ip_address);
 }

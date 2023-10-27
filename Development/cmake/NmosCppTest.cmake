@@ -134,11 +134,6 @@ target_include_directories(nmos-cpp-test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party
     )
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    target_include_directories(nmos-cpp-test PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mDNSResponder/mDNSShared
-		)
-endif()
 
 include(Catch)
 

@@ -5,6 +5,7 @@
 #include <boost/algorithm/string/erase.hpp>
 #include "cpprest/basic_utils.h"
 #include "cpprest/host_utils.h"
+#include "mdns/dns_sd_impl.h"
 #include "slog/all_in_one.h"
 
 namespace mdns_details
@@ -330,7 +331,7 @@ namespace mdns_details
         return had_enough;
     }
 
-    bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
+    static bool getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& latest_timeout_, DNSServiceCancellationToken cancel, slog::base_gate& gate)
     {
         const auto earliest_timeout_ = std::chrono::seconds(0);
 
@@ -432,6 +433,30 @@ namespace mdns
 {
     namespace details
     {
+        struct cancellation_guard
+        {
+            cancellation_guard(const pplx::cancellation_token& source)
+                : source(source)
+                , target(nullptr)
+            {
+                if (source.is_cancelable())
+                {
+                    DNSServiceCreateCancellationToken(&target);
+                    reg = source.register_callback([this] { DNSServiceCancel(target); });
+                }
+            }
+
+            ~cancellation_guard()
+            {
+                if (pplx::cancellation_token_registration{} != reg) source.deregister_callback(reg);
+                DNSServiceCancellationTokenDeallocate(target);
+            }
+
+            pplx::cancellation_token source;
+            DNSServiceCancellationToken target;
+            pplx::cancellation_token_registration reg;
+        };
+
         // hm, 'final' may be appropriate here rather than 'override'?
         class service_discovery_impl_ : public service_discovery_impl
         {
@@ -482,6 +507,20 @@ namespace mdns
                 }, token);
             }
 
+            pplx::task<bool> getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
+            {
+                auto gate_ = &this->gate;
+                return pplx::create_task([=]
+                {
+                    cancellation_guard guard(token);
+                    auto result = mdns_details::getaddrinfo(handler, host_name, interface_id, timeout, guard.target, *gate_);
+                    // when this task is cancelled, make sure it doesn't just return an empty/partial result
+                    if (token.is_canceled()) pplx::cancel_current_task();
+                    // hmm, perhaps should throw an exception on timeout, rather than returning an empty result?
+                    return result;
+                }, token);
+            }
+
         private:
             slog::base_gate& gate;
         };
@@ -523,5 +562,10 @@ namespace mdns
     pplx::task<bool> service_discovery::resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
     {
         return impl->resolve(handler, name, type, domain, interface_id, timeout, token);
+    }
+
+    pplx::task<bool> service_discovery::getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+    {
+        return impl->getaddrinfo(handler, host_name, interface_id, timeout, token);
     }
 }
