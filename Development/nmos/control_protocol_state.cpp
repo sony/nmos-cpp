@@ -160,7 +160,7 @@ namespace nmos
             // setup the core datatypes
             datatypes =
             {
-                // Dataype models
+                // Datatype models
                 // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/#datatype-models-for-branch-v10-dev
                 { U("NcClassId"), {make_nc_class_id_datatype()} },
                 { U("NcOid"), {make_nc_oid_datatype()} },
