@@ -921,7 +921,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) throw node_implementation_init_exception();
     }
 
-    // example of using IS-12 control protocol
+    // examples of using IS-12 control protocol
+    // they are based on the NC-DEVICE-MOCK
+    // See https://specs.amwa.tv/nmos-device-control-mock/#about-nc-device-mock
+    // See https://github.com/AMWA-TV/nmos-device-control-mock/blob/main/code/src/NCModel/Features.ts
     if (0 <= nmos::fields::control_protocol_ws_port(model.settings))
     {
         // example to create a non-standard Gain control class
@@ -1102,7 +1105,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         {
             using web::json::value_of;
 
-            return web::json::value_of({
+            return value_of({
                 { enum_property, enum_property_ },
                 { string_property, string_property_ },
                 { number_property, number_property_ },
