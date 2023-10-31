@@ -750,7 +750,7 @@ BST_TEST_CASE(testSdpParametersVideoSmpte291)
                 { U("VPID_Code"), U("132") },
                 { U("exactframerate"), U("60000/1001") },
                 { U("TM"), U("CTM") },
-                { U("SSN"), U("ST2110-40:2022") },
+                { U("SSN"), U("ST2110-40:2021") },
                 { U("TROFF"), U("37") },
                 { U("TSMODE"), U("SAMP") },
                 { U("TSDELAY"), U("82") }
