@@ -14,6 +14,12 @@ o=- 3745911798 3745911798 IN IP4 192.168.9.142
 s=Example Sender 1 (Video)
 t=0 0
 a=group:DUP PRIMARY SECONDARY
+a=extmap:1 http://example.com/082005/ext.htm#ttime
+a=extmap:2/sendrecv http://example.com/082005/ext.htm#xmeta short
+a=extmap:3/sendonly http://example.com/082005/ext.htm#xmeta
+a=extmap:4 http://example.com/082005/ext.htm#ttime SHORT
+a=hkep:9000 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
+a=hkep:9001 IN IP4 192.168.9.142 db31de40-19ad-450a-afb9-f4105be7b564 01-02-03-04-05-06
 m=video 50020 RTP/AVP 96
 c=IN IP4 239.22.142.1/32
 a=ts-refclk:ptp=IEEE1588-2008:traceable
@@ -118,6 +124,60 @@ a=mid:SECONDARY
                         U("PRIMARY"),
                         U("SECONDARY")
                     }) }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 1 },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#ttime") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 2 },
+                    { sdp::fields::direction, sdp::directions::sendrecv.name },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#xmeta") },
+                    { sdp::fields::extensionattributes, U("short") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 3 },
+                    { sdp::fields::direction, sdp::directions::sendonly.name },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#xmeta") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::extmap },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::local_id, 4 },
+                    { sdp::fields::uri, U("http://example.com/082005/ext.htm#ttime") },
+                    { sdp::fields::extensionattributes, U("SHORT") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::hkep },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::port, 9000 },
+                    { sdp::fields::network_type, sdp::network_types::internet.name },
+                    { sdp::fields::address_type, sdp::address_types::IP4.name },
+                    { sdp::fields::unicast_address, U("192.168.9.142") },
+                    { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
+                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
+                }, keep_order) },
+            }, keep_order),
+            web::json::value_of({
+                { sdp::fields::name, sdp::attributes::hkep },
+                { sdp::fields::value, web::json::value_of({
+                    { sdp::fields::port, 9001 },
+                    { sdp::fields::network_type, sdp::network_types::internet.name },
+                    { sdp::fields::address_type, sdp::address_types::IP4.name },
+                    { sdp::fields::unicast_address, U("192.168.9.142") },
+                    { sdp::fields::node_id, U("db31de40-19ad-450a-afb9-f4105be7b564") },
+                    { sdp::fields::port_id, U("01-02-03-04-05-06") }
                 }, keep_order) },
             }, keep_order)
         }) },
@@ -325,6 +385,42 @@ a=framerate:59.94
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpDigits)
+{
+    const bool keep_order = true;
+
+    const std::string test_sdp = R"(v=000
+o=- 007 0987654321098765432 IN IP4 192.0.2.0
+s=Leading zeros
+b=AS:09876543210
+t=0 0
+m=video 000000000000000000050020 RTP/AVP 0096
+)";
+
+    const std::string expected_sdp = R"(v=0
+o=- 7 987654321098765432 IN IP4 192.0.2.0
+s=Leading zeros
+b=AS:9876543210
+t=0 0
+m=video 50020 RTP/AVP 0096
+)";
+
+    auto session_description = sdp::parse_session_description(test_sdp);
+
+    auto test_sdp2 = sdp::make_session_description(session_description);
+    std::istringstream expected(expected_sdp), actual(test_sdp2);
+    do
+    {
+        std::string expected_line, actual_line;
+        std::getline(expected, expected_line);
+        std::getline(actual, actual_line);
+        // CR cannot appear in a raw string literal, so remove it from the actual line
+        if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
+        BST_CHECK_EQUAL(expected_line, actual_line);
+    } while (!expected.fail() && !actual.fail());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpParseErrors)
 {
     // an empty SDP file results in "sdp parse error - expected a line for protocol_version at line 1"
@@ -361,6 +457,35 @@ BST_TEST_CASE(testSdpParseErrors)
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\n"), std::runtime_error);
     // ... even if there's a complete valid line after it
     BST_REQUIRE_THROW(sdp::parse_session_description(enough + "\r\na=foo"), std::runtime_error);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpNumberErrors)
+{
+    const std::string before = "v=0\r\no=- 42 42 IN IP4 10.0.0.1\r\ns= \r\n";
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "t=0 0"));
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "t=0 0\r\na=ptime:0.125"));
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description(before + "t=0 0\r\na=ptime:1"));
+    // an invalid time results in "sdp parse error - expected a number at line 4"
+    BST_REQUIRE_THROW(sdp::parse_session_description(before + "t=foo 0"), std::runtime_error);
+    // an invalid packet time results in "sdp parse error - expected a number at line 5"
+    BST_REQUIRE_THROW(sdp::parse_session_description(before + "t=0 0\r\na=ptime:foo"), std::runtime_error);
+    //BST_REQUIRE_THROW(sdp::parse_session_description(before + "t=0 0\r\na=ptime:+1.25e-1"), std::runtime_error);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpDigitsErrors)
+{
+    const std::string after = "\r\no=- 42 42 IN IP4 10.0.0.1\r\ns= \r\nt=0 0\r\n";
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description("v=0" + after));
+    BST_REQUIRE_NO_THROW(sdp::parse_session_description("v=0000000000" + after));
+    // an invalid protocol version results in "sdp parse error - expected a sequence of digits at line 1"
+    BST_REQUIRE_THROW(sdp::parse_session_description("v=" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description("v=foo" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description("v=0foo" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description("v=0.0" + after), std::runtime_error);
+    BST_REQUIRE_THROW(sdp::parse_session_description("v=0x0" + after), std::runtime_error);
+    //BST_REQUIRE_THROW(sdp::parse_session_description("v=+0" + after), std::runtime_error);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

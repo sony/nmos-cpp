@@ -143,6 +143,13 @@ namespace sdp
         // See https://tools.ietf.org/html/rfc7273
         const utility::string_t ts_refclk{ U("ts-refclk") };
         const utility::string_t mediaclk{ U("mediaclk") };
+
+        // See VSF TR-10-5:2022 Internet Protocol Media Experience (IPMX): HDCP Key Exchange Protocol, Section 10
+        // at https://videoservicesforum.com/download/technical_recommendations/VSF_TR-10-5_2022-03-22.pdf
+        const utility::string_t hkep{ U("hkep") };
+
+        // See https://tools.ietf.org/html/rfc5285#section-5
+        const utility::string_t extmap{ U("extmap") };
     }
 
     namespace fields
@@ -195,6 +202,18 @@ namespace sdp
 
         // a=mediaclk:[id=<clock id> ]<clock source>[=<clock parameters>]
         // See https://tools.ietf.org/html/rfc7273#section-5
+
+        // a=hkep:<port> <nettype> <addrtype> <unicast-address> <node-id> <port-id>
+        // See VSF TR-10-5:2022 Internet Protocol Media Experience (IPMX): HDCP Key Exchange Protocol, Section 10
+        // at https://videoservicesforum.com/download/technical_recommendations/VSF_TR-10-5_2022-03-22.pdf
+        const web::json::field_as_string node_id{ U("node_id") };
+        const web::json::field_as_string port_id{ U("port_id") };
+
+        // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
+        // See https://tools.ietf.org/html/rfc5285#section-5
+        const web::json::field<uint64_t> local_id{ U("local_id") };
+        const web::json::field_as_string_or direction{ U("direction"), {} }; // see sdp::direction
+        const web::json::field_as_string_or extensionattributes{ U("extensionattributes"), {} };
     }
 
     // make a named value (useful for attributes)
@@ -298,6 +317,16 @@ namespace sdp
         const address_type IP4{ U("IP4") };
         // IPv6
         const address_type IP6{ U("IP6") };
+    }
+
+    // Direction
+    DEFINE_STRING_ENUM(direction)
+    namespace directions
+    {
+        const direction recvonly{ U("recvonly") };
+        const direction sendrecv{ U("sendrecv") };
+        const direction sendonly{ U("sendonly") };
+        const direction inactive{ U("inactive") };
     }
 }
 
@@ -424,7 +453,8 @@ namespace sdp
 
         // See https://tools.ietf.org/html/rfc4175
         // and SMPTE ST 2110-20:2022 Section 7 Session Description Protocol (SDP) Considerations
-        // and VSF TR-05:2018
+        // and VSF TR-05:2018 Essential Formats and Descriptions for Interoperability of SMPTE ST 2110-20 Video Signals
+        // at https://videoservicesforum.net/download/technical_recommendations/VSF_TR-05_2018-06-23.pdf
 
         // ST 2110-20:2022 Section 7.2 Required Media Type Parameters
         const web::json::field_as_string sampling{ U("sampling") }; // see sdp::sampling

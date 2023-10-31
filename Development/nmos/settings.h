@@ -114,6 +114,9 @@ namespace nmos
         const web::json::field_as_integer_or discovery_backoff_max{ U("discovery_backoff_max"), 30 };
         const web::json::field_with_default<double> discovery_backoff_factor{ U("discovery_backoff_factor"), 1.5 };
 
+        // service_name_prefix [registry, node]: used as a prefix in the advertised service names ("<prefix>_<api>_<host>:<port>", e.g. "nmos-cpp_node_127-0-0-1:3212")
+        const web::json::field_as_string_or service_name_prefix{ U("service_name_prefix"), U("nmos-cpp") };
+
         // registry_address [node]: IP address or host name used to construct request URLs for registry APIs (if not discovered via DNS-SD)
         const web::json::field_as_string registry_address{ U("registry_address") };
 

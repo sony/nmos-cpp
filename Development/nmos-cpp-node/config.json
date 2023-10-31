@@ -114,6 +114,9 @@
     //"discovery_backoff_max": 30,
     //"discovery_backoff_factor": 1.5,
 
+    // service_name_prefix [registry, node]: used as a prefix in the advertised service names ("<prefix>_<api>_<host>:<port>", e.g. "nmos-cpp_node_127-0-0-1:3212")
+    //"service_name_prefix": "nmos-cpp"
+
     // registry_address [node]: IP address or host name used to construct request URLs for registry APIs (if not discovered via DNS-SD)
     //"registry_address": ip-address-string,
 

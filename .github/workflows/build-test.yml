@@ -579,13 +579,25 @@ jobs:
         apt-get --allow-unauthenticated install -y curl g++ git make patch zlib1g-dev libssl-dev bsdmainutils dnsutils unzip
         # ubuntu-14.04 ca-certificates are out of date
         git config --global http.sslVerify false
-        curl -sS https://www.python.org/ftp/python/3.6.9/Python-3.6.9.tar.xz | tar -xJ
-        cd Python-3.6.9
-        ./configure
+        # build and install openssl
+        curl -OsSk https://www.openssl.org/source/openssl-1.1.1v.tar.gz
+        tar xzf openssl-1.1.1v.tar.gz
+        cd openssl-1.1.1v
+        ./config --prefix=/usr/local/custom-openssl --libdir=lib --openssldir=/etc/ssl
+        make -j1 depend
+        make -j8
+        make install_sw
+        cd ..
+        # install ffi.h, which is required for python build
+        apt install libffi-dev
+        # build and install python
+        curl -sSk https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tar.xz | tar -xJ
+        cd Python-3.11.5
+        ./configure -C --with-openssl=/usr/local/custom-openssl --with-openssl-rpath=auto
         make -j8
         make install
-        update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.6 3
-        ln -s /usr/local/bin/python3.6 /usr/bin/python
+        update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.11 3
+        ln -s /usr/local/bin/python3.11 /usr/bin/python
         curl -sS https://bootstrap.pypa.io/pip/3.6/get-pip.py | python
         curl -sS https://nodejs.org/dist/v12.16.2/node-v12.16.2-linux-x64.tar.xz | tar -xJ
         echo "`pwd`/node-v12.16.2-linux-x64/bin" >> $GITHUB_PATH
