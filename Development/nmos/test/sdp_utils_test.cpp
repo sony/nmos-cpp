@@ -761,7 +761,7 @@ BST_TEST_CASE(testSdpParametersVideoSmpte291)
             nmos::vpid_codes::vpid_1_5Gbps_720_line,
             nmos::rates::rate59_94,
             sdp::transmission_models::compatible,
-            sdp::smpte_standard_numbers::ST2110_40_2022,
+            sdp::smpte_standard_numbers::ST2110_40_2023,
             37,
             sdp::timestamp_modes::SAMP,
             82
