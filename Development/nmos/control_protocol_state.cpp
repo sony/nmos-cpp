@@ -117,9 +117,15 @@ namespace nmos
             {
                 // Control class models
                 // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/#control-class-models-for-branch-v10-dev
-                { nc_object_class_id, make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"), to_vector(make_nc_object_properties()),
+
+                // NcObject
+                { nc_object_class_id, make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"),
+                    // NcObject properties
+                    to_vector(make_nc_object_properties()),
+                    // NcObject methods
                     to_methods_vector(make_nc_object_methods(),
                     {
+                        // link NcObject method_ids with method functions
                         { nc_object_get_method_id, nmos::details::get },
                         { nc_object_set_method_id, nmos::details::set },
                         { nc_object_get_sequence_item_method_id, nmos::details::get_sequence_item },
@@ -128,33 +134,88 @@ namespace nmos
                         { nc_object_remove_sequence_item_method_id, nmos::details::remove_sequence_item },
                         { nc_object_get_sequence_length_method_id, nmos::details::get_sequence_length }
                     }),
+                    // NcObject events
                     to_vector(make_nc_object_events())) },
-                { nc_block_class_id, make_control_class(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"), to_vector(make_nc_block_properties()),
+                // NcBlock
+                { nc_block_class_id, make_control_class(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"),
+                    // NcBlock properties
+                    to_vector(make_nc_block_properties()),
+                    // NcBlock methods
                     to_methods_vector(make_nc_block_methods(),
                     {
+                        // link NcBlock method_ids with method functions
                         { nc_block_get_member_descriptors_method_id, nmos::details::get_member_descriptors },
                         { nc_block_find_members_by_path_method_id, nmos::details::find_members_by_path },
                         { nc_block_find_members_by_role_method_id, nmos::details::find_members_by_role },
                         { nc_block_find_members_by_class_id_method_id, nmos::details::find_members_by_class_id }
                     }),
+                    // NcBlock events
                     to_vector(make_nc_block_events())) },
-                { nc_worker_class_id, make_control_class(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"), to_vector(make_nc_worker_properties()), to_methods_vector(make_nc_worker_methods(), {}), to_vector(make_nc_worker_events())) },
-                { nc_manager_class_id, make_control_class(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"),to_vector(make_nc_manager_properties()), to_methods_vector(make_nc_manager_methods(), {}), to_vector(make_nc_manager_events())) },
-                { nc_device_manager_class_id, make_control_class(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"), to_vector(make_nc_device_manager_properties()), to_methods_vector(make_nc_device_manager_methods(), {}), to_vector(make_nc_device_manager_events())) },
-                { nc_class_manager_class_id, make_control_class(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), to_vector(make_nc_class_manager_properties()),
+                // NcWorker
+                { nc_worker_class_id, make_control_class(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"),
+                    // NcWorker properties
+                    to_vector(make_nc_worker_properties()),
+                    // NcWorker methods
+                    to_methods_vector(make_nc_worker_methods(), {}),
+                    // NcWorker events
+                    to_vector(make_nc_worker_events())) },
+                // NcManager
+                { nc_manager_class_id, make_control_class(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"),
+                    // NcManager properties
+                    to_vector(make_nc_manager_properties()),
+                    // NcManager methods
+                    to_methods_vector(make_nc_manager_methods(), {}),
+                    // NcManager events
+                    to_vector(make_nc_manager_events())) },
+                // NcDeviceManager
+                { nc_device_manager_class_id, make_control_class(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"),
+                    // NcDeviceManager properties
+                    to_vector(make_nc_device_manager_properties()),
+                    // NcDeviceManager methods
+                    to_methods_vector(make_nc_device_manager_methods(), {}),
+                    // NcDeviceManager events
+                    to_vector(make_nc_device_manager_events())) },
+                // NcClassManager
+                { nc_class_manager_class_id, make_control_class(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"),
+                    // NcClassManager properties
+                    to_vector(make_nc_class_manager_properties()),
+                    // NcClassManager methods
                     to_methods_vector(make_nc_class_manager_methods(),
                     {
+                        // link NcClassManager method_ids with method functions
                         { nc_class_manager_get_control_class_method_id, nmos::details::get_control_class },
                         { nc_class_manager_get_datatype_method_id, nmos::details::get_datatype }
                     }),
+                    // NcClassManager events
                     to_vector(make_nc_class_manager_events())) },
                 // identification beacon model
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
-                { nc_ident_beacon_class_id, make_control_class(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), to_vector(make_nc_ident_beacon_properties()), to_methods_vector(make_nc_ident_beacon_methods(), {}), to_vector(make_nc_ident_beacon_events())) },
+                // NcIdentBeacon
+                { nc_ident_beacon_class_id, make_control_class(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"),
+                    // NcIdentBeacon properties
+                    to_vector(make_nc_ident_beacon_properties()),
+                    // NcIdentBeacon methods
+                    to_methods_vector(make_nc_ident_beacon_methods(), {}),
+                    // NcIdentBeacon events
+                    to_vector(make_nc_ident_beacon_events())) },
                 // Monitoring
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-                { nc_receiver_monitor_class_id, make_control_class(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"), to_vector(make_nc_receiver_monitor_properties()), to_methods_vector(make_nc_receiver_monitor_methods(), {}), to_vector(make_nc_receiver_monitor_events())) },
-                { nc_receiver_monitor_protected_class_id, make_control_class(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), to_vector(make_nc_receiver_monitor_protected_properties()), to_methods_vector(make_nc_receiver_monitor_protected_methods(), {}), to_vector(make_nc_receiver_monitor_protected_events())) }
+                // NcReceiverMonitor
+                { nc_receiver_monitor_class_id, make_control_class(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"),
+                    // NcReceiverMonitor properties
+                    to_vector(make_nc_receiver_monitor_properties()),
+                    // NcReceiverMonitor methods
+                    to_methods_vector(make_nc_receiver_monitor_methods(), {}),
+                    // NcReceiverMonitor events
+                    to_vector(make_nc_receiver_monitor_events())) },
+                // NcReceiverMonitorProtected
+                { nc_receiver_monitor_protected_class_id, make_control_class(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"),
+                    // NcReceiverMonitorProtected properties
+                    to_vector(make_nc_receiver_monitor_protected_properties()),
+                    // NcReceiverMonitorProtected methods
+                    to_methods_vector(make_nc_receiver_monitor_protected_methods(), {}),
+                    // NcReceiverMonitorProtected events
+                    to_vector(make_nc_receiver_monitor_protected_events())) }
             };
 
             // setup the core datatypes
@@ -162,6 +223,16 @@ namespace nmos
             {
                 // Datatype models
                 // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/#datatype-models-for-branch-v10-dev
+                { U("NcBoolean"), {make_nc_boolean_datatype()} },
+                { U("NcInt16"), {make_nc_int16_datatype()} },
+                { U("NcInt32"), {make_nc_int32_datatype()} },
+                { U("NcInt64"), {make_nc_int64_datatype()} },
+                { U("NcUint16"), {make_nc_uint16_datatype()} },
+                { U("NcUint32"), {make_nc_uint32_datatype()} },
+                { U("NcUint64"), {make_nc_uint64_datatype()} },
+                { U("NcFloat32"), {make_nc_float32_datatype()} },
+                { U("NcFloat64"), {make_nc_float64_datatype()} },
+                { U("NcString"), {make_nc_string_datatype()} },
                 { U("NcClassId"), {make_nc_class_id_datatype()} },
                 { U("NcOid"), {make_nc_oid_datatype()} },
                 { U("NcTouchpoint"), {make_nc_touchpoint_datatype()} },

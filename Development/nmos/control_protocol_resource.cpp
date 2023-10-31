@@ -1304,6 +1304,86 @@ namespace nmos
         return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
     }
 
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_boolean_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("Boolean primitive type"), U("NcBoolean"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_int16_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("short"), U("NcInt16"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_int32_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("long"), U("NcInt32"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_int64_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("longlong"), U("NcInt64"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_uint16_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("unsignedshort"), U("NcUint16"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_uint32_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("unsignedlong"), U("NcUint32"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_uint64_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("unsignedlonglong"), U("NcUint64"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_float32_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("unrestrictedfloat"), U("NcFloat32"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_float64_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("unrestricteddouble"), U("NcFloat64"), value::null());
+    }
+
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_string_datatype()
+    {
+        using web::json::value;
+
+        return details::make_nc_datatype_descriptor_primitive(U("UTF-8 string"), U("NcString"), value::null());
+    }
+
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcBlockMemberDescriptor.html
     web::json::value make_nc_block_member_descriptor_datatype()
     {

@@ -270,6 +270,26 @@ namespace nmos
     // Datatype models
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/#datatype-models-for-branch-v10-dev
     //
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_boolean_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_int16_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_int32_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_int64_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_uint16_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_uint32_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_uint64_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_float32_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_float64_datatype();
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
+    web::json::value make_nc_string_datatype();
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcBlockMemberDescriptor.html
     web::json::value make_nc_block_member_descriptor_datatype();
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcClassDescriptor.html
