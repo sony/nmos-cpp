@@ -110,11 +110,11 @@ namespace mdns
                 .then([results](bool) { return std::move(*results); });
         }
         template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
-        pplx::task<address_result> getaddrinfo(const std::string& host_name, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        pplx::task<std::vector<address_result>> getaddrinfo(const std::string& host_name, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
-            std::shared_ptr<address_result> result(new address_result());
-            return getaddrinfo([result](const address_result& result_) {*result = result_; return true; }, host_name, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token)
-                .then([result](bool) { return std::move(*result); });
+            std::shared_ptr<std::vector<address_result>> results(new std::vector<address_result>());
+            return getaddrinfo([results](const address_result& result) {results->push_back(result); return true; }, host_name, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token)
+                .then([results](bool) { return std::move(*results); });
         }
 
         service_discovery(service_discovery&& other);

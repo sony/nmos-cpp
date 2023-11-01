@@ -426,6 +426,7 @@ BST_TEST_CASE(testDnsGetAddrInfo)
     test_gate gate;
 
     mdns::service_discovery discover(gate);
-    auto result = discover.getaddrinfo("google-public-dns-a.google.com").get();
-    BST_REQUIRE_EQUAL("8.8.8.8", result.ip_address);
+    auto results = discover.getaddrinfo("google-public-dns-a.google.com").get();
+    BST_REQUIRE(!results.empty());
+    BST_REQUIRE_EQUAL("8.8.8.8", results[0].ip_address);
 }
