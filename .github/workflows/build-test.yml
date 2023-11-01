@@ -343,7 +343,7 @@ jobs:
         # Install AMWA NMOS Testing Tool (N-Nagorny instead of AMWA-TV and is-11 instead of master until IS-11 tests are merged)
         git clone https://github.com/N-Nagorny/nmos-testing.git
         cd nmos-testing
-        git checkout is-11-output-tests-rework
+        git checkout is-11-independent-test-cases
 
         # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
@@ -851,7 +851,7 @@ jobs:
         # Install AMWA NMOS Testing Tool (N-Nagorny instead of AMWA-TV and is-11 instead of master until IS-11 tests are merged)
         git clone https://github.com/N-Nagorny/nmos-testing.git
         cd nmos-testing
-        git checkout is-11-output-tests-rework
+        git checkout is-11-independent-test-cases
 
         # Configure the Testing Tool so all APIs are tested with TLS
         printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
