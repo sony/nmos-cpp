@@ -1,7 +1,6 @@
 #include "nmos/json_schema.h"
 
 #include "cpprest/basic_utils.h"
-#include "nmos/bcp00401_schemas/bcp00401_schemas.h"
 #include "nmos/is04_versions.h"
 #include "nmos/is04_schemas/is04_schemas.h"
 #include "nmos/is05_versions.h"
@@ -144,21 +143,6 @@ namespace nmos
             const utility::string_t tag(_XPLATSTR("v1.0-dev"));
 
             const web::uri senders_active_constraints_put_request_uri = make_schema_uri(tag, _XPLATSTR("constraints_active.json"));
-        }
-    }
-
-    namespace bcp00401_schemas
-    {
-        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
-        {
-            return{ _XPLATSTR("https://github.com/AMWA-TV/bcp-004-01/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
-        }
-
-        // See https://github.com/AMWA-TV/bcp-004-01/tree/v1.0.x/APIs/schemas/
-        namespace v1_0
-        {
-            using namespace nmos::bcp00401_schemas::v1_0_x;
-            const utility::string_t tag(_XPLATSTR("v1.0.x"));
         }
     }
 }
@@ -363,25 +347,6 @@ namespace nmos
             };
         }
 
-        static std::map<web::uri, web::json::value> make_bcp00401_schemas()
-        {
-            using namespace nmos::bcp00401_schemas;
-
-            return
-            {
-                // v1.0
-                { make_schema_uri(v1_0::tag, _XPLATSTR("constraint_set.json")), make_schema(v1_0::constraint_set) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("constraint_sets.json")), make_schema(v1_0::constraint_sets) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_boolean.json")), make_schema(v1_0::param_constraint_boolean) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_integer.json")), make_schema(v1_0::param_constraint_integer) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint.json")), make_schema(v1_0::param_constraint) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_number.json")), make_schema(v1_0::param_constraint_number) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_rational.json")), make_schema(v1_0::param_constraint_rational) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("param_constraint_string.json")), make_schema(v1_0::param_constraint_string) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("receiver_constraint_sets.json")), make_schema(v1_0::receiver_constraint_sets) },
-            };
-        }
-
         inline void merge(std::map<web::uri, web::json::value>& to, std::map<web::uri, web::json::value>&& from)
         {
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
@@ -394,7 +359,6 @@ namespace nmos
             merge(result, make_is08_schemas());
             merge(result, make_is09_schemas());
             merge(result, make_is11_schemas());
-            merge(result, make_bcp00401_schemas());
             return result;
         }
 
