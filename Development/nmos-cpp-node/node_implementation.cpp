@@ -976,7 +976,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             Beta = 2,
             Gamma = 3
         };
-
         {
             // Example control class properties
             std::vector<web::json::value> example_control_properties = {
@@ -1168,6 +1167,32 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
         };
 
+        // example to create a non-standard Temperature Sensor control class
+        const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
+        const web::json::field_as_number temperature{ U("temperature") };
+        const web::json::field_as_string unit{ U("uint") };
+        {
+            // Temperature Sensor control class properties
+            std::vector<web::json::value> temperature_sensor_properties = {
+                nmos::experimental::make_control_class_property(U("Temperature"), { 3, 1 }, temperature, U("NcFloat32"), true),
+                nmos::experimental::make_control_class_property(U("Unit"), { 3, 2 }, unit, U("NcString"), true)
+            };
+
+            // create Temperature Sensor control class
+            auto temperature_sensor_control_class = nmos::experimental::make_control_class(U("Temperature Sensor control class descriptor"), temperature_sensor_control_class_id, U("TemperatureSensor"), temperature_sensor_properties);
+
+            // insert Temperature Sensor control class to global state, which will be used by the control_protocol_ws_message_handler to process incoming ws message
+            control_protocol_state.insert(temperature_sensor_control_class);
+        }
+        // helper function to create Temperature Sensor control
+        auto make_temperature_sensor = [&temperature, &unit, temperature_sensor_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), float temperature_ = 0.0, const utility::string_t& unit_ = U("Celsius"))
+        {
+            auto data = nmos::details::make_nc_worker(temperature_sensor_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
+            data[temperature] = value::number(temperature_);
+            data[unit] = value::string(unit_);
+
+            return nmos::control_protocol_resource{ nmos::is12_versions::v1_0, nmos::types::nc_worker, std::move(data), true };
+        };
 
         // example root block
         auto root_block = nmos::make_root_block();
@@ -1244,6 +1269,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             }
         }
 
+        // example temperature-sensor
+        const auto temperature_sensor = make_temperature_sensor(++oid, nmos::root_block_oid, U("temperature-sensor"), U("Temperature Sensor"), U("Temperature Sensor block"));
+
+        // add temperature-sensor to root-block
+        nmos::push_back(root_block, temperature_sensor);
         // add example-control to root-block
         nmos::push_back(root_block, example_control);
         // add stereo-gain to root-block
@@ -1316,6 +1346,33 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
                             nmos::fields::endpoint_state(resource.data) = nmos::make_events_number_state({ source_id, flow_id }, catcall, impl::catcall);
                         }
                     });
+                }
+            }
+
+            // update temperature sensor
+            {
+                const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
+                const web::json::field_as_number temperature{ U("temperature") };
+
+                auto& resources = model.control_protocol_resources;
+
+                auto found = nmos::find_resource_if(resources, nmos::types::nc_worker, [&temperature_sensor_control_class_id](const nmos::resource& resource)
+                {
+                    return temperature_sensor_control_class_id == nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data));
+                });
+
+                if (resources.end() != found)
+                {
+                    const auto propertry_changed_event = nmos::make_propertry_changed_event(nmos::fields::nc::oid(found->data),
+                    {
+                        { {3, 1}, nmos::nc_property_change_type::type::value_changed, web::json::value(temp.scaled_value()) }
+                    });
+
+                    nmos::modify_control_protocol_resource(model.control_protocol_resources, found->id, [&](nmos::resource& resource)
+                    {
+                        resource.data[temperature] = temp.scaled_value();
+
+                    }, propertry_changed_event);
                 }
             }
 
