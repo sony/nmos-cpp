@@ -65,7 +65,7 @@ The following configurations, defined by the [build-test](.github/workflows/src/
 | Linux    | Ubuntu 20.04 (GCC 9.4.0)  | mDNSResponder                      | Secure Communications<br/>Multicast DNS-SD |
 | Linux    | Ubuntu 14.04 (GCC 4.8.4)  | mDNSResponder, not using Conan     | Secure Communications<br/>Multicast DNS-SD |
 | Windows  | Server 2019 (VS 2019)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>Multicast DNS-SD |
-| Windows  | Server 2019 (VS 2019)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD |
 | macOS    | 11 (AppleClang 13.0)      | Bonjour (mDNSResponder)            | Secure Communications<br/>Multicast DNS-SD |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.

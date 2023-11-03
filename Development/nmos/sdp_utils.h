@@ -425,7 +425,7 @@ namespace nmos
     };
 
     // Additional "video/smpte291" data payload parameters
-    // See SMPTE ST 2110-40:2022
+    // See SMPTE ST 2110-40:2023
     // and https://www.iana.org/assignments/media-types/video/smpte291
     // and https://tools.ietf.org/html/rfc8331
     struct video_smpte291_parameters
@@ -434,11 +434,11 @@ namespace nmos
         std::vector<nmos::did_sdid> did_sdids;
         // fmtp optionally indicates VPID Code of the source interface
         nmos::vpid_code vpid_code;
-        // fmtp is required to indicate frame rate, since ST 2110-40:2022
+        // fmtp is required to indicate frame rate, since ST 2110-40:2023
         nmos::rational exactframerate;
-        // fmtp optionally indicates TM, since ST 2110-40:2022
+        // fmtp optionally indicates TM, since ST 2110-40:2023
         sdp::transmission_model tm; // if omitted (empty), assume sdp::transmission_models::CTM
-        // fmtp is required to indicate SSN, since ST 2110-40:2022
+        // fmtp is required to indicate SSN, since ST 2110-40:2023
         sdp::smpte_standard_number ssn;
 
         // additional fmtp parameters from ST 2110-21:2022
