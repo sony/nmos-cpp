@@ -38,21 +38,31 @@ namespace nmos
         };
     }
 
-    get_control_protocol_methods_handler make_get_control_protocol_methods_handler(experimental::control_protocol_state& control_protocol_state)
+    get_control_protocol_method_handler make_get_control_protocol_method_handler(experimental::control_protocol_state& control_protocol_state)
     {
-        return [&]()
+        return [&](const nc_class_id& class_id_, const nc_method_id& method_id)
         {
-            std::map<nmos::nc_class_id, experimental::methods> methods;
+            auto class_id = class_id_;
+
+            auto get_control_protocol_class = make_get_control_protocol_class_handler(control_protocol_state);
 
             auto lock = control_protocol_state.read_lock();
 
-            auto& control_classes = control_protocol_state.control_classes;
-
-            for (const auto& control_class : control_classes)
+            while (!class_id.empty())
             {
-                methods[control_class.first] = control_class.second.method_handlers;
+                const auto& control_class = get_control_protocol_class(class_id);
+                auto& methods = control_class.method_handlers;
+
+                auto method_found = methods.find(method_id);
+                if (methods.end() != method_found)
+                {
+                    return method_found->second;
+                }
+
+                class_id.pop_back();
             }
-            return methods;
+
+            return experimental::method_handler(nullptr);
         };
     }
 

@@ -25,7 +25,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_methods_handler get_control_protocol_methods)
+            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_method_handler get_control_protocol_method)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -39,7 +39,7 @@ namespace nmos
                 , get_ocsp_response(std::move(get_ocsp_response))
                 , get_control_protocol_class(std::move(get_control_protocol_class))
                 , get_control_protocol_datatype(std::move(get_control_protocol_datatype))
-                , get_control_protocol_methods(std::move(get_control_protocol_methods))
+                , get_control_protocol_method(std::move(get_control_protocol_method))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -63,7 +63,7 @@ namespace nmos
             node_implementation& on_get_ocsp_response(nmos::ocsp_response_handler get_ocsp_response) { this->get_ocsp_response = std::move(get_ocsp_response); return *this; }
             node_implementation& on_get_control_class(nmos::get_control_protocol_class_handler get_control_protocol_class) { this->get_control_protocol_class = std::move(get_control_protocol_class); return *this; }
             node_implementation& on_get_control_datatype(nmos::get_control_protocol_datatype_handler get_control_protocol_datatype) { this->get_control_protocol_datatype = std::move(get_control_protocol_datatype); return *this; }
-            node_implementation& on_get_control_protocol_methods(nmos::get_control_protocol_methods_handler get_control_protocol_methods) { this->get_control_protocol_methods = std::move(get_control_protocol_methods); return *this; }
+            node_implementation& on_get_control_protocol_method(nmos::get_control_protocol_method_handler get_control_protocol_method) { this->get_control_protocol_method = std::move(get_control_protocol_method); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -96,7 +96,7 @@ namespace nmos
 
             nmos::get_control_protocol_class_handler get_control_protocol_class;
             nmos::get_control_protocol_datatype_handler get_control_protocol_datatype;
-            nmos::get_control_protocol_methods_handler get_control_protocol_methods;
+            nmos::get_control_protocol_method_handler get_control_protocol_method;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

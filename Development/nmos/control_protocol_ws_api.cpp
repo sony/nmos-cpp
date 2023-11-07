@@ -45,29 +45,6 @@ namespace nmos
         {
             controlprotocol_validator().validate(request_data, experimental::make_controlprotocolapi_subscription_message_schema_uri(version));
         }
-
-        nmos::experimental::method find_method(const nc_method_id& method_id, const nc_class_id& class_id_, const std::map<nmos::nc_class_id, experimental::methods>& methods)
-        {
-            auto class_id = class_id_;
-
-            while (!class_id.empty())
-            {
-                auto class_id_methods_found = methods.find(class_id);
-
-                if (methods.end() != class_id_methods_found)
-                {
-                    auto& method_id_methods = class_id_methods_found->second;
-                    auto method_found = method_id_methods.find(method_id);
-                    if (method_id_methods.end() != method_found)
-                    {
-                        return method_found->second;
-                    }
-                }
-                class_id.pop_back();
-            }
-
-            return nullptr;
-        }
     }
 
     // IS-12 Control Protocol WebSocket API
@@ -206,14 +183,12 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_methods_handler get_control_protocol_methods, slog::base_gate& gate_)
+    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_method_handler get_control_protocol_method, slog::base_gate& gate_)
     {
         using web::json::value;
         using web::json::value_of;
 
-        auto methods = get_control_protocol_methods();
-
-        return [&model, &websockets, get_control_protocol_class, get_control_protocol_datatype, methods, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
+        return [&model, &websockets, get_control_protocol_class, get_control_protocol_datatype, get_control_protocol_method, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
 
@@ -276,7 +251,7 @@ namespace nmos
                                         const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevent method handler to execute
-                                        auto method = details::find_method(method_id, class_id, methods);
+                                        auto method = get_control_protocol_method(class_id, method_id);
                                         if (method)
                                         {
                                             // execute the relevant method handler, then accumulating up their response to reponses

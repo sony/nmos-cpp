@@ -11,10 +11,10 @@ namespace nmos
         {
             // create control class
             //   where
-            //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
-            //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
+            //     properties: vector of NcPropertyDescriptor can be constructed using make_control_class_property
+            //     methods:    vector of NcMethodDescriptor can be constructed using make_nc_method_descriptor and the assoicated method handler
             //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods_, const std::vector<web::json::value>& events_)
+            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<std::pair<web::json::value, nmos::experimental::method_handler>>& methods_, const std::vector<web::json::value>& events_)
             {
                 using web::json::value;
 
@@ -38,7 +38,7 @@ namespace nmos
         //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events)
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method_handler>>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
@@ -49,7 +49,7 @@ namespace nmos
         //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method>>& methods, const std::vector<web::json::value>& events)
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method_handler>>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
@@ -100,7 +100,7 @@ namespace nmos
 
             auto to_methods_vector = [](const web::json::value& method_data_array, const nmos::experimental::methods& method_handlers)
             {
-                std::vector<std::pair<web::json::value, nmos::experimental::method>> methods;
+                std::vector<std::pair<web::json::value, nmos::experimental::method_handler>> methods;
 
                 if (!method_data_array.is_null())
                 {

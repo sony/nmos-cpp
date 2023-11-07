@@ -1002,12 +1002,16 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
             auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
 
                 return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
-            auto example_method_with_simple_args = [&](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_simple_args = [enum_arg, string_arg, number_arg, boolean_arg, make_string_example_argument_constraints, make_number_example_argument_constraints](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments:"
                     << " enum_arg: "
                     << enum_arg(arguments).to_int32()
@@ -1028,8 +1032,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                 return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
-            auto example_method_with_object_args = [&](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_object_args = [obj_arg](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
+                // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object argument:"
                     << " obj_arg: "
                     << obj_arg(arguments).serialize();
@@ -1037,7 +1043,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
             };
             // Example control class methods
-            std::vector<std::pair<web::json::value, nmos::experimental::method>> example_control_methods =
+            std::vector<std::pair<web::json::value, nmos::experimental::method_handler>> example_control_methods =
             {
                 { nmos::experimental::make_control_class_method(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false), example_method_with_no_args },
                 { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 2 }, U("MethodSimpleArgs"), U("NcMethodResult"),
