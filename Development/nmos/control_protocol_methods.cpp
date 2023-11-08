@@ -143,6 +143,11 @@ namespace nmos
             const auto& property = find_property(property_id_, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
+                if (nmos::fields::nc::is_read_only(property))
+                {
+                    return make_control_protocol_message_response(handle, { nc_method_status::read_only });
+                }
+
                 auto& data = resource->data.at(nmos::fields::nc::name(property));
 
                 if (!nmos::fields::nc::is_sequence(property) || data.is_null() || !data.is_array())
@@ -200,6 +205,11 @@ namespace nmos
             const auto& property = find_property(property_id_, parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
+                if (nmos::fields::nc::is_read_only(property))
+                {
+                    return make_control_protocol_message_response(handle, { nc_method_status::read_only });
+                }
+
                 if (!nmos::fields::nc::is_sequence(property))
                 {
                     // property is not a sequence
