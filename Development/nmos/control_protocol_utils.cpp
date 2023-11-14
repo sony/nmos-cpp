@@ -117,7 +117,7 @@ namespace nmos
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
             if (constraints.has_field(nmos::fields::nc::max_characters) && !constraints.at(nmos::fields::nc::max_characters).is_null())
             {
-                const auto max_characters = nmos::fields::nc::max_characters(constraints);
+                const size_t max_characters = nmos::fields::nc::max_characters(constraints);
                 if (!value.is_string() || value.as_string().length() > max_characters) { return false; }
             }
             if (constraints.has_field(nmos::fields::nc::pattern) && !constraints.at(nmos::fields::nc::pattern).is_null())
