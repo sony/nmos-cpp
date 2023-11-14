@@ -13,6 +13,9 @@ namespace nmos
         // get the runtime property constraints of a given property_id
         web::json::value get_runtime_property_constraints(const nc_property_id& property_id, const web::json::value& runtime_property_constraints_list);
 
+        // get the datatype descriptor of a specific type_name
+        web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype);
+
         // get the datatype property constraints of a given type_name
         web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype);
     }
@@ -57,14 +60,14 @@ namespace nmos
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 
-    // constraints validation
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
-    bool constraints_validation(const web::json::value& value, const web::json::value& constraints);
-
+    struct datatype_constraints_validation_parameters
+    {
+        web::json::value datatype_descriptor;
+        get_control_protocol_datatype_handler get_control_protocol_datatype;
+    };
     // multiple levels of constraints validation
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
-    bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const web::json::value& data_constraints);
+    bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
 }
 
 #endif

@@ -64,7 +64,7 @@ namespace nmos
                 // do constraints validation
                 if (!val.is_null())
                 {
-                    if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), get_datatype_constraints(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype)))
+                    if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype }))
                     {
                         return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                     }
@@ -161,7 +161,7 @@ namespace nmos
                 if (data.as_array().size() > (size_t)index)
                 {
                     // do constraints validation
-                    if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), get_datatype_constraints(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype)))
+                    if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype }))
                     {
                         return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                     }
@@ -223,7 +223,7 @@ namespace nmos
                 const nc_id sequence_item_index = data.is_null() ? 0 : nc_id(data.as_array().size());
 
                 // do constraints validation
-                if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), get_datatype_constraints(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype)))
+                if (!constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype }))
                 {
                     return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                 }

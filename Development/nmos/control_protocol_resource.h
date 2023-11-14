@@ -130,6 +130,9 @@ namespace nmos
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdatatypedescriptortypedef
         web::json::value make_nc_datatype_typedef(const utility::string_t& description, const nc_name& name, bool is_sequence, const utility::string_t& parent_type, const web::json::value& constraints);
 
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraints
+        web::json::value make_nc_property_constraints(const nc_property_id& property_id, const web::json::value& default_value);
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyconstraintsnumber
         web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t default_value, uint64_t minimum, uint64_t maximum, uint64_t step);
         web::json::value make_nc_property_constraints_number(const nc_property_id& property_id, uint64_t minimum, uint64_t maximum, uint64_t step);
@@ -139,6 +142,9 @@ namespace nmos
         web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, uint32_t max_characters, const nc_regex& pattern);
         web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, uint32_t max_characters);
         web::json::value make_nc_property_constraints_string(const nc_property_id& property_id, const nc_regex& pattern);
+
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraints
+        web::json::value make_nc_parameter_constraints(const web::json::value& default_value);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
         web::json::value make_nc_parameter_constraints_number(uint64_t default_value, uint64_t minimum, uint64_t maximum, uint64_t step);

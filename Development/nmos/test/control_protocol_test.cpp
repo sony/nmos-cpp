@@ -707,62 +707,727 @@ BST_TEST_CASE(testConstraints)
     using web::json::value;
 
     const nmos::nc_property_id property_string_id{ 100, 1 };
-    const nmos::nc_property_id property_number_id{ 100, 2 };
+    const nmos::nc_property_id property_int32_id{ 100, 2 };
     const nmos::nc_property_id unknown_property_id{ 100, 3 };
 
+    // constraints
+
+    // runtime constraints
     const auto runtime_property_string_constraints = nmos::details::make_nc_property_constraints_string(property_string_id, 10, U("^[0-9]+$"));
-    const auto runtime_property_number_constraints = nmos::details::make_nc_property_constraints_number(property_number_id, 10, 1000, 1);
+    const auto runtime_property_int32_constraints = nmos::details::make_nc_property_constraints_number(property_int32_id, 10, 1000, 1);
 
     const auto runtime_property_constraints = value_of({
         { runtime_property_string_constraints },
-        { runtime_property_number_constraints }
+        { runtime_property_int32_constraints }
     });
 
+    // propertry constraints
     const auto property_string_constraints = nmos::details::make_nc_parameter_constraints_string(5, U("^[a-z]+$"));
-    const auto property_number_constraints = nmos::details::make_nc_parameter_constraints_number(50, 500, 5);
+    const auto property_int32_constraints = nmos::details::make_nc_parameter_constraints_number(50, 500, 5);
 
+    // datatype constraints
     const auto datatype_string_constraints = nmos::details::make_nc_parameter_constraints_string(2, U("^[0-9a-z]+$"));
-    const auto datatype_number_constraints = nmos::details::make_nc_parameter_constraints_number(100, 250, 10);
+    const auto datatype_int32_constraints = nmos::details::make_nc_parameter_constraints_number(100, 250, 10);
+
+    // datatypes
+    const auto no_constraints_bool_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints boolean datatype"), U("NoConstraintsBoolean"), false, U("NcBoolean"), value::null());
+    const auto no_constraints_int16_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int16 datatype"), U("NoConstraintsInt16"), false, U("NcInt16"), value::null());
+    const auto no_constraints_int32_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int32 datatype"), U("NoConstraintsInt32"), false, U("NcInt32"), value::null());
+    const auto no_constraints_int64_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), false, U("NcInt64"), value::null());
+    const auto no_constraints_uint16_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints uint16 datatype"), U("NoConstraintsUint16"), false, U("NcUint16"), value::null());
+    const auto no_constraints_uint32_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints uint32 datatype"), U("NoConstraintsUint32"), false, U("NcUint32"), value::null());
+    const auto no_constraints_uint64_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints uint64 datatype"), U("NoConstraintsUint64"), false, U("NcUint64"), value::null());
+    const auto no_constraints_float32_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints float32 datatype"), U("NoConstraintsFloat32"), false, U("NcFloat32"), value::null());
+    const auto no_constraints_float64_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints float64 datatype"), U("NoConstraintsFloat64"), false, U("NcFloat64"), value::null());
+    const auto no_constraints_string_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), false, U("NcString"), value::null());
+    const auto with_constraints_string_datatype = nmos::details::make_nc_datatype_typedef(U("With constraints string datatype"), U("WithConstraintsString"), false, U("NcString"), datatype_string_constraints);
+    const auto with_constraints_int32_datatype = nmos::details::make_nc_datatype_typedef(U("With constraints int32 datatype"), U("WithConstraintsInt32"), false, U("NcInt32"), datatype_int32_constraints);
+
+    enum enum_value { foo, bar, baz };
+    auto items = value::array();
+    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("foo"), U("foo"), enum_value::foo));
+    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("bar"), U("bar"), enum_value::bar));
+    web::json::push_back(items, nmos::details::make_nc_enum_item_descriptor(U("baz"), U("baz"), enum_value::baz));
+    const auto enum_datatype = nmos::details::make_nc_datatype_descriptor_enum(U("enum datatype"), U("enumDatatype"), items, value::null()); // no datatype constraints for enum datatype
+
+    auto simple_struct_fields = value::array();
+    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simple enum property example"), U("simpleEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simple string property example"), U("simpleStringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simple number property example"), U("simpleNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(simple_struct_fields, nmos::details::make_nc_field_descriptor(U("simle boolean property example"), U("simpleBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    const auto simple_struct_datatype = nmos::details::make_nc_datatype_descriptor_struct(U("simple struct datatype"), U("simpleStructDatatype"), simple_struct_fields, value::null()); // no datatype constraints for struct datatype
+
+    auto fields = value::array();
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Enum property example"), U("enumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("String property example"), U("stringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Number property example"), U("numberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Boolean property example"), U("booleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Struct property example"), U("structProperty"), U("simpleStructDatatype"), false, false, value::null())); // no datatype constraints for struct datatype
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence enum property example"), U("sequenceEnumProperty"), U("enumDatatype"), false, false, value::null())); // no field constraints for enum field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence string property example"), U("sequenceStringProperty"), U("NcString"), false, false, datatype_string_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence number property example"), U("sequenceNumberProperty"), U("NcInt32"), false, false, datatype_int32_constraints));
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence boolean property example"), U("sequenceBooleanProperty"), U("NcBoolean"), false, false, value::null())); // no field constraints for boolean field, as it is already described by its type
+    web::json::push_back(fields, nmos::details::make_nc_field_descriptor(U("Sequence struct property example"), U("sequenceStructProperty"), U("simpleStructDatatype"), false, false, value::null())); // no field constraints for struct field
+    const auto struct_datatype = nmos::details::make_nc_datatype_descriptor_struct(U("struct datatype"), U("structDatatype"), fields, value::null()); // no datatype constraints for struct datatype
+
+    // setup datatypes in control_protocol_state
+    nmos::experimental::control_protocol_state control_protocol_state;
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int16_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int32_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int64_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_uint16_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_uint32_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_uint64_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_string_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ with_constraints_int32_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ with_constraints_string_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ enum_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ simple_struct_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ struct_datatype });
 
     // test get_runtime_property_constraints
     BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_string_id, runtime_property_constraints), runtime_property_string_constraints);
-    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_number_id, runtime_property_constraints), runtime_property_number_constraints);
+    BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_int32_id, runtime_property_constraints), runtime_property_int32_constraints);
     BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(unknown_property_id, runtime_property_constraints), value::null());
 
     // string property constraints validation
-    BST_REQUIRE(nmos::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, datatype_string_constraints));
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, datatype_string_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, datatype_string_constraints), false);
-    BST_REQUIRE(nmos::constraints_validation(value::string(U("12345678901")), value::null(), value::null(), value::null()));
-    BST_REQUIRE(nmos::constraints_validation(value::string(U("123456789A")), value::null(), value::null(), value::null()));
 
-    BST_REQUIRE(nmos::constraints_validation(value::string(U("abcde")), value::null(), property_string_constraints, datatype_string_constraints));
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcdef")), value::null(), property_string_constraints, datatype_string_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcd1")), value::null(), property_string_constraints, datatype_string_constraints), false);
-
-    BST_REQUIRE(nmos::constraints_validation(value::string(U("1a")), value::null(), value::null(), datatype_string_constraints));
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1a2")), value::null(), value::null(), datatype_string_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1*")), value::null(), value::null(), datatype_string_constraints), false);
+    // runtime property constraints validation
+    const nmos::datatype_constraints_validation_parameters with_constraints_string_constraints_validation_params{ with_constraints_string_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    // property constraints validation
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("abcde")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcdef")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcd1")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    // datatype constraints validation
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("1a")), value::null(), value::null(), with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1a2")), value::null(), value::null(), with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1*")), value::null(), value::null(), with_constraints_string_constraints_validation_params), false);
+    const nmos::datatype_constraints_validation_parameters no_constraints_string_constraints_validation_params{ no_constraints_string_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE(nmos::constraints_validation(value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::null(), value::null(), no_constraints_string_constraints_validation_params));
 
     // number property constraints validation
-    BST_REQUIRE(nmos::constraints_validation(10, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints));
-    BST_REQUIRE(nmos::constraints_validation(1000, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints));
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(9, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(1001, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(0.5, runtime_property_number_constraints, property_number_constraints, datatype_number_constraints), false);
-    BST_REQUIRE(nmos::constraints_validation(9, value::null(), value::null(), value::null()));
-    BST_REQUIRE(nmos::constraints_validation(1001, value::null(), value::null(), value::null()));
-    BST_REQUIRE(nmos::constraints_validation(0.5, value::null(), value::null(), value::null()));
 
-    BST_REQUIRE(nmos::constraints_validation(50, value::null(), property_number_constraints, datatype_number_constraints));
-    BST_REQUIRE(nmos::constraints_validation(500, value::null(), property_number_constraints, datatype_number_constraints));
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(45, value::null(), property_number_constraints, datatype_number_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(505, value::null(), property_number_constraints, datatype_number_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(499, value::null(), property_number_constraints, datatype_number_constraints), false);
+    // runtime property constraints validation
+    const nmos::datatype_constraints_validation_parameters with_constraints_int32_constraints_validation_params{ with_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE(nmos::constraints_validation(10, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(1000, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(9, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(1001, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    // property constraints validation
+    BST_REQUIRE(nmos::constraints_validation(50, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(500, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(45, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(505, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(499, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    // datatype constraints validation
+    BST_REQUIRE(nmos::constraints_validation(100, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(250, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(90, value::null(), value::null(), with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(260, value::null(), value::null(), with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(99, value::null(), value::null(), with_constraints_int32_constraints_validation_params), false);
+    // int16 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_int16_constraints_validation_params{ no_constraints_int16_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(int64_t(std::numeric_limits<int16_t>::min()) - 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(int64_t(std::numeric_limits<int16_t>::max()) + 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<int16_t>::min(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<int16_t>::max(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
+    // int32 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_int32_constraints_validation_params{ no_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(int64_t(std::numeric_limits<int32_t>::min()) - 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(int64_t(std::numeric_limits<int32_t>::max()) + 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<int32_t>::min(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<int32_t>::max(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
+    // int64 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_int64_constraints_validation_params{ no_constraints_int64_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<int64_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<int64_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
+    // uint16 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_uint16_constraints_validation_params{ no_constraints_uint16_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(-1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(uint64_t(std::numeric_limits<uint16_t>::max()) + 1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<uint16_t>::min(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<uint16_t>::max(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
+    // uint32 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_uint32_constraints_validation_params{ no_constraints_uint32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(-1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(uint64_t(std::numeric_limits<uint32_t>::max()) + 1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<uint32_t>::min(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<uint32_t>::max(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
+    // uint64 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_uint64_constraints_validation_params{ no_constraints_uint64_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(-1, value::null(), value::null(), no_constraints_uint64_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<uint64_t>::min(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<uint64_t>::max(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
+    // float32 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_float32_constraints_validation_params{ no_constraints_float32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(std::numeric_limits<double>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(std::numeric_limits<double>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<float_t>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<float_t>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
+    // float64 datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters no_constraints_float64_constraints_validation_params{ no_constraints_float64_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(1000, value::null(), value::null(), no_constraints_float64_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(1000.0, value::null(), value::null(), no_constraints_float64_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
+    // enum property datatype constraints validation
+    const nmos::datatype_constraints_validation_parameters enum_constraints_validation_params{ enum_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE(nmos::constraints_validation(enum_value::foo, value::null(), value::null(), enum_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(4, value::null(), value::null(), enum_constraints_validation_params), false);
 
-    BST_REQUIRE(nmos::constraints_validation(100, value::null(), value::null(), datatype_number_constraints));
-    BST_REQUIRE(nmos::constraints_validation(250, value::null(), value::null(), datatype_number_constraints));
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(90, value::null(), value::null(), datatype_number_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(260, value::null(), value::null(), datatype_number_constraints), false);
-    BST_REQUIRE_EQUAL(nmos::constraints_validation(99, value::null(), value::null(), datatype_number_constraints), false);
+    // struct property datatype constraints validation
+    const auto good_struct = value_of({
+        { U("enumProperty"), enum_value::baz },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    // missing field
+    const auto bad_struct1 = value_of({
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    // invalid fields
+    const auto bad_struct2 = value_of({
+        { U("enumProperty"), 3 }, // bad value
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_1 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xyz") }, // bad value
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_2 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("x£") }, // bad value
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_3 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 99 },  // bad value
+        { U("booleanProperty"), true },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_4 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), 0 }, // bad value
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_5 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), 3 }, // bad value
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_5_1 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xyz") }, // bad value
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_5_2 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 99 }, // bad value
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_5_3 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), 3 } // bad value
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_6 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar, 4 }) }, // bad value
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_6_1 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bbb") }) }, // bad value
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_6_2 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 99, 110 }) }, // bad value
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_6_3 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, 0 }) }, // bad value
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_7 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), 3 }, // bad value
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_7_1 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("abc") }, // bad value
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_7_2 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 251 }, // bad value
+            { U("simpleBooleanProperty"), false }
+        }) }) }
+    });
+    const auto bad_struct2_7_3 = value_of({
+        { U("enumProperty"), enum_value::foo },
+        { U("stringProperty"), U("xy") },
+        { U("numberProperty"), 100 },
+        { U("booleanProperty"), true },
+        { U("structProperty"), value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }) },
+        { U("sequenceEnumProperty"), value_of({ enum_value::foo, enum_value::bar }) },
+        { U("sequenceStringProperty"), value_of({ U("aa"), U("bb") }) },
+        { U("sequenceNumberProperty"), value_of({ 100, 110 }) },
+        { U("sequenceBooleanProperty"), value_of({ true, false }) },
+        { U("sequenceStructProperty"), value_of({
+            value_of({
+            { U("simpleEnumProperty"), enum_value::bar },
+            { U("simpleStringProperty"), U("xy") },
+            { U("simpleNumberProperty"), 100 },
+            { U("simpleBooleanProperty"), true }
+        }), value_of({
+            { U("simpleEnumProperty"), enum_value::foo },
+            { U("simpleStringProperty"), U("ab") },
+            { U("simpleNumberProperty"), 200 },
+            { U("simpleBooleanProperty"), 0 } // bad value
+        }) }) }
+    });
+
+    const nmos::datatype_constraints_validation_parameters struct_constraints_validation_params{ struct_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE(nmos::constraints_validation(good_struct, value::null(), value::null(), struct_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct1, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_1, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_2, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_3, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_4, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_5, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_5_1, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_5_2, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_5_3, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_6, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_6_1, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_6_2, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_6_3, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_7, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_7_1, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_7_2, value::null(), value::null(), struct_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(bad_struct2_7_3, value::null(), value::null(), struct_constraints_validation_params), false);
 }
