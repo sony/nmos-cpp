@@ -26,7 +26,7 @@ namespace nmos
             const auto& property = find_property(parse_nc_property_id(property_id), parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), get_control_protocol_class);
             if (!property.is_null())
             {
-                return make_control_protocol_message_response(handle, { nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(property)));
+                return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, resource->data.at(nmos::fields::nc::name(property)));
             }
 
             // unknown property
@@ -77,7 +77,7 @@ namespace nmos
 
                 }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::value_changed, val } }));
 
-                return make_control_protocol_message_response(handle, { nc_method_status::ok });
+                return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
             }
 
             // unknown property
@@ -112,7 +112,7 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    return make_control_protocol_message_response(handle, { nc_method_status::ok }, data.at(index));
+                    return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, data.at(index));
                 }
 
                 // out of bound
@@ -173,7 +173,7 @@ namespace nmos
 
                     }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
 
-                    return make_control_protocol_message_response(handle, { nc_method_status::ok });
+                    return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
                 }
 
                 // out of bound
@@ -237,7 +237,7 @@ namespace nmos
 
                 }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
 
-                return make_control_protocol_message_response(handle, { nc_method_status::ok }, sequence_item_index);
+                return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, sequence_item_index);
             }
 
             // unknown property
@@ -279,7 +279,7 @@ namespace nmos
 
                     }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index) } }));
 
-                    return make_control_protocol_message_response(handle, { nc_method_status::ok });
+                    return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
                 }
 
                 // out of bound
@@ -325,7 +325,7 @@ namespace nmos
                     if (data.is_null())
                     {
                         // null
-                        return make_control_protocol_message_response(handle, { nc_method_status::ok }, value::null());
+                        return make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, value::null());
                     }
                 }
                 else
