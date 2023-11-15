@@ -800,10 +800,16 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE(nmos::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
     BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), false);
     BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(value_of({ value::string(U("1234567890")), value::string(U("1234567890")) }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ value::string(U("1234567890")), value::string(U("12345678901")) }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ value::string(U("1234567890")), 1 }), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), false);
     // property constraints validation
     BST_REQUIRE(nmos::constraints_validation(value::string(U("abcde")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
     BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcdef")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), false);
     BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("abcd1")), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(value_of({ value::string(U("abcde")), value::string(U("abcde")) }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ value::string(U("abcde")), value::string(U("abcdef")) }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ value::string(U("abcde")), 1 }), value::null(), property_string_constraints, with_constraints_string_constraints_validation_params), false);
     // datatype constraints validation
     BST_REQUIRE(nmos::constraints_validation(value::string(U("1a")), value::null(), value::null(), with_constraints_string_constraints_validation_params));
     BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1a2")), value::null(), value::null(), with_constraints_string_constraints_validation_params), false);
@@ -819,12 +825,20 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE(nmos::constraints_validation(1000, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
     BST_REQUIRE_EQUAL(nmos::constraints_validation(9, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
     BST_REQUIRE_EQUAL(nmos::constraints_validation(1001, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(value_of({ 10, 1000 }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 10, 1001 }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 10, value::string(U("a")) }), runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
     // property constraints validation
     BST_REQUIRE(nmos::constraints_validation(50, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
     BST_REQUIRE(nmos::constraints_validation(500, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
     BST_REQUIRE_EQUAL(nmos::constraints_validation(45, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
     BST_REQUIRE_EQUAL(nmos::constraints_validation(505, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
     BST_REQUIRE_EQUAL(nmos::constraints_validation(499, value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(value_of({ 50, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 49, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 50, 501 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 45, 500 }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 50, value::string(U("a")) }), value::null(), property_int32_constraints, with_constraints_int32_constraints_validation_params), false);
     // datatype constraints validation
     BST_REQUIRE(nmos::constraints_validation(100, value::null(), value::null(), with_constraints_int32_constraints_validation_params));
     BST_REQUIRE(nmos::constraints_validation(250, value::null(), value::null(), with_constraints_int32_constraints_validation_params));

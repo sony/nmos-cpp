@@ -985,20 +985,24 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             std::vector<web::json::value> example_control_properties = {
                 nmos::experimental::make_control_class_property(U("Example enum property"), { 3, 1 }, enum_property, U("ExampleEnum")),
                 // create "Example string property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
-                // use nmos::details::make_nc_parameter_constraints_string to create datatype constraints
+                // use nmos::details::make_nc_parameter_constraints_string to create property constraints
                 nmos::experimental::make_control_class_property(U("Example string property"), { 3, 2 }, string_property, U("NcString"), false, false, false, false, make_string_example_argument_constraints()),
                 // create "Example numeric property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
-                // use nmos::details::make_nc_parameter_constraints_number to create datatype constraints
+                // use nmos::details::make_nc_parameter_constraints_number to create property constraints
                 nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, make_number_example_argument_constraints()),
                 nmos::experimental::make_control_class_property(U("Example boolean property"), { 3, 4 }, boolean_property, U("NcBoolean")),
                 nmos::experimental::make_control_class_property(U("Example object property"), { 3, 5 }, object_property, U("ExampleDataType")),
                 nmos::experimental::make_control_class_property(U("Method no args invoke counter"), { 3, 6 }, method_no_args_count, U("NcUint64"), true),
                 nmos::experimental::make_control_class_property(U("Method simple args invoke counter"), { 3, 7 }, method_simple_args_count, U("NcUint64"), true),
                 nmos::experimental::make_control_class_property(U("Method obj arg invoke counter"), { 3, 8 }, method_object_arg_count, U("NcUint64"), true),
-                nmos::experimental::make_control_class_property(U("Example string sequence property"), { 3, 9 }, string_sequence, U("NcString"), false, false, true),
+                // create "Example sequence string property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                // use nmos::details::make_nc_parameter_constraints_string to create sequence property constraints
+                nmos::experimental::make_control_class_property(U("Example string sequence property"), { 3, 9 }, string_sequence, U("NcString"), false, false, true, false, make_string_example_argument_constraints()),
                 nmos::experimental::make_control_class_property(U("Example boolean sequence property"), { 3, 10 }, boolean_sequence, U("NcBoolean"), false, false, true),
                 nmos::experimental::make_control_class_property(U("Example enum sequence property"), { 3, 11 }, enum_sequence, U("ExampleEnum"), false, false, true),
-                nmos::experimental::make_control_class_property(U("Example number sequence property"), { 3, 12 }, number_sequence, U("NcUint64"), false, false, true),
+                // create "Example sequence numeric property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+                // use nmos::details::make_nc_parameter_constraints_number to create sequence property constraints
+                nmos::experimental::make_control_class_property(U("Example number sequence property"), { 3, 12 }, number_sequence, U("NcUint64"), false, false, true, false, make_number_example_argument_constraints()),
                 nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 13 }, object_sequence, U("ExampleDataType"), false, false, true)
             };
 

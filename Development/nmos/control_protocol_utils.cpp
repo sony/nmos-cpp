@@ -77,59 +77,74 @@ namespace nmos
         // constraints validation
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
-        bool constraints_validation(const web::json::value& value, const web::json::value& constraints)
+        bool constraints_validation(const web::json::value& data, const web::json::value& constraints)
         {
-            // is numeric constraints
-            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
-            if (constraints.has_field(nmos::fields::nc::step) && !nmos::fields::nc::step(constraints).is_null())
+            auto parameter_constraints_validation = [&constraints](const web::json::value& value)
             {
-                if (!value.is_integer()) { return false; }
+                // is numeric constraints
+                // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsnumber
+                if (constraints.has_field(nmos::fields::nc::step) && !nmos::fields::nc::step(constraints).is_null())
+                {
+                    if (!value.is_integer()) { return false; }
 
-                const auto step = nmos::fields::nc::step(constraints).as_double();
-                if (step <= 0) { return false; }
+                    const auto step = nmos::fields::nc::step(constraints).as_double();
+                    if (step <= 0) { return false; }
 
-                const auto value_double = value.as_double();
+                    const auto value_double = value.as_double();
+                    if (constraints.has_field(nmos::fields::nc::minimum) && !nmos::fields::nc::minimum(constraints).is_null())
+                    {
+                        auto min = nmos::fields::nc::minimum(constraints).as_double();
+                        if (0 != std::fmod(value_double - min, step)) { return false; }
+                    }
+                    else if (constraints.has_field(nmos::fields::nc::maximum) && !nmos::fields::nc::maximum(constraints).is_null())
+                    {
+                        auto max = nmos::fields::nc::maximum(constraints).as_double();
+                        if (0 != std::fmod(max - value_double, step)) { return false; }
+                    }
+                    else
+                    {
+                        if (0 != std::fmod(value_double, step)) { return false; }
+                    }
+                }
                 if (constraints.has_field(nmos::fields::nc::minimum) && !nmos::fields::nc::minimum(constraints).is_null())
                 {
-                    auto min = nmos::fields::nc::minimum(constraints).as_double();
-                    if (0 != std::fmod(value_double - min, step)) { return false; }
+                    if (!value.is_integer() || value.as_double() < nmos::fields::nc::minimum(constraints).as_double()) { return false; }
                 }
-                else if (constraints.has_field(nmos::fields::nc::maximum) && !nmos::fields::nc::maximum(constraints).is_null())
+                if (constraints.has_field(nmos::fields::nc::maximum) && !nmos::fields::nc::maximum(constraints).is_null())
                 {
-                    auto max = nmos::fields::nc::maximum(constraints).as_double();
-                    if (0 != std::fmod(max - value_double, step)) { return false; }
+                    if (!value.is_integer() || value.as_double() > nmos::fields::nc::maximum(constraints).as_double()) { return false; }
                 }
-                else
+
+                // is string constraints
+                // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
+                if (constraints.has_field(nmos::fields::nc::max_characters) && !constraints.at(nmos::fields::nc::max_characters).is_null())
                 {
-                    if (0 != std::fmod(value_double, step)) { return false; }
+                    const size_t max_characters = nmos::fields::nc::max_characters(constraints);
+                    if (!value.is_string() || value.as_string().length() > max_characters) { return false; }
                 }
-            }
-            if (constraints.has_field(nmos::fields::nc::minimum) && !nmos::fields::nc::minimum(constraints).is_null())
+                if (constraints.has_field(nmos::fields::nc::pattern) && !constraints.at(nmos::fields::nc::pattern).is_null())
+                {
+                    if (!value.is_string()) { return false; }
+                    const auto value_string = utility::us2s(value.as_string());
+                    bst::regex pattern(utility::us2s(nmos::fields::nc::pattern(constraints)));
+                    if (!bst::regex_match(value_string, pattern)) { return false; }
+                }
+
+                // reaching here, parameter validation successfully
+                return true;
+            };
+
+            if (data.is_array())
             {
-                if (!value.is_integer() || value.as_double() < nmos::fields::nc::minimum(constraints).as_double()) { return false; }
-            }
-            if (constraints.has_field(nmos::fields::nc::maximum) && !nmos::fields::nc::maximum(constraints).is_null())
-            {
-                if (!value.is_integer() || value.as_double() > nmos::fields::nc::maximum(constraints).as_double()) { return false; }
+                for (const auto& value : data.as_array())
+                {
+                    if (!parameter_constraints_validation(value)) { return false; }
+                }
+                // validation successfully
+                return true;
             }
 
-            // is string constraints
-            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncparameterconstraintsstring
-            if (constraints.has_field(nmos::fields::nc::max_characters) && !constraints.at(nmos::fields::nc::max_characters).is_null())
-            {
-                const size_t max_characters = nmos::fields::nc::max_characters(constraints);
-                if (!value.is_string() || value.as_string().length() > max_characters) { return false; }
-            }
-            if (constraints.has_field(nmos::fields::nc::pattern) && !constraints.at(nmos::fields::nc::pattern).is_null())
-            {
-                if (!value.is_string()) { return false; }
-                const auto value_string = utility::us2s(value.as_string());
-                bst::regex pattern(utility::us2s(nmos::fields::nc::pattern(constraints)));
-                if (!bst::regex_match(value_string, pattern)) { return false; }
-            }
-
-            // reaching here, no validation is required
-            return true;
+            return parameter_constraints_validation(data);
         }
 
         // level 0 datatype constraints validation
@@ -145,22 +160,10 @@ namespace nmos
                 const auto& datatype_constraints = nmos::fields::nc::constraints(params.datatype_descriptor);
                 if (!datatype_constraints.is_null())
                 {
-                    if (data.is_array())
-                    {
-                        for (const auto& val : data.as_array())
-                        {
-                            if (!constraints_validation(val, datatype_constraints)) { return false; }
-                        }
-                        // reaching here, validation successfully
-                        return true;
-                    }
-                    else
-                    {
-                        return constraints_validation(data, datatype_constraints);
-                    }
+                    return constraints_validation(data, datatype_constraints);
                 }
 
-                auto primitive_validation = [](const nc_name& name, const web::json::value& val)
+                auto primitive_validation = [](const nc_name& name, const web::json::value& value)
                 {
                     auto is_int16 = [](int32_t value)
                     {
@@ -178,16 +181,16 @@ namespace nmos
                             && value <= (std::numeric_limits<float_t>::max)();
                     };
 
-                    if (U("NcBoolean") == name) { return val.is_boolean(); }
-                    if (U("NcInt16") == name && val.is_number()) { return is_int16(val.as_number().to_int32()); }
-                    if (U("NcInt32") == name && val.is_number()) { return val.as_number().is_int32(); }
-                    if (U("NcInt64") == name && val.is_number()) { return val.as_number().is_int64(); }
-                    if (U("NcUint16") == name && val.is_number()) { return is_uint16(val.as_number().to_uint32()); }
-                    if (U("NcUint32") == name && val.is_number()) { return val.as_number().is_uint32(); }
-                    if (U("NcUint64") == name && val.is_number()) { return val.as_number().is_uint64(); }
-                    if (U("NcFloat32") == name && val.is_number()) { return is_float32(val.as_number().to_double()); }
-                    if (U("NcFloat64") == name && val.is_number()) { return !val.as_number().is_integral(); }
-                    if (U("NcString") == name) { return val.is_string(); }
+                    if (U("NcBoolean") == name) { return value.is_boolean(); }
+                    if (U("NcInt16") == name && value.is_number()) { return is_int16(value.as_number().to_int32()); }
+                    if (U("NcInt32") == name && value.is_number()) { return value.as_number().is_int32(); }
+                    if (U("NcInt64") == name && value.is_number()) { return value.as_number().is_int64(); }
+                    if (U("NcUint16") == name && value.is_number()) { return is_uint16(value.as_number().to_uint32()); }
+                    if (U("NcUint32") == name && value.is_number()) { return value.as_number().is_uint32(); }
+                    if (U("NcUint64") == name && value.is_number()) { return value.as_number().is_uint64(); }
+                    if (U("NcFloat32") == name && value.is_number()) { return is_float32(value.as_number().to_double()); }
+                    if (U("NcFloat64") == name && value.is_number()) { return !value.as_number().is_integral(); }
+                    if (U("NcString") == name) { return value.is_string(); }
 
                     // invalid primitive type
                     return false;
@@ -197,17 +200,15 @@ namespace nmos
                 const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
                 if (data.is_array())
                 {
-                    for (const auto& val : data.as_array())
+                    for (const auto& value : data.as_array())
                     {
-                        if (!primitive_validation(name, val)) { return false; }
+                        if (!primitive_validation(name, value)) { return false; }
                     }
-                    // reaching here, validation successfully
+                    // reaching here, primitive validation successfully
                     return true;
                 }
-                else
-                {
-                    return primitive_validation(name, data);
-                }
+
+                return primitive_validation(name, data);
             }
 
             // do NcDatatypeDescriptorTypeDef constraints validation
@@ -252,19 +253,8 @@ namespace nmos
                     {
                         auto value = data.at(name);
 
-                        if (value.is_array())
-                        {
-                            for (const auto& val : value.as_array())
-                            {
-                                // do field constraints validation
-                                if (!constraints_validation(val, constraints)) { return false; }
-                            }
-                        }
-                        else
-                        {
-                            // do field constraints validation
-                            if (!constraints_validation(value, constraints)) { return false; }
-                        }
+                        // do field constraints validation
+                        if (!constraints_validation(value, constraints)) { return false; }
                     }
                     else
                     {
@@ -574,15 +564,15 @@ namespace nmos
 
     // multiple levels of constraints validation
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
-    bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params)
+    bool constraints_validation(const web::json::value& data, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params)
     {
         // do level 2 runtime property constraints validation
-        if (!runtime_property_constraints.is_null()) { return details::constraints_validation(value, runtime_property_constraints); }
+        if (!runtime_property_constraints.is_null()) { return details::constraints_validation(data, runtime_property_constraints); }
 
         // do level 1 property constraints validation
-        if (!property_constraints.is_null()) { return details::constraints_validation(value, property_constraints); }
+        if (!property_constraints.is_null()) { return details::constraints_validation(data, property_constraints); }
 
         // do level 0 datatype constraints validation
-        return details::datatype_constraints_validation(value, params);
+        return details::datatype_constraints_validation(data, params);
     }
 }
