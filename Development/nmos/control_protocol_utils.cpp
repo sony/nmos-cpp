@@ -138,44 +138,76 @@ namespace nmos
         {
             const auto& datatype_type = nmos::fields::nc::type(params.datatype_descriptor);
 
-            auto is_int16 = [](int32_t value)
-            {
-                return value >= (std::numeric_limits<int16_t>::min)()
-                    && value <= (std::numeric_limits<int16_t>::max)();
-            };
-            auto is_uint16 = [](uint32_t value)
-            {
-                return value >= (std::numeric_limits<uint16_t>::min)()
-                    && value <= (std::numeric_limits<uint16_t>::max)();
-            };
-            auto is_float32 = [](double value)
-            {
-                return value >= (std::numeric_limits<float_t>::min)()
-                    && value <= (std::numeric_limits<float_t>::max)();
-            };
-
             // do NcDatatypeDescriptorPrimitive constraints validation
             if (nc_datatype_type::Primitive == datatype_type)
             {
                 // hmm, for the primitive type, it should not have datatype constraints specified via the datatype_descriptor but just in case
                 const auto& datatype_constraints = nmos::fields::nc::constraints(params.datatype_descriptor);
-                if (!datatype_constraints.is_null()) { return constraints_validation(data, datatype_constraints); }
+                if (!datatype_constraints.is_null())
+                {
+                    if (data.is_array())
+                    {
+                        for (const auto& val : data.as_array())
+                        {
+                            if (!constraints_validation(val, datatype_constraints)) { return false; }
+                        }
+                        // reaching here, validation successfully
+                        return true;
+                    }
+                    else
+                    {
+                        return constraints_validation(data, datatype_constraints);
+                    }
+                }
 
-                // do primitive type constraints
+                auto primitive_validation = [](const nc_name& name, const web::json::value& val)
+                {
+                    auto is_int16 = [](int32_t value)
+                    {
+                        return value >= (std::numeric_limits<int16_t>::min)()
+                            && value <= (std::numeric_limits<int16_t>::max)();
+                    };
+                    auto is_uint16 = [](uint32_t value)
+                    {
+                        return value >= (std::numeric_limits<uint16_t>::min)()
+                            && value <= (std::numeric_limits<uint16_t>::max)();
+                    };
+                    auto is_float32 = [](double value)
+                    {
+                        return value >= (std::numeric_limits<float_t>::min)()
+                            && value <= (std::numeric_limits<float_t>::max)();
+                    };
+
+                    if (U("NcBoolean") == name) { return val.is_boolean(); }
+                    if (U("NcInt16") == name && val.is_number()) { return is_int16(val.as_number().to_int32()); }
+                    if (U("NcInt32") == name && val.is_number()) { return val.as_number().is_int32(); }
+                    if (U("NcInt64") == name && val.is_number()) { return val.as_number().is_int64(); }
+                    if (U("NcUint16") == name && val.is_number()) { return is_uint16(val.as_number().to_uint32()); }
+                    if (U("NcUint32") == name && val.is_number()) { return val.as_number().is_uint32(); }
+                    if (U("NcUint64") == name && val.is_number()) { return val.as_number().is_uint64(); }
+                    if (U("NcFloat32") == name && val.is_number()) { return is_float32(val.as_number().to_double()); }
+                    if (U("NcFloat64") == name && val.is_number()) { return !val.as_number().is_integral(); }
+                    if (U("NcString") == name) { return val.is_string(); }
+
+                    // invalid primitive type
+                    return false;
+                };
+
+                // do primitive type constraints validation
                 const auto& name = nmos::fields::nc::name(params.datatype_descriptor);
-                if (U("NcBoolean") == name) { return data.is_boolean(); }
-                if (U("NcInt16") == name && data.is_number()) { return is_int16(data.as_number().to_int32()); }
-                if (U("NcInt32") == name && data.is_number()) { return data.as_number().is_int32(); }
-                if (U("NcInt64") == name && data.is_number()) { return data.as_number().is_int64(); }
-                if (U("NcUint16") == name && data.is_number()) { return is_uint16(data.as_number().to_uint32()); }
-                if (U("NcUint32") == name && data.is_number()) { return data.as_number().is_uint32(); }
-                if (U("NcUint64") == name && data.is_number()) { return data.as_number().is_uint64(); }
-                if (U("NcFloat32") == name && data.is_number()) { return is_float32(data.as_number().to_double()); }
-                if (U("NcFloat64") == name && data.is_number()) { return !data.as_number().is_integral(); }
-                if (U("NcString") == name) { return data.is_string(); }
-
-                // invalid primitive type
-                return false;
+                if (data.is_array())
+                {
+                    for (const auto& val : data.as_array())
+                    {
+                        if (!primitive_validation(name, val)) { return false; }
+                    }
+                    // reaching here, validation successfully
+                    return true;
+                }
+                else
+                {
+                    return primitive_validation(name, data);
+                }
             }
 
             // do NcDatatypeDescriptorTypeDef constraints validation

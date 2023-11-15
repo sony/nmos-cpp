@@ -56,6 +56,7 @@ namespace nmos
                 }
 
                 if ((val.is_null() && !nmos::fields::nc::is_nullable(property))
+                    || (!val.is_array() && nmos::fields::nc::is_sequence(property))
                     || (val.is_array() && !nmos::fields::nc::is_sequence(property)))
                 {
                     return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });

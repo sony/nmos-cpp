@@ -742,6 +742,8 @@ BST_TEST_CASE(testConstraints)
     const auto no_constraints_string_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), false, U("NcString"), value::null());
     const auto with_constraints_string_datatype = nmos::details::make_nc_datatype_typedef(U("With constraints string datatype"), U("WithConstraintsString"), false, U("NcString"), datatype_string_constraints);
     const auto with_constraints_int32_datatype = nmos::details::make_nc_datatype_typedef(U("With constraints int32 datatype"), U("WithConstraintsInt32"), false, U("NcInt32"), datatype_int32_constraints);
+    const auto no_constraints_int32_seq_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints int64 datatype"), U("NoConstraintsInt64"), true, U("NcInt32"), value::null());
+    const auto no_constraints_string_seq_datatype = nmos::details::make_nc_datatype_typedef(U("No constraints string datatype"), U("NoConstraintsString"), true, U("NcString"), value::null());
 
     enum enum_value { foo, bar, baz };
     auto items = value::array();
@@ -783,7 +785,8 @@ BST_TEST_CASE(testConstraints)
     control_protocol_state.insert(nmos::experimental::datatype{ with_constraints_string_datatype });
     control_protocol_state.insert(nmos::experimental::datatype{ enum_datatype });
     control_protocol_state.insert(nmos::experimental::datatype{ simple_struct_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ struct_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int32_seq_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_string_seq_datatype });
 
     // test get_runtime_property_constraints
     BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_string_id, runtime_property_constraints), runtime_property_string_constraints);
@@ -880,6 +883,20 @@ BST_TEST_CASE(testConstraints)
     const nmos::datatype_constraints_validation_parameters enum_constraints_validation_params{ enum_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
     BST_REQUIRE(nmos::constraints_validation(enum_value::foo, value::null(), value::null(), enum_constraints_validation_params));
     BST_REQUIRE_EQUAL(nmos::constraints_validation(4, value::null(), value::null(), enum_constraints_validation_params), false);
+    // invalid data vs primitive datatype constraints
+    const nmos::datatype_constraints_validation_parameters no_constraints_string_seq_constraints_validation_params{ no_constraints_string_seq_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE(nmos::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(1, value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), false);
+    const nmos::datatype_constraints_validation_parameters no_constraints_int32_seq_constraints_validation_params{ no_constraints_int32_seq_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), false);
+    BST_REQUIRE(nmos::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
+    BST_REQUIRE(nmos::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_int32_constraints_validation_params), false);
+    BST_REQUIRE_EQUAL(nmos::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_string_constraints_validation_params), false);
 
     // struct property datatype constraints validation
     const auto good_struct = value_of({
