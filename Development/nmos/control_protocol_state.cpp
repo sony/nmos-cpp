@@ -12,25 +12,18 @@ namespace nmos
             // create control class
             //   where
             //     properties: vector of NcPropertyDescriptor can be constructed using make_control_class_property
-            //     methods:    vector of NcMethodDescriptor can be constructed using make_nc_method_descriptor and the assoicated method handler
+            //     methods:    vector of NcMethodDescriptor vs assoicated method handler where NcMethodDescriptor can be constructed using make_nc_method_descriptor
             //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<std::pair<web::json::value, nmos::experimental::method_handler>>& methods_, const std::vector<web::json::value>& events_)
+            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<nmos::experimental::method>& methods_, const std::vector<web::json::value>& events_)
             {
                 using web::json::value;
 
                 web::json::value properties = value::array();
                 for (const auto& property : properties_) { web::json::push_back(properties, property); }
-                web::json::value methods = value::array();
-                nmos::experimental::methods method_handlers;
-                for (const auto& method : methods_)
-                {
-                    web::json::push_back(methods, method.first);
-                    method_handlers[nmos::details::parse_nc_method_id(nmos::fields::nc::id(method.first))] = method.second;
-                }
                 web::json::value events = value::array();
                 for (const auto& event : events_) { web::json::push_back(events, event); }
 
-                return { description, class_id, name, fixed_role, properties, methods, events, method_handlers };
+                return { description, class_id, name, fixed_role, properties, methods_, events };
             }
         }
         // create control class with fixed role
@@ -38,7 +31,7 @@ namespace nmos
         //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method_handler>>& methods, const std::vector<web::json::value>& events)
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<nmos::experimental::method>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
@@ -49,7 +42,7 @@ namespace nmos
         //     properties: vector of NcPropertyDescriptor which can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor which can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<std::pair<web::json::value, nmos::experimental::method_handler>>& methods, const std::vector<web::json::value>& events)
+        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<nmos::experimental::method>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
@@ -98,15 +91,16 @@ namespace nmos
                 return std::vector<web::json::value>{};
             };
 
-            auto to_methods_vector = [](const web::json::value& method_data_array, const nmos::experimental::methods& method_handlers)
+            auto to_methods_vector = [](const web::json::value& nc_method_descriptors, const std::map<nmos::nc_method_id, method_handler>& method_handlers)
             {
-                std::vector<std::pair<web::json::value, nmos::experimental::method_handler>> methods;
+                // NcMethodDescriptor vs method_handler
+                std::vector<nmos::experimental::method> methods;
 
-                if (!method_data_array.is_null())
+                if (!nc_method_descriptors.is_null())
                 {
-                    for (auto& method_data : method_data_array.as_array())
+                    for (const auto& nc_method_descriptor : nc_method_descriptors.as_array())
                     {
-                        methods.push_back({ method_data, method_handlers.at(nmos::details::parse_nc_method_id(nmos::fields::nc::id(method_data))) });
+                        methods.push_back({ nc_method_descriptor, method_handlers.at(nmos::details::parse_nc_method_id(nmos::fields::nc::id(nc_method_descriptor))) });
                     }
                 }
                 return methods;

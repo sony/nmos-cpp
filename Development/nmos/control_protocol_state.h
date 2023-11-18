@@ -21,16 +21,14 @@ namespace nmos
             web::json::value fixed_role;
 
             web::json::value properties = web::json::value::array(); // array of NcPropertyDescriptor
-            web::json::value methods = web::json::value::array(); // array of NcMethodDescriptor
+            std::vector<method> methods; // vector of NcMethodDescriptor and method_handler
             web::json::value events = web::json::value::array();  // array of NcEventDescriptor
-
-            nmos::experimental::methods method_handlers; // map of method handlers which are associated to this control_class (class_id), but not including its base class
 
             control_class()
                 : class_id({ 0 })
             {}
 
-            control_class(utility::string_t description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value properties, web::json::value methods, web::json::value events, nmos::experimental::methods method_handlers)
+            control_class(utility::string_t description, nmos::nc_class_id class_id, nmos::nc_name name, web::json::value fixed_role, web::json::value properties, std::vector<method> methods, web::json::value events)
                 : description(std::move(description))
                 , class_id(std::move(class_id))
                 , name(std::move(name))
@@ -38,7 +36,6 @@ namespace nmos
                 , properties(std::move(properties))
                 , methods(std::move(methods))
                 , events(std::move(events))
-                , method_handlers(std::move(method_handlers))
             {}
         };
 

@@ -65,7 +65,7 @@ namespace nmos
         {
             return make_nc_element_id(id);
         }
-        nc_event_id parse_nc_method_id(const web::json::value& id)
+        nc_method_id parse_nc_method_id(const web::json::value& id)
         {
             return parse_nc_element_id(id);
         }
@@ -75,7 +75,7 @@ namespace nmos
         {
             return make_nc_element_id(id);
         }
-        nc_event_id parse_nc_property_id(const web::json::value& id)
+        nc_property_id parse_nc_property_id(const web::json::value& id)
         {
             return parse_nc_element_id(id);
         }
@@ -781,9 +781,13 @@ namespace nmos
             for (const auto& control_class : control_protocol_state.control_classes)
             {
                 auto& ctl_class = control_class.second;
+
+                auto methods = value::array();
+                for (const auto& method : ctl_class.methods) { web::json::push_back(methods, method.first); }
+
                 const auto class_description = ctl_class.fixed_role.is_null()
-                    ? make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.properties, ctl_class.methods, ctl_class.events)
-                    : make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.fixed_role.as_string(), ctl_class.properties, ctl_class.methods, ctl_class.events);
+                    ? make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.properties, methods, ctl_class.events)
+                    : make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.fixed_role.as_string(), ctl_class.properties, methods, ctl_class.events);
                 web::json::push_back(control_classes, class_description);
             }
 

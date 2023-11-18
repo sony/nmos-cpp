@@ -6,6 +6,7 @@
 #include "nmos/api_utils.h"
 #include "nmos/control_protocol_resources.h"
 #include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_utils.h"
 #include "nmos/is12_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
@@ -245,6 +246,8 @@ namespace nmos
                                     // get arguments
                                     const auto& arguments = nmos::fields::nc::arguments(cmd);
 
+                                    value response;
+
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
                                     {
@@ -252,17 +255,28 @@ namespace nmos
 
                                         // find the relevent method handler to execute
                                         auto method = get_control_protocol_method(class_id, method_id);
-                                        if (method)
+                                        if (method.second)
                                         {
-                                            // execute the relevant method handler, then accumulating up their response to reponses
-                                            web::json::push_back(responses, method(resources, resource, handle, arguments, get_control_protocol_class, get_control_protocol_datatype, gate));
+                                            // do method arguments constraints validation
+                                            if (method_parameters_contraints_validation(arguments, method.first, get_control_protocol_datatype))
+                                            {
+                                                // execute the relevant method handler, then accumulating up their response to reponses
+                                                response = method.second(resources, resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, gate);
+                                            }
+                                            else
+                                            {
+                                                // invalid arguments
+                                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid argument: " << arguments.serialize();
+                                                response = make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
+                                            }
                                         }
                                         else
                                         {
+                                            // unknown methodId
                                             utility::stringstream_t ss;
-                                            ss << U("unsupported method id: ") << nmos::fields::nc::method_id(cmd).serialize();
-                                            web::json::push_back(responses,
-                                                make_control_protocol_error_response(handle, { nc_method_status::method_not_implemented }, ss.str()));
+                                            ss << U("unsupported method_id: ") << nmos::fields::nc::method_id(cmd).serialize()
+                                                << U(" for control class class_id: ") << resource->data.at(nmos::fields::nc::class_id).serialize();
+                                            response = make_control_protocol_error_response(handle, { nc_method_status::method_not_implemented }, ss.str());
                                         }
                                     }
                                     else
@@ -270,9 +284,10 @@ namespace nmos
                                         // resource not found for the given oid
                                         utility::stringstream_t ss;
                                         ss << U("unknown oid: ") << oid;
-                                        web::json::push_back(responses,
-                                            make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, ss.str()));
+                                        response = make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, ss.str());
                                     }
+                                    // accumulating up response
+                                    web::json::push_back(responses, response);
                                 }
 
                                 // add command_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread

@@ -1006,81 +1006,34 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 13 }, object_sequence, U("ExampleDataType"), false, false, true)
             };
 
-            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, const web::json::value& nc_method_descriptor, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
 
-                return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(nc_method_descriptor) ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_simple_args = [enum_arg, string_arg, number_arg, boolean_arg, make_string_example_argument_constraints, make_number_example_argument_constraints](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
-
-                using web::json::value;
+                // and the method parameters constriants has already been validated by the outter function
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments: " << arguments.serialize();
 
-                // example to do method arguments constraints validation
-                if (!nmos::constraints_validation(arguments.at(enum_arg), value::null(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("ExampleEnum")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid enum_arg: " << arguments.at(enum_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-                if (!nmos::constraints_validation(arguments.at(string_arg), make_string_example_argument_constraints(), value::null(), {nmos::details::get_datatype_descriptor(value::string(U("NcString")), get_control_protocol_datatype), get_control_protocol_datatype}))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid string_arg: " << arguments.at(string_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-                if (!nmos::constraints_validation(arguments.at(number_arg), make_number_example_argument_constraints(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("NcUint64")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid number_arg: " << arguments.at(number_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-                if (!nmos::constraints_validation(arguments.at(boolean_arg), value::null(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("NcBoolean")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid boolean_arg: " << arguments.at(boolean_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-
-                return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_object_args = [obj_arg, enum_arg, string_arg, number_arg, boolean_arg, make_string_example_argument_constraints, make_number_example_argument_constraints](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_object_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
+                // and the method parameters constriants has already been validated by the outter function
 
-                using web::json::value;
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object argument: " << arguments.serialize();
 
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object argument: " << obj_arg(arguments).serialize();
-
-                // example to do method arguments constraints validation
-                const auto& obj_arg_ = obj_arg(arguments);
-                if (!nmos::constraints_validation(obj_arg_.at(enum_arg), value::null(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("ExampleEnum")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid enum_arg: " << obj_arg_.at(enum_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-                if (!nmos::constraints_validation(obj_arg_.at(string_arg), make_string_example_argument_constraints(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("NcString")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid string_arg: " << obj_arg_.at(string_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-                if (!nmos::constraints_validation(obj_arg_.at(number_arg), make_number_example_argument_constraints(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("NcUint64")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid number_arg: " << obj_arg_.at(number_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-                if (!nmos::constraints_validation(obj_arg_.at(boolean_arg), value::null(), value::null(), { nmos::details::get_datatype_descriptor(value::string(U("NcBoolean")), get_control_protocol_datatype), get_control_protocol_datatype }))
-                {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid boolean_arg: " << obj_arg_.at(boolean_arg).serialize();
-                    return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
-                }
-
-                return nmos::make_control_protocol_message_response(handle, { nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
             // Example control class methods
-            std::vector<std::pair<web::json::value, nmos::experimental::method_handler>> example_control_methods =
+            std::vector<nmos::experimental::method> example_control_methods =
             {
                 { nmos::experimental::make_control_class_method(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false), example_method_with_no_args },
                 { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 2 }, U("MethodSimpleArgs"), U("NcMethodResult"),

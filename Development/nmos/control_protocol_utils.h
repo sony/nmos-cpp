@@ -18,6 +18,18 @@ namespace nmos
 
         // get the datatype property constraints of a given type_name
         web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype);
+
+        struct datatype_constraints_validation_parameters
+        {
+            web::json::value datatype_descriptor;
+            get_control_protocol_datatype_handler get_control_protocol_datatype;
+        };
+        // multiple levels of constraints validation
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+        bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
+
+        // method parameter constraints validation
+        bool method_parameter_constraints_validation(const web::json::value& data, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
     }
 
     // is the given class_id a NcBlock
@@ -60,14 +72,8 @@ namespace nmos
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 
-    struct datatype_constraints_validation_parameters
-    {
-        web::json::value datatype_descriptor;
-        get_control_protocol_datatype_handler get_control_protocol_datatype;
-    };
-    // multiple levels of constraints validation
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
-    bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
+    // method parameters constraints validation
+    bool method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_handler get_control_protocol_datatype);
 }
 
 #endif

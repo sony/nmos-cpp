@@ -51,18 +51,21 @@ namespace nmos
             while (!class_id.empty())
             {
                 const auto& control_class = get_control_protocol_class(class_id);
-                auto& methods = control_class.method_handlers;
 
-                auto method_found = methods.find(method_id);
+                auto& methods = control_class.methods;
+                auto method_found = std::find_if(methods.begin(), methods.end(), [&method_id](const experimental::method& method)
+                {
+                    return method_id == details::parse_nc_method_id(nmos::fields::nc::id(method.first));
+                });
                 if (methods.end() != method_found)
                 {
-                    return method_found->second;
+                    return *method_found;
                 }
 
                 class_id.pop_back();
             }
 
-            return experimental::method_handler(nullptr);
+            return experimental::method();
         };
     }
 
@@ -81,9 +84,9 @@ namespace nmos
                 // hmm, maybe updating connectionStatusMessage, payloadStatus, and payloadStatusMessage too
 
                 const auto propertry_changed_event = make_propertry_changed_event(nmos::fields::nc::oid(found->data),
-                    {
-                        { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, val }
-                    });
+                {
+                    { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, val }
+                });
 
                 modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
                 {
