@@ -954,6 +954,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         const web::json::field_as_number enum_property{ U("enumProperty") };
         const web::json::field_as_string string_property{ U("stringProperty") };
         const web::json::field_as_number number_property{ U("numberProperty") };
+        const web::json::field_as_number deprecated_number_property{ U("deprecatedNumberProperty") };
         const web::json::field_as_bool boolean_property{ U("booleanProperty") };
         const web::json::field_as_value object_property{ U("objectProperty") };
         const web::json::field_as_number method_no_args_count{ U("methodNoArgsCount") };
@@ -990,29 +991,30 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 // create "Example numeric property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
                 // use nmos::details::make_nc_parameter_constraints_number to create property constraints
                 nmos::experimental::make_control_class_property(U("Example numeric property"), { 3, 3 }, number_property, U("NcUint64"), false, false, false, false, make_number_example_argument_constraints()),
-                nmos::experimental::make_control_class_property(U("Example boolean property"), { 3, 4 }, boolean_property, U("NcBoolean")),
-                nmos::experimental::make_control_class_property(U("Example object property"), { 3, 5 }, object_property, U("ExampleDataType")),
-                nmos::experimental::make_control_class_property(U("Method no args invoke counter"), { 3, 6 }, method_no_args_count, U("NcUint64"), true),
-                nmos::experimental::make_control_class_property(U("Method simple args invoke counter"), { 3, 7 }, method_simple_args_count, U("NcUint64"), true),
-                nmos::experimental::make_control_class_property(U("Method obj arg invoke counter"), { 3, 8 }, method_object_arg_count, U("NcUint64"), true),
+                nmos::experimental::make_control_class_property(U("Example deprecated numeric property"), { 3, 4 }, deprecated_number_property, U("NcUint64"), false, false, false, true, make_number_example_argument_constraints()),
+                nmos::experimental::make_control_class_property(U("Example boolean property"), { 3, 5 }, boolean_property, U("NcBoolean")),
+                nmos::experimental::make_control_class_property(U("Example object property"), { 3, 6 }, object_property, U("ExampleDataType")),
+                nmos::experimental::make_control_class_property(U("Example method no args invoke counter"), { 3, 7 }, method_no_args_count, U("NcUint64"), true),
+                nmos::experimental::make_control_class_property(U("Example method simple args invoke counter"), { 3, 8 }, method_simple_args_count, U("NcUint64"), true),
+                nmos::experimental::make_control_class_property(U("Example method obj arg invoke counter"), { 3, 9 }, method_object_arg_count, U("NcUint64"), true),
                 // create "Example sequence string property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
                 // use nmos::details::make_nc_parameter_constraints_string to create sequence property constraints
-                nmos::experimental::make_control_class_property(U("Example string sequence property"), { 3, 9 }, string_sequence, U("NcString"), false, false, true, false, make_string_example_argument_constraints()),
-                nmos::experimental::make_control_class_property(U("Example boolean sequence property"), { 3, 10 }, boolean_sequence, U("NcBoolean"), false, false, true),
-                nmos::experimental::make_control_class_property(U("Example enum sequence property"), { 3, 11 }, enum_sequence, U("ExampleEnum"), false, false, true),
+                nmos::experimental::make_control_class_property(U("Example string sequence property"), { 3, 10 }, string_sequence, U("NcString"), false, false, true, false, make_string_example_argument_constraints()),
+                nmos::experimental::make_control_class_property(U("Example boolean sequence property"), { 3, 11 }, boolean_sequence, U("NcBoolean"), false, false, true),
+                nmos::experimental::make_control_class_property(U("Example enum sequence property"), { 3, 12 }, enum_sequence, U("ExampleEnum"), false, false, true),
                 // create "Example sequence numeric property" with level 1: property constraints, See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
                 // use nmos::details::make_nc_parameter_constraints_number to create sequence property constraints
-                nmos::experimental::make_control_class_property(U("Example number sequence property"), { 3, 12 }, number_sequence, U("NcUint64"), false, false, true, false, make_number_example_argument_constraints()),
-                nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 13 }, object_sequence, U("ExampleDataType"), false, false, true)
+                nmos::experimental::make_control_class_property(U("Example number sequence property"), { 3, 13 }, number_sequence, U("NcUint64"), false, false, true, false, make_number_example_argument_constraints()),
+                nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 14 }, object_sequence, U("ExampleDataType"), false, false, true)
             };
 
-            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, const web::json::value& nc_method_descriptor, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
 
-                return nmos::make_control_protocol_message_response(handle, { nmos::fields::nc::is_deprecated(nc_method_descriptor) ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
+                return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
             auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
             {
@@ -1036,7 +1038,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             std::vector<nmos::experimental::method> example_control_methods =
             {
                 { nmos::experimental::make_control_class_method(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false), example_method_with_no_args },
-                { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 2 }, U("MethodSimpleArgs"), U("NcMethodResult"),
+                { nmos::experimental::make_control_class_method(U("Example deprecated method with no arguments"), { 3, 2 }, U("MethodNoArgs"), U("NcMethodResult"), {}, true), example_method_with_no_args },
+                { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 3 }, U("MethodSimpleArgs"), U("NcMethodResult"),
                     {
                         nmos::details::make_nc_parameter_descriptor(U("Enum example argument"), enum_arg, U("ExampleEnum"), false, false, value::null()),
                         nmos::details::make_nc_parameter_descriptor(U("String example argument"), string_arg, U("NcString"), false, false, make_string_example_argument_constraints()), // e.g. include method property constraints
@@ -1045,7 +1048,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                     },
                     false), example_method_with_simple_args
                 },
-                { nmos::experimental::make_control_class_method(U("Example method with object argument"), { 3, 3 }, U("MethodObjectArg"), U("NcMethodResult"),
+                { nmos::experimental::make_control_class_method(U("Example method with object argument"), { 3, 4 }, U("MethodObjectArg"), U("NcMethodResult"),
                     {
                         nmos::details::make_nc_parameter_descriptor(U("Object example argument"), obj_arg, U("ExampleDataType"), false, false, value::null())
                     },
@@ -1114,6 +1117,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             example_enum enum_property_ = example_enum::Undefined,
             const utility::string_t& string_property_ = U(""),
             uint64_t number_property_ = 0,
+            uint64_t deprecated_number_property_ = 0,
             bool boolean_property_ = true,
             const value& object_property_ = value::null(),
             uint64_t method_no_args_count_ = 0,
@@ -1129,6 +1133,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             data[enum_property] = value::number(enum_property_);
             data[string_property] = value::string(string_property_);
             data[number_property] = value::number(number_property_);
+            data[deprecated_number_property] = value::number(deprecated_number_property_);
             data[boolean_property] = value::boolean(boolean_property_);
             data[object_property] = object_property_;
             data[method_no_args_count] = value::number(method_no_args_count_);
@@ -1233,6 +1238,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             example_enum::Undefined,
             U("test"),
             3,
+            10,
             false,
             make_example_datatype(example_enum::Undefined, U("default"), 5, false),
             0,
