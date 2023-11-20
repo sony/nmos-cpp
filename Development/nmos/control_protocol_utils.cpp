@@ -596,6 +596,11 @@ namespace nmos
             const auto& name = nmos::fields::nc::name(param);
             const auto& constraints = nmos::fields::nc::constraints(param);
             const auto& type_name = param.at(nmos::fields::nc::type_name);
+            if (arguments.is_null() || !arguments.has_field(name))
+            {
+                // missing argument parameter
+                return false;
+            }
             if (!details::method_parameter_constraints_validation(arguments.at(name), constraints, { nmos::details::get_datatype_descriptor(type_name, get_control_protocol_datatype), get_control_protocol_datatype }))
             {
                 return false;

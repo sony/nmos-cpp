@@ -238,10 +238,10 @@ namespace nmos
 
             // for control_protocol_ws_api commands
             const web::json::field_as_array commands{ U("commands") };
-            const web::json::field_as_array subscriptions{ U("subscriptions")};
+            const web::json::field_as_array subscriptions{ U("subscriptions") };
             const web::json::field_as_integer oid{ U("oid") };
             const web::json::field_as_value method_id{ U("methodId") };
-            const web::json::field_as_value arguments{ U("arguments") };
+            const web::json::field_as_value_or arguments{ U("arguments"), {} };
             const web::json::field_as_value id{ U("id") };
             const web::json::field_as_integer level{ U("level") };
             const web::json::field_as_integer index{ U("index") };
