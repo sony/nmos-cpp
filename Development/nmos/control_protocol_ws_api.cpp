@@ -228,6 +228,7 @@ namespace nmos
                             const auto msg_type = nmos::fields::nc::message_type(message);
                             switch (msg_type)
                             {
+                            // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-message-type
                             case ncp_message_type::command:
                             {
                                 // validate command-message
@@ -299,6 +300,7 @@ namespace nmos
                                 });
                             }
                             break;
+                            // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#subscription-message-type
                             case ncp_message_type::subscription:
                             {
                                 // validate subscription-message
