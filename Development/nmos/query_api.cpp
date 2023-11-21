@@ -574,6 +574,7 @@ namespace nmos
                         // never expire persistent subscriptions, they are only deleted when explicitly requested
                         nmos::resource subscription{ version, nmos::types::subscription, data, nmos::fields::persist(data) };
 
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Creating subscription: " << id;
                         resource = insert_resource(resources, std::move(subscription)).first;
                     }
                     else
@@ -591,6 +592,8 @@ namespace nmos
                         {
                             resource->health = health_now();
                         }
+
+                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning subscription: " << resource->id;
                     }
 
                     set_reply(res, creating ? status_codes::Created : status_codes::OK, data);
