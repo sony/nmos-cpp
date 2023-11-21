@@ -258,16 +258,18 @@ namespace nmos
                                         auto method = get_control_protocol_method(class_id, method_id);
                                         if (method.second)
                                         {
-                                            // do method arguments constraints validation
-                                            if (method_parameters_contraints_validation(arguments, method.first, get_control_protocol_datatype))
+                                            try
                                             {
+                                                // do method arguments constraints validation
+                                                method_parameters_contraints_validation(arguments, method.first, get_control_protocol_datatype);
+
                                                 // execute the relevant method handler, then accumulating up their response to reponses
                                                 response = method.second(resources, resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, gate);
                                             }
-                                            else
+                                            catch (const nmos::control_protocol_exception& e)
                                             {
                                                 // invalid arguments
-                                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid argument: " << arguments.serialize();
+                                                slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid argument: " << arguments.serialize() << " error: " << e.what();
                                                 response = make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
                                             }
                                         }

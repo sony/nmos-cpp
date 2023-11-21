@@ -8,6 +8,11 @@ namespace nmos
 {
     struct control_protocol_resource;
 
+    struct control_protocol_exception : std::runtime_error
+    {
+        control_protocol_exception(const std::string& message) : std::runtime_error(message) {}
+    };
+
     namespace details
     {
         // get the runtime property constraints of a given property_id
@@ -24,12 +29,12 @@ namespace nmos
             web::json::value datatype_descriptor;
             get_control_protocol_datatype_handler get_control_protocol_datatype;
         };
-        // multiple levels of constraints validation
+        // multiple levels of constraints validation, may throw nmos::control_protocol_exception
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
-        bool constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
+        void constraints_validation(const web::json::value& value, const web::json::value& runtime_property_constraints, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
 
-        // method parameter constraints validation
-        bool method_parameter_constraints_validation(const web::json::value& data, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
+        // method parameter constraints validation, may throw nmos::control_protocol_exception
+        void method_parameter_constraints_validation(const web::json::value& data, const web::json::value& property_constraints, const datatype_constraints_validation_parameters& params);
     }
 
     // is the given class_id a NcBlock
@@ -72,8 +77,8 @@ namespace nmos
     // find the control protocol resource which is assoicated with the given IS-04/IS-05/IS-08 resource id
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 
-    // method parameters constraints validation
-    bool method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_handler get_control_protocol_datatype);
+    // method parameters constraints validation, may throw nmos::control_protocol_exception
+    void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_handler get_control_protocol_datatype);
 }
 
 #endif

@@ -62,23 +62,26 @@ namespace nmos
                     return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                 }
 
-                // do property constraints validation
-                if (!val.is_null())
+                try
                 {
-                    if (!nmos::details::constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype }))
+                    // do property constraints validation
+                    nmos::details::constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype });
+
+                    // update property
+                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
                     {
-                        return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
-                    }
+                        resource.data[nmos::fields::nc::name(property)] = val;
+
+                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::value_changed, val } }));
+
+                    return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
                 }
-
-                // update property
-                modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
+                catch (const nmos::control_protocol_exception& e)
                 {
-                    resource.data[nmos::fields::nc::name(property)] = val;
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set property: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
 
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::value_changed, val } }));
-
-                return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
+                    return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
+                }
             }
 
             // unknown property
@@ -161,20 +164,26 @@ namespace nmos
 
                 if (data.as_array().size() > (size_t)index)
                 {
-                    // do property constraints validation
-                    if (!nmos::details::constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype }))
+                    try
                     {
+                        // do property constraints validation
+                        nmos::details::constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype });
+
+                        // update property
+                        modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
+                        {
+                            resource.data[nmos::fields::nc::name(property)][index] = val;
+
+                        }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
+
+                        return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
+                    }
+                    catch (const nmos::control_protocol_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Set sequence item: " << property_id.serialize() << " index: " << index << " value: " << val.serialize() << " error: " << e.what();
+
                         return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                     }
-
-                    // update property
-                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
-                    {
-                        resource.data[nmos::fields::nc::name(property)][index] = val;
-
-                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
-
-                    return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
                 }
 
                 // out of bound
@@ -223,22 +232,28 @@ namespace nmos
 
                 const nc_id sequence_item_index = data.is_null() ? 0 : nc_id(data.as_array().size());
 
-                // do property constraints validation
-                if (!nmos::details::constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype }))
+                try
                 {
+                    // do property constraints validation
+                    nmos::details::constraints_validation(val, get_runtime_property_constraints(property_id_, resource->data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype });
+
+                    // update property
+                    modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
+                    {
+                        auto& sequence = resource.data[nmos::fields::nc::name(property)];
+                        if (data.is_null()) { sequence = value::array(); }
+                        web::json::push_back(sequence, val);
+
+                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
+
+                    return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, sequence_item_index);
+                }
+                catch (const nmos::control_protocol_exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Add sequence item: " << property_id.serialize() << " value: " << val.serialize() << " error: " << e.what();
+
                     return make_control_protocol_message_response(handle, { nc_method_status::parameter_error });
                 }
-
-                // update property
-                modify_control_protocol_resource(resources, resource->id, [&](nmos::resource& resource)
-                {
-                    auto& sequence = resource.data[nmos::fields::nc::name(property)];
-                    if (data.is_null()) { sequence = value::array(); }
-                    web::json::push_back(sequence, val);
-
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource->data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
-
-                return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, sequence_item_index);
             }
 
             // unknown property
