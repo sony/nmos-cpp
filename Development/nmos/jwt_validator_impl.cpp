@@ -26,7 +26,7 @@ namespace nmos
 
                     if (pubkeys.is_array())
                     {
-                        // empty out all jwt validators
+                        // empty out all jwt verifiers
                         validators.clear();
 
                         // create jwt verifier for each public key

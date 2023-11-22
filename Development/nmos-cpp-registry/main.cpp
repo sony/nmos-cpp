@@ -117,8 +117,8 @@ int main(int argc, char* argv[])
         if (nmos::experimental::fields::server_authorization(registry_model.settings))
         {
             registry_implementation
-                .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(registry_model, authorization_state, gate))
-                .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(registry_model, authorization_state, gate));
+                .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(registry_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate), gate))
+                .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(registry_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate),  gate));
         }
 
         // Set up the registry server

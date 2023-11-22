@@ -8,6 +8,7 @@
 #include "cpprest/http_listener.h" // for web::http::experimental::listener::http_listener_config
 #include "cpprest/regex_utils.h"
 #include "cpprest/ws_listener.h" // for web::websockets::experimental::listener::websocket_listener_config
+#include "nmos/authorization_handlers.h" // for nmos::experimental::validate_authorization_token_handler
 #include "nmos/settings.h" // just a forward declaration of nmos::settings
 
 namespace slog
@@ -210,7 +211,7 @@ namespace nmos
         {
             // JWT validation to confirm authentication credentials and an access token that allows access to the protected resource
             // see https://tools.ietf.org/html/rfc6750#section-3
-            web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, slog::base_gate& gate);
+            web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, validate_authorization_token_handler access_token_validation, slog::base_gate& gate);
 
             // set error response
             void set_error_reply(web::http::http_response& res, const utility::string_t& realm, int retry_after, const nmos::experimental::authorization_error& error);

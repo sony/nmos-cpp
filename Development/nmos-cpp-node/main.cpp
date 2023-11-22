@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
         if (nmos::experimental::fields::server_authorization(node_model.settings))
         {
             node_implementation
-                .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(node_model, authorization_state, gate))
-                .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(node_model, authorization_state, gate));
+                .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(node_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate), gate))
+                .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(node_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate), gate));
         }
         if (nmos::experimental::fields::client_authorization(node_model.settings))
         {

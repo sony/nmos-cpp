@@ -30,6 +30,26 @@ namespace nmos
     {
         struct authorization_state;
 
+        struct authorization_error
+        {
+            enum status_t
+            {
+                succeeded,
+                without_authentication, // failure: access protected resource request without authentication
+                insufficient_scope, // failure: access protected resource request higher privileges
+                no_matching_keys, // failure: no matching keys for the token validation
+                failed  // failure: access protected resource request with authentication but failed
+            };
+
+            authorization_error() : value(without_authentication) {}
+            authorization_error(status_t value, const std::string& message = {}) : value(value), message(message) {}
+
+            status_t value;
+            std::string message;
+
+            operator bool() const { return succeeded != value; }
+        };
+
         namespace fields
         {
             // authorization_server_uri: the uri of the authorization server, where the client is registered
@@ -123,17 +143,23 @@ namespace nmos
         authorization_config_handler make_authorization_config_handler(const web::json::value& authorization_server_metadata, const web::json::value& client_metadata, slog::base_gate& gate);
         authorization_config_handler make_authorization_config_handler(const authorization_state& authorization_state, slog::base_gate& gate);
 
+        // callback to validate OAuth 2.0 authorization access token
+        // this callback should not throw exceptions
+        typedef std::function <authorization_error(const utility::string_t& access_token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience)> validate_authorization_token_handler;
+        // construct callback to validate OAuth 2.0 authorization access token
+        validate_authorization_token_handler make_validate_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate);
+
         // callback to return the OAuth 2.0 validation route handler
         // this callback is executed at the beginning while walking the supported API routes
         typedef std::function<web::http::experimental::listener::route_handler(const nmos::experimental::scope& scope)> validate_authorization_handler;
-        // construct callback to validate authorization
-        validate_authorization_handler make_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, slog::base_gate& gate);
+        // construct callback to validate OAuth 2.0 authorization
+        validate_authorization_handler make_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, validate_authorization_token_handler access_token_validation, slog::base_gate& gate);
 
         // callback to return OAuth 2.0 authorization bearer token
         // this callback is execute while create http_client
-        typedef std::function<web::http::oauth2::experimental::oauth2_token()> authorization_token_handler;
-        // construct callback to retrieve authorization bearer token
         // this callback should not throw exceptions
+        typedef std::function<web::http::oauth2::experimental::oauth2_token()> authorization_token_handler;
+        // construct callback to retrieve OAuth 2.0 authorization bearer token
         authorization_token_handler make_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate);
     }
 }

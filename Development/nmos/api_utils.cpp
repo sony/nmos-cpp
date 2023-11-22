@@ -764,11 +764,11 @@ namespace nmos
         {
             // JWT validation to confirm authentication credentials and an access token that allows access to the protected resource
             // see https://tools.ietf.org/html/rfc6750#section-3
-            web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, slog::base_gate& gate_)
+            web::http::experimental::listener::route_handler make_validate_authorization_handler(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, const nmos::experimental::scope& scope, validate_authorization_token_handler access_token_validation, slog::base_gate& gate_)
             {
                 using namespace web::http::experimental::listener::api_router_using_declarations;
 
-                return [&model, &authorization_state, scope, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+                return [&model, &authorization_state, scope, access_token_validation, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
                 {
                     nmos::api_gate gate(gate_, req, parameters);
 
@@ -776,12 +776,8 @@ namespace nmos
 
                     web::uri token_issuer;
                     const auto audience = with_read_lock(model.mutex, [&] { return nmos::get_host_name(model.settings); });
-                    auto error = with_read_lock(authorization_state.mutex, [&authorization_state, &audience, req, &scope, &token_issuer, &gate_]
-                    {
-                        // note: the validate_authorization will update the token_issuer, i.e. using with_write_lock to protected it
-                        return nmos::experimental::validate_authorization(authorization_state.issuers, req, scope, audience, token_issuer, gate_);
-                    });
-
+                    // note: the validate_authorization returns the token_issuer via function parameter
+                    const auto error = nmos::experimental::validate_authorization(req, scope, audience, token_issuer, access_token_validation, gate_);
                     if (error)
                     {
                         // set error repsonse
@@ -790,8 +786,8 @@ namespace nmos
                         const auto retry_after = with_read_lock(model.mutex, [&] { return nmos::experimental::fields::service_unavailable_retry_after(model.settings); });
                         set_error_reply(res, realm, retry_after, error);
 
-                        // if error was deal to no matching keys, trigger a re-fetch to obtain public keys from the token issuer (authorization_state.token_issuer)
-                        if (error.value == nmos::experimental::authorization_error::no_matching_keys)
+                        // if no matching public keys caused the error, trigger a re-fetch to obtain public keys from the token issuer (authorization_state.token_issuer)
+                        if (error.value == authorization_error::no_matching_keys)
                         {
                             slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Authorization warning: " << error.message;
 

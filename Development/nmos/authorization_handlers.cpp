@@ -201,8 +201,8 @@ namespace nmos
 #endif
                 std::ignore = system(browser_cmd.c_str());
 
-                // TODO: process Authorization Server error response
-                // notify authorization_code_flow in the authorization_behaviour thread
+                // hmm, notify authorization_code_flow in the authorization_behaviour thread
+                // in the event of user cancels the authorization code flow process
             };
         }
 
@@ -253,16 +253,97 @@ namespace nmos
             };
         }
 
-        validate_authorization_handler make_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, slog::base_gate& gate)
+        // construct callback to validate OAuth 2.0 authorization access token
+        validate_authorization_token_handler make_validate_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
         {
-            return[&](const nmos::experimental::scope& scope)
+            return[&](const utility::string_t& access_token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience)
             {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make authorization validation";
+                //web::uri token_issuer;
 
-                return nmos::experimental::details::make_validate_authorization_handler(model, authorization_state, scope, gate);
+                try
+                {
+                    // extract the token issuer from the token
+                    auto token_issuer = nmos::experimental::jwt_validator::get_token_issuer(access_token);
+
+                    auto lock = authorization_state.read_lock();
+
+                    std::string error;
+                    auto issuer = authorization_state.issuers.find(token_issuer);
+                    if (authorization_state.issuers.end() != issuer)
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Validate access token against " << utility::us2s(issuer->first.to_string()) << " public keys";
+
+                        try
+                        {
+                            // if jwt_validator has not already set up, treat it as no public keys to validate token
+                            if (issuer->second.jwt_validator.is_initialized())
+                            {
+                                issuer->second.jwt_validator.validate(access_token, request, scope, audience);
+                                return authorization_error{ authorization_error::succeeded };
+                            }
+                            else
+                            {
+                                std::stringstream ss;
+                                ss << "No public keys from " << utility::us2s(issuer->first.to_string()) << " to validate access token";
+                                error = ss.str();
+                                slog::log<slog::severities::error>(gate, SLOG_FLF) << error;
+                            }
+                        }
+                        catch (const no_matching_keys_exception& e)
+                        {
+                            error = e.what();
+#if defined (NDEBUG)
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys";
+#else
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys; access_token: " << access_token;
+#endif
+                        }
+                        catch (const insufficient_scope_exception& e)
+                        {
+                            // validator can decode the token, but insufficient scope
+#if !defined (NDEBUG)
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << "; access_token: " << access_token;
+#endif
+                            return authorization_error{ authorization_error::insufficient_scope, e.what() };
+                        }
+                        catch (const std::exception& e)
+                        {
+                            // validator can decode the token, with general failure
+#if !defined (NDEBUG)
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << "; access_token: " << access_token;
+#endif
+                            return authorization_error{ authorization_error::failed, e.what() };
+                        }
+                    }
+
+                    // reaching here, must be no public keys to validate token
+                    return authorization_error{ authorization_error::no_matching_keys, error };
+                }
+                catch (const std::exception& e)
+                {
+#if defined (NDEBUG)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to extract token issuer from access token: " << e.what();
+#else
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to extract token issuer from access token: " << e.what() << "; access_token: " << access_token;
+#endif
+                    return authorization_error{ authorization_error::failed, e.what() };
+                }
+
             };
         }
 
+        // construct callback to validate OAuth 2.0 authorization
+        validate_authorization_handler make_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, validate_authorization_token_handler access_token_validation, slog::base_gate& gate)
+        {
+            return[&, access_token_validation](const nmos::experimental::scope& scope)
+            {
+                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make authorization validation";
+
+                return nmos::experimental::details::make_validate_authorization_handler(model, authorization_state, scope, access_token_validation, gate);
+            };
+        }
+
+        // construct callback to retrieve OAuth 2.0 authorization bearer token
         authorization_token_handler make_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
         {
             return[&]()

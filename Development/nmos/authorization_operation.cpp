@@ -1637,19 +1637,19 @@ namespace nmos
                         {
                             // authorization code workflow timeout
                             authorization_service_error = true;
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "authorization code workflow timeout";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code workflow timeout";
                         }
                         else if (nmos::experimental::authorization_state::access_token_received == authorization_flow)
                         {
                             // access token received
                             access_token_received = true;
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "access token received";
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Acess token received";
                         }
                         else
                         {
                             // authorization code workflow failure
                             authorization_service_error = true;
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "authorization code workflow failure";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code workflow failure";
                         }
                     }
                     else
@@ -1663,13 +1663,13 @@ namespace nmos
                         {
                             // access token received
                             access_token_received = true;
-                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "access token received";
+                            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Access token received";
                         }
                         else
                         {
                             // authorization code workflow failure
                             authorization_service_error = true;
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "authorization code workflow failure";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code workflow failure";
                         }
                     }
                 }
@@ -1677,7 +1677,7 @@ namespace nmos
                 {
                     // no handler to start the authorization code grant workflow
                     authorization_service_error = true;
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "no authorization code workflow handler";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "No authorization code workflow handler";
                 }
 
                 model.notify();
@@ -1900,7 +1900,7 @@ namespace nmos
                         {
                             try
                             {
-                                const auto pem = jwk_to_public_key(jwk); // can throw jwk_exception
+                                const auto& pem = jwk_to_public_key(jwk); // can throw jwk_exception
 
                                 web::json::push_back(pems, web::json::value_of({
                                     { U("jwk"), jwk },

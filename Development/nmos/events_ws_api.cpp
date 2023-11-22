@@ -62,9 +62,9 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::validate_handler make_events_ws_validate_handler(nmos::node_model& model, nmos::experimental::authorization_state& authorization_state, slog::base_gate& gate_)
+    web::websockets::experimental::listener::validate_handler make_events_ws_validate_handler(nmos::node_model& model, nmos::experimental::authorization_state& authorization_state, nmos::experimental::validate_authorization_token_handler access_token_validation, slog::base_gate& gate_)
     {
-        return [&model, &authorization_state, &gate_](web::http::http_request req)
+        return [&model, &authorization_state, access_token_validation, &gate_](web::http::http_request req)
         {
             nmos::ws_api_gate gate(gate_, req.request_uri());
             auto lock = model.write_lock();
@@ -79,9 +79,8 @@ namespace nmos
                 const auto& settings = model.settings;
 
                 web::uri token_issuer;
-
-                authorization_state.write_lock();
-                const auto error = nmos::experimental::ws_validate_authorization(authorization_state.issuers, req, nmos::experimental::scopes::events, nmos::get_host_name(settings), token_issuer, gate_);
+                // note: the ws_validate_authorization returns the token_issuer via function parameter
+                const auto error = nmos::experimental::ws_validate_authorization(req, nmos::experimental::scopes::events, nmos::get_host_name(settings), token_issuer, access_token_validation, gate_);
                 if (error)
                 {
                     // set error repsonse
@@ -92,12 +91,17 @@ namespace nmos
                     nmos::experimental::details::set_error_reply(res, realm, retry_after, error);
                     req.reply(res);
 
-                    // if error was deal to no matching keys, trigger authorization_token_issuer_thread to fetch public keys from the token issuer
+                    // if no matching public keys caused the error, trigger a re-fetch to obtain public keys from the token issuer (authorization_state.token_issuer)
                     if (error.value == nmos::experimental::authorization_error::no_matching_keys)
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid websocket connection to: " << req.request_uri().path() << ": " << error.message;
-                        authorization_state.fetch_token_issuer_pubkeys = true;
-                        authorization_state.token_issuer = token_issuer;
+
+                        with_write_lock(authorization_state.mutex, [&authorization_state, token_issuer]
+                        {
+                            authorization_state.fetch_token_issuer_pubkeys = true;
+                            authorization_state.token_issuer = token_issuer;
+                        });
+
                         model.notify();
                     }
                     else

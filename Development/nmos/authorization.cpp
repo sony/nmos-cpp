@@ -14,7 +14,7 @@ namespace nmos
             without_authentication_exception(const std::string& message) : std::runtime_error(message) {}
         };
 
-        bool is_token_expired(const utility::string_t& access_token, const issuers& issuers, const web::uri& expected_issuer, slog::base_gate& gate)
+        bool is_access_token_expired(const utility::string_t& access_token, const issuers& issuers, const web::uri& expected_issuer, slog::base_gate& gate)
         {
             if (access_token.empty())
             {
@@ -40,7 +40,7 @@ namespace nmos
             }
             catch (const std::exception& e)
             {
-                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "test token expiry: " << e.what();
+                slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Test token expiry error: " << e.what();
             }
 
             // reaching here, token validation has failed, treat it as expired
@@ -69,86 +69,50 @@ namespace nmos
             }
             catch (const std::exception& e)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "failed to get client_id from header: " << e.what();
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Failed to get client_id from header: " << e.what();
             }
             return{};
         }
 
-        authorization_error validate_authorization(const utility::string_t& access_token, const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, slog::base_gate& gate)
+        namespace details
         {
-            if (access_token.empty())
+            authorization_error validate_authorization(const utility::string_t& access_token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, validate_authorization_token_handler access_token_validation, slog::base_gate& gate)
             {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "missing access token";
-                return{ authorization_error::without_authentication, "missing access token" };
-            }
-
-            try
-            {
-                // extract the token issuer from the token
-                token_issuer = nmos::experimental::jwt_validator::get_token_issuer(access_token);
-            }
-            catch (const std::exception& e)
-            {
-#if defined (NDEBUG)
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "unable to extract token issuer from access token: " << e.what();
-#else
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "unable to extract token issuer from access token: " << e.what() << "; access_token: " << access_token;
-#endif
-                return{ authorization_error::failed, e.what() };
-            }
-
-            // find the relevent issuer's public keys to validate the token
-            std::string error;
-            auto issuer = issuers.find(token_issuer);
-            if(issuers.end() != issuer)
-            {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "validate access token against " << utility::us2s(issuer->first.to_string()) << " public keys";
+                if (access_token.empty())
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Missing access token";
+                    return{ authorization_error::without_authentication, "Missing access token" };
+                }
 
                 try
                 {
-                    // if jwt_validator has not already set up, treat it as no public keys to validate token
-                    if (issuer->second.jwt_validator.is_initialized())
-                    {
-                        issuer->second.jwt_validator.validate(access_token, request, scope, audience);
-                        return{ authorization_error::succeeded };
-                    }
-                    else
-                    {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "no " << utility::us2s(issuer->first.to_string()) << " public keys to validate access token";
-                    }
-                }
-                catch (const no_matching_keys_exception& e)
-                {
-                    error = e.what();
-#if defined (NDEBUG)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys";
-#else
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys; access_token: " << access_token;
-#endif
-                }
-                catch (const insufficient_scope_exception& e)
-                {
-                    // validator can decode the token, but insufficient scope
-#if !defined (NDEBUG)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << "; access_token: " << access_token;
-#endif
-                    return{ authorization_error::insufficient_scope, e.what() };
+                    // extract the token issuer from the token
+                    token_issuer = nmos::experimental::jwt_validator::get_token_issuer(access_token);
                 }
                 catch (const std::exception& e)
                 {
-                    // validator can decode the token, with general failure
-#if !defined (NDEBUG)
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << "; access_token: " << access_token;
+#if defined (NDEBUG)
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to extract token issuer from access token: " << e.what();
+#else
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to extract token issuer from access token: " << e.what() << "; access_token: " << access_token;
 #endif
                     return{ authorization_error::failed, e.what() };
                 }
-            }
 
-            // reach here must be because there are no public keys to validate token
-            return{ authorization_error::no_matching_keys, error };
+                if (access_token_validation)
+                {
+                    return access_token_validation(access_token, request, scope, audience);
+                }
+                else
+                {
+                    std::string error{ "Access token validation callback is not set up to validate the access token" };
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << error;
+                    return{ authorization_error::failed, error };
+                }
+            }
         }
 
-        authorization_error validate_authorization(const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, slog::base_gate& gate)
+        authorization_error validate_authorization(const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, validate_authorization_token_handler access_token_validation, slog::base_gate& gate)
         {
             try
             {
@@ -168,7 +132,7 @@ namespace nmos
                 }
 
                 const auto access_token = token.substr(scheme.length());
-                return validate_authorization(access_token, issuers, request, scope, audience, token_issuer, gate);
+                return details::validate_authorization(access_token, request, scope, audience, token_issuer, access_token_validation, gate);
             }
             catch (const without_authentication_exception& e)
             {
@@ -180,9 +144,9 @@ namespace nmos
         // Clients SHOULD use the "Authorization Request Header Field" method.
         // Clients MAY use "URI Query Parameter".
         // See https://tools.ietf.org/html/rfc6750#section-2
-        authorization_error ws_validate_authorization(const issuers& issuers, const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, slog::base_gate& gate)
+        authorization_error ws_validate_authorization(const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, validate_authorization_token_handler access_token_validation, slog::base_gate& gate)
         {
-            auto error = validate_authorization(issuers, request, scope, audience, token_issuer, gate);
+            auto error = validate_authorization(request, scope, audience, token_issuer, access_token_validation, gate);
 
             if (error)
             {
@@ -193,10 +157,10 @@ namespace nmos
                 if (!query.empty())
                 {
                     auto querys = web::uri::split_query(query);
-                    auto it = querys.find(U("access_token"));
-                    if (querys.end() != it)
+                    auto found = querys.find(U("access_token"));
+                    if (querys.end() != found)
                     {
-                        error = nmos::experimental::validate_authorization(it->second, issuers, request, scope, audience, token_issuer, gate);
+                        error = details::validate_authorization(found->second, request, scope, audience, token_issuer, access_token_validation, gate);
                     }
                 }
             }

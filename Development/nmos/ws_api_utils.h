@@ -3,7 +3,7 @@
 
 #include <functional>
 #include "cpprest/http_msg.h"
-#include "nmos/scope.h"
+#include "nmos/authorization_handlers.h"
 
 namespace slog
 {
@@ -19,7 +19,7 @@ namespace nmos
         struct authorization_state;
 
         typedef std::function<bool(web::http::http_request& request, const nmos::experimental::scope& scope)> ws_validate_authorization_handler;
-        ws_validate_authorization_handler make_ws_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, slog::base_gate& gate);
+        ws_validate_authorization_handler make_ws_validate_authorization_handler(nmos::base_model& model, authorization_state& authorization_state, validate_authorization_token_handler access_token_validation, slog::base_gate& gate);
     }
 }
 

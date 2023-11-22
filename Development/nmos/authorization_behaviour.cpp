@@ -141,7 +141,7 @@ namespace nmos
                         // is it not a scopeless client (where scopeless client doesn't access any protected APIs, i.e. doesn't require to register to Authorization server)
                         if (with_read_lock(model.mutex, [&] { return details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings)).size(); }))
                         {
-                            // is the client already registered to Authorization server, i.e. found in cache
+                            // is the client already registered to Authorization server, i.e. found it in cache
                             if (!client_metadata.is_null())
                             {
                                 auto is_authorization_code_flow_next = [&]
@@ -149,7 +149,7 @@ namespace nmos
                                     auto lock = authorization_state.read_lock();
 
                                     const auto& bearer_token = authorization_state.bearer_token;
-                                    return (!bearer_token.is_valid_access_token() || is_token_expired(bearer_token.access_token(), authorization_state.issuers, authorization_state.authorization_server_uri, gate));
+                                    return (!bearer_token.is_valid_access_token() || is_access_token_expired(bearer_token.access_token(), authorization_state.issuers, authorization_state.authorization_server_uri, gate));
                                 };
 
                                 auto is_client_expired = [&]
