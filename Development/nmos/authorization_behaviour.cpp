@@ -144,7 +144,8 @@ namespace nmos
                             // is the client already registered to Authorization server, i.e. found it in cache
                             if (!client_metadata.is_null())
                             {
-                                auto is_authorization_code_flow_next = [&]
+                                // no token or token expired
+                                auto is_access_token_bad = [&]
                                 {
                                     auto lock = authorization_state.read_lock();
 
@@ -193,7 +194,8 @@ namespace nmos
                                         // fetch client metadata from Authorization server in case it has been changed (e.g. changed by the system admin)
                                         if (details::request_client_metadata_from_openid_connect(model, authorization_state, load_ca_certificates, save_authorization_client, gate))
                                         {
-                                            mode = (web::http::oauth2::experimental::grant_types::client_credentials.name == authorization_flow) ? authorization_operation : (is_authorization_code_flow_next() ? authorization_code_flow : authorization_operation_with_immediate_token_fetch);
+                                            mode = (web::http::oauth2::experimental::grant_types::client_credentials.name == authorization_flow) ? authorization_operation // client credentials flow
+                                                : (is_access_token_bad() ? authorization_code_flow : authorization_operation_with_immediate_token_fetch); // bad access token must start from authorization code flow, otherise do token refresh
                                         }
                                         else
                                         {
@@ -209,14 +211,18 @@ namespace nmos
                                         // no registration_access_token and registration_client_uri found, treat it has connected with a non-OpenID Connect server
                                         // start grant flow based on what been defined in the settings
                                         // hmm, maybe use of the OpenID API to extend the client lifespan instead of re-registration
-                                        mode = is_client_expired() ? client_registration : ((web::http::oauth2::experimental::grant_types::client_credentials.name == authorization_flow) ? authorization_operation : (is_authorization_code_flow_next() ? authorization_code_flow : authorization_operation_with_immediate_token_fetch));
+                                        mode = is_client_expired() ? client_registration // client registration
+                                            : ((web::http::oauth2::experimental::grant_types::client_credentials.name == authorization_flow) ? authorization_operation // client credentials flow
+                                                : (is_access_token_bad() ? authorization_code_flow : authorization_operation_with_immediate_token_fetch)); // bad access token must start from authorization code flow, otherise do token refresh
                                     }
                                 }
                                 else
                                 {
                                     // start grant flow based on what been defined in the settings
                                     // hmm, maybe use of the OpenID API to extend the client lifespan instead of re-registration
-                                    mode = is_client_expired() ? client_registration : ((web::http::oauth2::experimental::grant_types::client_credentials.name == authorization_flow) ? authorization_operation : (is_authorization_code_flow_next() ? authorization_code_flow : authorization_operation_with_immediate_token_fetch));
+                                    mode = is_client_expired() ? client_registration // client registration
+                                        : ((web::http::oauth2::experimental::grant_types::client_credentials.name == authorization_flow) ? authorization_operation // client credentials flow
+                                            : (is_access_token_bad() ? authorization_code_flow : authorization_operation_with_immediate_token_fetch));  // bad access token must start from authorization code flow, otherise do token refresh
                                 }
                             }
                             else
@@ -276,7 +282,7 @@ namespace nmos
                     details::authorization_operation(model, authorization_state, load_ca_certificates, load_rsa_private_keys, false, gate);
 
                     // reaching here, there must be failure within the authorization operation,
-                    // start authorization sequence again on next available Authorization server
+                    // start the authorization sequence again on next available Authorization server
                     authorization_service_error = true;
                     mode = request_authorization_server_metadata;
                     break;
@@ -287,7 +293,7 @@ namespace nmos
                     details::authorization_operation(model, authorization_state, load_ca_certificates, load_rsa_private_keys, true, gate);
 
                     // reaching here, there must be failure within the authorization operation,
-                    // start authorization sequence again on next available Authorization server
+                    // start the authorization sequence again on next available Authorization server
                     authorization_service_error = true;
                     mode = request_authorization_server_metadata;
                     break;

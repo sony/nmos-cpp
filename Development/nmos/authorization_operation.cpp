@@ -1718,14 +1718,9 @@ namespace nmos
                 };
 
                 auto bearer_token_requests(pplx::task_from_result());
-                web::http::oauth2::experimental::oauth2_token bearer_token;
-                std::set<scope> scopes;
                 const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
-                nmos::with_read_lock(authorization_state.mutex, [&]
-                {
-                    bearer_token = authorization_state.bearer_token.is_valid_access_token() ? authorization_state.bearer_token : web::http::oauth2::experimental::oauth2_token{};
-                    scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
-                });
+                const auto scopes = nmos::experimental::details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings));
+                const auto bearer_token = nmos::with_read_lock(authorization_state.mutex, [&] { return authorization_state.bearer_token.is_valid_access_token() ? authorization_state.bearer_token : web::http::oauth2::experimental::oauth2_token{}; });
                 token_shared_state token_state(
                     grant,
                     bearer_token,

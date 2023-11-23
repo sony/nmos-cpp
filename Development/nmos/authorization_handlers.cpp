@@ -258,8 +258,6 @@ namespace nmos
         {
             return[&](const utility::string_t& access_token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience)
             {
-                //web::uri token_issuer;
-
                 try
                 {
                     // extract the token issuer from the token
