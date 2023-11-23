@@ -967,7 +967,7 @@ namespace nmos
                             throw web::http::oauth2::experimental::oauth2_exception(U("Unsupported grant: ") + token_state.grant_type.name);
                         }
 
-                    }).then([=, &authorization_state, &token_state, &gate](web::http::oauth2::experimental::oauth2_token bearer_token)
+                    }).then([=, &authorization_state, &token_state, &gate](const web::http::oauth2::experimental::oauth2_token& bearer_token)
                     {
                         token_state.bearer_token = bearer_token;
 

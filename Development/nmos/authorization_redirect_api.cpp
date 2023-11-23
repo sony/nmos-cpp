@@ -276,7 +276,7 @@ namespace nmos
                 // exchange authorization code for bearer token
                 request_token = details::request_token_from_redirected_uri(client, version, req.request_uri(), response_type, client_id, client_secret, scope, redirect_uri, state, code_verifier, token_endpoint_auth_meth, client_assertion, gate);
 
-                auto request = request_token.then([&model, &authorization_state, &scope, &gate](web::http::oauth2::experimental::oauth2_token bearer_token)
+                auto request = request_token.then([&model, &authorization_state, &scope, &gate](const web::http::oauth2::experimental::oauth2_token& bearer_token)
                 {
                     auto lock = authorization_state.write_lock();
 
