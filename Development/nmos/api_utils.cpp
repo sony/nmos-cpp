@@ -777,19 +777,19 @@ namespace nmos
                     web::uri token_issuer;
                     const auto audience = with_read_lock(model.mutex, [&] { return nmos::get_host_name(model.settings); });
                     // note: the validate_authorization returns the token_issuer via function parameter
-                    const auto error = nmos::experimental::validate_authorization(req, scope, audience, token_issuer, access_token_validation, gate_);
-                    if (error)
+                    const auto result = nmos::experimental::validate_authorization(req, scope, audience, token_issuer, access_token_validation, gate_);
+                    if (!result)
                     {
                         // set error repsonse
                         auto realm = web::http::get_host_port(req).first;
                         if (realm.empty()) { realm = with_read_lock(model.mutex, [&] { return nmos::get_host(model.settings); }); }
                         const auto retry_after = with_read_lock(model.mutex, [&] { return nmos::experimental::fields::service_unavailable_retry_after(model.settings); });
-                        set_error_reply(res, realm, retry_after, error);
+                        set_error_reply(res, realm, retry_after, result);
 
                         // if no matching public keys caused the error, trigger a re-fetch to obtain public keys from the token issuer (authorization_state.token_issuer)
-                        if (error.value == authorization_error::no_matching_keys)
+                        if (result.value == authorization_error::no_matching_keys)
                         {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Authorization warning: " << error.message;
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Authorization warning: " << result.message;
 
                             with_write_lock(authorization_state.mutex, [&authorization_state, token_issuer]
                             {
@@ -802,7 +802,7 @@ namespace nmos
                         }
                         else
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization error: " << error.message;
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization error: " << result.message;
                         }
 
                         throw nmos::details::to_api_finally_handler{}; // in order to skip other route handlers and then send the response

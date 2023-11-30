@@ -1,6 +1,7 @@
 #ifndef NMOS_JWT_VALIDATOR_H
 #define NMOS_JWT_VALIDATOR_H
 
+#include <cpprest/http_msg.h>
 #include "cpprest/base_uri.h"
 
 namespace web
@@ -40,20 +41,35 @@ namespace nmos
         }
 
         // callback for JSON validating access token
-        typedef std::function<void(const web::json::value& payload)> token_validator;
+        typedef std::function<void(const web::json::value& payload)> token_json_validator;
 
         class jwt_validator
         {
         public:
             jwt_validator() {}
-            jwt_validator(const web::json::value& pub_keys, token_validator token_validation);
+            jwt_validator(const web::json::value& pub_keys, token_json_validator token_validation);
 
+            // is JWT validator initialised
             bool is_initialized() const;
 
-            void validate_expiry(const utility::string_t& token) const;
-            void validate(const utility::string_t& token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience) const;
+            // Token JSON validation
+            // may throw
+            void json_validation(const utility::string_t& token) const;
 
+            // Basic token validation, including token schema validation and token issuer public keys validation
+            // may throw
+            void basic_validation(const utility::string_t& token) const;
+
+            // Registered claims validation
+            // may throw
+            static void registered_claims_validation(const utility::string_t& token, const web::http::method& method, const web::uri& relative_uri, const scope& scope, const utility::string_t& audience);
+
+            // Get token client Id
+            // may throw
             static utility::string_t get_client_id(const utility::string_t& token);
+
+            // Get token issuer
+            // may throw
             static web::uri get_token_issuer(const utility::string_t& token);
 
         private:

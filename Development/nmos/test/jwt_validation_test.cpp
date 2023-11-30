@@ -3,11 +3,11 @@
 
 #include <boost/range/join.hpp>
 #include <cpprest/http_msg.h>
+#include <jwt-cpp/jwt.h>
 #include "bst/test/test.h"
 #include "cpprest/basic_utils.h" // for utility::us2s, utility::s2us
 #include "cpprest/json_utils.h"
 #include "cpprest/json_validator.h"
-#include "nmos/is10_versions.h"
 #include "nmos/is10_schemas/is10_schemas.h"
 #include "nmos/jwk_utils.h"
 #include "nmos/scope.h"
@@ -143,17 +143,14 @@ BST_TEST_CASE(testAccessTokenJSON)
     // missing exp(expiration)
     const utility::string_t missing_exp_token = U("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJpc3MiOiJodHRwczovL25tb3MtbW9ja3MubG9jYWw6NTAxMSIsInN1YiI6InRlc3RAdGVzdHN1aXRlLm5tb3MudHYiLCJhdWQiOlsiaHR0cHM6Ly8qLnRlc3RzdWl0ZS5ubW9zLnR2IiwiaHR0cHM6Ly8qLmxvY2FsIl0sImlhdCI6MTY5Njg2ODI3Miwic2NvcGUiOiJyZWdpc3RyYXRpb24iLCJjbGllbnRfaWQiOiI0NThmNmQwNi00NmIxLTQ5ZmQtYjc3OC03YzMwNDI4ODg5YzYiLCJ4LW5tb3MtcmVnaXN0cmF0aW9uIjp7InJlYWQiOlsiKiJdLCJ3cml0ZSI6WyIqIl19fQ.RQqfKCwOaBXOVH6CvPo13gT5SP8aQAUVorUoe860sSdETor6aXPZyE733OsRjMrspvgV6r6-abW4s1pUDLPcFQBPEU9QhCqGnTmACWkyBDDI2ZFfnC1tqySW7Qd1ZM8oNHNlIJUO7yXtg7YgJyWbr_Nwj-4W_cbhukIeSGBDTjG_Vhcg7O6sRZBVGFni8aqfegHMxnBFGPxfKb70C6sJbXmyb3-ufQYVs-uWbsRJmZyucjdd317lW7OTgi0nn2ZCUzI07EIArfhlJGeK4E0zzROCJbpFJs751IOpte-4lCUeHCJXg9yhS0N_jjIsdKC1G0SEMqAZ-Uo0RJ1FDU5TNg");
 
-    web::http::http_request request(web::http::methods::GET);
-    request.set_request_uri(U("https://api-nmos.testsuite.nmos.tv/x-nmos/registration/v1.3"));
-
     // missing iss(issuer), on GET request
-    BST_REQUIRE_THROW(jwt_validator.validate(missing_iss_token, request, nmos::experimental::scopes::registration, audience), web::json::json_exception);
+    BST_REQUIRE_THROW(jwt_validator.basic_validation(missing_iss_token), web::json::json_exception);
     // missing sub(subject), on GET request
-    BST_REQUIRE_THROW(jwt_validator.validate(missing_sub_token, request, nmos::experimental::scopes::registration, audience), web::json::json_exception);
+    BST_REQUIRE_THROW(jwt_validator.basic_validation(missing_sub_token), web::json::json_exception);
     // missing aud(audience), on GET request
-    BST_REQUIRE_THROW(jwt_validator.validate(missing_aud_token, request, nmos::experimental::scopes::registration, audience), web::json::json_exception);
+    BST_REQUIRE_THROW(jwt_validator.basic_validation(missing_aud_token), web::json::json_exception);
     // missing exp(expiration), on GET request
-    BST_REQUIRE_THROW(jwt_validator.validate(missing_exp_token, request, nmos::experimental::scopes::registration, audience), web::json::json_exception);
+    BST_REQUIRE_THROW(jwt_validator.basic_validation(missing_exp_token), web::json::json_exception);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,40 +205,29 @@ BST_TEST_CASE(testAccessTokenStandardClaim)
     const utility::string_t valid_token = U("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJpc3MiOiJodHRwczovL25tb3MtbW9ja3MubG9jYWw6NTAxMSIsInN1YiI6InRlc3RAdGVzdHN1aXRlLm5tb3MudHYiLCJhdWQiOlsiaHR0cHM6Ly8qLnRlc3RzdWl0ZS5ubW9zLnR2IiwiaHR0cHM6Ly8qLmxvY2FsIl0sImV4cCI6NDgyODIwNDgwMCwiaWF0IjoxNjk2ODY4MjcyLCJzY29wZSI6InJlZ2lzdHJhdGlvbiIsImNsaWVudF9pZCI6IjQ1OGY2ZDA2LTQ2YjEtNDlmZC1iNzc4LTdjMzA0Mjg4ODljNiIsIngtbm1vcy1yZWdpc3RyYXRpb24iOnsicmVhZCI6WyIqIl0sIndyaXRlIjpbIioiXX19.ybx4VU2E6tuFbWFbCUwKyKm_MPmAXZv70x_2eyuS_Z4qF8rgB0M_yXIJMt_5padA-NPRTd8XIvnq7TLJTYMUV9-F45oQLBBWgiBQh2shsmjYg-1fHCHLxXXdlVLzxennbE38Sm60Jo-u3ZC9yFiYBMaOL5ai6f8bhzNdYaz0xbI8XZaki1pICKgVfpq1XKbXBhUD0quRwfl4PjzKfu0rtAxYc_5IxDWkxJx7BYSHR_lkMaOINda8mkSnim9V7wqkGylOc6b38OoXORtfGJCdmhc_oR9n2jwj_42r4HPo6rEul9_yYUwcYOBG65RLEB3-cbwbj8DNPguHu_TnbzBJsA");
 
     {
-        web::http::http_request request(web::http::methods::GET);
-        request.set_request_uri(U("https://api-nmos.testsuite.nmos.tv/x-nmos/registration/v1.3"));
-
-        // invalid iat(issued at, greater than the current UTC time), on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(invalid_iat_token, request, nmos::experimental::scopes::registration, audience), std::invalid_argument);
-        // missing client_id and azp, on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(missing_clientid_azp_token, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
-        // mismacthed client_id and azp, on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(mismatch_clientid_azp_token, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
-        // bad scope, on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(bad_scope_token, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
         // invalid nbf(not before 00:00:00 1/1/2123), on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(invalid_nbf_token, request, nmos::experimental::scopes::registration, audience), std::invalid_argument);
+        BST_REQUIRE_THROW(jwt_validator.basic_validation(invalid_nbf_token), jwt::error::token_verification_exception);
         // expired token, on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(expired_token, request, nmos::experimental::scopes::registration, audience), std::invalid_argument);
+        BST_REQUIRE_THROW(jwt_validator.basic_validation(expired_token), jwt::error::token_verification_exception);
         // invalid audience, on GET request
-        BST_REQUIRE_THROW(jwt_validator.validate(valid_token, request, nmos::experimental::scopes::registration, U("https://api-nmos.bad_audience.com")), nmos::experimental::insufficient_scope_exception);
+        BST_REQUIRE_THROW(nmos::experimental::jwt_validator::registered_claims_validation(valid_token, web::http::methods::GET, U("/x-nmos/registration/v1.3"), nmos::experimental::scopes::registration, U("https://api-nmos.bad_audience.com")), nmos::experimental::insufficient_scope_exception);
 
         // missing optional scope, on GET request
-        BST_REQUIRE_NO_THROW(jwt_validator.validate(missing_scope_token, request, nmos::experimental::scopes::registration, audience));
+        BST_REQUIRE_NO_THROW(jwt_validator.basic_validation(missing_scope_token));
+        BST_REQUIRE_NO_THROW(nmos::experimental::jwt_validator::registered_claims_validation(missing_scope_token, web::http::methods::GET, U("/x-nmos/registration/v1.3"), nmos::experimental::scopes::registration, audience));
         // missing x-nmos-*, on GET request
-        BST_REQUIRE_NO_THROW(jwt_validator.validate(missing_private_claim_token, request, nmos::experimental::scopes::registration, audience));
+        BST_REQUIRE_NO_THROW(jwt_validator.basic_validation(missing_private_claim_token));
+        BST_REQUIRE_NO_THROW(nmos::experimental::jwt_validator::registered_claims_validation(missing_private_claim_token, web::http::methods::GET, U("/x-nmos/registration/v1.3"), nmos::experimental::scopes::registration, audience));
         // valid token (expired at 00:00:00 1/1/2123), on GET request
-        BST_REQUIRE_NO_THROW(jwt_validator.validate(valid_token, request, nmos::experimental::scopes::registration, audience));
+        BST_REQUIRE_NO_THROW(jwt_validator.basic_validation(valid_token));
+        BST_REQUIRE_NO_THROW(nmos::experimental::jwt_validator::registered_claims_validation(valid_token, web::http::methods::GET, U("/x-nmos/registration/v1.3"), nmos::experimental::scopes::registration, audience));
     }
 
     {
-        web::http::http_request request(web::http::methods::POST);
-        request.set_request_uri(U("https://api-nmos.testsuite.nmos.tv/x-nmos/registration/v1.3/"));
-
         // missing optional scope, on POST request
-        BST_REQUIRE_THROW(jwt_validator.validate(missing_scope_token, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
+        BST_REQUIRE_THROW(nmos::experimental::jwt_validator::registered_claims_validation(missing_scope_token, web::http::methods::POST, U("/x-nmos/registration/v1.3"), nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
         // missing x-nmos-*, on POST request
-        BST_REQUIRE_THROW(jwt_validator.validate(missing_private_claim_token, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
+        BST_REQUIRE_THROW(nmos::experimental::jwt_validator::registered_claims_validation(missing_private_claim_token, web::http::methods::POST, U("/x-nmos/registration/v1.3"), nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
     }
 }
 
@@ -276,12 +262,9 @@ BST_TEST_CASE(testAccessTokenPrivateClaim1)
     // readonly token
     const utility::string_t readonly_token = U("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJpc3MiOiJodHRwczovL25tb3MtbW9ja3MubG9jYWw6NTAxMSIsInN1YiI6InRlc3RAdGVzdHN1aXRlLm5tb3MudHYiLCJhdWQiOlsiaHR0cHM6Ly8qLnRlc3RzdWl0ZS5ubW9zLnR2IiwiaHR0cHM6Ly8qLmxvY2FsIl0sImV4cCI6NDgyODIwNDgwMCwiaWF0IjoxNjk2ODY4MjcyLCJzY29wZSI6InJlZ2lzdHJhdGlvbiIsImNsaWVudF9pZCI6IjQ1OGY2ZDA2LTQ2YjEtNDlmZC1iNzc4LTdjMzA0Mjg4ODljNiIsIngtbm1vcy1yZWdpc3RyYXRpb24iOnsicmVhZCI6WyIqIl19fQ.0offeC5TooP73p2VedN27DeyHdjXIY-RFZzf2NCsyrB03dX89v2i3eHDF3nl-ZNFviNAlTiEMZqA9Sb6kvUI4jsmwpHRQ19nA9QQBKmYCog_uLvxUcGroxTJ7f9Nj8WIaWM1NZ25ZlylyOtz7QHhmkqNSVr8-eXYx8zVUtOurFUXNTN7UnCZ3ZpKoj9sR5O4bRb-11oxEKoOjQadHq22CN9_8AReKl1e3dx5aILYG1Xf_gvYxWpTfzYcgIVYjxKarE7msCUe6PnXBzJMlpu1Abu2llNQz7eCTAbNNA-PPN5cYFYuEdXSIcd8erkXSAK_8VbyizJRU1hE0uFFx0r3Iw");
 
-    web::http::http_request request(web::http::methods::POST);
-    request.set_request_uri(U("https://api-nmos.testsuite.nmos.tv/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"));
-
     // test x-nmos-*
     // valid token with x-nmos-registration read only set
-    BST_REQUIRE_THROW(jwt_validator.validate(readonly_token, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
+    BST_REQUIRE_THROW(nmos::experimental::jwt_validator::registered_claims_validation(readonly_token, web::http::methods::POST, U("/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"), nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -352,12 +335,9 @@ BST_TEST_CASE(testAccessTokenPrivateClaim2)
     //    }
     const utility::string_t invalid_token2 = U("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJpc3MiOiJodHRwczovL25tb3MtbW9ja3MubG9jYWw6NTAxMSIsInN1YiI6InRlc3RAdGVzdHN1aXRlLm5tb3MudHYiLCJhdWQiOlsiaHR0cHM6Ly8qLnRlc3RzdWl0ZS5ubW9zLnR2IiwiaHR0cHM6Ly8qLmxvY2FsIl0sImV4cCI6NDgyODIwNDgwMCwiaWF0IjoxNjk2ODY4MjcyLCJzY29wZSI6InJlZ2lzdHJhdGlvbiIsImNsaWVudF9pZCI6IjQ1OGY2ZDA2LTQ2YjEtNDlmZC1iNzc4LTdjMzA0Mjg4ODljNiIsIngtbm1vcy1yZWdpc3RyYXRpb24iOnsid3JpdGUiOlsiaGVhbHRoL2JhZC8qIl19fQ.o_5XAUKjv4Dyf7cxvuL6bP8GsFhV5IcscndUYenzmGo50sRw0sHvi7eANMTdoh1HAMvTcAYzdpPRPEsIrk2tvKsEVKQzKjCVXw_uKc_Xew00qEF6nUbCPAPd0TotJXTQKtqP_NIcUsRDFWL4X9wpAJQkPdv9xzE_j3RKmbOv3uQq3iRA-TBSOcgJlsCZ37IGNM-_gyOzyRZSKaaY2xAHuPpEt7Gm88sjRmgerIyRLC9zSFt-5jIYAOXlUSMv1tsQK0BQCvqxF_nppHKyfpQacxDTN-UOiD7DvJWhMTpny0mM0mwFnoS-UyQq_cHPA03BDF9-noYeBqo4VMRMx_gnlA");
 
-    web::http::http_request request(web::http::methods::POST);
-    request.set_request_uri(U("https://api-nmos.testsuite.nmos.tv/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"));
-
-    BST_REQUIRE_NO_THROW(jwt_validator.validate(valid_token1, request, nmos::experimental::scopes::registration, audience));
-    BST_REQUIRE_NO_THROW(jwt_validator.validate(valid_token2, request, nmos::experimental::scopes::registration, audience));
-    BST_REQUIRE_NO_THROW(jwt_validator.validate(valid_token3, request, nmos::experimental::scopes::registration, audience));
-    BST_REQUIRE_THROW(jwt_validator.validate(invalid_token1, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
-    BST_REQUIRE_THROW(jwt_validator.validate(invalid_token2, request, nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
+    BST_REQUIRE_NO_THROW(nmos::experimental::jwt_validator::registered_claims_validation(valid_token1, web::http::methods::POST, U("/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"), nmos::experimental::scopes::registration, audience));
+    BST_REQUIRE_NO_THROW(nmos::experimental::jwt_validator::registered_claims_validation(valid_token2, web::http::methods::POST, U("/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"), nmos::experimental::scopes::registration, audience));
+    BST_REQUIRE_NO_THROW(nmos::experimental::jwt_validator::registered_claims_validation(valid_token3, web::http::methods::POST, U("/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"), nmos::experimental::scopes::registration, audience));
+    BST_REQUIRE_THROW(nmos::experimental::jwt_validator::registered_claims_validation(invalid_token1, web::http::methods::POST, U("/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"), nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
+    BST_REQUIRE_THROW(nmos::experimental::jwt_validator::registered_claims_validation(invalid_token2, web::http::methods::POST, U("/x-nmos/registration/v1.3/health/nodes/88888888-4444-4444-4444-cccccccccccc"), nmos::experimental::scopes::registration, audience), nmos::experimental::insufficient_scope_exception);
 }

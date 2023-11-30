@@ -2,8 +2,8 @@
 #define NMOS_AUTHORIZATION_HANDLERS_H
 
 #include <functional>
+#include <cpprest/oauth2.h>
 #include "cpprest/api_router.h"
-#include "cpprest/oauth2.h"
 #include "nmos/scope.h"
 #include "nmos/settings.h"
 
@@ -47,7 +47,7 @@ namespace nmos
             status_t value;
             std::string message;
 
-            operator bool() const { return succeeded != value; }
+            operator bool() const { return succeeded == value; }
         };
 
         namespace fields
@@ -145,7 +145,7 @@ namespace nmos
 
         // callback to validate OAuth 2.0 authorization access token
         // this callback should not throw exceptions
-        typedef std::function <authorization_error(const utility::string_t& access_token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience)> validate_authorization_token_handler;
+        typedef std::function <authorization_error(const utility::string_t& access_token)> validate_authorization_token_handler;
         // construct callback to validate OAuth 2.0 authorization access token
         validate_authorization_token_handler make_validate_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate);
 

@@ -33,7 +33,7 @@ namespace nmos
                     const auto& issuer = issuers.find(token_issuer);
                     if (issuers.end() != issuer)
                     {
-                        issuer->second.jwt_validator.validate_expiry(access_token);
+                        issuer->second.jwt_validator.basic_validation(access_token);
                         return false;
                     }
                 }
@@ -101,7 +101,40 @@ namespace nmos
 
                 if (access_token_validation)
                 {
-                    return access_token_validation(access_token, request, scope, audience);
+                    try
+                    {
+                        // do basic access token token validation
+                        const auto result = access_token_validation(access_token);
+
+                        if (result)
+                        {
+                            // do AMWA IS-10 registered claims validation
+                            nmos::experimental::jwt_validator::registered_claims_validation(access_token, request.method(), request.relative_uri(), scope, audience);
+
+                            return authorization_error{ authorization_error::succeeded };
+                        }
+                        return result;
+                    }
+                    catch (const insufficient_scope_exception& e)
+                    {
+                        // validator can decode the token, but insufficient scope
+#if defined (NDEBUG)
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Insufficient scope error: " << e.what();
+#else
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Insufficient scope error: " << e.what() << "; access_token: " << access_token;
+#endif
+                        return authorization_error{ authorization_error::insufficient_scope, e.what() };
+                    }
+                    catch (const std::exception& e)
+                    {
+                        // validator can decode the token, with general failure
+#if defined (NDEBUG)
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
+#else
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what() << "; access_token: " << access_token;
+#endif
+                        return authorization_error{ authorization_error::failed, e.what() };
+                    }
                 }
                 else
                 {
@@ -146,11 +179,11 @@ namespace nmos
         // See https://tools.ietf.org/html/rfc6750#section-2
         authorization_error ws_validate_authorization(const web::http::http_request& request, const scope& scope, const utility::string_t& audience, web::uri& token_issuer, validate_authorization_token_handler access_token_validation, slog::base_gate& gate)
         {
-            auto error = validate_authorization(request, scope, audience, token_issuer, access_token_validation, gate);
+            auto result = validate_authorization(request, scope, audience, token_issuer, access_token_validation, gate);
 
-            if (error)
+            if (!result)
             {
-                error = { authorization_error::without_authentication, "missing access token" };
+                result = { authorization_error::without_authentication, "missing access token" };
 
                 // test "URI Query Parameter"
                 const auto& query = request.request_uri().query();
@@ -160,11 +193,11 @@ namespace nmos
                     auto found = querys.find(U("access_token"));
                     if (querys.end() != found)
                     {
-                        error = details::validate_authorization(found->second, request, scope, audience, token_issuer, access_token_validation, gate);
+                        result = details::validate_authorization(found->second, request, scope, audience, token_issuer, access_token_validation, gate);
                     }
                 }
             }
-            return error;
+            return result;
         }
     }
 }

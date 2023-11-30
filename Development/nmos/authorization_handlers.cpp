@@ -1,5 +1,6 @@
 #include "nmos/authorization_handlers.h"
 
+#include <jwt-cpp/jwt.h>
 #include "cpprest/basic_utils.h"
 #include "cpprest/json_validator.h"
 #include "cpprest/response_type.h"
@@ -256,12 +257,12 @@ namespace nmos
         // construct callback to validate OAuth 2.0 authorization access token
         validate_authorization_token_handler make_validate_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
         {
-            return[&](const utility::string_t& access_token, const web::http::http_request& request, const scope& scope, const utility::string_t& audience)
+            return[&](const utility::string_t& access_token)
             {
                 try
                 {
                     // extract the token issuer from the token
-                    auto token_issuer = nmos::experimental::jwt_validator::get_token_issuer(access_token);
+                    const auto token_issuer = nmos::experimental::jwt_validator::get_token_issuer(access_token);
 
                     auto lock = authorization_state.read_lock();
 
@@ -276,46 +277,68 @@ namespace nmos
                             // if jwt_validator has not already set up, treat it as no public keys to validate token
                             if (issuer->second.jwt_validator.is_initialized())
                             {
-                                issuer->second.jwt_validator.validate(access_token, request, scope, audience);
+                                // do access token basic validation, including token schema validation and token issuer public keys validation
+                                issuer->second.jwt_validator.basic_validation(access_token);
+
                                 return authorization_error{ authorization_error::succeeded };
                             }
                             else
                             {
                                 std::stringstream ss;
-                                ss << "No public keys from " << utility::us2s(issuer->first.to_string()) << " to validate access token";
+                                ss << "No " << utility::us2s(issuer->first.to_string()) << " public keys to validate access token";
                                 error = ss.str();
                                 slog::log<slog::severities::error>(gate, SLOG_FLF) << error;
+
+                                return authorization_error{ authorization_error::no_matching_keys, error };
                             }
+                        }
+                        catch (const web::json::json_exception& e)
+                        {
+#if defined (NDEBUG)
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what();
+#else
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "JSON error: " << e.what() << "; access_token: " << access_token;
+#endif
+                            return authorization_error{ authorization_error::failed, e.what() };
+                        }
+                        catch (const jwt::error::token_verification_exception& e)
+                        {
+#if defined (NDEBUG)
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Token verification error: " << e.what();
+#else
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Token verification error: " << e.what() << "; access_token: " << access_token;
+#endif
+                            return authorization_error{ authorization_error::failed, e.what() };
                         }
                         catch (const no_matching_keys_exception& e)
                         {
-                            error = e.what();
 #if defined (NDEBUG)
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "No matching public keys error: " << e.what();
 #else
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << " against " << utility::us2s(issuer->first.to_string()) << " public keys; access_token: " << access_token;
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "No matching public keys error: " << e.what() << "; access_token: " << access_token;
 #endif
-                        }
-                        catch (const insufficient_scope_exception& e)
-                        {
-                            // validator can decode the token, but insufficient scope
-#if !defined (NDEBUG)
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << "; access_token: " << access_token;
-#endif
-                            return authorization_error{ authorization_error::insufficient_scope, e.what() };
+                            return authorization_error{ authorization_error::no_matching_keys, e.what() };
                         }
                         catch (const std::exception& e)
                         {
-                            // validator can decode the token, with general failure
-#if !defined (NDEBUG)
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << e.what() << "; access_token: " << access_token;
+#if defined (NDEBUG)
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what();
+#else
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unexpected exception: " << e.what() << "; access_token: " << access_token;
 #endif
                             return authorization_error{ authorization_error::failed, e.what() };
                         }
                     }
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "No " << utility::us2s(token_issuer.to_string()) << " public keys to validate access token";
+                        error = ss.str();
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << error;
 
-                    // reaching here, must be no public keys to validate token
-                    return authorization_error{ authorization_error::no_matching_keys, error };
+                        // no public keys to validate token
+                        return authorization_error{ authorization_error::no_matching_keys, error };
+                    }
                 }
                 catch (const std::exception& e)
                 {
@@ -326,7 +349,6 @@ namespace nmos
 #endif
                     return authorization_error{ authorization_error::failed, e.what() };
                 }
-
             };
         }
 
