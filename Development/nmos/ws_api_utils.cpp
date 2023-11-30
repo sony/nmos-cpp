@@ -22,21 +22,21 @@ namespace nmos
 
                     web::uri token_issuer;
                     // note: the ws_validate_authorization returns the token_issuer via function parameter
-                    const auto error = ws_validate_authorization(request, scope, nmos::get_host_name(settings), token_issuer, access_token_validation, gate);
-                    if (error)
+                    const auto result = ws_validate_authorization(request, scope, nmos::get_host_name(settings), token_issuer, access_token_validation, gate);
+                    if (!result)
                     {
                         // set error repsonse
                         auto realm = web::http::get_host_port(request).first;
                         if (realm.empty()) { realm = nmos::get_host(settings); }
                         web::http::http_response res;
                         const auto retry_after = nmos::experimental::fields::service_unavailable_retry_after(settings);
-                        nmos::experimental::details::set_error_reply(res, realm, retry_after, error);
+                        nmos::experimental::details::set_error_reply(res, realm, retry_after, result);
                         request.reply(res);
 
                         // if no matching public keys caused the error, trigger a re-fetch to obtain public keys from the token issuer (authorization_state.token_issuer)
-                        if (error.value == authorization_error::no_matching_keys)
+                        if (result.value == authorization_error::no_matching_keys)
                         {
-                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid websocket connection to: " << request.request_uri().path() << ": " << error.message;
+                            slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Invalid websocket connection to: " << request.request_uri().path() << ": " << result.message;
 
                             with_write_lock(authorization_state.mutex, [&authorization_state, token_issuer]
                             {
@@ -48,7 +48,7 @@ namespace nmos
                         }
                         else
                         {
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Invalid websocket connection to: " << request.request_uri().path() << ": " << error.message;
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Invalid websocket connection to: " << request.request_uri().path() << ": " << result.message;
                         }
                         return false;
                     }
