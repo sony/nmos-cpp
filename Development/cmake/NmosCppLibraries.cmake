@@ -1112,12 +1112,12 @@ target_link_libraries(
     nmos-cpp::OpenSSL
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
+	nmos-cpp::jwt-cpp
     )
 target_link_libraries(
     nmos-cpp PRIVATE
     nmos-cpp::websocketpp
     nmos-cpp::json_schema_validator
-    nmos-cpp::jwt-cpp
     )
 if(NMOS_CPP_BUILD_LLDP)
     target_link_libraries(
