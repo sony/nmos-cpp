@@ -190,7 +190,7 @@ namespace nmos
 
             struct authorization_exception {};
 
-            // parse the given json to obtain access token
+            // parse the given json to obtain bearer token
             // this function is based on the oauth2_config::_parse_token_from_json(const json::value& token_json) from cpprestsdk's oauth2.cpp
             web::http::oauth2::experimental::oauth2_token parse_token_from_json(const web::json::value& token_json)
             {
