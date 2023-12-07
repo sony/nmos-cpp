@@ -207,53 +207,6 @@ namespace nmos
             };
         }
 
-        // construct callback to make OAuth 2.0 config
-        authorization_config_handler make_authorization_config_handler(const web::json::value& authorization_server_metadata, const web::json::value& client_metadata, slog::base_gate& gate)
-        {
-            return[&](const web::http::oauth2::experimental::oauth2_token& bearer_token)
-            {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make OAuth 2.0 config";
-
-                web::http::oauth2::experimental::oauth2_config config(
-                    client_metadata.is_null() ? U("") : nmos::experimental::fields::client_id(client_metadata),
-                    client_metadata.is_null() ? U("") : client_metadata.has_string_field(nmos::experimental::fields::client_secret) ? nmos::experimental::fields::client_secret(client_metadata) : U(""),
-                    authorization_server_metadata.is_null() ? U("") : nmos::experimental::fields::authorization_endpoint(authorization_server_metadata),
-                    authorization_server_metadata.is_null() ? U("") : nmos::experimental::fields::token_endpoint(authorization_server_metadata),
-                    client_metadata.is_null() ? U("") : client_metadata.has_array_field(nmos::experimental::fields::redirect_uris) && nmos::experimental::fields::redirect_uris(client_metadata).size() ? nmos::experimental::fields::redirect_uris(client_metadata).at(0).as_string() : U(""),
-                    client_metadata.is_null() ? U("") : client_metadata.has_string_field(nmos::experimental::fields::scope) ? nmos::experimental::fields::scope(client_metadata) : U(""));
-
-                if (!client_metadata.is_null())
-                {
-                    const auto& response_types = nmos::experimental::fields::response_types(client_metadata);
-                    bool found_code = false;
-                    bool found_token = false;
-                    for (auto response_type : response_types)
-                    {
-                        if (web::http::oauth2::experimental::response_types::code.name == response_type.as_string()) { found_code = true; }
-                        else if (web::http::oauth2::experimental::response_types::token.name == response_type.as_string()) { found_token = true; }
-                    };
-                    config.set_bearer_auth(found_code || !found_token);
-                }
-
-                config.set_token(bearer_token);
-
-                return config;
-            };
-        }
-        authorization_config_handler make_authorization_config_handler(const authorization_state& authorization_state, slog::base_gate& gate)
-        {
-            return[&](const web::http::oauth2::experimental::oauth2_token& /*bearer_token*/)
-            {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Make OAuth 2.0 config using bearer_token cache";
-
-                const auto authorization_server_metadata = get_authorization_server_metadata(authorization_state);
-                const auto client_metadata = get_client_metadata(authorization_state);
-
-                auto make_authorization_config = make_authorization_config_handler(authorization_server_metadata, client_metadata, gate);
-                return make_authorization_config(authorization_state.bearer_token);
-            };
-        }
-
         // construct callback to validate OAuth 2.0 authorization access token
         validate_authorization_token_handler make_validate_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
         {
@@ -364,7 +317,7 @@ namespace nmos
         }
 
         // construct callback to retrieve OAuth 2.0 authorization bearer token
-        authorization_token_handler make_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
+        get_authorization_bearer_token_handler make_get_authorization_bearer_token_handler(authorization_state& authorization_state, slog::base_gate& gate)
         {
             return[&]()
             {

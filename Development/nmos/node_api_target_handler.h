@@ -22,7 +22,7 @@ namespace nmos
 
     // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified handlers
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_ca_certificates_handler load_ca_certificates, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, nmos::experimental::authorization_config_handler make_authorization_config);
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_ca_certificates_handler load_ca_certificates, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token);
 
     inline node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_ca_certificates_handler load_ca_certificates, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged)
     {

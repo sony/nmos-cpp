@@ -127,8 +127,7 @@ int main(int argc, char* argv[])
         if (nmos::experimental::fields::client_authorization(node_model.settings))
         {
             node_implementation
-                .on_get_authorization_bearer_token(nmos::experimental::make_authorization_token_handler(authorization_state, gate))
-                .on_make_authorization_config(nmos::experimental::make_authorization_config_handler(authorization_state, gate))
+                .on_get_authorization_bearer_token(nmos::experimental::make_get_authorization_bearer_token_handler(authorization_state, gate))
                 .on_load_authorization_clients(nmos::experimental::make_load_authorization_clients_handler(node_model.settings, gate))
                 .on_save_authorization_client(nmos::experimental::make_save_authorization_client_handler(node_model.settings, gate))
                 .on_load_rsa_private_keys(nmos::make_load_rsa_private_keys_handler(node_model.settings, gate)) // may be omitted, only required for OAuth client which is using Private Key JWT as the requested authentication method for the token endpoint

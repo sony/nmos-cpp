@@ -180,9 +180,9 @@ namespace nmos
 
             // construct authorization client config based on settings
             // with the remaining options defaulted, e.g. authorization request timeout
-            web::http::client::http_client_config make_authorization_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, authorization_config_handler make_authorization_config, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
+            web::http::client::http_client_config make_authorization_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
             {
-                auto config = nmos::make_http_client_config(settings, load_ca_certificates, make_authorization_config, bearer_token, gate);
+                auto config = nmos::make_http_client_config(settings, load_ca_certificates, bearer_token, gate);
                 config.set_timeout(std::chrono::seconds(nmos::experimental::fields::authorization_request_max(settings)));
 
                 return config;
@@ -1323,7 +1323,7 @@ namespace nmos
                 const auto& registration_client_uri = nmos::experimental::fields::registration_client_uri(client_metadata);
                 const auto& issuer = nmos::experimental::fields::issuer(authorization_server_metadata);
 
-                request = request_client_metadata_from_openid_connect(web::http::client::http_client(registration_client_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, make_authorization_config_handler(authorization_server_metadata, client_metadata, gate), { registration_access_token }, gate)),
+                request = request_client_metadata_from_openid_connect(web::http::client::http_client(registration_client_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, { registration_access_token }, gate)),
                     auth_version, gate, token).then([&model, &authorization_state, issuer, save_authorization_client, &gate](web::json::value client_metadata)
                 {
                     auto lock = model.write_lock();
@@ -1474,7 +1474,7 @@ namespace nmos
                 const auto jwks_uri = make_jwks_uri(model.settings);
                 const auto& initial_access_token = nmos::experimental::fields::initial_access_token(model.settings);
 
-                request = request_client_registration(web::http::client::http_client(registration_endpoint, make_authorization_http_client_config(model.settings, load_ca_certificates, make_authorization_config_handler({}, {}, gate), { initial_access_token }, gate)),
+                request = request_client_registration(web::http::client::http_client(registration_endpoint, make_authorization_http_client_config(model.settings, load_ca_certificates, { initial_access_token }, gate)),
                     client_name, redirect_uris, {}, response_types, scopes, grants, token_endpoint_auth_method, {}, jwks_uri, auth_version, gate, token).then([&model, &authorization_state, issuer, token_endpoint_auth_method, save_authorization_client, &gate](web::json::value client_metadata)
                 {
                     auto lock = model.write_lock();

@@ -32,12 +32,13 @@ namespace nmos
 
         namespace details
         {
+
             // construct authorization client config based on settings
             // with the remaining options defaulted, e.g. authorization request timeout
-            web::http::client::http_client_config make_authorization_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, authorization_config_handler make_authorization_config, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate);
+            web::http::client::http_client_config make_authorization_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate);
             inline web::http::client::http_client_config make_authorization_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
             {
-                return make_authorization_http_client_config(settings, load_ca_certificates, {}, {}, gate);
+                return make_authorization_http_client_config(settings, load_ca_certificates, {}, gate);
             }
 
             // verify the redirect URI and make an asynchronously POST request on the Authorization API to exchange authorization code for bearer token

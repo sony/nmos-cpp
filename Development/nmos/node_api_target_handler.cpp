@@ -13,11 +13,11 @@
 
 namespace nmos
 {
-    // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser and the specified validator
+    // implement the Node API /receivers/{receiverId}/target endpoint using the Connection API implementation with the specified transport file parser, the specified validator and the bearer token getter
     // (the /target endpoint is only required to support RTP transport, other transport types use the Connection API)
-    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_ca_certificates_handler load_ca_certificates, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, nmos::experimental::authorization_config_handler make_authorization_config)
+    node_api_target_handler make_node_api_target_handler(nmos::node_model& model, load_ca_certificates_handler load_ca_certificates, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token)
     {
-        return [&model, load_ca_certificates, parse_transport_file, validate_merged, make_authorization_config](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
+        return [&model, load_ca_certificates, parse_transport_file, validate_merged, get_authorization_bearer_token](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
         {
             using web::json::value;
             using web::json::value_of;
@@ -30,7 +30,7 @@ namespace nmos
                 // if manifest_href is null, this will throw json_exception which will be reported appropriately as 400 Bad Request
                 const auto manifest_href = nmos::fields::manifest_href(sender_data).as_string();
 
-                web::http::client::http_client client(manifest_href, nmos::with_read_lock(model.mutex, [&, load_ca_certificates, make_authorization_config] { return nmos::make_http_client_config(model.settings, load_ca_certificates, make_authorization_config, gate); }));
+                web::http::client::http_client client(manifest_href, nmos::with_read_lock(model.mutex, [&, load_ca_certificates, get_authorization_bearer_token] { return nmos::make_http_client_config(model.settings, load_ca_certificates, get_authorization_bearer_token, gate); }));
                 return api_request(client, web::http::methods::GET, gate).then([manifest_href, &gate](web::http::http_response res)
                 {
                     if (res.status_code() != web::http::status_codes::OK)

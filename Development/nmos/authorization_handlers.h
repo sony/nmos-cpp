@@ -135,14 +135,6 @@ namespace nmos
         // construct callback to start the authorization code flow request on a browser
         request_authorization_code_handler make_request_authorization_code_handler(slog::base_gate& gate);
 
-        // callback to return OAuth 2.0 authorization config
-        // this callback is executed while constructing http_client_config
-        // this callback should not throw exceptions
-        typedef std::function <web::http::oauth2::experimental::oauth2_config(const web::http::oauth2::experimental::oauth2_token& bearer_token)> authorization_config_handler;
-        // construct callback to make OAuth 2.0 config
-        authorization_config_handler make_authorization_config_handler(const web::json::value& authorization_server_metadata, const web::json::value& client_metadata, slog::base_gate& gate);
-        authorization_config_handler make_authorization_config_handler(const authorization_state& authorization_state, slog::base_gate& gate);
-
         // callback to validate OAuth 2.0 authorization access token
         // this callback should not throw exceptions
         typedef std::function <authorization_error(const utility::string_t& access_token)> validate_authorization_token_handler;
@@ -158,9 +150,9 @@ namespace nmos
         // callback to return OAuth 2.0 authorization bearer token
         // this callback is execute while create http_client
         // this callback should not throw exceptions
-        typedef std::function<web::http::oauth2::experimental::oauth2_token()> authorization_token_handler;
+        typedef std::function<web::http::oauth2::experimental::oauth2_token()> get_authorization_bearer_token_handler;
         // construct callback to retrieve OAuth 2.0 authorization bearer token
-        authorization_token_handler make_authorization_token_handler(authorization_state& authorization_state, slog::base_gate& gate);
+        get_authorization_bearer_token_handler make_get_authorization_bearer_token_handler(authorization_state& authorization_state, slog::base_gate& gate);
     }
 }
 

@@ -22,11 +22,11 @@ namespace nmos
 {
     namespace details
     {
-        void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
+        void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
 
         // registered operation
-        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, slog::base_gate& gate);
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, slog::base_gate& gate);
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate);
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate);
 
         // peer to peer operation
         void peer_to_peer_operation(nmos::model& model, const nmos::id& grain_id, mdns::service_discovery& discovery, mdns::service_advertiser& advertiser, slog::base_gate& gate);
@@ -43,7 +43,7 @@ namespace nmos
 
     // uses the default DNS-SD implementation
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, slog::base_gate& gate_)
+    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
 
@@ -52,7 +52,7 @@ namespace nmos
 
         mdns::service_discovery discovery(gate);
 
-        details::node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), std::move(make_authorization_config), std::move(get_authorization_bearer_token), advertiser, discovery, gate);
+        details::node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), std::move(get_authorization_bearer_token), advertiser, discovery, gate);
     }
     void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, slog::base_gate& gate_)
     {
@@ -63,43 +63,35 @@ namespace nmos
 
         mdns::service_discovery discovery(gate);
 
-        details::node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), {}, {}, advertiser, discovery, gate);
+        details::node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), {}, advertiser, discovery, gate);
     }
 
     // uses the specified DNS-SD implementation
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate_)
+    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate_)
     {
         nmos::details::omanip_gate gate(gate_, nmos::stash_category(nmos::categories::node_behaviour));
 
-        details::node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), std::move(make_authorization_config), std::move(get_authorization_bearer_token), advertiser, discovery, gate);
+        details::node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), std::move(get_authorization_bearer_token), advertiser, discovery, gate);
     }
     void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
     {
-        node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), {}, {}, advertiser, discovery, gate);
+        node_behaviour_thread(model, std::move(load_ca_certificates), std::move(registration_changed), {}, advertiser, discovery, gate);
     }
 
     // uses the default DNS-SD implementation
-    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, slog::base_gate& gate)
-    {
-        node_behaviour_thread(model, load_ca_certificates, {}, std::move(make_authorization_config), std::move(get_authorization_bearer_token), gate);
-    }
     void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
-        node_behaviour_thread(model, load_ca_certificates, {}, gate);
+        node_behaviour_thread(model, load_ca_certificates, {}, {}, gate);
     }
 
     // uses the specified DNS-SD implementation
-    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
-    {
-        node_behaviour_thread(model, load_ca_certificates, {}, std::move(make_authorization_config), std::move(get_authorization_bearer_token), advertiser, discovery, gate);
-    }
     void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
     {
-        node_behaviour_thread(model, load_ca_certificates, {}, advertiser, discovery, gate);
+        node_behaviour_thread(model, load_ca_certificates, {}, {}, advertiser, discovery, gate);
     }
 
-    void details::node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
+    void details::node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate)
     {
         // The possible states of node behaviour represent the two primary modes (registered operation and peer-to-peer operation)
         // and a few hopefully ephemeral states as the node works through the "Standard Registration Sequences".
@@ -184,7 +176,7 @@ namespace nmos
 
             case initial_registration:
                 // "5. The Node registers itself with the Registration API by taking the object it holds under the Node API's /self resource and POSTing this to the Registration API."
-                details::initial_registration(self_id, model, grain_id, load_ca_certificates, make_authorization_config, gate);
+                details::initial_registration(self_id, model, grain_id, load_ca_certificates, get_authorization_bearer_token, gate);
 
                 if (details::has_discovered_registration_services(model))
                 {
@@ -201,7 +193,7 @@ namespace nmos
             case registered_operation:
                 // "6. The Node persists itself in the registry by issuing heartbeats."
                 // "7. The Node registers its other resources (from /devices, /sources etc) with the Registration API."
-                details::registered_operation(self_id, model, grain_id, load_ca_certificates, registration_changed, make_authorization_config, get_authorization_bearer_token, gate);
+                details::registered_operation(self_id, model, grain_id, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate);
 
                 if (details::has_discovered_registration_services(model))
                 {
@@ -494,16 +486,16 @@ namespace nmos
             handle_registration_error_conditions(response, false, gate, operation);
         }
 
-        web::http::client::http_client_config make_registration_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, slog::base_gate& gate)
+        web::http::client::http_client_config make_registration_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
         {
-            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), std::move(make_authorization_config), gate);
+            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), bearer_token, gate);
             config.set_timeout(std::chrono::seconds(nmos::fields::registration_request_max(settings)));
             return config;
         }
 
-        web::http::client::http_client_config make_heartbeat_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, slog::base_gate& gate)
+        web::http::client::http_client_config make_heartbeat_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
         {
-            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), std::move(make_authorization_config), gate);
+            auto config = nmos::make_http_client_config(settings, std::move(load_ca_certificates), bearer_token, gate);
             config.set_timeout(std::chrono::seconds(nmos::fields::registration_heartbeat_max(settings)));
             return config;
         }
@@ -681,7 +673,7 @@ namespace nmos
         }
 
         // there is significant similarity between initial_registration and registered_operation but I'm too tired to refactor again right now...
-        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, nmos::experimental::authorization_config_handler make_authorization_config, slog::base_gate& gate)
+        void initial_registration(nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting initial registration";
 
@@ -768,7 +760,7 @@ namespace nmos
                         grain.updated = strictly_increasing_update(resources);
                     });
 
-                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, make_authorization_config, gate)));
+                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, get_authorization_bearer_token(), gate)));
                 }
 
                 events = web::json::value::array();
@@ -839,7 +831,7 @@ namespace nmos
             request.wait();
         }
 
-        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::authorization_config_handler make_authorization_config, nmos::experimental::authorization_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+        void registered_operation(const nmos::id& self_id, nmos::model& model, const nmos::id& grain_id, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
         {
             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Adopting registered operation";
 
@@ -908,8 +900,9 @@ namespace nmos
                     const auto registry_version = parse_api_version(web::uri::split_path(base_uri.path()).back());
                     if (registry_version != grain->version) break;
 
-                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, make_authorization_config, gate)));
-                    heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, make_authorization_config, gate)));
+                    const auto& bearer_token = get_authorization_bearer_token();
+                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
+                    heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
 
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
@@ -955,13 +948,13 @@ namespace nmos
 
                                 if (get_authorization_bearer_token)
                                 {
-                                    const auto bearer_token = get_authorization_bearer_token();
+                                    const auto& bearer_token = get_authorization_bearer_token();
                                     if (heartbeat_bearer_token.access_token() != bearer_token.access_token())
                                     {
                                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Update heartbeat client with new authorization token";
 
                                         heartbeat_bearer_token = bearer_token;
-                                        heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, make_authorization_config, gate)));
+                                        heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
                                     }
                                 }
 
@@ -1013,13 +1006,13 @@ namespace nmos
                     // renew regsitration_client if bearer token has changed
                     if (get_authorization_bearer_token)
                     {
-                        const auto bearer_token = get_authorization_bearer_token();
+                        const auto& bearer_token = get_authorization_bearer_token();
                         if (registration_bearer_token.access_token() != bearer_token.access_token())
                         {
                             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Update registration client with new authorization token";
 
                             registration_bearer_token = bearer_token;
-                            registration_client.reset(new web::http::client::http_client(registration_client->base_uri(), make_registration_client_config(model.settings, load_ca_certificates, make_authorization_config, gate)));
+                            registration_client.reset(new web::http::client::http_client(registration_client->base_uri(), make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
                         }
                     }
 
