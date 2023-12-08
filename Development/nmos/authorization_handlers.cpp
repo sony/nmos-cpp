@@ -182,10 +182,10 @@ namespace nmos
         }
 
         // construct callback to start the authorization code flow request on a browser
-        // it is required for those OAuth client which is using the Authorization Code Flow to obtain the access token
+        // this is required for OAuth clients which use Authorization Code Flow to obtain the access token
         // note: as it is not easy to specify the 'content-type' used in the browser programmatically, this can be easily
         // fixed by installing a browser header modifier
-        // such extension e.g. ModHeader can be used to add the missing 'content-type' header accordingly
+        // extensions such as ModHeader can be used to add the missing 'content-type' header:
         // for Windows https://chrome.google.com/webstore/detail/modheader-modify-http-hea/idgpnmonknjnojddfkpgkljpfnnfcklj
         // for Linux   https://addons.mozilla.org/en-GB/firefox/addon/modheader-firefox/
         request_authorization_code_handler make_request_authorization_code_handler(slog::base_gate& gate)
@@ -227,7 +227,7 @@ namespace nmos
 
                         try
                         {
-                            // if jwt_validator has not already set up, treat it as no public keys to validate token
+                            // if jwt_validator is not already set up, assume no public keys to validate token
                             if (issuer->second.jwt_validator.is_initialized())
                             {
                                 // do access token basic validation, including token schema validation and token issuer public keys validation

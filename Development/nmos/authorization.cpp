@@ -43,7 +43,7 @@ namespace nmos
                 slog::log<slog::severities::warning>(gate, SLOG_FLF) << "Test token expiry error: " << e.what();
             }
 
-            // reaching here, token validation has failed, treat it as expired
+            // reaching here indicates token validation has failed so treat it as expired
             return true;
         }
 

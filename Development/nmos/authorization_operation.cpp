@@ -100,8 +100,8 @@ namespace nmos
 
                     // code_verifier = high-entropy cryptographic random STRING using the
                     // unreserved characters[A - Z] / [a - z] / [0 - 9] / "-" / "." / "_" / "~"
-                    //    from Section 2.3 of[RFC3986], with a minimum length of 43 characters
-                    //    and a maximum length of 128 characters
+                    // from Section 2.3 of[RFC3986], with a minimum length of 43 characters
+                    // and a maximum length of 128 characters
                     // see https://tools.ietf.org/html/rfc7636#section-4.1
                     {
                         utility::nonce_generator generator(128);
@@ -136,7 +136,7 @@ namespace nmos
                 return ub.to_uri();
             }
 
-            // it is used to strip the trailing dot of the FQDN if it is presented
+            // used to strip the trailing dot of the FQDN if it is presented
             utility::string_t strip_trailing_dot(const utility::string_t& host_)
             {
                 auto host = host_;
@@ -219,7 +219,7 @@ namespace nmos
                 }
                 else
                 {
-                    // Some services don't return 'token_type' while it's required by OAuth 2.0 spec:
+                    // Some services don't return 'token_type' even though it's required by the OAuth 2.0 spec:
                     // http://tools.ietf.org/html/rfc6749#section-5.1
                     // As workaround we act as if 'token_type=bearer' was received.
                     result.set_token_type(oauth2_strings::bearer);
@@ -301,9 +301,9 @@ namespace nmos
                                 // validate server metadata
                                 authapi_validator().validate(metadata, experimental::make_authapi_auth_metadata_schema_uri(version)); // may throw json_exception
 
-                                // hmm, verify Authorization server meeting the minimum client requirement
+                                // hmm, verify Authorization server meets the minimum client requirement.
 
-                                // is the required response_types supported by the Authorization server
+                                // are the required response_types supported by the Authorization server?
                                 std::set<web::http::oauth2::experimental::response_type> response_types = { response_types::code };
                                 if (grants.end() != std::find_if(grants.begin(), grants.end(), [](const web::http::oauth2::experimental::grant_type& grant) { return grant_types::implicit == grant; }))
                                 {
@@ -327,7 +327,7 @@ namespace nmos
                                 // scopes_supported is optional
                                 if (scopes.size() && metadata.has_array_field(nmos::experimental::fields::scopes_supported))
                                 {
-                                    // is the required scopes supported by the Authorization server
+                                    // are the required scopes supported by the Authorization server?
                                     const auto supported = std::all_of(scopes.begin(), scopes.end(), [&](const nmos::experimental::scope& scope)
                                     {
                                         const auto& scopes_supported = nmos::experimental::fields::scopes_supported(metadata);
@@ -336,7 +336,7 @@ namespace nmos
                                     });
                                     if (!supported)
                                     {
-                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not supporting all the required scopes: " << [&scopes]() { std::stringstream ss; for (auto scope : scopes) ss << utility::us2s(scope.name) << " "; return ss.str();  }();
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not support all the required scopes: " << [&scopes]() { std::stringstream ss; for (auto scope : scopes) ss << utility::us2s(scope.name) << " "; return ss.str();  }();
                                         throw authorization_exception();
                                     }
                                 }
@@ -353,7 +353,7 @@ namespace nmos
                                     });
                                     if (!supported)
                                     {
-                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not supporting all the required grants: " << [&grants]() { std::stringstream ss; for (auto grant : grants) ss << utility::us2s(grant.name) << " "; return ss.str();  }();
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not support all the required grants: " << [&grants]() { std::stringstream ss; for (auto grant : grants) ss << utility::us2s(grant.name) << " "; return ss.str();  }();
                                         throw authorization_exception();
                                     }
                                 }
