@@ -107,7 +107,7 @@ namespace nmos
                         }
                     }
 
-                    // reaching here, there must be because no matching public key to validate the access token
+                    // reaching here indicates there is no matching public key to validate the access token
 
                     // "Where a Resource Server has no matching public key for a given token, it SHOULD attempt to obtain the missing public key via the the token iss
                     // claim as specified in RFC 8414 section 3. In cases where the Resource Server needs to fetch a public key from a remote Authorization Server it
@@ -186,8 +186,8 @@ namespace nmos
 
                             if (segments.size() >= aud_segments.size() && aud_segments.size())
                             {
-                                // token audience got to be in wildcard domain name format, leftmost is a "*" charcater
-                                // if not it is not going to match
+                                // in order to match the token audience has to be in wildcard domain name format
+                                // with a leftmost "*" character.
                                 // see https://tools.ietf.org/html/rfc4592#section-2.1.1
                                 if (aud_segments[0] != "*")
                                 {
@@ -219,7 +219,7 @@ namespace nmos
                     }
 
                     // scope optional
-                    // If scope claim does not contain the expected scope, the Resource Server reject the token.
+                    // If scope claim does not contain the expected scope, the Resource Server will reject the token.
                     // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#scope
                     auto verify_scope = [&decoded_token](const nmos::experimental::scope& scope)
                     {
@@ -384,7 +384,7 @@ namespace nmos
                     using namespace jwt::traits;
 
                     auto decoded_token = jwt::decode<nlohmann_json>(utility::us2s(token));
-                    // token does not guarantee to have client_id
+                    // token is not guaranteed to have a client_id
                     // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.4._Behaviour_-_Access_Tokens.html#client_id
                     if (decoded_token.has_payload_claim("client_id"))
                     {

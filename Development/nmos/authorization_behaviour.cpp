@@ -279,6 +279,8 @@ namespace nmos
                 case authorization_operation:
                     // fetch public keys
                     // fetch access token within 1/2 token life time interval.
+                    // authorization_operation will block until an error occurs, or shutdown
+                    // on shutdown, enclosing for loop will exit
                     details::authorization_operation(model, authorization_state, load_ca_certificates, load_rsa_private_keys, false, gate);
 
                     // reaching here indicates there has been a failure within the authorization operation,
@@ -290,6 +292,9 @@ namespace nmos
                 case authorization_operation_with_immediate_token_fetch:
                     // fetch public keys
                     // immediately fetch access token
+                    // authorization_operation will block until an error occurs, or shutdown
+                    // on shutdown, enclosing for loop will exit
+
                     details::authorization_operation(model, authorization_state, load_ca_certificates, load_rsa_private_keys, true, gate);
 
                     // reaching here indicates there has been a failure within the authorization operation,

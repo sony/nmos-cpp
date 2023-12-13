@@ -172,7 +172,7 @@ namespace nmos
         return config;
     }
 
-    // construct client config based on settings, e.g. using the specified proxy
+    // construct client config based on settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
     web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {

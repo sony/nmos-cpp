@@ -124,7 +124,7 @@ namespace nmos
                 using ssl::experimental::BIO_ptr;
 
                 // supported Elliptic-Curve types
-                // see https://tools.ietf.org/search/rfc4492#appendix-A
+                // see https://tools.ietf.org/html/rfc4492#appendix-A
                 const std::map<utility::string_t, int> curve =
                 {
                     { U("P-256"), NID_X9_62_prime256v1 },

@@ -79,7 +79,7 @@ namespace nmos
                 const auto& settings = model.settings;
 
                 web::uri token_issuer;
-                // note: the ws_validate_authorization returns the token_issuer via function parameter
+                // note: ws_validate_authorization returns the token_issuer via function parameter
                 const auto result = nmos::experimental::ws_validate_authorization(req, nmos::experimental::scopes::events, nmos::get_host_name(settings), token_issuer, access_token_validation, gate_);
                 if (!result)
                 {
