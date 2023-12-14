@@ -22,15 +22,15 @@ jobs:
         use_conan: [true]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
-        enable_authorization: [False, True]
+        enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
           - os: macos-11
-            enable_authorization: False
+            enable_authorization: false
           - os: windows-2019
-            enable_authorization: False
+            enable_authorization: false
           - os: ubuntu-20.04
-            enable_authorization: False
+            enable_authorization: false
           - os: macos-11
             install_mdns: true
           - os: windows-2019
@@ -45,32 +45,31 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
-            enable_authorization: False
         include:
           - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
-            enable_authorization: True
+            enable_authorization: true
           - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
-            enable_authorization: False
+            enable_authorization: false
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
-            enable_authorization: True
+            enable_authorization: true
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
-            enable_authorization: False
+            enable_authorization: false
 
     steps:
     - uses: actions/checkout@v3
@@ -106,7 +105,7 @@ jobs:
     @import build-and-test
 
   build_and_test_ubuntu_14:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ubuntu-20.04
     container:
       image: ubuntu:14.04
