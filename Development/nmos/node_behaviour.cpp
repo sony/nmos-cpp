@@ -760,7 +760,7 @@ namespace nmos
                         grain.updated = strictly_increasing_update(resources);
                     });
 
-                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, get_authorization_bearer_token(), gate)));
+                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, get_authorization_bearer_token ? get_authorization_bearer_token() : web::http::oauth2::experimental::oauth2_token{}, gate)));
                 }
 
                 events = web::json::value::array();
@@ -900,7 +900,7 @@ namespace nmos
                     const auto registry_version = parse_api_version(web::uri::split_path(base_uri.path()).back());
                     if (registry_version != grain->version) break;
 
-                    const auto& bearer_token = get_authorization_bearer_token();
+                    const auto bearer_token = get_authorization_bearer_token ? get_authorization_bearer_token() : web::http::oauth2::experimental::oauth2_token{};
                     registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
                     heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
 
