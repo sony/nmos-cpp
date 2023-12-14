@@ -59,7 +59,9 @@ common_params=",\
   \"host_address\":\"${host_ip}\",\
   \"host_addresses\":[\"${host_ip}\"]\
   "
-
+registry_params=""
+node_params=""
+  
 if [[ "${config_secure}" == "True" ]]; then
   secure=true
   echo "Running TLS tests"
@@ -114,10 +116,10 @@ if [[ "${config_auth}" == "True" ]]; then
   \"server_authorization\":true,\
   \"service_unavailable_retry_after\":25\
   "
-  registry_params=",\
+  registry_params+=",\
   \"label\":\"nmos-cpp-registry\"\
   "
-  node_params=",\
+  node_params+=",\
   \"label\":\"nmos-cpp-node\",\
   \"client_authorization\":true,\
   \"authorization_flow\":\"client_credentials\",\
