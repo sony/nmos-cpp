@@ -22,15 +22,15 @@ jobs:
         use_conan: [true]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
-		enable_authorization: [False, True]
+        enable_authorization: [False, True]
         exclude:
           # install_mdns is only meaningful on Linux
           - os: macos-11
-			enable_authorization: False
+            enable_authorization: False
           - os: windows-2019
-			enable_authorization: False
+            enable_authorization: False
           - os: ubuntu-20.04
-			enable_authorization: False
+            enable_authorization: False
           - os: macos-11
             install_mdns: true
           - os: windows-2019
@@ -45,32 +45,32 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
-			enable_authorization: False
+            enable_authorization: False
         include:
           - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
-			enable_authorization: True
+            enable_authorization: True
           - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
-			enable_authorization: False
+            enable_authorization: False
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
-			enable_authorization: True
+            enable_authorization: True
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
-			enable_authorization: False
+            enable_authorization: False
 
     steps:
     - uses: actions/checkout@v3
