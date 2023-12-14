@@ -118,6 +118,7 @@ jobs:
         use_conan: [false]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast]
+        enable_authorization: [true]
 
     steps:
     - uses: actions/checkout@v3

@@ -31,7 +31,7 @@
     fi
     printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
 
-    if [[ "${{matrix.enable_authorization}}" ]]; then
+    if [[ "${{matrix.enable_authorization}}" == "true" ]]; then
       printf 'CONFIG.ENABLE_AUTH = True\n' >> nmostesting/UserConfig.py
     else
       printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
