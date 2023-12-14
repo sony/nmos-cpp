@@ -203,9 +203,8 @@ namespace nmos
                     client_assertion_lifespan = std::chrono::seconds(nmos::experimental::fields::authorization_request_max(settings));
                 });
 
-                // The Authorization server may redirect error back due to something have went wrong
-                // such as resource owner rejects the request or the developer did something wrong
-                // when creating the Authorization request
+                // The authorization server may redirect an error back to this endpoint due to error conditions
+                // such as resource owner rejecting the request, or invalid authorization request
                 {
                     auto lock = authorization_state.write_lock(); // in order to update shared state
                     try
@@ -220,7 +219,7 @@ namespace nmos
                     }
                     catch (const authorization_flow_exception& e)
                     {
-                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request Authorization Flow error: " << utility::us2s(e.error.name) << " description: " << utility::us2s(e.description);
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization flow token request authorization flow error: " << utility::us2s(e.error.name) << " description: " << utility::us2s(e.description);
                         result = details::make_authorization_flow_error_response(status_codes::BadRequest, e.error.name, e.description);
                         authorization_state.authorization_flow = authorization_state::failed;
                     }

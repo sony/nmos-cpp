@@ -78,7 +78,7 @@ namespace nmos
                 return{};
             }
 
-            // use the authorization URI on a web browser to start the authorization code grant workflow
+            // use the authorization URI on a web browser to start the authorization code flow
             web::uri make_authorization_code_uri(const web::uri& authorization_endpoint, const utility::string_t& client_id, const web::uri& redirect_uri, const web::http::oauth2::experimental::response_type& response_type, const std::set<scope>& scopes, const web::json::array& code_challenge_methods_supported, utility::string_t& state, utility::string_t& code_verifier)
             {
                 using web::http::oauth2::details::oauth2_strings;
@@ -100,8 +100,8 @@ namespace nmos
 
                     // code_verifier = high-entropy cryptographic random STRING using the
                     // unreserved characters[A - Z] / [a - z] / [0 - 9] / "-" / "." / "_" / "~"
-                    //    from Section 2.3 of[RFC3986], with a minimum length of 43 characters
-                    //    and a maximum length of 128 characters
+                    // from Section 2.3 of[RFC3986], with a minimum length of 43 characters
+                    // and a maximum length of 128 characters
                     // see https://tools.ietf.org/html/rfc7636#section-4.1
                     {
                         utility::nonce_generator generator(128);
@@ -136,7 +136,7 @@ namespace nmos
                 return ub.to_uri();
             }
 
-            // it is used to strip the trailing dot of the FQDN if it is presented
+            // used to strip the trailing dot of the FQDN if it is presented
             utility::string_t strip_trailing_dot(const utility::string_t& host_)
             {
                 auto host = host_;
@@ -219,7 +219,7 @@ namespace nmos
                 }
                 else
                 {
-                    // Some services don't return 'token_type' while it's required by OAuth 2.0 spec:
+                    // Some services don't return 'token_type' even though it's required by the OAuth 2.0 spec:
                     // http://tools.ietf.org/html/rfc6749#section-5.1
                     // As workaround we act as if 'token_type=bearer' was received.
                     result.set_token_type(oauth2_strings::bearer);
@@ -301,9 +301,9 @@ namespace nmos
                                 // validate server metadata
                                 authapi_validator().validate(metadata, experimental::make_authapi_auth_metadata_schema_uri(version)); // may throw json_exception
 
-                                // hmm, verify Authorization server meeting the minimum client requirement
+                                // hmm, verify Authorization server meets the minimum client requirement.
 
-                                // is the required response_types supported by the Authorization server
+                                // are the required response_types supported by the Authorization server?
                                 std::set<web::http::oauth2::experimental::response_type> response_types = { response_types::code };
                                 if (grants.end() != std::find_if(grants.begin(), grants.end(), [](const web::http::oauth2::experimental::grant_type& grant) { return grant_types::implicit == grant; }))
                                 {
@@ -327,7 +327,7 @@ namespace nmos
                                 // scopes_supported is optional
                                 if (scopes.size() && metadata.has_array_field(nmos::experimental::fields::scopes_supported))
                                 {
-                                    // is the required scopes supported by the Authorization server
+                                    // are the required scopes supported by the Authorization server?
                                     const auto supported = std::all_of(scopes.begin(), scopes.end(), [&](const nmos::experimental::scope& scope)
                                     {
                                         const auto& scopes_supported = nmos::experimental::fields::scopes_supported(metadata);
@@ -336,7 +336,7 @@ namespace nmos
                                     });
                                     if (!supported)
                                     {
-                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not supporting all the required scopes: " << [&scopes]() { std::stringstream ss; for (auto scope : scopes) ss << utility::us2s(scope.name) << " "; return ss.str();  }();
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not support all the required scopes: " << [&scopes]() { std::stringstream ss; for (auto scope : scopes) ss << utility::us2s(scope.name) << " "; return ss.str();  }();
                                         throw authorization_exception();
                                     }
                                 }
@@ -344,7 +344,7 @@ namespace nmos
                                 // grant_types_supported is optional
                                 if (grants.size() && metadata.has_array_field(nmos::experimental::fields::grant_types_supported))
                                 {
-                                    // is the required grants supported by the Authorization server
+                                    // are the required grants supported by the Authorization server?
                                     const auto supported = std::all_of(grants.begin(), grants.end(), [&](const web::http::oauth2::experimental::grant_type& grant)
                                     {
                                         const auto& grants_supported = nmos::experimental::fields::grant_types_supported(metadata);
@@ -353,7 +353,7 @@ namespace nmos
                                     });
                                     if (!supported)
                                     {
-                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not supporting all the required grants: " << [&grants]() { std::stringstream ss; for (auto grant : grants) ss << utility::us2s(grant.name) << " "; return ss.str();  }();
+                                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Request authorization server metadata error: server does not support all the required grants: " << [&grants]() { std::stringstream ss; for (auto grant : grants) ss << utility::us2s(grant.name) << " "; return ss.str();  }();
                                         throw authorization_exception();
                                     }
                                 }
@@ -361,7 +361,7 @@ namespace nmos
                                 // token_endpoint_auth_methods_supported is optional
                                 if (metadata.has_array_field(nmos::experimental::fields::token_endpoint_auth_methods_supported))
                                 {
-                                    // is the required token_endpoint_auth_method supported by the Authorization server
+                                    // is the required token_endpoint_auth_method supported by the Authorization server?
                                     const auto& supported = nmos::experimental::fields::token_endpoint_auth_methods_supported(metadata);
                                     const auto found = std::find_if(supported.begin(), supported.end(), [&token_endpoint_auth_method](const web::json::value& token_endpoint_auth_method_) { return token_endpoint_auth_method_.as_string() == token_endpoint_auth_method.name; });
                                     if (supported.end() == found)
@@ -1011,8 +1011,8 @@ namespace nmos
                         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Authorization API Bearer token request unexpected unknown exception";
                     }
 
-                    // reaching here, there must be something has gone wrong with the Authorization Server
-                    // let select the next avaliable Authorization server
+                    // reaching here indicates something has gone wrong with the Authorization Server
+                    // so let's select the next available Authorization server
                     authorization_service_error = true;
 
                     model.notify();
@@ -1155,7 +1155,7 @@ namespace nmos
                 });
             }
 
-            // fetch authorization server metadata, such as endpoints use for client registration, token fetch and public keys fetch
+            // fetch authorization server metadata, such as endpoints used for client registration, token fetches and public keys fetches
             bool request_authorization_server_metadata(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, bool& authorization_service_error, nmos::load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization server metadata fetch";
@@ -1338,27 +1338,27 @@ namespace nmos
                         throw authorization_exception();
                     }
 
-                    // scope is optional, it may not be returned by the Authorization server, just insert it,
-                    // as it is required for the authorization support
+                    // scope is optional. If one has not be returned by the Authorization server,
+                    // insert one as it is required by authorization functionality.
                     if (!client_metadata.has_field(nmos::experimental::fields::scope))
                     {
                         client_metadata[nmos::experimental::fields::scope] = web::json::value::string(make_scope(nmos::experimental::authorization_scopes::from_settings(model.settings)));
                     }
-                    // grant_types is optional, it may not be returned by the Authorization server, just insert it,
-                    // as it is required for the authorization support
+                    // grant_types is optional. If it has not been returned by the Authorization server
+                    // insert it as it is required by authorization functionality.
                     if (!client_metadata.has_field(nmos::experimental::fields::grant_types))
                     {
                         client_metadata[nmos::experimental::fields::grant_types] = make_grant_types(grant_types_from_settings(model.settings));
                     }
-                    // token_endpoint_auth_method is optional, it may not be returning by the Authorization server, just insert it,
-                    // as it is required for the authorization support
+                    // token_endpoint_auth_method is optional. If it has not been returned by the Authorization server
+                    // insert it as it is required by the authorization functionality.
                     if (!client_metadata.has_field(nmos::experimental::fields::token_endpoint_auth_method))
                     {
                         client_metadata[nmos::experimental::fields::token_endpoint_auth_method] = web::json::value::string(token_endpoint_auth_method_from_settings(model.settings).name);
                     }
 
                     // store client metadata to settings
-                    // hmm, may store the only required fields
+                    // hmm, may store only the required fields
                     nmos::experimental::update_client_metadata(authorization_state, client_metadata);
 
                     // do callback to safely store the client metadata
@@ -1427,7 +1427,7 @@ namespace nmos
                 return !authorization_service_error && registered;
             }
 
-            // register client to the Authorization server
+            // register client with the Authorization server
             bool client_registration(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, nmos::experimental::save_authorization_client_handler save_authorization_client, slog::base_gate& gate)
             {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting authorization client registration";
@@ -1479,7 +1479,7 @@ namespace nmos
                 {
                     auto lock = model.write_lock();
 
-                    // check client_secret existence for confidential client
+                    // check client_secret exists for confidential client
                     if (client_metadata.has_string_field(nmos::experimental::fields::token_endpoint_auth_method))
                     {
                         if (((nmos::experimental::fields::token_endpoint_auth_method(client_metadata) == web::http::oauth2::experimental::token_endpoint_auth_methods::client_secret_basic.name)
@@ -1503,27 +1503,27 @@ namespace nmos
                         }
                     }
 
-                    // scope is optional, it may not be returned by the Authorization server, just insert it,
-                    // as it is required for the authorization support
+                    // scope is optional. If one has not be returned by the Authorization server,
+                    // insert one as it is required by authorization functionality.
                     if (!client_metadata.has_field(nmos::experimental::fields::scope))
                     {
                         client_metadata[nmos::experimental::fields::scope] = web::json::value::string(make_scope(nmos::experimental::authorization_scopes::from_settings(model.settings)));
                     }
-                    // grant_types is optional, it may not be returned by the Authorization server, just insert it,
-                    // as it is required for the authorization support
+                    // grant_types is optional. If it has not been returned by the Authorization server
+                    // insert it as it is required by authorization functionality.
                     if (!client_metadata.has_field(nmos::experimental::fields::grant_types))
                     {
                         client_metadata[nmos::experimental::fields::grant_types] = make_grant_types(grant_types_from_settings(model.settings));
                     }
-                    // token_endpoint_auth_method is optional, it may not be returning by the Authorization server, just insert it,
-                    // as it is required for the authorization support
+                    // token_endpoint_auth_method is optional. If it has not been returned by the Authorization server
+                    // insert it as it is required by the authorization functionality.
                     if (!client_metadata.has_field(nmos::experimental::fields::token_endpoint_auth_method))
                     {
                         client_metadata[nmos::experimental::fields::token_endpoint_auth_method] = web::json::value::string(token_endpoint_auth_method_from_settings(model.settings).name);
                     }
 
                     // store client metadata to settings
-                    // hmm, may store the only required fields
+                    // hmm, may store only the required fields
                     nmos::experimental::update_client_metadata(authorization_state, client_metadata);
 
                     // hmm, do a callback allowing user to store the client credentials
@@ -1591,7 +1591,7 @@ namespace nmos
                 return !authorization_service_error && registered;
             }
 
-            // start authorization code workflow
+            // start authorization code flow
             // see https://tools.ietf.org/html/rfc8252#section-4.1
             bool authorization_code_flow(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::experimental::request_authorization_code_handler request_authorization_code, slog::base_gate& gate)
             {
@@ -1616,8 +1616,8 @@ namespace nmos
                 auto access_token_received = false;
                 auto authorization_flow = nmos::experimental::authorization_state::request_code;
 
-                // start the authorization code grant workflow, the authorization URI is required to
-                // be loaded in the web browser to kick start the authorization code grant workflow
+                // start the authorization code flow, the authorization URI is required to
+                // be loaded in the web browser to kick start the authorization code grant flow
                 if (request_authorization_code)
                 {
                     nmos::with_write_lock(authorization_state.mutex, [&]
@@ -1630,14 +1630,14 @@ namespace nmos
                     const auto& authorization_code_flow_max = nmos::experimental::fields::authorization_code_flow_max(settings);
                     if (authorization_code_flow_max > -1)
                     {
-                        // wait access token with timeout
+                        // wait for access token with timeout
                         if (!model.wait_for(lock, std::chrono::seconds(authorization_code_flow_max), [&] {
                             authorization_flow = with_read_lock(authorization_state.mutex, [&] { return authorization_state.authorization_flow; });
                             return shutdown || nmos::experimental::authorization_state::failed == authorization_flow || nmos::experimental::authorization_state::access_token_received == authorization_flow; }))
                         {
-                            // authorization code workflow timeout
+                            // authorization code flow timeout
                             authorization_service_error = true;
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code workflow timeout";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code flow timeout";
                         }
                         else if (nmos::experimental::authorization_state::access_token_received == authorization_flow)
                         {
@@ -1647,14 +1647,14 @@ namespace nmos
                         }
                         else
                         {
-                            // authorization code workflow failure
+                            // authorization code flow failure
                             authorization_service_error = true;
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code workflow failure";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code flow failure";
                         }
                     }
                     else
                     {
-                        // wait access token without timeout
+                        // wait for access token without timeout
                         condition.wait(lock, [&] {
                             authorization_flow = with_read_lock(authorization_state.mutex, [&] { return authorization_state.authorization_flow; });
                             return shutdown || nmos::experimental::authorization_state::failed == authorization_flow || nmos::experimental::authorization_state::access_token_received == authorization_flow; });
@@ -1667,17 +1667,17 @@ namespace nmos
                         }
                         else
                         {
-                            // authorization code workflow failure
+                            // authorization code flow failure
                             authorization_service_error = true;
-                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code workflow failure";
+                            slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization code flow failure";
                         }
                     }
                 }
                 else
                 {
-                    // no handler to start the authorization code grant workflow
+                    // no handler to start the authorization code grant flow
                     authorization_service_error = true;
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "No authorization code workflow handler";
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "No authorization code flow handler";
                 }
 
                 model.notify();
@@ -1688,7 +1688,7 @@ namespace nmos
             // fetch the bearer access token for the required scope(s) to access the protected APIs
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.2._Behaviour_-_Clients.html#requesting-a-token
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.2._Behaviour_-_Clients.html#accessing-protected-resources
-            // fetch the token issuer(authorization server)'s public keys fpr validating the incoming bearer access token
+            // fetch the token issuer(authorization server)'s public keys for validating the incoming bearer access token
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
             void authorization_operation(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, load_ca_certificates_handler load_ca_certificates, load_rsa_private_keys_handler load_rsa_private_keys, bool immediate_token_fetch, slog::base_gate& gate)
             {

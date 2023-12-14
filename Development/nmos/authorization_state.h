@@ -39,7 +39,7 @@ namespace nmos
 
         struct authorization_state
         {
-            // mutex to be used to protect the members of the settings from simultaneous access by multiple threads
+            // mutex to be used to protect the members of the authorization_state from simultaneous access by multiple threads
             mutable nmos::mutex mutex;
 
             // authorization code flow settings
@@ -64,7 +64,7 @@ namespace nmos
 
             // map of issuer (authorization server) to jwt_validator set for access token validation
             nmos::experimental::issuers issuers;
-            // the authorization server which is currently connected to
+            // currently connected authorization server
             web::uri authorization_server_uri;
 
             // OAuth 2.0 bearer token to access authorizaton protected APIs

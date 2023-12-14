@@ -822,12 +822,12 @@ namespace nmos
                 utility::string_t error_description{};
                 // If the request lacks any authentication information (e.g., the client
                 // was unaware that authentication is necessary or attempted using an
-                //    unsupported authentication method), the resource server SHOULD NOT
-                //    include an error code or other error information.
+                // unsupported authentication method), the resource server SHOULD NOT
+                // include an error code or other error information.
                 //
-                //    For example :
+                // For example :
                 //
-                // HTTP / 1.1 401 Unauthorized
+                //    HTTP / 1.1 401 Unauthorized
                 //    WWW - Authenticate : Bearer realm = "example"
                 // see https://tools.ietf.org/html/rfc6750#section-3.1
                 if (error.value != nmos::experimental::authorization_error::without_authentication)

@@ -56,7 +56,7 @@ namespace nmos
             // see https://tools.ietf.org/html/rfc7591#section-3.1
             bool client_registration(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, nmos::experimental::save_authorization_client_handler client_registered, slog::base_gate& gate);
 
-            // start authorization code workflow
+            // start authorization code flow
             // see https://tools.ietf.org/html/rfc8252#section-4.1
             bool authorization_code_flow(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::experimental::request_authorization_code_handler request_authorization_code, slog::base_gate& gate);
 
@@ -65,7 +65,7 @@ namespace nmos
             // fetch the bearer access token for the required scope(s) to access the protected APIs
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.2._Behaviour_-_Clients.html#requesting-a-token
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.2._Behaviour_-_Clients.html#accessing-protected-resources
-            // fetch the Token Issuer(authorization server)'s public keys fpr validating the incoming bearer access token
+            // fetch the Token Issuer(authorization server)'s public keys for validating the incoming bearer access token
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
             void authorization_operation(nmos::base_model& model, nmos::experimental::authorization_state& authorization_state, nmos::load_ca_certificates_handler load_ca_certificates, load_rsa_private_keys_handler load_rsa_private_keys, bool immediate_token_fetch, slog::base_gate& gate);
 

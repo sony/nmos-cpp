@@ -80,7 +80,7 @@ namespace nmos
             std::default_random_engine discovery_backoff_engine(discovery_backoff_seeder);
             double discovery_backoff = 0;
 
-            // load authorization clients metadata to cache
+            // load authorization client's metadata to cache
             if (load_authorization_clients)
             {
                 const auto auth_clients = load_authorization_clients();
@@ -138,10 +138,10 @@ namespace nmos
                         // reterive client metadata from cache
                         const auto client_metadata = nmos::experimental::get_client_metadata(authorization_state);
 
-                        // is it not a scopeless client (where scopeless client doesn't access any protected APIs, i.e. doesn't require to register to Authorization server)
+                        // does the client have a scope? A client without a scope is one that doesn't access any protected APIs (i.e. client isn't required to register with Authorization server).
                         if (with_read_lock(model.mutex, [&] { return details::scopes(client_metadata, nmos::experimental::authorization_scopes::from_settings(model.settings)).size(); }))
                         {
-                            // is the client already registered to Authorization server, i.e. found it in cache
+                            // is the client already registered to Authorization server? (i.e. found it in cache).
                             if (!client_metadata.is_null())
                             {
                                 // no token or token expired
@@ -180,8 +180,8 @@ namespace nmos
                                 {
                                     // if OpenID Connect Authorization server is used, client status can be obtained via the Client Configuration Endpoint
                                     // "The Client Configuration Endpoint is an OAuth 2.0 Protected Resource that MAY be provisioned by the server for a
-                                    //  specific Client to be able to view and update its registered information."
-                                    // see 3.2 of https://openid.net/specs/openid-connect-registration-1_0.html#ClientConfigurationEndpoint
+                                    // specific Client to be able to view and update its registered information."
+                                    // see https://openid.net/specs/openid-connect-registration-1_0.html#ClientConfigurationEndpoint
                                     // registration_access_token
                                     //     OPTIONAL. Registration Access Token that can be used at the Client Configuration Endpoint to perform subsequent operations upon the
                                     //               Client registration.
@@ -208,7 +208,7 @@ namespace nmos
                                     }
                                     else
                                     {
-                                        // no registration_access_token and registration_client_uri found, treat it has connected with a non-OpenID Connect server
+                                        // no registration_access_token and registration_client_uri found, treat it as if connected with a non-OpenID Connect server
                                         // start grant flow based on what been defined in the settings
                                         // hmm, maybe use of the OpenID API to extend the client lifespan instead of re-registration
                                         mode = is_client_expired() ? client_registration // client registration
@@ -227,13 +227,13 @@ namespace nmos
                             }
                             else
                             {
-                                // client has not been registered to the Authorization server yet
+                                // client has not been registered with the Authorization server yet
                                 mode = client_registration;
                             }
                         }
                         else
                         {
-                            // scope-less client, not require to obtain access token
+                            // client does not have a scope therefore not require to obtain access token
                             mode = authorization_operation;
                         }
                     }
@@ -278,10 +278,12 @@ namespace nmos
 
                 case authorization_operation:
                     // fetch public keys
-                    // fetch access token in 1/2 token life time interval
+                    // fetch access token within 1/2 token life time interval.
+                    // authorization_operation will block until an error occurs, or shutdown
+                    // on shutdown, enclosing for loop will exit
                     details::authorization_operation(model, authorization_state, load_ca_certificates, load_rsa_private_keys, false, gate);
 
-                    // reaching here, there must be failure within the authorization operation,
+                    // reaching here indicates there has been a failure within the authorization operation,
                     // start the authorization sequence again on next available Authorization server
                     authorization_service_error = true;
                     mode = request_authorization_server_metadata;
@@ -290,9 +292,12 @@ namespace nmos
                 case authorization_operation_with_immediate_token_fetch:
                     // fetch public keys
                     // immediately fetch access token
+                    // authorization_operation will block until an error occurs, or shutdown
+                    // on shutdown, enclosing for loop will exit
+
                     details::authorization_operation(model, authorization_state, load_ca_certificates, load_rsa_private_keys, true, gate);
 
-                    // reaching here, there must be failure within the authorization operation,
+                    // reaching here indicates there has been a failure within the authorization operation,
                     // start the authorization sequence again on next available Authorization server
                     authorization_service_error = true;
                     mode = request_authorization_server_metadata;

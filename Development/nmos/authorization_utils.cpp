@@ -77,7 +77,7 @@ namespace nmos
             // get issuer version
             api_version version(const web::uri& issuer)
             {
-                // issuer uri should be like "https://server.example.com/{version}
+                // issuer uri should be of the form "https://server.example.com/{version}"
                 api_version ver{ api_version{} };
                 if (!issuer.is_path_empty())
                 {

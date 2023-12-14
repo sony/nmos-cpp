@@ -20,7 +20,7 @@ namespace web
                 //  "application/x-www-form-urlencoded" format"
                 // see https://tools.ietf.org/html/rfc6749#section-4.1.2.1
 
-                // for diret error
+                // for direct error:
                 // If the access token request is invalid or unauthorized
                 // "The authorization server responds with an HTTP 400 (Bad Request)
                 // status code(unless specified otherwise) and includes the following

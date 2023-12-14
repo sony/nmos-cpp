@@ -123,7 +123,7 @@ namespace nmos
     }
 
     // construct callback to load RSA private keys from file based on settings, see nmos/certificate_settings.h
-    // require for OAuth client which is using Private Key JWT as the requested authentication method for the token endpoint
+    // required for OAuth client which is using Private Key JWT as the requested authentication method for the token endpoint
     load_rsa_private_keys_handler make_load_rsa_private_keys_handler(const nmos::settings& settings, slog::base_gate& gate)
     {
         // load the server private keys from files

@@ -36,7 +36,7 @@ namespace nmos
             {
                 succeeded,
                 without_authentication, // failure: access protected resource request without authentication
-                insufficient_scope, // failure: access protected resource request higher privileges
+                insufficient_scope, // failure: access protected resource request requires higher privileges
                 no_matching_keys, // failure: no matching keys for the token validation
                 failed  // failure: access protected resource request with authentication but failed
             };
