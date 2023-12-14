@@ -20,7 +20,7 @@
     cd nmos-testing
 
     # Configure the Testing Tool so all APIs are tested with TLS and authorization
-    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+    printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = ${{ matrix.enable_authorization }}\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
     # Set the DNS-SD mode
     printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
     # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
