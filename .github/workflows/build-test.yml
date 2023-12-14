@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,8 +22,15 @@ jobs:
         use_conan: [true]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
+		enable_authorization: [False, True]
         exclude:
           # install_mdns is only meaningful on Linux
+          - os: macos-11
+			enable_authorization: False
+          - os: windows-2019
+			enable_authorization: False
+          - os: ubuntu-20.04
+			enable_authorization: False
           - os: macos-11
             install_mdns: true
           - os: windows-2019
@@ -38,17 +45,32 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
+			enable_authorization: False
         include:
           - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
+			enable_authorization: True
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: true
+            dns_sd_mode: multicast
+			enable_authorization: False
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
+			enable_authorization: True
+          - os: ubuntu-22.04
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+			enable_authorization: False
 
     steps:
     - uses: actions/checkout@v3
@@ -345,7 +367,7 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = ${{ matrix.enable_authorization }}\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
@@ -874,7 +896,7 @@ jobs:
         cd nmos-testing
 
         # Configure the Testing Tool so all APIs are tested with TLS and authorization
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.ENABLE_AUTH = ${{ matrix.enable_authorization }}\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
         # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
