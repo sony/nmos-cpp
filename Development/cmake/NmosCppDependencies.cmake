@@ -505,8 +505,8 @@ else()
         nmos-cpp::compile-settings
         )
     target_include_directories(jwt-cpp PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party>
-        $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}/third_party>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
         )
 endif()
 
