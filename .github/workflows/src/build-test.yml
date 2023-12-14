@@ -45,6 +45,7 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
+            enable_authorization: true
         include:
           - os: windows-2022
             install_mdns: false
