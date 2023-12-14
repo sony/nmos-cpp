@@ -1066,7 +1066,6 @@ add_library(
     ${NMOS_CPP_CPPREST_HEADERS}
     ${NMOS_CPP_NMOS_SOURCES}
     ${NMOS_CPP_NMOS_HEADERS}
-    ${NMOS_CPP_JWT_HEADERS}
     ${NMOS_CPP_JWK_HEADERS}
     ${NMOS_CPP_PPLX_SOURCES}
     ${NMOS_CPP_PPLX_HEADERS}
@@ -1088,7 +1087,6 @@ source_group("ssl\\Source Files" FILES ${NMOS_CPP_SSL_SOURCES})
 
 source_group("bst\\Header Files" FILES ${NMOS_CPP_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_CPPREST_HEADERS})
-source_group("jwt\\Header Files" FILES ${NMOS_CPP_JWT_HEADERS})
 source_group("jwk\\Header Files" FILES ${NMOS_CPP_JWK_HEADERS})
 source_group("nmos\\Header Files" FILES ${NMOS_CPP_NMOS_HEADERS})
 source_group("pplx\\Header Files" FILES ${NMOS_CPP_PPLX_HEADERS})
