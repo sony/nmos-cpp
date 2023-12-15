@@ -410,7 +410,7 @@ namespace nmos
 
             // authorization_flow [node]: used to specify the authorization flow for the registered scopes
             // supported flow are authorization_code and client_credentials
-            // client_credentials SHOULD only be used for NO user interface node/registry, otherwise authorization_code MUST be used
+            // client_credentials SHOULD only be used when the node/registry has NO user interface, otherwise authorization_code MUST be used
             const web::json::field_as_string_or authorization_flow{ U("authorization_flow"), U("authorization_code") };
 
             // authorization_redirect_port [node]: redirect URL port for listening authorization code, used for client registration
