@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
             }
         }
 
-// only implement communication with Authorization server if IS-10 is required
+// only implement communication with Authorization server if IS-10/BCP-003-02 is required
         if (nmos::experimental::fields::client_authorization(node_model.settings) || nmos::experimental::fields::server_authorization(node_model.settings))
         {
             // IS-10 client registration, fetch access token, and fetch authorization server token public key
