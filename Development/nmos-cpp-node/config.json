@@ -325,7 +325,7 @@
     // server_authorization [registry, node]: whether server should use authorization to protect its APIs
     //"server_authorization": false,
 
-    // authorization_code_flow_max [node]: timeout for the authorization code workflow (in seconds)
+    // authorization_code_flow_max [node]: timeout for the authorization code flow (in seconds)
     // No timeout if value is set to -1, default to 30 seconds
     //"authorization_code_flow_max": 30,
 
