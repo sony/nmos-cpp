@@ -11,32 +11,16 @@ namespace Concurrency // since namespace pplx = Concurrency
 namespace pplx
 #endif
 {
-    /// <summary>
-    ///     Creates a task that completes after a specified amount of time.
-    /// </summary>
-    /// <param name="milliseconds">
-    ///     The number of milliseconds after which the task should complete.
-    /// </param>
-    /// <param name="token">
-    ///     Cancellation token for cancellation of this operation.
-    /// </param>
-    /// <remarks>
-    ///     Because the scheduler is cooperative in nature, the delay before the task completes could be longer than the specified amount of time.
-    /// </remarks>
+    // Creates a task that completes after a specified amount of time.
+    // milliseconds: The number of milliseconds after which the task should complete.
+    // token: Cancellation token for cancellation of this operation.
+    // Because the scheduler is cooperative in nature, the delay before the task completes could be longer than the specified amount of time.
     pplx::task<void> complete_after(unsigned int milliseconds, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
-    /// <summary>
-    ///     Creates a task that completes after a specified amount of time.
-    /// </summary>
-    /// <param name="duration">
-    ///     The amount of time (milliseconds and up) after which the task should complete.
-    /// </param>
-    /// <param name="token">
-    ///     Cancellation token for cancellation of this operation.
-    /// </param>
-    /// <remarks>
-    ///     Because the scheduler is cooperative in nature, the delay before the task completes could be longer than the specified amount of time.
-    /// </remarks>
+    // Creates a task that completes after a specified amount of time.
+    // duration: The amount of time (milliseconds and up) after which the task should complete.
+    // token: Cancellation token for cancellation of this operation.
+    // Because the scheduler is cooperative in nature, the delay before the task completes could be longer than the specified amount of time.
     template <typename Rep, typename Period>
     inline pplx::task<void> complete_after(const std::chrono::duration<Rep, Period>& duration, const pplx::cancellation_token& token = pplx::cancellation_token::none())
     {
@@ -45,42 +29,24 @@ namespace pplx
             : pplx::task_from_result();
     }
 
-    /// <summary>
-    ///     Creates a task that completes at a specified time.
-    /// </summary>
-    /// <param name="time">
-    ///     The time point at which the task should complete.
-    /// </param>
-    /// <param name="token">
-    ///     Cancellation token for cancellation of this operation.
-    /// </param>
-    /// <remarks>
-    ///     Because the scheduler is cooperative in nature, the time at which the task completes could be after the specified time.
-    /// </remarks>
+    // Creates a task that completes at a specified time.
+    // time: The time point at which the task should complete.
+    // token: Cancellation token for cancellation of this operation.
+    // Because the scheduler is cooperative in nature, the time at which the task completes could be after the specified time.
     template <typename Clock, typename Duration = typename Clock::duration>
     inline pplx::task<void> complete_at(const std::chrono::time_point<Clock, Duration>& time, const pplx::cancellation_token& token = pplx::cancellation_token::none())
     {
         return complete_after(time - Clock::now(), token);
     }
 
-    /// <summary>
-    ///     Creates a task for an asynchronous do-while loop. Executes a task repeatedly, until the returned condition value becomes false.
-    /// </summary>
-    /// <param name="create_iteration_task">
-    ///     This function should create a task that performs the loop iteration and returns the Boolean value of the loop condition.
-    /// </param>
-    /// <param name="token">
-    ///     Cancellation token for cancellation of the do-while loop.
-    /// </param>
+    // Creates a task for an asynchronous do-while loop. Executes a task repeatedly, until the returned condition value becomes false.
+    // create_iteration_task: This function should create a task that performs the loop iteration and returns the Boolean value of the loop condition.
+    // token: Cancellation token for cancellation of the do-while loop.
     pplx::task<void> do_while(const std::function<pplx::task<bool>()>& create_iteration_task, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
-    /// <summary>
-    ///     Returns true if the task is default constructed.
-    /// </summary>
-    /// <remarks>
-    ///     A default constructed task cannot be used until you assign a valid task to it. Methods such as <c>get</c>, <c>wait</c> or <c>then</c>
-    ///     will throw an <see cref="invalid_argument Class">invalid_argument</see> exception when called on a default constructed task.
-    /// </remarks>
+    // Returns true if the task is default constructed.
+    // A default constructed task cannot be used until you assign a valid task to it. Methods such as <c>get</c>, <c>wait</c> or <c>then</c>
+    // will throw an <see cref="invalid_argument Class">invalid_argument</see> exception when called on a default constructed task.
     template <typename ReturnType>
     bool empty(const pplx::task<ReturnType>& task)
     {
@@ -99,7 +65,7 @@ namespace pplx
             catch (...) {}
         }
     }
-        
+
     struct exception_observer
     {
         template <typename ContinuationReturnType>
@@ -109,13 +75,9 @@ namespace pplx
         }
     };
 
-    /// <summary>
-    ///     Silently 'observe' any exception thrown from a task.
-    /// </summary>
-    /// <remarks>
-    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
-    ///     Add this as a continuation to silently swallow all exceptions.
-    /// </remarks>
+    // Silently 'observe' any exception thrown from a task.
+    // Exceptions that are unobserved when a task is destructed will terminate the process.
+    // Add this as a continuation to silently swallow all exceptions.
     inline exception_observer observe_exception()
     {
         return exception_observer();
@@ -153,26 +115,18 @@ namespace pplx
         std::vector<pplx::task<ReturnType>> tasks;
     };
 
-    /// <summary>
-    ///     Silently 'observe' all exceptions thrown from a range of tasks.
-    /// </summary>
-    /// <remarks>
-    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
-    ///     Add this as a continuation to silently swallow all exceptions.
-    /// </remarks>
+    // Silently 'observe' all exceptions thrown from a range of tasks.
+    // Exceptions that are unobserved when a task is destructed will terminate the process.
+    // Add this as a continuation to silently swallow all exceptions.
     template <typename InputRange, typename ReturnType = typename std::iterator_traits<decltype(std::declval<InputRange>().begin())>::value_type::result_type>
     inline exceptions_observer<ReturnType> observe_exceptions(InputRange&& tasks)
     {
         return exceptions_observer<ReturnType>(std::forward<InputRange>(tasks));
     }
 
-    /// <summary>
-    ///     Silently 'observe' all exceptions thrown from a range of tasks.
-    /// </summary>
-    /// <remarks>
-    ///     Exceptions that are unobserved when a task is destructed will terminate the process.
-    ///     Add this as a continuation to silently swallow all exceptions.
-    /// </remarks>
+    // Silently 'observe' all exceptions thrown from a range of tasks.
+    // Exceptions that are unobserved when a task is destructed will terminate the process.
+    // Add this as a continuation to silently swallow all exceptions.
     template <typename InputIterator, typename ReturnType = typename std::iterator_traits<InputIterator>::value_type::result_type>
     inline exceptions_observer<ReturnType> observe_exceptions(InputIterator&& first, InputIterator&& last)
     {
@@ -244,9 +198,7 @@ namespace pplx
         }
     }
 
-    /// <summary>
-    ///     RAII helper for classes that have asynchronous open/close member functions.
-    /// </summary>
+    // RAII helper for classes that have asynchronous open/close member functions.
     template <typename T>
     struct open_close_guard
     {

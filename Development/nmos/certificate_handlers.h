@@ -65,6 +65,9 @@ namespace nmos
     // this callback should not throw exceptions
     typedef std::function<utility::string_t()> load_dh_param_handler;
 
+    // callback to supply a list of RSA private keys
+    typedef std::function<std::vector<utility::string_t>()> load_rsa_private_keys_handler;
+
     // construct callback to load certification authorities from file based on settings, see nmos/certificate_settings.h
     load_ca_certificates_handler make_load_ca_certificates_handler(const nmos::settings& settings, slog::base_gate& gate);
 
@@ -73,6 +76,9 @@ namespace nmos
 
     // construct callback to load Diffie-Hellman parameters for ephemeral key exchange support from file based on settings, see nmos/certificate_settings.h
     load_dh_param_handler make_load_dh_param_handler(const nmos::settings& settings, slog::base_gate& gate);
+
+    // construct callback to load server RSA private key files based on settings, see nmos/certificate_settings.h
+    load_rsa_private_keys_handler make_load_rsa_private_keys_handler(const nmos::settings& settings, slog::base_gate& gate);
 }
 
 #endif

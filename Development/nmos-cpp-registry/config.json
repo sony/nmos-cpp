@@ -34,11 +34,18 @@
     // is09_versions [registry, node]: used to specify the enabled API versions (advertised via 'api_ver') for a version-locked configuration
     //"is09_versions": ["v1.0"],
 
+    // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
+    //"is10_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
+    // authorization_highest_pri, authorization_lowest_pri [registry, node]: used to specify the (inclusive) range of suitable 'pri' values of discovered Authorization APIs, to avoid development and live systems colliding
+    //"authorization_highest_pri": 0,
+    //"authorization_lowest_pri": 2147483647,
+
     // discovery_backoff_min/discovery_backoff_max/discovery_backoff_factor [registry, node]: used to back-off after errors interacting with all discoverable service instances
-    // e.g. Registration APIs, System APIs, or OCSP servers
+    // e.g. Registration APIs, System APIs, Authorization APIs, or OCSP servers
     //"discovery_backoff_min": 1,
     //"discovery_backoff_max": 30,
     //"discovery_backoff_factor": 1.5,
@@ -238,6 +245,39 @@
 
     // ocsp_request_max [registry, node]: timeout for interactions with the OCSP server
     //"ocsp_request_max": 30,
+
+    // authorization_address [registry, node]: IP address or host name used to construct request URLs for the Authorization API (if not discovered via DNS-SD)
+    //"authorization_address": ip-address-string,
+
+    // authorization_port [registry, node]: used to construct request URLs for the authorization server's Authorization API (if not discovered via DNS-SD)
+    //"authorization_port" 443,
+
+    // authorization_version [registry, node]: used to construct request URLs for Authorization API (if not discovered via DNS-SD)
+    //"authorization_version": "v1.0",
+
+    // authorization_selector [registry, node]: used to construct request URLs for the authorization API (if not discovered via DNS-SD)
+    //"authorization_selector", "",
+
+    // authorization_request_max [registry, node]: timeout for interactions with the Authorization API /certs & /token endpoints
+    //"authorization_request_max": 30,
+
+    // fetch_authorization_public_keys_interval_min/fetch_authorization_public_keys_interval_max [registry, node]: used to poll for Authorization API public keys changes; default is about one hour
+    // "Resource Servers (Nodes) SHOULD seek to fetch public keys from the Authorization Server at least once every hour. Resource Servers MUST vary their retrieval
+    // interval at random by up to at least one minute to avoid overloading the Authorization Server due to Resource Servers synchronising their retrieval time."
+    // See https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.1._Behaviour_-_Authorization_Servers.html#authorization-server-public-keys
+    //"fetch_authorization_public_keys_interval_min": 3600,
+    //"fetch_authorization_public_keys_interval_max": 3660,
+
+    // server_authorization [registry, node]: whether server should use authorization to protect its APIs
+    //"server_authorization": false,
+
+    // retry_after [registry, node]: used to specify the HTTP Retry-After header to indicate the number of seconds when the client may retry its request again, default to 5 seconds
+    // "Where a Resource Server has no matching public key for a given token, it SHOULD attempt to obtain the missing public key via the the token iss
+    // claim as specified in RFC 8414 section 3. In cases where the Resource Server needs to fetch a public key from a remote Authorization Server it
+    // MAY temporarily respond with an HTTP 503 code in order to avoid blocking the incoming authorized request. When a HTTP 503 code is used, the Resource
+    // Server SHOULD include an HTTP Retry-After header to indicate when the client may retry its request.
+    // If the Resource Server fails to verify a token using all public keys available it MUST reject the token."
+    //"service_unavailable_retry_after": 5,
 
     "don't worry": "about trailing commas"
 }

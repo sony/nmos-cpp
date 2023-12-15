@@ -1,5 +1,7 @@
 #include <fstream>
 #include <iostream>
+#include "nmos/authorization_behaviour.h"
+#include "nmos/authorization_state.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
 #include "nmos/ocsp_behaviour.h"
@@ -104,9 +106,20 @@ int main(int argc, char* argv[])
         nmos::experimental::ocsp_state ocsp_state;
         if (nmos::experimental::fields::server_secure(registry_model.settings))
         {
-            registry_implementation.on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
+            registry_implementation
+                .on_get_ocsp_response(nmos::make_ocsp_response_handler(ocsp_state, gate));
         }
 #endif
+
+// only implement communication with Authorization server if IS-10/BCP-003-02 is required
+// cf. preprocessor conditions in nmos::make_registration_api, nmos::make_query_api, make_query_ws_validate_handler
+        nmos::experimental::authorization_state authorization_state;
+        if (nmos::experimental::fields::server_authorization(registry_model.settings))
+        {
+            registry_implementation
+                .on_validate_authorization(nmos::experimental::make_validate_authorization_handler(registry_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate), gate))
+                .on_ws_validate_authorization(nmos::experimental::make_ws_validate_authorization_handler(registry_model, authorization_state, nmos::experimental::make_validate_authorization_token_handler(authorization_state, gate),  gate));
+        }
 
         // Set up the registry server
 
@@ -134,6 +147,14 @@ int main(int argc, char* argv[])
             registry_server.thread_functions.push_back([&, load_ca_certificates, load_server_certificates] { nmos::ocsp_behaviour_thread(registry_model, ocsp_state, load_ca_certificates, load_server_certificates, gate); });
         }
 #endif
+
+// only implement communication with Authorization server if IS-10/BCP-003-02 is required
+        if (nmos::experimental::fields::server_authorization(registry_model.settings))
+        {
+            auto load_ca_certificates = registry_implementation.load_ca_certificates;
+            registry_server.thread_functions.push_back([&, load_ca_certificates] { authorization_behaviour_thread(registry_model, authorization_state, load_ca_certificates, {}, {}, {}, {}, gate); });
+            registry_server.thread_functions.push_back([&, load_ca_certificates] { authorization_token_issuer_thread(registry_model, authorization_state, load_ca_certificates, gate); });
+        }
 
         // Open the API ports and start up registry management
 

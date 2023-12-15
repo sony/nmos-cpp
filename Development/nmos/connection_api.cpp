@@ -24,7 +24,7 @@ namespace nmos
 {
     web::http::experimental::listener::api_router make_unmounted_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -42,6 +42,12 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+        if (validate_authorization)
+        {
+            connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), validate_authorization);
+            connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/.*"), validate_authorization);
+        }
+
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is05_versions::from_settings(model.settings); });
         connection_api.support(U("/x-nmos/") + nmos::patterns::connection_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
         {
@@ -54,9 +60,14 @@ namespace nmos
         return connection_api;
     }
 
+    web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, transport_file_parser parse_transport_file, details::connection_resource_patch_validator validate_merged, slog::base_gate& gate)
+    {
+        return make_connection_api(model, parse_transport_file, validate_merged, {}, gate);
+    }
+
     web::http::experimental::listener::api_router make_connection_api(nmos::node_model& model, slog::base_gate& gate)
     {
-        return make_connection_api(model, &parse_rtp_transport_file, {}, gate);
+        return make_connection_api(model, &parse_rtp_transport_file, {}, {}, gate);
     }
 
     inline bool is_connection_api_permitted_downgrade(const nmos::resource& resource, const nmos::resource& connection_resource, const nmos::api_version& version)

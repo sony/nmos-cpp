@@ -9,6 +9,7 @@
 #include "nmos/is08_schemas/is08_schemas.h"
 #include "nmos/is09_versions.h"
 #include "nmos/is09_schemas/is09_schemas.h"
+#include "nmos/is10_schemas/is10_schemas.h"
 #include "nmos/type.h"
 
 namespace nmos
@@ -124,6 +125,28 @@ namespace nmos
             const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
             const web::uri systemapi_global_schema_uri = make_schema_uri(tag, _XPLATSTR("global.json"));
+        }
+    }
+
+    namespace is10_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-authorization/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        namespace v1_0
+        {
+            using namespace nmos::is10_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0.x"));
+
+            const web::uri authapi_auth_metadata_schema_uri = make_schema_uri(tag, _XPLATSTR("auth_metadata.json"));
+            const web::uri authapi_jwks_response_schema_uri = make_schema_uri(tag, _XPLATSTR("jwks_response.json"));
+            const web::uri authapi_register_client_error_response_uri = make_schema_uri(tag, _XPLATSTR("register_client_error_response.json"));
+            const web::uri authapi_register_client_response_uri = make_schema_uri(tag, _XPLATSTR("register_client_response.json"));
+            const web::uri authapi_token_error_response_uri = make_schema_uri(tag, _XPLATSTR("token_error_response.json"));
+            const web::uri authapi_token_response_schema_uri = make_schema_uri(tag, _XPLATSTR("token_response.json"));
+            const web::uri authapi_token_schema_schema_uri = make_schema_uri(tag, _XPLATSTR("token_schema.json"));
         }
     }
 }
@@ -310,6 +333,24 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is10_schemas()
+        {
+            using namespace nmos::is10_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("auth_metadata.json")), make_schema(v1_0::auth_metadata) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("jwks_response.json")), make_schema(v1_0::jwks_response) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("jwks_schema.json")), make_schema(v1_0::jwks_schema) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("register_client_error_response.json")), make_schema(v1_0::register_client_error_response) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("register_client_response.json")), make_schema(v1_0::register_client_response) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("token_error_response.json")), make_schema(v1_0::token_error_response) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("token_response.json")), make_schema(v1_0::token_response) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("token_schema.json")), make_schema(v1_0::token_schema) }
+            };
+        }
+
         inline void merge(std::map<web::uri, web::json::value>& to, std::map<web::uri, web::json::value>&& from)
         {
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
@@ -321,6 +362,7 @@ namespace nmos
             merge(result, make_is05_schemas());
             merge(result, make_is08_schemas());
             merge(result, make_is09_schemas());
+            merge(result, make_is10_schemas());
             return result;
         }
 
@@ -380,6 +422,36 @@ namespace nmos
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version)
         {
             return is08_schemas::v1_0::map_activations_post_request_uri;
+        }
+
+        web::uri make_authapi_auth_metadata_schema_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_auth_metadata_schema_uri;
+        }
+
+        web::uri make_authapi_jwks_response_schema_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_jwks_response_schema_uri;
+        }
+
+        web::uri make_authapi_register_client_response_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_register_client_response_uri;
+        }
+
+        web::uri make_authapi_token_error_response_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_token_error_response_uri;
+        }
+
+        web::uri make_authapi_token_schema_schema_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_token_schema_schema_uri;
+        }
+
+        web::uri make_authapi_token_response_schema_uri(const nmos::api_version& version)
+        {
+            return is10_schemas::v1_0::authapi_token_response_schema_uri;
         }
 
         // load the json schema for the specified base URI

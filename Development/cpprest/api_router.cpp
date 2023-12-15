@@ -198,6 +198,11 @@ namespace web
                     impl->insert(impl->routes.end(), details::match_prefix, route_pattern, any_method, all_handler);
                 }
 
+                void api_router::pop_back()
+                {
+                    impl->routes.pop_back();
+                }
+
                 void api_router::set_exception_handler(route_handler handler)
                 {
                     impl->exception_handler = handler;

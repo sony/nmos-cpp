@@ -2,6 +2,7 @@
 #define NMOS_NODE_BEHAVIOUR_H
 
 #include <functional>
+#include "nmos/authorization_handlers.h"
 #include "nmos/certificate_handlers.h"
 
 namespace web
@@ -35,11 +36,13 @@ namespace nmos
 
     // uses the default DNS-SD implementation
     // callbacks from this function are called with the model locked, and may read or write directly to the model
+    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate);
     void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, slog::base_gate& gate);
 
     // uses the specified DNS-SD implementation
     // callbacks from this function are called with the model locked, and may read or write directly to the model
-    void node_behaviour_thread(nmos::model& model, registration_handler registration_changed, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
+    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
+    void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, registration_handler registration_changed, mdns::service_advertiser& advertiser, mdns::service_discovery& discovery, slog::base_gate& gate);
 
     // uses the default DNS-SD implementation
     void node_behaviour_thread(nmos::model& model, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
