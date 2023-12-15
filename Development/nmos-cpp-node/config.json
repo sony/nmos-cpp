@@ -342,10 +342,11 @@
 
     // authorization_scopes [node]: used to specify the supported scopes for client registration
     // supported scopes are registration, query, node, connection, events and channelmapping
-    //"authorization_scopes": array-of-scope-string,
+    //"authorization_scopes": [ "registration" ],
 
     // token_endpoint_auth_method [node]: String indicator of the requested authentication method for the token endpoint
     // supported methods are none, client_secret_basic and private_key_jwt, default to client_secret_basic, where none is used for public client
+    // when using private_key_jwt, the JWT is created and signed by the node's private key
     //"token_endpoint_auth_method": "client_secret_basic",
 
     // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration

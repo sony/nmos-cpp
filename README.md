@@ -14,6 +14,7 @@ This repository contains an implementation of the [AMWA Networked Media Open Spe
 - [AMWA BCP-002-01 NMOS Grouping Recommendations - Natural Grouping](https://specs.amwa.tv/bcp-002-01/)
 - [AMWA BCP-002-02 NMOS Asset Distinguishing Information](https://specs.amwa.tv/bcp-002-02/)
 - [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/)
+- [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/)
 - [AMWA BCP-004-01 NMOS Receiver Capabilities](https://specs.amwa.tv/bcp-004-01/)
 - [AMWA BCP-006-01 NMOS With JPEG XS](https://specs.amwa.tv/bcp-006-01/)
 
@@ -55,16 +56,18 @@ Several vendors have deployed JT-NM Tested badged products, using nmos-cpp, to t
 
 The following configurations, defined by the [build-test](.github/workflows/src/build-test.yml) jobs, are built and unit tested automatically via continuous integration.
 
-| Platform | Version                   | Build Options                      | Test Options                               |
-|----------|---------------------------|------------------------------------|--------------------------------------------|
-| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | Avahi                              | Secure Communications<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | Avahi                              | Secure Communications<br/>Unicast DNS-SD   |
-| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | mDNSResponder                      | Secure Communications<br/>Multicast DNS-SD |
-| Linux    | Ubuntu 14.04 (GCC 4.8.4)  | mDNSResponder, not using Conan     | Secure Communications<br/>Multicast DNS-SD |
-| Windows  | Server 2019 (VS 2019)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>Multicast DNS-SD |
-| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD |
-| macOS    | 11 (AppleClang 13.0)      | Bonjour (mDNSResponder)            | Secure Communications<br/>Multicast DNS-SD |
+| Platform | Version                   | Build Options                      | Test Options                                                       |
+|----------|---------------------------|------------------------------------|--------------------------------------------------------------------|
+| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>Multicast DNS-SD                         |
+| Linux    | Ubuntu 22.04 (GCC 11.2.0) | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | Avahi                              | Secure Communications<br/>IS-10 Authorization<br/>Unicast DNS-SD   |
+| Linux    | Ubuntu 20.04 (GCC 9.4.0)  | mDNSResponder                      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Linux    | Ubuntu 14.04 (GCC 4.8.4)  | mDNSResponder, not using Conan     | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2019 (VS 2019)     | Bonjour (mDNSResponder), WinHTTP   | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>Multicast DNS-SD                         |
+| Windows  | Server 2022 (VS 2022)     | Bonjour (mDNSResponder), ASIO      | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
+| macOS    | 11 (AppleClang 13.0)      | Bonjour (mDNSResponder)            | Secure Communications<br/>IS-10 Authorization<br/>Multicast DNS-SD |
 
 The [AMWA NMOS API Testing Tool](https://github.com/AMWA-TV/nmos-testing) is automatically run against the APIs of the **nmos-cpp-node** and **nmos-cpp-registry** applications.
 
@@ -113,7 +116,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
-- Added support for IS-10 Autorization API
+- Added support for IS-10 Authorization API
 - Added support for HSTS and OCSP stapling
 - Added support for BCP-006-01 v1.0-dev, which can be demonstrated with **nmos-cpp-node** by using `"video_type": "video/jxsv"`
 - Updates to the GitHub Actions build-test workflow for better coverage of platforms and to include unicast DNS-SD tests

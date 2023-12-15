@@ -426,6 +426,7 @@ namespace nmos
 
             // token_endpoint_auth_method [node]: String indicator of the requested authentication method for the token endpoint
             // supported methods are client_secret_basic and private_key_jwt, default to client_secret_basic
+            // when using private_key_jwt, the JWT is created and signed by the node's private key
             const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic")};
 
             // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration
@@ -445,6 +446,7 @@ namespace nmos
             // MAY temporarily respond with an HTTP 503 code in order to avoid blocking the incoming authorized request. When a HTTP 503 code is used, the Resource
             // Server SHOULD include an HTTP Retry-After header to indicate when the client may retry its request.
             // If the Resource Server fails to verify a token using all public keys available it MUST reject the token."
+            // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
             const web::json::field_as_integer_or service_unavailable_retry_after{ U("service_unavailable_retry_after"), 5};
         }
     }
