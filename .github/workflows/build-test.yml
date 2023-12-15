@@ -78,16 +78,22 @@ jobs:
     - name: set environment variables
       shell: bash
       run: |
+        if [[ "${{ matrix.enable_authorization }}" == "true" ]]; then
+          authorization_mode=auth
+        else
+          authorization_mode=noauth
+        fi
+
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
         else
-          echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_auth_$authorization_mode" >> $GITHUB_ENV
         fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
