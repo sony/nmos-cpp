@@ -116,7 +116,7 @@ The implementation is designed to be extended. Development is ongoing, following
 
 Recent activity on the project (newest first):
 
-- Added support for IS-10 Authorization API
+- Added support for IS-10 Authorization
 - Added support for HSTS and OCSP stapling
 - Added support for BCP-006-01 v1.0-dev, which can be demonstrated with **nmos-cpp-node** by using `"video_type": "video/jxsv"`
 - Updates to the GitHub Actions build-test workflow for better coverage of platforms and to include unicast DNS-SD tests
