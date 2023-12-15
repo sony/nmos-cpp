@@ -31,11 +31,9 @@ namespace utility
             }
         }
 
-        /// <summary>
-        /// Encode the given byte array into a base64url string
-        /// using the alternative alphabet and skipping the padding
-        /// as per https://tools.ietf.org/html/rfc4648#section-5
-        /// </summary>
+        // Encode the given byte array into a base64url string
+        // using the alternative alphabet and skipping the padding
+        // as per https://tools.ietf.org/html/rfc4648#section-5
         inline utility::string_t to_base64url(const std::vector<unsigned char>& data)
         {
             auto str = utility::conversions::to_base64(data);
@@ -51,11 +49,9 @@ namespace utility
             return str;
         }
 
-        /// <summary>
-        /// Decode the given base64url string to a byte array
-        /// using the alternative alphabet and skipping the padding
-        /// as per https://tools.ietf.org/html/rfc4648#section-5
-        /// </summary>
+        // Decode the given base64url string to a byte array
+        // using the alternative alphabet and skipping the padding
+        // as per https://tools.ietf.org/html/rfc4648#section-5
         inline std::vector<unsigned char> from_base64url(utility::string_t str)
         {
             for (auto& c : str)
