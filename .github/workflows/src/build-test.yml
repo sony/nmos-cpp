@@ -93,7 +93,7 @@ jobs:
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
           echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
         else
-          echo "BUILD_NAME=${{ matrix.os }}_auth_$authorization_mode" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
         fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
@@ -205,7 +205,7 @@ jobs:
     - name: make badges
       run: |
         # combine badges from all builds, exclude macos-11
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11_auth macos-11_noauth
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}
