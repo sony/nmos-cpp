@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Client Registration Error Response",
+  "description": "Describes the client registration endpoint's OAuth error response",
+  "type": "object",
+  "minItems": 1,
+  "properties": {
+    "error": {
+      "description": "Error Type",
+      "type": "string",
+      "enum": ["invalid_redirect_uri", "invalid_client_metadata", "invalid_software_statement", "unapproved_software_statement"]
+    },
+    "error_description": {
+      "description": "Human-readable ASCII text providing additional information",
+      "type": "string"
+    },
+    "error_uri": {
+      "description": "A URI identifying a human-readable web page with information about the error",
+      "type": "string",
+      "format": "uri"
+    }
+  },
+  "required": ["error"]
+}

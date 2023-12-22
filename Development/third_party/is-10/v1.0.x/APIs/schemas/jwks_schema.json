@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "JSON Web Key Set",
+  "description": "JSON Web Key Set to validate JSON Web Token",
+  "type": "object",
+  "properties": {
+    "keys": {
+      "description": "The value of the 'keys' parameter is an array of JWK values. By default, the order of the JWK values within the array does not imply an order of preference among them, although applications of JWK Sets can choose to assign a meaning to the order for their purposes, if desired.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kty": {
+            "type": "string"
+          },
+          "use": {
+            "type": "string"
+          },
+          "key_ops": {
+            "type": "string"
+          },
+          "alg": {
+            "type": "string"
+          },
+          "kid": {
+            "type": "string"
+          },
+          "x5u": {
+            "type": "string",
+            "format": "uri"
+          },
+          "x5c": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "x5t": {
+            "type": "string"
+          },
+          "x5t#S256": {
+            "type": "string"
+          }
+        },
+        "required": ["kty"]
+      }
+    }
+  },
+  "required": ["keys"]
+}

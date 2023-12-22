@@ -20,7 +20,7 @@ namespace nmos
 {
     namespace experimental
     {
-        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API
+        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, the IS-10 Authorization API
         // and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
@@ -50,23 +50,26 @@ namespace nmos
 
             // Configure the Node API
 
-            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.load_ca_certificates, node_implementation.parse_transport_file, node_implementation.validate_staged);
-            node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
+            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.load_ca_certificates, node_implementation.parse_transport_file, node_implementation.validate_staged, node_implementation.get_authorization_bearer_token);
+            auto validate_authorization = node_implementation.validate_authorization;
+            node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, validate_authorization ? validate_authorization(nmos::experimental::scopes::node) : nullptr, gate));
             node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
 
             // Configure the Connection API
 
-            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged, gate));
+            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged, validate_authorization ? validate_authorization(nmos::experimental::scopes::connection) : nullptr, gate));
 
             // Configure the Events API
-            node_server.api_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
+
+            node_server.api_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::events) : nullptr, gate));
 
             // Configure the Channel Mapping API
-            node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
+
+            node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, validate_authorization ? validate_authorization(nmos::experimental::scopes::channelmapping) : nullptr, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
-            auto& events_ws_api = node_server.ws_handlers[{ {}, events_ws_port }];
-            events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, gate);
+            auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
+            events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, node_implementation.ws_validate_authorization, gate);
 
             // can't share a port between the events ws and the control protocol ws
             const auto& control_protocol_enabled = (0 <= nmos::fields::control_protocol_ws_port(node_model.settings));
@@ -131,8 +134,9 @@ namespace nmos
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
+            auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
             node_server.thread_functions.assign({
-                [&, load_ca_certificates, registration_changed] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, gate); },
+                [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },

@@ -387,8 +387,6 @@ a=framerate:59.94
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testSdpDigits)
 {
-    const bool keep_order = true;
-
     const std::string test_sdp = R"(v=000
 o=- 007 0987654321098765432 IN IP4 192.0.2.0
 s=Leading zeros

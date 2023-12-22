@@ -16,7 +16,7 @@ namespace nmos
 {
     web::http::experimental::listener::api_router make_unmounted_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_channelmapping_api(nmos::node_model& model, details::channelmapping_output_map_validator validate_merged, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -33,6 +33,12 @@ namespace nmos
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("channelmapping/") }, req, res));
             return pplx::task_from_result(true);
         });
+
+        if (validate_authorization)
+        {
+            channelmapping_api.support(U("/x-nmos/") + nmos::patterns::channelmapping_api.pattern + U("/?"), validate_authorization);
+            channelmapping_api.support(U("/x-nmos/") + nmos::patterns::channelmapping_api.pattern + U("/.*"), validate_authorization);
+        }
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is08_versions::from_settings(model.settings); });
         channelmapping_api.support(U("/x-nmos/") + nmos::patterns::channelmapping_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)

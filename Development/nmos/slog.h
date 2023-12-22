@@ -44,6 +44,7 @@ namespace nmos
         const category send_events_ws_commands{ "send_events_ws_commands" };
         const category node_system_behaviour{ "node_system_behaviour" };
         const category ocsp_behaviour{ "ocsp_behaviour" };
+        const category authorization_behaviour{ "authorization_behaviour" };
         const category send_control_protocol_ws_messages{ "send_control_protocol_ws_messages" };
 
         // other categories may be defined ad-hoc
