@@ -184,12 +184,12 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_method_handler get_control_protocol_method, slog::base_gate& gate_)
+    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_method_handler get_control_protocol_method, nmos::control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
     {
         using web::json::value;
         using web::json::value_of;
 
-        return [&model, &websockets, get_control_protocol_class, get_control_protocol_datatype, get_control_protocol_method, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
+        return [&model, &websockets, get_control_protocol_class, get_control_protocol_datatype, get_control_protocol_method, property_changed, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
 
@@ -264,7 +264,7 @@ namespace nmos
                                                 method_parameters_contraints_validation(arguments, method.first, get_control_protocol_datatype);
 
                                                 // execute the relevant method handler, then accumulating up their response to reponses
-                                                response = method.second(resources, resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, gate);
+                                                response = method.second(resources, resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, property_changed, gate);
                                             }
                                             catch (const nmos::control_protocol_exception& e)
                                             {

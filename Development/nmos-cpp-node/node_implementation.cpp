@@ -1008,7 +1008,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 14 }, object_sequence, U("ExampleDataType"), false, false, true)
             };
 
-            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_no_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::control_protocol_property_changed_handler, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
 
@@ -1016,7 +1016,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                 return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_simple_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::control_protocol_property_changed_handler, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
                 // and the method parameters constriants has already been validated by the outter function
@@ -1025,7 +1025,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                 return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_object_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)
+            auto example_method_with_object_args = [](nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::control_protocol_property_changed_handler, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outter function, so access to control_protocol_resources is OK...
                 // and the method parameters constriants has already been validated by the outter function
@@ -1696,6 +1696,24 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
+// Example Control Protocol WebSocket API property changed callback to perform application-specific operations to complete the property changed
+nmos::control_protocol_property_changed_handler make_node_implementation_control_protocol_property_changed_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::resource& resource, const utility::string_t& property_name, int index)
+    {
+        if (index >= 0)
+        {
+            // sequence property
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " index " << index << " has value changed to " << resource.data.at(property_name).at(index).serialize();
+        }
+        else
+        {
+            // non-sequence property
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has value changed to " << resource.data.at(property_name).serialize();
+        }
+    };
+}
+
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
@@ -1849,5 +1867,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
-        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
+        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
+        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
 }

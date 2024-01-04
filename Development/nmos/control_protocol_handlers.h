@@ -32,10 +32,15 @@ namespace nmos
     // this callback should not throw exceptions
     typedef std::function<experimental::datatype(const nc_name& name)> get_control_protocol_datatype_handler;
 
+    // a control_protocol_property_changed_handler is a notification that the specified (IS-12) property has changed
+    // index is set to -1 for non-sequence property
+    // this callback should not throw exceptions, as the relevant property will already has been changed and those changes will not be rolled back
+    typedef std::function<void(const nmos::resource& resource, const utility::string_t& property_name, int index)> control_protocol_property_changed_handler;
+
     namespace experimental
     {
         // method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, slog::base_gate& gate)> method_handler;
+        typedef std::function<web::json::value(nmos::resources& resources, nmos::resources::iterator resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)> method_handler;
 
         // method definition (NcMethodDescriptor vs method handler)
         typedef std::pair<web::json::value, nmos::experimental::method_handler> method;

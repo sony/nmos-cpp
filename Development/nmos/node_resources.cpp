@@ -134,6 +134,7 @@ namespace nmos
         {
             for (const auto& version : nmos::is12_versions::from_settings(settings))
             {
+                // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/IS-04_interactions.html
                 auto ncp_uri = web::uri_builder()
                     .set_scheme(nmos::ws_scheme(settings))
                     .set_port(nmos::fields::control_protocol_ws_port(settings))

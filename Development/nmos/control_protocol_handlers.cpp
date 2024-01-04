@@ -69,6 +69,7 @@ namespace nmos
         };
     }
 
+    // Example Receiver-Monitor Connection activation callback to perform application-specific operations to complete activation
     control_protocol_connection_activation_handler make_receiver_monitor_connection_activation_handler(resources& resources)
     {
         return [&resources](const resource& connection_resource)
@@ -79,18 +80,18 @@ namespace nmos
                 // update receiver-monitor's connectionStatus propertry
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
-                const web::json::value val = active ? nc_connection_status::connected : nc_connection_status::disconnected;
+                const web::json::value value = active ? nc_connection_status::connected : nc_connection_status::disconnected;
 
                 // hmm, maybe updating connectionStatusMessage, payloadStatus, and payloadStatusMessage too
 
                 const auto propertry_changed_event = make_propertry_changed_event(nmos::fields::nc::oid(found->data),
                 {
-                    { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, val }
+                    { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, value }
                 });
 
                 modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
                 {
-                    resource.data[nmos::fields::nc::connection_status] = val;
+                    resource.data[nmos::fields::nc::connection_status] = value;
 
                 }, propertry_changed_event);
             }
