@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 #endif
 
 // only implement communication with Authorization server if IS-10/BCP-003-02 is required
-// cf. preprocessor conditions in nmos::make_node_api, nmos::make_connection_api, nmos::make_events_api, nmos::make_channelmapping_api, make_events_ws_validate_handler
+// cf. preprocessor conditions in nmos::make_node_api, nmos::make_connection_api, nmos::make_events_api, nmos::make_channelmapping_api, make_events_ws_validate_handler, make_control_protocol_ws_validate_handler
         nmos::experimental::authorization_state authorization_state;
         if (nmos::experimental::fields::server_authorization(node_model.settings))
         {

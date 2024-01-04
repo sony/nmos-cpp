@@ -50,9 +50,9 @@ namespace nmos
 
     // IS-12 Control Protocol WebSocket API
 
-    web::websockets::experimental::listener::validate_handler make_control_protocol_ws_validate_handler(nmos::node_model& model, slog::base_gate& gate_)
+    web::websockets::experimental::listener::validate_handler make_control_protocol_ws_validate_handler(nmos::node_model& model, nmos::experimental::ws_validate_authorization_handler ws_validate_authorization, slog::base_gate& gate_)
     {
-        return [&model, &gate_](web::http::http_request req)
+        return [&model, ws_validate_authorization, &gate_](web::http::http_request req)
         {
             nmos::ws_api_gate gate(gate_, req.request_uri());
 
@@ -60,6 +60,10 @@ namespace nmos
             // Clients SHOULD use the "Authorization Request Header Field" method.
             // Clients MAY use a "URI Query Parameter".
             // See https://tools.ietf.org/html/rfc6750#section-2
+            if (ws_validate_authorization)
+            {
+                if (!ws_validate_authorization(req, nmos::experimental::scopes::ncp)) { return false; }
+            }
 
             // For now just return true
             const auto& ws_ncp_path = req.request_uri().path();
