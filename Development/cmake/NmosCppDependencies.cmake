@@ -461,7 +461,7 @@ endif()
 
 if(NMOS_CPP_USE_CONAN)
     set(JWT_VERSION_MIN "0.5.1")
-    set(JWT_VERSION_CUR "0.6.0")
+    set(JWT_VERSION_CUR "0.7.0")
     find_package(jwt-cpp REQUIRED)
     if(NOT jwt-cpp_VERSION)
         message(STATUS "Found jwt-cpp unknown version; minimum version: " ${JWT_VERSION_MIN})
