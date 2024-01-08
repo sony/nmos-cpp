@@ -120,13 +120,13 @@ namespace nmos
                     to_methods_vector(make_nc_object_methods(),
                     {
                         // link NcObject method_ids with method functions
-                        { nc_object_get_method_id, nmos::details::get },
-                        { nc_object_set_method_id, nmos::details::set },
-                        { nc_object_get_sequence_item_method_id, nmos::details::get_sequence_item },
-                        { nc_object_set_sequence_item_method_id, nmos::details::set_sequence_item },
-                        { nc_object_add_sequence_item_method_id, nmos::details::add_sequence_item },
-                        { nc_object_remove_sequence_item_method_id, nmos::details::remove_sequence_item },
-                        { nc_object_get_sequence_length_method_id, nmos::details::get_sequence_length }
+                        { nc_object_get_method_id, get },
+                        { nc_object_set_method_id, set },
+                        { nc_object_get_sequence_item_method_id, get_sequence_item },
+                        { nc_object_set_sequence_item_method_id, set_sequence_item },
+                        { nc_object_add_sequence_item_method_id, add_sequence_item },
+                        { nc_object_remove_sequence_item_method_id, remove_sequence_item },
+                        { nc_object_get_sequence_length_method_id, get_sequence_length }
                     }),
                     // NcObject events
                     to_vector(make_nc_object_events())) },
@@ -138,10 +138,10 @@ namespace nmos
                     to_methods_vector(make_nc_block_methods(),
                     {
                         // link NcBlock method_ids with method functions
-                        { nc_block_get_member_descriptors_method_id, nmos::details::get_member_descriptors },
-                        { nc_block_find_members_by_path_method_id, nmos::details::find_members_by_path },
-                        { nc_block_find_members_by_role_method_id, nmos::details::find_members_by_role },
-                        { nc_block_find_members_by_class_id_method_id, nmos::details::find_members_by_class_id }
+                        { nc_block_get_member_descriptors_method_id, get_member_descriptors },
+                        { nc_block_find_members_by_path_method_id, find_members_by_path },
+                        { nc_block_find_members_by_role_method_id, find_members_by_role },
+                        { nc_block_find_members_by_class_id_method_id, find_members_by_class_id }
                     }),
                     // NcBlock events
                     to_vector(make_nc_block_events())) },
@@ -177,8 +177,8 @@ namespace nmos
                     to_methods_vector(make_nc_class_manager_methods(),
                     {
                         // link NcClassManager method_ids with method functions
-                        { nc_class_manager_get_control_class_method_id, nmos::details::get_control_class },
-                        { nc_class_manager_get_datatype_method_id, nmos::details::get_datatype }
+                        { nc_class_manager_get_control_class_method_id, get_control_class },
+                        { nc_class_manager_get_datatype_method_id, get_datatype }
                     }),
                     // NcClassManager events
                     to_vector(make_nc_class_manager_events())) },

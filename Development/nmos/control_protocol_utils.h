@@ -60,13 +60,13 @@ namespace nmos
     web::json::value find_property(const nc_property_id& property_id, const nc_class_id& class_id, get_control_protocol_class_handler get_control_protocol_class);
 
     // get block memeber descriptors
-    void get_member_descriptors(const resources& resources, resources::iterator resource, bool recurse, web::json::array& descriptors);
+    void get_member_descriptors(const resources& resources, const resource& resource, bool recurse, web::json::array& descriptors);
 
     // find members with given role name or fragment
-    void find_members_by_role(const resources& resources, resources::iterator resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& nc_block_member_descriptors);
+    void find_members_by_role(const resources& resources, const resource& resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& nc_block_member_descriptors);
 
     // find members with given class id
-    void find_members_by_class_id(const resources& resources, resources::iterator resource, const nc_class_id& class_id, bool include_derived, bool recurse, web::json::array& descriptors);
+    void find_members_by_class_id(const resources& resources, const resource& resource, const nc_class_id& class_id, bool include_derived, bool recurse, web::json::array& descriptors);
 
     // push control protocol resource into other control protocol NcBlock resource
     void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource);

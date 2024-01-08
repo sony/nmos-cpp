@@ -268,7 +268,7 @@ namespace nmos
                                                 method_parameters_contraints_validation(arguments, method.first, get_control_protocol_datatype);
 
                                                 // execute the relevant method handler, then accumulating up their response to reponses
-                                                response = method.second(resources, resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, property_changed, gate);
+                                                response = method.second(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, property_changed, gate);
                                             }
                                             catch (const nmos::control_protocol_exception& e)
                                             {

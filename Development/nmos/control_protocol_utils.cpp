@@ -414,11 +414,11 @@ namespace nmos
     }
 
     // get block member descriptors
-    void get_member_descriptors(const resources& resources, resources::iterator resource, bool recurse, web::json::array& descriptors)
+    void get_member_descriptors(const resources& resources, const resource& resource, bool recurse, web::json::array& descriptors)
     {
-        if (resource->data.has_field(nmos::fields::nc::members))
+        if (resource.data.has_field(nmos::fields::nc::members))
         {
-            const auto& members = nmos::fields::nc::members(resource->data);
+            const auto& members = nmos::fields::nc::members(resource.data);
 
             for (const auto& member : members)
             {
@@ -434,8 +434,11 @@ namespace nmos
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
-
-                        get_member_descriptors(resources, find_resource(resources, utility::s2us(std::to_string(oid))), recurse, descriptors);
+                        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            get_member_descriptors(resources, *found, recurse, descriptors);
+                        }
                     }
                 }
             }
@@ -443,7 +446,7 @@ namespace nmos
     }
 
     // find members with given role name or fragment
-    void find_members_by_role(const resources& resources, resources::iterator resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& descriptors)
+    void find_members_by_role(const resources& resources, const resource& resource, const utility::string_t& role, bool match_whole_string, bool case_sensitive, bool recurse, web::json::array& descriptors)
     {
         auto find_members_by_matching_role = [&](const web::json::array& members)
         {
@@ -466,9 +469,9 @@ namespace nmos
             return boost::make_iterator_range(boost::make_filter_iterator(match, members.begin(), members.end()), boost::make_filter_iterator(match, members.end(), members.end()));
         };
 
-        if (resource->data.has_field(nmos::fields::nc::members))
+        if (resource.data.has_field(nmos::fields::nc::members))
         {
-            const auto& members = nmos::fields::nc::members(resource->data);
+            const auto& members = nmos::fields::nc::members(resource.data);
 
             auto members_found = find_members_by_matching_role(members);
             for (const auto& member : members_found)
@@ -485,8 +488,11 @@ namespace nmos
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
-
-                        find_members_by_role(resources, find_resource(resources, utility::s2us(std::to_string(oid))), role, match_whole_string, case_sensitive, recurse, descriptors);
+                        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            find_members_by_role(resources, *found, role, match_whole_string, case_sensitive, recurse, descriptors);
+                        }
                     }
                 }
             }
@@ -494,7 +500,7 @@ namespace nmos
     }
 
     // find members with given class id
-    void find_members_by_class_id(const resources& resources, resources::iterator resource, const nc_class_id& class_id_, bool include_derived, bool recurse, web::json::array& descriptors)
+    void find_members_by_class_id(const resources& resources, const nmos::resource& resource, const nc_class_id& class_id_, bool include_derived, bool recurse, web::json::array& descriptors)
     {
         auto find_members_by_matching_class_id = [&](const web::json::array& members)
         {
@@ -511,9 +517,9 @@ namespace nmos
             return boost::make_iterator_range(boost::make_filter_iterator(match, members.begin(), members.end()), boost::make_filter_iterator(match, members.end(), members.end()));
         };
 
-        if (resource->data.has_field(nmos::fields::nc::members))
+        if (resource.data.has_field(nmos::fields::nc::members))
         {
-            auto& members = nmos::fields::nc::members(resource->data);
+            auto& members = nmos::fields::nc::members(resource.data);
 
             auto members_found = find_members_by_matching_class_id(members);
             for (const auto& member : members_found)
@@ -530,8 +536,11 @@ namespace nmos
                     {
                         // get resource based on the oid
                         const auto& oid = nmos::fields::nc::oid(member);
-
-                        find_members_by_class_id(resources, find_resource(resources, utility::s2us(std::to_string(oid))), class_id_, include_derived, recurse, descriptors);
+                        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            find_members_by_class_id(resources, *found, class_id_, include_derived, recurse, descriptors);
+                        }
                     }
                 }
             }
