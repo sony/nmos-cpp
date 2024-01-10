@@ -3,6 +3,7 @@
 #include "cpprest/ws_utils.h"
 #include "nmos/api_utils.h"
 #include "nmos/channelmapping_activation.h"
+#include "nmos/configuration_api.h"
 #include "nmos/control_protocol_ws_api.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
@@ -66,6 +67,10 @@ namespace nmos
             // Configure the Channel Mapping API
 
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, validate_authorization ? validate_authorization(nmos::experimental::scopes::channelmapping) : nullptr, gate));
+
+            // Configure the Configuration API
+
+            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];

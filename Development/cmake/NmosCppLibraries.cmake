@@ -921,6 +921,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/channels.cpp
     nmos/client_utils.cpp
     nmos/components.cpp
+    nmos/configuration_api.cpp
     nmos/connection_activation.cpp
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
@@ -1014,6 +1015,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/colorspace.h
     nmos/components.h
     nmos/copyable_atomic.h
+    nmos/configuration_api.h
     nmos/connection_activation.h
     nmos/connection_api.h
     nmos/connection_events_activation.h
@@ -1048,6 +1050,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/is09_versions.h
     nmos/is10_versions.h
     nmos/is12_versions.h
+    nmos/is14_versions.h
     nmos/issuers.h
     nmos/json_fields.h
     nmos/json_schema.h
