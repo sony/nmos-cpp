@@ -507,7 +507,6 @@ namespace nmos
 
         auto descriptors = value::array();
         nmos::find_members_by_class_id(resources, resource, class_id, include_derived, recurse, descriptors.as_array());
-//        auto descriptors = nmos::find_members_by_class_id(resources, resource, class_id, include_derived, recurse);// , descriptors.as_array());
 
         return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptors);
     }

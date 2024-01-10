@@ -145,7 +145,8 @@ namespace nmos
                 {
                     web::json::push_back(data[U("controls")], value_of({
                         { U("href"), ncp_uri.set_host(host).to_uri().to_string() },
-                        { U("type"), type }
+                        { U("type"), type },
+                        { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
                     }));
                 }
             }
