@@ -11,8 +11,10 @@
 #include "cpprest/basic_utils.h"
 #include "cpprest/details/system_error.h"
 #include "cpprest/http_utils.h"
+#include "cpprest/response_type.h"
 #include "cpprest/ws_client.h"
 #include "nmos/certificate_settings.h"
+#include "nmos/json_fields.h"
 #include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
 
@@ -177,6 +179,43 @@ namespace nmos
         return make_http_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
     }
 
+    // construct oauth2 config with the bearer token
+    web::http::oauth2::experimental::oauth2_config make_oauth2_config(const web::http::oauth2::experimental::oauth2_token& bearer_token)
+    {
+        web::http::oauth2::experimental::oauth2_config config(U(""), U(""), U(""), U(""), U(""), U(""));
+        config.set_token(bearer_token);
+
+        return config;
+    }
+
+    // construct client config including OAuth 2.0 config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. authorization request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
+    {
+        auto config = make_http_client_config(settings, load_ca_certificates, gate);
+
+        if (bearer_token.is_valid_access_token())
+        {
+            config.set_oauth2(make_oauth2_config(bearer_token));
+        }
+
+        return config;
+    }
+
+    // construct client config including OAuth 2.0 config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. authorization request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+    {
+        web::http::oauth2::experimental::oauth2_token bearer_token;
+
+        if (get_authorization_bearer_token)
+        {
+            bearer_token = get_authorization_bearer_token();
+        }
+
+        return make_http_client_config(settings, load_ca_certificates, bearer_token, gate);
+    }
+
     // construct client config based on specified secure flag and settings, e.g. using the specified proxy
     // with the remaining options defaulted
     web::websockets::client::websocket_client_config make_websocket_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
@@ -201,6 +240,22 @@ namespace nmos
     {
         return make_websocket_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
     }
+
+    // construct client config based on settings and access token, e.g. using the specified proxy
+    // with the remaining options defaulted
+    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+    {
+        auto config = make_websocket_client_config(settings, std::move(load_ca_certificates), gate);
+
+        if (get_authorization_bearer_token)
+        {
+            const auto bearer_token = get_authorization_bearer_token();
+            config.headers().add(web::http::header_names::authorization, U("Bearer ") + bearer_token.access_token());
+        }
+
+        return config;
+    }
+
 
     // make a request with logging
     pplx::task<web::http::http_response> api_request(web::http::client::http_client client, web::http::http_request request, slog::base_gate& gate, const pplx::cancellation_token& token)

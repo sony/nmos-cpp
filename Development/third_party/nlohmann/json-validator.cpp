@@ -436,9 +436,12 @@ class logical_combination : public schema
 
 		for (auto &s : subschemata_) {
 			first_error_handler esub;
+			auto oldPatchSize = patch.get_json().size();
 			s->validate(ptr, instance, patch, esub);
 			if (!esub)
 				count++;
+			else
+				patch.get_json().get_ref<nlohmann::json::array_t &>().resize(oldPatchSize);
 
 			if (is_validate_complete(instance, ptr, e, esub, count))
 				return;
@@ -553,6 +556,9 @@ class type_schema : public schema
 					else_->validate(ptr, instance, patch, e);
 			}
 		}
+		if (instance.is_null()) {
+			patch.add(nlohmann::json::json_pointer{}, default_value_);
+		}
 	}
 
 protected:
@@ -601,10 +607,12 @@ public:
 			} break;
 
 			case json::value_t::array: // "type": ["type1", "type2"]
-				for (auto &schema_type : attr.value())
+				for (auto &array_value : attr.value()) {
+					auto schema_type = array_value.get<std::string>();
 					for (auto &t : schema_types)
 						if (t.first == schema_type)
 							type_[static_cast<uint8_t>(t.second)] = type_schema::make(sch, t.second, root, uris, known_keywords);
+				}
 				break;
 
 			default:
@@ -856,7 +864,12 @@ class numeric : public schema
 	bool violates_multiple_of(T x) const
 	{
 		double res = std::remainder(x, multipleOf_.second);
+		double multiple = std::fabs(x / multipleOf_.second);
+		if (multiple > 1) {
+			res = res / multiple;
+		}
 		double eps = std::nextafter(x, 0) - static_cast<double>(x);
+
 		return std::fabs(res) > std::fabs(eps);
 	}
 
@@ -1133,6 +1146,11 @@ public:
 		if (attr != sch.end()) {
 			propertyNames_ = schema::make(attr.value(), root, {"propertyNames"}, uris);
 			sch.erase(attr);
+		}
+
+		attr = sch.find("default");
+		if (attr != sch.end()) {
+			set_default_value(*attr);
 		}
 	}
 };

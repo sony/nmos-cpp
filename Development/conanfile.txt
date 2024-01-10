@@ -3,9 +3,10 @@ boost/1.80.0
 cpprestsdk/2.10.18
 websocketpp/0.8.2
 openssl/1.1.1s
-json-schema-validator/2.2.0
-nlohmann_json/3.11.2
+json-schema-validator/2.3.0
+nlohmann_json/3.11.3
 zlib/1.2.13
+jwt-cpp/0.7.0
 
 [imports]
 bin, *.dll -> ./bin

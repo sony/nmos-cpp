@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,8 +22,15 @@ jobs:
         use_conan: [true]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
+        enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
+          - os: macos-11
+            enable_authorization: false
+          - os: windows-2019
+            enable_authorization: false
+          - os: ubuntu-20.04
+            enable_authorization: false
           - os: macos-11
             install_mdns: true
           - os: windows-2019
@@ -38,17 +45,32 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
+            enable_authorization: true
         include:
-          - os: windows-2019
+          - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
+            enable_authorization: true
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: true
+            dns_sd_mode: multicast
+            enable_authorization: false
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
+            enable_authorization: true
+          - os: ubuntu-22.04
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: false
 
     steps:
     - uses: actions/checkout@v3
@@ -56,16 +78,22 @@ jobs:
     - name: set environment variables
       shell: bash
       run: |
+        if [[ "${{ matrix.enable_authorization }}" == "true" ]]; then
+          authorization_mode=auth
+        else
+          authorization_mode=noauth
+        fi
+
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
         else
-          echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
         fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
@@ -269,7 +297,10 @@ jobs:
       run: |
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - name: setup developer command prompt for Microsoft Visual C++
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
     - name: build
       uses: lukka/run-cmake@v3.4
       with:
@@ -344,10 +375,23 @@ jobs:
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
 
-        # Configure the Testing Tool so all APIs are tested with TLS
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        # Configure the Testing Tool so all APIs are tested with TLS and authorization
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
+        # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
+        if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+          hostname=nmos-api.local
+        else
+          hostname=api.testsuite.nmos.tv
+        fi
+        printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+
+        if [[ "${{matrix.enable_authorization}}" == "true" ]]; then
+          printf 'CONFIG.ENABLE_AUTH = True\n' >> nmostesting/UserConfig.py
+        else
+          printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
+        fi
 
         # Download testssl
         cd testssl
@@ -386,20 +430,21 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-            certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
-            certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+          # install certificates
+          certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+          certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
         fi
 
         if [[ "${{ runner.os }}" == "macOS" ]]; then
@@ -534,7 +579,7 @@ jobs:
 
 
   build_and_test_ubuntu_14:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ubuntu-20.04
     container:
       image: ubuntu:14.04
@@ -546,6 +591,7 @@ jobs:
         use_conan: [false]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast]
+        enable_authorization: [true]
 
     steps:
     - uses: actions/checkout@v3
@@ -790,7 +836,10 @@ jobs:
       run: |
         echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - name: setup developer command prompt for Microsoft Visual C++
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
     - name: build
       uses: lukka/run-cmake@v3.4
       with:
@@ -865,10 +914,23 @@ jobs:
         git clone https://github.com/AMWA-TV/nmos-testing.git
         cd nmos-testing
 
-        # Configure the Testing Tool so all APIs are tested with TLS
-        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\n" > nmostesting/UserConfig.py
+        # Configure the Testing Tool so all APIs are tested with TLS and authorization
+        printf "from . import Config as CONFIG\nCONFIG.ENABLE_HTTPS = True\nCONFIG.MOCK_SERVICES_WARM_UP_DELAY = 30\nCONFIG.HTTP_TIMEOUT = 2\n" > nmostesting/UserConfig.py
         # Set the DNS-SD mode
         printf 'CONFIG.DNS_SD_MODE = "'${{ matrix.dns_sd_mode }}'"\n' >> nmostesting/UserConfig.py
+        # Set the client JWKS_URI for mock Authorization Server to obtain the client JSON Web Key Set (public keys) to verify the client_assertion, when the client is requesting the access token
+        if [[ "${{ matrix.dns_sd_mode }}" == "multicast" ]]; then
+          hostname=nmos-api.local
+        else
+          hostname=api.testsuite.nmos.tv
+        fi
+        printf 'CONFIG.JWKS_URI = "https://'${hostname}':1080/x-authorization/jwks"\n' >> nmostesting/UserConfig.py
+
+        if [[ "${{matrix.enable_authorization}}" == "true" ]]; then
+          printf 'CONFIG.ENABLE_AUTH = True\n' >> nmostesting/UserConfig.py
+        else
+          printf 'CONFIG.ENABLE_AUTH = False\n' >> nmostesting/UserConfig.py
+        fi
 
         # Download testssl
         cd testssl
@@ -907,20 +969,21 @@ jobs:
         pip install -r utilities/run-test-suites/gsheetsImport/requirements.txt
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-            certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
-            certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
-            certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
+          # install certificates
+          certutil -enterprise -addstore -user root test_data\\BCP00301\\ca\\certs\\ca.cert.pem
+          certutil -enterprise -addstore -user ca test_data\\BCP00301\\ca\\intermediate\\certs\\intermediate.cert.pem
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\ecdsa.api.testsuite.nmos.tv.cert.chain.pfx
+          certutil -importpfx -enterprise test_data\\BCP00301\\ca\\intermediate\\certs\\rsa.api.testsuite.nmos.tv.cert.chain.pfx
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:1080 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:1080 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
 
-            # RSA
-            netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
-            # ECDSA
-            #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
+          # RSA
+          netsh http add sslcert ipport=0.0.0.0:8088 certhash=021d50df2177c07095485184206ee2297e50b65c appid="{00000000-0000-0000-0000-000000000000}"
+          # ECDSA
+          #netsh http add sslcert ipport=0.0.0.0:8088 certhash=875eca592c49120254b32bb8bed90ac3679015a5 appid="{00000000-0000-0000-0000-000000000000}"
         fi
 
         if [[ "${{ runner.os }}" == "macOS" ]]; then
@@ -1075,8 +1138,8 @@ jobs:
 
     - name: make badges
       run: |
-        # combine badges from all builds, exclude macos-11 and ubuntu-14.04
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11 ubuntu-14.04
+        # combine badges from all builds, exclude macos-11
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11_auth macos-11_noauth
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}

@@ -341,7 +341,7 @@ namespace nmos
         // hm, TM not indicated in IS-04
         if (tm) params.tm = *tm;
 
-        params.ssn = params.tm.empty() ? sdp::smpte_standard_numbers::ST2110_40_2018 : sdp::smpte_standard_numbers::ST2110_40_2022;
+        params.ssn = params.tm.empty() ? sdp::smpte_standard_numbers::ST2110_40_2018 : sdp::smpte_standard_numbers::ST2110_40_2023;
 
         // hm, ST 2110-21 TROFF not indicated in IS-04 so omit this
         // hm, ST 2110-10 TSMODE and TSDELAY not indicated in IS-04 so omit these
@@ -832,8 +832,8 @@ namespace nmos
         {
             return sdp_parameters::fmtp_t::value_type{ sdp::fields::DID_SDID, make_fmtp_did_sdid(did_sdid) };
         }));
-        if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed(params.vpid_code) });
-        if (!params.exactframerate) fmtp.push_back({ sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) });
+        if (0 != params.vpid_code) fmtp.push_back({ sdp::fields::VPID_Code, utility::ostringstreamed((uint32_t)params.vpid_code) });
+        if (0 != params.exactframerate) fmtp.push_back({ sdp::fields::exactframerate, nmos::details::make_exactframerate(params.exactframerate) });
         if (!params.tm.empty()) fmtp.push_back({ sdp::fields::TM, params.tm.name });
         if (!params.ssn.empty()) fmtp.push_back({ sdp::fields::smpte_standard_number, params.ssn.name });
         if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });

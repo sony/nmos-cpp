@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "JSON Web Token Contents",
+  "description": "Claims contained within JSON Web Token",
+  "type": "object",
+  "properties": {
+    "iss": {
+      "description": "A case-sensitive string containing a StringOrURI value that identifies the Authorization Server that issued the JWT",
+      "type": "string"
+    },
+    "sub": {
+      "description": "The unique identifier assigned to the end-user by the user authorization system",
+      "type": "string"
+    },
+    "aud": {
+      "description": "A JSON array of case-sensitive strings, each containing a StringOrURI value that identifies the recipients that the JWT is intended for",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "exp": {
+      "description": "The UTC time at which the token expires",
+      "type": "number"
+    },
+    "iat": {
+      "description": "The UTC time at which the token was issued",
+      "type": "number"
+    },
+    "client_id": {
+      "description": "The client identifier of the OAuth 2.0 client that requested the token",
+      "type": "string"
+    },
+    "azp": {
+      "description": "The client identifier of the OAuth 2.0 client that requested the token",
+      "type": "string"
+    },
+    "scope": {
+      "description": "A string containing a space-separated list of scopes associated with the token",
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^x-nmos-[a-z]+$": {
+      "description": "An object containing the access permissions of the user for the NMOS API identified by this attribute's name",
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "read": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "write": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    }
+  },
+  "required": ["iss", "sub", "aud", "exp"]
+}

@@ -3,12 +3,15 @@
 #include <boost/algorithm/string/join.hpp>
 #include "cpprest/json_storage.h"
 #include "nmos/api_utils.h"
+#include "nmos/authorization.h"
+#include "nmos/authorization_state.h"
 #include "nmos/is07_versions.h"
 #include "nmos/log_manip.h"
 #include "nmos/model.h"
 #include "nmos/query_utils.h"
 #include "nmos/rational.h"
 #include "nmos/thread_utils.h" // for wait_until
+#include "nmos/scope.h"
 #include "nmos/slog.h"
 #include "nmos/version.h"
 
@@ -23,18 +26,22 @@ namespace nmos
     // by the IS-04 Registration API, so this implementation also shares much commonality.
     // See nmos/query_ws_api.cpp and nmos/registration_api.cpp
 
-    web::websockets::experimental::listener::validate_handler make_events_ws_validate_handler(nmos::node_model& model, slog::base_gate& gate_)
+    web::websockets::experimental::listener::validate_handler make_events_ws_validate_handler(nmos::node_model& model, nmos::experimental::ws_validate_authorization_handler ws_validate_authorization, slog::base_gate& gate_)
     {
-        return [&model, &gate_](web::http::http_request req)
+        return [&model, ws_validate_authorization, &gate_](web::http::http_request req)
         {
             nmos::ws_api_gate gate(gate_, req.request_uri());
-            auto lock = model.read_lock();
+            auto lock = model.write_lock();
             auto& resources = model.connection_resources;
 
             // RFC 6750 defines two methods of sending bearer access tokens which are applicable to WebSocket
             // Clients SHOULD use the "Authorization Request Header Field" method.
             // Clients MAY use a "URI Query Parameter".
             // See https://tools.ietf.org/html/rfc6750#section-2
+            if (ws_validate_authorization)
+            {
+                if (!ws_validate_authorization(req, nmos::experimental::scopes::events)) { return false; }
+            }
 
             // For now, to determine whether the "resource name" is valid, only look at the path, and ignore any query parameters
             const auto& ws_resource_path = req.request_uri().path();

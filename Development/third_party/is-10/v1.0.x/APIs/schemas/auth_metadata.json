@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Authorization API metadata resource",
+  "description": "Displays the Authorization server metadata",
+  "properties": {
+    "issuer": {
+      "description": "The authorization server's issuer identifier, which is a URL that uses the 'https' scheme and has no query or fragment components.  Authorization server metadata is published at a location that is '.well-known' according to RFC 5785 [RFC5785] derived from this issuer identifier, as described in Section 3. The issuer identifier is used to prevent authorization server mix-up attacks.",
+      "format": "uri",
+      "type": "string"
+    },
+    "authorization_endpoint": {
+      "description": "URL of the authorization server's authorization endpoint [RFC6749].  This is REQUIRED unless no grant types are supported that use the authorization endpoint.",
+      "format": "uri",
+      "type": "string"
+    },
+    "token_endpoint": {
+      "description": "URL of the authorization server's token endpoint [RFC6749].  This is REQUIRED unless only the implicit grant type is supported.",
+      "format": "uri",
+      "type": "string"
+    },
+    "jwks_uri": {
+      "description": "URL of the authorization server's JWK Set [JWK] document. The referenced document contains the signing key(s) the client uses to validate signatures from the authorization server. This URL MUST use the 'https' scheme. The JWK Set MAY also contain the server's encryption key or keys, which are used by clients to encrypt requests to the server. When both signing and encryption keys are made available, a 'use' (public key use) parameter value is REQUIRED for all keys in the referenced JWK Set to indicate each key's intended usage.",
+      "format": "uri",
+      "type": "string"
+    },
+    "registration_endpoint": {
+      "description": "URL of the authorization server's OAuth 2.0 Dynamic Client Registration endpoint [RFC7591].",
+      "format": "uri",
+      "type": "string"
+    },
+    "scopes_supported": {
+      "description": "JSON array containing a list of the OAuth 2.0 [RFC6749] 'scope' values that this authorization server supports. Servers MAY choose not to advertise some supported scope values even when this parameter is used.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true
+      }
+    },
+    "response_types_supported": {
+      "description": "JSON array containing a list of the OAuth 2.0 'response_type' values that this authorization server supports. The array values used are the same as those used with the 'response_types' parameter defined by 'OAuth 2.0 Dynamic Client Registration Protocol' in RFC7591",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true
+      }
+    },
+    "grant_types_supported": {
+      "description": "JSON array containing a list of the OAuth 2.0 grant type values that this authorization server supports. The array values used are the same as those used with the 'grant_types' parameter defined by 'OAuth 2.0 Dynamic Client Registration Protocol' in [RFC7591]. If omitted, the default value is ['authorization_code', 'implicit']",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true
+      }
+    },
+    "revocation_endpoint": {
+      "description": "URL of the authorization server's OAuth 2.0 revocation endpoint in RFC7009.",
+      "format": "uri",
+      "type": "string"
+    },
+    "code_challenge_methods_supported": {
+      "description": "JSON array containing a list of Proof Key for Code Exchange (PKCE) [RFC7636] code challenge methods supported by this authorization server. Code challenge method values are used in the 'code_challenge_method' parameter defined in Section 4.3 of [RFC7636]. The valid code challenge method values are those registered in the IANA 'PKCE Code Challenge Methods' registry [IANA.OAuth.Parameters]. If omitted, the authorization server does not support PKCE.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true
+      }
+    }
+  },
+  "required": [
+    "issuer",
+    "authorization_endpoint",
+    "token_endpoint",
+    "jwks_uri",
+    "registration_endpoint",
+    "response_types_supported",
+    "code_challenge_methods_supported"
+  ]
+}

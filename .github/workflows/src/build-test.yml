@@ -12,7 +12,7 @@ env:
   SECRET_RESULTS_SHEET_ID: ${{ secrets.RESULTS_SHEET_ID }}
 jobs:
   build_and_test:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,8 +22,15 @@ jobs:
         use_conan: [true]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast, unicast]
+        enable_authorization: [false, true]
         exclude:
           # install_mdns is only meaningful on Linux
+          - os: macos-11
+            enable_authorization: false
+          - os: windows-2019
+            enable_authorization: false
+          - os: ubuntu-20.04
+            enable_authorization: false
           - os: macos-11
             install_mdns: true
           - os: windows-2019
@@ -38,17 +45,32 @@ jobs:
           - os: ubuntu-20.04
             install_mdns: true
             dns_sd_mode: unicast
+            enable_authorization: true
         include:
-          - os: windows-2019
+          - os: windows-2022
             install_mdns: false
             use_conan: true
             force_cpprest_asio: true
             dns_sd_mode: multicast
+            enable_authorization: true
+          - os: windows-2022
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: true
+            dns_sd_mode: multicast
+            enable_authorization: false
           - os: ubuntu-22.04
             install_mdns: false
             use_conan: true
             force_cpprest_asio: false
             dns_sd_mode: multicast
+            enable_authorization: true
+          - os: ubuntu-22.04
+            install_mdns: false
+            use_conan: true
+            force_cpprest_asio: false
+            dns_sd_mode: multicast
+            enable_authorization: false
 
     steps:
     - uses: actions/checkout@v3
@@ -56,16 +78,22 @@ jobs:
     - name: set environment variables
       shell: bash
       run: |
+        if [[ "${{ matrix.enable_authorization }}" == "true" ]]; then
+          authorization_mode=auth
+        else
+          authorization_mode=noauth
+        fi
+
         if [[ "${{ runner.os }}"  == "Linux" ]]; then
           if [[ "${{ matrix.install_mdns }}" == "true" ]]; then
-            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_mdns_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           else
-            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}" >> $GITHUB_ENV
+            echo "BUILD_NAME=${{ matrix.os }}_avahi_${{ matrix.dns_sd_mode }}_$authorization_mode" >> $GITHUB_ENV
           fi
         elif [[ "${{ matrix.force_cpprest_asio }}" == "true" ]]; then
-          echo "BUILD_NAME=${{ matrix.os }}_asio" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_asio_$authorization_mode" >> $GITHUB_ENV
         else
-          echo "BUILD_NAME=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "BUILD_NAME=${{ matrix.os }}_$authorization_mode" >> $GITHUB_ENV
         fi
         GITHUB_COMMIT=`echo "${{ github.sha }}" | cut -c1-7`
         echo "GITHUB_COMMIT=$GITHUB_COMMIT" >> $GITHUB_ENV
@@ -84,7 +112,7 @@ jobs:
     @import build-and-test
 
   build_and_test_ubuntu_14:
-    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}})'
+    name: '${{ matrix.os }}: build and test (install mdns: ${{ matrix.install_mdns }}, use conan: ${{ matrix.use_conan }}, force cpprest asio: ${{ matrix.force_cpprest_asio }}, dns-sd mode: ${{ matrix.dns_sd_mode}}, enable_authorization: ${{ matrix.enable_authorization }})'
     runs-on: ubuntu-20.04
     container:
       image: ubuntu:14.04
@@ -96,6 +124,7 @@ jobs:
         use_conan: [false]
         force_cpprest_asio: [false]
         dns_sd_mode: [multicast]
+        enable_authorization: [true]
 
     steps:
     - uses: actions/checkout@v3
@@ -175,8 +204,8 @@ jobs:
 
     - name: make badges
       run: |
-        # combine badges from all builds, exclude macos-11 and ubuntu-14.04
-        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11 ubuntu-14.04
+        # combine badges from all builds, exclude macos-11
+        ${{ github.workspace }}/Sandbox/make_badges.sh ${{ github.workspace }} ${{ runner.workspace }}/artifacts macos-11_auth macos-11_noauth
 
         # force push to github onto an orphan 'badges' branch
         cd ${{ github.workspace }}

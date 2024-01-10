@@ -59,6 +59,9 @@ namespace web
                     // add a handler to support all other requests for this route and sub-routes (must be added after any method-specific handlers)
                     void mount(const utility::string_t& route_pattern, route_handler all_handler);
 
+                    // pop back handler
+                    void pop_back();
+
                     // provide an exception handler for this route and sub-routes (using std::current_exception, etc.)
                     void set_exception_handler(route_handler handler);
 

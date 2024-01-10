@@ -189,7 +189,7 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 if(NMOS_CPP_USE_CONAN)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
-    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.2.0")
+    set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.3.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
     if(NOT nlohmann_json_schema_validator_VERSION)
         message(STATUS "Found nlohmann_json_schema_validator unknown version; minimum version: " ${JSON_SCHEMA_VALIDATOR_VERSION_MIN})
@@ -202,7 +202,7 @@ if(NMOS_CPP_USE_CONAN)
     endif()
 
     set(NLOHMANN_JSON_VERSION_MIN "3.6.0")
-    set(NLOHMANN_JSON_VERSION_CUR "3.11.2")
+    set(NLOHMANN_JSON_VERSION_CUR "3.11.3")
     find_package(nlohmann_json REQUIRED)
     if(NOT nlohmann_json_VERSION)
         message(STATUS "Found nlohmann_json unknown version; minimum version: " ${NLOHMANN_JSON_VERSION_MIN})
@@ -456,3 +456,65 @@ if(NMOS_CPP_BUILD_LLDP)
     list(APPEND NMOS_CPP_TARGETS PCAP)
     add_library(nmos-cpp::PCAP ALIAS PCAP)
 endif()
+
+# jwt library
+
+if(NMOS_CPP_USE_CONAN)
+    set(JWT_VERSION_MIN "0.5.1")
+    set(JWT_VERSION_CUR "0.7.0")
+    find_package(jwt-cpp REQUIRED)
+    if(NOT jwt-cpp_VERSION)
+        message(STATUS "Found jwt-cpp unknown version; minimum version: " ${JWT_VERSION_MIN})
+    elseif(jwt-cpp_VERSION VERSION_LESS JWT_VERSION_MIN)
+        message(FATAL_ERROR "Found jwt-cpp version " ${jwt-cpp_VERSION} " that is lower than the minimum version: " ${JWT_VERSION_MIN})
+    elseif(jwt-cpp_VERSION VERSION_GREATER JWT_VERSION_CUR)
+        message(STATUS "Found jwt-cpp version " ${jwt-cpp_VERSION} " that is higher than the current tested version: " ${JWT_VERSION_CUR})
+    else()
+        message(STATUS "Found jwt-cpp version " ${jwt-cpp_VERSION})
+    endif()
+
+    add_library(jwt-cpp INTERFACE)
+    target_link_libraries(jwt-cpp INTERFACE jwt-cpp::jwt-cpp)
+else()
+    set(JWT_SOURCES
+        )
+
+    set(JWT_HEADERS
+        third_party/jwt-cpp/jwt.h
+        )
+
+    add_library(
+        jwt-cpp STATIC
+        ${JWT_SOURCES}
+        ${JWT_HEADERS}
+        )
+
+    source_group("Source Files" FILES ${JWT_SOURCES})
+    source_group("Header Files" FILES ${JWT_HEADERS})
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+            target_compile_definitions(
+                jwt-cpp PRIVATE
+                )
+        endif()
+    endif()
+
+    target_link_libraries(
+        jwt-cpp PRIVATE
+        nmos-cpp::compile-settings
+        )
+    target_include_directories(jwt-cpp PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+        )
+endif()
+
+target_compile_definitions(
+    jwt-cpp INTERFACE
+    JWT_DISABLE_PICOJSON
+    )
+
+set_target_properties(jwt-cpp PROPERTIES LINKER_LANGUAGE CXX)
+list(APPEND NMOS_CPP_TARGETS jwt-cpp)
+add_library(nmos-cpp::jwt-cpp ALIAS jwt-cpp)
