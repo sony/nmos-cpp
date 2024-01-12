@@ -444,13 +444,13 @@ namespace nmos
                     // no role
                     utility::stringstream_t ss;
                     ss << U("role: ") << role.as_string() << U(" not found to do FindMembersByPath");
-                    return make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, ss.str());
+                    return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, ss.str());
                 }
             }
             else
             {
                 // no members
-                return make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, U("no members to do FindMembersByPath"));
+                return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("no members to do FindMembersByPath"));
             }
         }
 
