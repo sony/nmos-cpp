@@ -550,6 +550,8 @@ namespace nmos
     // push a control protocol resource into other control protocol NcBlock resource
     void push_back(control_protocol_resource& nc_block_resource, const control_protocol_resource& resource)
     {
+        // note, model write lock should aleady be applied by the outer function, so access to control_protocol_resources is OK...
+
         using web::json::value;
 
         auto& parent = nc_block_resource.data;
@@ -566,6 +568,8 @@ namespace nmos
     // modify a control protocol resource, and insert notification event to all subscriptions
     bool modify_control_protocol_resource(resources& resources, const id& id, std::function<void(resource&)> modifier, const web::json::value& notification_event)
     {
+        // note, model write lock should aleady be applied by the outer function, so access to control_protocol_resources is OK...
+
         auto found = resources.find(id);
         if (resources.end() == found || !found->has_data()) return false;
 
