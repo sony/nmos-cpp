@@ -1008,7 +1008,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 nmos::experimental::make_control_class_property(U("Example object sequence property"), { 3, 14 }, object_sequence, U("ExampleDataType"), false, false, true)
             };
 
-            auto example_method_with_no_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+            auto example_method_with_no_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -1016,7 +1016,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                 return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_simple_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+            auto example_method_with_simple_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
                 // and the method parameters constriants has already been validated by the outer function
@@ -1025,7 +1025,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
                 return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_object_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+            auto example_method_with_object_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
                 // and the method parameters constriants has already been validated by the outer function
@@ -1037,22 +1037,22 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             // Example control class methods
             std::vector<nmos::experimental::method> example_control_methods =
             {
-                { nmos::experimental::make_control_class_method(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false), example_method_with_no_args },
-                { nmos::experimental::make_control_class_method(U("Example deprecated method with no arguments"), { 3, 2 }, U("MethodNoArgs"), U("NcMethodResult"), {}, true), example_method_with_no_args },
+                { nmos::experimental::make_control_class_method(U("Example method with no arguments"), { 3, 1 }, U("MethodNoArgs"), U("NcMethodResult"), {}, false, example_method_with_no_args) },
+                { nmos::experimental::make_control_class_method(U("Example deprecated method with no arguments"), { 3, 2 }, U("MethodNoArgs"), U("NcMethodResult"), {}, true, example_method_with_no_args) },
                 { nmos::experimental::make_control_class_method(U("Example method with simple arguments"), { 3, 3 }, U("MethodSimpleArgs"), U("NcMethodResult"),
-                    {
-                        nmos::details::make_nc_parameter_descriptor(U("Enum example argument"), enum_arg, U("ExampleEnum"), false, false, value::null()),
-                        nmos::details::make_nc_parameter_descriptor(U("String example argument"), string_arg, U("NcString"), false, false, make_string_example_argument_constraints()), // e.g. include method property constraints
-                        nmos::details::make_nc_parameter_descriptor(U("Number example argument"), number_arg, U("NcUint64"), false, false, make_number_example_argument_constraints()), // e.g. include method property constraints
-                        nmos::details::make_nc_parameter_descriptor(U("Boolean example argument"), boolean_arg, U("NcBoolean"), false, false, value::null())
+                     {
+                        nmos::experimental::make_control_class_method_parameter(U("Enum example argument"), enum_arg, U("ExampleEnum")),
+                        nmos::experimental::make_control_class_method_parameter(U("String example argument"), string_arg, U("NcString"), false, false, make_string_example_argument_constraints()), // e.g. include method property constraints
+                        nmos::experimental::make_control_class_method_parameter(U("Number example argument"), number_arg, U("NcUint64"), false, false, make_number_example_argument_constraints()), // e.g. include method property constraints
+                        nmos::experimental::make_control_class_method_parameter(U("Boolean example argument"), boolean_arg, U("NcBoolean"))
                     },
-                    false), example_method_with_simple_args
+                    false, example_method_with_simple_args)
                 },
                 { nmos::experimental::make_control_class_method(U("Example method with object argument"), { 3, 4 }, U("MethodObjectArg"), U("NcMethodResult"),
                     {
-                        nmos::details::make_nc_parameter_descriptor(U("Object example argument"), obj_arg, U("ExampleDataType"), false, false, value::null())
+                        nmos::experimental::make_control_class_method_parameter(U("Object example argument"), obj_arg, U("ExampleDataType"))
                     },
-                    false), example_method_with_object_args
+                    false, example_method_with_object_args)
                 }
             };
 

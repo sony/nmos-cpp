@@ -783,7 +783,7 @@ namespace nmos
                 auto& ctl_class = control_class.second;
 
                 auto methods = value::array();
-                for (const auto& method : ctl_class.methods) { web::json::push_back(methods, method.first); }
+                for (const auto& method : ctl_class.methods) { web::json::push_back(methods, std::get<0>(method)); }
 
                 const auto class_description = ctl_class.fixed_role.is_null()
                     ? make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.properties, methods, ctl_class.events)

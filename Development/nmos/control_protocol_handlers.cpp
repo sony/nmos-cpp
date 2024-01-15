@@ -55,7 +55,7 @@ namespace nmos
                 auto& methods = control_class.methods;
                 auto method_found = std::find_if(methods.begin(), methods.end(), [&method_id](const experimental::method& method)
                 {
-                    return method_id == details::parse_nc_method_id(nmos::fields::nc::id(method.first));
+                    return method_id == details::parse_nc_method_id(nmos::fields::nc::id(std::get<0>(method)));
                 });
                 if (methods.end() != method_found)
                 {

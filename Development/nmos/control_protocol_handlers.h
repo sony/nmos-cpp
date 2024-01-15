@@ -2,7 +2,6 @@
 #define NMOS_CONTROL_PROTOCOL_HANDLERS_H
 
 #include <functional>
-#include <map>
 #include "nmos/control_protocol_typedefs.h"
 #include "nmos/resources.h"
 
@@ -39,11 +38,24 @@ namespace nmos
 
     namespace experimental
     {
-        // method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)> method_handler;
+        // standard method handler definition
+        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)> standard_method_handler;
+
+        // non-standard method handler definition
+        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> non_standard_method_handler;
 
         // method definition (NcMethodDescriptor vs method handler)
-        typedef std::pair<web::json::value, nmos::experimental::method_handler> method;
+        typedef std::tuple<web::json::value, standard_method_handler, non_standard_method_handler> method;
+
+        inline method make_control_class_standard_method(const web::json::value& nc_method_descriptor, standard_method_handler method_handler)
+        {
+            return std::make_tuple(nc_method_descriptor, method_handler, nullptr);
+        }
+
+        inline method make_control_class_non_standard_method(const web::json::value& nc_method_descriptor, non_standard_method_handler method_handler)
+        {
+            return std::make_tuple(nc_method_descriptor, nullptr, method_handler);
+        }
     }
 
     // callback to retrieve a specific method

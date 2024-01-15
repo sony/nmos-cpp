@@ -61,15 +61,26 @@ namespace nmos
             return nmos::details::make_nc_parameter_descriptor(description, name, type_name, is_nullable, is_sequence, constraints);
         }
 
-        // create control class method
-        web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters_, bool is_deprecated)
+        namespace details
         {
-            using web::json::value;
+            web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters_, bool is_deprecated)
+            {
+                using web::json::value;
 
-            value parameters = value::array();
-            for (const auto& parameter : parameters_) { web::json::push_back(parameters, parameter); }
+                value parameters = value::array();
+                for (const auto& parameter : parameters_) { web::json::push_back(parameters, parameter); }
 
-            return nmos::details::make_nc_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated);
+                return nmos::details::make_nc_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated);
+            }
+        }
+        // create control class method
+        method make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, standard_method_handler method_handler)
+        {
+            return make_control_class_standard_method(details::make_control_class_method(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
+        }
+        method make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, non_standard_method_handler method_handler)
+        {
+            return make_control_class_non_standard_method(details::make_control_class_method(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
         }
 
         // create control class event
@@ -91,16 +102,16 @@ namespace nmos
                 return std::vector<web::json::value>{};
             };
 
-            auto to_methods_vector = [](const web::json::value& nc_method_descriptors, const std::map<nmos::nc_method_id, method_handler>& method_handlers)
+            auto to_methods_vector = [](const web::json::value& nc_method_descriptors, const std::map<nmos::nc_method_id, const standard_method_handler>& method_handlers)
             {
-                // NcMethodDescriptor vs method_handler
-                std::vector<nmos::experimental::method> methods;
+                // NcMethodDescriptor vs method
+                std::vector<method> methods;
 
                 if (!nc_method_descriptors.is_null())
                 {
                     for (const auto& nc_method_descriptor : nc_method_descriptors.as_array())
                     {
-                        methods.push_back({ nc_method_descriptor, method_handlers.at(nmos::details::parse_nc_method_id(nmos::fields::nc::id(nc_method_descriptor))) });
+                        methods.push_back(make_control_class_standard_method(nc_method_descriptor, method_handlers.at(nmos::details::parse_nc_method_id(nmos::fields::nc::id(nc_method_descriptor)))));
                     }
                 }
                 return methods;

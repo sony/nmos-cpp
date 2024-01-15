@@ -538,7 +538,7 @@ namespace nmos
             auto& fixed_role = control_class.fixed_role;
             auto properties = control_class.properties;
             auto methods = value::array();
-            for (const auto& method : control_class.methods) { web::json::push_back(methods, method.first); }
+            for (const auto& method : control_class.methods) { web::json::push_back(methods, std::get<0>(method)); }
             auto events = control_class.events;
 
             if (include_inherited)
@@ -551,7 +551,7 @@ namespace nmos
                     const auto& inherited_control_class = get_control_protocol_class(inherited_class_id);
                     {
                         for (const auto& property : inherited_control_class.properties.as_array()) { web::json::push_back(properties, property); }
-                        for (const auto& method : inherited_control_class.methods) { web::json::push_back(methods, method.first); }
+                        for (const auto& method : inherited_control_class.methods) { web::json::push_back(methods, std::get<0>(method)); }
                         for (const auto& event : inherited_control_class.events.as_array()) { web::json::push_back(events, event); }
                     }
                     inherited_class_id.pop_back();

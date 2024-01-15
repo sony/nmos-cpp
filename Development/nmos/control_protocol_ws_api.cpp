@@ -260,15 +260,25 @@ namespace nmos
 
                                         // find the relevent method handler to execute
                                         auto method = get_control_protocol_method(class_id, method_id);
-                                        if (method.second)
+                                        auto& nc_method_descriptor = std::get<0>(method);
+                                        auto& standard_method = std::get<1>(method);
+                                        auto& non_standard_method = std::get<2>(method);
+                                        if (standard_method || non_standard_method)
                                         {
                                             try
                                             {
                                                 // do method arguments constraints validation
-                                                method_parameters_contraints_validation(arguments, method.first, get_control_protocol_datatype);
+                                                method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype);
 
                                                 // execute the relevant method handler, then accumulating up their response to reponses
-                                                response = method.second(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(method.first), get_control_protocol_class, get_control_protocol_datatype, property_changed, gate);
+                                                if (standard_method)
+                                                {
+                                                    response = standard_method(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class, get_control_protocol_datatype, property_changed, gate);
+                                                }
+                                                else // non_standard_method
+                                                {
+                                                    response = non_standard_method(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
+                                                }
                                             }
                                             catch (const nmos::control_protocol_exception& e)
                                             {
