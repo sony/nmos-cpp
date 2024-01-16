@@ -14,6 +14,7 @@ More details are given below.
 - For JSON Schema validation, the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library, which is implemented on top of [JSON for Modern C++](https://github.com/nlohmann/json)
 - For DNS Service Discovery (DNS-SD), the [Bonjour SDK](https://developer.apple.com/bonjour/) on Windows, and on Linux either [Avahi](https://www.avahi.org/) or Apple's [mDNSResponder](https://opensource.apple.com/tarballs/mDNSResponder/) (another name for Bonjour)
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
+- The [C++ JSON Web Token validator](https://github.com/Thalhammer/jwt-cpp) header only library
 
 ## Preparation
 
@@ -308,6 +309,17 @@ Notes:
 
 A copy of the single header version (v1.10.0) is included in the [third_party/catch](../Development/third_party/catch) directory.
 No installation is necessary.
+
+### C++ JSON Web Token validator
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
+
+A copy of the source code necessary to use this library is included in the [third_party/jwt-cpp](../Development/third_party/jwt-cpp) directory.
+No installation is necessary.
+
+</details>
 
 # What Next?
 

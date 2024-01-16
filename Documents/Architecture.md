@@ -1,10 +1,10 @@
 # Architecture of nmos-cpp
 
-The [nmos](../Development/nmos/) module fundamentally provides three things. 
+The [nmos](../Development/nmos/) module fundamentally provides three things.
 
-1. A C++ data model for the AMWA IS-04 and IS-05 NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
-2. An implementation of each of the REST APIs defined by the AMWA IS-04 and IS-05 NMOS specifications, in terms of the data model.
-3. An implementation of the Node and Registry "active behaviours" defined by the specifications.  
+1. A C++ data model for the AMWA IS-04, IS-05 and IS-08 NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
+2. An implementation of each of the REST APIs defined by the AMWA IS-04, IS-05, IS-08, IS-09 and IS-10 NMOS specifications, in terms of the data model.
+3. An implementation of the Node and Registry "active behaviours" defined by the specifications.
 
 The module also provides the concept of a server which combines the REST APIs and behaviours into a single object for simplicity.
 
@@ -14,12 +14,13 @@ The module also provides the concept of a server which combines the REST APIs an
 
 The top-level data structures for an NMOS Node and Registry are ``nmos::node_model`` and ``nmos::registry_model`` respectively.
 
-A ``node_model`` has three member variables which are containers, of IS-04 resources, IS-05 resources and IS-07 resources, respectively:
+A ``node_model`` has four member variables which are containers, of IS-04 resources, IS-05 resources, IS-07 resources and IS-08 resources, respectively:
 
 ```C++
 nmos::resources node_resources;
 nmos::resources connection_resources;
 nmos::resources events_resources;
+nmos::resources channelmapping_resources;
 ```
 
 A ``registry_model`` has two containers, this time for the Registry's own Node API "self" resource, and for the resources that have been registered with the Registration API:
@@ -118,9 +119,11 @@ for (;;)
 > [nmos/events_api.cpp](../Development/nmos/events_api.cpp),
 > [nmos/registration_api.cpp](../Development/nmos/registration_api.cpp),
 > [nmos/query_api.cpp](../Development/nmos/query_api.cpp),
-> [nmos/system_api.cpp](../Development/nmos/system_api.cpp)
+> [nmos/system_api.cpp](../Development/nmos/system_api.cpp),
+> [nmos/channelmapping_api.cpp](../Development/nmos/channelmapping_api.cpp)
+> [nmos/authorization_redirect_api.cpp](../Development/nmos/authorization_redirect_api.cpp)
 
-The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07 and IS-09.
+The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07, IS-08, IS-09 and IS-10.
 
 The C++ REST SDK provides a general purpose HTTP listener, that accepts requests at a particular base URL and passes them to a user-specified request handler for processing.
 Therefore the ``nmos`` module implements each API as a request handler which reads and/or writes the relevant parts of the NMOS data model, and provides a convenience function, ``nmos::support_api``, for associating the API request handler with the HTTP listener.
@@ -167,7 +170,7 @@ The required Node behaviour includes:
 
 The state machine implemented by the ``nmos::node_behaviour_thread`` is shown below:
 
-![NMOS Node Behaviour](images/node-behaviour.png)  
+![NMOS Node Behaviour](images/node-behaviour.png)
 
 <details>
 <summary>More details...</summary>
@@ -211,7 +214,7 @@ The diagram below shows a sequence of events within and between an **nmos-cpp** 
 Resource events initiated in a resource-scheduling thread in the Node are propagated via the Registration API to the Registry model.
 Events in the Registry model are sent in WebSocket messages to each Client with a matching Query API subscription.
 
-![Sequence Diagram](images/node-registry-sequence.png)  
+![Sequence Diagram](images/node-registry-sequence.png)
 
 ## Servers
 
@@ -273,3 +276,102 @@ A logging statement at run-time:
   - terminates the application if its severity level is fatal
 
 </details>
+
+## Authorization
+
+This is based on the ``OAuth 2.0`` recommendation, it is used for protecting the NMOS APIs, which allows NMOS Node and NMOS Registry to give limited access to the third-party application. Third-party applications including Broadcast Controller, which queries Registry via the AMWA IS-04 for the NMOS Nodes information and issues the IS-05 connection to the Nodes. NMOS Nodes also act as the third-party for the Registry to perform the AMWA IS-04 node registration.
+
+### General idea of how it works
+
+A client such as Broadcast Controller provides credentials to the Authorization Server. The required access token(s) is then granted to the Controller for accessing the protected APIs on the Resource(s) Server, such as the NMOS Node. The Resource Server will verify the access token for the level of the access right. If all goes well, the protected API is accessible.
+
+The access token is time-limited, it must be refreshed before it expired. It is recommended to attempt a refresh at least 15 seconds before the expiry or the half-life of the access token.
+
+To speed up the token validation process, the Resource(s) Server periodically fetches the Authorization Server's public keys, typically once every hour. The public keys allow the Resource(s) Server to perform local token validation without bombarding the Authorization Server on every API access validation.
+
+A similar idea is also applied to how NMOS Node performs node registration. Registry obtains the public keys from the Authorization Server, and the Node obtains the registration access token from the Authorization Server. The Node embeds the token into the registration request for node registration, and registry heartbeat.
+
+### Authorization Server Metadata
+
+Clients, such as NMOS Broadcast Controller, Registry and Node locate the Authorization API endpoints via the DNS-SD Authorization Server discovery. The Authorization Server has a well-known endpoint for returning the server metadata. Details are shown in the client registration sequence diagram.
+
+### Client Registration
+
+Clients must be registered to the Authorization Server before using the ``OAuth 2.0`` protocol. In the event of successful registration, the Authorization Server will return the client_id for the public client and client_id and client_secret for the confidential client. It is, however, important that the public client which is using the Authorization Code Flow must register one or more redirect URLs for security purposes, which allows Authorization Server to ensure any authorization request is genuine and only the valid redirect URLs are used for returning the authorization code. While using Client Credentials Flow, Private Key JWT can be used for client authentication with extra security.
+
+See the client registration sequence diagram below on how an NMOS Node is registered to the Authorization Server.
+
+![Client-Registration](images/Authorization-Client-Registration.png)
+
+### Access Token
+
+There are a number of ways to request the access token, it is based on the type of authorization grant. The grant type depends on the location and the nature of the client involved in obtaining the access token. A number of grant types are defined in ``OAuth 2.0``.  NMOS is focused on using the following types, the ``Authorization Code Grant`` and the ``Client Credentials Grant``.
+
+#### Authorization Code Grant
+
+This is the most recommended type, it should be used if the client has a web browser, such as the Broadcast Controller. An Authorization code is returned by the Authorization Server via the client's redirect URI. The client can then exchange it for a time-limited access token, and renew it with the refresh token.
+
+For public clients, there is a potential security risk with an attacker hijacking the Authorization code. To prevent that ``Proof Key for Code Exchange`` (PKCE) is used to further secure the Authorization Code Flow.
+
+Step 1. create a high entropy cryptographic random string, ``code_verifier``.
+
+Step 2. convert the ``code_verifier`` to ``code_challenge`` with the following logic:
+
+```
+code_challenge=BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
+```
+
+Step 3. includes the ``code_challege`` and the hashing method used to generate the ``code_challenge`` in the authorization code request.
+
+Step 4. send the ``code_verifier`` and the ``authorization code`` for exchanging the token. The Authorization Server uses the ``code_verifier`` to recreate the matching ``code_challenge`` to verify the client.
+
+![Authorization-Code-Flow](images/Authorization-Code-Flow.png)
+
+#### Client Credentials Grant
+
+This type of authorization is used by clients to obtain the access token without user authorization, such as a hardware NMOS Node which has no web browser supported. To gain extra security the ``Private Key JWT`` is used by the NMOS Node as a form of client authentication by the Authorization Server before handing out the token.
+
+![Client-Credentials-Flow](Images/Authorization-Client-Credentials-Flow.png)
+
+### Authorization Server Public Keys
+
+The public keys are used by the Resource(s) Server for validating the access token before giving access right to it's protected APIs. The client must periodically poll the Authorization Server's ``public keys``, typically once every hour. In the event, that the Authorization Server is no longer available, the last fetched public keys will be kept in use until the Authorization Server connection is restored.
+
+The token validation is done by re-generating the matching token signature by signing the token header and the token payload.
+
+![Public-Keys](Images/Authorization-Public-Keys.png)
+
+### Authorization behaviour
+
+> [nmos/authorization_behaviour.cpp](../../Development/nmos/authorization_behaviour.cpp)
+
+The required Authorization behaviour includes:
+
+- discovery of the Authorization Server
+- fetch Authorization Server metadata for Authorization Server endpoints and supported features
+- Authorization client registration
+- fetch Authorization Server public keys
+- fetch Bearer token for accessing protected endpoints
+
+The state machine implemented by the ```nmos::experimental::authorization_behaviour_thread``` is shown below:
+
+![Authorization-behaviour](Images/Authorization-behaviour.png)
+
+### Missing public keys to validate the access token
+
+> [nmos/authorization_handlers.cpp](../../Development/nmos/authorization_handlers.cpp)
+> [nmos/authorization_behaviour.cpp](../../Development/nmos/authorization_behaviour.cpp)
+
+If no matching public key is available to validate the incoming access token. The validation handler will trigger the authorization token issuer thread to fetch and cache the public keys from this token's issuer, which will then be possible to validate any token issued by this issuer.
+
+The state machine implemented by the ```nmos::experimental::validate_authorization_handler``` and the ```nmos::experimental::authorization_token_issuer_thread``` are shown below:
+
+![missing-public-keys](Images/Authorization-Missing-Public-Keys.png)
+
+### OAuth 2.0 Node Registration Example
+
+Following is an overview of how an ``OAuth 2.0`` NMOS Node registers to an ``OAuth 2.0`` enabled NMOS Registry.
+
+![Node-Registration](Images/Authorization-Node-Registration.png)
+
+In addition, if the Authorization behaviour thread is excluded, the NMOS Node/Registry can easily be configured as a headless ``OAuth 2.0`` enabled device. Where the access token will be fed in externally via the ```nmos::experimental::get_authorization_bearer_token_handler``` callback and the access token validation will be happening on the ```nmos::experimental::validate_authorization_token_handler``` callback.
