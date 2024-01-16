@@ -331,7 +331,7 @@ Step 4. send the ``code_verifier`` and the ``authorization code`` for exchanging
 
 This type of authorization is used by clients to obtain the access token without user authorization, such as a hardware NMOS Node which has no web browser supported. To gain extra security the ``Private Key JWT`` is used by the NMOS Node as a form of client authentication by the Authorization Server before handing out the token.
 
-![Client-Credentials-Flow](Images/Authorization-Client-Credentials-Flow.png)
+![Client-Credentials-Flow](images/Authorization-Client-Credentials-Flow.png)
 
 ### Authorization Server Public Keys
 
@@ -339,7 +339,7 @@ The public keys are used by the Resource(s) Server for validating the access tok
 
 The token validation is done by re-generating the matching token signature by signing the token header and the token payload.
 
-![Public-Keys](Images/Authorization-Public-Keys.png)
+![Public-Keys](images/Authorization-Public-Keys.png)
 
 ### Authorization behaviour
 
@@ -355,7 +355,7 @@ The required Authorization behaviour includes:
 
 The state machine implemented by the ```nmos::experimental::authorization_behaviour_thread``` is shown below:
 
-![Authorization-behaviour](Images/Authorization-behaviour.png)
+![Authorization-behaviour](images/Authorization-behaviour.png)
 
 ### Missing public keys to validate the access token
 
@@ -366,12 +366,12 @@ If no matching public key is available to validate the incoming access token. Th
 
 The state machine implemented by the ```nmos::experimental::validate_authorization_handler``` and the ```nmos::experimental::authorization_token_issuer_thread``` are shown below:
 
-![missing-public-keys](Images/Authorization-Missing-Public-Keys.png)
+![missing-public-keys](images/Authorization-Missing-Public-Keys.png)
 
 ### OAuth 2.0 Node Registration Example
 
 Following is an overview of how an ``OAuth 2.0`` NMOS Node registers to an ``OAuth 2.0`` enabled NMOS Registry.
 
-![Node-Registration](Images/Authorization-Node-Registration.png)
+![Node-Registration](images/Authorization-Node-Registration.png)
 
 In addition, if the Authorization behaviour thread is excluded, the NMOS Node/Registry can easily be configured as a headless ``OAuth 2.0`` enabled device. Where the access token will be fed in externally via the ```nmos::experimental::get_authorization_bearer_token_handler``` callback and the access token validation will be happening on the ```nmos::experimental::validate_authorization_token_handler``` callback.
