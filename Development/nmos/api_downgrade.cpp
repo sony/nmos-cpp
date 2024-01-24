@@ -1033,13 +1033,11 @@ namespace nmos
     struct property
     {
         utility::string_t name;
-        web::json::value default_value;
-        bool required;  // is required property
+        bst::optional<web::json::value> default_value;
 
-        property(utility::string_t name, web::json::value default_value = web::json::value::null(), bool required = true)
+        property(utility::string_t name, bst::optional<web::json::value> default_value = web::json::value::null())
             : name(std::move(name))
             , default_value(std::move(default_value))
-            , required(std::move(required))
         {}
     };
 
@@ -1048,6 +1046,13 @@ namespace nmos
         using web::json::value;
         using web::json::value_of;
 
+        // The downgrade function uses the following map to identify which properties are required on the relevant version
+        //
+        // 1. work from the minimum version to the required downgrade version
+        // 2. find the property in the resource
+        // 3. do property schema validation on schema changed properties
+        // 4. if schema validation failed, remove optional property or set required property to default
+        // 5. if all okay, copy the resource property to the downgrade result
         static const std::map<nmos::type, std::map<nmos::api_version, std::vector<property>>> resources_versions
         {
             {
@@ -1072,8 +1077,8 @@ namespace nmos
                         { U("interfaces"), value::array() }
                     } },
                     { nmos::is04_versions::v1_3, {
-                        { U("services"), value::array() },
-                        { U("interfaces"), value::array() }
+                        { U("services"), value::array() }, // schema changed
+                        { U("interfaces"), value::array() } // schema changed
                     } }
                 }
             },
@@ -1090,14 +1095,14 @@ namespace nmos
                         { U("receivers") }
                     } },
                     { nmos::is04_versions::v1_1, {
-                        { U("type"), value::string(U("urn:x-nmos:device:generic")) },
+                        { U("type"), value::string(U("urn:x-nmos:device:generic")) }, // schema changed
                         { U("description") },
                         { U("tags") },
                         { U("controls"), value::array() }
                     } },
                     { nmos::is04_versions::v1_3, {
-                        { U("type"), value::string(U("urn:x-nmos:device:generic")) },
-                        { U("controls"), value::array() }
+                        { U("type"), value::string(U("urn:x-nmos:device:generic")) }, // schema changed
+                        { U("controls"), value::array() } // schema changed
                     } },
                 }
             },
@@ -1116,15 +1121,18 @@ namespace nmos
                         { U("parents") }
                     } },
                     { nmos::is04_versions::v1_1, {
-                        { U("format"), value::string(U("urn:x-nmos:format:video")) },
-                        { U("grain_rate"), value_of({
-                            { nmos::fields::numerator, 0 },
-                            { nmos::fields::denominator, 1 } }), false },
+                        { U("format"), value::string(U("urn:x-nmos:format:video")) }, // schema chnaged
+                        { U("grain_rate"), bst::nullopt }, // optional
                         { U("clock_name") },
-                        { U("channels") }
+                        { U("channels"), value_of({
+                            value_of({
+                                {U("label"), U("")}
+                            })
+                        }) }
                     } },
                     { nmos::is04_versions::v1_3, {
-                        { U("event_type") } } }
+                        { U("event_type"), bst::nullopt } // optional
+                    } }
                 }
             },
             {
@@ -1141,7 +1149,7 @@ namespace nmos
                         { U("parents") }
                     } },
                     { nmos::is04_versions::v1_1, {
-                        { U("format"), value::string(U("urn:x-nmos:format:video")) },
+                        { U("format"), value::string(U("urn:x-nmos:format:video")) }, // schema changed
                         { U("grain_rate") },
                         { U("device_id") },
                         { U("media_type") },
@@ -1152,13 +1160,13 @@ namespace nmos
                         { U("frame_height") },
                         { U("interlace_mode") },
                         { U("colorspace"), value::string(U("BT709")) },
-                        { U("transfer_characteristic"), value::string(U("SDR")), false },
+                        { U("transfer_characteristic"), bst::nullopt }, // optional
                         { U("components") }
                     } },
                     { nmos::is04_versions::v1_3, {
-                        { U("colorspace"), value::string(U("BT709")) },
-                        { U("transfer_characteristic"), value::string(U("SDR")), false },
-                        { U("event_type") }
+                        { U("colorspace"), value::string(U("BT709")) }, // schema changed
+                        { U("transfer_characteristic"), bst::nullopt }, // schema changed, field optional
+                        { U("event_type"), bst::nullopt } // optional
                     } }
                 }
             },
@@ -1172,23 +1180,23 @@ namespace nmos
                         { U("description") },
                         { U("flow_id") },
                         { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) },
-                        { U("tags"), value::array(), false },
+                        { U("tags"), bst::nullopt }, // optional
                         { U("device_id") },
                         { U("manifest_href") }
                     } },
                     { nmos::is04_versions::v1_1, {
-                        { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) },
-                        { U("tags"), value::array() }
+                        { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) }, // schema changed
+                        { U("tags"), value::array() } // schema changed, field required
                     } },
                     { nmos::is04_versions::v1_2, {
-                        { U("caps"), value::object(), false },
+                        { U("caps"), bst::nullopt }, // optional
                         { U("interface_bindings"), value::array() },
                         { U("subscription"), value_of({
                             { nmos::fields::active, value::boolean(true) },
                             { nmos::fields::receiver_id, value::null() } }) }
                     } },
                     { nmos::is04_versions::v1_3, {
-                        { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) }
+                        { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) } // schema changed
                     } }
                 }
             },
@@ -1209,17 +1217,18 @@ namespace nmos
                             { nmos::fields::sender_id, value::null() } }) }
                     } },
                     { nmos::is04_versions::v1_1, {
-                        { U("format"), value::string(U("urn:x-nmos:format:video")) },
-                        { U("caps"), value_of({
+                        { U("format"), value::string(U("urn:x-nmos:format:video")) }, // schema changed
+                        { U("caps"), value_of({ // schema changed, select one of the media types (video/audio/data/mux) for the default
                             { nmos::fields::media_types, value_of({
                                 { U("video/raw") } }) }})
                         },
-                        { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) },
-                        { U("subscription"), value_of({
+                        { U("transport"), value::string(U("urn:x-nmos:transport:rtp")) }, // schema changed
+                        { U("subscription"), value_of({ // schema changed
                             { nmos::fields::sender_id, value::null() } }) }
                     } },
-                    { nmos::is04_versions::v1_2, { {U("interface_bindings")},
-                        { U("subscription"), value_of({
+                    { nmos::is04_versions::v1_2, {
+                        { U("interface_bindings") },
+                        { U("subscription"), value_of({ // schema changed
                             { nmos::fields::active, value::boolean(false) },
                             { nmos::fields::sender_id, value::null() } }) }
                     } }
@@ -1264,6 +1273,8 @@ namespace nmos
         // Further examples of this are the proposed addition in v1.3 of "attached_network_device" in the "interfaces"
         // sub-objects of a node and of "authorization" in node "api.endpoints" and "services" and device "controls".
         // See https://github.com/AMWA-TV/is-04/pull/109/files#diff-251d9acc57a6ffaeed673153c6409f5f
+        // Further examples of this are the enhancement of "colorspace" and "transfer_characteristic" in the video flow
+        // See https://specs.amwa.tv/is-04/releases/v1.3.0/APIs/schemas/with-refs/flow_video.html
 
         auto& resource_versions = resources_versions().at(resource_type);
 
@@ -1275,7 +1286,7 @@ namespace nmos
             {
                 if (resource_data.has_field(property.name))
                 {
-                    // do schema validation on their property which has schema associated to it
+                    // do schema validation on those properties which have schema associated with them
                     const auto& schema_id = details::make_schema_id(version_properties->first, resource_type, property.name);
                     if (details::property_schemas.end() != details::property_schemas.find(schema_id))
                     {
@@ -1289,10 +1300,10 @@ namespace nmos
                         }
                         catch(...)
                         {
-                            // if property required, i.e. obligatory
-                            if (property.required)
+                            // is the property required
+                            if (property.default_value)
                             {
-                                result[property.name] = property.default_value;
+                                result[property.name] = *property.default_value;
                             }
                             else
                             {
@@ -1306,6 +1317,7 @@ namespace nmos
                     }
                     else
                     {
+                        // no schema validation required, just copy the resource property to the result
                         result[property.name] = resource_data.at(property.name);
                     }
                 }
