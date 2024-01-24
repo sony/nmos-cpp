@@ -34,8 +34,8 @@ namespace
     const auto flow_id = nmos::make_id();
     const auto sender_id = nmos::make_id();
     const auto receiver_id = nmos::make_id();
-    const auto sender_ids = { sender_id };
-    const auto receiver_ids = { receiver_id };
+    const std::vector<nmos::id> sender_ids = { sender_id };
+    const std::vector<nmos::id> receiver_ids = { receiver_id };
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
