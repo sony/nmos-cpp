@@ -30,6 +30,12 @@ namespace nmos
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
+            const web::uri node_uri = make_schema_uri(tag, _XPLATSTR("node.json"));
+            const web::uri device_uri = make_schema_uri(tag, _XPLATSTR("device.json"));
+            const web::uri source_uri = make_schema_uri(tag, _XPLATSTR("source.json"));
+            const web::uri flow_uri = make_schema_uri(tag, _XPLATSTR("flow.json"));
+            const web::uri sender_uri = make_schema_uri(tag, _XPLATSTR("sender.json"));
+            const web::uri receiver_uri = make_schema_uri(tag, _XPLATSTR("receiver.json"));
         }
 
         // See https://github.com/AMWA-TV/is-04/blob/v1.2.x/APIs/schemas/
@@ -41,6 +47,12 @@ namespace nmos
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
+            const web::uri node_uri = make_schema_uri(tag, _XPLATSTR("node.json"));
+            const web::uri device_uri = make_schema_uri(tag, _XPLATSTR("device.json"));
+            const web::uri source_uri = make_schema_uri(tag, _XPLATSTR("source.json"));
+            const web::uri flow_uri = make_schema_uri(tag, _XPLATSTR("flow.json"));
+            const web::uri sender_uri = make_schema_uri(tag, _XPLATSTR("sender.json"));
+            const web::uri receiver_uri = make_schema_uri(tag, _XPLATSTR("receiver.json"));
         }
 
         // See https://github.com/AMWA-TV/is-04/blob/v1.1.x/APIs/schemas/
@@ -52,6 +64,12 @@ namespace nmos
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-subscriptions-post-request.json"));
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
+            const web::uri node_uri = make_schema_uri(tag, _XPLATSTR("node.json"));
+            const web::uri device_uri = make_schema_uri(tag, _XPLATSTR("device.json"));
+            const web::uri source_uri = make_schema_uri(tag, _XPLATSTR("source.json"));
+            const web::uri flow_uri = make_schema_uri(tag, _XPLATSTR("flow.json"));
+            const web::uri sender_uri = make_schema_uri(tag, _XPLATSTR("sender.json"));
+            const web::uri receiver_uri = make_schema_uri(tag, _XPLATSTR("receiver.json"));
         }
 
         // See https://github.com/AMWA-TV/is-04/blob/v1.0.x/APIs/schemas/
@@ -63,6 +81,12 @@ namespace nmos
             const web::uri registrationapi_resource_post_request_uri = make_schema_uri(tag, _XPLATSTR("registrationapi-v1.0-resource-post-request.json"));
             const web::uri queryapi_subscriptions_post_request_uri = make_schema_uri(tag, _XPLATSTR("queryapi-v1.0-subscriptions-post-request.json"));
             const web::uri nodeapi_receiver_target_put_request_uri = make_schema_uri(tag, _XPLATSTR("nodeapi-receiver-target.json"));
+            const web::uri node_uri = make_schema_uri(tag, _XPLATSTR("node.json"));
+            const web::uri device_uri = make_schema_uri(tag, _XPLATSTR("device.json"));
+            const web::uri source_uri = make_schema_uri(tag, _XPLATSTR("source.json"));
+            const web::uri flow_uri = make_schema_uri(tag, _XPLATSTR("flow.json"));
+            const web::uri sender_uri = make_schema_uri(tag, _XPLATSTR("sender.json"));
+            const web::uri receiver_uri = make_schema_uri(tag, _XPLATSTR("receiver.json"));
         }
     }
 
@@ -398,6 +422,54 @@ namespace nmos
             if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::nodeapi_receiver_target_put_request_uri;
             if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::nodeapi_receiver_target_put_request_uri;
             return is04_schemas::v1_0::nodeapi_receiver_target_put_request_uri;
+        }
+
+        web::uri make_node_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::node_uri;
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::node_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::node_uri;
+            return is04_schemas::v1_0::node_uri;
+        }
+
+        web::uri make_device_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::device_uri;
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::device_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::device_uri;
+            return is04_schemas::v1_0::device_uri;
+        }
+
+        web::uri make_source_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::source_uri;
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::source_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::source_uri;
+            return is04_schemas::v1_0::source_uri;
+        }
+
+        web::uri make_flow_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::flow_uri;
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::flow_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::flow_uri;
+            return is04_schemas::v1_0::flow_uri;
+        }
+
+        web::uri make_sender_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::sender_uri;
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::sender_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::sender_uri;
+            return is04_schemas::v1_0::sender_uri;
+        }
+
+        web::uri make_receiver_schema_uri(const nmos::api_version& version)
+        {
+            if (is04_versions::v1_3 <= version) return is04_schemas::v1_3::receiver_uri;
+            if (is04_versions::v1_2 <= version) return is04_schemas::v1_2::receiver_uri;
+            if (is04_versions::v1_1 <= version) return is04_schemas::v1_1::receiver_uri;
+            return is04_schemas::v1_0::receiver_uri;
         }
 
         web::uri make_connectionapi_staged_patch_request_schema_uri(const nmos::api_version& version, const nmos::type& type)
