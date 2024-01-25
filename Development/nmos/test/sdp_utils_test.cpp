@@ -598,11 +598,11 @@ BST_TEST_CASE(testSdpParametersVideoRaw)
             sdp::packing_modes::block,
             sdp::smpte_standard_numbers::ST2110_20_2022,
             sdp::type_parameters::type_W,
-            0,
+            uint32_t(0),
             42,
             57,
             sdp::timestamp_modes::SAMP,
-            0
+            uint32_t(0)
         }
     };
 
@@ -668,7 +668,7 @@ BST_TEST_CASE(testSdpParametersAudioL)
             96000,
             U("SMPTE2110.(M,M,M,M,ST,U02)"), // not testing nmos::make_fmtp_channel_order here
             sdp::timestamp_modes::SAMP,
-            0,
+            uint32_t(0),
             0.333
         }
     };
@@ -738,9 +738,9 @@ BST_TEST_CASE(testSdpParametersVideoSmpte291)
             nmos::rates::rate59_94,
             sdp::transmission_models::compatible,
             sdp::smpte_standard_numbers::ST2110_40_2023,
-            0,
+            uint32_t(0),
             sdp::timestamp_modes::SAMP,
-            0
+            uint32_t(0)
         }
     };
 
@@ -791,7 +791,7 @@ BST_TEST_CASE(testSdpParametersVideoSmpte2022_6)
         },
         {
              sdp::type_parameters::type_W,
-             0
+             uint32_t(0)
         }
     };
 

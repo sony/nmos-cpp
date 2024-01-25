@@ -169,11 +169,11 @@ BST_TEST_CASE(testSdpParametersVideoJpegXs)
             sdp::ranges::FULL,
             sdp::smpte_standard_numbers::ST2110_20_2022,
             sdp::type_parameters::type_W,
-            0,
+            uint32_t(0),
             42,
             57,
             sdp::timestamp_modes::SAMP,
-            0,
+            uint32_t(0),
             200000
         }
     };
