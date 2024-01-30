@@ -86,9 +86,7 @@ BST_TEST_CASE(testSdpParametersVideoJpegXs)
                 { U("SSN"), U("ST2110-22:2019") },
                 { U("TP"), U("2110TPN") }
             },
-            {
-                116000
-            }
+            116000
         },
         {
             sdp::video_jxsv::packetization_mode::codestream,
@@ -147,9 +145,7 @@ BST_TEST_CASE(testSdpParametersVideoJpegXs)
                 { U("TSMODE"), U("SAMP") },
                 { U("TSDELAY"), U("0") }
             },
-            {
-                200000
-            }
+            200000
         },
         {
             sdp::video_jxsv::packetization_mode::codestream,
