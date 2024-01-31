@@ -82,7 +82,7 @@ If using Conan, this section can be skipped.
    Notes:
    - Several Boost releases have been tested, including Version 1.83.0 (latest release at the time) and Version 1.54.0
    - On Linux distributions, a Boost libraries package may already be installed, e.g. Ubuntu 14.04 LTS has Version 1.54.0
-2. Expand the archive so that, for example, the boost\_1\_80\_0 directory is at the same level as the nmos-cpp directory
+2. Expand the archive so that, for example, the boost\_1\_83\_0 directory is at the same level as the nmos-cpp directory
 3. Build and stage (or install) the following Boost libraries for your platform/toolset:
    - atomic
    - chrono
