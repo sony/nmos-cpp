@@ -142,7 +142,7 @@
       libssl-dev
 
     cd ${{ env.RUNNER_WORKSPACE }}
-    git clone --recurse-submodules --branch v2.10.18 https://github.com/Microsoft/cpprestsdk
+    git clone --recurse-submodules --branch v2.10.19 https://github.com/Microsoft/cpprestsdk
     cd cpprestsdk/Release
     mkdir build
     cd build
