@@ -127,7 +127,7 @@ namespace nmos
         }
 
 #ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
-        // The current version of the C++ REST SDK 2.10.18 does not provide the callback to enable the custom websocket setting
+        // The current version of the C++ REST SDK 2.10.19 does not provide the callback to enable the custom websocket setting
         inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
         {
             if (client_address.empty()) return {};
