@@ -69,12 +69,26 @@ namespace nmos
             // generate SHA256 with the given string
             std::vector<uint8_t> sha256(const std::string& text)
             {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
                 uint8_t hash[SHA256_DIGEST_LENGTH];
                 SHA256_CTX ctx;
                 if (SHA256_Init(&ctx) && SHA256_Update(&ctx, text.c_str(), text.size()) && SHA256_Final(hash, &ctx))
                 {
                     return{ hash, hash + SHA256_DIGEST_LENGTH };
                 }
+#else
+                typedef std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> EVP_MD_CTX_ptr;
+                typedef std::unique_ptr<EVP_MD, decltype(&EVP_MD_free)> EVP_MD_ptr;
+
+                uint8_t hash[EVP_MAX_MD_SIZE];
+                uint32_t md_len{ 0 };
+                EVP_MD_CTX_ptr mdctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
+                EVP_MD_ptr md(EVP_MD_fetch(NULL, "SHA2-256", NULL), &EVP_MD_free);
+                if (EVP_DigestInit_ex(mdctx.get(), md.get(), NULL) && EVP_DigestUpdate(mdctx.get(), text.c_str(), text.size()) && EVP_DigestFinal_ex(mdctx.get(), hash, &md_len))
+                {
+                    return{ hash, hash + md_len };
+                }
+#endif
                 return{};
             }
 
