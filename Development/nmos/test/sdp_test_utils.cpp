@@ -3,7 +3,7 @@
 #include "bst/test/test.h"
 #include "nmos/sdp_utils.h"
 
-namespace sdp_test
+namespace nmos
 {
     typedef std::multimap<utility::string_t, utility::string_t> comparable_fmtp_t;
 

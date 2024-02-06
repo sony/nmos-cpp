@@ -4,10 +4,7 @@
 namespace nmos
 {
     struct sdp_parameters;
-}
 
-namespace sdp_test
-{
     void check_sdp_parameters(const nmos::sdp_parameters& lhs, const nmos::sdp_parameters& rhs);
 }
 

@@ -576,6 +576,60 @@ BST_TEST_CASE(testSdpParametersVideoRaw)
                 { U("PM"), U("2110BPM") },
                 { U("SSN"), U("ST2110-20:2022") },
                 { U("TP"), U("2110TPW") },
+                { U("TROFF"), U("37") },
+                { U("CMAX"), U("42") },
+                { U("MAXUDP"), U("57") },
+                { U("TSMODE"), U("SAMP") },
+                { U("TSDELAY"), U("82") }
+            }
+        },
+        {
+            sdp::samplings::UNSPECIFIED,
+            16,
+            9999,
+            6666,
+            { 123, 1 },
+            true,
+            true,
+            sdp::transfer_characteristic_systems::ST2115LOGS3,
+            sdp::colorimetries::BT2100,
+            sdp::ranges::FULLPROTECT,
+            { 12, 11 },
+            sdp::packing_modes::block,
+            sdp::smpte_standard_numbers::ST2110_20_2022,
+            sdp::type_parameters::type_W,
+            37,
+            42,
+            57,
+            sdp::timestamp_modes::SAMP,
+            82
+        }
+    };
+
+    std::pair<nmos::sdp_parameters, nmos::video_raw_parameters> zero_troff_tsdelay{
+        {
+            U("zero_troff_tsdelay"),
+            sdp::media_types::video,
+            {
+                123,
+                U("raw"),
+                90000
+            },
+            {
+                { U("sampling"), U("UNSPECIFIED") },
+                { U("depth"), U("16") },
+                { U("width"), U("9999") },
+                { U("height"), U("6666") },
+                { U("exactframerate"), U("123") },
+                { U("interlace"), {} },
+                { U("segmented"), {} },
+                { U("TCS"), U("ST2115LOGS3") },
+                { U("colorimetry"), U("BT2100") },
+                { U("RANGE"), U("FULLPROTECT") },
+                { U("PAR"), U("12:11") },
+                { U("PM"), U("2110BPM") },
+                { U("SSN"), U("ST2110-20:2022") },
+                { U("TP"), U("2110TPW") },
                 { U("TROFF"), U("0") },
                 { U("CMAX"), U("42") },
                 { U("MAXUDP"), U("57") },
@@ -598,20 +652,20 @@ BST_TEST_CASE(testSdpParametersVideoRaw)
             sdp::packing_modes::block,
             sdp::smpte_standard_numbers::ST2110_20_2022,
             sdp::type_parameters::type_W,
-            uint32_t(0),
+            0U,
             42,
             57,
             sdp::timestamp_modes::SAMP,
-            uint32_t(0)
+            0U
         }
     };
 
-    for (auto& test : { example, wacky })
+    for (auto& test : { example, wacky, zero_troff_tsdelay })
     {
         auto made = nmos::make_video_raw_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, made);
+        nmos::check_sdp_parameters(test.first, made);
         auto roundtripped = nmos::make_video_raw_sdp_parameters(made.session_name, nmos::get_video_raw_parameters(made), made.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, roundtripped);
+        nmos::check_sdp_parameters(test.first, roundtripped);
     }
 }
 
@@ -657,6 +711,34 @@ BST_TEST_CASE(testSdpParametersAudioL)
             {
                 { U("channel-order"), U("SMPTE2110.(M,M,M,M,ST,U02)") },
                 { U("TSMODE"), U("SAMP") },
+                { U("TSDELAY"), U("82") }
+            },
+            {},
+            0.333
+        },
+        {
+            1,
+            16,
+            96000,
+            U("SMPTE2110.(M,M,M,M,ST,U02)"), // not testing nmos::make_fmtp_channel_order here
+            sdp::timestamp_modes::SAMP,
+            82,
+            0.333
+        }
+    };
+
+    std::pair<nmos::sdp_parameters, nmos::audio_L_parameters> zero_tsdelay{
+        {
+            U("zero_tsdelay"),
+            sdp::media_types::audio,
+            {
+                123,
+                U("L16"),
+                96000
+            },
+            {
+                { U("channel-order"), U("SMPTE2110.(M,M,M,M,ST,U02)") },
+                { U("TSMODE"), U("SAMP") },
                 { U("TSDELAY"), U("0") }
             },
             {},
@@ -668,17 +750,17 @@ BST_TEST_CASE(testSdpParametersAudioL)
             96000,
             U("SMPTE2110.(M,M,M,M,ST,U02)"), // not testing nmos::make_fmtp_channel_order here
             sdp::timestamp_modes::SAMP,
-            uint32_t(0),
+            0U,
             0.333
         }
     };
 
-    for (auto& test : { example, wacky })
+    for (auto& test : { example, wacky, zero_tsdelay })
     {
         auto made = nmos::make_audio_L_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, made);
+        nmos::check_sdp_parameters(test.first, made);
         auto roundtripped = nmos::make_audio_L_sdp_parameters(made.session_name, nmos::get_audio_L_parameters(made), made.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, roundtripped);
+        nmos::check_sdp_parameters(test.first, roundtripped);
     }
 }
 
@@ -727,6 +809,39 @@ BST_TEST_CASE(testSdpParametersVideoSmpte291)
                 { U("exactframerate"), U("60000/1001") },
                 { U("TM"), U("CTM") },
                 { U("SSN"), U("ST2110-40:2021") },
+                { U("TROFF"), U("37") },
+                { U("TSMODE"), U("SAMP") },
+                { U("TSDELAY"), U("82") }
+            }
+        },
+        {
+            { { 0xAB, 0xCD }, { 0xEF, 0x01 } },
+            nmos::vpid_codes::vpid_1_5Gbps_720_line,
+            nmos::rates::rate59_94,
+            sdp::transmission_models::compatible,
+            sdp::smpte_standard_numbers::ST2110_40_2023,
+            37,
+            sdp::timestamp_modes::SAMP,
+            82
+        }
+    };
+
+    std::pair<nmos::sdp_parameters, nmos::video_smpte291_parameters> zero_troff_tsdelay{
+        {
+            U("zero_troff_tsdelay"),
+            sdp::media_types::video,
+            {
+                123,
+                U("smpte291"),
+                90000
+            },
+            {
+                { U("DID_SDID"), U("{0xAB,0xCD}") },
+                { U("DID_SDID"), U("{0xEF,0x01}") },
+                { U("VPID_Code"), U("132") },
+                { U("exactframerate"), U("60000/1001") },
+                { U("TM"), U("CTM") },
+                { U("SSN"), U("ST2110-40:2021") },
                 { U("TROFF"), U("0") },
                 { U("TSMODE"), U("SAMP") },
                 { U("TSDELAY"), U("0") }
@@ -738,18 +853,18 @@ BST_TEST_CASE(testSdpParametersVideoSmpte291)
             nmos::rates::rate59_94,
             sdp::transmission_models::compatible,
             sdp::smpte_standard_numbers::ST2110_40_2023,
-            uint32_t(0),
+            0U,
             sdp::timestamp_modes::SAMP,
-            uint32_t(0)
+            0U
         }
     };
 
-    for (auto& test : { example, wacky })
+    for (auto& test : { example, wacky, zero_troff_tsdelay })
     {
         auto made = nmos::make_video_smpte291_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, made);
+        nmos::check_sdp_parameters(test.first, made);
         auto roundtripped = nmos::make_video_smpte291_sdp_parameters(made.session_name, nmos::get_video_smpte291_parameters(made), made.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, roundtripped);
+        nmos::check_sdp_parameters(test.first, roundtripped);
     }
 }
 
@@ -786,20 +901,40 @@ BST_TEST_CASE(testSdpParametersVideoSmpte2022_6)
             },
             {
                 { U("TP"), U("2110TPW") },
+                { U("TROFF"), U("37") }
+            }
+        },
+        {
+             sdp::type_parameters::type_W,
+             37
+        }
+    };
+
+    std::pair<nmos::sdp_parameters, nmos::video_SMPTE2022_6_parameters> zero_troff{
+        {
+            U("zero_troff"),
+            sdp::media_types::video,
+            {
+                123,
+                U("SMPTE2022-6"),
+                27000000
+            },
+            {
+                { U("TP"), U("2110TPW") },
                 { U("TROFF"), U("0") }
             }
         },
         {
              sdp::type_parameters::type_W,
-             uint32_t(0)
+             0U
         }
     };
 
-    for (auto& test : { example, wacky })
+    for (auto& test : { example, wacky, zero_troff })
     {
         auto made = nmos::make_video_SMPTE2022_6_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, made);
+        nmos::check_sdp_parameters(test.first, made);
         auto roundtripped = nmos::make_video_SMPTE2022_6_sdp_parameters(made.session_name, nmos::get_video_SMPTE2022_6_parameters(made), made.rtpmap.payload_type);
-        sdp_test::check_sdp_parameters(test.first, roundtripped);
+        nmos::check_sdp_parameters(test.first, roundtripped);
     }
 }
