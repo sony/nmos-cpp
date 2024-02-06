@@ -117,7 +117,7 @@ BST_TEST_CASE(testSdpParametersVideoJpegXs)
 
     std::pair<nmos::sdp_parameters, nmos::video_jxsv_parameters> wacky{
         {
-            U("example"),
+            U("wacky"),
             sdp::media_types::video,
             {
                 123,

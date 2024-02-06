@@ -1,6 +1,6 @@
+#include "nmos/test/sdp_test_utils.h"
 
 #include "bst/test/test.h"
-#include "nmos/test/sdp_test_utils.h"
 #include "nmos/sdp_utils.h"
 
 namespace sdp_test

@@ -482,7 +482,7 @@ namespace nmos
     {
         // additional fmtp parameters from ST 2110-21:2017
         sdp::type_parameter tp;
-        bst::optional<uint32_t> troff; // if omitted (zero), assume default
+        bst::optional<uint32_t> troff; // if omitted, assume default
 
         video_SMPTE2022_6_parameters() : troff() {}
 
