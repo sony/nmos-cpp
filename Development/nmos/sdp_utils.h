@@ -316,7 +316,7 @@ namespace nmos
 
         // additional fmtp parameters from ST 2110-21:2022
         sdp::type_parameter tp;
-        bst::optional<uint32_t> troff; // if omitted, assume default 
+        bst::optional<uint32_t> troff; // if omitted, assume default
         uint32_t cmax; // if omitted (zero), assume max defined for tp
 
         // additional fmtp parameters from ST 2110-10:2022
