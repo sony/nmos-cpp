@@ -176,11 +176,11 @@ namespace nmos
         // additional parameters introduced by SMPTE specs since then...
         if (!params.ssn.empty()) fmtp.push_back({ sdp::fields::smpte_standard_number, params.ssn.name });
         if (!params.tp.empty()) fmtp.push_back({ sdp::fields::type_parameter, params.tp.name });
-        if (0 != params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(params.troff) });
+        if (params.troff) fmtp.push_back({ sdp::fields::TROFF, utility::ostringstreamed(*params.troff) });
         if (0 != params.cmax) fmtp.push_back({ sdp::fields::CMAX, utility::ostringstreamed(params.cmax) });
         if (0 != params.maxudp) fmtp.push_back({ sdp::fields::max_udp_packet_size, utility::ostringstreamed(params.maxudp) });
         if (!params.tsmode.empty()) fmtp.push_back({ sdp::fields::timestamp_mode, params.tsmode.name });
-        if (0 != params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(params.tsdelay) });
+        if (params.tsdelay) fmtp.push_back({ sdp::fields::timestamp_delay, utility::ostringstreamed(*params.tsdelay) });
 
         return{ session_name, sdp::media_types::video, rtpmap, fmtp, params.bit_rate, {}, {}, {}, media_stream_ids, ts_refclk };
     }
