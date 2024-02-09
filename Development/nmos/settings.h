@@ -110,7 +110,7 @@ namespace nmos
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
-        // highest_pri, lowest_pri [registry, node]: used to specify the (inclusive) range of suitable 'pri' values of discovered APIs, to avoid development and live systems colliding
+        // highest_pri, lowest_pri [node]: used to specify the (inclusive) range of suitable 'pri' values of discovered APIs, to avoid development and live systems colliding
         const web::json::field_as_integer_or highest_pri{ U("highest_pri"), 0 }; // default to highest_active_priority; specifying no_priority disables discovery completely
         const web::json::field_as_integer_or lowest_pri{ U("lowest_pri"), (std::numeric_limits<int>::max)() }; // default to no_priority
 

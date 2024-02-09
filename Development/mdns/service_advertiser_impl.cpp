@@ -69,7 +69,7 @@ namespace mdns_details
         }
     }
 
-    static bool register_address(DNSServiceRef client, const std::string& host_name, const std::string& ip_address_, const std::string& domain, std::uint32_t interface_id, slog::base_gate& gate)
+    static bool register_address(DNSServiceRef& client, const std::string& host_name, const std::string& ip_address_, const std::string& domain, std::uint32_t interface_id, slog::base_gate& gate)
     {
         // since empty host_name is valid for other functions, check that logic error here
         if (host_name.empty()) return false;
