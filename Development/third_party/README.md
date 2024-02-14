@@ -7,7 +7,7 @@ Third-party source files used by the nmos-cpp libraries
 - [cmake](cmake)  
   CMake modules derived from third-party sources
 - [jwt-cpp](jwt-cpp)  
-  The [C++ JSON Web Tokens creator and validator](https://github.com/Thalhammer/jwt-cpp) header only library
+  The [Thalhammer/jwt-cpp](https://github.com/Thalhammer/jwt-cpp) header only library for creating and validating JSON Web Tokens in C++11
 - [mDNSResponder](mDNSResponder)  
   Patches and patched source files for the Bonjour DNS-SD implementation
 - [nlohmann](nlohmann)  
