@@ -1110,7 +1110,7 @@ target_link_libraries(
     nmos-cpp::OpenSSL
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
-	nmos-cpp::jwt-cpp
+    nmos-cpp::jwt-cpp
     )
 target_link_libraries(
     nmos-cpp PRIVATE

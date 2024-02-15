@@ -12,6 +12,7 @@ More details are given below.
   - This library incorporates some third-party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and [OpenSSL](https://www.openssl.org/).
 - The [WebSocket++](https://github.com/zaphoyd/websocketpp) header-only C++ websocket client/server library, to implement Query API websocket subscriptions
 - For JSON Schema validation, the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library, which is implemented on top of [JSON for Modern C++](https://github.com/nlohmann/json)
+- For creating and validating JSON Web Tokens, the [Thalhammer/jwt-cpp](https://github.com/Thalhammer/jwt-cpp) header only library
 - For DNS Service Discovery (DNS-SD), the [Bonjour SDK](https://developer.apple.com/bonjour/) on Windows, and on Linux either [Avahi](https://www.avahi.org/) or Apple's [mDNSResponder](https://opensource.apple.com/tarballs/mDNSResponder/) (another name for Bonjour)
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
 - The [C++ JSON Web Token validator](https://github.com/Thalhammer/jwt-cpp) header only library
@@ -55,7 +56,7 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 1. Install Python 3 if necessary  
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Install or upgrade Conan using `pip install --upgrade conan~=1.47`
+2. Install or upgrade Conan using `pip install --upgrade conan~=1.47`  
    Notes:
    - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=1.47`
    - Currently, Conan 1.47 or higher (and lower than version 2.0) is required by the nmos-cpp recipe; dependencies may require a higher version; version 1.59.0 has been tested
@@ -235,15 +236,17 @@ If using Conan, this section can be skipped.
 <summary>If not using Conan...</summary>
 
 The C++ REST SDK depends on [OpenSSL](https://www.openssl.org/) (to implement secure HTTP and/or secure WebSockets).
-It is compatible with the OpenSSL 1.1 API, so the 1.1.1 Long Term Support (LTS) release is recommended.
-It is also possible to use OpenSSL 1.0, but the OpenSSL team announced that [users of that release are strongly advised to upgrade to OpenSSL 1.1.1](https://www.openssl.org/blog/blog/2018/09/11/release111/).
+The nmos-cpp codebase also uses OpenSSL directly to implement the specific requirements of [AMWA BCP-003-01 Secure Communication in NMOS Systems](https://specs.amwa.tv/bcp-003-01/) and [AMWA BCP-003-02 Authorization in NMOS Systems](https://specs.amwa.tv/bcp-003-02/).
 
-1. Download and install a recent release
+OpenSSL version 3 is recommended, and version 3.2.1 (latest release at the time) has been tested.
+It is currently also possible to use OpenSSL v1.1.1, although [this OpenSSL release is now end of life](https://www.openssl.org/blog/blog/2023/09/11/eol-111/index.html).
+
+1. Download and install a recent release  
    Notes:
    - On Windows, an installer can be downloaded from [Shining Light Productions - Win32 OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)  
-     The Win64 OpenSSL v1.1.1s installer (latest release at the time) has been tested
+     The Win64 OpenSSL v3.2.1 installer (latest release at the time) has been tested
    - On Linux distributions, an OpenSSL package may already be available  
-     The Ubuntu team announced an [OpenSSL 1.1.1 stable release update (SRU) for Ubuntu 18.04 LTS](https://lists.ubuntu.com/archives/ubuntu-devel/2018-December/040567.html)
+     For example, Ubuntu 22.04 LTS includes OpenSSL v3.0.2
 
 </details>
 
@@ -254,6 +257,17 @@ If using Conan, this section can be skipped.
 <summary>If not using Conan...</summary>
 
 A copy of the source code necessary to use this library is included in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
+No installation is necessary.
+
+</details>
+
+### jwt-cpp
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
+
+A copy of the source code necessary to use this library is included in the [third_party/jwt-cpp](../Development/third_party/jwt-cpp) directory.
 No installation is necessary.
 
 </details>

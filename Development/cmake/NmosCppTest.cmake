@@ -125,7 +125,7 @@ target_link_libraries(
     nmos-cpp::mdns
     nmos-cpp::cpprestsdk
     nmos-cpp::Boost
-	nmos-cpp::jwt-cpp
+    nmos-cpp::jwt-cpp
     )
 if(NMOS_CPP_BUILD_LLDP)
     target_link_libraries(
