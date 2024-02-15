@@ -56,5 +56,5 @@ namespace nmos
                 return true;
             };
         }
-	}
+    }
 }
