@@ -121,8 +121,7 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan~=1.47
-        conan config set general.revisions_enabled=1
+        pip install conan~=2.0.5
 
     - name: install cmake
       uses: lukka/get-cmake@v3.24.2
@@ -139,7 +138,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # set compiler to cl.exe to avoid building with gcc.
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
+        echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -269,13 +268,17 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
         make -j 2 && sudo make install
 
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+          "-DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL=\"1\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL=\"1\"" \
+          >> $GITHUB_ENV
 
-    - name: disable conan
-      if: matrix.use_conan == false
+    - name: enable conan
+      if: matrix.use_conan == true
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" >> $GITHUB_ENV
 
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -295,7 +298,7 @@ jobs:
       if: matrix.force_cpprest_asio == true
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCONAN_INSTALL_ARGS:STRING=\"--build=missing;--options;cpprestsdk/*:http_client_impl=asio;--options;cpprestsdk/*:http_listener_impl=asio\"" >> $GITHUB_ENV
 
     - name: setup developer command prompt for Microsoft Visual C++
       if: runner.os == 'Windows'
@@ -307,7 +310,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
 
     - name: unit test
       run: |
@@ -344,10 +347,10 @@ jobs:
         cmakeAppendedArgs: '-GNinja
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
-            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan"
             -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
-            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
-            ${{ env.CMAKE_EXTRA_ARGS }}'
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
+            ${{ env.CMAKE_COMPILER_ARGS }}'
 
     - name: install test log
       run: |
@@ -660,8 +663,7 @@ jobs:
     - name: install conan
       if: matrix.use_conan == true
       run: |
-        pip install conan~=1.47
-        conan config set general.revisions_enabled=1
+        pip install conan~=2.0.5
 
     - name: install cmake
       uses: lukka/get-cmake@v3.24.2
@@ -678,7 +680,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # set compiler to cl.exe to avoid building with gcc.
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
+        echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
         # disable unused network interface
         netsh interface set interface name="vEthernet (nat)" admin=DISABLED
         # get host IP address
@@ -808,13 +810,17 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
         make -j 2 && sudo make install
 
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+          "-DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL=\"1\"" \
+          "-DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL=\"1\"" \
+          >> $GITHUB_ENV
 
-    - name: disable conan
-      if: matrix.use_conan == false
+    - name: enable conan
+      if: matrix.use_conan == true
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" >> $GITHUB_ENV
 
     - name: ubuntu avahi setup
       if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -834,7 +840,7 @@ jobs:
       if: matrix.force_cpprest_asio == true
       shell: bash
       run: |
-        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
+        echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCONAN_INSTALL_ARGS:STRING=\"--build=missing;--options;cpprestsdk/*:http_client_impl=asio;--options;cpprestsdk/*:http_listener_impl=asio\"" >> $GITHUB_ENV
 
     - name: setup developer command prompt for Microsoft Visual C++
       if: runner.os == 'Windows'
@@ -846,7 +852,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
         buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
-        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_EXTRA_ARGS }}'
+        cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
 
     - name: unit test
       run: |
@@ -883,10 +889,10 @@ jobs:
         cmakeAppendedArgs: '-GNinja
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_FIND_PACKAGE_PREFER_CONFIG="1"
-            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build"
+            -DCMAKE_MODULE_PATH="${{ env.CMAKE_WORKSPACE }}/build/conan"
             -DCMAKE_PREFIX_PATH="${{ env.CMAKE_WORKSPACE }}/install"
-            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build"
-            ${{ env.CMAKE_EXTRA_ARGS }}'
+            -DCMAKE_INSTALL_PREFIX="${{ env.CMAKE_WORKSPACE }}/build/conan"
+            ${{ env.CMAKE_COMPILER_ARGS }}'
 
     - name: install test log
       run: |

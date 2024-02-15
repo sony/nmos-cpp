@@ -187,7 +187,9 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 # json schema validator library
 
-if(NMOS_CPP_USE_CONAN)
+set(NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR OFF CACHE BOOL "Use supplied third_party/nlohmann")
+mark_as_advanced(FORCE NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
+if(NOT NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
     set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.3.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
@@ -459,7 +461,9 @@ endif()
 
 # jwt library
 
-if(NMOS_CPP_USE_CONAN)
+set(NMOS_CPP_USE_SUPPLIED_JWT_CPP OFF CACHE BOOL "Use supplied third_party/jwt-cpp")
+mark_as_advanced(FORCE NMOS_CPP_USE_SUPPLIED_JWT_CPP)
+if(NOT NMOS_CPP_USE_SUPPLIED_JWT_CPP)
     set(JWT_VERSION_MIN "0.5.1")
     set(JWT_VERSION_CUR "0.7.0")
     find_package(jwt-cpp REQUIRED)
@@ -476,13 +480,19 @@ if(NMOS_CPP_USE_CONAN)
     add_library(jwt-cpp INTERFACE)
     target_link_libraries(jwt-cpp INTERFACE jwt-cpp::jwt-cpp)
 else()
+    message(STATUS "Using sources at third_party/jwt-cpp instead of external \"jwt-cpp\" package.")
+
     set(JWT_SOURCES
         )
 
     set(JWT_HEADERS
+        third_party/jwt-cpp/base.h
         third_party/jwt-cpp/jwt.h
+        third_party/jwt-cpp/traits/nlohmann-json/defaults.h
+        third_party/jwt-cpp/traits/nlohmann-json/traits.h
         )
 
+    # hm, header-only so should be INTERFACE library?
     add_library(
         jwt-cpp STATIC
         ${JWT_SOURCES}
@@ -491,14 +501,6 @@ else()
 
     source_group("Source Files" FILES ${JWT_SOURCES})
     source_group("Header Files" FILES ${JWT_HEADERS})
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-            target_compile_definitions(
-                jwt-cpp PRIVATE
-                )
-        endif()
-    endif()
 
     target_link_libraries(
         jwt-cpp PRIVATE
