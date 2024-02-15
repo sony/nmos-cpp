@@ -12,6 +12,7 @@ More details are given below.
   - This library incorporates some third-party material including WebSocket++, and also relies on e.g. some of the Boost C++ Libraries and [OpenSSL](https://www.openssl.org/).
 - The [WebSocket++](https://github.com/zaphoyd/websocketpp) header-only C++ websocket client/server library, to implement Query API websocket subscriptions
 - For JSON Schema validation, the [Modern C++ JSON schema validator](https://github.com/pboettch/json-schema-validator) library, which is implemented on top of [JSON for Modern C++](https://github.com/nlohmann/json)
+- For creating and validating JSON Web Tokens, the [Thalhammer/jwt-cpp](https://github.com/Thalhammer/jwt-cpp) header only library
 - For DNS Service Discovery (DNS-SD), the [Bonjour SDK](https://developer.apple.com/bonjour/) on Windows, and on Linux either [Avahi](https://www.avahi.org/) or Apple's [mDNSResponder](https://opensource.apple.com/tarballs/mDNSResponder/) (another name for Bonjour)
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
 
@@ -253,6 +254,17 @@ If using Conan, this section can be skipped.
 <summary>If not using Conan...</summary>
 
 A copy of the source code necessary to use this library is included in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
+No installation is necessary.
+
+</details>
+
+### jwt-cpp
+
+If using Conan, this section can be skipped.
+<details>
+<summary>If not using Conan...</summary>
+
+A copy of the source code necessary to use this library is included in the [third_party/jwt-cpp](../Development/third_party/jwt-cpp) directory.
 No installation is necessary.
 
 </details>
