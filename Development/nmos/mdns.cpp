@@ -569,7 +569,7 @@ namespace nmos
                         auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.rbegin(), api_ver.rend());
                         if (resolved_vers.rend() == resolved_ver) return true;
 
-                        // hmm, may be in the furture check for the matching 'api_selector' value
+                        // hmm, maybe in the future check for the matching 'api_selector' value
                         auto resolved_selector = nmos::parse_api_selector_record(records);
 
                         auto resolved_uri = web::uri_builder();

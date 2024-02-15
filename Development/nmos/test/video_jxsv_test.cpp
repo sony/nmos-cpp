@@ -3,6 +3,7 @@
 
 #include "bst/test/test.h"
 #include "nmos/json_fields.h"
+#include "nmos/test/sdp_test_utils.h"
 #include "sdp/sdp.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,4 +56,190 @@ a=fmtp:112 packetmode=0; profile=High444.12; level=1k-1; sublevel=Sublev3bpp; de
         if (!actual_line.empty() && '\r' == actual_line.back()) actual_line.pop_back();
         BST_CHECK_EQUAL(expected_line, actual_line);
     } while (!expected.fail() && !actual.fail());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testSdpParametersVideoJpegXs)
+{
+    std::pair<nmos::sdp_parameters, nmos::video_jxsv_parameters> example{
+        {
+            U("example"),
+            sdp::media_types::video,
+            {
+                112,
+                U("jxsv"),
+                90000
+            },
+            {
+                { U("packetmode"), U("0") },
+                { U("profile"), U("High444.12") },
+                { U("level"), U("1k-1") },
+                { U("sublevel"), U("Sublev3bpp") },
+                { U("sampling"), U("YCbCr-4:2:2") },
+                { U("width"), U("1280") },
+                { U("height"), U("720") },
+                { U("exactframerate"), U("60000/1001") },
+                { U("depth"), U("10") },
+                { U("colorimetry"), U("BT709") },
+                { U("TCS"), U("SDR") },
+                { U("RANGE"), U("FULL") },
+                { U("SSN"), U("ST2110-22:2019") },
+                { U("TP"), U("2110TPN") }
+            },
+            116000
+        },
+        {
+            sdp::video_jxsv::packetization_mode::codestream,
+            sdp::video_jxsv::transmission_mode::sequential,
+            sdp::video_jxsv::profiles::High444_12,
+            sdp::video_jxsv::levels::Level1k_1,
+            sdp::video_jxsv::sublevels::Sublev3bpp,
+            sdp::samplings::YCbCr_4_2_2,
+            10,
+            1280,
+            720,
+            nmos::rates::rate59_94,
+            false,
+            false,
+            sdp::transfer_characteristic_systems::SDR,
+            sdp::colorimetries::BT709,
+            sdp::ranges::FULL,
+            sdp::smpte_standard_numbers::ST2110_22_2019,
+            sdp::type_parameters::type_N,
+            {},
+            {},
+            {},
+            {},
+            {},
+            116000
+        }
+    };
+
+    std::pair<nmos::sdp_parameters, nmos::video_jxsv_parameters> wacky{
+        {
+            U("wacky"),
+            sdp::media_types::video,
+            {
+                123,
+                U("jxsv"),
+                90000
+            },
+            {
+                { U("packetmode"), U("1") },
+                { U("transmode"), U("0") },
+                { U("profile"), U("Light444.12") },
+                { U("level"), U("Bayer16k-1") },
+                { U("sublevel"), U("Full") },
+                { U("sampling"), U("UNSPECIFIED") },
+                { U("width"), U("9999") },
+                { U("height"), U("6666") },
+                { U("exactframerate"), U("123") },
+                { U("depth"), U("16") },
+                { U("colorimetry"), U("BT2100") },
+                { U("TCS"), U("UNSPECIFIED") },
+                { U("RANGE"), U("NARROW") },
+                { U("SSN"), U("ST2110-20:2022") },
+                { U("TP"), U("2110TPW") },
+                { U("TROFF"), U("37") },
+                { U("CMAX"), U("42") },
+                { U("MAXUDP"), U("57") },
+                { U("TSMODE"), U("SAMP") },
+                { U("TSDELAY"), U("82") }
+            },
+            200000
+        },
+        {
+            sdp::video_jxsv::packetization_mode::slice,
+            sdp::video_jxsv::transmission_mode::out_of_order,
+            sdp::video_jxsv::profiles::Light444_12,
+            sdp::video_jxsv::levels::Bayer16k_1,
+            sdp::video_jxsv::sublevels::Full,
+            sdp::samplings::UNSPECIFIED,
+            16,
+            9999,
+            6666,
+            { 123, 1 },
+            false,
+            false,
+            sdp::transfer_characteristic_systems::UNSPECIFIED,
+            sdp::colorimetries::BT2100,
+            sdp::ranges::NARROW,
+            sdp::smpte_standard_numbers::ST2110_20_2022,
+            sdp::type_parameters::type_W,
+            37,
+            42,
+            57,
+            sdp::timestamp_modes::SAMP,
+            82,
+            200000
+        }
+    };
+
+    std::pair<nmos::sdp_parameters, nmos::video_jxsv_parameters> zero_troff_tsdelay{
+        {
+            U("zero_troff_tsdelay"),
+            sdp::media_types::video,
+            {
+                123,
+                U("jxsv"),
+                90000
+            },
+            {
+                { U("packetmode"), U("1") },
+                { U("transmode"), U("0") },
+                { U("profile"), U("Light444.12") },
+                { U("level"), U("Bayer16k-1") },
+                { U("sublevel"), U("Full") },
+                { U("sampling"), U("UNSPECIFIED") },
+                { U("width"), U("9999") },
+                { U("height"), U("6666") },
+                { U("exactframerate"), U("123") },
+                { U("depth"), U("16") },
+                { U("colorimetry"), U("BT2100") },
+                { U("TCS"), U("UNSPECIFIED") },
+                { U("RANGE"), U("NARROW") },
+                { U("SSN"), U("ST2110-20:2022") },
+                { U("TP"), U("2110TPW") },
+                { U("TROFF"), U("0") },
+                { U("CMAX"), U("42") },
+                { U("MAXUDP"), U("57") },
+                { U("TSMODE"), U("SAMP") },
+                { U("TSDELAY"), U("0") }
+            },
+            200000
+        },
+        {
+            sdp::video_jxsv::packetization_mode::slice,
+            sdp::video_jxsv::transmission_mode::out_of_order,
+            sdp::video_jxsv::profiles::Light444_12,
+            sdp::video_jxsv::levels::Bayer16k_1,
+            sdp::video_jxsv::sublevels::Full,
+            sdp::samplings::UNSPECIFIED,
+            16,
+            9999,
+            6666,
+            { 123, 1 },
+            false,
+            false,
+            sdp::transfer_characteristic_systems::UNSPECIFIED,
+            sdp::colorimetries::BT2100,
+            sdp::ranges::NARROW,
+            sdp::smpte_standard_numbers::ST2110_20_2022,
+            sdp::type_parameters::type_W,
+            0U,
+            42,
+            57,
+            sdp::timestamp_modes::SAMP,
+            0U,
+            200000
+        }
+    };
+
+    for (auto& test : { example, wacky, zero_troff_tsdelay })
+    {
+        auto made = nmos::make_video_jxsv_sdp_parameters(test.first.session_name, test.second, test.first.rtpmap.payload_type);
+        nmos::check_sdp_parameters(test.first, made);
+        auto roundtripped = nmos::make_video_jxsv_sdp_parameters(made.session_name, nmos::get_video_jxsv_parameters(made), made.rtpmap.payload_type);
+        nmos::check_sdp_parameters(test.first, roundtripped);
+    }
 }
