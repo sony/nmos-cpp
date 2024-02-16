@@ -188,7 +188,6 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 # json schema validator library
 
 set(NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR OFF CACHE BOOL "Use supplied third_party/nlohmann")
-mark_as_advanced(FORCE NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
 if(NOT NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
     set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.3.0")
@@ -462,7 +461,6 @@ endif()
 # jwt library
 
 set(NMOS_CPP_USE_SUPPLIED_JWT_CPP OFF CACHE BOOL "Use supplied third_party/jwt-cpp")
-mark_as_advanced(FORCE NMOS_CPP_USE_SUPPLIED_JWT_CPP)
 if(NOT NMOS_CPP_USE_SUPPLIED_JWT_CPP)
     set(JWT_VERSION_MIN "0.5.1")
     set(JWT_VERSION_CUR "0.7.0")
