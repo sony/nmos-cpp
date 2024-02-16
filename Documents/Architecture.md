@@ -2,8 +2,8 @@
 
 The [nmos](../Development/nmos/) module fundamentally provides three things.
 
-1. A C++ data model for the AMWA IS-04, IS-05 and IS-08 NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
-2. An implementation of each of the REST APIs defined by the AMWA IS-04, IS-05, IS-08, IS-09 and IS-10 NMOS specifications, in terms of the data model.
+1. A C++ data model for the AMWA NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
+2. An implementation of each of the REST APIs defined by the AMWA NMOS specifications, in terms of the data model.
 3. An implementation of the Node and Registry "active behaviours" defined by the specifications.
 
 The module also provides the concept of a server which combines the REST APIs and behaviours into a single object for simplicity.
@@ -117,10 +117,10 @@ for (;;)
 > [nmos/node_api.cpp](../Development/nmos/node_api.cpp),
 > [nmos/connection_api.cpp](../Development/nmos/connection_api.cpp),
 > [nmos/events_api.cpp](../Development/nmos/events_api.cpp),
+> [nmos/channelmapping_api.cpp](../Development/nmos/channelmapping_api.cpp),
 > [nmos/registration_api.cpp](../Development/nmos/registration_api.cpp),
 > [nmos/query_api.cpp](../Development/nmos/query_api.cpp),
 > [nmos/system_api.cpp](../Development/nmos/system_api.cpp),
-> [nmos/channelmapping_api.cpp](../Development/nmos/channelmapping_api.cpp)
 > [nmos/authorization_redirect_api.cpp](../Development/nmos/authorization_redirect_api.cpp)
 
 The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07, IS-08, IS-09 and IS-10.
