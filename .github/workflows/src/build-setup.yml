@@ -154,12 +154,6 @@
       "-DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL=\"1\"" \
       >> $GITHUB_ENV
 
-- name: enable conan
-  if: matrix.use_conan == true
-  shell: bash
-  run: |
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" >> $GITHUB_ENV
-
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
   run: |
@@ -175,7 +169,17 @@
     echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
 - name: force cpprest asio
-  if: matrix.force_cpprest_asio == true
+  if: matrix.force_cpprest_asio == true && matrix.use_conan == true
   shell: bash
   run: |
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCONAN_INSTALL_ARGS:STRING=\"--build=missing;--options;cpprestsdk/*:http_client_impl=asio;--options;cpprestsdk/*:http_listener_impl=asio\"" >> $GITHUB_ENV
+    echo "CONAN_INSTALL_EXTRA_ARGS=--options\;cpprestsdk/*:http_client_impl=asio\;--options\;cpprestsdk/*:http_listener_impl=asio" >> $GITHUB_ENV
+
+- name: enable conan
+  if: matrix.use_conan == true
+  shell: bash
+  run: |
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+      "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" \
+      "-DCONAN_INSTALL_ARGS:STRING=\"--build=missing\;${{ env.CONAN_INSTALL_EXTRA_ARGS }}\;--lockfile-out=conan.lock\"" \
+      >> $GITHUB_ENV
+    cat $GITHUB_ENV

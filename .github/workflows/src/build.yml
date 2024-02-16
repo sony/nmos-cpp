@@ -9,3 +9,8 @@
     cmakeListsTxtPath: '${{ env.GITHUB_WORKSPACE }}/Development/CMakeLists.txt'
     buildDirectory: '${{ env.RUNNER_WORKSPACE }}/build/'
     cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.RUNNER_WORKSPACE }}/install" ${{ env.CMAKE_COMPILER_ARGS }} ${{ env.CMAKE_EXTRA_ARGS }}'
+
+- name: dump conan lockfile
+  if: matrix.use_conan == true
+  run: |
+    cat ${{ env.RUNNER_WORKSPACE }}/build/conan.lock
