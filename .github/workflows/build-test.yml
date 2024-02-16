@@ -123,8 +123,13 @@ jobs:
       run: |
         pip install conan~=2.0.5
 
-    - name: install cmake
+    - name: 'ubuntu-14.04: install cmake'
+      if: matrix.os == 'ubuntu-14.04'
       uses: lukka/get-cmake@v3.24.2
+
+    - name: install cmake
+      if: matrix.os != 'ubuntu-14.04'
+      uses: lukka/get-cmake@v3.28.3
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -674,8 +679,13 @@ jobs:
       run: |
         pip install conan~=2.0.5
 
-    - name: install cmake
+    - name: 'ubuntu-14.04: install cmake'
+      if: matrix.os == 'ubuntu-14.04'
       uses: lukka/get-cmake@v3.24.2
+
+    - name: install cmake
+      if: matrix.os != 'ubuntu-14.04'
+      uses: lukka/get-cmake@v3.28.3
 
     - name: setup bash path
       working-directory: ${{ env.GITHUB_WORKSPACE }}
