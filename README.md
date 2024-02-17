@@ -42,7 +42,7 @@ After setting up the dependencies, follow these [instructions](Documents/Getting
 
 Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
-An [nmos-cpp Conan package](https://conan.io/center/nmos-cpp) is published at Conan Center Index.
+An [nmos-cpp Conan package](https://conan.io/center/recipes/nmos-cpp) is occasionally published at Conan Center Index.
 
 ## Agile Development
 
