@@ -34,7 +34,7 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
 
 1. Download and install a recent [CMake stable release](https://cmake.org/download/#latest) for your platform  
    Notes:
-   - Currently, CMake 3.17 or higher is required; version 3.24.2 (latest release at the time) has been tested
+   - Currently, CMake 3.24 or higher is required in order to use the Conan package manager; version 3.28.3 (latest release at the time) has been tested
    - Pre-built binary distributions are available for many platforms
    - On Linux distributions, e.g. Ubuntu 14.04 LTS (long-term support), the pre-built binary version available via ``apt-get`` may be too out-of-date  
      Fetch, build and install a suitable version:  
@@ -47,7 +47,7 @@ Specific instructions for [cross-compiling for Raspberry Pi](Raspberry-Pi.md) ar
      sudo make install
      cd ..
      ```
-   - Some CMake modules derived from third-party sources are included in the [third_party/cmake](../Development/third_party/cmake) directory
+   - Some CMake modules derived from third-party sources are supplied in the [third_party/cmake](../Development/third_party/cmake) directory
 
 ### Conan
 
@@ -55,23 +55,16 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 
 1. Install Python 3 if necessary  
    Note: The Python scripts directory needs to be added to the `PATH`, so the Conan executable can be found
-2. Install or upgrade Conan using `pip install --upgrade conan~=1.47`  
+2. Install or upgrade Conan using `pip install --upgrade conan~=2.0.5`  
    Notes:
-   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=1.47`
-   - Currently, Conan 1.47 or higher (and lower than version 2.0) is required by the nmos-cpp recipe; dependencies may require a higher version; version 1.59.0 has been tested
-   - Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan~=1.47` regularly
-   - By default [Conan assumes semver compatibility](https://docs.conan.io/en/1.42/creating_packages/define_abi_compatibility.html#versioning-schema).
-     Boost and other C++ libraries do not meet this expectation and break ABI compatibility between e.g. minor versions.
-     Unfortunately, the recipes in Conan Center Index do not generally customize their `package_id` method to take this into account.
-     Therefore it is strongly recommended to change Conan's default package id mode to `minor_mode` or a stricter mode such as `recipe_revision_mode`.
-     ```sh
-     conan config set general.default_package_id_mode=minor_mode
-     ```
+   - On some platforms with Python 2 and Python 3 both installed this may need to be `pip3 install --upgrade conan~=2.0.5`
+   - Conan 2.0.5 or higher is required; dependencies may require a higher version; version 2.0.17 (latest release at the time) has been tested
+   - Conan 1.X is no longer supported
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
 
-If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DNMOS_CPP_USE_CONAN:BOOL="0"` when building nmos-cpp.
+If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below.
 
 ### Boost C++ Libraries
 
@@ -255,8 +248,10 @@ If using Conan, this section can be skipped.
 <details>
 <summary>If not using Conan...</summary>
 
-A copy of the source code necessary to use this library is included in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
+A copy of the source code necessary to use this library is supplied in the [third_party/nlohmann](../Development/third_party/nlohmann) directory.
 No installation is necessary.
+
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR`` in order to use the supplied version when building nmos-cpp.)
 
 </details>
 
@@ -266,8 +261,10 @@ If using Conan, this section can be skipped.
 <details>
 <summary>If not using Conan...</summary>
 
-A copy of the source code necessary to use this library is included in the [third_party/jwt-cpp](../Development/third_party/jwt-cpp) directory.
+A copy of the source code necessary to use this library is supplied in the [third_party/jwt-cpp](../Development/third_party/jwt-cpp) directory.
 No installation is necessary.
+
+(The [Getting Started](Getting-Started.md) instructions explain how to set ``NMOS_CPP_USE_SUPPLIED_JWT_CPP`` in order to use the supplied version when building nmos-cpp.)
 
 </details>
 
@@ -320,7 +317,7 @@ Notes:
 
 ### Catch
 
-A copy of the single header version (v1.10.0) is included in the [third_party/catch](../Development/third_party/catch) directory.
+A copy of the single header version (v1.10.0) is supplied in the [third_party/catch](../Development/third_party/catch) directory.
 No installation is necessary.
 
 # What Next?

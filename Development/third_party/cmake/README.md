@@ -29,3 +29,12 @@ Original source code:
 
 - Licensed under the Apache License, Version 2.0.
 - Copyright (c) 2021, NVIDIA CORPORATION.
+
+## CMake Provider for Conan
+
+Copied from [conan-io/cmake-conan](https://github.com/conan-io/cmake-conan).
+
+Original source code:
+
+- Licensed under the MIT License
+- Copyright (c) 2019 JFrog
