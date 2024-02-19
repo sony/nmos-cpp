@@ -294,9 +294,6 @@ namespace nmos
             // proxy_port [registry, node]: forward proxy port
             const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
 
-            // discovery_mode [node]: whether the discovered host name (1) or resolved addresses (2) are used to construct request URLs for Registration APIs or System APIs
-            const web::json::field_as_integer_or discovery_mode{ U("discovery_mode"), 0 }; // when omitted, a default heuristic is used
-
             // href_mode [registry, node]: whether the host name (1), addresses (2) or both (3) are used to construct response headers, and host and URL fields in the data model
             const web::json::field_as_integer_or href_mode{ U("href_mode"), 0 }; // when omitted, a default heuristic is used
 
