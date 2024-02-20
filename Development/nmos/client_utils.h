@@ -31,6 +31,12 @@ namespace nmos
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate);
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate);
 
+    namespace details
+    {
+        // make a client for the specified base_uri and config, with Host header sneakily stashed in user info
+        std::unique_ptr<web::http::client::http_client> make_http_client(const web::uri& base_uri_with_host_name_in_user_info, const web::http::client::http_client_config& client_config);
+    }
+
     // make an API request with logging
     pplx::task<web::http::http_response> api_request(web::http::client::http_client client, web::http::http_request request, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none());
     pplx::task<web::http::http_response> api_request(web::http::client::http_client client, const web::http::method& mtd, slog::base_gate& gate, const pplx::cancellation_token& token = pplx::cancellation_token::none());

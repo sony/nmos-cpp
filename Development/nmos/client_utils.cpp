@@ -256,6 +256,26 @@ namespace nmos
         return config;
     }
 
+    namespace details
+    {
+        // make a client for the specified base_uri and config, with Host header sneakily stashed in user info
+        std::unique_ptr<web::http::client::http_client> make_http_client(const web::uri& base_uri, const web::http::client::http_client_config& client_config)
+        {
+            // unstash the Host header
+            // cf. nmos::details::resolve_service
+            const auto& host_name = base_uri.user_info();
+            std::unique_ptr<web::http::client::http_client> client(new web::http::client::http_client(web::uri_builder(base_uri).set_user_info({}).to_uri(), client_config));
+            if (!host_name.empty())
+            {
+                client->add_handler([host_name](web::http::http_request request, std::shared_ptr<web::http::http_pipeline_stage> next_stage) -> pplx::task<web::http::http_response>
+                {
+                    request.headers().add(web::http::header_names::host, host_name);
+                    return next_stage->propagate(request);
+                });
+            }
+            return client;
+        }
+    }
 
     // make a request with logging
     pplx::task<web::http::http_response> api_request(web::http::client::http_client client, web::http::http_request request, slog::base_gate& gate, const pplx::cancellation_token& token)
