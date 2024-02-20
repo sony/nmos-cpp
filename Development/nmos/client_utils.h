@@ -33,7 +33,7 @@ namespace nmos
 
     namespace details
     {
-        // make a client for the specified base_uri and config, with Host header sneakily stashed in user info
+        // make a client for the specified base_uri and config, with host name for the Host header sneakily stashed in user info
         std::unique_ptr<web::http::client::http_client> make_http_client(const web::uri& base_uri_with_host_name_in_user_info, const web::http::client::http_client_config& client_config);
     }
 

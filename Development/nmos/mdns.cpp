@@ -561,7 +561,7 @@ namespace nmos
 
                         for (const auto& ip_address : resolved.ip_addresses)
                         {
-                            // sneakily stash the Host header in user info
+                            // sneakily stash the host name for the Host header in user info
                             // cf. nmos::details::make_http_client
                             results->push_back({ { *resolved_ver, resolved_pri }, resolved_uri
                                 .set_user_info(host_name)
