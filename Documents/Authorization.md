@@ -12,45 +12,53 @@ To speed up the token validation process, the Node periodically fetches the Auth
 
 A similar idea is also applied to how Nodes perform node registration. The Registry obtains the public keys from the Authorization Server, and the Node obtains the registration access token from the Authorization Server. The Node embeds the token into the registration request for Node registration, and Registry heartbeats.
 
-## Authorization Server Metadata
-
-Authorization Server clients, such as Broadcast Controllers, Registry and Nodes, locate the Authorization API endpoints via DNS-SD. The Authorization Server has a well-known endpoint for returning this server metadata. Details are shown in the client registration sequence diagram below.
-
 ## Client Registration
 
-Clients must be registered to the Authorization Server before using the ``OAuth 2.0`` protocol. In the event of successful registration, the Authorization Server will return the client_id for the public client and client_id and client_secret for the confidential client. It is, however, important that the public client which is using the Authorization Code Flow must register one or more redirect URLs for security purposes, which allows Authorization Server to ensure any authorization request is genuine and only the valid redirect URLs are used for returning the authorization code. While using Client Credentials Flow, Private Key JWT can be used for client authentication with extra security.
+This this context the term Client is used to refer to clients of the Authorization Server.  In this way Broadcast Controllers, Registries and Nodes are all referred to here as Clients.
 
-See the client registration sequence diagram below on how an NMOS Node is registered to the Authorization Server.
+Clients locate the Authorization Server's API endpoints via DNS-SD. The Authorization Server has a well-known endpoint for returning server metadata.
+
+Clients must be registered to the Authorization Server before using the OAuth 2.0 protocol. In the event of successful registration, the Authorization Server will return the `client_id` for a public client and `client_id` and `client_secret` for a confidential client. 
+
+However, it is important that a public client which is using the Authorization Code flow register one or more redirect URLs for security purposes. These allow the Authorization Server to ensure any authorization request is genuine and only valid redirect URLs are used for returning authorization codes. While using Client Credentials flow, Private Key JWT can be used in client authentication for extra security.
+
+See the client registration sequence diagram below on how a Node is registered to the Authorization Server.
 
 ![Client-Registration](images/Authorization-Client-Registration.png)
 
 ## Access Token
 
-There are a number of ways to request the access token, it is based on the type of authorization grant. The grant type depends on the location and the nature of the client involved in obtaining the access token. A number of grant types are defined in ``OAuth 2.0``.  NMOS is focused on using the following types, the ``Authorization Code Grant`` and the ``Client Credentials Grant``.
+There are a number of ways to request the access token according to the type of authorization grant. The grant type depends on the location and the nature of the Client involved in obtaining the access token.
+
+A number of grant types are defined in OAuth 2.0.  IS-10/BCP-003-02 focuses on using the following grant types; the ``Authorization Code Grant`` and the ``Client Credentials Grant``.
 
 ### Authorization Code Grant
 
-This is the most recommended type, it should be used if the client has a web browser, such as the Broadcast Controller. An Authorization code is returned by the Authorization Server via the client's redirect URI. The client can then exchange it for a time-limited access token, and renew it with the refresh token.
+This recommended grant type and should be used if the Client runs within web browser (for instance a Broadcast Controller). An authorization code is returned by the Authorization Server via the client's redirect URI. The client can then exchange this code for a time-limited access token, which can be renewed with the refresh token.
 
-For public clients, there is a potential security risk with an attacker hijacking the Authorization code. To prevent that ``Proof Key for Code Exchange`` (PKCE) is used to further secure the Authorization Code Flow.
+For public clients, there is a risk of an attacker hijacking the authorization code. To prevent this Proof Key for Code Exchange (PKCE) is used to further secure the Authorization Code flow.
 
-Step 1. create a high entropy cryptographic random string, ``code_verifier``.
+The PCKE steps are:
 
-Step 2. convert the ``code_verifier`` to ``code_challenge`` with the following logic:
+Step 1. Create a high entropy cryptographic random string, ``code_verifier``.
+
+Step 2. Convert the ``code_verifier`` to ``code_challenge`` with the following logic:
 
 ```
 code_challenge=BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
 ```
 
-Step 3. includes the ``code_challege`` and the hashing method used to generate the ``code_challenge`` in the authorization code request.
+Step 3. Includes the ``code_challege`` and the hashing method used to generate the ``code_challenge`` in the authorization code request.
 
-Step 4. send the ``code_verifier`` and the ``authorization code`` for exchanging the token. The Authorization Server uses the ``code_verifier`` to recreate the matching ``code_challenge`` to verify the client.
+Step 4. Send the ``code_verifier`` and the ``authorization code`` in exchange for the token. The Authorization Server uses the ``code_verifier`` to recreate the matching ``code_challenge`` to verify the client.
 
 ![Authorization-Code-Flow](images/Authorization-Code-Flow.png)
 
 ### Client Credentials Grant
 
-This type of authorization is used by clients to obtain the access token without user authorization, such as a hardware NMOS Node which has no web browser supported. To gain extra security the ``Private Key JWT`` is used by the NMOS Node as a form of client authentication by the Authorization Server before handing out the token.
+This type of authorization is used by Clients to obtain the access token without user interaction. This is used by Nodes with no user interface.
+
+For extra security the Node uses ``Private Key JWT`` to authenticate with the Authorization Server when requesting the access token.
 
 ![Client-Credentials-Flow](images/Authorization-Client-Credentials-Flow.png)
 
