@@ -1,16 +1,16 @@
 # Authorization in nmos-cpp
 
-This is based on the ``OAuth 2.0`` recommendation, it is used for protecting the NMOS APIs, which allows NMOS Node and NMOS Registry to give limited access to the third-party application. Third-party applications including Broadcast Controller, which queries Registry via the AMWA IS-04 for the NMOS Nodes information and issues the IS-05 connection to the Nodes. NMOS Nodes also act as the third-party for the Registry to perform the AMWA IS-04 node registration.
+This is based on the ``OAuth 2.0`` recommendations which allows NMOS Node and NMOS Registry to protect APIs by giving limited access to third-party applications. Third-party applications might include Broadcast Controllers, which queries the Registry via the IS-04 API and handles connection to nodes via the IS-05 API. NMOS Nodes also act as a third-party to the Registry when performing IS-04 node registrations.
 
-## General idea of how it works
+## Overview
 
-A client such as Broadcast Controller provides credentials to the Authorization Server. The required access token(s) is then granted to the Controller for accessing the protected APIs on the Resource(s) Server, such as the NMOS Node. The Resource Server will verify the access token for the level of the access right. If all goes well, the protected API is accessible.
+A client such as a Broadcast Controller provides credentials to the Authorization Server. The Authorization Server grants the required access token(s) to the Controller for accessing the protected APIs on the NMOS Node. The Node will verify that the access token has the level of the access rights required, and if successfully verified will allow access to the API.
 
-The access token is time-limited, it must be refreshed before it expired. It is recommended to attempt a refresh at least 15 seconds before the expiry or the half-life of the access token.
+The access token is time-limited, and must be refreshed before it expires. It is recommended to attempt to refresh the token at least 15 seconds before its expiry, or at the half-life of the access token.
 
-To speed up the token validation process, the Resource(s) Server periodically fetches the Authorization Server's public keys, typically once every hour. The public keys allow the Resource(s) Server to perform local token validation without bombarding the Authorization Server on every API access validation.
+To speed up the token validation process, the Node periodically fetches the Authorization Server's public keys, typically once every hour. The public keys allow the Node to perform local token validation without having to bombard the Authorization Server every time an API is accessed.
 
-A similar idea is also applied to how NMOS Node performs node registration. Registry obtains the public keys from the Authorization Server, and the Node obtains the registration access token from the Authorization Server. The Node embeds the token into the registration request for node registration, and registry heartbeat.
+A similar idea is also applied to how Nodes perform node registration. The Registry obtains the public keys from the Authorization Server, and the Node obtains the registration access token from the Authorization Server. The Node embeds the token into the registration request for Node registration, and Registry heartbeats.
 
 ## Authorization Server Metadata
 
