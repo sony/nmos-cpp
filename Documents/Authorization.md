@@ -14,7 +14,7 @@ A similar idea is also applied to how Nodes perform node registration. The Regis
 
 ## Authorization Server Metadata
 
-Clients, such as NMOS Broadcast Controller, Registry and Node locate the Authorization API endpoints via the DNS-SD Authorization Server discovery. The Authorization Server has a well-known endpoint for returning the server metadata. Details are shown in the client registration sequence diagram.
+Authorization Server clients, such as Broadcast Controllers, Registry and Nodes, locate the Authorization API endpoints via DNS-SD. The Authorization Server has a well-known endpoint for returning this server metadata. Details are shown in the client registration sequence diagram below.
 
 ## Client Registration
 
