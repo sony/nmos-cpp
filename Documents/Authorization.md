@@ -1,6 +1,6 @@
 # Authorization in nmos-cpp
 
-Authorization in nmos-cpp is based on the IS-10 / BCP-003-02 specifications, which are themselves based on OAuth 2.0.
+Authorization in nmos-cpp is based on the IS-10 / BCP-003-02 specifications, which are themselves based on _OAuth 2.0_.
 
 Authorization allows NMOS Nodes and Registries to protect APIs by limiting their access by third-party applications.
 
@@ -22,9 +22,9 @@ In this context the term Client is used to refer to clients of the Authorization
 
 Clients locate the Authorization Server's API endpoints via DNS-SD. The Authorization Server has a well-known endpoint for returning server metadata.
 
-Clients must be registered to the Authorization Server before using the OAuth 2.0 protocol. In the event of successful registration, the Authorization Server will return the `client_id` for a public client and `client_id` and `client_secret` for a confidential client. 
+Clients must be registered to the Authorization Server before using the _OAuth 2.0_ protocol. In the event of successful registration, the Authorization Server will return the `client_id` for a public client and `client_id` and `client_secret` for a confidential client. 
 
-However, it is important that a public client which is using the Authorization Code flow register one or more redirect URLs for security purposes. These allow the Authorization Server to ensure any authorization request is genuine and only valid redirect URLs are used for returning authorization codes. While using Client Credentials flow, Private Key JWT can be used in client authentication for extra security.
+However, it is important that a public client which is using the Authorization Code flow register one or more redirect URLs for security purposes. These allow the Authorization Server to ensure any authorization request is genuine and only valid redirect URLs are used for returning authorization codes. While using Client Credentials flow, _Private Key JWT_ can be used in client authentication for extra security.
 
 See the client registration sequence diagram below on how a Node is registered to the Authorization Server.
 
@@ -34,7 +34,7 @@ See the client registration sequence diagram below on how a Node is registered t
 
 There are two ways of requesting access tokens from the Authomrization Server according to the type of authorization grant used. The grant type depends on the location and the nature of the Client involved in obtaining the access token.
 
-A number of grant types are defined in OAuth 2.0, but the IS-10/BCP-003-02 specifications focus on using the following grant types:
+A number of grant types are defined in _OAuth 2.0_, but the IS-10/BCP-003-02 specifications focus on using the following grant types:
 - Authorization Code Grant.
 - Client Credentials Grant.
 
@@ -64,7 +64,7 @@ Step 4. Send the ``code_verifier`` and the ``authorization code`` in exchange fo
 
 This type of authorization is used by Clients to obtain the access token without user interaction. This is used by Nodes with no user interface.
 
-For extra security the Node uses ``Private Key JWT`` to authenticate with the Authorization Server when requesting the access token.
+For extra security the Node uses _Private Key JWT_ to authenticate with the Authorization Server when requesting the access token.
 
 ![Client-Credentials-Flow](images/Authorization-Client-Credentials-Flow.png)
 
@@ -103,12 +103,12 @@ The state machine implemented by the ```nmos::experimental::validate_authorizati
 
 ![missing-public-keys](images/Authorization-Missing-Public-Keys.png)
 
-In addition, if the Authorization behaviour thread is excluded, the Node/Registry can easily be configured as a headless OAuth 2.0 enabled device.
+In addition, if the Authorization behaviour thread is excluded, the Node/Registry can easily be configured as a headless _OAuth 2.0_ enabled device.
 
 In this case the access token will be fed in externally via the ```nmos::experimental::get_authorization_bearer_token_handler``` callback and the access token validation will be happening on the ```nmos::experimental::validate_authorization_token_handler``` callback.
 
 ## OAuth 2.0 Node Registration Example
 
-The following is an overview of how an OAuth 2.0 Node registers to an OAuth 2.0 enabled Registry.
+The following is an overview of how an _OAuth 2.0_ Node registers to an _OAuth 2.0_ enabled Registry.
 
 ![Node-Registration](images/Authorization-Node-Registration.png)
