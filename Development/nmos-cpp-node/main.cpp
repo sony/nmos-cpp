@@ -115,8 +115,11 @@ int main(int argc, char* argv[])
         }
 #endif
 
-// only implement communication with Authorization server if IS-10/BCP-003-02 is required
-// cf. preprocessor conditions in nmos::make_node_api, nmos::make_connection_api, nmos::make_events_api, nmos::make_channelmapping_api, make_events_ws_validate_handler
+        // only configure communication with Authorization server if IS-10/BCP-003-02 is required
+        // Note:
+        // the validate_authorization callback must be set up before executing the make_node_server where make_node_api, make_connection_api, make_events_api, and make_channelmapping_api are set up
+        // the ws_validate_authorization callback must be set up before executing the make_node_server where make_events_ws_validate_handler is set up
+        // the get_authorization_bearer_token callback must be set up before executing the make_node_server where make_http_client_config is set up
         nmos::experimental::authorization_state authorization_state;
         if (nmos::experimental::fields::server_authorization(node_model.settings))
         {
@@ -153,7 +156,7 @@ int main(int argc, char* argv[])
         }
 #endif
 
-// only implement communication with Authorization server if IS-10/BCP-003-02 is required
+        // only configure communication with Authorization server if IS-10/BCP-003-02 is required
         if (nmos::experimental::fields::client_authorization(node_model.settings))
         {
             std::map<nmos::host_port, web::http::experimental::listener::api_router> api_routers;
@@ -214,7 +217,7 @@ int main(int argc, char* argv[])
             }
         }
 
-// only implement communication with Authorization server if IS-10/BCP-003-02 is required
+        // only configure communication with Authorization server if IS-10/BCP-003-02 is required
         if (nmos::experimental::fields::client_authorization(node_model.settings) || nmos::experimental::fields::server_authorization(node_model.settings))
         {
             // IS-10 client registration, fetch access token, and fetch authorization server token public key
