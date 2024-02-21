@@ -24,7 +24,7 @@ Clients locate the Authorization Server's API endpoints via DNS-SD. The Authoriz
 
 Clients must be registered to the Authorization Server before using the _OAuth 2.0_ protocol. In the event of successful registration, the Authorization Server will return the `client_id` for a public client and `client_id` and `client_secret` for a confidential client. 
 
-However, it is important that a public client which is using the Authorization Code flow register one or more redirect URLs for security purposes. These allow the Authorization Server to ensure any authorization request is genuine and only valid redirect URLs are used for returning authorization codes. While using Client Credentials flow, _Private Key JWT_ can be used in client authentication for extra security.
+However, it is important that a public client which is using the Authorization Code grant register one or more redirect URLs for security purposes. These allow the Authorization Server to ensure any authorization request is genuine and only valid redirect URLs are used for returning authorization codes. While using Client Credentials grant, _Private Key JWT_ can be used in client authentication for extra security.
 
 See the client registration sequence diagram below on how a Node is registered to the Authorization Server.
 
@@ -42,7 +42,7 @@ A number of grant types are defined in _OAuth 2.0_, but the IS-10/BCP-003-02 spe
 
 This is the recommended grant type and should be used if the Client runs within web browser (for instance a Broadcast Controller). An authorization code is returned by the Authorization Server via the Client's redirect URI. The Client can then exchange this code for a time-limited access token, which can be renewed with the refresh token.
 
-For public clients, there is a risk of an attacker hijacking the authorization code. To prevent this Proof Key for Code Exchange (PKCE) is used to further secure the Authorization Code flow.
+For public clients, there is a risk of an attacker hijacking the authorization code. To prevent this Proof Key for Code Exchange (PKCE) is used to further secure the Authorization Code grant.
 
 The PCKE steps are:
 
