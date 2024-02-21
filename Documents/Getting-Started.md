@@ -38,6 +38,9 @@ Notes:
        - Set ``cpprestsdk_DIR`` (PATH) to the location of the installed *cpprestsdk-config.cmake*
        - *Either* set ``websocketpp_DIR`` (PATH) to the location of the installed *websocketpp-config.cmake*
        - *Or* set ``WEBSOCKETPP_INCLUDE_DIR`` (PATH) to the location of the WebSocket++ include files, e.g. *``<home-dir>``*``/cpprestsdk/Release/libs/websocketpp`` to use the copy within the C++ REST SDK source tree
+     - Set flags to use the supplied Modern C++ JSON schema validator and jwt-cpp libraries
+       - Set ``NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR`` (BOOL) to ``1`` (true)
+       - Set ``NMOS_CPP_USE_SUPPLIED_JWT_CPP`` (BOOL) to ``1`` (true)
 
      </details>
 3. Use CMake to generate build/project files, and then build  
@@ -49,7 +52,8 @@ Cache Variable | Default | Description
 -|-|-
 `NMOS_CPP_BUILD_EXAMPLES` | `ON` | Build example applications
 `NMOS_CPP_BUILD_TESTS` | `ON` | Build test suite application
-`NMOS_CPP_USE_CONAN` | `ON` | Use Conan to acquire dependencies
+`NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR` | `OFF` | Use supplied third_party/nlohmann
+`NMOS_CPP_USE_SUPPLIED_JWT_CPP` | `OFF` | Use supplied third_party/jwt-cpp
 `NMOS_CPP_USE_AVAHI` | `ON` | Use Avahi compatibility library rather than mDNSResponder
 
 **Windows**
@@ -61,7 +65,8 @@ mkdir build
 cd build
 cmake .. ^
   -G "Visual Studio 16 2019" ^
-  -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release"
+  -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" ^
+  -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING="third_party/cmake/conan_provider.cmake"
 ```
 
 <details>
@@ -77,7 +82,9 @@ cmake .. ^
   -DBoost_USE_STATIC_LIBS:BOOL="1" ^
   -DBOOST_INCLUDEDIR:PATH="<home-dir>/boost_1_83_0" ^
   -DBOOST_LIBRARYDIR:PATH="<home-dir>/boost_1_83_0/x64/lib" ^
-  -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
+  -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp" ^
+  -DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL="1" ^
+  -DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL="1"
 ```
 
 </details>
@@ -97,7 +104,8 @@ cd <home-dir>/nmos-cpp/Development
 mkdir build
 cd build
 cmake .. \
-  -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>"
+  -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" \
+  -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING="third_party/cmake/conan_provider.cmake"
 make
 ```
 
@@ -110,7 +118,9 @@ mkdir build
 cd build
 cmake .. \
   -DCMAKE_BUILD_TYPE:STRING="<Debug-or-Release>" \
-  -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp"
+  -DWEBSOCKETPP_INCLUDE_DIR:PATH="<home-dir>/cpprestsdk/Release/libs/websocketpp" \
+  -DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL="1" \
+  -DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL="1"
 make
 ```
 

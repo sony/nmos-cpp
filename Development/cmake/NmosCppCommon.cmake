@@ -1,9 +1,6 @@
-set(NMOS_CPP_USE_CONAN ON CACHE BOOL "Use Conan to acquire dependencies")
-mark_as_advanced(FORCE NMOS_CPP_USE_CONAN)
-
-if(NMOS_CPP_USE_CONAN)
-    include(cmake/NmosCppConan.cmake)
-endif()
+# since moving to Conan 2 and CMake 3.24 or higher, the injection point is used to configure conan
+# see https://cmake.org/cmake/help/v3.24/variable/CMAKE_PROJECT_TOP_LEVEL_INCLUDES.html
+unset(NMOS_CPP_USE_CONAN CACHE)
 
 include(GNUInstallDirs)
 
