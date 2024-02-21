@@ -1,14 +1,10 @@
 # Authorization in nmos-cpp
 
-Authorization in nmos-cpp is based on the IS-10 / BCP-003-02 specifications, which are themselves based on _OAuth 2.0_.
-
-Authorization allows NMOS Nodes and Registries to protect APIs by limiting their access by third-party applications.
-
-Third-party applications might include Broadcast Controllers, which queries the Registry via the IS-04 API and handles connections to nodes via the IS-05 API. NMOS Nodes also act as a third-party to the Registry when performing IS-04 node registrations.
+Authorization in nmos-cpp is based on the IS-10 / BCP-003-02 specifications, which are themselves based on _OAuth 2.0_. Authorization allows NMOS Nodes and Registries to protect APIs by limiting their access by third-party applications. Third-party applications might include Broadcast Controllers and other Nodes accessing NMOS APIs such as IS-04 and IS-05.
 
 ## Overview
 
-A client such as a Broadcast Controller provides credentials to the Authorization Server. The Authorization Server grants the required access token(s) to the Controller for accessing the protected APIs on the NMOS Node. The Node will verify that the access token has the level of the access rights required, and if successfully verified will allow access to the API.
+A client such as a Broadcast Controller provides credentials to the Authorization Server. The Authorization Server grants the required access token(s) to the Controller for accessing protected APIs on NMOS Node(s). A Node will verify that the access token has the necessary access rights, and once successfully verified will allow access to that API.
 
 The access token is time-limited, and must be refreshed before it expires. It is recommended to attempt to refresh the token at least 15 seconds before its expiry, or at the half-life of the access token.
 
@@ -40,9 +36,9 @@ A number of grant types are defined in _OAuth 2.0_, but the IS-10/BCP-003-02 spe
 
 ### Authorization Code Grant
 
-This is the recommended grant type and should be used if the Client runs within web browser (for instance a Broadcast Controller). An authorization code is returned by the Authorization Server via the Client's redirect URI. The Client can then exchange this code for a time-limited access token, which can be renewed with the refresh token.
+This is the recommended grant type and should be used if the Client runs within a web browser (for instance a Broadcast Controller). An authorization code is returned by the Authorization Server via the Client's redirect URI. The Client can then exchange this code for a time-limited access token, which can be renewed with the refresh token.
 
-For public clients, there is a risk of an attacker hijacking the authorization code. To prevent this Proof Key for Code Exchange (PKCE) is used to further secure the Authorization Code grant.
+For public clients, there is a risk of an attacker hijacking the authorization code. To prevent this _Proof Key for Code Exchange_ (PKCE) is used to further secure the Authorization Code grant.
 
 The PCKE steps are:
 
@@ -54,7 +50,7 @@ Step 2. Convert the ``code_verifier`` to ``code_challenge`` with the following l
 code_challenge=BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
 ```
 
-Step 3. Includes the ``code_challenge`` and the hashing method used to generate the ``code_challenge`` in the authorization code request.
+Step 3. Include the ``code_challenge`` and the hashing method used to generate the ``code_challenge`` in the authorization code request.
 
 Step 4. Send the ``code_verifier`` and the ``authorization code`` in exchange for the token. The Authorization Server uses the ``code_verifier`` to recreate the matching ``code_challenge`` to verify the client.
 
@@ -62,7 +58,7 @@ Step 4. Send the ``code_verifier`` and the ``authorization code`` in exchange fo
 
 ### Client Credentials Grant
 
-This type of authorization is used by Clients to obtain the access token without user interaction. This is used by Nodes with no user interface.
+This type of authorization is used by Clients to obtain the access token without user interaction. This is for use by Nodes with no user interface.
 
 For extra security the Node uses _Private Key JWT_ to authenticate with the Authorization Server when requesting the access token.
 
