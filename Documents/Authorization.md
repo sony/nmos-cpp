@@ -10,7 +10,7 @@ The access token is time-limited, and must be refreshed before it expires. It is
 
 To speed up the token validation process, the Node periodically fetches the Authorization Server's public keys, typically once every hour. The public keys allow the Node to perform local token validation without having to contact the Authorization Server every time an API is accessed.
 
-A similar idea is also applied to how Nodes perform node registration. The Registry obtains the public keys from the Authorization Server, and the Node obtains the registration access token from the Authorization Server. The Node embeds the token into the registration request for Node registration, and Registry heartbeats.
+Similarly the Registry obtains the public keys from the Authorization Server which can be used to validate access tokens a Node obtains from the Authorization Server, and uses for Node registration and Registry heartbeats. 
 
 ## Client Registration
 
