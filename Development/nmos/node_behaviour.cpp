@@ -554,7 +554,8 @@ namespace nmos
                             // Location may be a relative (to the request URL) or absolute URL
                             auto request_uri = web::uri_builder(client.base_uri()).append_path(U("/resource")).to_uri();
                             auto location_uri = request_uri.resolve_uri(response.headers()[web::http::header_names::location]);
-                            deletion = api_request(web::http::client::http_client(location_uri, client.client_config()), web::http::methods::DEL, gate, token);
+                            auto deletion_client = nmos::details::make_http_client(location_uri, client.client_config());
+                            deletion = api_request(*deletion_client, web::http::methods::DEL, gate, token);
                         }
                         else
                         {
@@ -784,7 +785,7 @@ namespace nmos
 
                     self_id = id_type.first;
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().to_string();
 
                     auto token = cancellation_source.get_token();
                     request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
@@ -908,7 +909,7 @@ namespace nmos
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().to_string();
 
                     node_registered = false;
 
