@@ -784,7 +784,7 @@ namespace nmos
 
                     self_id = id_type.first;
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().to_string();
 
                     auto token = cancellation_source.get_token();
                     request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
@@ -908,7 +908,7 @@ namespace nmos
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().to_string();
 
                     node_registered = false;
 
