@@ -554,7 +554,8 @@ namespace nmos
                             // Location may be a relative (to the request URL) or absolute URL
                             auto request_uri = web::uri_builder(client.base_uri()).append_path(U("/resource")).to_uri();
                             auto location_uri = request_uri.resolve_uri(response.headers()[web::http::header_names::location]);
-                            deletion = api_request(web::http::client::http_client(location_uri, client.client_config()), web::http::methods::DEL, gate, token);
+                            auto deletion_client = nmos::details::make_http_client(location_uri, client.client_config());
+                            deletion = api_request(*deletion_client, web::http::methods::DEL, gate, token);
                         }
                         else
                         {
@@ -760,7 +761,8 @@ namespace nmos
                         grain.updated = strictly_increasing_update(resources);
                     });
 
-                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, get_authorization_bearer_token ? get_authorization_bearer_token() : web::http::oauth2::experimental::oauth2_token{}, gate)));
+                    const auto bearer_token = get_authorization_bearer_token ? get_authorization_bearer_token() : web::http::oauth2::experimental::oauth2_token{};
+                    registration_client = nmos::details::make_http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate));
                 }
 
                 events = web::json::value::array();
@@ -783,7 +785,7 @@ namespace nmos
 
                     self_id = id_type.first;
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Registering nmos-cpp node with the Registration API at: " << registration_client->base_uri().to_string();
 
                     auto token = cancellation_source.get_token();
                     request = details::request_registration(*registration_client, events.at(0), gate, token).then([&](pplx::task<void> finally)
@@ -901,13 +903,13 @@ namespace nmos
                     if (registry_version != grain->version) break;
 
                     const auto bearer_token = get_authorization_bearer_token ? get_authorization_bearer_token() : web::http::oauth2::experimental::oauth2_token{};
-                    registration_client.reset(new web::http::client::http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
-                    heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
+                    registration_client = nmos::details::make_http_client(base_uri, make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate));
+                    heartbeat_client = nmos::details::make_http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate));
 
                     // "The first interaction with a new Registration API [after a server side or connectivity issue]
                     // should be a heartbeat to confirm whether whether the Node is still present in the registry"
 
-                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().host() << ":" << registration_client->base_uri().port();
+                    slog::log<slog::severities::info>(gate, SLOG_FLF) << "Attempting registration heartbeats with the Registration API at: " << registration_client->base_uri().to_string();
 
                     node_registered = false;
 
@@ -946,6 +948,7 @@ namespace nmos
                             {
                                 heartbeat_time = std::chrono::steady_clock::now();
 
+                                // renew heartbeat_client if bearer token has changed
                                 if (get_authorization_bearer_token)
                                 {
                                     const auto& bearer_token = get_authorization_bearer_token();
@@ -954,7 +957,7 @@ namespace nmos
                                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Update heartbeat client with new authorization token";
 
                                         heartbeat_bearer_token = bearer_token;
-                                        heartbeat_client.reset(new web::http::client::http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
+                                        heartbeat_client = nmos::details::make_http_client(base_uri, make_heartbeat_client_config(model.settings, load_ca_certificates, bearer_token, gate));
                                     }
                                 }
 
@@ -1003,7 +1006,7 @@ namespace nmos
 
                     auto token = cancellation_source.get_token();
 
-                    // renew regsitration_client if bearer token has changed
+                    // renew registration_client if bearer token has changed
                     if (get_authorization_bearer_token)
                     {
                         const auto& bearer_token = get_authorization_bearer_token();
@@ -1012,7 +1015,7 @@ namespace nmos
                             slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Update registration client with new authorization token";
 
                             registration_bearer_token = bearer_token;
-                            registration_client.reset(new web::http::client::http_client(registration_client->base_uri(), make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate)));
+                            registration_client = nmos::details::make_http_client(registration_client->base_uri(), make_registration_client_config(model.settings, load_ca_certificates, bearer_token, gate));
                         }
                     }
 

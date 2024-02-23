@@ -14,4 +14,7 @@ lib, *.so* -> ./lib
 lib, *.dylib* -> ./lib
 
 [options]
-boost:shared=False
+boost/*:shared=False
+
+[generators]
+CMakeDeps

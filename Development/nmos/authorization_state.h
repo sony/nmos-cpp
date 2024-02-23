@@ -28,7 +28,7 @@ namespace nmos
                 , immediate(true)
                 , received(false) {}
 
-            pubkeys_shared_state(web::http::client::http_client client, nmos::api_version version, web::uri issuer)//, bool one_shot = false)
+            pubkeys_shared_state(web::http::client::http_client client, nmos::api_version version, web::uri issuer)
                 : engine(seeder)
                 , client(std::unique_ptr<web::http::client::http_client>(new web::http::client::http_client(client)))
                 , version(std::move(version))

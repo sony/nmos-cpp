@@ -111,8 +111,10 @@ int main(int argc, char* argv[])
         }
 #endif
 
-// only implement communication with Authorization server if IS-10/BCP-003-02 is required
-// cf. preprocessor conditions in nmos::make_registration_api, nmos::make_query_api, nmos::make_query_ws_validate_handler, nmos::make_events_ws_validate_handler
+        // only configure communication with Authorization server if IS-10/BCP-003-02 is required
+        // Note:
+        // the validate_authorization callback must be set up before executing the make_node_server where make_node_api, make_connection_api, make_events_api, and make_channelmapping_api are set up
+        // the ws_validate_authorization callback must be set up before executing the make_node_server where make_events_ws_validate_handler is set up
         nmos::experimental::authorization_state authorization_state;
         if (nmos::experimental::fields::server_authorization(registry_model.settings))
         {
@@ -148,7 +150,7 @@ int main(int argc, char* argv[])
         }
 #endif
 
-// only implement communication with Authorization server if IS-10/BCP-003-02 is required
+        // only configure communication with Authorization server if IS-10/BCP-003-02 is required
         if (nmos::experimental::fields::server_authorization(registry_model.settings))
         {
             auto load_ca_certificates = registry_implementation.load_ca_certificates;

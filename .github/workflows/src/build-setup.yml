@@ -1,11 +1,15 @@
 - name: install conan
   if: matrix.use_conan == true
   run: |
-    pip install conan~=1.47
-    conan config set general.revisions_enabled=1
+    pip install conan~=2.0.5
+
+- name: 'ubuntu-14.04: install cmake'
+  if: matrix.os == 'ubuntu-14.04'
+  uses: lukka/get-cmake@v3.24.2
 
 - name: install cmake
-  uses: lukka/get-cmake@v3.24.2
+  if: matrix.os != 'ubuntu-14.04'
+  uses: lukka/get-cmake@v3.28.3
 
 - name: setup bash path
   working-directory: ${{ env.GITHUB_WORKSPACE }}
@@ -19,7 +23,7 @@
   if: runner.os == 'Windows'
   run: |
     # set compiler to cl.exe to avoid building with gcc.
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
+    echo "CMAKE_COMPILER_ARGS=-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe" >> $env:GITHUB_ENV
     # disable unused network interface
     netsh interface set interface name="vEthernet (nat)" admin=DISABLED
     # get host IP address
@@ -149,13 +153,11 @@
     cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DWERROR:BOOL="0" -DBUILD_SAMPLES:BOOL="0" -DBUILD_TESTS:BOOL="0"
     make -j 2 && sudo make install
 
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" >> $GITHUB_ENV
-
-- name: disable conan
-  if: matrix.use_conan == false
-  shell: bash
-  run: |
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_CONAN:BOOL=\"0\"" >> $GITHUB_ENV
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+      "-DWEBSOCKETPP_INCLUDE_DIR:PATH=\"${{ env.RUNNER_WORKSPACE }}/cpprestsdk/Release/libs/websocketpp\"" \
+      "-DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR:BOOL=\"1\"" \
+      "-DNMOS_CPP_USE_SUPPLIED_JWT_CPP:BOOL=\"1\"" \
+      >> $GITHUB_ENV
 
 - name: ubuntu avahi setup
   if: runner.os == 'Linux' && matrix.install_mdns == false
@@ -172,7 +174,17 @@
     echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_USE_AVAHI:BOOL=\"1\"" >> $GITHUB_ENV
 
 - name: force cpprest asio
-  if: matrix.force_cpprest_asio == true
+  if: matrix.force_cpprest_asio == true && matrix.use_conan == true
   shell: bash
   run: |
-    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }} -DNMOS_CPP_CONAN_OPTIONS:STRING=\"cpprestsdk:http_client_impl=asio;cpprestsdk:http_listener_impl=asio\"" >> $GITHUB_ENV
+    echo "CONAN_INSTALL_EXTRA_ARGS=--options\;cpprestsdk/*:http_client_impl=asio\;--options\;cpprestsdk/*:http_listener_impl=asio" >> $GITHUB_ENV
+
+- name: enable conan
+  if: matrix.use_conan == true
+  shell: bash
+  run: |
+    echo "CMAKE_EXTRA_ARGS=${{ env.CMAKE_EXTRA_ARGS }}" \
+      "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING=\"third_party/cmake/conan_provider.cmake\"" \
+      "-DCONAN_INSTALL_ARGS:STRING=\"--build=missing\;${{ env.CONAN_INSTALL_EXTRA_ARGS }}\;--lockfile-out=conan.lock\"" \
+      >> $GITHUB_ENV
+    cat $GITHUB_ENV

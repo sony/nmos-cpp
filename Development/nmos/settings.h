@@ -299,9 +299,6 @@ namespace nmos
             // proxy_port [registry, node]: forward proxy port
             const web::json::field_as_integer_or proxy_port{ U("proxy_port"), 8080 };
 
-            // discovery_mode [node]: whether the discovered host name (1) or resolved addresses (2) are used to construct request URLs for Registration APIs or System APIs
-            const web::json::field_as_integer_or discovery_mode{ U("discovery_mode"), 0 }; // when omitted, a default heuristic is used
-
             // href_mode [registry, node]: whether the host name (1), addresses (2) or both (3) are used to construct response headers, and host and URL fields in the data model
             const web::json::field_as_integer_or href_mode{ U("href_mode"), 0 }; // when omitted, a default heuristic is used
 
@@ -432,7 +429,7 @@ namespace nmos
             // token_endpoint_auth_method [node]: String indicator of the requested authentication method for the token endpoint
             // supported methods are client_secret_basic and private_key_jwt, default to client_secret_basic
             // when using private_key_jwt, the JWT is created and signed by the node's private key
-            const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic")};
+            const web::json::field_as_string_or token_endpoint_auth_method{ U("token_endpoint_auth_method"), U("client_secret_basic") };
 
             // jwks_uri_port [node]: JWKs URL port for providing JSON Web Key Set (public keys) to Authorization Server for verifing client_assertion, used for client registration
             // see http_port
@@ -443,7 +440,7 @@ namespace nmos
 
             // no_trailing_dot_for_authorization_callback_uri [node]: used to specify whether no trailing dot FQDN should be used to construct the URL for the authorization server callbacks
             // as it is because not all Authorization server can cope with URL with trailing dot, default to true
-            const web::json::field_as_bool_or no_trailing_dot_for_authorization_callback_uri{ U("no_trailing_dot_for_authorization_callback_uri"), true};
+            const web::json::field_as_bool_or no_trailing_dot_for_authorization_callback_uri{ U("no_trailing_dot_for_authorization_callback_uri"), true };
 
             // retry_after [registry, node]: used to specify the HTTP Retry-After header to indicate the number of seconds when the client may retry its request again, default to 5 seconds
             // "Where a Resource Server has no matching public key for a given token, it SHOULD attempt to obtain the missing public key via the the token iss
@@ -452,7 +449,7 @@ namespace nmos
             // Server SHOULD include an HTTP Retry-After header to indicate when the client may retry its request.
             // If the Resource Server fails to verify a token using all public keys available it MUST reject the token."
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
-            const web::json::field_as_integer_or service_unavailable_retry_after{ U("service_unavailable_retry_after"), 5};
+            const web::json::field_as_integer_or service_unavailable_retry_after{ U("service_unavailable_retry_after"), 5 };
 
             // manufacturer_name [node]: the manufacturer name of the NcDeviceManager used for NMOS Control Protocol
             // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
