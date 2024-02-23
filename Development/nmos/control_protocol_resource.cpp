@@ -1284,6 +1284,8 @@ namespace nmos
         return details::make_nc_class_descriptor(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), make_nc_class_manager_properties(), make_nc_class_manager_methods(), make_nc_class_manager_events());
     }
 
+
+    // Identification feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     web::json::value make_nc_ident_beacon_class()
     {
@@ -1292,6 +1294,8 @@ namespace nmos
         return details::make_nc_class_descriptor(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), make_nc_ident_beacon_properties(), make_nc_ident_beacon_methods(), make_nc_ident_beacon_events());
     }
 
+
+    // Monitoring feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     web::json::value make_nc_receiver_monitor_class()
     {
@@ -1308,6 +1312,8 @@ namespace nmos
         return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
     }
 
+
+    // Primitive datatypes
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
     web::json::value make_nc_boolean_datatype()
     {
@@ -1388,6 +1394,8 @@ namespace nmos
         return details::make_nc_datatype_descriptor_primitive(U("UTF-8 string"), U("NcString"), value::null());
     }
 
+
+    // Standard datatypes
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcBlockMemberDescriptor.html
     web::json::value make_nc_block_member_descriptor_datatype()
     {

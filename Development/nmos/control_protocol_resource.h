@@ -264,10 +264,14 @@ namespace nmos
     web::json::value make_nc_receiver_monitor_properties();
     web::json::value make_nc_receiver_monitor_methods();
     web::json::value make_nc_receiver_monitor_events();
+    
+    // Monitoring feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
     web::json::value make_nc_receiver_monitor_protected_properties();
     web::json::value make_nc_receiver_monitor_protected_methods();
     web::json::value make_nc_receiver_monitor_protected_events();
+
+    // Identification feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     web::json::value make_nc_ident_beacon_properties();
     web::json::value make_nc_ident_beacon_methods();
@@ -413,7 +417,7 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcVersionCode.html
     web::json::value make_nc_version_code_datatype();
 
-    // Monitoring datatypes
+    // Monitoring feature set datatypes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
     //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
