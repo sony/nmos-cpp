@@ -1,10 +1,10 @@
 # Architecture of nmos-cpp
 
-The [nmos](../Development/nmos/) module fundamentally provides three things. 
+The [nmos](../Development/nmos/) module fundamentally provides three things.
 
-1. A C++ data model for the AMWA IS-04 and IS-05 NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
-2. An implementation of each of the REST APIs defined by the AMWA IS-04 and IS-05 NMOS specifications, in terms of the data model.
-3. An implementation of the Node and Registry "active behaviours" defined by the specifications.  
+1. A C++ data model for the AMWA NMOS resources which represent the logical functionality of a Node, or equally, for the resources of many Nodes held by a Registry.
+2. An implementation of each of the REST APIs defined by the AMWA NMOS specifications, in terms of the data model.
+3. An implementation of the Node and Registry "active behaviours" defined by the specifications.
 
 The module also provides the concept of a server which combines the REST APIs and behaviours into a single object for simplicity.
 
@@ -14,12 +14,13 @@ The module also provides the concept of a server which combines the REST APIs an
 
 The top-level data structures for an NMOS Node and Registry are ``nmos::node_model`` and ``nmos::registry_model`` respectively.
 
-A ``node_model`` has three member variables which are containers, of IS-04 resources, IS-05 resources and IS-07 resources, respectively:
+A ``node_model`` has four member variables which are containers, of IS-04 resources, IS-05 resources, IS-07 resources and IS-08 resources, respectively:
 
 ```C++
 nmos::resources node_resources;
 nmos::resources connection_resources;
 nmos::resources events_resources;
+nmos::resources channelmapping_resources;
 ```
 
 A ``registry_model`` has two containers, this time for the Registry's own Node API "self" resource, and for the resources that have been registered with the Registration API:
@@ -116,11 +117,13 @@ for (;;)
 > [nmos/node_api.cpp](../Development/nmos/node_api.cpp),
 > [nmos/connection_api.cpp](../Development/nmos/connection_api.cpp),
 > [nmos/events_api.cpp](../Development/nmos/events_api.cpp),
+> [nmos/channelmapping_api.cpp](../Development/nmos/channelmapping_api.cpp),
 > [nmos/registration_api.cpp](../Development/nmos/registration_api.cpp),
 > [nmos/query_api.cpp](../Development/nmos/query_api.cpp),
-> [nmos/system_api.cpp](../Development/nmos/system_api.cpp)
+> [nmos/system_api.cpp](../Development/nmos/system_api.cpp),
+> [nmos/authorization_redirect_api.cpp](../Development/nmos/authorization_redirect_api.cpp)
 
-The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07 and IS-09.
+The ``nmos`` module also provides the implementation of each of the REST APIs defined by AMWA IS-04, IS-05, IS-07, IS-08, IS-09 and IS-10.
 
 The C++ REST SDK provides a general purpose HTTP listener, that accepts requests at a particular base URL and passes them to a user-specified request handler for processing.
 Therefore the ``nmos`` module implements each API as a request handler which reads and/or writes the relevant parts of the NMOS data model, and provides a convenience function, ``nmos::support_api``, for associating the API request handler with the HTTP listener.
@@ -167,7 +170,7 @@ The required Node behaviour includes:
 
 The state machine implemented by the ``nmos::node_behaviour_thread`` is shown below:
 
-![NMOS Node Behaviour](images/node-behaviour.png)  
+![NMOS Node Behaviour](images/node-behaviour.png)
 
 <details>
 <summary>More details...</summary>
@@ -211,7 +214,7 @@ The diagram below shows a sequence of events within and between an **nmos-cpp** 
 Resource events initiated in a resource-scheduling thread in the Node are propagated via the Registration API to the Registry model.
 Events in the Registry model are sent in WebSocket messages to each Client with a matching Query API subscription.
 
-![Sequence Diagram](images/node-registry-sequence.png)  
+![Sequence Diagram](images/node-registry-sequence.png)
 
 ## Servers
 
