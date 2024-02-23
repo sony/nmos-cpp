@@ -554,7 +554,8 @@ namespace nmos
                             // Location may be a relative (to the request URL) or absolute URL
                             auto request_uri = web::uri_builder(client.base_uri()).append_path(U("/resource")).to_uri();
                             auto location_uri = request_uri.resolve_uri(response.headers()[web::http::header_names::location]);
-                            deletion = api_request(web::http::client::http_client(location_uri, client.client_config()), web::http::methods::DEL, gate, token);
+                            auto deletion_client = nmos::details::make_http_client(location_uri, client.client_config());
+                            deletion = api_request(*deletion_client, web::http::methods::DEL, gate, token);
                         }
                         else
                         {
