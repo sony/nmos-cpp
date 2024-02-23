@@ -5,6 +5,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
+#include "nmos/is04_versions.h"
 #include "nmos/logging_api.h"
 #include "nmos/manifest_api.h"
 #include "nmos/model.h"
@@ -25,7 +26,13 @@ namespace nmos
         {
             // Log the API addresses we'll be using
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::get_host(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: "
+                << web::uri_builder()
+                .set_scheme(nmos::http_scheme(node_model.settings))
+                .set_host(nmos::get_host(node_model.settings))
+                .set_port(nmos::fields::node_port(node_model.settings))
+                .set_path(U("/x-nmos/node/") + nmos::make_api_version(*nmos::is04_versions::from_settings(node_model.settings).rbegin()))
+                .to_string();
 
             nmos::server node_server{ node_model };
 
