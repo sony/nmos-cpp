@@ -41,12 +41,10 @@ namespace nmos
     namespace details
     {
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
-        //web::json::value make_nc_element_id(uint16_t level, uint16_t index);
         web::json::value make_nc_element_id(const nc_element_id& element_id);
         nc_element_id parse_nc_element_id(const web::json::value& element_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nceventid
-        //web::json::value make_nc_event_id(uint16_t level, uint16_t index);
         web::json::value make_nc_event_id(const nc_event_id& event_id);
         nc_event_id parse_nc_event_id(const web::json::value& event_id);
 
@@ -264,7 +262,7 @@ namespace nmos
     web::json::value make_nc_receiver_monitor_properties();
     web::json::value make_nc_receiver_monitor_methods();
     web::json::value make_nc_receiver_monitor_events();
-    
+
     // Monitoring feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
     web::json::value make_nc_receiver_monitor_protected_properties();
