@@ -1237,7 +1237,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             }),
             example_enum::Undefined,
             U("test"),
-            3,
+            4,
             10,
             false,
             make_example_datatype(example_enum::Undefined, U("default"), 5, false),
