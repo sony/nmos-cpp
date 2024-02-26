@@ -105,7 +105,7 @@ namespace nmos
 
             auto to_methods_vector = [](const web::json::value& nc_method_descriptors, const std::map<nmos::nc_method_id, const standard_method_handler>& method_handlers)
             {
-                // NcMethodDescriptor vs method
+                // NcMethodDescriptor method handler array
                 std::vector<method> methods;
 
                 if (!nc_method_descriptors.is_null())

@@ -20,9 +20,9 @@ namespace nmos
             nmos::nc_name name;
             web::json::value fixed_role;
 
-            web::json::value properties = web::json::value::array(); // array of NcPropertyDescriptor
-            std::vector<method> methods; // vector of NcMethodDescriptor, standard_method_handler and non_standard_method_handler
-            web::json::value events = web::json::value::array();  // array of NcEventDescriptor
+            web::json::value properties = web::json::value::array(); // NcPropertyDescriptor array
+            std::vector<method> methods; // NcMethodDescriptor method handler array
+            web::json::value events = web::json::value::array();  // NcEventDescriptor array
 
             control_class()
                 : class_id({ 0 })
