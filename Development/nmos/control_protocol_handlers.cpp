@@ -93,7 +93,7 @@ namespace nmos
                 {
                     resource.data[nmos::fields::nc::connection_status] = value;
 
-                }, propertry_changed_event);
+                }, property_changed_event);
             }
         };
     }
