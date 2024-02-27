@@ -76,7 +76,7 @@ namespace nmos
                         property_changed(resource, nmos::fields::nc::name(property), -1);
                     }
 
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::value_changed, val } }));
+                }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::value_changed, val } }));
 
                 return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
             }
@@ -184,7 +184,7 @@ namespace nmos
                             property_changed(resource, nmos::fields::nc::name(property), index);
                         }
 
-                    }, make_propertry_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
+                    }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::sequence_item_changed, val, nc_id(index) } }));
 
                     return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
                 }
@@ -260,7 +260,7 @@ namespace nmos
                         property_changed(resource, nmos::fields::nc::name(property), (int)sequence.as_array().size()-1);
                     }
 
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
+                }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
 
                 return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, sequence_item_index);
             }
@@ -309,7 +309,7 @@ namespace nmos
                     auto& sequence = resource.data[nmos::fields::nc::name(property)].as_array();
                     sequence.erase(index);
 
-                }, make_propertry_changed_event(nmos::fields::nc::oid(resource.data), { { details::parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index) } }));
+                }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { details::parse_nc_property_id(property_id), nc_property_change_type::type::sequence_item_removed, nc_id(index) } }));
 
                 return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok });
             }

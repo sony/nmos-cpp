@@ -899,7 +899,7 @@ namespace nmos
     // property changed notification event
     // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#the-propertychanged-event
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/NcObject.html#propertychanged-event
-    web::json::value make_propertry_changed_event(nc_oid oid, const std::vector<nc_property_changed_event_data>& property_changed_event_data_list)
+    web::json::value make_property_changed_event(nc_oid oid, const std::vector<nc_property_changed_event_data>& property_changed_event_data_list)
     {
         using web::json::value;
 

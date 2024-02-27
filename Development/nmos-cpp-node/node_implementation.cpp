@@ -1365,7 +1365,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
 
                 if (resources.end() != found)
                 {
-                    const auto propertry_changed_event = nmos::make_propertry_changed_event(nmos::fields::nc::oid(found->data),
+                    const auto property_changed_event = nmos::make_property_changed_event(nmos::fields::nc::oid(found->data),
                     {
                         { {3, 1}, nmos::nc_property_change_type::type::value_changed, web::json::value(temp.scaled_value()) }
                     });
@@ -1374,7 +1374,7 @@ void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
                     {
                         resource.data[temperature] = temp.scaled_value();
 
-                    }, propertry_changed_event);
+                    }, property_changed_event);
                 }
             }
 

@@ -84,7 +84,7 @@ namespace nmos
 
                 // hmm, maybe updating connectionStatusMessage, payloadStatus, and payloadStatusMessage too
 
-                const auto propertry_changed_event = make_propertry_changed_event(nmos::fields::nc::oid(found->data),
+                const auto property_changed_event = make_property_changed_event(nmos::fields::nc::oid(found->data),
                 {
                     { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, value }
                 });
