@@ -728,12 +728,27 @@ namespace nmos
         }
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncworker
-        web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled)
+        web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled)
         {
             using web::json::value;
 
             auto data = details::make_nc_object(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints);
             data[nmos::fields::nc::enabled] = value::boolean(enabled);
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
+            nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message)
+        {
+            using web::json::value;
+
+            auto data = make_nc_worker(class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
+            data[nmos::fields::nc::connection_status] = value::number(connection_status);
+            data[nmos::fields::nc::connection_status_message] = value::string(connection_status_message);
+            data[nmos::fields::nc::payload_status] = value::number(payload_status);
+            data[nmos::fields::nc::payload_status_message] = value::string(payload_status_message);
 
             return data;
         }
@@ -1284,7 +1299,6 @@ namespace nmos
         return details::make_nc_class_descriptor(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"), make_nc_class_manager_properties(), make_nc_class_manager_methods(), make_nc_class_manager_events());
     }
 
-
     // Identification feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     web::json::value make_nc_ident_beacon_class()
@@ -1293,7 +1307,6 @@ namespace nmos
 
         return details::make_nc_class_descriptor(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"), make_nc_ident_beacon_properties(), make_nc_ident_beacon_methods(), make_nc_ident_beacon_events());
     }
-
 
     // Monitoring feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
@@ -1311,7 +1324,6 @@ namespace nmos
 
         return details::make_nc_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"), make_nc_receiver_monitor_protected_properties(), make_nc_receiver_monitor_protected_methods(), make_nc_receiver_monitor_protected_events());
     }
-
 
     // Primitive datatypes
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#primitives
