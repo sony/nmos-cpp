@@ -256,6 +256,40 @@ namespace nmos
         return config;
     }
 
+    namespace details
+    {
+        // make a client for the specified base_uri and config, with host name for the Host header sneakily stashed in user info
+        std::unique_ptr<web::http::client::http_client> make_http_client(const web::uri& base_uri, const web::http::client::http_client_config& client_config)
+        {
+            // unstash the host name for the Host header
+            // cf. nmos::details::resolve_service
+            // don't bother clearing user_info since http_client makes no use of it
+            // see https://github.com/microsoft/cpprestsdk/issues/3
+            std::unique_ptr<web::http::client::http_client> client(new web::http::client::http_client(base_uri, client_config));
+            if (!base_uri.user_info().empty())
+            {
+                auto host = base_uri.user_info();
+
+                // hmm, in secure mode, don't append the port to the Host header
+                // because both calc_cn_host in cpprestsdk/Release/src/http/client/http_client_asio.cpp
+                // and winhttp_client::send_request in cpprestsdk/Release/src/http/client/http_client_winhttp.cpp
+                // compare the entire Host header value with the certificate Common Name
+                // which causes an SSL handshake error
+                // see https://github.com/microsoft/cpprestsdk/issues/1790
+                if (base_uri.port() > 0 && !web::is_secure_uri_scheme(base_uri.scheme()))
+                {
+                    host.append(U(":")).append(utility::conversions::details::to_string_t(base_uri.port()));
+                }
+
+                client->add_handler([host](web::http::http_request request, std::shared_ptr<web::http::http_pipeline_stage> next_stage) -> pplx::task<web::http::http_response>
+                {
+                    request.headers().add(web::http::header_names::host, host);
+                    return next_stage->propagate(request);
+                });
+            }
+            return client;
+        }
+    }
 
     // make a request with logging
     pplx::task<web::http::http_response> api_request(web::http::client::http_client client, web::http::http_request request, slog::base_gate& gate, const pplx::cancellation_token& token)

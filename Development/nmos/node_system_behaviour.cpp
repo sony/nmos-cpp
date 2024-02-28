@@ -396,7 +396,7 @@ namespace nmos
                 if (!state.client)
                 {
                     const auto base_uri = top_system_service(model.settings);
-                    state.client.reset(new web::http::client::http_client(base_uri, make_system_client_config(model.settings, load_ca_certificates, gate)));
+                    state.client = nmos::details::make_http_client(base_uri, make_system_client_config(model.settings, load_ca_certificates, gate));
                 }
 
                 auto token = cancellation_source.get_token();

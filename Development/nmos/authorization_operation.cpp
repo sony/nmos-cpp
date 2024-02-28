@@ -1214,7 +1214,7 @@ namespace nmos
                     const auto service = top_authorization_service(model.settings);
 
                     const auto auth_uri = service.second;
-                    client.reset(new web::http::client::http_client(auth_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate)));
+                    client = nmos::details::make_http_client(auth_uri, make_authorization_http_client_config(model.settings, load_ca_certificates, gate));
 
                     auto token = cancellation_source.get_token();
 
