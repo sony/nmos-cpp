@@ -1012,6 +1012,10 @@ namespace nmos
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API Bearer token request OAuth 2.0 error: " << e.what();
                     }
+                    catch (const nmos::experimental::jwk_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API Bearer token request JWK error: " << e.what();
+                    }
                     catch (const std::exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API Bearer token request error: " << e.what();
@@ -1072,7 +1076,7 @@ namespace nmos
                             {
                                 try
                                 {
-                                    const auto pem = jwk_to_public_key(jwk); // can throw jwk_exception
+                                    const auto pem = jwk_to_rsa_public_key(jwk); // can throw jwk_exception
 
                                     web::json::push_back(pems, web::json::value_of({
                                         { U("jwk"), jwk },
@@ -1909,7 +1913,7 @@ namespace nmos
                         {
                             try
                             {
-                                const auto& pem = jwk_to_public_key(jwk); // can throw jwk_exception
+                                const auto& pem = jwk_to_rsa_public_key(jwk); // can throw jwk_exception
 
                                 web::json::push_back(pems, web::json::value_of({
                                     { U("jwk"), jwk },
