@@ -259,6 +259,7 @@ namespace nmos
                                         const auto& class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data));
 
                                         // find the relevent method handler to execute
+                                        // method tuple definition described in control_protocol_handlers.h
                                         auto method = get_control_protocol_method(class_id, method_id);
                                         auto& nc_method_descriptor = std::get<0>(method);
                                         auto& standard_method = std::get<1>(method);
