@@ -7,59 +7,59 @@
 
 namespace nmos
 {
-    get_control_protocol_class_handler make_get_control_protocol_class_handler(nmos::experimental::control_protocol_state& control_protocol_state)
+    get_control_protocol_class_descriptor_handler make_get_control_protocol_class_descriptor_handler(nmos::experimental::control_protocol_state& control_protocol_state)
     {
         return [&](const nc_class_id& class_id)
         {
             auto lock = control_protocol_state.read_lock();
 
-            auto& control_classes = control_protocol_state.control_classes;
-            auto found = control_classes.find(class_id);
-            if (control_classes.end() != found)
+            auto& control_class_descriptors = control_protocol_state.control_class_descriptors;
+            auto found = control_class_descriptors.find(class_id);
+            if (control_class_descriptors.end() != found)
             {
                 return found->second;
             }
-            return nmos::experimental::control_class{};
+            return nmos::experimental::control_class_descriptor{};
         };
     }
 
-    get_control_protocol_datatype_handler make_get_control_protocol_datatype_handler(nmos::experimental::control_protocol_state& control_protocol_state)
+    get_control_protocol_datatype_descriptor_handler make_get_control_protocol_datatype_descriptor_handler(nmos::experimental::control_protocol_state& control_protocol_state)
     {
         return [&](const nmos::nc_name& name)
         {
             auto lock = control_protocol_state.read_lock();
 
-            auto found = control_protocol_state.datatypes.find(name);
-            if (control_protocol_state.datatypes.end() != found)
+            auto found = control_protocol_state.datatype_descriptors.find(name);
+            if (control_protocol_state.datatype_descriptors.end() != found)
             {
                 return found->second;
             }
-            return nmos::experimental::datatype{};
+            return nmos::experimental::datatype_descriptor{};
         };
     }
 
-    get_control_protocol_method_handler make_get_control_protocol_method_handler(experimental::control_protocol_state& control_protocol_state)
+    get_control_protocol_method_descriptor_handler make_get_control_protocol_method_descriptor_handler(experimental::control_protocol_state& control_protocol_state)
     {
         return [&](const nc_class_id& class_id_, const nc_method_id& method_id)
         {
             auto class_id = class_id_;
 
-            auto get_control_protocol_class = make_get_control_protocol_class_handler(control_protocol_state);
+            auto get_control_protocol_class_descriptor = make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
             auto lock = control_protocol_state.read_lock();
 
             while (!class_id.empty())
             {
-                const auto& control_class = get_control_protocol_class(class_id);
+                const auto& control_class_descriptor = get_control_protocol_class_descriptor(class_id);
 
-                auto& methods = control_class.methods;
-                auto method_found = std::find_if(methods.begin(), methods.end(), [&method_id](const experimental::method& method)
+                auto& method_descriptors = control_class_descriptor.method_descriptors;
+                auto found = std::find_if(method_descriptors.begin(), method_descriptors.end(), [&method_id](const experimental::method& method)
                 {
                     return method_id == details::parse_nc_method_id(nmos::fields::nc::id(std::get<0>(method)));
                 });
-                if (methods.end() != method_found)
+                if (method_descriptors.end() != found)
                 {
-                    return *method_found;
+                    return *found;
                 }
 
                 class_id.pop_back();

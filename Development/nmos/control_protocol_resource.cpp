@@ -793,25 +793,25 @@ namespace nmos
             // add control classes
             data[nmos::fields::nc::control_classes] = value::array();
             auto& control_classes = data[nmos::fields::nc::control_classes];
-            for (const auto& control_class : control_protocol_state.control_classes)
+            for (const auto& control_class : control_protocol_state.control_class_descriptors)
             {
                 auto& ctl_class = control_class.second;
 
-                auto methods = value::array();
-                for (const auto& method : ctl_class.methods) { web::json::push_back(methods, std::get<0>(method)); }
+                auto method_descriptors = value::array();
+                for (const auto& method_descriptor : ctl_class.method_descriptors) { web::json::push_back(method_descriptors, std::get<0>(method_descriptor)); }
 
                 const auto class_description = ctl_class.fixed_role.is_null()
-                    ? make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.properties, methods, ctl_class.events)
-                    : make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.fixed_role.as_string(), ctl_class.properties, methods, ctl_class.events);
+                    ? make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.property_descriptors, method_descriptors, ctl_class.event_descriptors)
+                    : make_nc_class_descriptor(ctl_class.description, ctl_class.class_id, ctl_class.name, ctl_class.fixed_role.as_string(), ctl_class.property_descriptors, method_descriptors, ctl_class.event_descriptors);
                 web::json::push_back(control_classes, class_description);
             }
 
             // add datatypes
             data[nmos::fields::nc::datatypes] = value::array();
             auto& datatypes = data[nmos::fields::nc::datatypes];
-            for (const auto& datatype : control_protocol_state.datatypes)
+            for (const auto& datatype_descriptor : control_protocol_state.datatype_descriptors)
             {
-                web::json::push_back(datatypes, datatype.second.descriptor);
+                web::json::push_back(datatypes, datatype_descriptor.second.descriptor);
             }
 
             return data;

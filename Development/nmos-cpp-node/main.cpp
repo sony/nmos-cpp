@@ -143,9 +143,9 @@ int main(int argc, char* argv[])
         if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
         {
             node_implementation
-                .on_get_control_class(nmos::make_get_control_protocol_class_handler(control_protocol_state))
-                .on_get_control_datatype(nmos::make_get_control_protocol_datatype_handler(control_protocol_state))
-                .on_get_control_protocol_method(nmos::make_get_control_protocol_method_handler(control_protocol_state));
+                .on_get_control_class_descriptor(nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state))
+                .on_get_control_datatype_descriptor(nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state))
+                .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state));
         }
 
         // Set up the node server

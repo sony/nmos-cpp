@@ -12,7 +12,7 @@ namespace nmos
 {
     // NcObject methods implementation
     // Get property value
-    web::json::value get(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -21,7 +21,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get property: " << property_id.serialize();
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, resource.data.at(nmos::fields::nc::name(property)));
@@ -34,7 +34,7 @@ namespace nmos
     }
 
     // Set property value
-    web::json::value set(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+    web::json::value set(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -45,7 +45,7 @@ namespace nmos
 
         // find the relevant nc_property_descriptor
         const auto property_id_ = details::parse_nc_property_id(property_id);
-        const auto& property = find_property(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (nmos::fields::nc::is_read_only(property))
@@ -63,7 +63,7 @@ namespace nmos
             try
             {
                 // do property constraints validation
-                nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype });
+                nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
 
                 // update property
                 modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
@@ -95,7 +95,7 @@ namespace nmos
     }
 
     // Get sequence item
-    web::json::value get_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -105,7 +105,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence item: " << property_id.serialize() << " index: " << index;
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -136,7 +136,7 @@ namespace nmos
     }
 
     // Set sequence item
-    web::json::value set_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+    web::json::value set_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -148,7 +148,7 @@ namespace nmos
 
         // find the relevant nc_property_descriptor
         const auto property_id_ = details::parse_nc_property_id(property_id);
-        const auto& property = find_property(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (nmos::fields::nc::is_read_only(property))
@@ -171,7 +171,7 @@ namespace nmos
                 try
                 {
                     // do property constraints validation
-                    nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype });
+                    nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
 
                     // update property
                     modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
@@ -209,7 +209,7 @@ namespace nmos
     }
 
     // Add item to sequence
-    web::json::value add_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
+    web::json::value add_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -222,7 +222,7 @@ namespace nmos
 
         // find the relevant nc_property_descriptor
         const auto property_id_ = details::parse_nc_property_id(property_id);
-        const auto& property = find_property(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(property_id_, details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (nmos::fields::nc::is_read_only(property))
@@ -245,7 +245,7 @@ namespace nmos
             try
             {
                 // do property constraints validation
-                nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype), get_control_protocol_datatype });
+                nmos::details::constraints_validation(val, details::get_runtime_property_constraints(property_id_, resource.data.at(nmos::fields::nc::runtime_property_constraints)), nmos::fields::nc::constraints(property), { details::get_datatype_descriptor(property.at(nmos::fields::nc::type_name), get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
 
                 // update property
                 modify_control_protocol_resource(resources, resource.id, [&](nmos::resource& resource)
@@ -279,7 +279,7 @@ namespace nmos
     }
 
     // Delete sequence item
-    web::json::value remove_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value remove_sequence_item(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -289,7 +289,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Remove sequence item: " << property_id.serialize() << " index: " << index;
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             const auto& data = resource.data.at(nmos::fields::nc::name(property));
@@ -327,7 +327,7 @@ namespace nmos
     }
 
     // Get sequence length
-    web::json::value get_sequence_length(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_sequence_length(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -338,7 +338,7 @@ namespace nmos
         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get sequence length: " << property_id.serialize();
 
         // find the relevant nc_property_descriptor
-        const auto& property = find_property(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class);
+        const auto& property = find_property_descriptor(details::parse_nc_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource.data)), get_control_protocol_class_descriptor);
         if (!property.is_null())
         {
             if (!nmos::fields::nc::is_sequence(property))
@@ -382,7 +382,7 @@ namespace nmos
 
     // NcBlock methods implementation
     // Gets descriptors of members of the block
-    web::json::value get_member_descriptors(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_member_descriptors(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -399,7 +399,7 @@ namespace nmos
     }
 
     // Finds member(s) by path
-    web::json::value find_members_by_path(nmos::resources& resources, const nmos::resource& resource_, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value find_members_by_path(nmos::resources& resources, const nmos::resource& resource_, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -459,7 +459,7 @@ namespace nmos
     }
 
     // Finds members with given role name or fragment
-    web::json::value find_members_by_role(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value find_members_by_role(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -485,7 +485,7 @@ namespace nmos
     }
 
     // Finds members with given class id
-    web::json::value find_members_by_class_id(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value find_members_by_class_id(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -513,7 +513,7 @@ namespace nmos
 
     // NcClassManager methods implementation
     // Get a single class descriptor
-    web::json::value get_control_class(nmos::resources&, const nmos::resource&, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler get_control_protocol_class, get_control_protocol_datatype_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_control_class(nmos::resources&, const nmos::resource&, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
     {
         using web::json::value;
 
@@ -530,16 +530,16 @@ namespace nmos
 
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
-        const auto& control_class = get_control_protocol_class(class_id);
+        const auto& control_class = get_control_protocol_class_descriptor(class_id);
         if (!control_class.class_id.empty())
         {
             auto& description = control_class.description;
             auto& name = control_class.name;
             auto& fixed_role = control_class.fixed_role;
-            auto properties = control_class.properties;
-            auto methods = value::array();
-            for (const auto& method : control_class.methods) { web::json::push_back(methods, std::get<0>(method)); }
-            auto events = control_class.events;
+            auto property_descriptors = control_class.property_descriptors;
+            auto method_descriptors = value::array();
+            for (const auto& method_descriptor : control_class.method_descriptors) { web::json::push_back(method_descriptors, std::get<0>(method_descriptor)); }
+            auto event_descriptors = control_class.event_descriptors;
 
             if (include_inherited)
             {
@@ -548,18 +548,18 @@ namespace nmos
 
                 while (!inherited_class_id.empty())
                 {
-                    const auto& inherited_control_class = get_control_protocol_class(inherited_class_id);
+                    const auto& inherited_control_class = get_control_protocol_class_descriptor(inherited_class_id);
                     {
-                        for (const auto& property : inherited_control_class.properties.as_array()) { web::json::push_back(properties, property); }
-                        for (const auto& method : inherited_control_class.methods) { web::json::push_back(methods, std::get<0>(method)); }
-                        for (const auto& event : inherited_control_class.events.as_array()) { web::json::push_back(events, event); }
+                        for (const auto& property_descriptor : inherited_control_class.property_descriptors.as_array()) { web::json::push_back(property_descriptors, property_descriptor); }
+                        for (const auto& method_descriptor : inherited_control_class.method_descriptors) { web::json::push_back(method_descriptors, std::get<0>(method_descriptor)); }
+                        for (const auto& event_descriptor : inherited_control_class.event_descriptors.as_array()) { web::json::push_back(event_descriptors, event_descriptor); }
                     }
                     inherited_class_id.pop_back();
                 }
             }
             const auto descriptor = fixed_role.is_null()
-                ? details::make_nc_class_descriptor(description, class_id, name, properties, methods, events)
-                : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), properties, methods, events);
+                ? details::make_nc_class_descriptor(description, class_id, name, property_descriptors, method_descriptors, event_descriptors)
+                : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), property_descriptors, method_descriptors, event_descriptors);
 
             return make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptor);
         }
@@ -568,7 +568,7 @@ namespace nmos
     }
 
     // Get a single datatype descriptor
-    web::json::value get_datatype(nmos::resources&, const nmos::resource&, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_handler, get_control_protocol_datatype_handler get_control_protocol_datatype, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_datatype(nmos::resources&, const nmos::resource&, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler, slog::base_gate& gate)
         {
             // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -583,7 +583,7 @@ namespace nmos
                 return make_control_protocol_error_response(handle, { nc_method_status::parameter_error }, U("empty name to do GetDatatype"));
             }
 
-            const auto& datatype = get_control_protocol_datatype(name);
+            const auto& datatype = get_control_protocol_datatype_descriptor(name);
             if (datatype.descriptor.size())
             {
                 auto descriptor = datatype.descriptor;
@@ -600,7 +600,7 @@ namespace nmos
                             const auto& parent_type = descriptor_.at(nmos::fields::nc::parent_type);
                             if (!parent_type.is_null())
                             {
-                                const auto& parent_datatype = get_control_protocol_datatype(parent_type.as_string());
+                                const auto& parent_datatype = get_control_protocol_datatype_descriptor(parent_type.as_string());
                                 if (parent_datatype.descriptor.size())
                                 {
                                     descriptor_ = parent_datatype.descriptor;

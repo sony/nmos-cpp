@@ -35,10 +35,9 @@ namespace nmos
             {
                 auto& runtime_prop_constraints = runtime_property_constraints.as_array();
                 auto found_constraints = std::find_if(runtime_prop_constraints.begin(), runtime_prop_constraints.end(), [&property_id](const web::json::value& constraints)
-                    {
-                        //return nmos::fields::nc::id(property) == nmos::fields::nc::property_id(constraints);
-                        return property_id == parse_nc_property_id(nmos::fields::nc::property_id(constraints));
-                    });
+                {
+                    return property_id == parse_nc_property_id(nmos::fields::nc::property_id(constraints));
+                });
 
                 if (runtime_prop_constraints.end() != found_constraints)
                 {
@@ -49,24 +48,24 @@ namespace nmos
         }
 
         // get the datatype descriptor of a specific type_name
-        web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype)
+        web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
         {
             using web::json::value;
 
             if (!type_name.is_null())
             {
-                return get_control_protocol_datatype(type_name.as_string()).descriptor;
+                return get_control_protocol_datatype_descriptor(type_name.as_string()).descriptor;
             }
             return value::null();
         }
 
         // get the datatype property constraints of a specific type_name
-        web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype)
+        web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
         {
             using web::json::value;
 
             // NcDatatypeDescriptor
-            const auto& datatype_descriptor = get_datatype_descriptor(type_name, get_control_protocol_datatype);
+            const auto& datatype_descriptor = get_datatype_descriptor(type_name, get_control_protocol_datatype_descriptor);
             if (!datatype_descriptor.is_null())
             {
                 return nmos::fields::nc::constraints(datatype_descriptor);
@@ -242,7 +241,7 @@ namespace nmos
                 {
                     // do parent typename constraints validation
                     const auto& type_name = params.datatype_descriptor.at(nmos::fields::nc::parent_type); // parent type_name
-                    datatype_constraints_validation(data, { details::get_datatype_descriptor(type_name, params.get_control_protocol_datatype), params.get_control_protocol_datatype });
+                    datatype_constraints_validation(data, { details::get_datatype_descriptor(type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
                 }
                 else
                 {
@@ -299,13 +298,13 @@ namespace nmos
                                 for (const auto& val : value.as_array())
                                 {
                                     // do typename constraints validation
-                                    datatype_constraints_validation(val, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype), params.get_control_protocol_datatype });
+                                    datatype_constraints_validation(val, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
                                 }
                             }
                             else
                             {
                                 // do typename constraints validation
-                                datatype_constraints_validation(value, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype), params.get_control_protocol_datatype });
+                                datatype_constraints_validation(value, { details::get_datatype_descriptor(field_type_name, params.get_control_protocol_datatype_descriptor), params.get_control_protocol_datatype_descriptor });
                             }
                         }
                     }
@@ -320,7 +319,7 @@ namespace nmos
                 return;
             }
 
-            // unsupport datatype_type, no validation is required
+            // unsupported datatype_type, no validation is required
         }
 
         // multiple levels of constraints validation, may throw nmos::control_protocol_exception
@@ -390,8 +389,8 @@ namespace nmos
         return make_nc_class_id(prefix, 0, suffix);
     }
 
-    // find control class property (NcPropertyDescriptor)
-    web::json::value find_property(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_handler get_control_protocol_class)
+    // find control class property descriptor (NcPropertyDescriptor)
+    web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id_, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
     {
         using web::json::value;
 
@@ -399,13 +398,13 @@ namespace nmos
 
         while (!class_id.empty())
         {
-            const auto& control_class = get_control_protocol_class(class_id);
-            auto& properties = control_class.properties.as_array();
-            auto found = std::find_if(properties.begin(), properties.end(), [&property_id](const web::json::value& property)
+            const auto& control_class = get_control_protocol_class_descriptor(class_id);
+            auto& property_descriptors = control_class.property_descriptors.as_array();
+            auto found = std::find_if(property_descriptors.begin(), property_descriptors.end(), [&property_id](const web::json::value& property_descriptor)
             {
-                return (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property)));
+                return (property_id == nmos::details::parse_nc_property_id(nmos::fields::nc::id(property_descriptor)));
             });
-            if (properties.end() != found) { return *found; }
+            if (property_descriptors.end() != found) { return *found; }
 
             class_id.pop_back();
         }
@@ -634,7 +633,7 @@ namespace nmos
     }
 
     // method parameters constraints validation
-    void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_handler get_control_protocol_datatype)
+    void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
     {
         for (const auto& param : nmos::fields::nc::parameters(nc_method_descriptor))
         {
@@ -646,7 +645,7 @@ namespace nmos
                 // missing argument parameter
                 throw control_protocol_exception("missing argument parameter " + utility::us2s(name));
             }
-            details::method_parameter_constraints_validation(arguments.at(name), constraints, { nmos::details::get_datatype_descriptor(type_name, get_control_protocol_datatype), get_control_protocol_datatype });
+            details::method_parameter_constraints_validation(arguments.at(name), constraints, { nmos::details::get_datatype_descriptor(type_name, get_control_protocol_datatype_descriptor), get_control_protocol_datatype_descriptor });
         }
     }
 }

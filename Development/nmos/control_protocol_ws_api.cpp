@@ -188,12 +188,12 @@ namespace nmos
         };
     }
 
-    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_method_handler get_control_protocol_method, nmos::control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
+    web::websockets::experimental::listener::message_handler make_control_protocol_ws_message_handler(nmos::node_model& model, nmos::websockets& websockets, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler property_changed, slog::base_gate& gate_)
     {
         using web::json::value;
         using web::json::value_of;
 
-        return [&model, &websockets, get_control_protocol_class, get_control_protocol_datatype, get_control_protocol_method, property_changed, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
+        return [&model, &websockets, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, get_control_protocol_method_descriptor, property_changed, &gate_](const web::uri& connection_uri, const web::websockets::experimental::listener::connection_id& connection_id, const web::websockets::websocket_incoming_message& msg_)
         {
             nmos::ws_api_gate gate(gate_, connection_uri);
 
@@ -260,7 +260,7 @@ namespace nmos
 
                                         // find the relevent method handler to execute
                                         // method tuple definition described in control_protocol_handlers.h
-                                        auto method = get_control_protocol_method(class_id, method_id);
+                                        auto method = get_control_protocol_method_descriptor(class_id, method_id);
                                         auto& nc_method_descriptor = std::get<0>(method);
                                         auto& standard_method = std::get<1>(method);
                                         auto& non_standard_method = std::get<2>(method);
@@ -269,12 +269,12 @@ namespace nmos
                                             try
                                             {
                                                 // do method arguments constraints validation
-                                                method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype);
+                                                method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
 
                                                 // execute the relevant method handler, then accumulating up their response to reponses
                                                 if (standard_method)
                                                 {
-                                                    response = standard_method(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class, get_control_protocol_datatype, property_changed, gate);
+                                                    response = standard_method(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                                                 }
                                                 else // non_standard_method
                                                 {

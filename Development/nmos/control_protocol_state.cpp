@@ -9,12 +9,12 @@ namespace nmos
     {
         namespace details
         {
-            // create control class
+            // create control class descriptor
             //   where
             //     properties: vector of NcPropertyDescriptor where NcPropertyDescriptor can be constructed using make_control_class_property
             //     methods:    vector of NcMethodDescriptor vs assoicated method handler where NcMethodDescriptor can be constructed using make_nc_method_descriptor
             //     events:     vector of NcEventDescriptor where NcEventDescriptor can be constructed using make_nc_event_descriptor
-            control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<nmos::experimental::method>& methods_, const std::vector<web::json::value>& events_)
+            control_class_descriptor make_control_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const web::json::value& fixed_role, const std::vector<web::json::value>& properties_, const std::vector<nmos::experimental::method>& methods_, const std::vector<web::json::value>& events_)
             {
                 using web::json::value;
 
@@ -26,44 +26,44 @@ namespace nmos
                 return { description, class_id, name, fixed_role, properties, methods_, events };
             }
         }
-        // create control class with fixed role
+        // create control class descriptor with fixed role
         //   where
         //     properties: vector of NcPropertyDescriptor where NcPropertyDescriptor can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor where NcMethodDescriptor  can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor where NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<nmos::experimental::method>& methods, const std::vector<web::json::value>& events)
+        control_class_descriptor make_control_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const utility::string_t& fixed_role, const std::vector<web::json::value>& properties, const std::vector<nmos::experimental::method>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
-            return details::make_control_class(description, class_id, name, value::string(fixed_role), properties, methods, events);
+            return details::make_control_class_descriptor(description, class_id, name, value::string(fixed_role), properties, methods, events);
         }
-        // create control class without fixed role
+        // create control class descriptor without fixed role
         //   where
         //     properties: vector of NcPropertyDescriptor where NcPropertyDescriptor can be constructed using make_control_class_property
         //     methods:    vector of NcMethodDescriptor where NcMethodDescriptor can be constructed using make_nc_method_descriptor and the assoicated method handler
         //     events:     vector of NcEventDescriptor where NcEventDescriptor can be constructed using make_nc_event_descriptor
-        control_class make_control_class(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<nmos::experimental::method>& methods, const std::vector<web::json::value>& events)
+        control_class_descriptor make_control_class_descriptor(const utility::string_t& description, const nc_class_id& class_id, const nc_name& name, const std::vector<web::json::value>& properties, const std::vector<nmos::experimental::method>& methods, const std::vector<web::json::value>& events)
         {
             using web::json::value;
 
-            return details::make_control_class(description, class_id, name, value::null(), properties, methods, events);
+            return details::make_control_class_descriptor(description, class_id, name, value::null(), properties, methods, events);
         }
 
-        // create control class property
-        web::json::value make_control_class_property(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
+        // create control class property descriptor
+        web::json::value make_control_class_property_descriptor(const utility::string_t& description, const nc_property_id& id, const nc_name& name, const utility::string_t& type_name, bool is_read_only, bool is_nullable, bool is_sequence, bool is_deprecated, const web::json::value& constraints)
         {
             return nmos::details::make_nc_property_descriptor(description, id, name, type_name, is_read_only, is_nullable, is_sequence, is_deprecated, constraints);
         }
 
-        // create control class method parameter
-        web::json::value make_control_class_method_parameter(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints)
+        // create control class method parameter descriptor
+        web::json::value make_control_class_method_parameter_descriptor(const utility::string_t& description, const nc_name& name, const utility::string_t& type_name, bool is_nullable, bool is_sequence, const web::json::value& constraints)
         {
             return nmos::details::make_nc_parameter_descriptor(description, name, type_name, is_nullable, is_sequence, constraints);
         }
 
         namespace details
         {
-            web::json::value make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters_, bool is_deprecated)
+            web::json::value make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters_, bool is_deprecated)
             {
                 using web::json::value;
 
@@ -73,19 +73,19 @@ namespace nmos
                 return nmos::details::make_nc_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated);
             }
         }
-        // create standard control class method
-        method make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, standard_method_handler method_handler)
+        // create standard control class method descriptor
+        method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, standard_method_handler method_handler)
         {
-            return make_control_class_standard_method(details::make_control_class_method(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
+            return make_control_class_standard_method(details::make_control_class_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
         }
-        // create non-standard control class method
-        method make_control_class_method(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, non_standard_method_handler method_handler)
+        // create non-standard control class method descriptor
+        method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, non_standard_method_handler method_handler)
         {
-            return make_control_class_non_standard_method(details::make_control_class_method(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
+            return make_control_class_non_standard_method(details::make_control_class_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
         }
 
-        // create control class event
-        web::json::value make_control_class_event(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated)
+        // create control class event descriptor
+        web::json::value make_control_class_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype, bool is_deprecated)
         {
             return nmos::details::make_nc_event_descriptor(description, id, name, event_datatype, is_deprecated);
         }
@@ -119,13 +119,13 @@ namespace nmos
             };
 
             // setup the standard control classes
-            control_classes =
+            control_class_descriptors =
             {
                 // Control class models
                 // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/classes/
 
                 // NcObject
-                { nc_object_class_id, make_control_class(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"),
+                { nc_object_class_id, make_control_class_descriptor(U("NcObject class descriptor"), nc_object_class_id, U("NcObject"),
                     // NcObject properties
                     to_vector(make_nc_object_properties()),
                     // NcObject methods
@@ -143,7 +143,7 @@ namespace nmos
                     // NcObject events
                     to_vector(make_nc_object_events())) },
                 // NcBlock
-                { nc_block_class_id, make_control_class(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"),
+                { nc_block_class_id, make_control_class_descriptor(U("NcBlock class descriptor"), nc_block_class_id, U("NcBlock"),
                     // NcBlock properties
                     to_vector(make_nc_block_properties()),
                     // NcBlock methods
@@ -158,7 +158,7 @@ namespace nmos
                     // NcBlock events
                     to_vector(make_nc_block_events())) },
                 // NcWorker
-                { nc_worker_class_id, make_control_class(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"),
+                { nc_worker_class_id, make_control_class_descriptor(U("NcWorker class descriptor"), nc_worker_class_id, U("NcWorker"),
                     // NcWorker properties
                     to_vector(make_nc_worker_properties()),
                     // NcWorker methods
@@ -166,7 +166,7 @@ namespace nmos
                     // NcWorker events
                     to_vector(make_nc_worker_events())) },
                 // NcManager
-                { nc_manager_class_id, make_control_class(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"),
+                { nc_manager_class_id, make_control_class_descriptor(U("NcManager class descriptor"), nc_manager_class_id, U("NcManager"),
                     // NcManager properties
                     to_vector(make_nc_manager_properties()),
                     // NcManager methods
@@ -174,7 +174,7 @@ namespace nmos
                     // NcManager events
                     to_vector(make_nc_manager_events())) },
                 // NcDeviceManager
-                { nc_device_manager_class_id, make_control_class(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"),
+                { nc_device_manager_class_id, make_control_class_descriptor(U("NcDeviceManager class descriptor"), nc_device_manager_class_id, U("NcDeviceManager"), U("DeviceManager"),
                     // NcDeviceManager properties
                     to_vector(make_nc_device_manager_properties()),
                     // NcDeviceManager methods
@@ -182,7 +182,7 @@ namespace nmos
                     // NcDeviceManager events
                     to_vector(make_nc_device_manager_events())) },
                 // NcClassManager
-                { nc_class_manager_class_id, make_control_class(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"),
+                { nc_class_manager_class_id, make_control_class_descriptor(U("NcClassManager class descriptor"), nc_class_manager_class_id, U("NcClassManager"), U("ClassManager"),
                     // NcClassManager properties
                     to_vector(make_nc_class_manager_properties()),
                     // NcClassManager methods
@@ -197,7 +197,7 @@ namespace nmos
                 // Identification feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#control-classes
                 // NcIdentBeacon
-                { nc_ident_beacon_class_id, make_control_class(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"),
+                { nc_ident_beacon_class_id, make_control_class_descriptor(U("NcIdentBeacon class descriptor"), nc_ident_beacon_class_id, U("NcIdentBeacon"),
                     // NcIdentBeacon properties
                     to_vector(make_nc_ident_beacon_properties()),
                     // NcIdentBeacon methods
@@ -207,7 +207,7 @@ namespace nmos
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#control-classes
                 // NcReceiverMonitor
-                { nc_receiver_monitor_class_id, make_control_class(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"),
+                { nc_receiver_monitor_class_id, make_control_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"),
                     // NcReceiverMonitor properties
                     to_vector(make_nc_receiver_monitor_properties()),
                     // NcReceiverMonitor methods
@@ -215,7 +215,7 @@ namespace nmos
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) },
                 // NcReceiverMonitorProtected
-                { nc_receiver_monitor_protected_class_id, make_control_class(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"),
+                { nc_receiver_monitor_protected_class_id, make_control_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"),
                     // NcReceiverMonitorProtected properties
                     to_vector(make_nc_receiver_monitor_protected_properties()),
                     // NcReceiverMonitorProtected methods
@@ -225,7 +225,7 @@ namespace nmos
             };
 
             // setup the standard datatypes
-            datatypes =
+            datatype_descriptors =
             {
                 // Datatype models
                 // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/
@@ -304,55 +304,55 @@ namespace nmos
             };
         }
 
-        // insert control class, false if class already inserted
-        bool control_protocol_state::insert(const experimental::control_class& control_class)
+        // insert control class descriptor, false if class descriptor already inserted
+        bool control_protocol_state::insert(const experimental::control_class_descriptor& control_class_descriptor)
         {
             auto lock = write_lock();
 
-            if (control_classes.end() == control_classes.find(control_class.class_id))
+            if (control_class_descriptors.end() == control_class_descriptors.find(control_class_descriptor.class_id))
             {
-                control_classes[control_class.class_id] = control_class;
+                control_class_descriptors[control_class_descriptor.class_id] = control_class_descriptor;
                 return true;
             }
             return false;
         }
 
-        // erase control class of the given class id, false if the required class not found
+        // erase control class descriptor of the given class id, false if the required class descriptor not found
         bool control_protocol_state::erase(nc_class_id class_id)
         {
             auto lock = write_lock();
 
-            if (control_classes.end() != control_classes.find(class_id))
+            if (control_class_descriptors.end() != control_class_descriptors.find(class_id))
             {
-                control_classes.erase(class_id);
+                control_class_descriptors.erase(class_id);
                 return true;
             }
             return false;
         }
 
-        // insert datatype, false if datatype already inserted
-        bool control_protocol_state::insert(const experimental::datatype& datatype)
+        // insert datatype descriptor, false if datatype descriptor already inserted
+        bool control_protocol_state::insert(const experimental::datatype_descriptor& datatype_descriptor)
         {
-            const auto& name = nmos::fields::nc::name(datatype.descriptor);
+            const auto& name = nmos::fields::nc::name(datatype_descriptor.descriptor);
 
             auto lock = write_lock();
 
-            if (datatypes.end() == datatypes.find(name))
+            if (datatype_descriptors.end() == datatype_descriptors.find(name))
             {
-                datatypes[name] = datatype;
+                datatype_descriptors[name] = datatype_descriptor;
                 return true;
             }
             return false;
         }
 
-        // erase datatype of the given datatype name, false if the required datatype not found
-        bool control_protocol_state::erase(const utility::string_t& name)
+        // erase datatype descriptor of the given datatype name, false if the required datatype descriptor not found
+        bool control_protocol_state::erase(const utility::string_t& datatype_name)
         {
             auto lock = write_lock();
 
-            if (datatypes.end() != datatypes.find(name))
+            if (datatype_descriptors.end() != datatype_descriptors.find(datatype_name))
             {
-                datatypes.erase(name);
+                datatype_descriptors.erase(datatype_name);
                 return true;
             }
             return false;

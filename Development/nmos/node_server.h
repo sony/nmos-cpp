@@ -27,7 +27,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_handler get_control_protocol_class, nmos::get_control_protocol_datatype_handler get_control_protocol_datatype, nmos::get_control_protocol_method_handler get_control_protocol_method, nmos::control_protocol_property_changed_handler control_protocol_property_changed)
+            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler control_protocol_property_changed)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -46,9 +46,9 @@ namespace nmos
                 , load_authorization_clients(std::move(load_authorization_clients))
                 , save_authorization_client(std::move(save_authorization_client))
                 , request_authorization_code(std::move(request_authorization_code))
-                , get_control_protocol_class(std::move(get_control_protocol_class))
-                , get_control_protocol_datatype(std::move(get_control_protocol_datatype))
-                , get_control_protocol_method(std::move(get_control_protocol_method))
+                , get_control_protocol_class_descriptor(std::move(get_control_protocol_class_descriptor))
+                , get_control_protocol_datatype_descriptor(std::move(get_control_protocol_datatype_descriptor))
+                , get_control_protocol_method_descriptor(std::move(get_control_protocol_method_descriptor))
                 , control_protocol_property_changed(std::move(control_protocol_property_changed))
             {}
 
@@ -78,9 +78,9 @@ namespace nmos
             node_implementation& on_load_authorization_clients(load_authorization_clients_handler load_authorization_clients) { this->load_authorization_clients = std::move(load_authorization_clients); return *this; }
             node_implementation& on_save_authorization_client(save_authorization_client_handler save_authorization_client) { this->save_authorization_client = std::move(save_authorization_client); return *this; }
             node_implementation& on_request_authorization_code(request_authorization_code_handler request_authorization_code) { this->request_authorization_code = std::move(request_authorization_code); return *this; }
-            node_implementation& on_get_control_class(nmos::get_control_protocol_class_handler get_control_protocol_class) { this->get_control_protocol_class = std::move(get_control_protocol_class); return *this; }
-            node_implementation& on_get_control_datatype(nmos::get_control_protocol_datatype_handler get_control_protocol_datatype) { this->get_control_protocol_datatype = std::move(get_control_protocol_datatype); return *this; }
-            node_implementation& on_get_control_protocol_method(nmos::get_control_protocol_method_handler get_control_protocol_method) { this->get_control_protocol_method = std::move(get_control_protocol_method); return *this; }
+            node_implementation& on_get_control_class_descriptor(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor) { this->get_control_protocol_class_descriptor = std::move(get_control_protocol_class_descriptor); return *this; }
+            node_implementation& on_get_control_datatype_descriptor(nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { this->get_control_protocol_datatype_descriptor = std::move(get_control_protocol_datatype_descriptor); return *this; }
+            node_implementation& on_get_control_protocol_method_descriptor(nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor) { this->get_control_protocol_method_descriptor = std::move(get_control_protocol_method_descriptor); return *this; }
             node_implementation& on_control_protocol_property_changed(nmos::control_protocol_property_changed_handler control_protocol_property_changed) { this->control_protocol_property_changed = std::move(control_protocol_property_changed); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
@@ -120,9 +120,9 @@ namespace nmos
             save_authorization_client_handler save_authorization_client;
             request_authorization_code_handler request_authorization_code;
 
-            nmos::get_control_protocol_class_handler get_control_protocol_class;
-            nmos::get_control_protocol_datatype_handler get_control_protocol_datatype;
-            nmos::get_control_protocol_method_handler get_control_protocol_method;
+            nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor;
+            nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
+            nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor;
             nmos::control_protocol_property_changed_handler control_protocol_property_changed;
         };
 

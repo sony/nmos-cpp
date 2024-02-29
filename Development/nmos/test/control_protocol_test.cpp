@@ -677,26 +677,26 @@ BST_TEST_CASE(testFindProperty)
     const auto invalid_class_id = nmos::nc_class_id({ 1000, 1000 });
 
     nmos::experimental::control_protocol_state control_protocol_state;
-    auto get_control_protocol_class = nmos::make_get_control_protocol_class_handler(control_protocol_state);
+    auto get_control_protocol_class_descriptor = nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state);
 
     {
         // valid - find members property in NcBlock
-        auto property = nmos::find_property(nc_block_members_property_id, nc_block_class_id, get_control_protocol_class);
+        auto property = nmos::find_property_descriptor(nc_block_members_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(!property.is_null());
     }
     {
         // invalid - find members property in NcWorker
-        auto property = nmos::find_property(nc_block_members_property_id, nc_worker_class_id, get_control_protocol_class);
+        auto property = nmos::find_property_descriptor(nc_block_members_property_id, nc_worker_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
     {
         // invalid - find unknown propertry in NcBlock
-        auto property = nmos::find_property(invalid_property_id, nc_block_class_id, get_control_protocol_class);
+        auto property = nmos::find_property_descriptor(invalid_property_id, nc_block_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
     {
         // invalid - find unknown property in unknown class
-        auto property = nmos::find_property(invalid_property_id, invalid_class_id, get_control_protocol_class);
+        auto property = nmos::find_property_descriptor(invalid_property_id, invalid_class_id, get_control_protocol_class_descriptor);
         BST_REQUIRE(property.is_null());
     }
 }
@@ -774,19 +774,19 @@ BST_TEST_CASE(testConstraints)
 
     // setup datatypes in control_protocol_state
     nmos::experimental::control_protocol_state control_protocol_state;
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int16_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int32_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int64_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_uint16_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_uint32_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_uint64_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_string_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ with_constraints_int32_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ with_constraints_string_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ enum_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ simple_struct_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_int32_seq_datatype });
-    control_protocol_state.insert(nmos::experimental::datatype{ no_constraints_string_seq_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int16_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int32_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int64_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_uint16_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_uint32_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_uint64_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_string_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ with_constraints_int32_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ with_constraints_string_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ enum_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ simple_struct_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_int32_seq_datatype });
+    control_protocol_state.insert(nmos::experimental::datatype_descriptor{ no_constraints_string_seq_datatype });
 
     // test get_runtime_property_constraints
     BST_REQUIRE_EQUAL(nmos::details::get_runtime_property_constraints(property_string_id, runtime_property_constraints), runtime_property_string_constraints);
@@ -796,7 +796,7 @@ BST_TEST_CASE(testConstraints)
     // string property constraints validation
 
     // runtime property constraints validation
-    const nmos::details::datatype_constraints_validation_parameters with_constraints_string_constraints_validation_params{ with_constraints_string_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters with_constraints_string_constraints_validation_params{ with_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1234567890")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("12345678901")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("123456789A")), runtime_property_string_constraints, property_string_constraints, with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
@@ -814,13 +814,13 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1a")), value::null(), value::null(), with_constraints_string_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1a2")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1*")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_string_constraints_validation_params{ no_constraints_string_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_string_constraints_validation_params{ no_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::null(), value::null(), no_constraints_string_constraints_validation_params));
 
     // number property constraints validation
 
     // runtime property constraints validation
-    const nmos::details::datatype_constraints_validation_parameters with_constraints_int32_constraints_validation_params{ with_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters with_constraints_int32_constraints_validation_params{ with_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(10, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(1000, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(9, runtime_property_int32_constraints, property_int32_constraints, with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
@@ -846,64 +846,64 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE_THROW(nmos::details::constraints_validation(260, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(99, value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     // int16 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int16_constraints_validation_params{ no_constraints_int16_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_int16_constraints_validation_params{ no_constraints_int16_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int16_t>::min()) - 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int16_t>::max()) + 1, value::null(), value::null(), no_constraints_int16_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int16_t>::min(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int16_t>::max(), value::null(), value::null(), no_constraints_int16_constraints_validation_params));
     // int32 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_constraints_validation_params{ no_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_constraints_validation_params{ no_constraints_int32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int32_t>::min()) - 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(int64_t(std::numeric_limits<int32_t>::max()) + 1, value::null(), value::null(), no_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int32_t>::min(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int32_t>::max(), value::null(), value::null(), no_constraints_int32_constraints_validation_params));
     // int64 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int64_constraints_validation_params{ no_constraints_int64_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_int64_constraints_validation_params{ no_constraints_int64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int64_t>::min(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<int64_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params));
     // uint16 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint16_constraints_validation_params{ no_constraints_uint16_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint16_constraints_validation_params{ no_constraints_uint16_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(uint64_t(std::numeric_limits<uint16_t>::max()) + 1, value::null(), value::null(), no_constraints_uint16_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint16_t>::min(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint16_t>::max(), value::null(), value::null(), no_constraints_uint16_constraints_validation_params));
     // uint32 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint32_constraints_validation_params{ no_constraints_uint32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint32_constraints_validation_params{ no_constraints_uint32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(uint64_t(std::numeric_limits<uint32_t>::max()) + 1, value::null(), value::null(), no_constraints_uint32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint32_t>::min(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint32_t>::max(), value::null(), value::null(), no_constraints_uint32_constraints_validation_params));
     // uint64 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint64_constraints_validation_params{ no_constraints_uint64_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_uint64_constraints_validation_params{ no_constraints_uint64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(-1, value::null(), value::null(), no_constraints_uint64_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_int64_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint64_t>::min(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<uint64_t>::max(), value::null(), value::null(), no_constraints_uint64_constraints_validation_params));
     // float32 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_float32_constraints_validation_params{ no_constraints_float32_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_float32_constraints_validation_params{ no_constraints_float32_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(std::numeric_limits<double>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::min(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<float_t>::max(), value::null(), value::null(), no_constraints_float32_constraints_validation_params));
     // float64 datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_float64_constraints_validation_params{ no_constraints_float64_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_float64_constraints_validation_params{ no_constraints_float64_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(1000, value::null(), value::null(), no_constraints_float64_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(1000.0, value::null(), value::null(), no_constraints_float64_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::min(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(std::numeric_limits<double_t>::max(), value::null(), value::null(), no_constraints_float64_constraints_validation_params));
     // enum property datatype constraints validation
-    const nmos::details::datatype_constraints_validation_parameters enum_constraints_validation_params{ enum_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters enum_constraints_validation_params{ enum_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(enum_value::foo, value::null(), value::null(), enum_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(4, value::null(), value::null(), enum_constraints_validation_params), nmos::control_protocol_exception);
     // invalid data vs primitive datatype constraints
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_string_seq_constraints_validation_params{ no_constraints_string_seq_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_string_seq_constraints_validation_params{ no_constraints_string_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(1, value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
-    const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_seq_constraints_validation_params{ no_constraints_int32_seq_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_seq_constraints_validation_params{ no_constraints_int32_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
@@ -1441,7 +1441,7 @@ BST_TEST_CASE(testConstraints)
         }) }) }
     });
 
-    const nmos::details::datatype_constraints_validation_parameters struct_constraints_validation_params{ struct_datatype, nmos::make_get_control_protocol_datatype_handler(control_protocol_state) };
+    const nmos::details::datatype_constraints_validation_parameters struct_constraints_validation_params{ struct_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(good_struct, value::null(), value::null(), struct_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct1, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(bad_struct2, value::null(), value::null(), struct_constraints_validation_params), nmos::control_protocol_exception);
