@@ -16,6 +16,11 @@
 # define BOOST_ASIO_SYNC_OP_VOID_RETURN(e) return
 #endif
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/core_names.h>
+#include <openssl/evp.h>
+#endif
+
 namespace boost {
 namespace asio {
 namespace ssl {
@@ -40,11 +45,13 @@ struct evp_pkey_cleanup
     ~evp_pkey_cleanup() { if (p) ::EVP_PKEY_free(p); }
 };
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 struct ec_key_cleanup
 {
     EC_KEY *p;
     ~ec_key_cleanup() { if (p) ::EC_KEY_free(p); }
 };
+#endif
 
 inline
 BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh(boost::asio::ssl::context& ctx,
@@ -52,7 +59,9 @@ BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh(boost::asio::ssl::context& ctx,
 {
     ::ERR_clear_error();
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
     int nid = NID_undef;
+#endif
 
     x509_cleanup x509 = { ::PEM_read_bio_X509(bio, NULL, 0, NULL) };
     if (x509.p)
@@ -60,15 +69,29 @@ BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh(boost::asio::ssl::context& ctx,
         evp_pkey_cleanup pkey = { ::X509_get_pubkey(x509.p) };
         if (pkey.p)
         {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
             ec_key_cleanup key = { ::EVP_PKEY_get1_EC_KEY(pkey.p) };
             if (key.p)
             {
                 const EC_GROUP *group = EC_KEY_get0_group(key.p);
                 nid = EC_GROUP_get_curve_name(group);
             }
+#else
+            char curve_name[64];
+            size_t return_size{ 0 };
+            if (::EVP_PKEY_get_utf8_string_param(pkey.p, OSSL_PKEY_PARAM_GROUP_NAME, curve_name, sizeof(curve_name), &return_size))
+            {
+                if (::SSL_CTX_set1_groups_list(ctx.native_handle(), curve_name) == 1)
+                {
+                    ec = boost::system::error_code();
+                    BOOST_ASIO_SYNC_OP_VOID_RETURN(ec);
+                }
+            }
+#endif
         }
     }
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
     ec_key_cleanup ec_key = { ::EC_KEY_new_by_curve_name(nid) };
     if (ec_key.p)
     {
@@ -78,6 +101,7 @@ BOOST_ASIO_SYNC_OP_VOID do_use_tmp_ecdh(boost::asio::ssl::context& ctx,
             BOOST_ASIO_SYNC_OP_VOID_RETURN(ec);
         }
     }
+#endif
 
     ec = boost::system::error_code(
         static_cast<int>(::ERR_get_error()),
