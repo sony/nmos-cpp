@@ -78,13 +78,10 @@ namespace nmos
                 }
 #else
                 typedef std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> EVP_MD_CTX_ptr;
-                typedef std::unique_ptr<EVP_MD, decltype(&EVP_MD_free)> EVP_MD_ptr;
-
                 uint8_t hash[EVP_MAX_MD_SIZE];
                 uint32_t md_len{ 0 };
                 EVP_MD_CTX_ptr mdctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
-                EVP_MD_ptr md(EVP_MD_fetch(NULL, "SHA2-256", NULL), &EVP_MD_free);
-                if (EVP_DigestInit_ex(mdctx.get(), md.get(), NULL) && EVP_DigestUpdate(mdctx.get(), text.c_str(), text.size()) && EVP_DigestFinal_ex(mdctx.get(), hash, &md_len))
+                if (EVP_DigestInit_ex(mdctx.get(), EVP_sha256(), NULL) && EVP_DigestUpdate(mdctx.get(), text.c_str(), text.size()) && EVP_DigestFinal_ex(mdctx.get(), hash, &md_len))
                 {
                     return{ hash, hash + md_len };
                 }

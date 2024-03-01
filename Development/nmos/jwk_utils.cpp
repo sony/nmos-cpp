@@ -6,6 +6,7 @@
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
 #include <openssl/rsa.h>
 #else
+#include <openssl/core_names.h>
 #include <openssl/param_build.h>
 #endif
 
@@ -107,11 +108,11 @@ namespace nmos
                 }
 #else
                 OSSL_PARAM_BLD_ptr param_bld(OSSL_PARAM_BLD_new(), &OSSL_PARAM_BLD_free);
-                if (OSSL_PARAM_BLD_push_BN(param_bld.get(), "n", modulus.get()))
+                if (OSSL_PARAM_BLD_push_BN(param_bld.get(), OSSL_PKEY_PARAM_RSA_N, modulus.get()))
                 {
                     modulus.release();
                 }
-                if (OSSL_PARAM_BLD_push_BN(param_bld.get(), "e", exponent.get()))
+                if (OSSL_PARAM_BLD_push_BN(param_bld.get(), OSSL_PKEY_PARAM_RSA_E, exponent.get()))
                 {
                     exponent.release();
                 }
@@ -156,11 +157,14 @@ namespace nmos
             {
                 auto bignum_to_string_t = [](const BIGNUM* bignum)
                 {
-                    const auto size = BN_num_bytes(bignum);
-                    std::vector<uint8_t> data(size);
-                    if (BN_bn2bin(bignum, data.data()))
+                    if (bignum)
                     {
-                        return utility::conversions::to_base64url(data);
+                        const auto size = BN_num_bytes(bignum);
+                        std::vector<uint8_t> data(size);
+                        if (BN_bn2bin(bignum, data.data()))
+                        {
+                            return utility::conversions::to_base64url(data);
+                        }
                     }
                     return utility::string_t{};
                 };
@@ -181,39 +185,22 @@ namespace nmos
                 const auto base64_n = bignum_to_string_t(modulus);
                 const auto base64_e = bignum_to_string_t(exponent);
 #else
-                // hmm, need to release params
-                OSSL_PARAM* params;
+                BIGNUM* modulus = nullptr;
+                BIGNUM* exponent = nullptr;
 
-                if (1 != EVP_PKEY_todata(pkey.get(), EVP_PKEY_PUBLIC_KEY, &params))
+                utility::string_t base64_n;
+                if (EVP_PKEY_get_bn_param(pkey.get(), OSSL_PKEY_PARAM_RSA_N, &modulus))
                 {
-                    throw jwk_exception("convert RSA to jwk error: failed to extract RSA OSSL_PARAM");
+                    base64_n = bignum_to_string_t(modulus);
+                    BN_clear_free(modulus);
                 }
 
-                auto find_param = [&, bignum_to_string_t](const utility::string_t& name)
+                utility::string_t base64_e;
+                if (EVP_PKEY_get_bn_param(pkey.get(), OSSL_PKEY_PARAM_RSA_E, &exponent))
                 {
-                    OSSL_PARAM* param;
-                    int idx{ 0 };
-                    do
-                    {
-                        param = &params[idx++];
-                        if (utility::s2us(param->key) == name)
-                        {
-                            BIGNUM* bignum = nullptr;
-                            if (1 != OSSL_PARAM_get_BN(param, &bignum)) { break; }
-
-                            return bignum_to_string_t(bignum);
-                        }
-                    } while (param->key != nullptr);
-
-                    return utility::string_t{};
-                };
-
-                // extract the n and e parameters
-                const auto base64_n = find_param(U("n"));
-                const auto base64_e = find_param(U("e"));
-
-                // release params
-                OSSL_PARAM_free(params);
+                    base64_e = bignum_to_string_t(exponent);
+                    BN_clear_free(exponent);
+                }
 #endif
                 // construct jwk
                 return web::json::value_of({
