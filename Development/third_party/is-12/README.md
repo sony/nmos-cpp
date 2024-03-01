@@ -4,6 +4,6 @@ This directory contains files from the [AMWA NMOS Control & Monitoring Protocol]
 
 Original source code:
 
-- (c) AMWA 2018
+- (c) AMWA 2023
 - Licensed under the Apache License, Version 2.0; http://www.apache.org/licenses/LICENSE-2.0
 
