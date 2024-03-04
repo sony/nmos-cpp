@@ -13,6 +13,7 @@
 #include "mdns/service_advertiser.h"
 #include "mdns/service_discovery.h"
 #include "nmos/is09_versions.h"
+#include "nmos/is10_versions.h"
 #include "nmos/random.h"
 
 namespace nmos
@@ -109,10 +110,19 @@ namespace nmos
     {
         // IS-09 System API does not use authorization
         // See https://github.com/AMWA-TV/is-09/issues/21
+        // IS-10 Authorization API does not use authorization
+        if (nmos::service_types::system == service || nmos::service_types::authorization == service) return false;
+
+        return nmos::experimental::fields::client_authorization(settings) | nmos::experimental::fields::server_authorization(settings);
+    }
+
+    bool is_api_authorization_protected(const nmos::service_type& service, const nmos::settings& settings)
+    {
+        // IS-09 System API does not use authorization
+        // See https://github.com/AMWA-TV/is-09/issues/21
         if (nmos::service_types::system == service) return false;
-       
-        const auto client_authorization = false;
-        return client_authorization;
+
+        return nmos::experimental::fields::server_authorization(settings);
     }
 
     namespace details
@@ -175,8 +185,27 @@ namespace nmos
         return mdns::parse_txt_record(records, txt_record_keys::pri, details::parse_pri_value, service_priorities::no_priority);
     }
 
+    namespace details
+    {
+        inline std::string make_api_selector_value(utility::string_t api_selector = {})
+        {
+            return utility::us2s(api_selector);
+        }
+
+        inline utility::string_t parse_api_selector_value(const std::string& api_selector)
+        {
+            return utility::s2us(api_selector);
+        }
+    }
+
+    // find and parse the 'api_selector' TXT record (or return the default)
+    utility::string_t parse_api_selector_record(const mdns::structured_txt_records& records)
+    {
+        return mdns::parse_txt_record(records, txt_record_keys::api_selector, details::parse_api_selector_value, utility::string_t{});
+    }
+
     // make the required TXT records from the specified values (or sensible default values)
-    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri, const std::set<api_version>& api_ver, const service_protocol& api_proto, bool api_auth)
+    mdns::structured_txt_records make_txt_records(const nmos::service_type& service, service_priority pri, const std::set<api_version>& api_ver, const service_protocol& api_proto, bool api_auth, const utility::string_t& selector)
     {
         if (service == nmos::service_types::node)
         {
@@ -215,12 +244,12 @@ namespace nmos
         else if (service == nmos::service_types::authorization)
         {
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/3.0._Discovery.html#dns-sd-txt-records
-            // hm, IS-10 Authorization may also need an 'api_selector' TXT record
             return
             {
                 { txt_record_keys::api_proto, details::make_api_proto_value(api_proto) },
                 { txt_record_keys::api_ver, details::make_api_ver_value(api_ver) },
-                { txt_record_keys::pri, details::make_pri_value(pri) }
+                { txt_record_keys::pri, details::make_pri_value(pri) },
+                { txt_record_keys::api_selector, details::make_api_selector_value(selector) }
             };
         }
         else if (service == nmos::service_types::mqtt)
@@ -281,6 +310,7 @@ namespace nmos
                 if (nmos::service_types::registration == service) return nmos::fields::registration_port(settings);
                 if (nmos::service_types::register_ == service) return nmos::fields::registration_port(settings);
                 if (nmos::service_types::system == service) return nmos::fields::system_port(settings);
+                if (nmos::service_types::authorization == service) return nmos::experimental::fields::authorization_port(settings);
                 return 0;
             }
 
@@ -291,18 +321,21 @@ namespace nmos
                 if (nmos::service_types::registration == service) return "registration";
                 if (nmos::service_types::register_ == service) return "registration";
                 if (nmos::service_types::system == service) return "system";
+                if (nmos::service_types::authorization == service) return "auth";
                 return{};
             }
 
-            inline std::string service_base_name(const nmos::service_type& service)
+            inline std::string service_base_name(const nmos::service_type& service, const nmos::settings& settings)
             {
-                return "nmos-cpp_" + service_api(service);
+                return utility::us2s(nmos::fields::service_name_prefix(settings)) + "_" + service_api(service);
             }
 
             inline std::set<nmos::api_version> service_versions(const nmos::service_type& service, const nmos::settings& settings)
             {
                 // the System API is defined by IS-09 (having been originally specified in JT-NM TR-1001-1:2018 Annex A)
                 if (nmos::service_types::system == service) return nmos::is09_versions::from_settings(settings);
+                // the Authorization API is defined by IS-10
+                if (nmos::service_types::authorization == service) return nmos::is10_versions::from_settings(settings);
                 // all the other APIs are defined by IS-04, and should advertise consistent versions
                 return nmos::is04_versions::from_settings(settings);
             }
@@ -312,7 +345,7 @@ namespace nmos
         {
             // this just serves as an example of a possible service naming strategy
             // replacing '.' with '-', since although '.' is legal in service names, some DNS-SD implementations just don't like it
-            return boost::algorithm::replace_all_copy(details::service_base_name(service) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
+            return boost::algorithm::replace_all_copy(details::service_base_name(service, settings) + "_" + utility::us2s(nmos::get_host(settings)) + ":" + utility::us2s(utility::ostringstreamed(details::service_port(service, settings))), ".", "-");
         }
 
         // helper function for registering addresses when the host name is explicitly configured
@@ -347,7 +380,7 @@ namespace nmos
             if (0 > instance_port_or_disabled) return;
             const auto instance_port = (uint16_t)instance_port_or_disabled;
             const auto api_ver = details::service_versions(service, settings);
-            const auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver, nmos::get_service_protocol(service, settings), nmos::get_service_authorization(service, settings));
+            const auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver, nmos::get_service_protocol(service, settings), nmos::is_api_authorization_protected(service, settings));
             const auto txt_records = mdns::make_txt_records(records);
 
             // advertise "_nmos-register._tcp" for v1.3 (and as an experimental extension, for lower versions)
@@ -425,7 +458,7 @@ namespace nmos
         {
             const auto instance_name = service_name(service, settings);
             const auto api_ver = details::service_versions(service, settings);
-            auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver, nmos::get_service_protocol(service, settings), nmos::get_service_authorization(service, settings));
+            auto records = nmos::make_txt_records(service, nmos::fields::pri(settings), api_ver, nmos::get_service_protocol(service, settings), nmos::is_api_authorization_protected(service, settings));
             records.insert(records.end(), std::make_move_iterator(add_records.begin()), std::make_move_iterator(add_records.end()));
             const auto txt_records = mdns::make_txt_records(records);
 
@@ -462,46 +495,11 @@ namespace nmos
             update_service(advertiser, service, domain, settings, std::move(add_records));
         }
 
-        enum discovery_mode
-        {
-            discovery_mode_default = 0,
-            discovery_mode_name = 1,
-            discovery_mode_addresses = 2
-        };
-
         namespace details
         {
-            typedef std::pair<api_version, service_priority> api_ver_pri;
-            typedef std::pair<api_ver_pri, web::uri> resolved_service;
             typedef std::vector<resolved_service> resolved_services;
 
-            std::vector<utility::string_t> get_resolved_hosts(const mdns::resolve_result& resolved, const nmos::service_protocol& resolved_proto, discovery_mode mode)
-            {
-                std::vector<utility::string_t> results;
-
-                // by default, use the host name if secure communications are in use
-                if (mode == discovery_mode_name || (mode == discovery_mode_default && is_service_protocol_secure(resolved_proto)))
-                {
-                    auto host_name = utility::s2us(resolved.host_name);
-                    // remove a trailing '.' to turn an FQDN into a DNS name, for SSL certificate matching
-                    // hmm, this might be more appropriately done by tweaking the Host header in the client request?
-                    if (!host_name.empty() && U('.') == host_name.back()) host_name.pop_back();
-
-                    results.push_back(host_name);
-                }
-
-                if (mode == discovery_mode_addresses || (mode == discovery_mode_default && !is_service_protocol_secure(resolved_proto)))
-                {
-                    for (const auto& ip_address : resolved.ip_addresses)
-                    {
-                        results.push_back(utility::s2us(ip_address));
-                    }
-                }
-
-                return results;
-            }
-
-            pplx::task<bool> resolve_service(std::shared_ptr<resolved_services> results, mdns::service_discovery& discovery, discovery_mode discovery_mode, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, const std::chrono::steady_clock::time_point& timeout, const pplx::cancellation_token& token)
+            pplx::task<bool> resolve_service(std::shared_ptr<resolved_services> results, mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, const std::chrono::steady_clock::time_point& timeout, const pplx::cancellation_token& token)
             {
                 return discovery.browse([=, &discovery](const mdns::browse_result& resolving)
                 {
@@ -515,7 +513,7 @@ namespace nmos
                         // parse into structured TXT records
                         auto records = mdns::parse_txt_records(resolved.txt_records);
 
-                        // 'pri' must not be omitted for Registration API and Query API (see nmos::make_txt_records)
+                        // 'pri' must not be omitted for Registration API, Query API and Authorization API (see nmos::make_txt_records)
                         auto resolved_pri = nmos::parse_pri_record(records);
                         if (service != nmos::service_types::node)
                         {
@@ -538,17 +536,36 @@ namespace nmos
                         auto resolved_ver = std::find_first_of(resolved_vers.rbegin(), resolved_vers.rend(), api_ver.rbegin(), api_ver.rend());
                         if (resolved_vers.rend() == resolved_ver) return true;
 
-                        auto resolved_uri = web::uri_builder()
-                            .set_scheme(utility::s2us(resolved_proto))
-                            .set_port(resolved.port)
-                            .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)));
+                        // hmm, maybe in the future check for the matching 'api_selector' value
+                        auto resolved_selector = nmos::parse_api_selector_record(records);
 
-                        auto resolved_hosts = get_resolved_hosts(resolved, resolved_proto, discovery_mode);
-
-                        for (const auto& host : resolved_hosts)
+                        auto resolved_uri = web::uri_builder();
+                        if (service == nmos::service_types::authorization)
                         {
+                            resolved_uri
+                                .set_scheme(utility::s2us(resolved_proto))
+                                .set_port(resolved.port)
+                                .set_path(U("/.well-known/oauth-authorization-server")).append_path(!resolved_selector.empty() ? U("/") + resolved_selector : U(""));
+                        }
+                        else
+                        {
+                            resolved_uri
+                                .set_scheme(utility::s2us(resolved_proto))
+                                .set_port(resolved.port)
+                                .set_path(U("/x-nmos/") + utility::s2us(details::service_api(service)));
+                        }
+
+                        auto host_name = utility::s2us(resolved.host_name);
+                        // remove a trailing '.' to turn an FQDN into a DNS name, for SSL certificate matching
+                        if (!host_name.empty() && U('.') == host_name.back()) host_name.pop_back();
+
+                        for (const auto& ip_address : resolved.ip_addresses)
+                        {
+                            // sneakily stash the host name for the Host header in user info
+                            // cf. nmos::details::make_http_client
                             results->push_back({ { *resolved_ver, resolved_pri }, resolved_uri
-                                .set_host(host)
+                                .set_user_info(host_name)
+                                .set_host(utility::s2us(ip_address))
                                 .to_uri()
                             });
                         }
@@ -568,11 +585,14 @@ namespace nmos
 
             std::pair<nmos::service_priority, nmos::service_priority> service_priorities(const nmos::service_type& service, const nmos::settings& settings)
             {
+                if (nmos::service_types::authorization == service) return { nmos::fields::authorization_highest_pri(settings), nmos::fields::authorization_lowest_pri(settings) };
                 return { nmos::fields::highest_pri(settings), nmos::fields::lowest_pri(settings) };
             }
         }
 
-        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, discovery_mode mode, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+        // helper function for resolving instances of the specified service (API)
+        // with the highest version, highest priority instances at the front, and optionally services with the same priority ordered randomly
+        pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
         {
             const auto absolute_timeout = std::chrono::steady_clock::now() + timeout;
 
@@ -600,8 +620,8 @@ namespace nmos
                     };
 
                     const std::vector<pplx::task<bool>> both_tasks{
-                        details::resolve_service(both_results[0], discovery, mode, nmos::service_types::register_, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, linked_token),
-                        details::resolve_service(both_results[1], discovery, mode, service, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, linked_token)
+                        details::resolve_service(both_results[0], discovery, nmos::service_types::register_, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, linked_token),
+                        details::resolve_service(both_results[1], discovery, service, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, linked_token)
                     };
 
                     // when either task is completed, cancel and wait for the other to be completed
@@ -629,23 +649,23 @@ namespace nmos
                 }
                 else
                 {
-                    resolve_task = details::resolve_service(results, discovery, mode, nmos::service_types::register_, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, token);
+                    resolve_task = details::resolve_service(results, discovery, nmos::service_types::register_, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, token);
                 }
             }
             else
             {
-                resolve_task = details::resolve_service(results, discovery, mode, service, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, token);
+                resolve_task = details::resolve_service(results, discovery, service, browse_domain, api_ver, priorities, api_proto, api_auth, absolute_timeout, token);
             }
 
             return resolve_task.then([results, randomize](bool)
             {
                 // since each advertisement may be discovered via multiple interfaces and, in the case of the Registration API, via two service types
                 // remove duplicate uris, after sorting to ensure the highest advertised priority is kept for each
-                std::stable_sort(results->begin(), results->end(), [](const details::resolved_service& lhs, const details::resolved_service& rhs)
+                std::stable_sort(results->begin(), results->end(), [](const resolved_service& lhs, const resolved_service& rhs)
                 {
                     return lhs.second < rhs.second || (lhs.second == rhs.second && details::less_api_ver_pri(lhs.first, rhs.first));
                 });
-                results->erase(std::unique(results->begin(), results->end(), [](const details::resolved_service& lhs, const details::resolved_service& rhs)
+                results->erase(std::unique(results->begin(), results->end(), [](const resolved_service& lhs, const resolved_service& rhs)
                 {
                     return lhs.second == rhs.second;
                 }), results->end());
@@ -660,32 +680,40 @@ namespace nmos
                 }
 
                 // "Given multiple returned Registration APIs, the Node orders these based on their advertised priority (TXT pri)"
-                std::stable_sort(results->begin(), results->end(), [](const details::resolved_service& lhs, const details::resolved_service& rhs)
+                std::stable_sort(results->begin(), results->end(), [](const resolved_service& lhs, const resolved_service& rhs)
                 {
                     // hmm, for the moment, the scheme is *not* considered; one might want to prefer 'https' over 'http'?
                     return details::less_api_ver_pri(lhs.first, rhs.first);
                 });
 
+                // return the randomized services
+                std::list<resolved_service> resolved_services;
+                for (const auto& result : *results)
+                {
+                    resolved_services.push_back(result);
+                }
+                return resolved_services;
+            });
+        }
+
+        // helper function for resolving instances of the specified service (API)
+        // with the highest version, highest priority instances at the front, and optionally services with the same priority ordered randomly
+        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
+        {
+            return resolve_service_(discovery, service, browse_domain, api_ver, priorities, api_proto, api_auth, randomize, timeout, token).then([](std::list<resolved_service> resolved_services)
+            {
                 // add the version to each uri
-                return boost::copy_range<std::list<web::uri>>(*results | boost::adaptors::transformed([](const details::resolved_service& s)
+                return boost::copy_range<std::list<web::uri>>(resolved_services | boost::adaptors::transformed([](const resolved_service& s)
                 {
                     return web::uri_builder(s.second).append_path(U("/") + make_api_version(s.first.first)).to_uri();
                 }));
             });
         }
 
-        // helper function for resolving instances of the specified service (API)
-        // with the highest version, highest priority instances at the front, and (by default) services with the same priority ordered randomly
-        pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const std::string& browse_domain, const std::set<nmos::api_version>& api_ver, const std::pair<nmos::service_priority, nmos::service_priority>& priorities, const std::set<nmos::service_protocol>& api_proto, const std::set<bool>& api_auth, bool randomize, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token)
-        {
-            return resolve_service(discovery, discovery_mode_default, service, browse_domain, api_ver, priorities, api_proto, api_auth, randomize, timeout, token);
-        }
-
         // helper function for resolving instances of the specified service (API) based on the specified settings
         // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
         pplx::task<std::list<web::uri>> resolve_service(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
         {
-            const auto mode = discovery_mode(nmos::experimental::fields::discovery_mode(settings));
             const auto browse_domain = utility::us2s(nmos::get_domain(settings));
             const auto versions = details::service_versions(service, settings);
             const auto priorities = details::service_priorities(service, settings);
@@ -695,8 +723,25 @@ namespace nmos
             // use a short timeout that's long enough to ensure the daemon's cache is exhausted
             // when no cancellation token is specified
             const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
-            
-            return resolve_service(discovery, mode, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::seconds(timeout), token);
+
+            return resolve_service(discovery, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout)), token);
+        }
+
+        // helper function for resolving instances of the specified service (API) based on the specified settings
+        // with the highest version, highest priority instances at the front, and services with the same priority ordered randomly
+        pplx::task<std::list<resolved_service>> resolve_service_(mdns::service_discovery& discovery, const nmos::service_type& service, const nmos::settings& settings, const pplx::cancellation_token& token)
+        {
+            const auto browse_domain = utility::us2s(nmos::get_domain(settings));
+            const auto versions = details::service_versions(service, settings);
+            const auto priorities = details::service_priorities(service, settings);
+            const auto protocols = std::set<nmos::service_protocol>{ nmos::get_service_protocol(service, settings) };
+            const auto authorization = std::set<bool>{ nmos::get_service_authorization(service, settings) };
+
+            // use a short timeout that's long enough to ensure the daemon's cache is exhausted
+            // when no cancellation token is specified
+            const auto timeout = token.is_cancelable() ? nmos::fields::discovery_backoff_max(settings) : 1;
+
+            return resolve_service_(discovery, service, browse_domain, versions, priorities, protocols, authorization, true, std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(timeout)), token);
         }
     }
 }

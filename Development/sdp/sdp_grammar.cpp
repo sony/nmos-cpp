@@ -40,10 +40,33 @@ namespace sdp
         {
             // use web::json::basic_ostream_visitor rather than web::json::value::serialize
             // to avoid, for example, 59.94 being output as 59.939999999999998
-            std::stringstream os;
+            std::ostringstream os;
             return v.as_number(), web::json::visit(web::json::basic_ostream_visitor<char>(os), v), os.str();
         }
-        inline web::json::value s2jn(const std::string& s) { auto v = web::json::value::parse(utility::s2us(s)); return v.as_number(), v; }
+        inline web::json::value s2jn(const std::string& s)
+        {
+            try
+            {
+                // using web::json::value::parse handles ints, doubles, etc.
+                auto v = web::json::value::parse(utility::s2us(s));
+                return v.as_number(), v;
+            }
+            catch (const web::json::json_exception&)
+            {
+                throw sdp_parse_error("expected a number");
+            }
+        }
+
+        // since several fields have the grammar 1*DIGIT which allows leading zeros, use a different parser for these
+        // for now, leading zeros are not roundtrippable
+        inline web::json::value digits2jn(const std::string& s)
+        {
+            uint64_t v;
+            std::istringstream is(s);
+            is >> v;
+            if (is.fail() || !is.eof()) throw sdp_parse_error("expected a sequence of digits");
+            return web::json::value(v);
+        }
 
         // find the first delimiter in str, beginning at pos, and return the substring from pos to the delimiter (or end)
         // set pos to the end of the delimiter
@@ -70,6 +93,8 @@ namespace sdp
         const converter string_converter{ js2s, s2js };
 
         const converter number_converter{ jn2s, s2jn };
+
+        const converter digits_converter{ jn2s, digits2jn };
 
         // <key>[<separator><value>]
         converter key_value_converter(char separator, const std::pair<utility::string_t, converter>& key_converter, const std::pair<utility::string_t, converter>& value_converter)
@@ -199,12 +224,12 @@ namespace sdp
         const converter typed_time_converter
         {
             [](const web::json::value& v) {
-                return jn2s(v.at(sdp::fields::time_value)) + utility::us2s(sdp::fields::time_unit(v));
+                return digits_converter.format(v.at(sdp::fields::time_value)) + utility::us2s(sdp::fields::time_unit(v));
             },
             [](const std::string& s) {
                 return !s.empty() && std::string::npos != time_units.find(s.back())
-                    ? web::json::value_of({ { sdp::fields::time_value, s2jn(s.substr(0, s.size() - 1)) }, { sdp::fields::time_unit, s2js({ s.back() }) } }, keep_order)
-                    : web::json::value_of({ { sdp::fields::time_value, s2jn(s) } }, keep_order);
+                    ? web::json::value_of({ { sdp::fields::time_value, digits_converter.parse(s.substr(0, s.size() - 1)) }, { sdp::fields::time_unit, s2js({ s.back() }) } }, keep_order)
+                    : web::json::value_of({ { sdp::fields::time_value, digits_converter.parse(s) } }, keep_order);
             }
         };
 
@@ -256,7 +281,7 @@ namespace sdp
         const line protocol_version = required_line(
             sdp::fields::protocol_version,
             'v',
-            number_converter
+            digits_converter
         );
 
         // See https://tools.ietf.org/html/rfc4566#section-5.2
@@ -265,8 +290,8 @@ namespace sdp
             'o',
             object_converter({
                 { sdp::fields::user_name, string_converter },
-                { sdp::fields::session_id, number_converter },
-                { sdp::fields::session_version, number_converter },
+                { sdp::fields::session_id, digits_converter },
+                { sdp::fields::session_version, digits_converter },
                 { sdp::fields::network_type, string_converter },
                 { sdp::fields::address_type, string_converter },
                 { sdp::fields::unicast_address, string_converter }
@@ -328,7 +353,7 @@ namespace sdp
             'b',
             object_converter({
                 { sdp::fields::bandwidth_type, string_converter },
-                { sdp::fields::bandwidth, number_converter }
+                { sdp::fields::bandwidth, digits_converter }
             }, ":")
         );
 
@@ -469,7 +494,7 @@ namespace sdp
                         'm',
                         object_converter({
                             { sdp::fields::media_type, string_converter },
-                            { {}, key_value_converter('/', { sdp::fields::port, number_converter }, { sdp::fields::port_count, number_converter }) },
+                            { {}, key_value_converter('/', { sdp::fields::port, digits_converter }, { sdp::fields::port_count, number_converter }) },
                             { sdp::fields::protocol, string_converter },
                             { sdp::fields::formats, strings_converter }
                         })
@@ -714,6 +739,39 @@ namespace sdp
                 {
                     sdp::attributes::mediaclk,
                     string_converter // sorry, cannot summon the energy
+                },
+                {
+                    sdp::attributes::extmap,
+                    {
+                        [](const web::json::value& v) {
+                            std::string s;
+                            s += digits_converter.format(v.at(sdp::fields::local_id));
+                            if (v.has_field(sdp::fields::direction)) s += "/" + string_converter.format(v.at(sdp::fields::direction));
+                            s += " " + string_converter.format(v.at(sdp::fields::uri));
+                            if (v.has_field(sdp::fields::extensionattributes)) s += " " + string_converter.format(v.at(sdp::fields::extensionattributes));
+                            return s;
+                        },
+                        [](const std::string& s) {
+                            auto v = web::json::value::object(keep_order);
+                            size_t pos = 0;
+                            v[sdp::fields::local_id] = digits_converter.parse(substr_find(s, pos, bst::regex{ R"(\D)" }));
+                            if (s.at(pos - 1) == '/') v[sdp::fields::direction] = string_converter.parse(substr_find(s, pos, " "));
+                            v[sdp::fields::uri] = string_converter.parse(substr_find(s, pos, " "));
+                            if (std::string::npos != pos) v[sdp::fields::extensionattributes] = string_converter.parse(substr_find(s, pos));
+                            return v;
+                        }
+                    }
+                },
+                {
+                    sdp::attributes::hkep,
+                    object_converter({
+                        { sdp::fields::port, digits_converter },
+                        { sdp::fields::network_type, string_converter },
+                        { sdp::fields::address_type, string_converter },
+                        { sdp::fields::unicast_address, string_converter },
+                        { sdp::fields::node_id, string_converter },
+                        { sdp::fields::port_id, string_converter },
+                    })
                 }
             };
         }

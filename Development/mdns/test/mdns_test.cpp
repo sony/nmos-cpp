@@ -392,6 +392,10 @@ namespace
         {
             return pplx::task_from_result(false);
         }
+        pplx::task<bool> getaddrinfo(const mdns::address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token) override
+        {
+            return pplx::task_from_result(false);
+        }
 
         slog::base_gate& gate;
     };
@@ -414,4 +418,15 @@ BST_TEST_CASE(testMdnsImpl)
 
     advertiser.close().wait();
     BST_REQUIRE(gate.hasLogMessage("Close"));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+BST_TEST_CASE(testDnsGetAddrInfo)
+{
+    test_gate gate;
+
+    mdns::service_discovery discover(gate);
+    auto results = discover.getaddrinfo("google-public-dns-a.google.com").get();
+    BST_REQUIRE(!results.empty());
+    BST_REQUIRE_EQUAL("8.8.8.8", results[0].ip_address);
 }

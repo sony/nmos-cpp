@@ -113,7 +113,7 @@ namespace nmos
     {
         web::uri make_manifest_api_manifest(const nmos::id& sender_id, const nmos::settings& settings);
     }
-    
+
     nmos::resource make_sender(const nmos::id& id, const nmos::id& flow_id, const nmos::id& device_id, const std::vector<utility::string_t>& interfaces, const nmos::settings& settings);
 
     // See https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/receiver_core.html

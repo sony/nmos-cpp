@@ -6,6 +6,8 @@ Third-party source files used by the nmos-cpp libraries
   The [Catch](https://github.com/philsquared/Catch) (automated test framework) single header version
 - [cmake](cmake)  
   CMake modules derived from third-party sources
+- [jwt-cpp](jwt-cpp)  
+  The [Thalhammer/jwt-cpp](https://github.com/Thalhammer/jwt-cpp) header only library for creating and validating JSON Web Tokens in C++11
 - [mDNSResponder](mDNSResponder)  
   Patches and patched source files for the Bonjour DNS-SD implementation
 - [nlohmann](nlohmann)  
@@ -18,5 +20,7 @@ Third-party source files used by the nmos-cpp libraries
   The JSON Schema files used for validation of Channel Mapping API requests and responses
 - [is-09](is-09)  
   The JSON Schema files used for validation of System API requests and responses
+- [is-10](is-10)  
+  The JSON Schema files used for validation of Authorization API requests and responses
 - [WpdPack](WpdPack)  
   Libraries and header files from the [WinPcap](https://www.winpcap.org/) Developer's Pack

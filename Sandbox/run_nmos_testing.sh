@@ -60,7 +60,13 @@ common_params=",\
   \"host_address\":\"${host_ip}\",\
   \"host_addresses\":[\"${host_ip}\"]\
   "
-
+registry_params=",\
+  \"label\":\"nmos-cpp-registry\"\
+  "
+node_params=",\
+  \"label\":\"nmos-cpp-node\"\
+  "
+  
 if [[ "${config_secure}" == "True" ]]; then
   secure=true
   echo "Running TLS tests"
@@ -111,6 +117,18 @@ fi
 if [[ "${config_auth}" == "True" ]]; then
   echo "Running Auth tests"
   auth=true
+  common_params+=",\
+  \"server_authorization\":true,\
+  \"service_unavailable_retry_after\":25\
+  "
+  node_params+=",\
+  \"client_authorization\":true,\
+  \"authorization_flow\":\"client_credentials\",\
+  \"authorization_scopes\":[\"registration\"],\
+  \"token_endpoint_auth_method\":\"private_key_jwt\"\
+  "
+  # 7 test cases test_06 to test_12
+  (( expected_disabled_IS_09_01+=7 ))
 else
   echo "Running non-Auth tests"
   auth=false
@@ -130,7 +148,7 @@ else
   (( expected_disabled_IS_09_01+=7 ))
 fi
 
-"${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params}}" > ${results_dir}/nodeoutput 2>&1 &
+"${node_command}" "{\"how_many\":6,\"http_port\":1080 ${common_params} ${node_params}}" > ${results_dir}/nodeoutput 2>&1 &
 NODE_PID=$!
 
 function do_run_test() {
@@ -200,7 +218,7 @@ do_run_test IS-09-02 $expected_disabled_IS_09_02 --host "${host}" null --port 0 
 do_run_test IS-11-01 $expected_disabled_IS_11_01 --host "${host}" "${host}" "${host}" --port 1080 1080 1080 --version v1.0 v1.3 v1.1
 
 # Run Registry tests (leave Node running)
-"${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params}}" > ${results_dir}/registryoutput 2>&1 &
+"${registry_command}" "{\"pri\":0,\"http_port\":8088 ${common_params} ${registry_params}}" > ${results_dir}/registryoutput 2>&1 &
 REGISTRY_PID=$!
 # short delay to give the Registry a chance to start up and the Node a chance to register before running the Registry test suite
 sleep 2

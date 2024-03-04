@@ -55,6 +55,20 @@ namespace mdns
     // the callback must not throw
     typedef std::function<bool(const resolve_result&)> resolve_handler;
 
+    struct address_result
+    {
+        address_result() : ttl(0), interface_id(0) {}
+        address_result(const std::string& host_name, const std::string& ip_address, std::uint32_t ttl = 0, std::uint32_t interface_id = 0) : host_name(host_name), ip_address(ip_address), ttl(ttl), interface_id(interface_id) {}
+
+        std::string host_name;
+        std::string ip_address;
+        std::uint32_t ttl;
+        std::uint32_t interface_id;
+    };
+
+    // return true from the address result callback if the operation should be ended before its specified timeout once no more results are "imminent"
+    typedef std::function<bool(const address_result&)> address_handler;
+
     class service_discovery
     {
     public:
@@ -63,6 +77,7 @@ namespace mdns
 
         pplx::task<bool> browse(const browse_handler& handler, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
         pplx::task<bool> resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
+        pplx::task<bool> getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id, const std::chrono::steady_clock::duration& timeout, const pplx::cancellation_token& token = pplx::cancellation_token::none());
 
         template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
         pplx::task<bool> browse(const browse_handler& handler, const std::string& type, const std::string& domain = {}, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
@@ -73,6 +88,11 @@ namespace mdns
         pplx::task<bool> resolve(const resolve_handler& handler, const std::string& name, const std::string& type, const std::string& domain, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
         {
             return resolve(handler, name, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
+        }
+        template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
+        pplx::task<bool> getaddrinfo(const address_handler& handler, const std::string& host_name, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        {
+            return getaddrinfo(handler, host_name, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token);
         }
 
         template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
@@ -87,6 +107,13 @@ namespace mdns
         {
             std::shared_ptr<std::vector<resolve_result>> results(new std::vector<resolve_result>());
             return resolve([results](const resolve_result& result) { results->push_back(result); return true; }, name, type, domain, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token)
+                .then([results](bool) { return std::move(*results); });
+        }
+        template <typename Rep = std::chrono::seconds::rep, typename Period = std::chrono::seconds::period>
+        pplx::task<std::vector<address_result>> getaddrinfo(const std::string& host_name, std::uint32_t interface_id = 0, const std::chrono::duration<Rep, Period>& timeout = std::chrono::seconds(default_timeout_seconds), const pplx::cancellation_token& token = pplx::cancellation_token::none())
+        {
+            std::shared_ptr<std::vector<address_result>> results(new std::vector<address_result>());
+            return getaddrinfo([results](const address_result& result) {results->push_back(result); return true; }, host_name, interface_id, std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout), token)
                 .then([results](bool) { return std::move(*results); });
         }
 

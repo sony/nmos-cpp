@@ -2,8 +2,10 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
+#include "cpprest/resource_server_error.h"
 #include "nmos/api_downgrade.h" // for details::make_permitted_downgrade_error
 #include "nmos/api_utils.h"
+#include "nmos/authorization.h"
 #include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
@@ -68,7 +70,7 @@ namespace nmos
 
     inline web::http::experimental::listener::api_router make_unmounted_registration_api(nmos::registry_model& model, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_registration_api(nmos::registry_model& model, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_registration_api(nmos::registry_model& model, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -85,6 +87,12 @@ namespace nmos
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("registration/") }, req, res));
             return pplx::task_from_result(true);
         });
+
+        if (validate_authorization)
+        {
+            registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), validate_authorization);
+            registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/.*"), validate_authorization);
+        }
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
         registration_api.support(U("/x-nmos/") + nmos::patterns::registration_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
@@ -158,6 +166,11 @@ namespace nmos
         inline utility::string_t make_valid_super_api_version_error(const nmos::api_version& request_version, const nmos::api_version& super_resource_version)
         {
             return nmos::make_api_version(request_version) + U(" request conflicts with the existing ") + nmos::make_api_version(super_resource_version) + U(" registration of the parent");
+        }
+
+        inline utility::string_t make_valid_client_id_error(const utility::string_t& request_client_id)
+        {
+            return U("request for resource modification with invalid client_id ") + request_client_id;
         }
     }
 
@@ -282,7 +295,15 @@ namespace nmos
                 const bool valid_version = creating || unchanged || nmos::fields::version(data) > nmos::fields::version(resource->data);
                 valid = valid && valid_version;
 
-                if (!valid_type)
+                // check received request isn't being processed out of order
+                const auto received_time = req.headers().find(details::received_time);
+                const auto received = req.headers().end() != received_time ? nmos::parse_version(received_time->second) : nmos::tai{};
+                const bool valid_received = creating || received == nmos::tai{} || received > resource->received;
+                valid = valid && valid_received;
+
+                if (!valid_received)
+                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Registration requested for " << id_type << " at " << nmos::make_version(resource->received) << " processed before request received at " << nmos::make_version(received);
+                else if (!valid_type)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration requested for " << id_type << " would modify type from " << resource->type.name;
                 else if (!valid_api_version)
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "Registration requested for " << id_type << " would modify API version from " << nmos::make_api_version(resource->version);
@@ -396,33 +417,67 @@ namespace nmos
                 // always reject updates that would modify resource type or super-resource
                 if (valid_type && valid_super_id_type && (valid || allow_invalid_resources))
                 {
+                    // Registry MUST register the Client ID of the client performing the registration. Subsequent requests to modify or delete a registered
+                    // resource MUST validate the Client ID to ensure that clients do not, maliciously or incorrectly, alter resources belonging to other nodes
+                    // see https://specs.amwa.tv/bcp-003-02/releases/v1.0.0/docs/1.0._Authorization_Practice.html#registry-client-authorization
+                    utility::string_t client_id;
+                    if (nmos::experimental::fields::server_authorization(model.settings))
+                    {
+                        // get client_id from header's access token
+                        client_id = nmos::experimental::get_client_id(req.headers(), gate);
+                    }
+
                     if (creating)
                     {
-                        nmos::resource created_resource{ version, type, data, false };
+                        nmos::resource created_resource{ version, type, data, false, client_id };
+                        created_resource.received = received;
 
                         set_reply(res, status_codes::Created, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(created_resource));
 
                         resource = insert_resource(resources, std::move(created_resource), allow_invalid_resources).first;
                     }
+                    // invalid Client ID, reject resource modification
+                    // see https://specs.amwa.tv/bcp-003-02/releases/v1.0.0/docs/1.0._Authorization_Practice.html#registry-client-authorization
+                    else if (client_id != resource->client_id)
+                    {
+                        auto req_host = web::http::get_host_port(req).first;
+                        if (req_host.empty())
+                        {
+                            req_host = nmos::get_host(model.settings);
+                        }
+                        const auto error_description = details::make_valid_client_id_error(client_id);
+                        const utility::string_t auth_params{ U("Bearer realm=") + req_host + U(",error=") + web::http::oauth2::experimental::resource_server_errors::insufficient_scope.name + U(",error_description=") + error_description };
+                        res.headers().add(web::http::header_names::www_authenticate, auth_params);
+                        set_error_reply(res, status_codes::Forbidden, error_description);
+                    }
                     else
                     {
                         set_reply(res, status_codes::OK, data);
                         res.headers().add(web::http::header_names::location, make_registration_api_resource_location(*resource));
 
-                        modify_resource(resources, id, [&data](nmos::resource& resource)
+                        modify_resource(resources, id, [&received, &data](nmos::resource& resource)
                         {
+                            resource.received = received;
                             resource.data = data;
                         });
                     }
 
-                    // experimental extension, for debugging
-                    res.headers().add(U("X-Paging-Timestamp"), make_version(resource->updated));
+                    // resource created/updated
+                    if (client_id == resource->client_id)
+                    {
+                        // experimental extension, for debugging
+                        res.headers().add(U("X-Paging-Timestamp"), make_version(resource->updated));
 
-                    slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(resources);
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "At " << nmos::make_version(nmos::tai_now()) << ", the registry contains " << nmos::put_resources_statistics(resources);
 
-                    slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
-                    model.notify();
+                        slog::log<slog::severities::too_much_info>(gate, SLOG_FLF) << "Notifying query websockets thread"; // and anyone else who cares...
+                        model.notify();
+                    }
+                }
+                else if (!valid_received)
+                {
+                    set_reply(res, status_codes::InternalError);
                 }
                 else if (!valid_api_version)
                 {
@@ -585,10 +640,19 @@ namespace nmos
             const string_t resourceType = parameters.at(nmos::patterns::resourceType.name);
             const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-            auto resource = find_resource(resources, { resourceId, nmos::type_from_resourceType(resourceType) });
+            const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
+            auto resource = find_resource(resources, id_type);
             if (resources.end() != resource)
             {
-                if (resource->version == version)
+                // check received request isn't being processed out of order
+                const auto received_time = req.headers().find(details::received_time);
+                const auto received = req.headers().end() != received_time ? nmos::parse_version(received_time->second) : nmos::tai{};
+                if (received != nmos::tai{} && received < resource->received)
+                {
+                    slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Registration deletion requested for " << id_type << " at " << nmos::make_version(resource->received) << " processed before request received at " << nmos::make_version(received);
+                    set_reply(res, status_codes::InternalError);
+                }
+                else if (resource->version == version)
                 {
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Deleting resource: " << resourceId;
 

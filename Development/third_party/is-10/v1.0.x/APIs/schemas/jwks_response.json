@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "JWKs Response",
+  "description": "JSON Web Key Set to validate Access Token",
+  "type": "object",
+  "allOf": [
+    {"$ref": "jwks_schema.json"}
+  ]
+}

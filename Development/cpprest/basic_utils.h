@@ -30,6 +30,39 @@ namespace utility
                 return !iss.fail() ? t : default_val;
             }
         }
+
+        // Encode the given byte array into a base64url string
+        // using the alternative alphabet and skipping the padding
+        // as per https://tools.ietf.org/html/rfc4648#section-5
+        inline utility::string_t to_base64url(const std::vector<unsigned char>& data)
+        {
+            auto str = utility::conversions::to_base64(data);
+            auto it = str.begin();
+            for (; str.end() != it; ++it)
+            {
+                auto& c = *it;
+                if (U('=') == c) break;
+                if (U('+') == c) c = U('-');
+                else if (U('/') == c) c = U('_');
+            }
+            str.erase(it, str.end());
+            return str;
+        }
+
+        // Decode the given base64url string to a byte array
+        // using the alternative alphabet and skipping the padding
+        // as per https://tools.ietf.org/html/rfc4648#section-5
+        inline std::vector<unsigned char> from_base64url(utility::string_t str)
+        {
+            for (auto& c : str)
+            {
+                if (U('-') == c) c = U('+');
+                else if (U('_') == c) c = U('/');
+            }
+            auto m4 = str.size() % 4;
+            if (0 != m4) str.insert(str.end(), 4 - m4, U('='));
+            return utility::conversions::from_base64(str);
+        }
     }
 }
 

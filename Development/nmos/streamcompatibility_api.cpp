@@ -6,6 +6,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/containerstream.h"
 #include "cpprest/json_validator.h"
+#include "nmos/api_utils.h" // for set_error_reply
 #include "nmos/capabilities.h" // for nmos::fields::constraint_sets
 #include "nmos/streamcompatibility_resources.h"
 #include "nmos/is11_versions.h"
@@ -50,14 +51,14 @@ namespace nmos
                     {
                         slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " does not exist";
 
-                        set_error_reply(res, web::http::status_codes::NoContent);
+                        nmos::set_error_reply(res, web::http::status_codes::NoContent);
                     }
                 }
                 else
                 {
                     slog::log<slog::severities::warning>(gate, SLOG_FLF) << "EDID requested for " << id_type << " does not exist";
 
-                    set_error_reply(res, web::http::status_codes::NoContent);
+                    nmos::set_error_reply(res, web::http::status_codes::NoContent);
                 }
             }
 

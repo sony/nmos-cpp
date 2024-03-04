@@ -1,14 +1,20 @@
 #include "nmos/client_utils.h"
 
-// cf. preprocessor conditions in nmos::details::make_client_ssl_context_callback
+// cf. preprocessor conditions in nmos::details::make_client_ssl_context_callback and nmos::details::make_client_nativehandle_options
 #if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#if defined(__linux__)
+#include <boost/asio/ip/tcp.hpp>
+#endif
 #include "boost/asio/ssl/set_cipher_list.hpp"
+#include "cpprest/host_utils.h"
 #endif
 #include "cpprest/basic_utils.h"
 #include "cpprest/details/system_error.h"
 #include "cpprest/http_utils.h"
+#include "cpprest/response_type.h"
 #include "cpprest/ws_client.h"
 #include "nmos/certificate_settings.h"
+#include "nmos/json_fields.h"
 #include "nmos/slog.h"
 #include "nmos/ssl_context_options.h"
 
@@ -56,18 +62,173 @@ namespace nmos
             };
         }
 #endif
+
+#if !defined(_WIN32) || !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+        // bind socket to a specific network interface
+        // for now, only supporting Linux because SO_BINDTODEVICE is not defined on Windows and Mac
+        inline void bind_to_device(const utility::string_t& interface_name, bool secure, void* native_handle)
+        {
+#if defined(__linux__)
+            int socket_fd;
+            // hmm, frustrating that native_handle type has been erased so we need secure flag
+            if (secure)
+            {
+                auto socket = (boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>*)native_handle;
+                if (!socket->lowest_layer().is_open())
+                {
+                    // for now, limited to IPv4
+                    socket->lowest_layer().open(boost::asio::ip::tcp::v4());
+                }
+                socket_fd = socket->lowest_layer().native_handle();
+            }
+            else
+            {
+                auto socket = (boost::asio::ip::tcp::socket*)native_handle;
+                if (!socket->is_open())
+                {
+                    // for now, limited to IPv4
+                    socket->open(boost::asio::ip::tcp::v4());
+                }
+                socket_fd = socket->lowest_layer().native_handle();
+            }
+            const auto interface_name_ = utility::us2s(interface_name);
+            if (0 != setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, interface_name_.data(), interface_name_.length()))
+            {
+                char error[1024];
+                throw std::runtime_error(strerror_r(errno, error, sizeof(error)));
+            }
+#else
+            throw std::logic_error("unsupported");
+#endif
+        }
+
+        inline std::function<void(web::http::client::native_handle)> make_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
+        {
+            if (client_address.empty()) return {};
+            // get the associated network interface name from IP address
+            const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
+            if (interface_name.empty())
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the HTTP client connection";
+                return {};
+            }
+
+            return [interface_name, secure, &gate](web::http::client::native_handle native_handle)
+            {
+                try
+                {
+                    bind_to_device(interface_name, secure, native_handle);
+                }
+                catch (const std::exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind HTTP client connection to " << interface_name << ": " << e.what();
+                }
+            };
+        }
+
+#ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
+        // The current version of the C++ REST SDK 2.10.19 does not provide the callback to enable the custom websocket setting
+        inline std::function<void(web::websockets::client::native_handle)> make_ws_client_nativehandle_options(bool secure, const utility::string_t& client_address, slog::base_gate& gate)
+        {
+            if (client_address.empty()) return {};
+            // get the associated network interface name from IP address
+            const auto interface_name = web::hosts::experimental::get_interface_name(client_address);
+            if (interface_name.empty())
+            {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "No network interface found for " << client_address << " to bind for the websocket client connection";
+                return {};
+            }
+
+            return [interface_name, secure, &gate](web::websockets::client::native_handle native_handle)
+            {
+                try
+                {
+                    bind_to_device(interface_name, secure, native_handle);
+                }
+                catch (const std::exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Unable to bind websocket client connection to " << interface_name << ": " << e.what();
+                }
+            };
+        }
+#endif
+
+#endif
     }
 
-    // construct client config based on settings, e.g. using the specified proxy
+    // construct client config based on specified secure flag and settings, e.g. using the specified proxy and OCSP config
     // with the remaining options defaulted, e.g. request timeout
-    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+    web::http::client::http_client_config make_http_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
         web::http::client::http_client_config config;
         const auto proxy = proxy_uri(settings);
         if (!proxy.is_empty()) config.set_proxy(proxy);
-        config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
+        if (secure) config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
 #if !defined(_WIN32) && !defined(__cplusplus_winrt) || defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings, load_ca_certificates, gate));
+        if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::http::http_exception>(settings, load_ca_certificates, gate));
+        config.set_nativehandle_options(details::make_client_nativehandle_options(secure, nmos::experimental::fields::client_address(settings), gate));
+#endif
+
+        return config;
+    }
+
+    // construct client config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+    {
+        return make_http_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
+    }
+
+    // construct oauth2 config with the bearer token
+    web::http::oauth2::experimental::oauth2_config make_oauth2_config(const web::http::oauth2::experimental::oauth2_token& bearer_token)
+    {
+        web::http::oauth2::experimental::oauth2_config config(U(""), U(""), U(""), U(""), U(""), U(""));
+        config.set_token(bearer_token);
+
+        return config;
+    }
+
+    // construct client config including OAuth 2.0 config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. authorization request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, const web::http::oauth2::experimental::oauth2_token& bearer_token, slog::base_gate& gate)
+    {
+        auto config = make_http_client_config(settings, load_ca_certificates, gate);
+
+        if (bearer_token.is_valid_access_token())
+        {
+            config.set_oauth2(make_oauth2_config(bearer_token));
+        }
+
+        return config;
+    }
+
+    // construct client config including OAuth 2.0 config based on settings, e.g. using the specified proxy and OCSP config
+    // with the remaining options defaulted, e.g. authorization request timeout
+    web::http::client::http_client_config make_http_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+    {
+        web::http::oauth2::experimental::oauth2_token bearer_token;
+
+        if (get_authorization_bearer_token)
+        {
+            bearer_token = get_authorization_bearer_token();
+        }
+
+        return make_http_client_config(settings, load_ca_certificates, bearer_token, gate);
+    }
+
+    // construct client config based on specified secure flag and settings, e.g. using the specified proxy
+    // with the remaining options defaulted
+    web::websockets::client::websocket_client_config make_websocket_client_config(bool secure, const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
+    {
+        web::websockets::client::websocket_client_config config;
+        const auto proxy = proxy_uri(settings);
+        if (!proxy.is_empty()) config.set_proxy(proxy);
+        if (secure) config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
+#if !defined(_WIN32) || !defined(__cplusplus_winrt)
+        if (secure) config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_ca_certificates, gate));
+#ifdef CPPRESTSDK_ENABLE_BIND_WEBSOCKET_CLIENT
+        config.set_nativehandle_options(details::make_ws_client_nativehandle_options(secure, nmos::experimental::fields::client_address(settings), gate));
+#endif
 #endif
 
         return config;
@@ -77,15 +238,57 @@ namespace nmos
     // with the remaining options defaulted
     web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, slog::base_gate& gate)
     {
-        web::websockets::client::websocket_client_config config;
-        const auto proxy = proxy_uri(settings);
-        if (!proxy.is_empty()) config.set_proxy(proxy);
-        config.set_validate_certificates(nmos::experimental::fields::validate_certificates(settings));
-#if !defined(_WIN32) || !defined(__cplusplus_winrt)
-        config.set_ssl_context_callback(details::make_client_ssl_context_callback<web::websockets::client::websocket_exception>(settings, load_ca_certificates, gate));
-#endif
+        return make_websocket_client_config(nmos::experimental::fields::client_secure(settings), settings, load_ca_certificates, gate);
+    }
+
+    // construct client config based on settings and access token, e.g. using the specified proxy
+    // with the remaining options defaulted
+    web::websockets::client::websocket_client_config make_websocket_client_config(const nmos::settings& settings, load_ca_certificates_handler load_ca_certificates, nmos::experimental::get_authorization_bearer_token_handler get_authorization_bearer_token, slog::base_gate& gate)
+    {
+        auto config = make_websocket_client_config(settings, std::move(load_ca_certificates), gate);
+
+        if (get_authorization_bearer_token)
+        {
+            const auto bearer_token = get_authorization_bearer_token();
+            config.headers().add(web::http::header_names::authorization, U("Bearer ") + bearer_token.access_token());
+        }
 
         return config;
+    }
+
+    namespace details
+    {
+        // make a client for the specified base_uri and config, with host name for the Host header sneakily stashed in user info
+        std::unique_ptr<web::http::client::http_client> make_http_client(const web::uri& base_uri, const web::http::client::http_client_config& client_config)
+        {
+            // unstash the host name for the Host header
+            // cf. nmos::details::resolve_service
+            // don't bother clearing user_info since http_client makes no use of it
+            // see https://github.com/microsoft/cpprestsdk/issues/3
+            std::unique_ptr<web::http::client::http_client> client(new web::http::client::http_client(base_uri, client_config));
+            if (!base_uri.user_info().empty())
+            {
+                auto host = base_uri.user_info();
+
+                // hmm, in secure mode, don't append the port to the Host header
+                // because both calc_cn_host in cpprestsdk/Release/src/http/client/http_client_asio.cpp
+                // and winhttp_client::send_request in cpprestsdk/Release/src/http/client/http_client_winhttp.cpp
+                // compare the entire Host header value with the certificate Common Name
+                // which causes an SSL handshake error
+                // see https://github.com/microsoft/cpprestsdk/issues/1790
+                if (base_uri.port() > 0 && !web::is_secure_uri_scheme(base_uri.scheme()))
+                {
+                    host.append(U(":")).append(utility::conversions::details::to_string_t(base_uri.port()));
+                }
+
+                client->add_handler([host](web::http::http_request request, std::shared_ptr<web::http::http_pipeline_stage> next_stage) -> pplx::task<web::http::http_response>
+                {
+                    request.headers().add(web::http::header_names::host, host);
+                    return next_stage->propagate(request);
+                });
+            }
+            return client;
+        }
     }
 
     // make a request with logging

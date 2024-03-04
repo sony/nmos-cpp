@@ -5,8 +5,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
-#include "nmos/streamcompatibility_api.h"
-#include "nmos/streamcompatibility_behaviour.h"
+#include "nmos/is04_versions.h"
 #include "nmos/logging_api.h"
 #include "nmos/manifest_api.h"
 #include "nmos/model.h"
@@ -16,18 +15,26 @@
 #include "nmos/server_utils.h"
 #include "nmos/settings_api.h"
 #include "nmos/slog.h"
+#include "nmos/streamcompatibility_api.h"
+#include "nmos/streamcompatibility_behaviour.h"
 
 namespace nmos
 {
     namespace experimental
     {
-        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API
+        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, the IS-10 Authorization API
         // and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
             // Log the API addresses we'll be using
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::get_host(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: "
+                << web::uri_builder()
+                .set_scheme(nmos::http_scheme(node_model.settings))
+                .set_host(nmos::get_host(node_model.settings))
+                .set_port(nmos::fields::node_port(node_model.settings))
+                .set_path(U("/x-nmos/node/") + nmos::make_api_version(*nmos::is04_versions::from_settings(node_model.settings).rbegin()))
+                .to_string();
 
             nmos::server node_server{ node_model };
 
@@ -36,6 +43,8 @@ namespace nmos
             const auto server_secure = nmos::experimental::fields::server_secure(node_model.settings);
 
             const auto hsts = nmos::experimental::get_hsts(node_model.settings);
+
+            const auto server_address = nmos::experimental::fields::server_address(node_model.settings);
 
             // Configure the Settings API
 
@@ -49,25 +58,28 @@ namespace nmos
 
             // Configure the Node API
 
-            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.load_ca_certificates, node_implementation.parse_transport_file, node_implementation.validate_staged);
-            node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, gate));
+            nmos::node_api_target_handler target_handler = nmos::make_node_api_target_handler(node_model, node_implementation.load_ca_certificates, node_implementation.parse_transport_file, node_implementation.validate_staged, node_implementation.get_authorization_bearer_token);
+            auto validate_authorization = node_implementation.validate_authorization;
+            node_server.api_routers[{ {}, nmos::fields::node_port(node_model.settings) }].mount({}, nmos::make_node_api(node_model, target_handler, validate_authorization ? validate_authorization(nmos::experimental::scopes::node) : nullptr, gate));
             node_server.api_routers[{ {}, nmos::experimental::fields::manifest_port(node_model.settings) }].mount({}, nmos::experimental::make_manifest_api(node_model, gate));
 
             // Configure the Connection API
 
-            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged, gate));
+            node_server.api_routers[{ {}, nmos::fields::connection_port(node_model.settings) }].mount({}, nmos::make_connection_api(node_model, node_implementation.parse_transport_file, node_implementation.validate_staged, validate_authorization ? validate_authorization(nmos::experimental::scopes::connection) : nullptr, gate));
 
             // Configure the Events API
-            node_server.api_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, gate));
+
+            node_server.api_routers[{ {}, nmos::fields::events_port(node_model.settings) }].mount({}, nmos::make_events_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::events) : nullptr, gate));
 
             // Configure the Channel Mapping API
-            node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
+
+            node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, validate_authorization ? validate_authorization(nmos::experimental::scopes::channelmapping) : nullptr, gate));
 
             // Configure the Stream Compatibility API
             node_server.api_routers[{ {}, nmos::fields::streamcompatibility_port(node_model.settings) }].mount({}, nmos::experimental::make_streamcompatibility_api(node_model, node_implementation.base_edid_changed, node_implementation.set_effective_edid, node_implementation.active_constraints_changed, gate));
 
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
-            events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, gate);
+            events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, node_implementation.ws_validate_authorization, gate);
 
             // Set up the listeners for each HTTP API port
 
@@ -75,8 +87,8 @@ namespace nmos
 
             for (auto& api_router : node_server.api_routers)
             {
-                // default empty string means the wildcard address
-                const auto& host = !api_router.first.first.empty() ? api_router.first.first : web::http::experimental::listener::host_wildcard;
+                // if IP address isn't specified for this router, use default server address or wildcard address
+                const auto& host = !api_router.first.first.empty() ? api_router.first.first : !server_address.empty() ? server_address : web::http::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
                 node_server.http_listeners.push_back(nmos::make_api_listener(server_secure, host, nmos::experimental::server_port(api_router.first.second, node_model.settings), api_router.second, http_config, hsts, gate));
@@ -89,8 +101,8 @@ namespace nmos
 
             for (auto& ws_handler : node_server.ws_handlers)
             {
-                // default empty string means the wildcard address
-                const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : web::websockets::experimental::listener::host_wildcard;
+                // if IP address isn't specified for this router, use default server address or wildcard address
+                const auto& host = !ws_handler.first.first.empty() ? ws_handler.first.first : !server_address.empty() ? server_address : web::websockets::experimental::listener::host_wildcard;
                 // map the configured client port to the server port on which to listen
                 // hmm, this should probably also take account of the address
                 node_server.ws_listeners.push_back(nmos::make_ws_api_listener(server_secure, host, nmos::experimental::server_port(ws_handler.first.second, node_model.settings), ws_handler.second.first, websocket_config, gate));
@@ -106,10 +118,11 @@ namespace nmos
             auto set_transportfile = node_implementation.set_transportfile;
             auto connection_activated = node_implementation.connection_activated;
             auto channelmapping_activated = node_implementation.channelmapping_activated;
+            auto get_authorization_bearer_token = node_implementation.get_authorization_bearer_token;
             auto validate_sender_resources = node_implementation.validate_sender_resources;
             auto validate_receiver = node_implementation.validate_receiver;
             node_server.thread_functions.assign({
-                [&, load_ca_certificates, registration_changed] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, gate); },
+                [&, load_ca_certificates, registration_changed, get_authorization_bearer_token] { nmos::node_behaviour_thread(node_model, load_ca_certificates, registration_changed, get_authorization_bearer_token, gate); },
                 [&] { nmos::send_events_ws_messages_thread(events_ws_listener, node_model, events_ws_api.second, gate); },
                 [&] { nmos::erase_expired_events_resources_thread(node_model, gate); },
                 [&, resolve_auto, set_transportfile, connection_activated] { nmos::connection_activation_thread(node_model, resolve_auto, set_transportfile, connection_activated, gate); },

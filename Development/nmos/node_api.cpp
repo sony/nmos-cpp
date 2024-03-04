@@ -7,14 +7,14 @@
 #include "nmos/is04_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
+#include "nmos/scope.h"
 #include "nmos/slog.h"
-#include "cpprest/host_utils.h"
 
 namespace nmos
 {
     web::http::experimental::listener::api_router make_unmounted_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_node_api(const nmos::model& model, node_api_target_handler target_handler, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_node_api(const nmos::model& model, node_api_target_handler target_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -31,6 +31,12 @@ namespace nmos
             set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("node/") }, req, res));
             return pplx::task_from_result(true);
         });
+
+        if (validate_authorization)
+        {
+            node_api.support(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/?"), validate_authorization);
+            node_api.support(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/.*"), validate_authorization);
+        }
 
         const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is04_versions::from_settings(model.settings); });
         node_api.support(U("/x-nmos/") + nmos::patterns::node_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)

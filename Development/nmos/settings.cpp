@@ -82,6 +82,8 @@ namespace nmos
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::admin_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::mdns_port, http_port));
                 if (registry) web::json::insert(settings, std::make_pair(nmos::experimental::fields::schemas_port, http_port));
+                web::json::insert(settings, std::make_pair(nmos::experimental::fields::authorization_redirect_port, http_port));
+                web::json::insert(settings, std::make_pair(nmos::experimental::fields::jwks_uri_port, http_port));
             }
         }
     }
