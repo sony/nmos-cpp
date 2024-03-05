@@ -19,7 +19,7 @@ namespace nmos
         struct datatype_descriptor;
     }
 
-    // callback to retrieve a specific control protocol classs descriptor
+    // callback to retrieve a specific control protocol class descriptor
     // this callback should not throw exceptions
     typedef std::function<experimental::control_class_descriptor(const nc_class_id& class_id)> get_control_protocol_class_descriptor_handler;
 
