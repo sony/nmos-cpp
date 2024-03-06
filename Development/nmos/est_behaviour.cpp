@@ -20,6 +20,7 @@
 #include "nmos/random.h"
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h" // for wait_until, reverse_lock_guard
+#include "ssl/ssl_utils.h"
 
 namespace nmos
 {
@@ -686,13 +687,13 @@ namespace nmos
             pplx::task<void> do_cacerts_renewal_monitor(nmos::model& model, est_shared_state& est_state, slog::base_gate& gate, const pplx::cancellation_token& token)
             {
                 // split cacerts chain to list
-                auto ca_certs = split_certificate_chain(utility::us2s(est_state.cacerts));
+                auto ca_certs = ssl::experimental::split_certificate_chain(utility::us2s(est_state.cacerts));
 
                 // find the nearest to expiry time from the list of CA certs
                 auto expiry = std::chrono::seconds{ -1 };
                 for (auto& cert : ca_certs)
                 {
-                    auto tmp = std::chrono::seconds(certificate_expiry_from_now(cert, 0.8));
+                    auto tmp = std::chrono::seconds((int)ssl::experimental::certificate_expiry_from_now(cert, 0.8));
                     if (std::chrono::seconds(-1) == expiry || tmp < expiry)
                     {
                         expiry = tmp;
@@ -742,7 +743,7 @@ namespace nmos
                                 // "Renewal of the TLS Certificate SHOULD be attempted no sooner than 50% of the certificate's expiry time or before the 'Not Before' date on the certificate.
                                 // It is RECOMMENDED that certificate renewal is performed after 80% of the expiry time."
                                 // see https://specs.amwa.tv/bcp-003-03/releases/v1.0.0/docs/1.0._Certificate_Provisioning.html#certificate-renewal
-                                cert_state.delay = std::chrono::seconds(certificate_expiry_from_now(utility::us2s(cert_state.cert), 0.8));
+                                cert_state.delay = std::chrono::seconds((int)ssl::experimental::certificate_expiry_from_now(utility::us2s(cert_state.cert), 0.8));
 
                                 // get Certificate Revocation List URLs from certificate
                                 with_write_lock(cert_state.mutex, [&cert_state]
@@ -819,7 +820,7 @@ namespace nmos
                                 // "Renewal of the TLS Certificate SHOULD be attempted no sooner than 50% of the certificate's expiry time or before the 'Not Before' date on the certificate.
                                 // It is RECOMMENDED that certificate renewal is performed after 80% of the expiry time."
                                 // see https://specs.amwa.tv/bcp-003-03/releases/v1.0.0/docs/1.0._Certificate_Provisioning.html#certificate-renewal
-                                cert_state.delay = std::chrono::seconds(certificate_expiry_from_now(utility::us2s(result.second), 0.8));
+                                cert_state.delay = std::chrono::seconds((int)ssl::experimental::certificate_expiry_from_now(utility::us2s(result.second), 0.8));
 
                                 with_write_lock(cert_state.mutex, [&cert_state]
                                 {
@@ -1071,20 +1072,20 @@ namespace nmos
                     if (!cacerts.empty())
                     {
                         // split the cacerts chain to list
-                        auto ca_certs = split_certificate_chain(utility::us2s(cacerts));
+                        auto ca_certs = ssl::experimental::split_certificate_chain(utility::us2s(cacerts));
 
                         std::string issuer_name;
                         for (auto& cert : ca_certs)
                         {
                             // verify certificate's NotBefore, Not After, Common Name, Subject Alternative Name and chain of trust
-                            const auto cert_info = cert_information(cert);
+                            const auto cert_info = ssl::experimental::get_certificate_info(cert);
 
                             // verify the chain against the certificate issuer name and the issuer certificate common name
                             if (!issuer_name.empty())
                             {
-                                if (boost::to_upper_copy(issuer_name) != boost::to_upper_copy(cert_info.common_name)) { throw est_exception("invalid CA chain of trust"); }
+                                if (boost::to_upper_copy(issuer_name) != boost::to_upper_copy(cert_info.subject_common_name)) { throw est_exception("invalid CA chain of trust"); }
                             }
-                            issuer_name = cert_info.issuer_name;
+                            issuer_name = cert_info.issuer_common_name;
 
                             // Not Before
                             const auto now = time(NULL);
@@ -1150,7 +1151,7 @@ namespace nmos
                         if (state.receive_ca_certificate)
                         {
                             // extract the Root CA from chain, Root CA is always presented in the end of the CA chain
-                            const auto ca_certs = split_certificate_chain(utility::us2s(cacerts));
+                            const auto ca_certs = ssl::experimental::split_certificate_chain(utility::us2s(cacerts));
 
                             state.receive_ca_certificate(utility::s2us(ca_certs.back()));
                         }
@@ -1229,7 +1230,7 @@ namespace nmos
                         if (!certificate.empty())
                         {
                             // verify certificate's NotBefore, Not After, Common Name, Subject Alternative Name and chain of trust
-                            const auto cert_info = nmos::experimental::details::cert_information(utility::us2s(certificate));
+                            const auto cert_info = ssl::experimental::get_certificate_info(utility::us2s(certificate));
 
                             // Not Before
                             const auto now = time(NULL);
@@ -1239,15 +1240,15 @@ namespace nmos
                             if (cert_info.not_after < now) { throw est_exception("certificate has expired"); }
 
                             // Common Name
-                            if (boost::to_upper_copy(utility::us2s(FQDN)) != boost::to_upper_copy(cert_info.common_name)) { throw est_exception("invalid Common Name"); }
+                            if (boost::to_upper_copy(utility::us2s(FQDN)) != boost::to_upper_copy(cert_info.subject_common_name)) { throw est_exception("invalid Common Name"); }
 
                             // Subject Alternative Name
-                            auto found_san = std::find_if(cert_info.sans.begin(), cert_info.sans.end(), [&FQDN](const std::string& san) { return boost::to_upper_copy(utility::us2s(FQDN)) == boost::to_upper_copy(san); });
-                            if (cert_info.sans.end() == found_san) { throw est_exception("invalid Subject Alternative Name"); }
+                            auto found_san = std::find_if(cert_info.subject_alternative_names.begin(), cert_info.subject_alternative_names.end(), [&FQDN](const std::string& san) { return boost::to_upper_copy(utility::us2s(FQDN)) == boost::to_upper_copy(san); });
+                            if (cert_info.subject_alternative_names.end() == found_san) { throw est_exception("invalid Subject Alternative Name"); }
 
                             // chain of trust
-                            const auto cacerts_info = nmos::experimental::details::cert_information(utility::us2s(cacerts));
-                            if (cacerts_info.common_name != cert_info.issuer_name) { throw est_exception("invalid chain of trust"); }
+                            const auto cacerts_info = ssl::experimental::get_certificate_info(utility::us2s(cacerts));
+                            if (cacerts_info.subject_common_name != cert_info.issuer_common_name) { throw est_exception("invalid chain of trust"); }
                         }
                         else
                         {
