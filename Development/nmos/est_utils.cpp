@@ -100,7 +100,11 @@ namespace nmos
                     if (gen->type == GEN_URI || gen->type == GEN_DNS || gen->type == GEN_EMAIL)
                     {
                         auto asn1_str = gen->d.uniformResourceIdentifier;
+#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
                         auto san = std::string(reinterpret_cast<const char*>(ASN1_STRING_get0_data(asn1_str)), ASN1_STRING_length(asn1_str));
+#else
+                        auto san = std::string(reinterpret_cast<const char*>(ASN1_STRING_data(asn1_str)), ASN1_STRING_length(asn1_str));
+#endif
                         sans.push_back(san);
                     }
                     else
@@ -142,12 +146,20 @@ namespace nmos
 
                 // X509_get_notAfter returns the time that the cert expires, in Abstract Syntax Notation
                 // According to the openssl documentation, the returned value is an internal pointer which MUST NOT be freed
+#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
                 auto not_before = X509_get0_notBefore(x509.get());
+#else
+                auto not_before = X509_get_notBefore(x509.get());
+#endif
                 if(!not_before)
                 {
                     throw est_exception("failed to get notBefore: X509_get0_notBefore failure: " + last_openssl_error());
                 }
+#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
                 auto not_after = X509_get0_notAfter(x509.get());
+#else
+                auto not_after = X509_get_notAfter(x509.get());
+#endif
                 if (!not_after)
                 {
                     throw est_exception("failed to get notAfter: X509_get0_notAfter failure: " + last_openssl_error());
@@ -627,7 +639,11 @@ namespace nmos
                 for (auto idx = 0; idx < sk_X509_REVOKED_num(revoked_list); idx++)
                 {
                     auto entry = sk_X509_REVOKED_value(revoked_list, idx);
+#if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
                     auto serial_number = X509_REVOKED_get0_serialNumber(entry);
+#else
+                    auto serial_number = entry->serialNumber;
+#endif
                     if (serial_number->length == cert_serial_number->length)
                     {
                         if (memcmp(serial_number->data, cert_serial_number->data, cert_serial_number->length) == 0)
