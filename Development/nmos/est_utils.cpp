@@ -4,10 +4,12 @@
 #include <sstream>
 #include <string.h>
 #include <boost/algorithm/string.hpp> // for boost::split
-#include "openssl/err.h"
-#include "openssl/rsa.h"
-#include "openssl/pem.h"
-#include "openssl/x509v3.h" // for X509V3_EXT_conf_nid
+#include <openssl/asn1.h>
+#include <openssl/err.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h> // for X509V3_EXT_conf_nid
 
 namespace nmos
 {
@@ -150,21 +152,19 @@ namespace nmos
                 {
                     throw est_exception("failed to get notAfter: X509_get0_notAfter failure: " + last_openssl_error());
                 }
-                time_t not_before_time;
-                time_t not_after_time;
 #if (OPENSSL_VERSION_NUMBER >= 0x1010100fL)
                 tm not_before_tm;
                 if (!ASN1_TIME_to_tm(not_before, &not_before_tm))
                 {
                     throw est_exception("failed to convert notBefore ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
                 }
-                not_before_time = mktime(&not_before_tm);
+                auto not_before_time = mktime(&not_before_tm);
                 tm not_after_tm;
                 if (!ASN1_TIME_to_tm(not_after, &not_after_tm))
                 {
                     throw est_exception("failed to convert not_after ASN1_TIME to tm: ASN1_TIME_to_tm failure: " + last_openssl_error());
                 }
-                not_after_time = mktime(&not_after_tm);
+                auto not_after_time = mktime(&not_after_tm);
 #else
                 // Construct another ASN1_TIME for the unix epoch, get the difference
                 // between them and use that to calculate a unix timestamp representing
@@ -491,7 +491,11 @@ namespace nmos
                 auto extensions = sk_X509_EXTENSION_new_null();
                 auto add_extension = [&extensions](int nid, const std::string& value)
                 {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+                    auto extension = X509V3_EXT_conf_nid(NULL, NULL, nid, const_cast<char*>(value.c_str()));
+#else
                     auto extension = X509V3_EXT_conf_nid(NULL, NULL, nid, value.c_str());
+#endif
                     if (!extension)
                     {
                         std::stringstream ss;

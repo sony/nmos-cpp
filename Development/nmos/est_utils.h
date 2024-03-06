@@ -2,6 +2,7 @@
 #define NMOS_EST_UTILS_H
 
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace nmos
