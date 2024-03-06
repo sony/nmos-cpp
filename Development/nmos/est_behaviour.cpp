@@ -1,7 +1,11 @@
 #include "nmos/est_behaviour.h"
 
-#include <time.h> // for tm and strptime
 #include <boost/algorithm/string.hpp> // for boost::to_upper_copy
+#include <time.h> // for tm and strptime
+#if (defined(_WIN32) || defined(__cplusplus_winrt)) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#include <wincrypt.h>
+#include <winhttp.h>
+#endif
 #include "pplx/pplx_utils.h" // for pplx::complete_at
 #include "cpprest/http_client.h"
 #include "cpprest/json_validator.h"
