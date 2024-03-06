@@ -393,8 +393,6 @@ namespace nmos
 #if (defined(_WIN32) || defined(__cplusplus_winrt)) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
                 config.set_nativehandle_options([=](web::http::client::native_handle hRequest)
                 {
-                    // hmm, for debugging
-#ifdef LOAD_CLIENT_CERTIFICATE_FILE
                     // the client_certificate_file must be in PKCS #12 format
                     // hmm, while executing WinHttpSendRequest, it failed with ERROR_WINHTTP_CLIENT_CERT_NO_PRIVATE_KEY(12185) : No credentials were available in the client certificate.
                     const auto& client_certificate_file = nmos::experimental::fields::client_certificate_file(settings);
@@ -421,43 +419,6 @@ namespace nmos
                             CertCloseStore(hCertStore, 0);
                         }
                     }
-#else
-                    // open system certificate store that holds certificates with associated private keys
-                    auto hCertStore = CertOpenSystemStore(0, TEXT("MY"));
-                    if (hCertStore)
-                    {
-                        PCCERT_CONTEXT pCertContext = NULL;
-
-                        // example to get client certificate via enum
-                        //pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
-
-                        // example to get client certificate via system store based on certificate subject
-                        //pCertContext = CertFindCertificateInStore(hCertStore,
-                        //    X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
-                        //    0,
-                        //    CERT_FIND_SUBJECT_STR,
-                        //    (LPVOID)"CN=GBDEVWIND-8GGX.workshop.nmos.tv, O=NMOS Testing Ltd, S=England, C=GB", //Subject string in the certificate.
-                        //    NULL);
-
-                        // open the client certificate selection dialog for user to select the relevant client cerificate
-                        pCertContext = CryptUIDlgSelectCertificateFromStore(
-                            hCertStore,
-                            NULL,
-                            NULL,
-                            NULL,
-                            CRYPTUI_SELECT_LOCATION_COLUMN,
-                            0,
-                            NULL);
-
-                        if (pCertContext)
-                        {
-                            WinHttpSetOption(hRequest, WINHTTP_OPTION_CLIENT_CERT_CONTEXT, (LPVOID)pCertContext, sizeof(CERT_CONTEXT));
-
-                            CertFreeCertificateContext(pCertContext);
-                        }
-                        CertCloseStore(hCertStore, 0);
-                    }
-#endif //LOAD_CLIENT_CERTIFICATE_FILE
                 });
 #endif //#if (defined(_WIN32) || defined(__cplusplus_winrt)) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
                 return config;
