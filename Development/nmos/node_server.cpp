@@ -3,6 +3,7 @@
 #include "cpprest/ws_utils.h"
 #include "nmos/api_utils.h"
 #include "nmos/channelmapping_activation.h"
+#include "nmos/est_behaviour.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
 #include "nmos/is04_versions.h"
@@ -20,7 +21,7 @@ namespace nmos
 {
     namespace experimental
     {
-        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, the IS-10 Authorization API
+        // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API, IS-10 Authorization API, BCP-003-03 EST API
         // and the experimental Logging API and Settings API, according to the specified data models and callbacks
         nmos::server make_node_server(nmos::node_model& node_model, nmos::experimental::node_implementation node_implementation, nmos::experimental::log_model& log_model, slog::base_gate& gate)
         {
@@ -126,6 +127,15 @@ namespace nmos
             if (system_changed)
             {
                 node_server.thread_functions.push_back([&, load_ca_certificates, system_changed] { nmos::node_system_behaviour_thread(node_model, load_ca_certificates, system_changed, gate); });
+            }
+
+            if (nmos::experimental::fields::est_enabled(node_model.settings))
+            {
+                auto load_client_certificate = node_implementation.load_client_certificate;
+                auto ca_certificate_received = node_implementation.ca_certificate_received;
+                auto rsa_server_certificate_received = node_implementation.rsa_server_certificate_received;
+                auto ecdsa_server_certificate_received = node_implementation.ecdsa_server_certificate_received;
+                node_server.thread_functions.push_back([&, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received] { nmos::experimental::est_behaviour_thread(node_model, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received, gate); });
             }
 
             return node_server;
