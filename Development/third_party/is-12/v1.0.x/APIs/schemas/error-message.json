@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Error protocol message structure - used by devices to return general error messages for example when incoming messages do not have messageType, handles or contain invalid JSON",
+  "title": "Error protocol message",
+  "allOf": [
+    {
+      "$ref": "base-message.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "errorMessage",
+        "messageType"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "description": "Status of the message response. Must include the numeric values for NcMethodStatus or other types which inherit from it.",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "errorMessage": {
+          "description": "Error details associated with the failure",
+          "type": "string"
+        },
+        "messageType": {
+          "description": "Protocol message type",
+          "type": "integer",
+          "enum": [
+            5
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Command response protocol message structure",
+  "title": "Command response protocol message",
+  "allOf": [
+    {
+      "$ref": "base-message.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "responses",
+        "messageType"
+      ],
+      "properties": {
+        "responses": {
+          "description": "Responses being transmited in this transaction",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "handle",
+              "result"
+            ],
+            "properties": {
+              "handle": {
+                "type": "integer",
+                "description": "Integer value used for pairing with the command",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "result": {
+                "type": "object",
+                "description": "Response result",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "integer",
+                    "description": "Status of the command response. Must include the numeric values for NcMethodStatus or other types which inherit from it. 200 must be returned if the command was successful",
+                    "minimum": 0,
+                    "maximum": 65535
+                  },
+                  "value": {
+                    "type": ["string", "number", "object", "array", "boolean", "null" ],
+                    "description": "Method return value as described in the MS-05-02 Type definition or in a private Type definition"
+                  },
+                  "errorMessage": {
+                    "description": "Error message associated with the failure of the command (optional)",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "messageType": {
+          "description": "Protocol message type",
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        }
+      }
+    }
+  ]
+}
