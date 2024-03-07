@@ -104,6 +104,9 @@ namespace nmos
         // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is10_versions{ U("is10_versions") }; // when omitted, nmos::is10_versions::all is used
 
+        // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
+        const web::json::field_as_array is12_versions{ U("is12_versions") }; // when omitted, nmos::is12_versions::all is used
+
         // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
         const web::json::field_as_integer_or pri{ U("pri"), 100 }; // default to highest_development_priority
 
@@ -146,6 +149,8 @@ namespace nmos
         const web::json::field_as_integer_or channelmapping_port{ U("channelmapping_port"), 3215 };
         // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
         const web::json::field_as_integer_or system_port{ U("system_port"), 10641 };
+        // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
+        const web::json::field_as_integer_or control_protocol_ws_port{ U("control_protocol_ws_port"), 3218 };
 
         // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
         const web::json::field_as_integer_or listen_backlog{ U("listen_backlog"), 0 };
@@ -445,6 +450,20 @@ namespace nmos
             // If the Resource Server fails to verify a token using all public keys available it MUST reject the token."
             // see https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
             const web::json::field_as_integer_or service_unavailable_retry_after{ U("service_unavailable_retry_after"), 5 };
+
+            // manufacturer_name [node]: the manufacturer name of the NcDeviceManager used for NMOS Control Protocol
+            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
+            const web::json::field_as_string_or manufacturer_name{ U("manufacturer_name"), U("") };
+
+            // product_name/product_key/product_revision_level [node]: the product description of the NcDeviceManager used for NMOS Control Protocol
+            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncproduct
+            const web::json::field_as_string_or product_name{ U("product_name"), U("") };
+            const web::json::field_as_string_or product_key{ U("product_key"), U("") };
+            const web::json::field_as_string_or product_revision_level{ U("product_revision_level"), U("") };
+
+            // serial_number [node]: the serial number of the NcDeviceManager used for NMOS Control Protocol
+            // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
+            const web::json::field_as_string_or serial_number{ U("serial_number"), U("") };
         }
     }
 }

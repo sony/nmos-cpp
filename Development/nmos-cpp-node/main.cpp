@@ -18,6 +18,8 @@
 #include "nmos/server_utils.h" // for make_http_listener_config
 #include "node_implementation.h"
 
+#include "nmos/control_protocol_state.h"
+
 int main(int argc, char* argv[])
 {
     // Construct our data models including mutexes to protect them
@@ -137,13 +139,22 @@ int main(int argc, char* argv[])
                 .on_request_authorization_code(nmos::experimental::make_request_authorization_code_handler(gate)); // may be omitted, only required for OAuth client which is using the Authorization Code Flow to obtain the access token
         }
 
+        nmos::experimental::control_protocol_state control_protocol_state;
+        if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
+        {
+            node_implementation
+                .on_get_control_class_descriptor(nmos::make_get_control_protocol_class_descriptor_handler(control_protocol_state))
+                .on_get_control_datatype_descriptor(nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state))
+                .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state));
+        }
+
         // Set up the node server
 
         auto node_server = nmos::experimental::make_node_server(node_model, node_implementation, log_model, gate);
 
         // Add the underlying implementation, which will set up the node resources, etc.
 
-        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, gate); });
+        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
 
 // only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config

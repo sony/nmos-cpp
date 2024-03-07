@@ -230,6 +230,114 @@ namespace nmos
         const web::json::field_as_string hostname{ U("hostname") }; // hostname, ipv4 or ipv6
         const web::json::field_as_integer port{ U("port") }; // 1..65535
 
+        // IS-12 Control Protocol and MS-05 model definitions
+        namespace nc
+        {
+            // for control_protocol_ws_api
+            const web::json::field_as_integer message_type{ U("messageType") };
+
+            // for control_protocol_ws_api commands
+            const web::json::field_as_array commands{ U("commands") };
+            const web::json::field_as_array subscriptions{ U("subscriptions") };
+            const web::json::field_as_integer oid{ U("oid") };
+            const web::json::field_as_value method_id{ U("methodId") };
+            const web::json::field_as_value_or arguments{ U("arguments"), {} };
+            const web::json::field_as_value id{ U("id") };
+            const web::json::field_as_integer level{ U("level") };
+            const web::json::field_as_integer index{ U("index") };
+
+            // for control_protocol_ws_api responses & errors
+            const web::json::field_as_value responses{ U("responses") };
+            const web::json::field_as_value result{ U("result") };
+            const web::json::field_as_integer status{ U("status") };
+            const web::json::field_as_value value{ U("value") };
+            const web::json::field_as_string error_message{ U("errorMessage") };
+
+            // for control_protocol_ws_api commands & responses
+            const web::json::field_as_integer handle{ U("handle") };
+
+            // for cntrol_protocol_ws_api notifications
+            const web::json::field_as_array notifications{ U("notifications") };
+            const web::json::field_as_value event_data{ U("eventData") };
+            const web::json::field_as_value event_id{ U("eventId") };
+
+            const web::json::field_as_array class_id{ U("classId") };
+            const web::json::field_as_bool constant_oid{ U("constantOid") };
+            const web::json::field_as_integer owner{ U("owner") };
+            const web::json::field_as_string role{ U("role") };
+            const web::json::field_as_string user_label{ U("userLabel") };
+            const web::json::field_as_array touchpoints{ U("touchpoints") };
+            const web::json::field_as_array runtime_property_constraints{ U("runtimePropertyConstraints") };
+            const web::json::field_as_bool recurse{ U("recurse") };
+            const web::json::field_as_bool enabled{ U("enabled") };
+            const web::json::field_as_array members{ U("members") };
+            const web::json::field_as_string description{ U("description") };
+            const web::json::field_as_string nc_version{ U("ncVersion") }; // NcVersionCode
+            const web::json::field_as_value manufacturer{ U("manufacturer") }; // NcManufacturer
+            const web::json::field_as_value product{ U("product") }; // NcProduct
+            const web::json::field_as_string serial_number{ U("serialNumber") };
+            const web::json::field_as_string user_inventory_code{ U("userInventoryCode") };
+            const web::json::field_as_string device_name{ U("deviceName") };
+            const web::json::field_as_string device_role{ U("deviceRole") };
+            const web::json::field_as_value operational_state{ U("operationalState") }; // NcDeviceOperationalState
+            const web::json::field_as_integer reset_cause{ U("resetCause") }; // NcResetCause
+            const web::json::field_as_string message{ U("message") };
+            const web::json::field_as_array control_classes{ U("controlClasses") }; // sequence<NcClassDescriptor>
+            const web::json::field_as_array datatypes{ U("datatypes") }; // sequence<NcDatatypeDescriptor>
+            const web::json::field_as_string name{ U("name")};
+            const web::json::field_as_string fixed_role{ U("fixedRole") };
+            const web::json::field_as_array properties{ U("properties") }; // sequence<NcPropertyDescriptor>
+            const web::json::field_as_array methods{ U("methods") }; // sequence<NcMethodDescriptor>
+            const web::json::field_as_array events{ U("events") }; // sequence<NcEventDescriptor>
+            const web::json::field_as_integer type{ U("type") }; // NcDatatypeType
+            const web::json::field_as_value constraints{ U("constraints") }; // NcParameterConstraints
+            const web::json::field_as_integer organization_id{ U("organizationId") };
+            const web::json::field_as_string website{ U("website") };
+            const web::json::field_as_string key{ U("key") };
+            const web::json::field_as_string revision_level{ U("revisionLevel") };
+            const web::json::field_as_string brand_name{ U("brandName") };
+            const web::json::field_as_string uuid{ U("uuid") };
+            const web::json::field_as_string type_name{ U("typeName") };
+            const web::json::field_as_bool is_read_only{ U("isReadOnly") };
+            const web::json::field_as_bool is_persistent{ U("isPersistent") };
+            const web::json::field_as_bool is_nullable{ U("isNullable") };
+            const web::json::field_as_bool is_sequence{ U("isSequence") };
+            const web::json::field_as_bool is_deprecated{ U("isDeprecated") };
+            const web::json::field_as_bool is_constant{ U("isConstant") };
+            const web::json::field_as_string parent_type{ U("parentType") };
+            const web::json::field_as_string event_datatype{ U("eventDatatype") };
+            const web::json::field_as_string result_datatype{ U("resultDatatype") };
+            const web::json::field_as_array parameters{ U("parameters") };
+            const web::json::field_as_array items{ U("items") }; // sequence<NcEnumItemDescriptor>
+            const web::json::field_as_array fields{ U("fields") }; // sequence<NcFieldDescriptor>
+            const web::json::field_as_integer generic_state{ U("generic") }; // NcDeviceGenericState
+            const web::json::field_as_string device_specific_details{ U("deviceSpecificDetails") };
+            const web::json::field_as_array path{ U("path") }; // NcRolePath
+            const web::json::field_as_bool case_sensitive{ U("caseSensitive") };
+            const web::json::field_as_bool match_whole_string{ U("matchWholeString") };
+            const web::json::field_as_bool include_derived{ U("includeDerived") };
+            const web::json::field_as_bool include_inherited{ U("includeInherited") };
+            const web::json::field_as_string context_namespace{ U("contextNamespace") };
+            const web::json::field_as_value default_value{ U("defaultValue") };
+            const web::json::field_as_integer change_type{ U("changeType") }; // NcPropertyChangeType
+            const web::json::field_as_integer sequence_item_index{ U("sequenceItemIndex") }; // NcId
+            const web::json::field_as_value property_id{ U("propertyId") };
+            const web::json::field_as_value maximum{ U("maximum") };
+            const web::json::field_as_value minimum{ U("minimum") };
+            const web::json::field_as_value step{ U("step") };
+            const web::json::field_as_integer max_characters{ U("maxCharacters") };
+            const web::json::field_as_string pattern{ U("pattern") };
+            const web::json::field_as_value resource{ U("resource") };
+            const web::json::field_as_string resource_type{ U("resourceType") };
+            const web::json::field_as_string io_id{ U("ioId") };
+            const web::json::field_as_integer connection_status{ U("connectionStatus") }; // NcConnectionStatus
+            const web::json::field_as_string connection_status_message{ U("connectionStatusMessage") };
+            const web::json::field_as_integer payload_status{ U("payloadStatus") }; // NcPayloadStatus
+            const web::json::field_as_string payload_status_message{ U("payloadStatusMessage") };
+            const web::json::field_as_bool signal_protection_status{ U("signalProtectionStatus") };
+            const web::json::field_as_bool active{ U("active") };
+        }
+
         // NMOS Parameter Registers
 
         // Sender Attributes Register

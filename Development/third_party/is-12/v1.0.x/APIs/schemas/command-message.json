@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Command protocol message structure",
+  "title": "Command protocol message",
+  "allOf": [
+    {
+      "$ref": "base-message.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "commands",
+        "messageType"
+      ],
+      "properties": {
+        "commands": {
+          "description": "Commands being transmited in this transaction",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "handle",
+              "oid",
+              "methodId"
+            ],
+            "properties": {
+              "handle": {
+                "type": "integer",
+                "description": "Integer value used for pairing with the response",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "oid": {
+                "type": "integer",
+                "description": "Object id containing the method",
+                "minimum": 1
+              },
+              "methodId": {
+                "type": "object",
+                "description": "ID structure for the target method",
+                "required": [
+                  "level",
+                  "index"
+                ],
+                "properties": {
+                  "level": {
+                    "type": "integer",
+                    "description": "Level component of the method ID",
+                    "minimum": 1
+                  },
+                  "index": {
+                    "type": "integer",
+                    "description": "Index component of the method ID",
+                    "minimum": 1
+                  }
+                }
+              },
+              "arguments": {
+                "type": "object",
+                "description": "Method arguments"
+              }
+            }
+          }
+        },
+        "messageType": {
+          "description": "Protocol message type",
+          "type": "integer",
+          "enum": [
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

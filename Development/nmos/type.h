@@ -39,6 +39,16 @@ namespace nmos
 
         // the System API global configuration resource type, see nmos/system_resources.h
         const type global{ U("global") };
+
+        // the Control Protocol API resource type, see nmos/control_protcol_resources.h
+        const type nc_block{ U("nc_block") };
+        const type nc_worker{ U("nc_worker") };
+        const type nc_manager{ U("nc_manager") };
+        const type nc_device_manager{ U("nc_device_manager") };
+        const type nc_class_manager{ U("nc_class_manager") };
+        const type nc_receiver_monitor{ U("nc_receiver_monitor") };
+        const type nc_receiver_monitor_protected{ U("nc_receiver_monitor_protected") };
+        const type nc_ident_beacon{ U("nc_ident_beacon") };
     }
 }
 

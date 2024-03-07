@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Base protocol message structure",
+  "title": "Base protocol message",
+  "required": [
+    "messageType"
+  ],
+  "properties": {
+    "messageType": {
+      "description": "Protocol message type",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  }
+}

@@ -162,7 +162,15 @@ namespace nmos
             { U("receivers"), nmos::types::receiver },
             { U("subscriptions"), nmos::types::subscription },
             { U("inputs"), nmos::types::input },
-            { U("outputs"), nmos::types::output }
+            { U("outputs"), nmos::types::output },
+            { U("nc_block"), nmos::types::nc_block },
+            { U("nc_worker"), nmos::types::nc_worker },
+            { U("nc_manager"), nmos::types::nc_manager },
+            { U("nc_device_manager"), nmos::types::nc_device_manager },
+            { U("nc_class_manager"), nmos::types::nc_class_manager },
+            { U("nc_receiver_monitor"), nmos::types::nc_receiver_monitor },
+            { U("nc_receiver_monitor_protected"), nmos::types::nc_receiver_monitor_protected },
+            { U("nc_ident_beacon"), nmos::types::nc_ident_beacon }
         };
         return types_from_resourceType.at(resourceType);
     }
@@ -181,7 +189,15 @@ namespace nmos
             { nmos::types::subscription, U("subscriptions") },
             { nmos::types::grain, {} }, // subscription websocket grains aren't exposed via the Query API
             { nmos::types::input, U("inputs") },
-            { nmos::types::output, U("outputs") }
+            { nmos::types::output, U("outputs") },
+            { nmos::types::nc_block, U("nc_block") },
+            { nmos::types::nc_worker, U("nc_worker") },
+            { nmos::types::nc_manager, U("nc_manager") },
+            { nmos::types::nc_device_manager, U("nc_device_manager") },
+            { nmos::types::nc_class_manager, U("nc_class_manager") },
+            { nmos::types::nc_receiver_monitor, U("nc_receiver_monitor") },
+            { nmos::types::nc_receiver_monitor_protected, U("nc_receiver_monitor_protected") },
+            { nmos::types::nc_ident_beacon, U("nc_ident_beacon") }
         };
         return resourceTypes_from_type.at(type);
     }
