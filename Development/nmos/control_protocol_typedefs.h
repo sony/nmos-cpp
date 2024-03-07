@@ -32,7 +32,7 @@ namespace nmos
             property_deprecated = 298,      // Method call was successful but targeted property is deprecated
             method_deprecated = 299,        // Method call was successful but method is deprecated
             bad_command_format = 400,       // Badly-formed command
-            unathorized = 401,              // Client is not authorized
+            unauthorized = 401,              // Client is not authorized
             bad_oid = 404,                  // Command addresses a nonexistent object
             read_only = 405,                // Attempt to change read-only state
             invalid_request = 406,          // Method call is invalid in current operating context
@@ -146,7 +146,7 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nceventid
     typedef nc_element_id nc_event_id;
     // NcEventIds for NcObject
-    // SEe https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
     const nc_event_id nc_object_property_changed_event_id(1, 1);
 
     // NcMethodId

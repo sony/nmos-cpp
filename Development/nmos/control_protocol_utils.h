@@ -19,15 +19,15 @@ namespace nmos
         web::json::value get_runtime_property_constraints(const nc_property_id& property_id, const web::json::value& runtime_property_constraints_list);
 
         // get the datatype descriptor of a specific type_name
-        web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype);
+        web::json::value get_datatype_descriptor(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype);
 
         // get the datatype property constraints of a given type_name
-        web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_handler get_control_protocol_datatype);
+        web::json::value get_datatype_constraints(const web::json::value& type_name, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype);
 
         struct datatype_constraints_validation_parameters
         {
             web::json::value datatype_descriptor;
-            get_control_protocol_datatype_handler get_control_protocol_datatype;
+            get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
         };
         // multiple levels of constraints validation, may throw nmos::control_protocol_exception
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
@@ -56,8 +56,8 @@ namespace nmos
     nc_class_id make_nc_class_id(const nc_class_id& prefix, int32_t authority_key, const std::vector<int32_t>& suffix);
     nc_class_id make_nc_class_id(const nc_class_id& prefix, const std::vector<int32_t>& suffix); // using default authority_key 0
 
-    // find control class property (NcPropertyDescriptor)
-    web::json::value find_property(const nc_property_id& property_id, const nc_class_id& class_id, get_control_protocol_class_handler get_control_protocol_class);
+    // find control class property descriptor (NcPropertyDescriptor)
+    web::json::value find_property_descriptor(const nc_property_id& property_id, const nc_class_id& class_id, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor);
 
     // get block memeber descriptors
     void get_member_descriptors(const resources& resources, const resource& resource, bool recurse, web::json::array& descriptors);
@@ -78,7 +78,7 @@ namespace nmos
     resources::const_iterator find_control_protocol_resource(resources& resources, type type, const id& id);
 
     // method parameters constraints validation, may throw nmos::control_protocol_exception
-    void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_handler get_control_protocol_datatype);
+    void method_parameters_contraints_validation(const web::json::value& arguments, const web::json::value& nc_method_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor);
 }
 
 #endif

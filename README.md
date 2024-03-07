@@ -45,7 +45,7 @@ After setting up the dependencies, follow these [instructions](Documents/Getting
 
 Next, try out the registry and node applications in the [tutorial](Documents/Tutorial.md).
 
-An [nmos-cpp Conan package](https://conan.io/center/nmos-cpp) is published at Conan Center Index.
+An [nmos-cpp Conan package](https://conan.io/center/recipes/nmos-cpp) is occasionally published at Conan Center Index.
 
 ## Agile Development
 
@@ -120,6 +120,7 @@ The implementation is designed to be extended. Development is ongoing, following
 Recent activity on the project (newest first):
 
 - Added support for the IS-12 NMOS Control Protocol
+- Update to Conan 2; Conan 1.X is no longer supported
 - Added support for IS-10 Authorization
 - Added support for HSTS and OCSP stapling
 - Added support for BCP-006-01 v1.0-dev, which can be demonstrated with **nmos-cpp-node** by using `"video_type": "video/jxsv"`

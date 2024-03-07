@@ -104,6 +104,9 @@
     // is10_versions [registry, node]: used to specify the enabled API versions for a version-locked configuration
     //"is10_versions": ["v1.0"],
 
+    // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is12_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
@@ -236,9 +239,6 @@
 
     // proxy_port [registry, node]: forward proxy port
     //"proxy_port": 8080,
-
-    // discovery_mode [node]: whether the discovered host name (1) or resolved addresses (2) are used to construct request URLs for Registration APIs or System APIs
-    //"discovery_mode": 1,
 
     // href_mode [registry, node]: whether the host name (1), addresses (2) or both (3) are used to construct response headers, and host and URL fields in the data model
     //"href_mode": 1,

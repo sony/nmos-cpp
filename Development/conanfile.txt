@@ -1,8 +1,8 @@
 [requires]
-boost/1.80.0
-cpprestsdk/2.10.18
+boost/1.83.0
+cpprestsdk/2.10.19
 websocketpp/0.8.2
-openssl/1.1.1s
+openssl/3.2.1
 json-schema-validator/2.3.0
 nlohmann_json/3.11.3
 zlib/1.2.13
@@ -14,4 +14,7 @@ lib, *.so* -> ./lib
 lib, *.dylib* -> ./lib
 
 [options]
-boost:shared=False
+boost/*:shared=False
+
+[generators]
+CMakeDeps

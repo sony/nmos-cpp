@@ -1,7 +1,7 @@
 # Boost
 
 set(BOOST_VERSION_MIN "1.54.0")
-set(BOOST_VERSION_CUR "1.80.0")
+set(BOOST_VERSION_CUR "1.83.0")
 # note: 1.57.0 doesn't work due to https://svn.boost.org/trac10/ticket/10754
 # note: some components are only required for one platform or other
 # so find_package(Boost) is called after adding those components
@@ -95,7 +95,7 @@ add_library(nmos-cpp::Boost ALIAS Boost)
 
 # note: 2.10.16 or higher is recommended (which is the first version with cpprestsdk-configVersion.cmake)
 set(CPPRESTSDK_VERSION_MIN "2.10.11")
-set(CPPRESTSDK_VERSION_CUR "2.10.18")
+set(CPPRESTSDK_VERSION_CUR "2.10.19")
 find_package(cpprestsdk REQUIRED)
 if(NOT cpprestsdk_VERSION)
     message(STATUS "Found cpprestsdk unknown version; minimum version: " ${CPPRESTSDK_VERSION_MIN})
@@ -187,7 +187,8 @@ add_library(nmos-cpp::OpenSSL ALIAS OpenSSL)
 
 # json schema validator library
 
-if(NMOS_CPP_USE_CONAN)
+set(NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR OFF CACHE BOOL "Use supplied third_party/nlohmann")
+if(NOT NMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR)
     set(JSON_SCHEMA_VALIDATOR_VERSION_MIN "2.1.0")
     set(JSON_SCHEMA_VALIDATOR_VERSION_CUR "2.3.0")
     find_package(nlohmann_json_schema_validator REQUIRED)
@@ -459,7 +460,8 @@ endif()
 
 # jwt library
 
-if(NMOS_CPP_USE_CONAN)
+set(NMOS_CPP_USE_SUPPLIED_JWT_CPP OFF CACHE BOOL "Use supplied third_party/jwt-cpp")
+if(NOT NMOS_CPP_USE_SUPPLIED_JWT_CPP)
     set(JWT_VERSION_MIN "0.5.1")
     set(JWT_VERSION_CUR "0.7.0")
     find_package(jwt-cpp REQUIRED)
@@ -476,13 +478,19 @@ if(NMOS_CPP_USE_CONAN)
     add_library(jwt-cpp INTERFACE)
     target_link_libraries(jwt-cpp INTERFACE jwt-cpp::jwt-cpp)
 else()
+    message(STATUS "Using sources at third_party/jwt-cpp instead of external \"jwt-cpp\" package.")
+
     set(JWT_SOURCES
         )
 
     set(JWT_HEADERS
+        third_party/jwt-cpp/base.h
         third_party/jwt-cpp/jwt.h
+        third_party/jwt-cpp/traits/nlohmann-json/defaults.h
+        third_party/jwt-cpp/traits/nlohmann-json/traits.h
         )
 
+    # hm, header-only so should be INTERFACE library?
     add_library(
         jwt-cpp STATIC
         ${JWT_SOURCES}
@@ -491,14 +499,6 @@ else()
 
     source_group("Source Files" FILES ${JWT_SOURCES})
     source_group("Header Files" FILES ${JWT_HEADERS})
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-            target_compile_definitions(
-                jwt-cpp PRIVATE
-                )
-        endif()
-    endif()
 
     target_link_libraries(
         jwt-cpp PRIVATE

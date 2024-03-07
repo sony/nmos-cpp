@@ -2,7 +2,6 @@
 
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_utils.h"
-#include "nmos/resource.h"
 #include "nmos/is12_versions.h"
 
 namespace nmos
@@ -64,18 +63,39 @@ namespace nmos
         return{ is12_versions::v1_0, types::nc_class_manager, std::move(data), true };
     }
 
+    // Monitoring feature set control classes
+    //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-    control_protocol_resource make_receiver_monitor(nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints,
+    control_protocol_resource make_receiver_monitor(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
         nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message)
+    {
+        auto data = details::make_receiver_monitor(nc_receiver_monitor_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, connection_status, connection_status_message, payload_status, payload_status_message);
+
+        return{ is12_versions::v1_0, types::nc_receiver_monitor, std::move(data), true };
+    }
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
+    control_protocol_resource make_receiver_monitor_protected(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
+        nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message, bool signal_protection_status)
     {
         using web::json::value;
 
-        auto data = nmos::details::make_nc_worker(nc_receiver_monitor_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
-        data[nmos::fields::nc::connection_status] = value::number(connection_status);
-        data[nmos::fields::nc::connection_status_message] = value::string(connection_status_message);
-        data[nmos::fields::nc::payload_status] = value::number(payload_status);
-        data[nmos::fields::nc::payload_status_message] = value::string(payload_status_message);
+        auto data = details::make_receiver_monitor(nc_receiver_monitor_protected_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, connection_status, connection_status_message, payload_status, payload_status_message);
+        data[nmos::fields::nc::signal_protection_status] = value::boolean(signal_protection_status);
 
-        return{ is12_versions::v1_0, types::nc_receiver_monitor, std::move(data), true };
+        return{ is12_versions::v1_0, types::nc_receiver_monitor_protected, std::move(data), true };
+    }
+
+    // Identification feature set control classes
+    //
+    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
+    control_protocol_resource make_ident_beacon(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
+        bool active)
+    {
+        using web::json::value;
+
+        auto data = nmos::details::make_nc_worker(nc_ident_beacon_class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
+        data[nmos::fields::nc::active] = value::boolean(active);
+
+        return{ is12_versions::v1_0, types::nc_ident_beacon, std::move(data), true };
     }
 }

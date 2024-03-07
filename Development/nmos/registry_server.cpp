@@ -33,9 +33,27 @@ namespace nmos
         {
             // Log the API addresses we'll be using
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::node_port(registry_model.settings);
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::registration_port(registry_model.settings);
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: " << nmos::get_host(registry_model.settings) << ":" << nmos::fields::query_port(registry_model.settings);
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Node API at: "
+                << web::uri_builder()
+                .set_scheme(nmos::http_scheme(registry_model.settings))
+                .set_host(nmos::get_host(registry_model.settings))
+                .set_port(nmos::fields::node_port(registry_model.settings))
+                .set_path(U("/x-nmos/node/") + nmos::make_api_version(*nmos::is04_versions::from_settings(registry_model.settings).rbegin()))
+                .to_string();
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Registration API at: "
+                << web::uri_builder()
+                .set_scheme(nmos::http_scheme(registry_model.settings))
+                .set_host(nmos::get_host(registry_model.settings))
+                .set_port(nmos::fields::registration_port(registry_model.settings))
+                .set_path(U("/x-nmos/registration/") + nmos::make_api_version(*nmos::is04_versions::from_settings(registry_model.settings).rbegin()))
+                .to_string();
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp registry with its primary Query API at: "
+                << web::uri_builder()
+                .set_scheme(nmos::http_scheme(registry_model.settings))
+                .set_host(nmos::get_host(registry_model.settings))
+                .set_port(nmos::fields::query_port(registry_model.settings))
+                .set_path(U("/x-nmos/query/") + nmos::make_api_version(*nmos::is04_versions::from_settings(registry_model.settings).rbegin()))
+                .to_string();
 
             nmos::server registry_server{ registry_model };
 

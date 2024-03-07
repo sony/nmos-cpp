@@ -230,7 +230,7 @@ namespace nmos
         const web::json::field_as_string hostname{ U("hostname") }; // hostname, ipv4 or ipv6
         const web::json::field_as_integer port{ U("port") }; // 1..65535
 
-        // IS-12 Control Protocol
+        // IS-12 Control Protocol and MS-05 model definitions
         namespace nc
         {
             // for control_protocol_ws_api

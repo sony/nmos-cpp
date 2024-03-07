@@ -41,12 +41,10 @@ namespace nmos
     namespace details
     {
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
-        //web::json::value make_nc_element_id(uint16_t level, uint16_t index);
         web::json::value make_nc_element_id(const nc_element_id& element_id);
         nc_element_id parse_nc_element_id(const web::json::value& element_id);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nceventid
-        //web::json::value make_nc_event_id(uint16_t level, uint16_t index);
         web::json::value make_nc_event_id(const nc_event_id& event_id);
         nc_event_id parse_nc_event_id(const web::json::value& event_id);
 
@@ -172,7 +170,11 @@ namespace nmos
         web::json::value make_nc_block(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, const web::json::value& members);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncworker
-        web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled);
+        web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled);
+
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
+            nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanager
         web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
@@ -207,7 +209,7 @@ namespace nmos
     // property changed notification event
     // See https://specs.amwa.tv/ms-05-01/branches/v1.0.x/docs/Core_Mechanisms.html#the-propertychanged-event
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/NcObject.html#propertychanged-event
-    web::json::value make_propertry_changed_event(nc_oid oid, const std::vector<nc_property_changed_event_data>& property_changed_event_data_list);
+    web::json::value make_property_changed_event(nc_oid oid, const std::vector<nc_property_changed_event_data>& property_changed_event_data_list);
 
     // error message
     // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#error-messages
@@ -264,10 +266,14 @@ namespace nmos
     web::json::value make_nc_receiver_monitor_properties();
     web::json::value make_nc_receiver_monitor_methods();
     web::json::value make_nc_receiver_monitor_events();
+
+    // Monitoring feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
     web::json::value make_nc_receiver_monitor_protected_properties();
     web::json::value make_nc_receiver_monitor_protected_methods();
     web::json::value make_nc_receiver_monitor_protected_events();
+
+    // Identification feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
     web::json::value make_nc_ident_beacon_properties();
     web::json::value make_nc_ident_beacon_methods();
@@ -413,7 +419,7 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/models/datatypes/NcVersionCode.html
     web::json::value make_nc_version_code_datatype();
 
-    // Monitoring datatypes
+    // Monitoring feature set datatypes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
     //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus

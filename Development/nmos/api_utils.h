@@ -53,8 +53,8 @@ namespace nmos
         const route_pattern connection_api = make_route_pattern(U("api"), U("connection"));
         // IS-07 Events API
         const route_pattern events_api = make_route_pattern(U("api"), U("events"));
-		// IS-08 Channel Mapping API
-		const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
+        // IS-08 Channel Mapping API
+        const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
         // IS-14 Configuration API

@@ -7,6 +7,7 @@
 #include "nmos/control_protocol_ws_api.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
+#include "nmos/is04_versions.h"
 #include "nmos/logging_api.h"
 #include "nmos/manifest_api.h"
 #include "nmos/model.h"
@@ -27,7 +28,13 @@ namespace nmos
         {
             // Log the API addresses we'll be using
 
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: " << nmos::get_host(node_model.settings) << ":" << nmos::fields::node_port(node_model.settings);
+            slog::log<slog::severities::info>(gate, SLOG_FLF) << "Configuring nmos-cpp node with its primary Node API at: "
+                << web::uri_builder()
+                .set_scheme(nmos::http_scheme(node_model.settings))
+                .set_host(nmos::get_host(node_model.settings))
+                .set_port(nmos::fields::node_port(node_model.settings))
+                .set_path(U("/x-nmos/node/") + nmos::make_api_version(*nmos::is04_versions::from_settings(node_model.settings).rbegin()))
+                .to_string();
 
             nmos::server node_server{ node_model };
 
@@ -83,7 +90,7 @@ namespace nmos
             {
                 if (control_protocol_ws_port == events_ws_port) throw std::runtime_error("Same port used for events and control protocol websockets are not supported");
                 auto& control_protocol_ws_api = node_server.ws_handlers[{ {}, control_protocol_ws_port }];
-                control_protocol_ws_api.first = nmos::make_control_protocol_ws_api(node_model, control_protocol_ws_api.second, node_implementation.ws_validate_authorization, node_implementation.get_control_protocol_class, node_implementation.get_control_protocol_datatype, node_implementation.get_control_protocol_method, node_implementation.control_protocol_property_changed, gate);
+                control_protocol_ws_api.first = nmos::make_control_protocol_ws_api(node_model, control_protocol_ws_api.second, node_implementation.ws_validate_authorization, node_implementation.get_control_protocol_class_descriptor, node_implementation.get_control_protocol_datatype_descriptor, node_implementation.get_control_protocol_method_descriptor, node_implementation.control_protocol_property_changed, gate);
             }
 
             // Set up the listeners for each HTTP API port
