@@ -16,6 +16,7 @@
 #include "nmos/is05_versions.h"
 #include "nmos/is07_versions.h"
 #include "nmos/is08_versions.h"
+#include "nmos/is12_versions.h"
 #include "nmos/media_type.h"
 #include "nmos/resource.h"
 #include "nmos/sdp_utils.h" // for nmos::make_components
@@ -126,6 +127,28 @@ namespace nmos
                     { U("type"), type },
                     { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
                 }));
+            }
+        }
+
+        if (0 <= nmos::fields::control_protocol_ws_port(settings))
+        {
+            for (const auto& version : nmos::is12_versions::from_settings(settings))
+            {
+                // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/IS-04_interactions.html
+                auto ncp_uri = web::uri_builder()
+                    .set_scheme(nmos::ws_scheme(settings))
+                    .set_port(nmos::fields::control_protocol_ws_port(settings))
+                    .set_path(U("/x-nmos/ncp/") + make_api_version(version));
+                auto type = U("urn:x-nmos:control:ncp/") + make_api_version(version);
+
+                for (const auto& host : hosts)
+                {
+                    web::json::push_back(data[U("controls")], value_of({
+                        { U("href"), ncp_uri.set_host(host).to_uri().to_string() },
+                        { U("type"), type },
+                        { U("authorization"), nmos::experimental::fields::server_authorization(settings) }
+                    }));
+                }
             }
         }
 

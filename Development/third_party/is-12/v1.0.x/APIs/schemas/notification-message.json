@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Notification protocol message structure",
+  "title": "Notification protocol message",
+  "allOf": [
+    {
+      "$ref": "base-message.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "notifications",
+        "messageType"
+      ],
+      "properties": {
+        "notifications": {
+          "description": "Notifications being transmited in this transaction",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "oid",
+              "eventId",
+              "eventData"
+            ],
+            "properties": {
+              "oid": {
+                "type": "integer",
+                "description": "Emitter object id",
+                "minimum": 1
+              },
+              "eventId": {
+                "type": "object",
+                "description": "Event ID structure",
+                "required": [
+                  "level",
+                  "index"
+                ],
+                "properties": {
+                  "level": {
+                    "type": "integer",
+                    "description": "Level component of the event ID",
+                    "minimum": 1
+                  },
+                  "index": {
+                    "type": "integer",
+                    "description": "Index component of the event ID",
+                    "minimum": 1
+                  }
+                }
+              },
+              "eventData": {
+                "$ref": "event-data.json"
+              }
+            }
+          }
+        },
+        "messageType": {
+          "description": "Protocol message type",
+          "type": "integer",
+          "enum": [
+            2
+          ]
+        }
+      }
+    }
+  ]
+}

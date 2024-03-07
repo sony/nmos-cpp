@@ -101,6 +101,10 @@ namespace nmos
         // IS-08 inputs and outputs for this node
         // see nmos/channelmapping_resources.h
         nmos::resources channelmapping_resources;
+
+        // IS-12 resources for this node
+        // see nmos/control_protocol_resources.h
+        nmos::resources control_protocol_resources;
     };
 
     struct registry_model : model

@@ -10,6 +10,8 @@
 #include "nmos/is09_versions.h"
 #include "nmos/is09_schemas/is09_schemas.h"
 #include "nmos/is10_schemas/is10_schemas.h"
+#include "nmos/is12_versions.h"
+#include "nmos/is12_schemas/is12_schemas.h"
 #include "nmos/type.h"
 
 namespace nmos
@@ -147,6 +149,25 @@ namespace nmos
             const web::uri authapi_token_error_response_uri = make_schema_uri(tag, _XPLATSTR("token_error_response.json"));
             const web::uri authapi_token_response_schema_uri = make_schema_uri(tag, _XPLATSTR("token_response.json"));
             const web::uri authapi_token_schema_schema_uri = make_schema_uri(tag, _XPLATSTR("token_schema.json"));
+        }
+    }
+
+    namespace is12_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/is-12/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/is-12/tree/v1.0-dev/APIs/schemas/
+        namespace v1_0
+        {
+            using namespace nmos::is12_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0.x"));
+
+            const web::uri controlprotocolapi_base_message_schema_uri = make_schema_uri(tag, _XPLATSTR("base-message.json"));
+            const web::uri controlprotocolapi_command_message_schema_uri = make_schema_uri(tag, _XPLATSTR("command-message.json"));
+            const web::uri controlprotocolapi_subscription_message_schema_uri = make_schema_uri(tag, _XPLATSTR("subscription-message.json"));
         }
     }
 }
@@ -351,6 +372,25 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is12_schemas()
+        {
+            using namespace nmos::is12_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("base-message.json")), make_schema(v1_0::base_message) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("command-message.json")), make_schema(v1_0::command_message) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("command-response-message.json")), make_schema(v1_0::command_response_message) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("error-message.json")), make_schema(v1_0::error_message) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("event-data.json")), make_schema(v1_0::event_data) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("notification-message.json")), make_schema(v1_0::notification_message) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("property-changed-event-data.json")), make_schema(v1_0::property_changed_event_data) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("subscription-message.json")), make_schema(v1_0::subscription_message) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("subscription-response-message.json")), make_schema(v1_0::subscription_response_message) }
+            };
+        }
+
         inline void merge(std::map<web::uri, web::json::value>& to, std::map<web::uri, web::json::value>&& from)
         {
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
@@ -363,6 +403,7 @@ namespace nmos
             merge(result, make_is08_schemas());
             merge(result, make_is09_schemas());
             merge(result, make_is10_schemas());
+            merge(result, make_is12_schemas());
             return result;
         }
 
@@ -452,6 +493,21 @@ namespace nmos
         web::uri make_authapi_token_response_schema_uri(const nmos::api_version& version)
         {
             return is10_schemas::v1_0::authapi_token_response_schema_uri;
+        }
+
+        web::uri make_controlprotocolapi_base_message_schema_uri(const nmos::api_version& version)
+        {
+            return is12_schemas::v1_0::controlprotocolapi_base_message_schema_uri;
+        }
+
+        web::uri make_controlprotocolapi_command_message_schema_uri(const nmos::api_version& version)
+        {
+            return is12_schemas::v1_0::controlprotocolapi_command_message_schema_uri;
+        }
+
+        web::uri make_controlprotocolapi_subscription_message_schema_uri(const nmos::api_version& version)
+        {
+            return is12_schemas::v1_0::controlprotocolapi_subscription_message_schema_uri;
         }
 
         // load the json schema for the specified base URI
