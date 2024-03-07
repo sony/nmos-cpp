@@ -7,6 +7,7 @@
 #include "nmos/channelmapping_activation.h"
 #include "nmos/connection_api.h"
 #include "nmos/connection_activation.h"
+#include "nmos/control_protocol_handlers.h"
 #include "nmos/streamcompatibility_api.h"
 #include "nmos/streamcompatibility_behaviour.h"
 #include "nmos/streamcompatibility_validation.h"
@@ -29,7 +30,7 @@ namespace nmos
         // underlying implementation into the server instance for the NMOS Node
         struct node_implementation
         {
-            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code)
+            node_implementation(nmos::load_server_certificates_handler load_server_certificates, nmos::load_dh_param_handler load_dh_param, nmos::load_ca_certificates_handler load_ca_certificates, nmos::system_global_handler system_changed, nmos::registration_handler registration_changed, nmos::transport_file_parser parse_transport_file, nmos::details::connection_resource_patch_validator validate_staged, nmos::connection_resource_auto_resolver resolve_auto, nmos::connection_sender_transportfile_setter set_transportfile, nmos::connection_activation_handler connection_activated, nmos::ocsp_response_handler get_ocsp_response, get_authorization_bearer_token_handler get_authorization_bearer_token, validate_authorization_handler validate_authorization, ws_validate_authorization_handler ws_validate_authorization, nmos::load_rsa_private_keys_handler load_rsa_private_keys, load_authorization_clients_handler load_authorization_clients, save_authorization_client_handler save_authorization_client, request_authorization_code_handler request_authorization_code, nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor, nmos::control_protocol_property_changed_handler control_protocol_property_changed)
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
@@ -48,6 +49,10 @@ namespace nmos
                 , load_authorization_clients(std::move(load_authorization_clients))
                 , save_authorization_client(std::move(save_authorization_client))
                 , request_authorization_code(std::move(request_authorization_code))
+                , get_control_protocol_class_descriptor(std::move(get_control_protocol_class_descriptor))
+                , get_control_protocol_datatype_descriptor(std::move(get_control_protocol_datatype_descriptor))
+                , get_control_protocol_method_descriptor(std::move(get_control_protocol_method_descriptor))
+                , control_protocol_property_changed(std::move(control_protocol_property_changed))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -83,6 +88,10 @@ namespace nmos
             node_implementation& on_active_constraints_changed(nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed) { this->active_constraints_changed = std::move(active_constraints_changed); return *this; }
             node_implementation& on_validate_sender_resources_against_active_constraints(nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources) { this->validate_sender_resources = std::move(validate_sender_resources); return *this; }
             node_implementation& on_validate_receiver_against_transport_file(nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver) { this->validate_receiver = std::move(validate_receiver); return *this; }
+            node_implementation& on_get_control_class_descriptor(nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor) { this->get_control_protocol_class_descriptor = std::move(get_control_protocol_class_descriptor); return *this; }
+            node_implementation& on_get_control_datatype_descriptor(nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { this->get_control_protocol_datatype_descriptor = std::move(get_control_protocol_datatype_descriptor); return *this; }
+            node_implementation& on_get_control_protocol_method_descriptor(nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor) { this->get_control_protocol_method_descriptor = std::move(get_control_protocol_method_descriptor); return *this; }
+            node_implementation& on_control_protocol_property_changed(nmos::control_protocol_property_changed_handler control_protocol_property_changed) { this->control_protocol_property_changed = std::move(control_protocol_property_changed); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -126,6 +135,11 @@ namespace nmos
             nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed;
             nmos::experimental::details::streamcompatibility_sender_validator validate_sender_resources;
             nmos::experimental::details::streamcompatibility_receiver_validator validate_receiver;
+
+            nmos::get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor;
+            nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
+            nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor;
+            nmos::control_protocol_property_changed_handler control_protocol_property_changed;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

@@ -849,6 +849,80 @@ target_include_directories(nmos_is11_schemas PUBLIC
 list(APPEND NMOS_CPP_TARGETS nmos_is11_schemas)
 add_library(nmos-cpp::nmos_is11_schemas ALIAS nmos_is11_schemas)
 
+# nmos_is12_schemas library
+
+set(NMOS_IS12_SCHEMAS_HEADERS
+    nmos/is12_schemas/is12_schemas.h
+    )
+
+set(NMOS_IS12_V1_0_TAG v1.0.x)
+
+set(NMOS_IS12_V1_0_SCHEMAS_JSON
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/base-message.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/command-message.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/command-response-message.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/error-message.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/event-data.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/notification-message.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/property-changed-event-data.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/subscription-message.json
+    third_party/is-12/${NMOS_IS12_V1_0_TAG}/APIs/schemas/subscription-response-message.json
+    )
+
+set(NMOS_IS12_SCHEMAS_JSON_MATCH "third_party/is-12/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_IS12_SCHEMAS_SOURCE_REPLACE "${CMAKE_CURRENT_BINARY_DIR_REPLACE}/nmos/is12_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_IS12_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_IS12_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_IS12_V1_0_SCHEMAS_SOURCES "${NMOS_IS12_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_IS12_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_IS12_SCHEMAS_JSON_MATCH}" "${NMOS_IS12_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS12_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_IS12_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace is12_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_is12_schemas STATIC
+    ${NMOS_IS12_SCHEMAS_HEADERS}
+    ${NMOS_IS12_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\is12_schemas\\Header Files" FILES ${NMOS_IS12_SCHEMAS_HEADERS})
+source_group("nmos\\is12_schemas\\${NMOS_IS12_V1_0_TAG}\\Source Files" FILES ${NMOS_IS12_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_is12_schemas PRIVATE
+    nmos-cpp::compile-settings
+    )
+target_include_directories(nmos_is12_schemas PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${NMOS_CPP_INSTALL_INCLUDEDIR}>
+    )
+
+list(APPEND NMOS_CPP_TARGETS nmos_is12_schemas)
+add_library(nmos-cpp::nmos_is12_schemas ALIAS nmos_is12_schemas)
+
 # nmos-cpp library
 
 set(NMOS_CPP_BST_SOURCES
@@ -940,8 +1014,14 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/connection_api.cpp
     nmos/connection_events_activation.cpp
     nmos/connection_resources.cpp
-    nmos/streamcompatibility_validation.cpp
     nmos/constraints.cpp
+    nmos/control_protocol_handlers.cpp
+    nmos/control_protocol_methods.cpp
+    nmos/control_protocol_resource.cpp
+    nmos/control_protocol_resources.cpp
+    nmos/control_protocol_state.cpp
+    nmos/control_protocol_utils.cpp
+    nmos/control_protocol_ws_api.cpp
     nmos/did_sdid.cpp
     nmos/events_api.cpp
     nmos/events_resources.cpp
@@ -952,6 +1032,7 @@ set(NMOS_CPP_NMOS_SOURCES
     nmos/streamcompatibility_behaviour.cpp
     nmos/streamcompatibility_resources.cpp
     nmos/streamcompatibility_utils.cpp
+    nmos/streamcompatibility_validation.cpp
     nmos/group_hint.cpp
     nmos/id.cpp
     nmos/lldp_handler.cpp
@@ -1032,8 +1113,17 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/connection_api.h
     nmos/connection_events_activation.h
     nmos/connection_resources.h
-    nmos/streamcompatibility_validation.h
     nmos/constraints.h
+    nmos/control_protocol_handlers.h
+    nmos/control_protocol_methods.h
+    nmos/control_protocol_nmos_channel_mapping_resource_type.h
+    nmos/control_protocol_nmos_resource_type.h
+    nmos/control_protocol_resource.h
+    nmos/control_protocol_resources.h
+    nmos/control_protocol_state.h
+    nmos/control_protocol_typedefs.h
+    nmos/control_protocol_utils.h
+    nmos/control_protocol_ws_api.h
     nmos/device_type.h
     nmos/did_sdid.h
     nmos/event_type.h
@@ -1046,6 +1136,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/streamcompatibility_behaviour.h
     nmos/streamcompatibility_resources.h
     nmos/streamcompatibility_utils.h
+    nmos/streamcompatibility_validation.h
     nmos/format.h
     nmos/group_hint.h
     nmos/health.h
@@ -1057,6 +1148,7 @@ set(NMOS_CPP_NMOS_HEADERS
     nmos/is08_versions.h
     nmos/is09_versions.h
     nmos/is10_versions.h
+    nmos/is12_versions.h
     nmos/issuers.h
     nmos/json_fields.h
     nmos/json_schema.h
@@ -1208,6 +1300,7 @@ target_link_libraries(
     nmos-cpp::nmos_is09_schemas
     nmos-cpp::nmos_is10_schemas
     nmos-cpp::nmos_is11_schemas
+    nmos-cpp::nmos_is12_schemas
     nmos-cpp::mdns
     nmos-cpp::slog
     nmos-cpp::OpenSSL

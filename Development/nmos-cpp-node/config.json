@@ -115,7 +115,10 @@
     
     // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
     //"is11_versions": ["v1.0"],
-    
+
+    // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
+    //"is12_versions": ["v1.0"],
+
     // pri [registry, node]: used for the 'pri' TXT record; specifying nmos::service_priorities::no_priority (maximum value) disables advertisement completely
     //"pri": 100,
 
@@ -157,6 +160,8 @@
     //"streamcompatibility_port": 3218,
     // system_port [node]: used to construct request URLs for the System API (if not discovered via DNS-SD)
     //"system_port": 10641,
+    // control_protocol_ws_port [node]: used to construct request URLs for the Control Protocol websocket, or negative to disable the control protocol features
+    //"control_protocol_ws_port": 3218,
 
     // listen_backlog [registry, node]: the maximum length of the queue of pending connections, or zero for the implementation default (the implementation may not honour this value)
     //"listen_backlog": 0,
@@ -376,6 +381,20 @@
     // Server SHOULD include an HTTP Retry-After header to indicate when the client may retry its request.
     // If the Resource Server fails to verify a token using all public keys available it MUST reject the token."
     //"service_unavailable_retry_after": 5,
+
+    // manufacturer_name [node]: the manufacturer name of the NcDeviceManager used for NMOS Control Protocol
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
+    //"manufacturer_name": "",
+
+    // product_name/product_key/product_revision_level [node]: the product description of the NcDeviceManager used for NMOS Control Protocol
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncproduct
+    //"product_name": "",
+    //"product_key": "",
+    //"product_revision_level": "",
+
+    // serial_number [node]: the serial number of the NcDeviceManager used for NMOS Control Protocol
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
+    //"serial_number": "",
 
     "don't worry": "about trailing commas"
 }

@@ -105,6 +105,10 @@ namespace nmos
         // IS-11 senders, receivers, inputs and outputs for this node
         // see nmos/streamcompatibility_resources.h
         nmos::resources streamcompatibility_resources;
+        
+        // IS-12 resources for this node
+        // see nmos/control_protocol_resources.h
+        nmos::resources control_protocol_resources;
     };
 
     struct registry_model : model
