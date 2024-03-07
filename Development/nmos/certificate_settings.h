@@ -36,9 +36,11 @@ namespace nmos
             // one of the certificates must also be bound to each port e.g. using 'netsh add sslcert'
             const web::json::field_as_string_or certificate_chain_file{ U("certificate_chain_file"), U("") };
 
-            // client_certificate [registry, node]: an client certificate object, which has the full paths of private key file and certificate chain file
+            // client_certificate [registry, node]: a client certificate object, which has the full paths of private key file and certificate chain file
             // the value must be an object like { "private_key_file": "client-key.pem, "certificate_chain_file": "client-chain.pem" }
             // see private_key_file and certificate_chain_file above
+            // note: on windows, if C++ REST SDK is built with CPPREST_HTTP_CLIENT_IMPL=winhttp (reported as "client=winhttp" by nmos::get_build_settings_info)
+            // the certificate_chain_file must be in PKCS#12 format, storing the certificate chain and the private key
             const web::json::field_as_value_or client_certificate{ U("client_certificate"), web::json::value_of({ { private_key_file, U("") }, { certificate_chain_file, U("") } }) };
 
             // dh_param_file [registry, node]: Diffie-Hellman parameters file in PEM format for ephemeral key exchange support, or empty string for no support

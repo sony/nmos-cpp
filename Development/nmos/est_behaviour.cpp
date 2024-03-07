@@ -2,10 +2,6 @@
 
 #include <boost/algorithm/string.hpp> // for boost::to_upper_copy
 #include <time.h> // for tm and strptime
-#if (defined(_WIN32) || defined(__cplusplus_winrt)) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
-#include <wincrypt.h>
-#include <winhttp.h>
-#endif
 #include "pplx/pplx_utils.h" // for pplx::complete_at
 #include "cpprest/http_client.h"
 #include "cpprest/json_validator.h"
@@ -21,6 +17,12 @@
 #include "nmos/slog.h"
 #include "nmos/thread_utils.h" // for wait_until, reverse_lock_guard
 #include "ssl/ssl_utils.h"
+#if (defined(_WIN32) || defined(__cplusplus_winrt)) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#include <Windows.h>
+#include <wincrypt.h>
+#include <winhttp.h>
+#include "nmos/certificate_settings.h"
+#endif
 
 namespace nmos
 {
@@ -399,8 +401,10 @@ namespace nmos
                 config.set_nativehandle_options([=](web::http::client::native_handle hRequest)
                 {
                     // the client_certificate_file must be in PKCS #12 format
-                    // hmm, while executing WinHttpSendRequest, it failed with ERROR_WINHTTP_CLIENT_CERT_NO_PRIVATE_KEY(12185) : No credentials were available in the client certificate.
-                    const auto& client_certificate_file = nmos::experimental::fields::client_certificate_file(settings);
+                    // storing the certificate chain and the private key in a single encryptable file
+                    const auto client_certificate = nmos::experimental::fields::client_certificate(settings);
+                    const auto client_certificate_file = nmos::experimental::fields::certificate_chain_file(client_certificate);
+
                     if (!client_certificate_file.empty())
                     {
                         std::ifstream stream(client_certificate_file.c_str(), std::ios::in | std::ios::binary);
@@ -425,7 +429,7 @@ namespace nmos
                         }
                     }
                 });
-#endif //#if (defined(_WIN32) || defined(__cplusplus_winrt)) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
+#endif
                 return config;
             }
 
@@ -1281,7 +1285,12 @@ namespace nmos
                 }
                 catch (const est_exception& e)
                 {
-                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Logic error to generate CSR: " << e.what();
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Logic error to generate CSR EST error: " << e.what();
+                    return false;
+                }
+                catch (const ssl::experimental::ssl_exception& e)
+                {
+                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "Logic error to generate CSR SSL error: " << e.what();
                     return false;
                 }
                 catch (const std::exception& e)
