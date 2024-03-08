@@ -173,24 +173,25 @@ namespace nmos
 #endif
             }
 
+            // convert Bignum to base64url string
+            utility::string_t to_base64url(const BIGNUM* bignum)
+            {
+                if (bignum)
+                {
+                    const auto size = BN_num_bytes(bignum);
+                    std::vector<uint8_t> data(size);
+                    if (BN_bn2bin(bignum, data.data()))
+                    {
+                        return utility::conversions::to_base64url(data);
+                    }
+                }
+                return utility::string_t{};
+            };
+
             // convert RSA to JSON Web Key
             web::json::value rsa_to_jwk(const EVP_PKEY_ptr& pkey, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
             {
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
-                auto bignum_to_string_t = [](const BIGNUM* bignum)
-                {
-                    if (bignum)
-                    {
-                        const auto size = BN_num_bytes(bignum);
-                        std::vector<uint8_t> data(size);
-                        if (BN_bn2bin(bignum, data.data()))
-                        {
-                            return utility::conversions::to_base64url(data);
-                        }
-                    }
-                    return utility::string_t{};
-                };
-
                 RSA_ptr rsa(EVP_PKEY_get1_RSA(pkey.get()), &RSA_free);
 
                 // The n, e and d parameters can be obtained by calling RSA_get0_key().
@@ -203,8 +204,8 @@ namespace nmos
                 const BIGNUM* exponent = nullptr;
                 RSA_get0_key(rsa.get(), &modulus, &exponent, nullptr);
 
-                const auto base64_n = bignum_to_string_t(modulus);
-                const auto base64_e = bignum_to_string_t(exponent);
+                const auto base64_n = to_base64url(modulus);
+                const auto base64_e = to_base64url(exponent);
 
                 // construct jwk
                 return web::json::value_of({
@@ -217,34 +218,20 @@ namespace nmos
                 });
             }
 #else
-                auto bignum_to_string_t = [](const BIGNUM* bignum)
-                {
-                    if (bignum)
-                    {
-                        const auto size = BN_num_bytes(bignum);
-                        std::vector<uint8_t> data(size);
-                        if (BN_bn2bin(bignum, data.data()))
-                        {
-                            return utility::conversions::to_base64url(data);
-                        }
-                    }
-                    return utility::string_t{};
-                };
-
                 BIGNUM* modulus = nullptr;
                 BIGNUM* exponent = nullptr;
 
                 utility::string_t base64_n;
                 if (EVP_PKEY_get_bn_param(pkey.get(), OSSL_PKEY_PARAM_RSA_N, &modulus))
                 {
-                    base64_n = bignum_to_string_t(modulus);
+                    base64_n = to_base64url(modulus);
                     BN_clear_free(modulus);
                 }
 
                 utility::string_t base64_e;
                 if (EVP_PKEY_get_bn_param(pkey.get(), OSSL_PKEY_PARAM_RSA_E, &exponent))
                 {
-                    base64_e = bignum_to_string_t(exponent);
+                    base64_e = to_base64url(exponent);
                     BN_clear_free(exponent);
                 }
 
