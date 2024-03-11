@@ -106,7 +106,7 @@ namespace nmos
 
         // is11_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is11_versions{ U("is11_versions") }; // when omitted, nmos::is11_versions::all is used
-        
+
         // is12_versions [node]: used to specify the enabled API versions for a version-locked configuration
         const web::json::field_as_array is12_versions{ U("is12_versions") }; // when omitted, nmos::is12_versions::all is used
 
