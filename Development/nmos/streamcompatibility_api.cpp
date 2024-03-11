@@ -174,7 +174,7 @@ namespace nmos
 
         web::http::experimental::listener::api_router make_unmounted_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_streamcompatibility_api(nmos::node_model& model, details::streamcompatibility_base_edid_handler base_edid_handler, details::streamcompatibility_effective_edid_setter effective_edid_setter, details::streamcompatibility_active_constraints_handler active_constraints_handler, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -191,6 +191,12 @@ namespace nmos
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("streamcompatibility/") }, req, res));
                 return pplx::task_from_result(true);
             });
+
+            if (validate_authorization)
+            {
+                streamcompatibility_api.support(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/?"), validate_authorization);
+                streamcompatibility_api.support(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/.*"), validate_authorization);
+            }
 
             const auto versions = with_read_lock(model.mutex, [&model] { return nmos::is11_versions::from_settings(model.settings); });
             streamcompatibility_api.support(U("/x-nmos/") + nmos::patterns::streamcompatibility_api.pattern + U("/?"), methods::GET, [versions](http_request req, http_response res, const string_t&, const route_parameters&)
