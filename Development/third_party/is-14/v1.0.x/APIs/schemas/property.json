@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "description": "Describes the Configuration API /rolePaths/{rolePath}/properties/{propertyId}",
+  "title": "Configuration API /rolePaths/{rolePath}/properties/{propertyId}",
+  "items": {
+    "type": "string",
+    "enum": [
+      "value/",
+      "descriptor/"
+    ]
+  },
+  "minItems": 2,
+  "maxItems": 2,
+  "uniqueItems": true
+}
