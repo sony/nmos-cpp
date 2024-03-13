@@ -1,7 +1,11 @@
 #include "nmos/configuration_api.h"
 
+#include <boost/algorithm/string/split.hpp>
+#include <boost/iterator/filter_iterator.hpp>
 //#include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_utils.h"
 #include "nmos/is14_versions.h"
 //#include "nmos/json_schema.h"
 #include "nmos/log_manip.h"
@@ -89,6 +93,71 @@ namespace nmos
 
             return flat_query_params;
         }
+
+        void build_role_paths(const resources& resources, const nmos::resource& resource, const utility::string_t& base_role_path, std::set<utility::string_t>& role_paths)
+        {
+            if (resource.data.has_field(nmos::fields::nc::members))
+            {
+                const auto& members = nmos::fields::nc::members(resource.data);
+
+                for (const auto& member : members)
+                {
+                    const auto role_path = base_role_path + U(".") + nmos::fields::nc::role(member);
+                    role_paths.insert(role_path + U("/"));
+
+                    // get members on all NcBlock(s)
+                    if (nmos::is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(member))))
+                    {
+                        // get resource based on the oid
+                        const auto& oid = nmos::fields::nc::oid(member);
+                        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            build_role_paths(resources, *found, role_path, role_paths);
+                        }
+                    }
+                }
+            }
+        }
+
+        bool verify_role_path(const resources& resources, const nmos::resource& resource, std::list<utility::string_t>& role_path_segments)
+        {
+            if (resource.data.has_field(nmos::fields::nc::members))
+            {
+                const auto& members = nmos::fields::nc::members(resource.data);
+
+                const auto role_path_segement = role_path_segments.front();
+                role_path_segments.pop_front();
+                // find the role_path_segment member
+                auto member_found = std::find_if(members.begin(), members.end(), [&](const web::json::value& member)
+                {
+                    return role_path_segement == nmos::fields::nc::role(member);
+                });
+
+                if (members.end() != member_found)
+                {
+                    if (role_path_segments.empty())
+                    {
+                        // role_path verified
+                        return true;
+                    }
+
+                    // get the role_path_segement member resource
+                    if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(*member_found))))
+                    {
+                        // get resource based on the oid
+                        const auto& oid = nmos::fields::nc::oid(*member_found);
+                        const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                        if (resources.end() != found)
+                        {
+                            // verify the reminding role_path_segments
+                            return verify_role_path(resources, *found, role_path_segments);
+                        }
+                    }
+                }
+            }
+            return false;
+        }
     }
 
     inline web::http::experimental::listener::api_router make_unmounted_configuration_api(nmos::node_model& model, slog::base_gate& gate_)
@@ -103,69 +172,70 @@ namespace nmos
 
         configuration_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("root/") }, req, res));
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("rolePaths/") }, req, res));
             return pplx::task_from_result(true);
         });
 
-        configuration_api.mount(U("/root/?"), methods::GET, [](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/?"), methods::GET, [&model](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
         {
             using web::json::value;
-            using web::json::value_of;
 
-            // extarct the role path
-            //auto role_path = req.relative_uri().path();
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
 
-            // extract and decode the query string
-            const auto flat_query_params = details::parse_query_parameters(req.request_uri().query());
+            std::set<utility::string_t> role_paths;
 
-            value data;
-
-            if (flat_query_params.has_integer_field(nmos::details::fields::level) && flat_query_params.has_integer_field(nmos::details::fields::index))
+            // start at the root block resource
+            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
+            if (resources.end() != resource)
             {
-                if (flat_query_params.has_boolean_field(nmos::details::fields::describe))
+                // add root to role_paths
+                const auto role_path = nmos::fields::nc::role(resource->data);
+                role_paths.insert(role_path + U("/"));
+
+                // add rest to the role_paths
+                details::build_role_paths(resources, *resource, role_path, role_paths);
+            }
+
+            set_reply(res, status_codes::OK, nmos::make_sub_routes_body(role_paths, req, res));
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        {
+            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            // tokenize the role_path with '.' delimiter
+            std::list<utility::string_t> role_path_segments;
+            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
+
+            bool result{ false };
+
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
+            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
+            if (resources.end() != resource)
+            {
+                const auto role = nmos::fields::nc::role(resource->data);
+                if (role_path_segments.size() && role == role_path_segments.front())
                 {
-                    // Get datatype descriptor
-                    // {baseUrl}/{rolePath}?level={propertyLevel}&index={propertyIndex}&describe=true
-                    // see https://specs.amwa.tv/is-device-configuration/branches/publish-CR/docs/API_requests.html#getting-the-datatype-descriptor-of-a-property
-                    data = value_of({ U("Get datatype descriptor") });
+                    role_path_segments.pop_front();
+
+                    result = role_path_segments.size() ? details::verify_role_path(resources, *resource, role_path_segments) : true;
                 }
-                else
-                {
-                    // Get a property
-                    // {baseUrl}/{rolePath}?level={propertyLevel}&index={propertyIndex}
-                    // see https://specs.amwa.tv/is-device-configuration/branches/publish-CR/docs/API_requests.html#getting-a-property
-                    data = value_of({ U("Get a property") });
-                }
+            }
+
+            if (result)
+            {
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulkProperties/"), U("descriptors/"), U("methods/"), U("properties/") }, req, res));
             }
             else
             {
-                if (flat_query_params.has_boolean_field(nmos::details::fields::describe))
-                {
-                    // Get class descriptor
-                    // {baseUrl}/{rolePath}?describe=true
-                    // see https://specs.amwa.tv/is-device-configuration/branches/publish-CR/docs/API_requests.html#getting-the-class-descriptor-of-an-object
-                    data = value_of({ U("Get class descriptor") });
-                }
-                else
-                {
-                    // Get block members
-                    // {baseUrl}/{rolePath}
-                    // see https://specs.amwa.tv/is-device-configuration/branches/publish-CR/docs/API_requests.html#getting-the-members-of-a-block
-                    data = value_of({ U("Get block members") });
-                }
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
             }
 
-            // parse role path
-
-            set_reply(res, status_codes::OK, data);
             return pplx::task_from_result(true);
         });
-
-        //const web::json::experimental::json_validator validator
-        //{
-        //    nmos::experimental::load_json_schema,
-        //    boost::copy_range<std::vector<web::uri>>(is14_versions::all | boost::adaptors::transformed(experimental::make_systemapi_global_schema_uri))
-        //};
 
         return configuration_api;
     }

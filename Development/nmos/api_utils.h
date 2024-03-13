@@ -89,6 +89,9 @@ namespace nmos
         const route_pattern outputSubroute = make_route_pattern(U("outputSubroute"), U("properties|sourceid|channels|caps"));
         const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
 
+        // Configuration API
+        const route_pattern rolePath = make_route_pattern(U("rolePath"), U("root|root\\.[a-zA-Z0-9\\-_\\.]+"));
+
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
     }
