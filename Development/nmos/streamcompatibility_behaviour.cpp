@@ -1,6 +1,4 @@
 #include "nmos/streamcompatibility_behaviour.h"
-#include "nmos/streamcompatibility_state.h"
-#include "nmos/streamcompatibility_utils.h"
 
 #include <vector>
 #include <boost/range/adaptor/filtered.hpp>
@@ -16,6 +14,8 @@
 #include "nmos/resources.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
+#include "nmos/streamcompatibility_state.h"
+#include "nmos/streamcompatibility_utils.h"
 #include "sdp/sdp.h"
 
 namespace nmos
@@ -214,8 +214,7 @@ namespace nmos
                         auto receiver = find_resource(node_resources, receiver_id_type);
                         if (node_resources.end() == receiver) throw std::logic_error("Matching IS-04 receiver not found");
 
-                        updated = most_recent_update < nmos::fields::version(receiver->data);
-
+                        updated = most_recent_update < receiver->updated;
                         if (updated)
                         {
                             slog::log<slog::severities::info>(gate, SLOG_FLF) << "Receiver " << receiver_id << " has been updated recently and Status of Receiver is being updated as well";

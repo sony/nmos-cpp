@@ -734,7 +734,7 @@ namespace nmos
 
                             utility::string_t updated_timestamp;
 
-                            modify_resource(resources, resourceId, [&effective_edid_setter, &updated_timestamp](nmos::resource& input)
+                            modify_resource(resources, resourceId, [&updated_timestamp](nmos::resource& input)
                             {
                                 input.data[nmos::fields::endpoint_base_edid] = make_streamcompatibility_dummy_edid_endpoint();
 

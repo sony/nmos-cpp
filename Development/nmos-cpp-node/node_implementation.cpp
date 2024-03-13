@@ -970,7 +970,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
         utility::string_t edid(edid_bytes, edid_bytes + sizeof(edid_bytes));
-        
+
         const auto input_id = impl::make_id(seed_id, nmos::types::input);
         const auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, { impl::ports::video, impl::ports::audio });
 
@@ -2234,6 +2234,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_set_effective_edid(set_effective_edid) // may be omitted if not required
         .on_active_constraints_changed(make_node_implementation_streamcompatibility_active_constraints_handler(model, gate))
         .on_validate_sender_resources_against_active_constraints(make_node_implementation_streamcompatibility_sender_validator()) // may be omitted if the default is sufficient
-        .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator())
+        .on_validate_receiver_against_transport_file(make_node_implementation_streamcompatibility_receiver_validator()) // may be omitted if the default is sufficient
         .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
 }

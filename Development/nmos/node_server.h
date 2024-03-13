@@ -129,7 +129,7 @@ namespace nmos
             load_authorization_clients_handler load_authorization_clients;
             save_authorization_client_handler save_authorization_client;
             request_authorization_code_handler request_authorization_code;
-            
+
             nmos::experimental::details::streamcompatibility_base_edid_handler base_edid_changed;
             nmos::experimental::details::streamcompatibility_effective_edid_setter set_effective_edid;
             nmos::experimental::details::streamcompatibility_active_constraints_handler active_constraints_changed;
