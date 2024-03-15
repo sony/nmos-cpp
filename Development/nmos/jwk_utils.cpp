@@ -144,8 +144,14 @@ namespace nmos
                 OSSL_PARAM_ptr params(OSSL_PARAM_BLD_to_param(param_bld.get()), &OSSL_PARAM_free);
                 EVP_PKEY_CTX_ptr ctx(EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL), &EVP_PKEY_CTX_free);
 
-                EVP_PKEY* pkey = NULL;
-                if ((1 != EVP_PKEY_fromdata_init(ctx.get())) || (1 != EVP_PKEY_fromdata(ctx.get(), &pkey, EVP_PKEY_PUBLIC_KEY, params.get())))
+                struct evp_pkey_cleanup
+                {
+                    EVP_PKEY* p;
+                    ~evp_pkey_cleanup() { if (p) { EVP_PKEY_free(p); } }
+                };
+
+                evp_pkey_cleanup pkey = { 0 };
+                if ((1 != EVP_PKEY_fromdata_init(ctx.get())) || (1 != EVP_PKEY_fromdata(ctx.get(), &pkey.p, EVP_PKEY_PUBLIC_KEY, params.get())))
                 {
                     throw jwk_exception("convert jwk to pem error: failed to create EVP_PKEY-RSA public key from OSSL parameters");
                 }
@@ -153,12 +159,10 @@ namespace nmos
                 BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
                 if (!bio)
                 {
-                    if (pkey) { EVP_PKEY_free(pkey); }
                     throw jwk_exception("convert jwk to pem error: failed to create BIO memory");
                 }
-                if (PEM_write_bio_PUBKEY(bio.get(), pkey))
+                if (PEM_write_bio_PUBKEY(bio.get(), pkey.p))
                 {
-                    if (pkey) { EVP_PKEY_free(pkey); }
                     BUF_MEM* buf;
                     BIO_get_mem_ptr(bio.get(), &buf);
                     std::string pem(size_t(buf->length), 0);
@@ -167,7 +171,6 @@ namespace nmos
                 }
                 else
                 {
-                    if (pkey) { EVP_PKEY_free(pkey); }
                     throw jwk_exception("convert jwk to pem error: failed to write RSA public key to BIO memory");
                 }
 #endif
