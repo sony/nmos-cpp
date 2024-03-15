@@ -6,8 +6,8 @@
 namespace nmos
 {
     // Stream Compatibility Input states
-    // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/Behaviour_-_Server_Side.html#status-of-input
-    // and https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/input.html
+    // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#status-of-input
+    // and https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/schemas/with-refs/input.html
     DEFINE_STRING_ENUM(input_state)
     namespace input_states
     {
@@ -17,8 +17,8 @@ namespace nmos
     }
 
     // Stream Compatibility Output states
-    // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/Behaviour_-_Server_Side.html#status-of-output
-    // and https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/output.html
+    // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#status-of-output
+    // and https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/schemas/with-refs/output.html
     DEFINE_STRING_ENUM(output_state)
     namespace output_states
     {
@@ -28,8 +28,8 @@ namespace nmos
     }
 
     // Stream Compatibility Sender states
-    // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/Behaviour_-_Server_Side.html#status-of-sender
-    // and https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/sender-status.html
+    // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#status-of-sender
+    // and https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/schemas/with-refs/sender-status.html
     DEFINE_STRING_ENUM(sender_state)
     namespace sender_states
     {
@@ -41,8 +41,8 @@ namespace nmos
     }
 
     // Stream Compatibility Receiver states
-    // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/Behaviour_-_Server_Side.html#status-of-receiver
-    // and https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/receiver-status.html
+    // See https://specs.amwa.tv/is-11/branches/v1.0.x/docs/Behaviour_-_Server_Side.html#status-of-receiver
+    // and https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/schemas/with-refs/receiver-status.html
     DEFINE_STRING_ENUM(receiver_state)
     namespace receiver_states
     {

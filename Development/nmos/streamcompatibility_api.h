@@ -7,7 +7,7 @@
 #include "nmos/slog.h"
 
 // Stream Compatibility Management API implementation
-// See https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/StreamCompatibilityManagementAPI.html
+// See https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/StreamCompatibilityManagementAPI.html
 namespace nmos
 {
     struct node_model;

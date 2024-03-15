@@ -24,13 +24,13 @@ namespace nmos
         web::json::value make_streamcompatibility_edid_endpoint(const web::uri& edid_file, bool locked = false);
         web::json::value make_streamcompatibility_edid_endpoint(const utility::string_t& edid_file, bool locked = false);
 
-        // See https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/input.html
+        // See https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/schemas/with-refs/input.html
         // Makes an input without EDID support
         nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, const std::vector<nmos::id>& senders, const nmos::settings& settings);
         // Makes an input with EDID support
         nmos::resource make_streamcompatibility_input(const nmos::id& id, const nmos::id& device_id, bool connected, bool base_edid_support, const boost::variant<utility::string_t, web::uri>& effective_edid, const std::vector<nmos::id>& senders, const nmos::settings& settings);
 
-        // See https://specs.amwa.tv/is-11/branches/v1.0-dev/APIs/schemas/with-refs/output.html
+        // See https://specs.amwa.tv/is-11/branches/v1.0.x/APIs/schemas/with-refs/output.html
         // Makes an output without EDID support
         nmos::resource make_streamcompatibility_output(const nmos::id& id, const nmos::id& device_id, bool connected, const std::vector<nmos::id>& receivers, const nmos::settings& settings);
         // Makes an output with EDID support
