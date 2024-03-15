@@ -22,7 +22,6 @@ namespace nmos
         typedef std::unique_ptr<EVP_PKEY_CTX, decltype(&EVP_PKEY_CTX_free)> EVP_PKEY_CTX_ptr;
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
         typedef std::unique_ptr<RSA, decltype(&RSA_free)> RSA_ptr;
-        typedef std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> EC_KEY_ptr;
 #else
         typedef std::unique_ptr<OSSL_PARAM, decltype(&OSSL_PARAM_free)> OSSL_PARAM_ptr;
         typedef std::unique_ptr<OSSL_PARAM_BLD, decltype(&OSSL_PARAM_BLD_free)> OSSL_PARAM_BLD_ptr;
@@ -209,16 +208,6 @@ namespace nmos
 
                 const auto base64_n = to_base64url(modulus);
                 const auto base64_e = to_base64url(exponent);
-
-                // construct jwk
-                return web::json::value_of({
-                    { U("kid"), keyid },
-                    { U("kty"), U("RSA") },
-                    { U("n"), base64_n },
-                    { U("e"), base64_e },
-                    { U("alg"), alg.name },
-                    { U("use"), pubkey_use.name }
-                });
 #else
                 BIGNUM* modulus = nullptr;
                 BIGNUM* exponent = nullptr;
@@ -236,7 +225,7 @@ namespace nmos
                     base64_e = to_base64url(exponent);
                     BN_clear_free(exponent);
                 }
-
+#endif
                 // construct jwk
                 return web::json::value_of({
                     { U("kid"), keyid },
@@ -246,51 +235,12 @@ namespace nmos
                     { U("alg"), alg.name },
                     { U("use"), pubkey_use.name }
                 });
-#endif
             }
         }
 
         // extract RSA public key from RSA private key
         utility::string_t rsa_public_key(const utility::string_t& rsa_private_key)
         {
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
-            using ssl::experimental::BIO_ptr;
-
-            const std::string private_key_buffer{ utility::us2s(rsa_private_key) };
-            BIO_ptr private_key_bio(BIO_new_mem_buf((void*)private_key_buffer.c_str(), (int)private_key_buffer.length()), &BIO_free);
-            if (!private_key_bio)
-            {
-                throw jwk_exception("extract public key error: failed to create BIO memory from PEM private key");
-            }
-
-            EVP_PKEY_ptr private_key(PEM_read_bio_PrivateKey(private_key_bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
-
-            if (!private_key)
-            {
-                throw jwk_exception("extract public key error: failed to create EVP_PKEY-RSA from BIO private key");
-            }
-
-            RSA_ptr rsa(EVP_PKEY_get1_RSA(private_key.get()), &RSA_free);
-            if (!rsa)
-            {
-                throw jwk_exception("extract public key error: failed to load RSA key from private key");
-            }
-
-            BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
-
-            if (bio && PEM_write_bio_RSA_PUBKEY(bio.get(), rsa.get()))
-            {
-                BUF_MEM* buf;
-                BIO_get_mem_ptr(bio.get(), &buf);
-                std::string public_key(size_t(buf->length), 0);
-                BIO_read(bio.get(), (void*)public_key.data(), (int)public_key.length());
-                return utility::s2us(public_key);
-            }
-            else
-            {
-                throw jwk_exception("extract public key error: failed to write EVP_PKEY-RSA public key to BIO memory");
-            }
-#else
             using ssl::experimental::BIO_ptr;
 
             const std::string private_key_buffer{ utility::us2s(rsa_private_key) };
@@ -321,7 +271,6 @@ namespace nmos
             {
                 throw jwk_exception("extract public key error: failed to write EVP_PKEY-RSA public key to BIO memory");
             }
-#endif
         }
 
         // convert JSON Web Key to RSA public key
