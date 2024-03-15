@@ -186,7 +186,7 @@ namespace nmos
                     }
                 }
                 return utility::string_t{};
-            };
+            }
 
             // convert RSA to JSON Web Key
             web::json::value rsa_to_jwk(const EVP_PKEY_ptr& pkey, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
@@ -216,7 +216,6 @@ namespace nmos
                     { U("alg"), alg.name },
                     { U("use"), pubkey_use.name }
                 });
-            }
 #else
                 BIGNUM* modulus = nullptr;
                 BIGNUM* exponent = nullptr;
@@ -244,8 +243,8 @@ namespace nmos
                     { U("alg"), alg.name },
                     { U("use"), pubkey_use.name }
                 });
-            }
 #endif
+            }
         }
 
         // extract RSA public key from RSA private key
