@@ -1028,7 +1028,7 @@ BST_TEST_CASE(testConstraints)
     });
     const auto bad_struct2_2 = value_of({
         { U("enumProperty"), enum_value::foo },
-        { U("stringProperty"), U("x£") }, // bad value
+        { U("stringProperty"), U("x$") }, // bad value
         { U("numberProperty"), 100 },
         { U("booleanProperty"), true },
         { U("structProperty"), value_of({
