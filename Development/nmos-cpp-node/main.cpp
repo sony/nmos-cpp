@@ -6,6 +6,7 @@
 #include "nmos/authorization_behaviour.h"
 #include "nmos/authorization_redirect_api.h"
 #include "nmos/authorization_state.h"
+#include "nmos/control_protocol_state.h"
 #include "nmos/jwks_uri_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
@@ -17,8 +18,6 @@
 #include "nmos/server.h"
 #include "nmos/server_utils.h" // for make_http_listener_config
 #include "node_implementation.h"
-
-#include "nmos/control_protocol_state.h"
 
 int main(int argc, char* argv[])
 {
