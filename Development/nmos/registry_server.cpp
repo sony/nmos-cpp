@@ -5,7 +5,6 @@
 #include "mdns/service_advertiser.h"
 #include "nmos/admin_ui.h"
 #include "nmos/api_utils.h"
-#include "nmos/est_behaviour.h"
 #include "nmos/logging_api.h"
 #include "nmos/model.h"
 #include "nmos/mdns.h"
@@ -163,16 +162,6 @@ namespace nmos
                 [&] { nmos::erase_expired_resources_thread(registry_model, gate); },
                 [&] { nmos::advertise_registry_thread(registry_model, gate); }
             });
-
-            if (nmos::experimental::fields::est_enabled(registry_model.settings))
-            {
-                auto load_ca_certificates = registry_implementation.load_ca_certificates;
-                auto load_client_certificate = registry_implementation.load_client_certificate;
-                auto ca_certificate_received = registry_implementation.ca_certificate_received;
-                auto rsa_server_certificate_received = registry_implementation.rsa_server_certificate_received;
-                auto ecdsa_server_certificate_received = registry_implementation.ecdsa_server_certificate_received;
-                registry_server.thread_functions.push_back([&, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received] { nmos::experimental::est_behaviour_thread(registry_model, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received, gate); });
-            }
 
             return registry_server;
         }

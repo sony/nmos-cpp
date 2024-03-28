@@ -7,6 +7,7 @@
 #include "nmos/authorization_redirect_api.h"
 #include "nmos/authorization_state.h"
 #include "nmos/control_protocol_state.h"
+#include "nmos/est_behaviour.h"
 #include "nmos/jwks_uri_api.h"
 #include "nmos/log_gate.h"
 #include "nmos/model.h"
@@ -147,6 +148,15 @@ int main(int argc, char* argv[])
                 .on_get_control_protocol_method_descriptor(nmos::make_get_control_protocol_method_descriptor_handler(control_protocol_state));
         }
 
+        // only configure communication with EST server if BCP-003-03 is required
+        if (nmos::experimental::fields::est_enabled(node_model.settings))
+        {
+            node_implementation
+                .on_ca_certificate_received(nmos::experimental::make_ca_certificate_received_handler(node_model.settings, gate))
+                .on_rsa_server_certificate_received(nmos::experimental::make_rsa_server_certificate_received_handler(node_model.settings, gate))
+                .on_ecdsa_server_certificate_received(nmos::experimental::make_ecdsa_server_certificate_received_handler(node_model.settings, gate));
+        }
+
         // Set up the node server
 
         auto node_server = nmos::experimental::make_node_server(node_model, node_implementation, log_model, gate);
@@ -248,6 +258,17 @@ int main(int argc, char* argv[])
                 // and https://specs.amwa.tv/is-10/releases/v1.0.0/docs/4.5._Behaviour_-_Resource_Servers.html#public-keys
                 node_server.thread_functions.push_back([&, load_ca_certificates] { nmos::experimental::authorization_token_issuer_thread(node_model, authorization_state, load_ca_certificates, gate); });
             }
+        }
+
+        // only configure communication with EST server if BCP-003-03 is required
+        if (nmos::experimental::fields::est_enabled(node_model.settings))
+        {
+            auto load_ca_certificates = node_implementation.load_ca_certificates;
+            auto load_client_certificate = node_implementation.load_client_certificate;
+            auto ca_certificate_received = node_implementation.ca_certificate_received;
+            auto rsa_server_certificate_received = node_implementation.rsa_server_certificate_received;
+            auto ecdsa_server_certificate_received = node_implementation.ecdsa_server_certificate_received;
+            node_server.thread_functions.push_back([&, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received] { nmos::experimental::est_behaviour_thread(node_model, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received, gate); });
         }
 
         // Open the API ports and start up node operation (including the DNS-SD advertisements)

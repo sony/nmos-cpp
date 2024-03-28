@@ -4,7 +4,6 @@
 #include "nmos/api_utils.h"
 #include "nmos/channelmapping_activation.h"
 #include "nmos/control_protocol_ws_api.h"
-#include "nmos/est_behaviour.h"
 #include "nmos/events_api.h"
 #include "nmos/events_ws_api.h"
 #include "nmos/is04_versions.h"
@@ -162,15 +161,6 @@ namespace nmos
                 auto& control_protocol_ws_listener = node_server.ws_listeners.at(control_protocol_ws_pos);
                 auto& control_protocol_ws_api = node_server.ws_handlers.at({ {}, control_protocol_ws_port });
                 node_server.thread_functions.push_back([&] { nmos::send_control_protocol_ws_messages_thread(control_protocol_ws_listener, node_model, control_protocol_ws_api.second, gate); });
-            }
-
-            if (nmos::experimental::fields::est_enabled(node_model.settings))
-            {
-                auto load_client_certificate = node_implementation.load_client_certificate;
-                auto ca_certificate_received = node_implementation.ca_certificate_received;
-                auto rsa_server_certificate_received = node_implementation.rsa_server_certificate_received;
-                auto ecdsa_server_certificate_received = node_implementation.ecdsa_server_certificate_received;
-                node_server.thread_functions.push_back([&, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received] { nmos::experimental::est_behaviour_thread(node_model, load_ca_certificates, load_client_certificate, ca_certificate_received, rsa_server_certificate_received, ecdsa_server_certificate_received, gate); });
             }
 
             return node_server;
