@@ -1,10 +1,15 @@
 ﻿#include "nmos/jwk_utils.h"
 
-#include <map>
-#include <openssl/ec.h>
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
+
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 #include <openssl/rsa.h>
+#else
+#include <openssl/core_names.h>
+#include <openssl/param_build.h>
+#endif
+
 #include "cpprest/basic_utils.h"
 #include "ssl/ssl_utils.h"
 
@@ -12,13 +17,18 @@ namespace nmos
 {
     namespace experimental
     {
+        typedef std::unique_ptr<BIGNUM, decltype(&BN_free)> BIGNUM_ptr;
+        typedef std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> EVP_PKEY_ptr;
+        typedef std::unique_ptr<EVP_PKEY_CTX, decltype(&EVP_PKEY_CTX_free)> EVP_PKEY_CTX_ptr;
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+        typedef std::unique_ptr<RSA, decltype(&RSA_free)> RSA_ptr;
+#else
+        typedef std::unique_ptr<OSSL_PARAM, decltype(&OSSL_PARAM_free)> OSSL_PARAM_ptr;
+        typedef std::unique_ptr<OSSL_PARAM_BLD, decltype(&OSSL_PARAM_BLD_free)> OSSL_PARAM_BLD_ptr;
+#endif
+
         namespace details
         {
-            typedef std::unique_ptr<BIGNUM, decltype(&BN_free)> BIGNUM_ptr;
-            typedef std::unique_ptr<RSA, decltype(&RSA_free)> RSA_ptr;
-            typedef std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> EC_KEY_ptr;
-            typedef std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> EVP_PKEY_ptr;
-
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
             int RSA_set0_key(RSA* r, BIGNUM* n, BIGNUM* e, BIGNUM* d)
             {
@@ -59,12 +69,13 @@ namespace nmos
             // convert JSON Web Key to RSA Public Key
             // The "n" (modulus) parameter contains the modulus value for the RSA public key
             // It is represented as a Base64urlUInt - encoded value
-            // The "e" (exponent)parameter contains the exponent value for the RSA public key
+            // The "e" (exponent) parameter contains the exponent value for the RSA public key
             // It is represented as a Base64urlUInt - encoded value
             // see https://tools.ietf.org/html/rfc7518#section-6.3.1
             // this function is based on https://stackoverflow.com/questions/57217529/how-to-convert-jwk-public-key-to-pem-format-in-c
-            utility::string_t jwk_to_public_key(const utility::string_t& base64_n, const utility::string_t& base64_e)
+            utility::string_t jwk_to_rsa_public_key(const utility::string_t& base64_n, const utility::string_t& base64_e)
             {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
                 using ssl::experimental::BIO_ptr;
 
                 auto n = utility::conversions::from_base64url(base64_n);
@@ -92,6 +103,7 @@ namespace nmos
                 {
                     throw jwk_exception("convert jwk to pem error: failed to initialise RSA");
                 }
+
                 BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
                 if (!bio)
                 {
@@ -107,56 +119,40 @@ namespace nmos
                 }
                 else
                 {
-                    throw jwk_exception("convert jwk to pem error: failed to write BIO to pem");
+                    throw jwk_exception("convert jwk to pem error: failed to write RSA public key to BIO memory");
                 }
-            }
-
-            // convert JSON Web Key to EC Public Key
-            // The "crv" (curve) parameter identifies the cryptographic curve used with the EC public key
-            // The supported curves are "P-256", "P-384" and "P-521"
-            // The "x" (x coordinate) parameter contains the x coordinate for the Elliptic Curve point
-            // It is represented as the base64url encoding of the octet string representation of the coordinate
-            // The "y" (y coordinate) parameter contains the y coordinate for the Elliptic Curve point
-            // It is represented as the base64url encoding of the octet string representation of the coordinate
-            // see https://tools.ietf.org/html/rfc7518#section-6.2.1
-            utility::string_t jwk_to_public_key(const utility::string_t& curve_type, const utility::string_t& base64_x, const utility::string_t& base64_y)
-            {
+#else
                 using ssl::experimental::BIO_ptr;
 
-                // supported Elliptic-Curve types
-                // see https://tools.ietf.org/html/rfc4492#appendix-A
-                const std::map<utility::string_t, int> curve =
+                auto n = utility::conversions::from_base64url(base64_n);
+                auto e = utility::conversions::from_base64url(base64_e);
+
+                BIGNUM_ptr modulus(BN_bin2bn(n.data(), (int)n.size(), NULL), &BN_free);
+                BIGNUM_ptr exponent(BN_bin2bn(e.data(), (int)e.size(), NULL), &BN_free);
+
+                OSSL_PARAM_BLD_ptr param_bld(OSSL_PARAM_BLD_new(), &OSSL_PARAM_BLD_free);
+                if (OSSL_PARAM_BLD_push_BN(param_bld.get(), OSSL_PKEY_PARAM_RSA_N, modulus.get()))
                 {
-                    { U("P-256"), NID_X9_62_prime256v1 },
-                    { U("P-384"), NID_secp384r1 },
-                    { U("P-521"), NID_secp521r1 }
+                    modulus.release();
+                }
+                if (OSSL_PARAM_BLD_push_BN(param_bld.get(), OSSL_PKEY_PARAM_RSA_E, exponent.get()))
+                {
+                    exponent.release();
+                }
+
+                OSSL_PARAM_ptr params(OSSL_PARAM_BLD_to_param(param_bld.get()), &OSSL_PARAM_free);
+                EVP_PKEY_CTX_ptr ctx(EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL), &EVP_PKEY_CTX_free);
+
+                struct evp_pkey_cleanup
+                {
+                    EVP_PKEY* p;
+                    ~evp_pkey_cleanup() { if (p) { EVP_PKEY_free(p); } }
                 };
 
-                auto found = curve.find(curve_type);
-                if (curve.end() == found)
+                evp_pkey_cleanup pkey = { 0 };
+                if ((1 != EVP_PKEY_fromdata_init(ctx.get())) || (1 != EVP_PKEY_fromdata(ctx.get(), &pkey.p, EVP_PKEY_PUBLIC_KEY, params.get())))
                 {
-                    throw jwk_exception("convert jwk to pem error: EC type not supported");
-                }
-                EC_KEY_ptr ec_key(EC_KEY_new_by_curve_name(found->second), &EC_KEY_free);
-                if (!ec_key)
-                {
-                    throw jwk_exception("convert jwk to pem error: failed to create EC key with named curve");
-                }
-
-                auto x = utility::conversions::from_base64url(base64_x);
-                auto y = utility::conversions::from_base64url(base64_y);
-
-                BIGNUM_ptr x_coordinate(BN_bin2bn(x.data(), (int)x.size(), NULL), &BN_free);
-                BIGNUM_ptr y_coordinate(BN_bin2bn(y.data(), (int)y.size(), NULL), &BN_free);
-
-                if (EC_KEY_set_public_key_affine_coordinates(ec_key.get(), x_coordinate.get(), y_coordinate.get()))
-                {
-                    x_coordinate.release();
-                    y_coordinate.release();
-                }
-                else
-                {
-                    throw jwk_exception("convert jwk to pem error: failed to initialise EC");
+                    throw jwk_exception("convert jwk to pem error: failed to create EVP_PKEY-RSA public key from OSSL parameters");
                 }
 
                 BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
@@ -164,7 +160,7 @@ namespace nmos
                 {
                     throw jwk_exception("convert jwk to pem error: failed to create BIO memory");
                 }
-                if (PEM_write_bio_EC_PUBKEY(bio.get(), ec_key.get()))
+                if (PEM_write_bio_PUBKEY(bio.get(), pkey.p))
                 {
                     BUF_MEM* buf;
                     BIO_get_mem_ptr(bio.get(), &buf);
@@ -174,101 +170,64 @@ namespace nmos
                 }
                 else
                 {
-                    throw jwk_exception("convert jwk to pem error: failed to write BIO to pem");
+                    throw jwk_exception("convert jwk to pem error: failed to write RSA public key to BIO memory");
                 }
+#endif
             }
 
-            // convert JSON Web Key to public key in pem format
-            utility::string_t jwk_to_public_key(const web::json::value& jwk)
+            // convert Bignum to base64url string
+            utility::string_t to_base64url(const BIGNUM* bignum)
             {
-                // Key Type (kty)
-                // see https://tools.ietf.org/html/rfc7517#section-4.1
-
-                // RSA Public Keys
-                // see https://tools.ietf.org/html/rfc7518#section-6.3.1
-                if (U("RSA") == jwk.at(U("kty")).as_string())
+                if (bignum)
                 {
-                    // Public Key Use (use), optional!
-                    // see https://tools.ietf.org/html/rfc7517#section-4.2
-                    if (jwk.has_field(U("use")))
+                    const auto size = BN_num_bytes(bignum);
+                    std::vector<uint8_t> data(size);
+                    if (BN_bn2bin(bignum, data.data()))
                     {
-                        if (U("sig") != jwk.at(U("use")).as_string()) throw jwk_exception("jwk contains invalid 'use': " + utility::us2s(jwk.serialize()));
+                        return utility::conversions::to_base64url(data);
                     }
-
-                    // is n presented?
-                    // Base64 URL encoded string representing the modulus of the RSA Key
-                    // see https://tools.ietf.org/html/rfc7518#section-6.3.1.1
-                    if (!jwk.has_field(U("n"))) throw jwk_exception("jwk does not contain 'n': " + utility::us2s(jwk.serialize()));
-
-                    // is e presented?
-                    // Base64 URL encoded string representing the public exponent of the RSA Key
-                    // see https://tools.ietf.org/html/rfc7518#section-6.3.1.2
-                    if (!jwk.has_field(U("e"))) throw jwk_exception("jwk does not contain 'e': " + utility::us2s(jwk.serialize()));
-
-                    // using n & e to convert Json Web Key to RSA Public Key
-                    return jwk_to_public_key(jwk.at(U("n")).as_string(), jwk.at(U("e")).as_string()); // may throw jwk_exception
                 }
-                // Elliptic Curve Public Keys
-                // see https://tools.ietf.org/html/rfc7518#section-6.2
-                else if (U("EC") == jwk.at(U("kty")).as_string())
-                {
-                    // Public Key Use (use), optional!
-                    // see https://tools.ietf.org/html/rfc7517#section-4.2
-                    if (jwk.has_field(U("use")))
-                    {
-                        if (U("sig") != jwk.at(U("use")).as_string()) throw jwk_exception("jwk contains invalid 'use': " + utility::us2s(jwk.serialize()));
-                    }
-
-                    // is crv presented?
-                    // The "crv" (curve) parameter identifies the cryptographic curve used with the EC public Key
-                    // see https://tools.ietf.org/html/rfc7518#section-6.2.1.1
-                    if (!jwk.has_field(U("crv"))) throw jwk_exception("jwk does not contain 'crv': " + utility::us2s(jwk.serialize()));
-
-                    // is x presented?
-                    // Base64 URL encoded string representation of the x coordinate of the EC public Key
-                    // see https://tools.ietf.org/html/rfc7518#section-6.2.1.2
-                    if (!jwk.has_field(U("x"))) throw jwk_exception("jwk does not contains 'x': " + utility::us2s(jwk.serialize()));
-
-                    // is y presented?
-                    // Base64 URL encoded string representation of the y coordinate of the EC public Key
-                    // see https://tools.ietf.org/html/rfc7518#section-6.2.1.3
-                    if (!jwk.has_field(U("y"))) throw jwk_exception("jwk does not contain 'y': " + utility::us2s(jwk.serialize()));
-
-                    // using crv, x & y to convert Json Web Key to EC Public Key
-                    return jwk_to_public_key(jwk.at(U("crv")).as_string(), jwk.at(U("x")).as_string(), jwk.at(U("y")).as_string()); // may throw jwk_exception
-                }
-                else
-                {
-                    throw jwk_exception("jwk contains invalid 'kty': " + utility::us2s(jwk.serialize()));
-                }
+                return utility::string_t{};
             }
 
             // convert RSA to JSON Web Key
-            web::json::value rsa_to_jwk(const RSA_ptr& rsa, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
+            web::json::value rsa_to_jwk(const EVP_PKEY_ptr& pkey, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
             {
-                const BIGNUM* modulus = NULL;
-                const BIGNUM* exponent = NULL;
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+                RSA_ptr rsa(EVP_PKEY_get1_RSA(pkey.get()), &RSA_free);
 
                 // The n, e and d parameters can be obtained by calling RSA_get0_key().
                 // If they have not been set yet, then *n, *e and *d will be set to NULL.
                 // Otherwise, they are set to pointers to their respective values.
-                //These point directly to the internal representations of the values and
+                // These point directly to the internal representations of the values and
                 // therefore should not be freed by the caller.
                 // see https://manpages.debian.org/unstable/libssl-doc/RSA_get0_key.3ssl.en.html#DESCRIPTION
-                RSA_get0_key(rsa.get(), &modulus, &exponent, NULL);
+                const BIGNUM* modulus = nullptr;
+                const BIGNUM* exponent = nullptr;
+                RSA_get0_key(rsa.get(), &modulus, &exponent, nullptr);
 
-                const auto modulus_bytes = BN_num_bytes(modulus);
-                std::vector<uint8_t> n(modulus_bytes);
-                BN_bn2bin(modulus, n.data());
-                const auto base64_n = utility::conversions::to_base64url(n);
+                const auto base64_n = to_base64url(modulus);
+                const auto base64_e = to_base64url(exponent);
+#else
+                BIGNUM* modulus = nullptr;
+                BIGNUM* exponent = nullptr;
 
-                const auto exponent_bytes = BN_num_bytes(exponent);
-                std::vector<uint8_t> e(exponent_bytes);
-                BN_bn2bin(exponent, e.data());
-                const auto base64_e = utility::conversions::to_base64url(e);
+                utility::string_t base64_n;
+                if (EVP_PKEY_get_bn_param(pkey.get(), OSSL_PKEY_PARAM_RSA_N, &modulus))
+                {
+                    base64_n = to_base64url(modulus);
+                    BN_clear_free(modulus);
+                }
 
+                utility::string_t base64_e;
+                if (EVP_PKEY_get_bn_param(pkey.get(), OSSL_PKEY_PARAM_RSA_E, &exponent))
+                {
+                    base64_e = to_base64url(exponent);
+                    BN_clear_free(exponent);
+                }
+#endif
                 // construct jwk
-                return  web::json::value_of({
+                return web::json::value_of({
                     { U("kid"), keyid },
                     { U("kty"), U("RSA") },
                     { U("n"), base64_n },
@@ -277,111 +236,118 @@ namespace nmos
                     { U("use"), pubkey_use.name }
                 });
             }
+        }
 
-            // convert RSA public key to JSON Web Key
-            web::json::value public_key_to_jwk(const utility::string_t& pubkey, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
+        // extract RSA public key from RSA private key
+        utility::string_t rsa_public_key(const utility::string_t& rsa_private_key)
+        {
+            using ssl::experimental::BIO_ptr;
+
+            const std::string private_key_buffer{ utility::us2s(rsa_private_key) };
+            BIO_ptr private_key_bio(BIO_new_mem_buf((void*)private_key_buffer.c_str(), (int)private_key_buffer.length()), &BIO_free);
+            if (!private_key_bio)
             {
-                using ssl::experimental::BIO_ptr;
-
-                const std::string public_key{ utility::us2s(pubkey) };
-                BIO_ptr bio(BIO_new_mem_buf((void*)public_key.c_str(), (int)public_key.length()), &BIO_free);
-                if (!bio)
-                {
-                    throw jwk_exception("convert pem to jwk error: failed to create BIO memory from public key");
-                }
-
-                RSA* rsa_ = NULL;
-                RSA_ptr rsa(PEM_read_bio_RSA_PUBKEY(bio.get(), &rsa_, NULL, NULL), &RSA_free);
-                if(!rsa)
-                {
-                    throw jwk_exception("convert pem to jwk error: failed to load RSA");
-                }
-
-                return rsa_to_jwk(rsa, keyid, pubkey_use, alg);
+                throw jwk_exception("extract public key error: failed to create BIO memory from PEM private key");
             }
 
-            // convert RSA private key to JSON Web Key
-            web::json::value private_key_to_jwk(const utility::string_t& private_key_, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
+            EVP_PKEY_ptr private_key(PEM_read_bio_PrivateKey(private_key_bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
+
+            if (!private_key)
             {
-                using ssl::experimental::BIO_ptr;
-
-                const std::string buffer{ utility::us2s(private_key_) };
-                BIO_ptr bio(BIO_new_mem_buf((void*)buffer.c_str(), (int)buffer.length()), &BIO_free);
-                EVP_PKEY_ptr private_key(PEM_read_bio_PrivateKey(bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
-
-                if (private_key)
-                {
-                    RSA_ptr rsa(EVP_PKEY_get1_RSA(private_key.get()), &RSA_free);
-                    if (rsa)
-                    {
-                        return rsa_to_jwk(rsa, keyid, pubkey_use, alg);
-                    }
-                }
-                return{};
+                throw jwk_exception("extract public key error: failed to create EVP_PKEY-RSA from BIO private key");
             }
 
-            // find the RSA private key from private key list
-            utility::string_t found_rsa_key(const std::vector<utility::string_t>& private_keys)
+            BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
+
+            if (bio && PEM_write_bio_PUBKEY(bio.get(), private_key.get()))
             {
-                using ssl::experimental::BIO_ptr;
+                BUF_MEM* buf;
+                BIO_get_mem_ptr(bio.get(), &buf);
+                std::string public_key(size_t(buf->length), 0);
+                BIO_read(bio.get(), (void*)public_key.data(), (int)public_key.length());
+                return utility::s2us(public_key);
+            }
+            else
+            {
+                throw jwk_exception("extract public key error: failed to write EVP_PKEY-RSA public key to BIO memory");
+            }
+        }
 
-                for (const auto& private_key_ : private_keys)
+        // convert JSON Web Key to RSA public key
+        utility::string_t jwk_to_rsa_public_key(const web::json::value& jwk)
+        {
+            // Key Type (kty)
+            // see https://tools.ietf.org/html/rfc7517#section-4.1
+
+            // RSA Public Keys
+            // see https://tools.ietf.org/html/rfc7518#section-6.3.1
+            if (U("RSA") == jwk.at(U("kty")).as_string())
+            {
+                // Public Key Use (use), optional!
+                // see https://tools.ietf.org/html/rfc7517#section-4.2
+                if (jwk.has_field(U("use")))
                 {
-                    const std::string buffer{ utility::us2s(private_key_) };
-                    BIO_ptr bio(BIO_new_mem_buf((void*)buffer.c_str(), (int)buffer.length()), &BIO_free);
-                    EVP_PKEY_ptr private_key(PEM_read_bio_PrivateKey(bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
-
-                    if (private_key)
-                    {
-                        RSA_ptr rsa(EVP_PKEY_get1_RSA(private_key.get()), &RSA_free);
-                        if (rsa)
-                        {
-                            return private_key_;
-                        }
-                    }
+                    if (U("sig") != jwk.at(U("use")).as_string()) throw jwk_exception("jwk contains invalid 'use': " + utility::us2s(jwk.serialize()));
                 }
-                return{};
+
+                // is n presented?
+                // Base64 URL encoded string representing the modulus of the RSA Key
+                // see https://tools.ietf.org/html/rfc7518#section-6.3.1.1
+                if (!jwk.has_field(U("n"))) throw jwk_exception("jwk does not contain 'n': " + utility::us2s(jwk.serialize()));
+
+                // is e presented?
+                // Base64 URL encoded string representing the public exponent of the RSA Key
+                // see https://tools.ietf.org/html/rfc7518#section-6.3.1.2
+                if (!jwk.has_field(U("e"))) throw jwk_exception("jwk does not contain 'e': " + utility::us2s(jwk.serialize()));
+
+                // using n & e to convert Json Web Key to RSA Public Key
+                return details::jwk_to_rsa_public_key(jwk.at(U("n")).as_string(), jwk.at(U("e")).as_string()); // may throw jwk_exception
+            }
+            throw jwk_exception("unsupported non-RSA jwk: " + utility::us2s(jwk.serialize()));
+        }
+
+        // convert RSA public key to JSON Web Key
+        web::json::value rsa_public_key_to_jwk(const utility::string_t& rsa_public_key, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
+        {
+            using ssl::experimental::BIO_ptr;
+
+            const std::string public_key{ utility::us2s(rsa_public_key) };
+            BIO_ptr bio(BIO_new_mem_buf((void*)public_key.c_str(), (int)public_key.length()), &BIO_free);
+            if (!bio)
+            {
+                throw jwk_exception("convert pem to jwk error: failed to create BIO memory from PEM public key");
             }
 
-            // extract RSA public key from RSA private key
-            utility::string_t rsa_public_key(const utility::string_t& private_key_)
+            // create EVP_PKEY-RSA from BIO public key
+            EVP_PKEY_ptr key(PEM_read_bio_PUBKEY(bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
+            if (key)
             {
-                using ssl::experimental::BIO_ptr;
-
-                const std::string private_key_buffer{ utility::us2s(private_key_) };
-                BIO_ptr private_key_bio(BIO_new_mem_buf((void*)private_key_buffer.c_str(), (int)private_key_buffer.length()), &BIO_free);
-                if (!private_key_bio)
-                {
-                    throw jwk_exception("extract public key error: failed to create BIO memory from private key");
-                }
-
-                EVP_PKEY_ptr private_key(PEM_read_bio_PrivateKey(private_key_bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
-
-                if (!private_key)
-                {
-                    throw jwk_exception("extract public key error: failed to read BIO private key");
-                }
-
-                RSA_ptr rsa(EVP_PKEY_get1_RSA(private_key.get()), &RSA_free);
-                if (!rsa)
-                {
-                    throw jwk_exception("extract public key error: failed to load RSA key");
-                }
-
-                BIO_ptr bio(BIO_new(BIO_s_mem()), &BIO_free);
-                if (bio && PEM_write_bio_RSA_PUBKEY(bio.get(), rsa.get()))
-                {
-                    BUF_MEM* buf;
-                    BIO_get_mem_ptr(bio.get(), &buf);
-                    std::string public_key(size_t(buf->length), 0);
-                    BIO_read(bio.get(), (void*)public_key.data(), (int)public_key.length());
-                    return utility::s2us(public_key);
-                }
-                else
-                {
-                    throw jwk_exception("extract public key error: failed to read RSA public key");
-                }
+                // create JWK
+                return details::rsa_to_jwk(key, keyid, pubkey_use, alg);
             }
+            throw jwk_exception("convert pem to jwk error: failed to create EVP_PKEY-RSA from BIO public key");
+        }
+
+        // convert RSA private key to JSON Web Key
+        web::json::value rsa_private_key_to_jwk(const utility::string_t& rsa_private_key, const utility::string_t& keyid, const jwk::public_key_use& pubkey_use, const jwk::algorithm& alg)
+        {
+            using ssl::experimental::BIO_ptr;
+
+            const std::string buffer{ utility::us2s(rsa_private_key) };
+            BIO_ptr bio(BIO_new_mem_buf((void*)buffer.c_str(), (int)buffer.length()), &BIO_free);
+            if (!bio)
+            {
+                throw jwk_exception("convert pem to jwk error: failed to create BIO memory from PEM private key");
+            }
+
+            // create EVP_PKEY-RSA from BIO private key
+            EVP_PKEY_ptr private_key(PEM_read_bio_PrivateKey(bio.get(), NULL, NULL, NULL), &EVP_PKEY_free);
+            if (private_key)
+            {
+                // create JWK
+                return details::rsa_to_jwk(private_key, keyid, pubkey_use, alg);
+            }
+            throw jwk_exception("convert pem to jwk error: failed to create EVP_PKEY-RSA from BIO private key");
         }
     }
 }

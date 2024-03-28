@@ -64,7 +64,7 @@ cQIDAQAB
     const auto audience = U("https://api-nmos.testsuite.nmos.tv");
     const utility::string_t key_id{ U("test_key") };
 
-    const auto jwk1 = nmos::experimental::details::private_key_to_jwk(test_private_key, key_id, jwk::public_key_uses::signing, jwk::algorithms::RS512);
+    const auto jwk1 = nmos::experimental::rsa_private_key_to_jwk(test_private_key, key_id, jwk::public_key_uses::signing, jwk::algorithms::RS512);
     const auto pems = value_of({
         value_of({
             { U("jwk"), jwk1 },
@@ -97,10 +97,10 @@ cQIDAQAB
 ////////////////////////////////////////////////////////////////////////////////////////////
 BST_TEST_CASE(testJWK)
 {
-    const auto public_key = nmos::experimental::details::rsa_public_key(test_private_key);
+    const auto public_key = nmos::experimental::rsa_public_key(test_private_key);
     BST_REQUIRE_EQUAL(test_public_key, public_key);
 
-    const auto jwk2 = nmos::experimental::details::public_key_to_jwk(public_key, key_id, jwk::public_key_uses::signing, jwk::algorithms::RS512);
+    const auto jwk2 = nmos::experimental::rsa_public_key_to_jwk(public_key, key_id, jwk::public_key_uses::signing, jwk::algorithms::RS512);
     BST_REQUIRE_EQUAL(jwk1, jwk2);
 }
 
