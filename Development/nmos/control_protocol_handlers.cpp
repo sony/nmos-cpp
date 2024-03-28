@@ -77,7 +77,7 @@ namespace nmos
             auto found = find_control_protocol_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
             if (resources.end() != found && nc_receiver_monitor_class_id == details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)))
             {
-                // update receiver-monitor's connectionStatus and payloadStatus propertries
+                // update receiver-monitor's connectionStatus and payloadStatus properties
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
                 const web::json::value connection_status = active ? nc_connection_status::connected : nc_connection_status::disconnected;
