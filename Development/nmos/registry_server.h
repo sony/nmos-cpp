@@ -30,13 +30,13 @@ namespace nmos
                 : load_server_certificates(std::move(load_server_certificates))
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
-                , get_ocsp_response(std::move(get_ocsp_response))
-                , validate_authorization(std::move(validate_authorization))
-                , ws_validate_authorization(std::move(ws_validate_authorization))
                 , load_client_certificate(std::move(load_client_certificate))
                 , ca_certificate_received(std::move(ca_certificate_received))
                 , rsa_server_certificate_received(std::move(rsa_server_certificate_received))
                 , ecdsa_server_certificate_received(std::move(ecdsa_server_certificate_received))
+                , get_ocsp_response(std::move(get_ocsp_response))
+                , validate_authorization(std::move(validate_authorization))
+                , ws_validate_authorization(std::move(ws_validate_authorization))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization

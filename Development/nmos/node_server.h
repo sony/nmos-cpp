@@ -33,6 +33,9 @@ namespace nmos
                 , load_dh_param(std::move(load_dh_param))
                 , load_ca_certificates(std::move(load_ca_certificates))
                 , load_client_certificate(std::move(load_client_certificate))
+                , ca_certificate_received(std::move(ca_certificate_received))
+                , rsa_server_certificate_received(std::move(rsa_server_certificate_received))
+                , ecdsa_server_certificate_received(std::move(ecdsa_server_certificate_received))
                 , system_changed(std::move(system_changed))
                 , registration_changed(std::move(registration_changed))
                 , parse_transport_file(std::move(parse_transport_file))
@@ -43,9 +46,6 @@ namespace nmos
                 , get_ocsp_response(std::move(get_ocsp_response))
                 , get_authorization_bearer_token(std::move(get_authorization_bearer_token))
                 , validate_authorization(std::move(validate_authorization))
-                , ca_certificate_received(std::move(ca_certificate_received))
-                , rsa_server_certificate_received(std::move(rsa_server_certificate_received))
-                , ecdsa_server_certificate_received(std::move(ecdsa_server_certificate_received))
                 , ws_validate_authorization(std::move(ws_validate_authorization))
                 , load_rsa_private_keys(std::move(load_rsa_private_keys))
                 , load_authorization_clients(std::move(load_authorization_clients))
@@ -106,6 +106,10 @@ namespace nmos
             nmos::load_ca_certificates_handler load_ca_certificates;
             nmos::load_client_certificate_handler load_client_certificate;
 
+            nmos::experimental::receive_ca_certificate_handler ca_certificate_received;
+            nmos::experimental::receive_server_certificate_handler rsa_server_certificate_received;
+            nmos::experimental::receive_server_certificate_handler ecdsa_server_certificate_received;
+
             nmos::system_global_handler system_changed;
             nmos::registration_handler registration_changed;
 
@@ -119,10 +123,6 @@ namespace nmos
             nmos::details::channelmapping_output_map_validator validate_map;
 
             nmos::channelmapping_activation_handler channelmapping_activated;
-
-            nmos::experimental::receive_ca_certificate_handler ca_certificate_received;
-            nmos::experimental::receive_server_certificate_handler rsa_server_certificate_received;
-            nmos::experimental::receive_server_certificate_handler ecdsa_server_certificate_received;
 
             nmos::ocsp_response_handler get_ocsp_response;
 
