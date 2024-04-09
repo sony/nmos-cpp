@@ -8,6 +8,8 @@ For many platforms, a binary package is available from Conan Center Index so it 
    pip install --upgrade conan~=2.0.5
    ```
 
+   `pip` is the package installer for Python. Install Python 3 if necessary.
+
    If the python Scripts directory is not on the PATH you will get a warning like:
    > WARNING: The script conan.exe is installed in 'C:\Users\\%USERNAME%\\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\Scripts' which is not on PATH.
    > Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
@@ -67,4 +69,4 @@ For many platforms, a binary package is available from Conan Center Index so it 
    ```sh
    nmos-cpp-node
    ```
-   For more information about running these applications and the JSON configuration file that can be passed on the command-line, see the [Tutorial](Tutorial.md).
+   For more information about running these applications and the JSON configuration file that can be passed on the command-line, see the [tutorial](Tutorial.md).
