@@ -52,8 +52,12 @@ For many platforms, a binary package is available from Conan Center Index so it 
    On Linux, run `./conanbuild.sh`.
 
   
-4. Try running nmos-cpp-registry and/or nmos-cpp-node:
-   If your executables were added to the PATH you could call then directly like:  `nmos-cpp-node <your_config.json>` and `nmos-cpp-registry <your_config.json>`
+4. Try starting nmos-cpp-registry and/or nmos-cpp-node:
+   ```sh
+   nmos-cpp-registry
+   nmos-cpp-node
+   ```
+   For more information about running these applications and the JSON configuration file that can be passed on the command-line, see the [Tutorial](Tutorial.md).
 
    Alternatively if the nmos-cpp-node and nmos-cpp-registry has still not been added to path, you can add them manually (Executables likely located at C:\Users\\%USERNAME%\\.conan2\p\nmos-768c7905bf562\p\bin\Release) or work around this as shown below:
 
