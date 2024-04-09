@@ -9,7 +9,7 @@ For many platforms, a binary package is available from Conan Center Index so it 
    ```
 
    If the python Scripts directory is not on the PATH you will get a warning like:
-   > WARNING: The script conan.exe is installed in 'C:\Users\%USER%\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\Scripts' which is not on PATH.
+   > WARNING: The script conan.exe is installed in 'C:\Users\\%USERNAME%\\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\Scripts' which is not on PATH.
    > Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
 
    On Windows, you can use _System Properties \> Environment Variables..._ to permanently add the directory to the user PATH. Restart the Command Prompt and run `conan --help` to ensure Conan is found.
@@ -51,7 +51,11 @@ For many platforms, a binary package is available from Conan Center Index so it 
    On Windows, run `.\conanbuild.bat`.
    On Linux, run `./conanbuild.sh`.
 
-   Alternatively if the nmos-cpp-node and nmos-cpp-registry has still not been added to path, you can add them manually (Executables likely located at C:\Users\%USERNAME%\.conan2\p\nmos-768c7905bf562\p\bin\Release) or work around this as shown below:
+  
+4. Try running nmos-cpp-registry and/or nmos-cpp-node:
+   If your executables were added to the PATH you could call then directly like:  `nmos-cpp-node <your_config.json>` and `nmos-cpp-registry <your_config.json>`
+
+   Alternatively if the nmos-cpp-node and nmos-cpp-registry has still not been added to path, you can add them manually (Executables likely located at C:\Users\\%USERNAME%\\.conan2\p\nmos-768c7905bf562\p\bin\Release) or work around this as shown below:
 
     
 	> Executables can be copied to current working directory using a direct installation:\
@@ -59,8 +63,11 @@ For many platforms, a binary package is available from Conan Center Index so it 
    	> - `--deployer=direct_deploy` copies the direct dependencies, in this case nmos-cpp-registry.exe and nmos-cpp-node.exe.
    	>
  	> \
-	> Launch the registry using `./direct_deploy/nmos-cpp/bin/Release/nmos-cpp-registry.exe <your_config.json>` \
-	> Launch nodes using `./direct_deploy/nmos-cpp/bin/Release/nmos-cpp-node.exe <your_config.json>`.
-  
-4. Try running nmos-cpp-registry and/or nmos-cpp-node:
-   If your executables were added to the PATH you could call then directly like:  `nmos-cpp-node <your_config.json>` and `nmos-cpp-registry <your_config.json>`
+ 	> For Windows: \
+	> Launch the registry using `.\direct_deploy\nmos-cpp\bin\Release\nmos-cpp-registry.exe <your_config.json>` \
+	> Launch nodes using `.\direct_deploy\nmos-cpp\bin\Release\nmos-cpp-node.exe <your_config.json>`.\
+ 	>
+ 	>\
+ 	> For Linux: \
+ 	> Launch the registry using `./direct_deploy/nmos-cpp/bin/nmos-cpp-registry <your_config.json>` \
+	> Launch nodes using `./direct_deploy/nmos-cpp/bin/nmos-cpp-node <your_config.json>`.
