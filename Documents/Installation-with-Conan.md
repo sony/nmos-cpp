@@ -1,4 +1,4 @@
-## Install and Set Up nmos-cpp Using Conan
+## Install nmos-cpp Using Conan
 
 The following steps describe how to install and set up nmos-cpp using the Conan package manager.
 For many platforms, a binary package is available from Conan Center Index so it isn't necessary to build nmos-cpp or any of its dependencies.
@@ -47,31 +47,24 @@ For many platforms, a binary package is available from Conan Center Index so it 
    ```sh
    conan install --tool-requires=nmos-cpp/cci.20240223
    ```
-   Make the `nmos-cpp-registry` and `nmos-cpp-node` executables available in the current session.
-   On Windows, run `.\conanbuild.bat`.
+   This installs the **nmos-cpp-registry** and **nmos-cpp-node** applications in the Conan cache, and generates a script to make these executables available in the current session.
+   On Windows, run `.\conanbuild.bat` to add the install directory to the PATH.
    On Linux, run `./conanbuild.sh`.
 
-  
+   Alternatively the nmos-cpp installation can be copied to the current working directory using a Conan deployer:
+   ```sh
+   conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy
+   ```
+
+   On Windows, the executables are then found in the _.\direct_deploy\nmos-cpp\bin\Release_ directory.
+   On Linux, the executables are found in the _./direct_deploy/nmos-cpp/bin_ directory.
+
 4. Try starting nmos-cpp-registry and/or nmos-cpp-node:
    ```sh
    nmos-cpp-registry
+   ```
+   or
+   ```sh
    nmos-cpp-node
    ```
    For more information about running these applications and the JSON configuration file that can be passed on the command-line, see the [Tutorial](Tutorial.md).
-
-   Alternatively if the nmos-cpp-node and nmos-cpp-registry has still not been added to path, you can add them manually (Executables likely located at C:\Users\\%USERNAME%\\.conan2\p\nmos-768c7905bf562\p\bin\Release) or work around this as shown below:
-
-    
-	> Executables can be copied to current working directory using a direct installation:\
-	> `conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy`
-   	> - `--deployer=direct_deploy` copies the direct dependencies, in this case nmos-cpp-registry.exe and nmos-cpp-node.exe.
-   	>
- 	> \
- 	> For Windows: \
-	> Launch the registry using `.\direct_deploy\nmos-cpp\bin\Release\nmos-cpp-registry.exe <your_config.json>` \
-	> Launch nodes using `.\direct_deploy\nmos-cpp\bin\Release\nmos-cpp-node.exe <your_config.json>`.\
- 	>
- 	>\
- 	> For Linux: \
- 	> Launch the registry using `./direct_deploy/nmos-cpp/bin/nmos-cpp-registry <your_config.json>` \
-	> Launch nodes using `./direct_deploy/nmos-cpp/bin/nmos-cpp-node <your_config.json>`.
