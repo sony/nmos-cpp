@@ -33,7 +33,10 @@ Some information about the overall design of **nmos-cpp** is also included in th
 ### Getting Started With NMOS
 
 The [Easy-NMOS](https://github.com/rhastie/easy-nmos) starter kit allows the user to launch a simple NMOS setup with minimal installation steps.
-It relies on nmos-cpp to provide an NMOS Registry and a virtual NMOS Node in a Docker Compose network, along with the AMWA NMOS Testing Tool and supporting services.
+It relies on a containerized nmos-cpp build to provide an NMOS Registry and a virtual NMOS Node in a Docker Compose network, along with the AMWA NMOS Testing Tool and supporting services.
+
+Alternatively, it is possible to install a pre-built package for many platforms.
+See the instructions for [installing with Conan](Documents/Installation-with-Conan.md).
 
 ### Getting Started For Developers
 
