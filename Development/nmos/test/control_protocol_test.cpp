@@ -815,7 +815,7 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1a2")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1*")), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
     const nmos::details::datatype_constraints_validation_parameters no_constraints_string_constraints_validation_params{ no_constraints_string_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::null(), value::null(), no_constraints_string_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::null(), value::null(), no_constraints_string_constraints_validation_params));
 
     // number property constraints validation
 
@@ -899,16 +899,16 @@ BST_TEST_CASE(testConstraints)
     BST_REQUIRE_THROW(nmos::details::constraints_validation(4, value::null(), value::null(), enum_constraints_validation_params), nmos::control_protocol_exception);
     // invalid data vs primitive datatype constraints
     const nmos::details::datatype_constraints_validation_parameters no_constraints_string_seq_constraints_validation_params{ no_constraints_string_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
-    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
+    BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params));
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(1, value::null(), value::null(), no_constraints_string_seq_constraints_validation_params), nmos::control_protocol_exception);
     const nmos::details::datatype_constraints_validation_parameters no_constraints_int32_seq_constraints_validation_params{ no_constraints_int32_seq_datatype, nmos::make_get_control_protocol_datatype_descriptor_handler(control_protocol_state) };
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 1 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
     BST_REQUIRE_NO_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params));
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"£$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
-    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"£$%^&*()_+=")), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ value::string(U("1234567890-abcde-!\"$%^&*()_+=")) }), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
+    BST_REQUIRE_THROW(nmos::details::constraints_validation(value::string(U("1234567890-abcde-!\"$%^&*()_+=")), value::null(), value::null(), no_constraints_int32_seq_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_int32_constraints_validation_params), nmos::control_protocol_exception);
     BST_REQUIRE_THROW(nmos::details::constraints_validation(value_of({ 1, 2 }), value::null(), value::null(), with_constraints_string_constraints_validation_params), nmos::control_protocol_exception);
 
@@ -1028,7 +1028,7 @@ BST_TEST_CASE(testConstraints)
     });
     const auto bad_struct2_2 = value_of({
         { U("enumProperty"), enum_value::foo },
-        { U("stringProperty"), U("x£") }, // bad value
+        { U("stringProperty"), U("x$") }, // bad value
         { U("numberProperty"), 100 },
         { U("booleanProperty"), true },
         { U("structProperty"), value_of({

@@ -69,12 +69,23 @@ namespace nmos
             // generate SHA256 with the given string
             std::vector<uint8_t> sha256(const std::string& text)
             {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
                 uint8_t hash[SHA256_DIGEST_LENGTH];
                 SHA256_CTX ctx;
                 if (SHA256_Init(&ctx) && SHA256_Update(&ctx, text.c_str(), text.size()) && SHA256_Final(hash, &ctx))
                 {
                     return{ hash, hash + SHA256_DIGEST_LENGTH };
                 }
+#else
+                typedef std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> EVP_MD_CTX_ptr;
+                uint8_t hash[EVP_MAX_MD_SIZE];
+                uint32_t md_len{ 0 };
+                EVP_MD_CTX_ptr mdctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
+                if (EVP_DigestInit_ex(mdctx.get(), EVP_sha256(), NULL) && EVP_DigestUpdate(mdctx.get(), text.c_str(), text.size()) && EVP_DigestFinal_ex(mdctx.get(), hash, &md_len))
+                {
+                    return{ hash, hash + md_len };
+                }
+#endif
                 return{};
             }
 
@@ -998,6 +1009,10 @@ namespace nmos
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API Bearer token request OAuth 2.0 error: " << e.what();
                     }
+                    catch (const nmos::experimental::jwk_exception& e)
+                    {
+                        slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API Bearer token request JWK error: " << e.what();
+                    }
                     catch (const std::exception& e)
                     {
                         slog::log<slog::severities::error>(gate, SLOG_FLF) << "Authorization API Bearer token request error: " << e.what();
@@ -1058,7 +1073,7 @@ namespace nmos
                             {
                                 try
                                 {
-                                    const auto pem = jwk_to_public_key(jwk); // can throw jwk_exception
+                                    const auto pem = jwk_to_rsa_public_key(jwk); // can throw jwk_exception
 
                                     web::json::push_back(pems, web::json::value_of({
                                         { U("jwk"), jwk },
@@ -1895,7 +1910,7 @@ namespace nmos
                         {
                             try
                             {
-                                const auto& pem = jwk_to_public_key(jwk); // can throw jwk_exception
+                                const auto& pem = jwk_to_rsa_public_key(jwk); // can throw jwk_exception
 
                                 web::json::push_back(pems, web::json::value_of({
                                     { U("jwk"), jwk },

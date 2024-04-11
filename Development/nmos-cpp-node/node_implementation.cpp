@@ -941,7 +941,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             control_protocol_state.insert(gain_control_class_descriptor);
         }
         // helper function to create Gain control instance
-        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), float gain = 0.0)
+        auto make_gain_control = [&gain_value, &gain_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, float gain)
         {
             auto data = nmos::details::make_nc_worker(gain_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[gain_value] = value::number(gain);
@@ -1111,23 +1111,23 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             });
         };
         // helper function to create Example control instance
-        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const value& touchpoints = value::null(),
-            const value& runtime_property_constraints = value::null(),  // level 2: runtime constraints. See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
+        auto make_example_control = [&](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const value& touchpoints,
+            const value& runtime_property_constraints,  // level 2: runtime constraints. See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Constraints.html
                                                                         // use of make_nc_property_constraints_string and make_nc_property_constraints_number to create runtime constraints
-            example_enum enum_property_ = example_enum::Undefined,
-            const utility::string_t& string_property_ = U(""),
-            uint64_t number_property_ = 0,
-            uint64_t deprecated_number_property_ = 0,
-            bool boolean_property_ = true,
-            const value& object_property_ = value::null(),
-            uint64_t method_no_args_count_ = 0,
-            uint64_t method_simple_args_count_ = 0,
-            uint64_t method_object_arg_count_ = 0,
-            std::vector<utility::string_t> string_sequence_ = {},
-            std::vector<bool> boolean_sequence_ = {},
-            std::vector<example_enum> enum_sequence_ = {},
-            std::vector<uint64_t> number_sequence_ = {},
-            std::vector<value> object_sequence_ = {})
+            example_enum enum_property_,
+            const utility::string_t& string_property_,
+            uint64_t number_property_,
+            uint64_t deprecated_number_property_,
+            bool boolean_property_,
+            const value& object_property_,
+            uint64_t method_no_args_count_,
+            uint64_t method_simple_args_count_,
+            uint64_t method_object_arg_count_,
+            std::vector<utility::string_t> string_sequence_,
+            std::vector<bool> boolean_sequence_,
+            std::vector<example_enum> enum_sequence_,
+            std::vector<uint64_t> number_sequence_,
+            std::vector<value> object_sequence_)
         {
             auto data = nmos::details::make_nc_worker(example_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[enum_property] = value::number(enum_property_);
@@ -1186,7 +1186,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             control_protocol_state.insert(temperature_sensor_control_class_descriptor);
         }
         // helper function to create Temperature Sensor control instance
-        auto make_temperature_sensor = [&temperature, &unit, temperature_sensor_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), float temperature_ = 0.0, const utility::string_t& unit_ = U("Celsius"))
+        auto make_temperature_sensor = [&temperature, &unit, temperature_sensor_control_class_id](nmos::nc_oid oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, float temperature_, const utility::string_t& unit_)
         {
             auto data = nmos::details::make_nc_worker(temperature_sensor_control_class_id, oid, true, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, true);
             data[temperature] = value::number(temperature_);
@@ -1214,14 +1214,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         const auto channel_gain_oid = ++oid;
         auto channel_gain = nmos::make_block(channel_gain_oid, stereo_gain_oid, U("channel-gain"), U("Channel gain"), U("Channel gain block"));
         // example left/right gains
-        auto left_gain = make_gain_control(++oid, channel_gain_oid, U("left-gain"), U("Left gain"), U("Left channel gain"));
-        auto right_gain = make_gain_control(++oid, channel_gain_oid, U("right-gain"), U("Right gain"), U("Right channel gain"));
+        auto left_gain = make_gain_control(++oid, channel_gain_oid, U("left-gain"), U("Left gain"), U("Left channel gain"), value::null(), value::null(), 0.0);
+        auto right_gain = make_gain_control(++oid, channel_gain_oid, U("right-gain"), U("Right gain"), U("Right channel gain"), value::null(), value::null(), 0.0);
         // add left-gain and right-gain to channel gain
         nmos::push_back(channel_gain, left_gain);
         nmos::push_back(channel_gain, right_gain);
 
         // example master-gain
-        auto master_gain = make_gain_control(++oid, channel_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"));
+        auto master_gain = make_gain_control(++oid, channel_gain_oid, U("master-gain"), U("Master gain"), U("Master gain block"), value::null(), value::null(), 0.0);
         // add channel-gain and master-gain to stereo-gain
         nmos::push_back(stereo_gain, channel_gain);
         nmos::push_back(stereo_gain, master_gain);
@@ -1272,7 +1272,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         }
 
         // example temperature-sensor
-        const auto temperature_sensor = make_temperature_sensor(++oid, nmos::root_block_oid, U("temperature-sensor"), U("Temperature Sensor"), U("Temperature Sensor block"));
+        const auto temperature_sensor = make_temperature_sensor(++oid, nmos::root_block_oid, U("temperature-sensor"), U("Temperature Sensor"), U("Temperature Sensor block"), value::null(), value::null(), 0.0, U("Celsius"));
 
         // add temperature-sensor to root-block
         nmos::push_back(root_block, temperature_sensor);

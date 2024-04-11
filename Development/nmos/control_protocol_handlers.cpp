@@ -77,21 +77,24 @@ namespace nmos
             auto found = find_control_protocol_resource(resources, nmos::types::nc_receiver_monitor, connection_resource.id);
             if (resources.end() != found && nc_receiver_monitor_class_id == details::parse_nc_class_id(nmos::fields::nc::class_id(found->data)))
             {
-                // update receiver-monitor's connectionStatus propertry
+                // update receiver-monitor's connectionStatus and payloadStatus properties
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
-                const web::json::value value = active ? nc_connection_status::connected : nc_connection_status::disconnected;
+                const web::json::value connection_status = active ? nc_connection_status::connected : nc_connection_status::disconnected;
+                const web::json::value payload_status = active ? nc_payload_status::payload_ok : nc_payload_status::undefined;
 
-                // hmm, maybe updating connectionStatusMessage, payloadStatus, and payloadStatusMessage too
+                // hmm, maybe updating connectionStatusMessage and payloadStatusMessage too
 
                 const auto property_changed_event = make_property_changed_event(nmos::fields::nc::oid(found->data),
                 {
-                    { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, value }
+                    { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, connection_status },
+                    { nc_receiver_monitor_payload_status_property_id, nc_property_change_type::type::value_changed, payload_status }
                 });
 
                 modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
                 {
-                    resource.data[nmos::fields::nc::connection_status] = value;
+                    resource.data[nmos::fields::nc::connection_status] = connection_status;
+                    resource.data[nmos::fields::nc::payload_status] = payload_status;
 
                 }, property_changed_event);
             }
