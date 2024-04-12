@@ -23,11 +23,11 @@ namespace nmos
             extern const char* properties_base;
             extern const char* property;
             extern const char* property_descriptor;
-			extern const char* property_value_get;
-			extern const char* property_value_put_request;
-			extern const char* property_value_put_response;
-			extern const char* rolePath;
-			extern const char* rolePaths_base;
+            extern const char* property_value_get;
+            extern const char* property_value_put_request;
+            extern const char* property_value_put_response;
+            extern const char* rolePath;
+            extern const char* rolePaths_base;
         }
     }
 }
