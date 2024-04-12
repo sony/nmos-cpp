@@ -205,7 +205,7 @@ namespace nmos
         {
             const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
 
-            // tokenize the role_path with '.' delimiter
+            // tokenize the role_path with the '.' delimiter
             std::list<utility::string_t> role_path_segments;
             boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
 
