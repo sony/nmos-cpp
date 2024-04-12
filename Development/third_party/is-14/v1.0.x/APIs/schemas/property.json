@@ -6,8 +6,8 @@
   "items": {
     "type": "string",
     "enum": [
-      "value/",
-      "descriptor/"
+      "descriptor/",
+      "value/"
     ]
   },
   "minItems": 2,

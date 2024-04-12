@@ -10,6 +10,11 @@ namespace nmos
         namespace v1_0_x
         {
             extern const char* base;
+            extern const char* bulkProperties_get_response;
+            extern const char* bulkProperties_set_request;
+            extern const char* bulkProperties_set_response;
+            extern const char* bulkProperties_validate_request;
+            extern const char* bulkProperties_validate_response;
             extern const char* descriptor_get;
             extern const char* method_patch_request;
             extern const char* method_patch_response;
