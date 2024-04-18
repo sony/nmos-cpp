@@ -51,7 +51,7 @@ For many platforms, a binary package is available from Conan Center Index so it 
    ```
    This installs the **nmos-cpp-registry** and **nmos-cpp-node** applications in the Conan cache, and generates a script to make these executables available in the current session.
    On Windows, run `.\conanbuild.bat` to add the install directory to the PATH.
-   On Linux, run `./conanbuild.sh`.
+   On Linux, run `source conanbuild.sh`.
 
    Alternatively the nmos-cpp installation can be copied to the current working directory using a Conan deployer:
    ```sh
