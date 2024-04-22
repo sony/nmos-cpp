@@ -410,6 +410,17 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        {
+            const string_t property_id = parameters.at(nmos::patterns::propertyId.name);
+            set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+
+            return pplx::task_from_result(true);
+        });
+
         return configuration_api;
     }
+
+
 }
