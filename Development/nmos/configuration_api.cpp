@@ -5,6 +5,7 @@
 //#include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
 #include "nmos/control_protocol_resource.h"
+#include "nmos/control_protocol_state.h"
 #include "nmos/control_protocol_utils.h"
 #include "nmos/is14_versions.h"
 //#include "nmos/json_schema.h"
@@ -13,9 +14,9 @@
 
 namespace nmos
 {
-    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(nmos::node_model& model, slog::base_gate& gate);
+    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(nmos::node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate);
 
-    web::http::experimental::listener::api_router make_configuration_api(nmos::node_model& model, web::http::experimental::listener::route_handler validate_authorization, slog::base_gate& gate)
+    web::http::experimental::listener::api_router make_configuration_api(nmos::node_model& model, web::http::experimental::listener::route_handler validate_authorization, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -46,7 +47,7 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.mount(U("/x-nmos/") + nmos::patterns::configuration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_configuration_api(model, gate));
+        configuration_api.mount(U("/x-nmos/") + nmos::patterns::configuration_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_configuration_api(model, get_control_protocol_class_descriptor, gate));
 
         return configuration_api;
     }
@@ -120,11 +121,11 @@ namespace nmos
             }
         }
 
-        bool verify_role_path(const resources& resources, const nmos::resource& resource, std::list<utility::string_t>& role_path_segments)
+        web::json::value get_child_nc_object(const resources& resources, const nmos::resource& parent_nc_block_resource, std::list<utility::string_t>& role_path_segments)
         {
-            if (resource.data.has_field(nmos::fields::nc::members))
+            if (parent_nc_block_resource.data.has_field(nmos::fields::nc::members))
             {
-                const auto& members = nmos::fields::nc::members(resource.data);
+                const auto& members = nmos::fields::nc::members(parent_nc_block_resource.data);
 
                 const auto role_path_segement = role_path_segments.front();
                 role_path_segments.pop_front();
@@ -139,28 +140,28 @@ namespace nmos
                     if (role_path_segments.empty())
                     {
                         // role_path verified
-                        return true;
+                        return *member_found;
                     }
 
                     // get the role_path_segement member resource
                     if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(*member_found))))
                     {
                         // get resource based on the oid
-                        const auto& oid = nmos::fields::nc::oid(*member_found);
+                         const auto& oid = nmos::fields::nc::oid(*member_found);
                         const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                         if (resources.end() != found)
                         {
                             // verify the reminding role_path_segments
-                            return verify_role_path(resources, *found, role_path_segments);
+                            return get_child_nc_object(resources, *found, role_path_segments);
                         }
                     }
                 }
             }
-            return false;
+            return web::json::value{};
         }
     }
 
-    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(nmos::node_model& model, slog::base_gate& gate_)
+    inline web::http::experimental::listener::api_router make_unmounted_configuration_api(nmos::node_model& model, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate_)
     {
         using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -221,13 +222,80 @@ namespace nmos
                 {
                     role_path_segments.pop_front();
 
-                    result = role_path_segments.size() ? details::verify_role_path(resources, *resource, role_path_segments) : true;
+                    result = role_path_segments.size() ? !details::get_child_nc_object(resources, *resource, role_path_segments).is_null() : true;
                 }
             }
 
             if (result)
             {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulkProperties/"), U("descriptors/"), U("methods/"), U("properties/") }, req, res));
+            }
+            else
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        {
+            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            // tokenize the role_path with the '.' delimiter
+            std::list<utility::string_t> role_path_segments;
+            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
+
+            bool result{ false };
+            std::set<utility::string_t> properties_routes;
+
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
+            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
+            if (resources.end() != resource)
+            {
+                const auto role = nmos::fields::nc::role(resource->data);
+                if (role_path_segments.size() && role == role_path_segments.front())
+                {
+                    role_path_segments.pop_front();
+
+                    auto nc_object = role_path_segments.size() ? details::get_child_nc_object(resources, *resource, role_path_segments) : resource->data;
+
+                    result = !nc_object.is_null();
+
+                    if (result)
+                    {
+                        nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+
+                        while (!class_id.empty())
+                        {
+                            const auto& control_class = get_control_protocol_class_descriptor(class_id);
+                            auto& property_descriptors = control_class.property_descriptors.as_array();
+
+                            auto properties_route = boost::copy_range<std::set<utility::string_t>>(property_descriptors | boost::adaptors::transformed([](const web::json::value& property_descriptor)
+                            {
+                                auto make_property_id = [](const web::json::value& property_descriptor)
+                                {
+                                    auto property_id = nmos::fields::nc::id(property_descriptor);
+                                    utility::ostringstream_t os;
+                                    os << nmos::fields::nc::level(property_id) << 'p' << nmos::fields::nc::index(property_id);
+                                    return os.str();
+                                };
+
+                                return make_property_id(property_descriptor) + U("/");
+                            }));
+
+                            properties_routes.insert(properties_route.begin(), properties_route.end());
+
+                            class_id.pop_back();
+                        }
+                    }
+                }
+            }
+    
+            if (result)
+            {
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(properties_routes, req, res));
             }
             else
             {

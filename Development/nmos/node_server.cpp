@@ -77,7 +77,7 @@ namespace nmos
 
             // Configure the Configuration API
 
-            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, gate));
+            node_server.api_routers[{ {}, nmos::fields::configuration_port(node_model.settings) }].mount({}, nmos::make_configuration_api(node_model, validate_authorization ? validate_authorization(nmos::experimental::scopes::configuration) : nullptr, node_implementation.get_control_protocol_class_descriptor, gate));
 
             const auto& events_ws_port = nmos::fields::events_ws_port(node_model.settings);
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
