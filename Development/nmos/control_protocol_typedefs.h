@@ -232,8 +232,6 @@ namespace nmos
     // NcOid
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncoid
     typedef uint32_t nc_oid;
-    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
-    const nc_oid root_block_oid{ 1 };
 
     // NcUri
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncuri
@@ -381,6 +379,11 @@ namespace nmos
         friend bool operator!=(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return !(lhs == rhs); }
         friend bool operator<(const nc_touchpoint_resource_nmos_channel_mapping& lhs, const nc_touchpoint_resource_nmos_channel_mapping& rhs) { return lhs.tied() < rhs.tied(); }
     };
+
+    // Root block specification
+    // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Blocks.html
+    const nc_oid root_block_oid{ 1 };
+    const utility::string_t root_block_role{ U("root") };
 }
 
 #endif

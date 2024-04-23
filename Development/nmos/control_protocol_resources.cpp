@@ -32,7 +32,7 @@ namespace nmos
     {
         using web::json::value;
 
-        return details::make_block(1, value::null(), U("root"), U("Root"), U("Root block"), value::null(), value::null(), value::array());
+        return details::make_block(nmos::root_block_oid, value::null(), nmos::root_block_role, U("Root"), U("Root block"), value::null(), value::null(), value::array());
     }
 
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncdevicemanager
