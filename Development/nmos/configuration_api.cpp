@@ -305,6 +305,76 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/methods/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        {
+            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            // tokenize the role_path with the '.' delimiter
+            std::list<utility::string_t> role_path_segments;
+            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
+
+            bool result{ false };
+            std::set<utility::string_t> methods_routes;
+
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
+            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
+            if (resources.end() != resource)
+            {
+                const auto role = nmos::fields::nc::role(resource->data);
+                if (role_path_segments.size() && role == role_path_segments.front())
+                {
+                    role_path_segments.pop_front();
+
+                    auto nc_object = role_path_segments.size() ? details::get_child_nc_object(resources, *resource, role_path_segments) : resource->data;
+
+                    result = !nc_object.is_null();
+
+                    if (result)
+                    {
+                        nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+
+                        while (!class_id.empty())
+                        {
+                            const auto& control_class = get_control_protocol_class_descriptor(class_id);
+                            auto& method_descriptors = control_class.method_descriptors;
+
+                            auto methods_route = boost::copy_range<std::set<utility::string_t>>(method_descriptors | boost::adaptors::transformed([](const nmos::experimental::method& method)
+                            {
+                                auto make_method_id = [](const nmos::experimental::method& method)
+                                {
+                                    // method tuple definition described in control_protocol_handlers.h
+                                    auto& nc_method_descriptor = std::get<0>(method);
+                                    auto method_id = nmos::fields::nc::id(nc_method_descriptor);
+                                    utility::ostringstream_t os;
+                                    os << nmos::fields::nc::level(method_id) << 'm' << nmos::fields::nc::index(method_id);
+                                    return os.str();
+                                };
+
+                                return make_method_id(method) + U("/");
+                            }));
+
+                            methods_routes.insert(methods_route.begin(), methods_route.end());
+
+                            class_id.pop_back();
+                        }
+                    }
+                }
+            }
+
+            if (result)
+            {
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(methods_routes, req, res));
+            }
+            else
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
         return configuration_api;
     }
 }
