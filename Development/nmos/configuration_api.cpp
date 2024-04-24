@@ -292,7 +292,7 @@ namespace nmos
                     }
                 }
             }
-    
+
             if (result)
             {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body(properties_routes, req, res));
