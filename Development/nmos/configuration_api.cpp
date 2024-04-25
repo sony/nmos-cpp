@@ -121,7 +121,7 @@ namespace nmos
             }
         }
 
-        web::json::value get_child_nc_object(const resources& resources, const nmos::resource& parent_nc_block_resource, std::list<utility::string_t>& role_path_segments)
+        web::json::value get_nc_block_member_descriptor(const resources& resources, const nmos::resource& parent_nc_block_resource, std::list<utility::string_t>& role_path_segments)
         {
             if (parent_nc_block_resource.data.has_field(nmos::fields::nc::members))
             {
@@ -139,7 +139,7 @@ namespace nmos
                 {
                     if (role_path_segments.empty())
                     {
-                        // role_path verified
+                        // NcBlockMemberDescriptor
                         return *member_found;
                     }
 
@@ -147,17 +147,57 @@ namespace nmos
                     if (is_nc_block(nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(*member_found))))
                     {
                         // get resource based on the oid
-                         const auto& oid = nmos::fields::nc::oid(*member_found);
+                        const auto& oid = nmos::fields::nc::oid(*member_found);
                         const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
                         if (resources.end() != found)
                         {
-                            // verify the reminding role_path_segments
-                            return get_child_nc_object(resources, *found, role_path_segments);
+                            return get_nc_block_member_descriptor(resources, *found, role_path_segments);
                         }
                     }
                 }
             }
             return web::json::value{};
+        }
+
+        web::json::value get_nc_object(const resources& resources, std::list<utility::string_t>& role_path_segments)
+        {
+            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
+            if (resources.end() != resource)
+            {
+                const auto role = nmos::fields::nc::role(resource->data);
+                if (role_path_segments.size() && role == role_path_segments.front())
+                {
+                    role_path_segments.pop_front();
+
+                    if (role_path_segments.size())
+                    {
+                        const auto& block_member_descriptor = details::get_nc_block_member_descriptor(resources, *resource, role_path_segments);
+                        if (!block_member_descriptor.is_null())
+                        {
+                            const auto& oid = nmos::fields::nc::oid(block_member_descriptor);
+                            const auto& found = find_resource(resources, utility::s2us(std::to_string(oid)));
+                            if (resources.end() != found)
+                            {
+                                return found->data;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return resource->data;
+                    }
+                }
+            }
+            return web::json::value{};
+        }
+
+        web::json::value get_nc_object(const resources& resources, const utility::string_t& role_path)
+        {
+            // tokenize the role_path with the '.' delimiter
+            std::list<utility::string_t> role_path_segments;
+            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
+
+            return  get_nc_object(resources, role_path_segments);
         }
     }
 
@@ -206,29 +246,12 @@ namespace nmos
         {
             const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
 
-            // tokenize the role_path with the '.' delimiter
-            std::list<utility::string_t> role_path_segments;
-            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
-
-            bool result{ false };
-
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
-            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
-            if (resources.end() != resource)
-            {
-                const auto role = nmos::fields::nc::role(resource->data);
-                if (role_path_segments.size() && role == role_path_segments.front())
-                {
-                    role_path_segments.pop_front();
 
-                    result = role_path_segments.size() ? !details::get_child_nc_object(resources, *resource, role_path_segments).is_null() : true;
-                }
-            }
-
-            if (result)
+            if (!details::get_nc_object(resources, role_path).is_null())
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulkProperties/"), U("descriptors/"), U("methods/"), U("properties/") }, req, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulkProperties/"), U("descriptor/"), U("methods/"), U("properties/") }, req, res));
             }
             else
             {
@@ -242,59 +265,38 @@ namespace nmos
         {
             const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
 
-            // tokenize the role_path with the '.' delimiter
-            std::list<utility::string_t> role_path_segments;
-            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
-
-            bool result{ false };
-            std::set<utility::string_t> properties_routes;
-
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
-            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
-            if (resources.end() != resource)
+
+            const auto& nc_object = details::get_nc_object(resources, role_path);
+            if (!nc_object.is_null())
             {
-                const auto role = nmos::fields::nc::role(resource->data);
-                if (role_path_segments.size() && role == role_path_segments.front())
+                std::set<utility::string_t> properties_routes;
+
+                auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+                while (!class_id.empty())
                 {
-                    role_path_segments.pop_front();
+                    const auto& control_class = get_control_protocol_class_descriptor(class_id);
+                    auto& property_descriptors = control_class.property_descriptors.as_array();
 
-                    auto nc_object = role_path_segments.size() ? details::get_child_nc_object(resources, *resource, role_path_segments) : resource->data;
-
-                    result = !nc_object.is_null();
-
-                    if (result)
+                    auto properties_route = boost::copy_range<std::set<utility::string_t>>(property_descriptors | boost::adaptors::transformed([](const web::json::value& property_descriptor)
                     {
-                        nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
-
-                        while (!class_id.empty())
+                        auto make_property_id = [](const web::json::value& property_descriptor)
                         {
-                            const auto& control_class = get_control_protocol_class_descriptor(class_id);
-                            auto& property_descriptors = control_class.property_descriptors.as_array();
+                            auto property_id = nmos::fields::nc::id(property_descriptor);
+                            utility::ostringstream_t os;
+                            os << nmos::fields::nc::level(property_id) << 'p' << nmos::fields::nc::index(property_id);
+                            return os.str();
+                        };
 
-                            auto properties_route = boost::copy_range<std::set<utility::string_t>>(property_descriptors | boost::adaptors::transformed([](const web::json::value& property_descriptor)
-                            {
-                                auto make_property_id = [](const web::json::value& property_descriptor)
-                                {
-                                    auto property_id = nmos::fields::nc::id(property_descriptor);
-                                    utility::ostringstream_t os;
-                                    os << nmos::fields::nc::level(property_id) << 'p' << nmos::fields::nc::index(property_id);
-                                    return os.str();
-                                };
+                        return make_property_id(property_descriptor) + U("/");
+                    }));
 
-                                return make_property_id(property_descriptor) + U("/");
-                            }));
+                    properties_routes.insert(properties_route.begin(), properties_route.end());
 
-                            properties_routes.insert(properties_route.begin(), properties_route.end());
-
-                            class_id.pop_back();
-                        }
-                    }
+                    class_id.pop_back();
                 }
-            }
 
-            if (result)
-            {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body(properties_routes, req, res));
             }
             else
@@ -305,67 +307,100 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-
         configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/methods/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
         {
             const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
 
-            // tokenize the role_path with the '.' delimiter
-            std::list<utility::string_t> role_path_segments;
-            boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
 
-            bool result{ false };
-            std::set<utility::string_t> methods_routes;
+            const auto& nc_object = details::get_nc_object(resources, role_path);
+            if (!nc_object.is_null())
+            {
+                std::set<utility::string_t> methods_routes;
+
+                nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+                while (!class_id.empty())
+                {
+                    const auto& control_class = get_control_protocol_class_descriptor(class_id);
+                    auto& method_descriptors = control_class.method_descriptors;
+
+                    auto methods_route = boost::copy_range<std::set<utility::string_t>>(method_descriptors | boost::adaptors::transformed([](const nmos::experimental::method& method)
+                    {
+                        auto make_method_id = [](const nmos::experimental::method& method)
+                        {
+                            // method tuple definition described in control_protocol_handlers.h
+                            auto& nc_method_descriptor = std::get<0>(method);
+                            auto method_id = nmos::fields::nc::id(nc_method_descriptor);
+                            utility::ostringstream_t os;
+                            os << nmos::fields::nc::level(method_id) << 'm' << nmos::fields::nc::index(method_id);
+                            return os.str();
+                        };
+
+                        return make_method_id(method) + U("/");
+                    }));
+
+                    methods_routes.insert(methods_route.begin(), methods_route.end());
+
+                    class_id.pop_back();
+                }
+
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(methods_routes, req, res));
+            }
+            else
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        {
+            using web::json::value_from_elements;
+
+            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
 
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
-            auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
-            if (resources.end() != resource)
+
+            const auto& nc_object = details::get_nc_object(resources, role_path);
+            if (!nc_object.is_null())
             {
-                const auto role = nmos::fields::nc::role(resource->data);
-                if (role_path_segments.size() && role == role_path_segments.front())
+                nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+
+                if (!class_id.empty())
                 {
-                    role_path_segments.pop_front();
+                    const auto& control_class = get_control_protocol_class_descriptor(class_id);
 
-                    auto nc_object = role_path_segments.size() ? details::get_child_nc_object(resources, *resource, role_path_segments) : resource->data;
+                    auto& description = control_class.description;
+                    auto& name = control_class.name;
+                    auto& fixed_role = control_class.fixed_role;
+                    auto property_descriptors = control_class.property_descriptors;
+                    auto method_descriptors = value::array();
+                    for (const auto& method_descriptor : control_class.method_descriptors) { web::json::push_back(method_descriptors, std::get<0>(method_descriptor)); }
+                    auto event_descriptors = control_class.event_descriptors;
 
-                    result = !nc_object.is_null();
+                    auto inherited_class_id = class_id;
+                    inherited_class_id.pop_back();
 
-                    if (result)
+                    while (!inherited_class_id.empty())
                     {
-                        nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
-
-                        while (!class_id.empty())
+                        const auto& inherited_control_class = get_control_protocol_class_descriptor(inherited_class_id);
                         {
-                            const auto& control_class = get_control_protocol_class_descriptor(class_id);
-                            auto& method_descriptors = control_class.method_descriptors;
-
-                            auto methods_route = boost::copy_range<std::set<utility::string_t>>(method_descriptors | boost::adaptors::transformed([](const nmos::experimental::method& method)
-                            {
-                                auto make_method_id = [](const nmos::experimental::method& method)
-                                {
-                                    // method tuple definition described in control_protocol_handlers.h
-                                    auto& nc_method_descriptor = std::get<0>(method);
-                                    auto method_id = nmos::fields::nc::id(nc_method_descriptor);
-                                    utility::ostringstream_t os;
-                                    os << nmos::fields::nc::level(method_id) << 'm' << nmos::fields::nc::index(method_id);
-                                    return os.str();
-                                };
-
-                                return make_method_id(method) + U("/");
-                            }));
-
-                            methods_routes.insert(methods_route.begin(), methods_route.end());
-
-                            class_id.pop_back();
+                            for (const auto& property_descriptor : inherited_control_class.property_descriptors.as_array()) { web::json::push_back(property_descriptors, property_descriptor); }
+                            for (const auto& method_descriptor : inherited_control_class.method_descriptors) { web::json::push_back(method_descriptors, std::get<0>(method_descriptor)); }
+                            for (const auto& event_descriptor : inherited_control_class.event_descriptors.as_array()) { web::json::push_back(event_descriptors, event_descriptor); }
                         }
+                        inherited_class_id.pop_back();
                     }
-                }
-            }
 
-            if (result)
-            {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body(methods_routes, req, res));
+                    auto class_descriptor = fixed_role.is_null()
+                        ? details::make_nc_class_descriptor(description, class_id, name, property_descriptors, method_descriptors, event_descriptors)
+                        : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), property_descriptors, method_descriptors, event_descriptors);
+
+                    set_reply(res, status_codes::OK, class_descriptor);
+                }
             }
             else
             {
