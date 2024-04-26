@@ -504,12 +504,9 @@ namespace nmos
                 }
                 else
                 {
-                    web::json::value response = web::json::value_of({
-                        { nmos::fields::nc::status, nmos::fields::nc::is_deprecated(property_descriptor) ? nmos::nc_method_status::property_deprecated : nmos::nc_method_status::ok },
-                        { nmos::fields::nc::value, nc_object.at(nmos::fields::nc::name(property_descriptor)) }
-                        });
+                    web::json::value method_result = details::make_nc_method_result({ nmos::fields::nc::is_deprecated(property_descriptor) ? nmos::nc_method_status::property_deprecated : nmos::nc_method_status::ok }, nc_object.at(nmos::fields::nc::name(property_descriptor)));
 
-                    set_reply(res, status_codes::OK, response);
+                    set_reply(res, status_codes::OK, method_result);
                 }
             }
             else
