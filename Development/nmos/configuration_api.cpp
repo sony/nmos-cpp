@@ -410,7 +410,8 @@ namespace nmos
                         ? details::make_nc_class_descriptor(description, class_id, name, property_descriptors, method_descriptors, event_descriptors)
                         : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), property_descriptors, method_descriptors, event_descriptors);
 
-                    set_reply(res, status_codes::OK, class_descriptor);
+                    web::json::value method_result = details::make_nc_method_result({ nmos::nc_method_status::ok }, class_descriptor);
+                    set_reply(res, status_codes::OK, method_result);
                 }
             }
             else
@@ -472,7 +473,8 @@ namespace nmos
                 }
                 else
                 {
-                    set_reply(res, status_codes::OK, property_descriptor);
+                    web::json::value method_result = details::make_nc_method_result({ nmos::nc_method_status::ok }, property_descriptor);
+                    set_reply(res, status_codes::OK, method_result);
                 }
             }
             else
