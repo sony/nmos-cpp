@@ -204,10 +204,10 @@ namespace nmos
 
         nc_property_id parse_formatted_property_id(const utility::string_t& property_id)
         {
+            // Assume that property_id is in form "<level>p<index>" as validated by the propertyId regular expression pattern
             const utility::string_t::size_type delimiter = property_id.find('p');
-            utility::string_t level = std::string::npos != delimiter ? property_id.substr(0, delimiter) : L"0";
-            utility::string_t index = std::string::npos != delimiter ? property_id.substr(delimiter + 1) : L"0";
-            // JRT Hmmmm, what to do if the property_id is not of a form we recognise
+            utility::string_t level = property_id.substr(0, delimiter);
+            utility::string_t index = property_id.substr(delimiter + 1);
             return { uint16_t(web::json::value::parse(level).as_integer()), uint16_t(web::json::value::parse(index).as_integer()) };
         }
     }
