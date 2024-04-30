@@ -4,8 +4,10 @@
 #include <boost/iterator/filter_iterator.hpp>
 //#include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
+#include "nmos/control_protocol_methods.h"
 #include "nmos/control_protocol_resource.h"
 #include "nmos/control_protocol_state.h"
+#include "nmos/control_protocol_typedefs.h"
 #include "nmos/control_protocol_utils.h"
 #include "nmos/is14_versions.h"
 //#include "nmos/json_schema.h"
@@ -159,7 +161,7 @@ namespace nmos
             return web::json::value{};
         }
 
-        web::json::value get_nc_object(const resources& resources, std::list<utility::string_t>& role_path_segments)
+        web::json::value get_nc_resource(const resources& resources, std::list<utility::string_t>& role_path_segments)
         {
             auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(nmos::root_block_oid)));
             if (resources.end() != resource)
@@ -191,13 +193,49 @@ namespace nmos
             return web::json::value{};
         }
 
-        web::json::value get_nc_object(const resources& resources, const utility::string_t& role_path)
+        web::json::value get_nc_resource(const resources& resources, const utility::string_t& role_path)
         {
             // tokenize the role_path with the '.' delimiter
             std::list<utility::string_t> role_path_segments;
             boost::algorithm::split(role_path_segments, role_path, [](utility::char_t c) { return '.' == c; });
 
-            return  get_nc_object(resources, role_path_segments);
+            return get_nc_resource(resources, role_path_segments);
+        }
+
+        nc_property_id parse_formatted_property_id(const utility::string_t& property_id)
+        {
+            // Assume that property_id is in form "<level>p<index>" as validated by the propertyId regular expression pattern
+            const utility::string_t::size_type delimiter = property_id.find('p');
+            auto level = property_id.substr(0, delimiter);
+            auto index = property_id.substr(delimiter + 1);
+            return { uint16_t(web::json::value::parse(level).as_integer()), uint16_t(web::json::value::parse(index).as_integer()) };
+        }
+
+        // format nc_property_id to the form of "<level>p<index>"
+        utility::string_t make_formatted_property_id(const web::json::value& property_descriptor)
+        {
+            auto property_id = nmos::fields::nc::id(property_descriptor);
+            utility::ostringstream_t os;
+            os << nmos::fields::nc::level(property_id) << 'p' << nmos::fields::nc::index(property_id);
+            return os.str();
+        }
+
+        nc_method_id parse_formatted_method_id(const utility::string_t& method_id)
+        {
+            // Assume that method_id is in form "<level>m<index>" as validated by the methodId regular expression pattern
+            const utility::string_t::size_type delimiter = method_id.find('m');
+            auto level = method_id.substr(0, delimiter);
+            auto index = method_id.substr(delimiter + 1);
+            return { uint16_t(web::json::value::parse(level).as_integer()), uint16_t(web::json::value::parse(index).as_integer()) };
+        }
+
+        // format nc_method_id to the form of "<level>m<index>"
+        utility::string_t make_formatted_method_id(const web::json::value& method_descriptor)
+        {
+            auto method_id = nmos::fields::nc::id(method_descriptor);
+            utility::ostringstream_t os;
+            os << nmos::fields::nc::level(method_id) << 'm' << nmos::fields::nc::index(method_id);
+            return os.str();
         }
     }
 
@@ -217,10 +255,8 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.support(U("/rolePaths/?"), methods::GET, [&model](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters&)
         {
-            using web::json::value;
-
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
 
@@ -242,14 +278,14 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
 
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
 
-            if (!details::get_nc_object(resources, role_path).is_null())
+            if (!details::get_nc_resource(resources, role_path).is_null())
             {
                 set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("bulkProperties/"), U("descriptor/"), U("methods/"), U("properties/") }, req, res));
             }
@@ -261,19 +297,19 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
 
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
 
-            const auto& nc_object = details::get_nc_object(resources, role_path);
-            if (!nc_object.is_null())
+            const auto& resource = details::get_nc_resource(resources, role_path);
+            if (!resource.is_null())
             {
                 std::set<utility::string_t> properties_routes;
 
-                auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+                auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource));
                 while (!class_id.empty())
                 {
                     const auto& control_class = get_control_protocol_class_descriptor(class_id);
@@ -281,15 +317,7 @@ namespace nmos
 
                     auto properties_route = boost::copy_range<std::set<utility::string_t>>(property_descriptors | boost::adaptors::transformed([](const web::json::value& property_descriptor)
                     {
-                        auto make_property_id = [](const web::json::value& property_descriptor)
-                        {
-                            auto property_id = nmos::fields::nc::id(property_descriptor);
-                            utility::ostringstream_t os;
-                            os << nmos::fields::nc::level(property_id) << 'p' << nmos::fields::nc::index(property_id);
-                            return os.str();
-                        };
-
-                        return make_property_id(property_descriptor) + U("/");
+                        return details::make_formatted_property_id(property_descriptor) + U("/");
                     }));
 
                     properties_routes.insert(properties_route.begin(), properties_route.end());
@@ -307,19 +335,19 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/methods/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/methods/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
 
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
 
-            const auto& nc_object = details::get_nc_object(resources, role_path);
-            if (!nc_object.is_null())
+            const auto& resource = details::get_nc_resource(resources, role_path);
+            if (!resource.is_null())
             {
                 std::set<utility::string_t> methods_routes;
 
-                nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+                auto class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource));
                 while (!class_id.empty())
                 {
                     const auto& control_class = get_control_protocol_class_descriptor(class_id);
@@ -331,10 +359,7 @@ namespace nmos
                         {
                             // method tuple definition described in control_protocol_handlers.h
                             auto& nc_method_descriptor = std::get<0>(method);
-                            auto method_id = nmos::fields::nc::id(nc_method_descriptor);
-                            utility::ostringstream_t os;
-                            os << nmos::fields::nc::level(method_id) << 'm' << nmos::fields::nc::index(method_id);
-                            return os.str();
+                            return details::make_formatted_method_id(nc_method_descriptor);
                         };
 
                         return make_method_id(method) + U("/");
@@ -355,19 +380,17 @@ namespace nmos
             return pplx::task_from_result(true);
         });
 
-        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t& route_path, const route_parameters& parameters)
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
         {
-            using web::json::value_from_elements;
-
-            const string_t role_path = parameters.at(nmos::patterns::rolePath.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
 
             auto lock = model.read_lock();
             auto& resources = model.control_protocol_resources;
 
-            const auto& nc_object = details::get_nc_object(resources, role_path);
-            if (!nc_object.is_null())
+            const auto& resource = details::get_nc_resource(resources, role_path);
+            if (!resource.is_null())
             {
-                nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(nc_object));
+                nc_class_id class_id = nmos::details::parse_nc_class_id(nmos::fields::nc::class_id(resource));
 
                 if (!class_id.empty())
                 {
@@ -399,7 +422,101 @@ namespace nmos
                         ? details::make_nc_class_descriptor(description, class_id, name, property_descriptors, method_descriptors, event_descriptors)
                         : details::make_nc_class_descriptor(description, class_id, name, fixed_role.as_string(), property_descriptors, method_descriptors, event_descriptors);
 
-                    set_reply(res, status_codes::OK, class_descriptor);
+                    auto method_result = details::make_nc_method_result({ nmos::nc_method_status::ok }, class_descriptor);
+                    set_reply(res, status_codes::OK, method_result);
+                }
+            }
+            else
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            const auto property_id = parameters.at(nmos::patterns::propertyId.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
+
+            const auto& resource = details::get_nc_resource(resources, role_path);
+            if (!resource.is_null())
+            {
+                // find the relevant nc_property_descriptor
+                const auto& property_descriptor = find_property_descriptor(details::parse_formatted_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource)), get_control_protocol_class_descriptor);
+                if (property_descriptor.is_null())
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+                }
+                else
+                {
+                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("descriptor/"), U("value/") }, req, res));
+                }
+            }
+            else
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/descriptor/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            const auto property_id = parameters.at(nmos::patterns::propertyId.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
+
+            const auto& resource = details::get_nc_resource(resources, role_path);
+            if (!resource.is_null())
+            {
+                // find the relevant nc_property_descriptor
+                const auto& property_descriptor = find_property_descriptor(details::parse_formatted_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource)), get_control_protocol_class_descriptor);
+                if (property_descriptor.is_null())
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+                }
+                else
+                {
+                    web::json::value method_result = details::make_nc_method_result({ nmos::nc_method_status::ok }, property_descriptor);
+                    set_reply(res, status_codes::OK, method_result);
+                }
+            }
+            else
+            {
+                set_error_reply(res, status_codes::NotFound, U("Not Found; ") + role_path);
+            }
+
+            return pplx::task_from_result(true);
+        });
+
+        configuration_api.support(U("/rolePaths/") + nmos::patterns::rolePath.pattern + U("/properties/") + nmos::patterns::propertyId.pattern + U("/value/?"), methods::GET, [&model, get_control_protocol_class_descriptor, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+        {
+            const auto property_id = parameters.at(nmos::patterns::propertyId.name);
+            const auto role_path = parameters.at(nmos::patterns::rolePath.name);
+
+            auto lock = model.read_lock();
+            auto& resources = model.control_protocol_resources;
+
+            const auto& resource = details::get_nc_resource(resources, role_path);
+            if (!resource.is_null())
+            {
+                // find the relevant nc_property_descriptor
+                const auto& property_descriptor = find_property_descriptor(details::parse_formatted_property_id(property_id), details::parse_nc_class_id(nmos::fields::nc::class_id(resource)), get_control_protocol_class_descriptor);
+                if (property_descriptor.is_null())
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + property_id);
+                }
+                else
+                {
+                    web::json::value method_result = details::make_nc_method_result({ nmos::fields::nc::is_deprecated(property_descriptor) ? nmos::nc_method_status::property_deprecated : nmos::nc_method_status::ok }, resource.at(nmos::fields::nc::name(property_descriptor)));
+
+                    set_reply(res, status_codes::OK, method_result);
                 }
             }
             else

@@ -40,6 +40,9 @@ namespace nmos
 
     namespace details
     {
+        // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmethodresult
+        web::json::value make_nc_method_result(const nc_method_result& method_result, const web::json::value& value);
+
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncelementid
         web::json::value make_nc_element_id(const nc_element_id& element_id);
         nc_element_id parse_nc_element_id(const web::json::value& element_id);
