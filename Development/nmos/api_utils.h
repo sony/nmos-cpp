@@ -92,7 +92,8 @@ namespace nmos
         // Configuration API
         const route_pattern rolePath = make_route_pattern(U("rolePath"), U("root|root\\.[a-zA-Z0-9\\-_\\.]+"));
         const route_pattern propertyId = make_route_pattern(U("propertyId"), U("[0-9]+p[0-9]+"));
-        
+        const route_pattern methodId = make_route_pattern(U("methodId"), U("[0-9]+m[0-9]+"));
+
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));
     }
