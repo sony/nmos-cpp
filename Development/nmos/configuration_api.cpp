@@ -562,7 +562,7 @@ namespace nmos
                             }
 
                             auto status = nmos::fields::nc::status(method_result);
-                            if (nc_method_status::ok == status) { code = status_codes::OK; }
+                            if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
                             else if (nc_method_status::parameter_error == status) { code = status_codes::BadRequest; }
                             else if (nc_method_status::device_error == status) { code = status_codes::InternalError; }
                             else { code = status_codes::InternalError; }
@@ -635,7 +635,7 @@ namespace nmos
                         auto result = set(resources, *resource, 0, arguments, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate).at(nmos::fields::nc::result);
 
                         auto status = nmos::fields::nc::status(result);
-                        auto code = nc_method_status::ok == status ? status_codes::OK : status_codes::InternalError;
+                        auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
                         set_reply(res, code, result);
                     }
                 }
