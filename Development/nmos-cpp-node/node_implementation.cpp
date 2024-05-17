@@ -1008,31 +1008,31 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
                 nmos::experimental::make_control_class_property_descriptor(U("Example object sequence property"), { 3, 14 }, object_sequence, U("ExampleDataType"), false, false, true)
             };
 
-            auto example_method_with_no_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+            auto example_method_with_no_args = [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with no arguments";
 
-                return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
+                return nmos::details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_simple_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+            auto example_method_with_simple_args = [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
                 // and the method parameters constriants has already been validated by the outer function
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with simple arguments: " << arguments.serialize();
 
-                return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
+                return nmos::details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
-            auto example_method_with_object_args = [](nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+            auto example_method_with_object_args = [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
             {
                 // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
                 // and the method parameters constriants has already been validated by the outer function
 
                 slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Executing the example method with object argument: " << arguments.serialize();
 
-                return nmos::make_control_protocol_message_response(handle, { is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
+                return nmos::details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::nc_method_status::ok });
             };
             // Example control class method descriptors
             std::vector<nmos::experimental::method> example_control_method_descriptors =

@@ -39,10 +39,10 @@ namespace nmos
     namespace experimental
     {
         // standard method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)> standard_method_handler;
+        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)> standard_method_handler;
 
         // non-standard method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, int32_t handle, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> non_standard_method_handler;
+        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> non_standard_method_handler;
 
         // method definition (NcMethodDescriptor vs method handler)
         typedef std::tuple<web::json::value, standard_method_handler, non_standard_method_handler> method;

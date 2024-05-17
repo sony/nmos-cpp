@@ -833,6 +833,15 @@ namespace nmos
 
     // message response
     // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-response-message-type
+    web::json::value make_control_protocol_response(int32_t handle, const web::json::value& method_result)
+    {
+        using web::json::value_of;
+
+        return value_of({
+            { nmos::fields::nc::handle, handle },
+            { nmos::fields::nc::result, method_result }
+            });
+    }
     web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message)
     {
         using web::json::value_of;

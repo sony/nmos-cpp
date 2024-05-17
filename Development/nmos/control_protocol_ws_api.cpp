@@ -251,7 +251,7 @@ namespace nmos
                                     // get arguments
                                     const auto& arguments = nmos::fields::nc::arguments(cmd);
 
-                                    value response;
+                                    value nc_method_result;
 
                                     auto resource = nmos::find_resource(resources, utility::s2us(std::to_string(oid)));
                                     if (resources.end() != resource)
@@ -274,18 +274,19 @@ namespace nmos
                                                 // execute the relevant method handler, then accumulating up their response to reponses
                                                 if (standard_method)
                                                 {
-                                                    response = standard_method(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                                                    // wrap the NcMethodResuls here
+                                                    nc_method_result = standard_method(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                                                 }
                                                 else // non_standard_method
                                                 {
-                                                    response = non_standard_method(resources, *resource, handle, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
+                                                    nc_method_result = non_standard_method(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
                                                 }
                                             }
                                             catch (const nmos::control_protocol_exception& e)
                                             {
                                                 // invalid arguments
                                                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "invalid argument: " << arguments.serialize() << " error: " << e.what();
-                                                response = make_control_protocol_message_response(handle, { nmos::nc_method_status::parameter_error });
+                                                nc_method_result = details::make_nc_method_result({ nmos::nc_method_status::parameter_error });
                                             }
                                         }
                                         else
@@ -294,7 +295,7 @@ namespace nmos
                                             utility::stringstream_t ss;
                                             ss << U("unsupported method_id: ") << nmos::fields::nc::method_id(cmd).serialize()
                                                 << U(" for control class class_id: ") << resource->data.at(nmos::fields::nc::class_id).serialize();
-                                            response = make_control_protocol_error_response(handle, { nc_method_status::method_not_implemented }, ss.str());
+                                            nc_method_result = details::make_nc_method_result_error({ nc_method_status::method_not_implemented }, ss.str());
                                         }
                                     }
                                     else
@@ -302,9 +303,11 @@ namespace nmos
                                         // resource not found for the given oid
                                         utility::stringstream_t ss;
                                         ss << U("unknown oid: ") << oid;
-                                        response = make_control_protocol_error_response(handle, { nc_method_status::bad_oid }, ss.str());
+                                        nc_method_result = details::make_nc_method_result_error({ nc_method_status::bad_oid }, ss.str());
                                     }
                                     // accumulating up response
+                                    auto response = make_control_protocol_response(handle, nc_method_result);
+
                                     web::json::push_back(responses, response);
                                 }
 
