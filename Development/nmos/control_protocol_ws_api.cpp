@@ -314,7 +314,7 @@ namespace nmos
                                 // add command_response to the grain ready to transfer to the client in nmos::send_control_protocol_ws_messages_thread
                                 resources.modify(grain, [&](nmos::resource& grain)
                                 {
-                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_control_protocol_message_response(responses));
+                                    web::json::push_back(nmos::fields::message_grain_data(grain.data), make_control_protocol_command_response(responses));
 
                                     grain.updated = strictly_increasing_update(resources);
                                 });
