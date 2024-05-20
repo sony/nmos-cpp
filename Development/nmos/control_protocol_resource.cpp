@@ -840,7 +840,7 @@ namespace nmos
         return value_of({
             { nmos::fields::nc::handle, handle },
             { nmos::fields::nc::result, method_result }
-            });
+        });
     }
     web::json::value make_control_protocol_command_response(const web::json::value& responses)
     {

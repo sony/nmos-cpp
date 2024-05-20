@@ -262,7 +262,7 @@ namespace nmos
 
                 }, make_property_changed_event(nmos::fields::nc::oid(resource.data), { { property_id_, nc_property_change_type::type::sequence_item_added, val, sequence_item_index } }));
 
-                return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, value(sequence_item_index));
+                return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nmos::fields::nc::is_deprecated(property) ? nc_method_status::property_deprecated : nc_method_status::ok }, sequence_item_index);
             }
             catch (const nmos::control_protocol_exception& e)
             {
