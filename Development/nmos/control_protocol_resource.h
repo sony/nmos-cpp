@@ -193,13 +193,10 @@ namespace nmos
         web::json::value make_nc_class_manager(nc_oid oid, nc_oid owner, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, const nmos::experimental::control_protocol_state& control_protocol_state);
     }
 
-    // message response
+    // command message response
     // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#command-response-message-type
-    web::json::value make_control_protocol_error_response(int32_t handle, const nc_method_result& method_result, const utility::string_t& error_message);
-    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result);
-    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result, const web::json::value& value); // value can be sequence<NcBlockMemberDescriptor>, NcClassDescriptor, NcDatatypeDescriptor
-    web::json::value make_control_protocol_message_response(int32_t handle, const nc_method_result& method_result, uint32_t value);
-    web::json::value make_control_protocol_message_response(const web::json::value& responses);
+    web::json::value make_control_protocol_response(int32_t handle, const web::json::value& method_result);
+    web::json::value make_control_protocol_command_response(const web::json::value& responses);
 
     // subscription response
     // See https://specs.amwa.tv/is-12/branches/v1.0.x/docs/Protocol_messaging.html#subscription-response-message-type

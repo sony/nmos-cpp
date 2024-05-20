@@ -554,11 +554,11 @@ namespace nmos
                             // execute the relevant method handler, then accumulating up their response to reponses
                             if (standard_method)
                             {
-                                method_result = standard_method(resources, *resource, 0, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate).at(nmos::fields::nc::result);
+                                method_result = standard_method(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
                             }
                             else // non_standard_method
                             {
-                                method_result = non_standard_method(resources, *resource, 0, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate).at(nmos::fields::nc::result);
+                                method_result = non_standard_method(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
                             }
 
                             auto status = nmos::fields::nc::status(method_result);
@@ -632,7 +632,7 @@ namespace nmos
                         });
                         web::json::merge_patch(arguments, body, true);
 
-                        auto result = set(resources, *resource, 0, arguments, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate).at(nmos::fields::nc::result);
+                        auto result = set(resources, *resource, arguments, false, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
 
                         auto status = nmos::fields::nc::status(result);
                         auto code = (nc_method_status::ok == status || nc_method_status::property_deprecated == status) ? status_codes::OK : status_codes::InternalError;
