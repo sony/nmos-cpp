@@ -2049,4 +2049,74 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("A payload error was encountered"), U("PayloadError"), 3));
         return details::make_nc_datatype_descriptor_enum(U("Connection status enum data typee"), U("NcPayloadStatus"), items, value::null());
     }
+
+    // Device Configuration datatypes
+    // TODO: add link
+    web::json::value make_nc_property_value_holder_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property id"), nmos::fields::nc::id, U("NcPropertyId"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property name"), nmos::fields::nc::name, U("NcString"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property type name. If null it means the type is any"), nmos::fields::nc::type_name, U("NcName"), true, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Is the property ReadOnly?"), nmos::fields::nc::is_read_only, U("NcBoolean"), true, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Property value"), nmos::fields::nc::value, true, false, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Property value holder descriptor"), U("NcPropertyValueHolder"), fields, value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_object_properties_holder_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Object role path"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Object properties values"), nmos::fields::nc::values, U("NcPropertyValueHolder"), false, true, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Object properties holder descriptor"), U("NcObjectPropertiesHolder"), fields, value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_bulk_values_holder_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Optional vendor specific fingerprinting mechanism used for validation purposes"), nmos::fields::nc::validation_fingerprint, U("NcString"), true, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Values by rolePath"), nmos::fields::nc::values, U("NcObjectPropertiesHolder"), false, true, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Bulk values holder descriptor"), U("NcBulkValuesHolder"), fields, value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_object_properties_set_validation_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Object role path"), nmos::fields::nc::path, U("NcRolePath"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Validation status"), nmos::fields::nc::status, U("NcMethodStatus"), false, false, value::null()));
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Validation status message"), nmos::fields::nc::status_message, U("NcString"), true, false, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Object properties set validation descriptor"), U("NcObjectPropertiesSetValidation"), fields, value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_method_result_bulk_values_holder_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Bulk values holder value"), nmos::fields::nc::value, U("NcBulkValuesHolder"), false, false, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Method result containing bulk values holder descriptor"), U("NcMethodResultBulkValuesHolder"), fields, U("NcMethodResult"), value::null());
+    }
+    // TODO: add link
+    web::json::value make_nc_method_result_object_properties_set_validation_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Object properties set path validation"), nmos::fields::nc::value, U("NcObjectPropertiesSetValidation"), false, true, value::null()));
+
+        return details::make_nc_datatype_descriptor_struct(U("Method result containing object properties set validation descriptor"), U("NcMethodResultObjectPropertiesSetValidation"), fields, U("NcMethodResult"), value::null());
+    }
 }

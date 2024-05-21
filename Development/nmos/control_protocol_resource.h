@@ -428,6 +428,21 @@ namespace nmos
     web::json::value make_nc_connection_status_datatype();
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
     web::json::value make_nc_payload_status_datatype();
+
+    // Device configuration feature set datatypes
+    // TODO: add link
+    //
+    web::json::value make_nc_property_value_holder_datatype();
+    //
+    web::json::value make_nc_object_properties_holder_datatype();
+    //
+    web::json::value make_nc_bulk_values_holder_datatype();
+    //
+    web::json::value make_nc_object_properties_set_validation_datatype();
+    //
+    web::json::value make_nc_method_result_bulk_values_holder_datatype();
+    //
+    web::json::value make_nc_method_result_object_properties_set_validation_datatype();
 }
 
 #endif
