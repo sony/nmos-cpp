@@ -428,6 +428,16 @@ namespace nmos
     web::json::value make_nc_connection_status_datatype();
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
     web::json::value make_nc_payload_status_datatype();
+    // TOO: link
+    web::json::value make_nc_overall_status_datatype();
+    // TOO: link
+    web::json::value make_nc_link_status_datatype();
+    // TOO: link
+    web::json::value make_nc_synchronization_status_datatype();
+    // TOO: link
+    web::json::value make_nc_stream_status_datatype();
+    // TOO: link
+    web::json::value make_nc_method_result_counter_datatype();
 }
 
 #endif

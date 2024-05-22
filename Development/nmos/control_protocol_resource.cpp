@@ -2024,20 +2024,22 @@ namespace nmos
         return details::make_nc_datatype_typedef(U("Version code in semantic versioning format"), U("NcVersionCode"), false, U("NcString"), value::null());
     }
 
+    // Monitoring datatype defintions
+    //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     web::json::value make_nc_connection_status_datatype()
     {
         using web::json::value;
 
         auto items = value::array();
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("This is the value when there is no receiver"), U("Undefined"), 0));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Connected to a stream"), U("Connected"), 1));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Not connected to a stream"), U("Disconnected"), 2));
-        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("A connection error was encountered"), U("ConnectionError"), 3));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), 0));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), 1));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), 2));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), 3));
         return details::make_nc_datatype_descriptor_enum(U("Connection status enum data typee"), U("NcConnectionStatus"), items, value::null());
     }
-
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
+    // ******************
     web::json::value make_nc_payload_status_datatype()
     {
         using web::json::value;
@@ -2048,5 +2050,63 @@ namespace nmos
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Payload is being received but is of an unsupported type"), U("PayloadFormatUnsupported"), 2));
         web::json::push_back(items, details::make_nc_enum_item_descriptor(U("A payload error was encountered"), U("PayloadError"), 3));
         return details::make_nc_datatype_descriptor_enum(U("Connection status enum data typee"), U("NcPayloadStatus"), items, value::null());
+    }
+    // ***********************
+    // TOO: link
+    web::json::value make_nc_overall_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is healthy"), U("Healthy"), 1));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is partially healthy"), U("PartiallyHealthy"), 2));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("The overall status is unhealthy"), U("Unhealthy"), 3));
+        return details::make_nc_datatype_descriptor_enum(U("Overall status enum data type"), U("NcOverallStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_link_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("All the associated network interfaces are down"), U("AllDown"), 1));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Some of the associated network interfaces are down"), U("SomeDown"), 2));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("All the associated network interfaces are up"), U("AllUp"), 3));
+        return details::make_nc_datatype_descriptor_enum(U("Link status enum data type"), U("NcLinkStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_synchronization_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Feature not in use"), U("NotUsed"), 0)); 
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Locked from baseband"), U("BasebandLocked"), 1));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Partially locked from baseband"), U("BasebandPartiallyLocked"), 2));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Partially locked from network"), U("NetworkLocked"), 3));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Locked from network"), U("NetworkPartiallyLocked"), 4));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Not locked"), U("NotLocked"), 5));
+        return details::make_nc_datatype_descriptor_enum(U("Synchronization status enum data type"), U("NcSynchronizationStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_stream_status_datatype()
+    {
+        using web::json::value;
+
+        auto items = value::array();
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Inactive"), U("Inactive"), 0));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and healthy"), U("Healthy"), 1));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and partially healthy"), U("PartiallyHealthy"), 2));
+        web::json::push_back(items, details::make_nc_enum_item_descriptor(U("Active and unhealthy"), U("Unhealthy"), 3));
+        return details::make_nc_datatype_descriptor_enum(U("Stream status enum data type"), U("NcStreamStatus"), items, value::null());
+    }
+    // TOO: link
+    web::json::value make_nc_method_result_counter_datatype()
+    {
+        using web::json::value;
+
+        auto fields = value::array();
+        web::json::push_back(fields, details::make_nc_field_descriptor(U("Counter value"), nmos::fields::nc::value, U("NcUint64"), false, false, value::null()));
+        return details::make_nc_datatype_descriptor_struct(U("Counter method result"), U("NcMethodResultCounter"), fields, U("NcMethodResult"), value::null());
     }
 }

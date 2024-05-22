@@ -393,7 +393,12 @@ namespace nmos
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
                 { U("NcConnectionStatus"), {make_nc_connection_status_datatype()} },
-                { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} }
+                { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} },
+                { U("NcOverallStatus"), {make_nc_overall_status_datatype() } },
+                { U("NcLinkStatus"), {make_nc_link_status_datatype() } },
+                { U("NcSynchronizationStatus"), {make_nc_synchronization_status_datatype() } },
+                { U("NcStreamStatus"), {make_nc_stream_status_datatype() } },
+                { U("NcMethodResultCounter"), {make_nc_method_result_counter_datatype() } }
             };
         }
 

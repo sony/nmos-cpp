@@ -104,10 +104,10 @@ namespace nmos
     {
         enum status
         {
-            undefined = 0,          // This is the value when there is no receiver
-            connected = 1,          // Connected to a stream
-            disconnected = 2,       // Not connected to a stream
-            connection_error = 3     // A connection error was encountered
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
         };
     }
 
@@ -121,6 +121,58 @@ namespace nmos
             payload_ok = 1,                  // Payload is being received without errors and is the correct type
             payload_format_unsupported = 2,   // Payload is being received but is of an unsupported type
             payloadError = 3                // A payload error was encountered
+        };
+    }
+
+    // NcOverallStatus
+    // TODO: link
+    namespace nc_overall_status
+    {
+        enum status
+        {
+            healthy = 1, //         // The overall status is healthy
+            partially_unhealthy = 2,// The overall status is partially healthy
+            unhealthy = 3           // The overall status is unhealthy
+        };
+    }
+
+    //NcLinkStatus
+    // TODO: link
+    namespace nc_link_status
+    {
+        enum status
+        {
+            all_down = 1,   // All the associated network interfaces are down
+            some_down = 2,  // Some of the associated network interfaces are down
+            all_up = 3      // All the associated network interfaces are up
+        };
+    }
+
+    //NcSynchronizationStatus
+    // TODO: link
+    namespace nc_synchronization_status
+    {
+        enum status
+        {
+            not_used = 0,                   // Feature not in use
+            baseband_locked = 1,            // Locked from baseband
+            baseband_partially_locked = 2,  // Partially locked from baseband
+            network_locked = 3,             // Partially locked from network
+            network_partially_locked = 4,   // Partially locked from network
+            not_locked = 5                  // Not locked
+        };
+    }
+
+    //NcStreamStatus
+    // TODO: add link
+    namespace nc_stream_status
+    {
+        enum status
+        {
+            inactive = 0,           // Inactive
+            healthy = 1,            // Active and healthy
+            partially_healthy = 2,  // Active and partially healthy
+            unhealthy = 3           // Active and unhealthy
         };
     }
 

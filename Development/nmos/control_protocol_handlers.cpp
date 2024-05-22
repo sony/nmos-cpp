@@ -80,7 +80,7 @@ namespace nmos
                 // update receiver-monitor's connectionStatus and payloadStatus properties
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
-                const web::json::value connection_status = active ? nc_connection_status::connected : nc_connection_status::disconnected;
+                const web::json::value connection_status = active ? nc_connection_status::healthy : nc_connection_status::inactive;
                 const web::json::value payload_status = active ? nc_payload_status::payload_ok : nc_payload_status::undefined;
 
                 // hmm, maybe updating connectionStatusMessage and payloadStatusMessage too
