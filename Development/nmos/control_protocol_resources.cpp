@@ -67,22 +67,11 @@ namespace nmos
     //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     control_protocol_resource make_receiver_monitor(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
-        nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message)
+        nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& grand_master_clock_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
     {
-        auto data = details::make_receiver_monitor(nc_receiver_monitor_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, connection_status, connection_status_message, payload_status, payload_status_message);
+        auto data = details::make_receiver_monitor(nc_receiver_monitor_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, link_status, link_status_message, connection_status, connection_status_message, synchronization_status, synchronization_status_message, grand_master_clock_id, stream_status, stream_status_message);
 
         return{ is12_versions::v1_0, types::nc_receiver_monitor, std::move(data), true };
-    }
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    control_protocol_resource make_receiver_monitor_protected(nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
-        nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message, bool signal_protection_status)
-    {
-        using web::json::value;
-
-        auto data = details::make_receiver_monitor(nc_receiver_monitor_protected_class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, connection_status, connection_status_message, payload_status, payload_status_message);
-        data[nmos::fields::nc::signal_protection_status] = value::boolean(signal_protection_status);
-
-        return{ is12_versions::v1_0, types::nc_receiver_monitor_protected, std::move(data), true };
     }
 
     // Identification feature set control classes

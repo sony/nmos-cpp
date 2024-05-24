@@ -111,19 +111,6 @@ namespace nmos
         };
     }
 
-    // NcPayloadStatus
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
-    namespace nc_payload_status
-    {
-        enum status
-        {
-            undefined = 0,                  // This is the value when there's no connection.
-            payload_ok = 1,                  // Payload is being received without errors and is the correct type
-            payload_format_unsupported = 2,   // Payload is being received but is of an unsupported type
-            payloadError = 3                // A payload error was encountered
-        };
-    }
-
     // NcOverallStatus
     // TODO: link
     namespace nc_overall_status
@@ -223,6 +210,11 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_method_id nc_class_manager_get_control_class_method_id(3, 1);
     const nc_method_id nc_class_manager_get_datatype_method_id(3, 2);
+    // NcMethodIds for NcReceiverMonitor
+    // TODO: link
+    const nc_method_id nc_receiver_monitor_get_lost_packets_method_id(4, 1);
+    const nc_method_id nc_receiver_monitor_get_late_packets_method_id(4, 2);
+    const nc_method_id nc_receiver_monitor_reset_packet_counters_method_id(4, 3);
 
     // NcPropertyId
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncpropertyid
@@ -260,14 +252,20 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_property_id nc_class_manager_control_classes_property_id(3, 1);
     const nc_property_id nc_class_manager_datatypes_property_id(3, 2);
+    // NcPropertyIds for NcStatusMonitor
+    const nc_property_id nc_status_monitor_overall_status_property_id(3, 1);
+    const nc_property_id nc_status_monitor_overall_status_message_property_id(3, 2);
     // NcPropertyids for NcReceiverMonitor
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-    const nc_property_id nc_receiver_monitor_connection_status_property_id(3, 1);
-    const nc_property_id nc_receiver_monitor_connection_status_message_property_id(3, 2);
-    const nc_property_id nc_receiver_monitor_payload_status_property_id(3, 3);
-    const nc_property_id nc_receiver_monitor_payload_status_message_property_id(3, 4);
-    // NcPropertyids for NcReceiverMonitorProtected
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
+    const nc_property_id nc_receiver_monitor_link_status_property_id(4, 1);
+    const nc_property_id nc_receiver_monitor_link_status_message_property_id(4, 2);
+    const nc_property_id nc_receiver_monitor_connection_status_property_id(4, 3);
+    const nc_property_id nc_receiver_monitor_connection_status_message_property_id(4, 4);
+    const nc_property_id nc_receiver_monitor_synchronization_status_property_id(4, 5);
+    const nc_property_id nc_receiver_monitor_synchronization_status_message_property_id(4, 6);
+    const nc_property_id nc_receiver_monitor_synchronization_grand_master_clock_id_property_id(4, 7);
+    const nc_property_id nc_receiver_monitor_stream_status_property_id(4, 8);
+    const nc_property_id nc_receiver_monitor_stream_status_message_property_id(4, 9);
     const nc_property_id nc_receiver_monitor_protected_signal_protection_status_property_id(4, 1);
     // NcPropertyids for NcIdentBeacon
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
@@ -319,11 +317,11 @@ namespace nmos
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncclassmanager
     const nc_class_id nc_class_manager_class_id({ 1, 3, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
-    const nc_class_id nc_ident_beacon_class_id({ 1, 2, 2 });
+    const nc_class_id nc_ident_beacon_class_id({ 1, 2, 1 });
+    // TODO: link
+    const nc_class_id nc_status_monitor_class_id({ 1, 2, 2 });
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-    const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 3 });
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    const nc_class_id nc_receiver_monitor_protected_class_id({ 1, 2, 3, 1 });
+    const nc_class_id nc_receiver_monitor_class_id({ 1, 2, 2, 1 });
 
     // NcTouchpoint
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#nctouchpoint

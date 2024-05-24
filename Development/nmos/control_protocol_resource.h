@@ -178,8 +178,7 @@ namespace nmos
         web::json::value make_nc_worker(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled);
 
         // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled,
-            nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_payload_status::status payload_status, const utility::string_t& payload_status_message);
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& grand_master_clock_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message);
 
         // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncmanager
         web::json::value make_nc_manager(const nc_class_id& class_id, nc_oid oid, bool constant_oid, const web::json::value& owner, const utility::string_t& role, const web::json::value& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints);
@@ -236,8 +235,6 @@ namespace nmos
     web::json::value make_nc_ident_beacon_class();
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     web::json::value make_nc_receiver_monitor_class();
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    web::json::value make_nc_receiver_monitor_protected_class();
 
     // control classes proprties/methods/events
     // See https://specs.amwa.tv/ms-05-02/branches/v1.0.x/docs/Framework.html#ncobject
@@ -264,16 +261,16 @@ namespace nmos
     web::json::value make_nc_class_manager_properties();
     web::json::value make_nc_class_manager_methods();
     web::json::value make_nc_class_manager_events();
+    
+    // Monitoring feature set control classes
+    // TODO: link
+    web::json::value make_nc_status_monitor_properties();
+    web::json::value make_nc_status_monitor_methods();
+    web::json::value make_nc_status_monitor_events();
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
     web::json::value make_nc_receiver_monitor_properties();
     web::json::value make_nc_receiver_monitor_methods();
     web::json::value make_nc_receiver_monitor_events();
-
-    // Monitoring feature set control classes
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitorprotected
-    web::json::value make_nc_receiver_monitor_protected_properties();
-    web::json::value make_nc_receiver_monitor_protected_methods();
-    web::json::value make_nc_receiver_monitor_protected_events();
 
     // Identification feature set control classes
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/identification/#ncidentbeacon
@@ -426,8 +423,6 @@ namespace nmos
     //
     // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncconnectionstatus
     web::json::value make_nc_connection_status_datatype();
-    // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncpayloadstatus
-    web::json::value make_nc_payload_status_datatype();
     // TOO: link
     web::json::value make_nc_overall_status_datatype();
     // TOO: link

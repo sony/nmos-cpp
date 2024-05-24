@@ -81,20 +81,20 @@ namespace nmos
 
                 const auto active = nmos::fields::master_enable(nmos::fields::endpoint_active(connection_resource.data));
                 const web::json::value connection_status = active ? nc_connection_status::healthy : nc_connection_status::inactive;
-                const web::json::value payload_status = active ? nc_payload_status::payload_ok : nc_payload_status::undefined;
+                const web::json::value stream_status = active ? nc_stream_status::healthy : nc_stream_status::inactive;
 
                 // hmm, maybe updating connectionStatusMessage and payloadStatusMessage too
 
                 const auto property_changed_event = make_property_changed_event(nmos::fields::nc::oid(found->data),
                 {
                     { nc_receiver_monitor_connection_status_property_id, nc_property_change_type::type::value_changed, connection_status },
-                    { nc_receiver_monitor_payload_status_property_id, nc_property_change_type::type::value_changed, payload_status }
+                    { nc_receiver_monitor_stream_status_property_id, nc_property_change_type::type::value_changed, stream_status }
                 });
 
                 modify_control_protocol_resource(resources, found->id, [&](nmos::resource& resource)
                 {
                     resource.data[nmos::fields::nc::connection_status] = connection_status;
-                    resource.data[nmos::fields::nc::payload_status] = payload_status;
+                    resource.data[nmos::fields::nc::stream_status] = stream_status;
 
                 }, property_changed_event);
             }

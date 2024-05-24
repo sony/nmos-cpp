@@ -299,22 +299,28 @@ namespace nmos
                     to_vector(make_nc_ident_beacon_events())) },
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#control-classes
+                // NcStatusMonitor
+                { nc_status_monitor_class_id, make_control_class_descriptor(U("NcStatusMonitor class descriptor"), nc_status_monitor_class_id, U("NcStatusMonitor"),
+                    // NcReceiverMonitor properties
+                    to_vector(make_nc_status_monitor_properties()),
+                    // NcReceiverMonitor methods
+                    to_methods_vector(make_nc_status_monitor_methods(), {}),
+                    // NcReceiverMonitor events
+                    to_vector(make_nc_status_monitor_events())) },
                 // NcReceiverMonitor
                 { nc_receiver_monitor_class_id, make_control_class_descriptor(U("NcReceiverMonitor class descriptor"), nc_receiver_monitor_class_id, U("NcReceiverMonitor"),
                     // NcReceiverMonitor properties
                     to_vector(make_nc_receiver_monitor_properties()),
                     // NcReceiverMonitor methods
-                    to_methods_vector(make_nc_receiver_monitor_methods(), {}),
+                    to_methods_vector(make_nc_receiver_monitor_methods(),
+                    { 
+                        // link NcReceiverMonitor method_ids with method functions
+                        { nc_receiver_monitor_get_lost_packets_method_id, get_lost_packets },
+                        { nc_receiver_monitor_get_late_packets_method_id, get_late_packets },
+                        { nc_receiver_monitor_reset_packet_counters_method_id, reset_packet_counters }
+                    }),
                     // NcReceiverMonitor events
-                    to_vector(make_nc_receiver_monitor_events())) },
-                // NcReceiverMonitorProtected
-                { nc_receiver_monitor_protected_class_id, make_control_class_descriptor(U("NcReceiverMonitorProtected class descriptor"), nc_receiver_monitor_protected_class_id, U("NcReceiverMonitorProtected"),
-                    // NcReceiverMonitorProtected properties
-                    to_vector(make_nc_receiver_monitor_protected_properties()),
-                    // NcReceiverMonitorProtected methods
-                    to_methods_vector(make_nc_receiver_monitor_protected_methods(), {}),
-                    // NcReceiverMonitorProtected events
-                    to_vector(make_nc_receiver_monitor_protected_events())) }
+                    to_vector(make_nc_receiver_monitor_events())) }
             };
 
             // setup the standard datatypes
@@ -393,7 +399,6 @@ namespace nmos
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
                 { U("NcConnectionStatus"), {make_nc_connection_status_datatype()} },
-                { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} },
                 { U("NcOverallStatus"), {make_nc_overall_status_datatype() } },
                 { U("NcLinkStatus"), {make_nc_link_status_datatype() } },
                 { U("NcSynchronizationStatus"), {make_nc_synchronization_status_datatype() } },

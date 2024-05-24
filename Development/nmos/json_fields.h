@@ -332,10 +332,17 @@ namespace nmos
             const web::json::field_as_string io_id{ U("ioId") };
             const web::json::field_as_integer connection_status{ U("connectionStatus") }; // NcConnectionStatus
             const web::json::field_as_string connection_status_message{ U("connectionStatusMessage") };
-            const web::json::field_as_integer payload_status{ U("payloadStatus") }; // NcPayloadStatus
-            const web::json::field_as_string payload_status_message{ U("payloadStatusMessage") };
+            const web::json::field_as_integer link_status{ U("linkStatus") }; // NcLinkStatus
+            const web::json::field_as_string link_status_message{ U("linkStatusMessage") };
+            const web::json::field_as_integer synchronization_status{ U("synchronizationStatus") }; // NcSynchronizationStatus
+            const web::json::field_as_string synchronization_status_message{ U("synchronizationStatusMessage") };
+            const web::json::field_as_string grand_master_clock_id{ U("grandMasterClockId") };
             const web::json::field_as_bool signal_protection_status{ U("signalProtectionStatus") };
+            const web::json::field_as_integer stream_status{ U("streamStatus") }; // NcStreamStatus
+            const web::json::field_as_string stream_status_message{ U("streamStatusMessage") };
             const web::json::field_as_bool active{ U("active") };
+            const web::json::field_as_integer overall_status{ U("overallStatus") };
+            const web::json::field_as_string overall_status_message{ U("overallStatusMessage") };
         }
 
         // NMOS Parameter Registers
