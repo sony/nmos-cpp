@@ -58,13 +58,6 @@ namespace nmos
 
     namespace details
     {
-        namespace fields
-        {
-            const web::json::field_as_string_or level{ U("level"), {} };
-            const web::json::field_as_string_or index{ U("index"), {} };
-            const web::json::field_as_string_or describe{ U("describe"), {} };
-        }
-
         void build_role_paths(const resources& resources, const nmos::resource& resource, const utility::string_t& base_role_path, std::set<utility::string_t>& role_paths)
         {
             if (resource.data.has_field(nmos::fields::nc::members))
