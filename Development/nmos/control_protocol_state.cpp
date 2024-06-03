@@ -300,7 +300,15 @@ namespace nmos
                 // Monitoring feature set
                 // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#datatypes
                 { U("NcConnectionStatus"), {make_nc_connection_status_datatype()} },
-                { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} }
+                { U("NcPayloadStatus"), {make_nc_payload_status_datatype()} },
+                // Device configuration feature set
+                // TODO: add link
+                { U("NcPropertyValueHolder"), {make_nc_property_value_holder_datatype()}},
+                { U("NcObjectPropertiesHolder"), {make_nc_object_properties_holder_datatype()}},
+                { U("NcBulkValuesHolder"), {make_nc_bulk_values_holder_datatype()}},
+                { U("NcObjectPropertiesSetValidation"), {make_nc_object_properties_set_validation_datatype()}},
+                { U("NcMethodResultBulkValuesHolder"), {make_nc_method_result_bulk_values_holder_datatype()}},
+                { U("NcMethodResultObjectPropertiesSetValidation"), {make_nc_method_result_object_properties_set_validation_datatype()}}
             };
         }
 
