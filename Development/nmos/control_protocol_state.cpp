@@ -73,15 +73,10 @@ namespace nmos
                 return nmos::details::make_nc_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated);
             }
         }
-        // create standard control class method descriptor
-        method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, standard_method_handler method_handler)
+        // create control class method descriptor
+        method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, method_handler method_handler)
         {
-            return make_control_class_standard_method(details::make_control_class_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
-        }
-        // create non-standard control class method descriptor
-        method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype, const std::vector<web::json::value>& parameters, bool is_deprecated, non_standard_method_handler method_handler)
-        {
-            return make_control_class_non_standard_method(details::make_control_class_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
+            return make_control_class_method(details::make_control_class_method_descriptor(description, id, name, result_datatype, parameters, is_deprecated), method_handler);
         }
 
         // create control class event descriptor
@@ -90,7 +85,102 @@ namespace nmos
             return nmos::details::make_nc_event_descriptor(description, id, name, event_datatype, is_deprecated);
         }
 
-        control_protocol_state::control_protocol_state()
+        namespace details
+        {
+            nmos::experimental::method_handler make_nc_get_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+            {
+                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_set_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
+            {
+                return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return set(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_get_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+            {
+                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_set_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
+            {
+                return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return set_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_add_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed)
+            {
+                return [get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return add_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+            {
+                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return remove_sequence_item(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_get_sequence_length_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+            {
+                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_sequence_length(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_get_member_descriptors_handler()
+            {
+                return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_member_descriptors(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_find_members_by_path_handler()
+            {
+                return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return find_members_by_path(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_find_members_by_role_handler()
+            {
+                return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return find_members_by_role(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_find_members_by_class_id_handler()
+            {
+                return [](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return find_members_by_class_id(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_get_control_class_handler(get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor)
+            {
+                return [get_control_protocol_class_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_control_class(resources, resource, arguments, is_deprecated, get_control_protocol_class_descriptor, gate);
+                };
+            }
+            nmos::experimental::method_handler make_nc_get_datatype_handler(get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor)
+            {
+                return [get_control_protocol_datatype_descriptor](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_datatype(resources, resource, arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
+                };
+            }
+        }
+
+        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed)
         {
             using web::json::value;
 
@@ -103,7 +193,7 @@ namespace nmos
                 return std::vector<web::json::value>{};
             };
 
-            auto to_methods_vector = [](const web::json::value& nc_method_descriptors, const std::map<nmos::nc_method_id, const standard_method_handler>& method_handlers)
+            auto to_methods_vector = [](const web::json::value& nc_method_descriptors, const std::map<nmos::nc_method_id, const method_handler>& method_handlers)
             {
                 // NcMethodDescriptor method handler array
                 std::vector<method> methods;
@@ -112,11 +202,14 @@ namespace nmos
                 {
                     for (const auto& nc_method_descriptor : nc_method_descriptors.as_array())
                     {
-                        methods.push_back(make_control_class_standard_method(nc_method_descriptor, method_handlers.at(nmos::details::parse_nc_method_id(nmos::fields::nc::id(nc_method_descriptor)))));
+                        methods.push_back(make_control_class_method(nc_method_descriptor, method_handlers.at(nmos::details::parse_nc_method_id(nmos::fields::nc::id(nc_method_descriptor)))));
                     }
                 }
                 return methods;
             };
+
+            auto get_control_protocol_class_descriptor = make_get_control_protocol_class_descriptor_handler(*this);
+            auto get_control_protocol_datatype_descriptor = make_get_control_protocol_datatype_descriptor_handler(*this);
 
             // setup the standard control classes
             control_class_descriptors =
@@ -132,13 +225,13 @@ namespace nmos
                     to_methods_vector(make_nc_object_methods(),
                     {
                         // link NcObject method_ids with method functions
-                        { nc_object_get_method_id, get },
-                        { nc_object_set_method_id, set },
-                        { nc_object_get_sequence_item_method_id, get_sequence_item },
-                        { nc_object_set_sequence_item_method_id, set_sequence_item },
-                        { nc_object_add_sequence_item_method_id, add_sequence_item },
-                        { nc_object_remove_sequence_item_method_id, remove_sequence_item },
-                        { nc_object_get_sequence_length_method_id, get_sequence_length }
+                        { nc_object_get_method_id, details::make_nc_get_handler(get_control_protocol_class_descriptor) },
+                        { nc_object_set_method_id, details::make_nc_set_handler(get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed) },
+                        { nc_object_get_sequence_item_method_id, details::make_nc_get_sequence_item_handler(get_control_protocol_class_descriptor) },
+                        { nc_object_set_sequence_item_method_id, details::make_nc_set_sequence_item_handler(get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed) },
+                        { nc_object_add_sequence_item_method_id, details::make_nc_add_sequence_item_handler(get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed) },
+                        { nc_object_remove_sequence_item_method_id, details::make_nc_remove_sequence_item_handler(get_control_protocol_class_descriptor) },
+                        { nc_object_get_sequence_length_method_id, details::make_nc_get_sequence_length_handler(get_control_protocol_class_descriptor) }
                     }),
                     // NcObject events
                     to_vector(make_nc_object_events())) },
@@ -150,10 +243,10 @@ namespace nmos
                     to_methods_vector(make_nc_block_methods(),
                     {
                         // link NcBlock method_ids with method functions
-                        { nc_block_get_member_descriptors_method_id, get_member_descriptors },
-                        { nc_block_find_members_by_path_method_id, find_members_by_path },
-                        { nc_block_find_members_by_role_method_id, find_members_by_role },
-                        { nc_block_find_members_by_class_id_method_id, find_members_by_class_id }
+                        { nc_block_get_member_descriptors_method_id, details::make_nc_get_member_descriptors_handler() },
+                        { nc_block_find_members_by_path_method_id, details::make_nc_find_members_by_path_handler() },
+                        { nc_block_find_members_by_role_method_id, details::make_nc_find_members_by_role_handler() },
+                        { nc_block_find_members_by_class_id_method_id, details::make_nc_find_members_by_class_id_handler() }
                     }),
                     // NcBlock events
                     to_vector(make_nc_block_events())) },
@@ -189,8 +282,8 @@ namespace nmos
                     to_methods_vector(make_nc_class_manager_methods(),
                     {
                         // link NcClassManager method_ids with method functions
-                        { nc_class_manager_get_control_class_method_id, get_control_class },
-                        { nc_class_manager_get_datatype_method_id, get_datatype }
+                        { nc_class_manager_get_control_class_method_id, details::make_nc_get_control_class_handler(get_control_protocol_class_descriptor) },
+                        { nc_class_manager_get_datatype_method_id, details::make_nc_get_datatype_handler(get_control_protocol_datatype_descriptor) }
                     }),
                     // NcClassManager events
                     to_vector(make_nc_class_manager_events())) },
