@@ -58,7 +58,7 @@ namespace nmos
             nmos::read_lock read_lock() const { return nmos::read_lock{ mutex }; }
             nmos::write_lock write_lock() const { return nmos::write_lock{ mutex }; }
 
-            control_protocol_state();
+            control_protocol_state(control_protocol_property_changed_handler property_changed);
 
             // insert control class descriptor, false if class descriptor already inserted
             bool insert(const experimental::control_class_descriptor& control_class_descriptor);
@@ -88,7 +88,7 @@ namespace nmos
             bool is_nullable = false, bool is_sequence = false, const web::json::value& constraints = web::json::value::null());
         // create control class method descriptor
         method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype,
-            const std::vector<web::json::value>& parameters, bool is_deprecated, non_standard_method_handler method_handler);
+            const std::vector<web::json::value>& parameters, bool is_deprecated, control_protocol_method_handler method_handler);
 
         // create control class event descriptor
         web::json::value make_control_class_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype,
