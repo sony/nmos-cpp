@@ -88,7 +88,7 @@ namespace nmos
             bool is_nullable = false, bool is_sequence = false, const web::json::value& constraints = web::json::value::null());
         // create control class method descriptor
         method make_control_class_method_descriptor(const utility::string_t& description, const nc_method_id& id, const nc_name& name, const utility::string_t& result_datatype,
-            const std::vector<web::json::value>& parameters, bool is_deprecated, method_handler method_handler);
+            const std::vector<web::json::value>& parameters, bool is_deprecated, control_protocol_method_handler method_handler);
 
         // create control class event descriptor
         web::json::value make_control_class_event_descriptor(const utility::string_t& description, const nc_event_id& id, const nc_name& name, const utility::string_t& event_datatype,

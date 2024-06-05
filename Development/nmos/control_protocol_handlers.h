@@ -39,12 +39,12 @@ namespace nmos
     namespace experimental
     {
         // control method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> method_handler;
+        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> control_protocol_method_handler;
 
         // method definition (NcMethodDescriptor vs method handler)
-        typedef std::pair<web::json::value, method_handler> method;
+        typedef std::pair<web::json::value, control_protocol_method_handler> method;
 
-        inline method make_control_class_method(const web::json::value& nc_method_descriptor, method_handler method_handler)
+        inline method make_control_class_method(const web::json::value& nc_method_descriptor, control_protocol_method_handler method_handler)
         {
             return std::make_pair(nc_method_descriptor, method_handler);
         }
