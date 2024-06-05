@@ -531,28 +531,20 @@ namespace nmos
                 if (resources.end() != resource)
                 {
                     auto method = get_control_protocol_method_descriptor(details::parse_nc_class_id(nmos::fields::nc::class_id(resource->data)), details::parse_formatted_method_id(method_id));
-                    auto& nc_method_descriptor = std::get<0>(method);
-                    auto& standard_method = std::get<1>(method);
-                    auto& non_standard_method = std::get<2>(method);
+                    auto& nc_method_descriptor = method.first;
+                    auto& control_method_handler = method.second;
                     web::http::status_code code{ status_codes::BadRequest };
                     value method_result;
 
-                    if (standard_method || non_standard_method)
+                    if (control_method_handler)
                     {
                         try
                         {
                             // do method arguments constraints validation
                             method_parameters_contraints_validation(arguments, nc_method_descriptor, get_control_protocol_datatype_descriptor);
 
-                            // execute the relevant method handler, then accumulating up their response to reponses
-                            if (standard_method)
-                            {
-                                method_result = standard_method(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor, property_changed, gate);
-                            }
-                            else // non_standard_method
-                            {
-                                method_result = non_standard_method(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
-                            }
+                            // execute the relevant control method handler, then accumulating up their response to reponses
+                            method_result = control_method_handler(resources, *resource, arguments, nmos::fields::nc::is_deprecated(nc_method_descriptor), gate);
 
                             auto status = nmos::fields::nc::status(method_result);
                             if (nc_method_status::ok == status || nc_method_status::method_deprecated == status) { code = status_codes::OK; }
