@@ -38,23 +38,15 @@ namespace nmos
 
     namespace experimental
     {
-        // standard method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler property_changed, slog::base_gate& gate)> standard_method_handler;
-
-        // non-standard method handler definition
-        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> non_standard_method_handler;
+        // control method handler definition
+        typedef std::function<web::json::value(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)> control_protocol_method_handler;
 
         // method definition (NcMethodDescriptor vs method handler)
-        typedef std::tuple<web::json::value, standard_method_handler, non_standard_method_handler> method;
+        typedef std::pair<web::json::value, control_protocol_method_handler> method;
 
-        inline method make_control_class_standard_method(const web::json::value& nc_method_descriptor, standard_method_handler method_handler)
+        inline method make_control_class_method(const web::json::value& nc_method_descriptor, control_protocol_method_handler method_handler)
         {
-            return std::make_tuple(nc_method_descriptor, method_handler, nullptr);
-        }
-
-        inline method make_control_class_non_standard_method(const web::json::value& nc_method_descriptor, non_standard_method_handler method_handler)
-        {
-            return std::make_tuple(nc_method_descriptor, nullptr, method_handler);
+            return std::make_pair(nc_method_descriptor, method_handler);
         }
     }
 

@@ -12,7 +12,7 @@ namespace nmos
 {
     // NcObject methods implementation
     // Get property value
-    web::json::value get(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -95,7 +95,7 @@ namespace nmos
     }
 
     // Get sequence item
-    web::json::value get_sequence_item(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_sequence_item(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -279,7 +279,7 @@ namespace nmos
     }
 
     // Delete sequence item
-    web::json::value remove_sequence_item(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value remove_sequence_item(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -327,7 +327,7 @@ namespace nmos
     }
 
     // Get sequence length
-    web::json::value get_sequence_length(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_sequence_length(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -382,7 +382,7 @@ namespace nmos
 
     // NcBlock methods implementation
     // Gets descriptors of members of the block
-    web::json::value get_member_descriptors(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_member_descriptors(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -399,7 +399,7 @@ namespace nmos
     }
 
     // Finds member(s) by path
-    web::json::value find_members_by_path(nmos::resources& resources, const nmos::resource& resource_, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value find_members_by_path(nmos::resources& resources, const nmos::resource& resource_, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -459,7 +459,7 @@ namespace nmos
     }
 
     // Finds members with given role name or fragment
-    web::json::value find_members_by_role(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value find_members_by_role(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -485,7 +485,7 @@ namespace nmos
     }
 
     // Finds members with given class id
-    web::json::value find_members_by_class_id(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value find_members_by_class_id(nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
     {
         // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
 
@@ -513,7 +513,7 @@ namespace nmos
 
     // NcClassManager methods implementation
     // Get a single class descriptor
-    web::json::value get_control_class(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, get_control_protocol_datatype_descriptor_handler, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_control_class(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler get_control_protocol_class_descriptor, slog::base_gate& gate)
     {
         using web::json::value;
 
@@ -568,61 +568,61 @@ namespace nmos
     }
 
     // Get a single datatype descriptor
-    web::json::value get_datatype(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_class_descriptor_handler, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, control_protocol_property_changed_handler, slog::base_gate& gate)
+    web::json::value get_datatype(nmos::resources&, const nmos::resource&, const web::json::value& arguments, bool is_deprecated, get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor, slog::base_gate& gate)
+    {
+        // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
+
+        const auto& name = nmos::fields::nc::name(arguments); // name of datatype
+        const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
+
+        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single datatype descriptor: " << "name: " << name;
+
+        if (name.empty())
         {
-            // note, model mutex is already locked by the outer function, so access to control_protocol_resources is OK...
+            // empty name
+            return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("empty name to do GetDatatype"));
+        }
 
-            const auto& name = nmos::fields::nc::name(arguments); // name of datatype
-            const auto& include_inherited = nmos::fields::nc::include_inherited(arguments); // If set the descriptor would contain all inherited elements
+        const auto& datatype = get_control_protocol_datatype_descriptor(name);
+        if (datatype.descriptor.size())
+        {
+            auto descriptor = datatype.descriptor;
 
-            slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Get a single datatype descriptor: " << "name: " << name;
-
-            if (name.empty())
+            if (include_inherited)
             {
-                // empty name
-                return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("empty name to do GetDatatype"));
-            }
-
-            const auto& datatype = get_control_protocol_datatype_descriptor(name);
-            if (datatype.descriptor.size())
-            {
-                auto descriptor = datatype.descriptor;
-
-                if (include_inherited)
+                const auto& type = nmos::fields::nc::type(descriptor);
+                if (nc_datatype_type::Struct == type)
                 {
-                    const auto& type = nmos::fields::nc::type(descriptor);
-                    if (nc_datatype_type::Struct == type)
+                    auto descriptor_ = descriptor;
+
+                    for (;;)
                     {
-                        auto descriptor_ = descriptor;
-
-                        for (;;)
+                        const auto& parent_type = descriptor_.at(nmos::fields::nc::parent_type);
+                        if (!parent_type.is_null())
                         {
-                            const auto& parent_type = descriptor_.at(nmos::fields::nc::parent_type);
-                            if (!parent_type.is_null())
+                            const auto& parent_datatype = get_control_protocol_datatype_descriptor(parent_type.as_string());
+                            if (parent_datatype.descriptor.size())
                             {
-                                const auto& parent_datatype = get_control_protocol_datatype_descriptor(parent_type.as_string());
-                                if (parent_datatype.descriptor.size())
-                                {
-                                    descriptor_ = parent_datatype.descriptor;
+                                descriptor_ = parent_datatype.descriptor;
 
-                                    const auto& fields = nmos::fields::nc::fields(descriptor_);
-                                    for (const auto& field : fields)
-                                    {
-                                        web::json::push_back(descriptor.at(nmos::fields::nc::fields), field);
-                                    }
+                                const auto& fields = nmos::fields::nc::fields(descriptor_);
+                                for (const auto& field : fields)
+                                {
+                                    web::json::push_back(descriptor.at(nmos::fields::nc::fields), field);
                                 }
                             }
-                            else
-                            {
-                                break;
-                            }
+                        }
+                        else
+                        {
+                            break;
                         }
                     }
                 }
-
-                return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptor);
             }
 
-            return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("name not found"));
+            return details::make_nc_method_result({ is_deprecated ? nmos::nc_method_status::method_deprecated : nc_method_status::ok }, descriptor);
         }
+
+        return details::make_nc_method_result_error({ nc_method_status::parameter_error }, U("name not found"));
+    }
 }
