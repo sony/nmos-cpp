@@ -178,9 +178,30 @@ namespace nmos
                     return get_datatype(resources, resource, arguments, is_deprecated, get_control_protocol_datatype_descriptor, gate);
                 };
             }
+            nmos::experimental::control_protocol_method_handler make_nc_get_lost_packets(experimental::control_protocol_method_handler get_lost_packet_method_handler)
+            {
+                return [get_lost_packet_method_handler](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_lost_packet_method_handler(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_get_late_packets(experimental::control_protocol_method_handler get_late_packet_method_handler)
+            {
+                return [get_late_packet_method_handler](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return get_late_packet_method_handler(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
+            nmos::experimental::control_protocol_method_handler make_nc_reset_packet_counters(experimental::control_protocol_method_handler reset_packet_counters_method_handler)
+            {
+                return [reset_packet_counters_method_handler](nmos::resources& resources, const nmos::resource& resource, const web::json::value& arguments, bool is_deprecated, slog::base_gate& gate)
+                {
+                    return reset_packet_counters_method_handler(resources, resource, arguments, is_deprecated, gate);
+                };
+            }
         }
 
-        control_protocol_state::control_protocol_state(control_protocol_property_changed_handler property_changed)
+        control_protocol_state::control_protocol_state(experimental::control_protocol_method_handler get_lost_packet_method_handler, experimental::control_protocol_method_handler get_late_packet_method_handler, experimental::control_protocol_method_handler reset_packet_couter_method_handler, control_protocol_property_changed_handler property_changed)
         {
             using web::json::value;
 
@@ -315,9 +336,9 @@ namespace nmos
                     to_methods_vector(make_nc_receiver_monitor_methods(),
                     { 
                         // link NcReceiverMonitor method_ids with method functions
-                        { nc_receiver_monitor_get_lost_packets_method_id, get_lost_packets },
-                        { nc_receiver_monitor_get_late_packets_method_id, get_late_packets },
-                        { nc_receiver_monitor_reset_packet_counters_method_id, reset_packet_counters }
+                        { nc_receiver_monitor_get_lost_packets_method_id, details::make_nc_get_lost_packets(get_lost_packet_method_handler)},
+                        { nc_receiver_monitor_get_late_packets_method_id, details::make_nc_get_late_packets(get_late_packet_method_handler)},
+                        { nc_receiver_monitor_reset_packet_counters_method_id, details::make_nc_reset_packet_counters(reset_packet_couter_method_handler)}
                     }),
                     // NcReceiverMonitor events
                     to_vector(make_nc_receiver_monitor_events())) }
