@@ -82,6 +82,9 @@ namespace nmos
             node_implementation& on_get_control_datatype_descriptor(nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor) { this->get_control_protocol_datatype_descriptor = std::move(get_control_protocol_datatype_descriptor); return *this; }
             node_implementation& on_get_control_protocol_method_descriptor(nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor) { this->get_control_protocol_method_descriptor = std::move(get_control_protocol_method_descriptor); return *this; }
             node_implementation& on_control_protocol_property_changed(nmos::control_protocol_property_changed_handler control_protocol_property_changed) { this->control_protocol_property_changed = std::move(control_protocol_property_changed); return *this; }
+            node_implementation& on_get_lost_packet(experimental::control_protocol_method_handler get_lost_packet_method_handler) { this->get_lost_packet_method_handler = std::move(get_lost_packet_method_handler); return *this; }
+            node_implementation& on_get_late_packet(experimental::control_protocol_method_handler get_late_packet_method_handler) { this->get_late_packet_method_handler = std::move(get_late_packet_method_handler); return *this; }
+            node_implementation& on_reset_packet_counters(experimental::control_protocol_method_handler reset_packet_counters_method_handler) { this->reset_packet_counters_method_handler = std::move(reset_packet_counters_method_handler); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -124,6 +127,9 @@ namespace nmos
             nmos::get_control_protocol_datatype_descriptor_handler get_control_protocol_datatype_descriptor;
             nmos::get_control_protocol_method_descriptor_handler get_control_protocol_method_descriptor;
             nmos::control_protocol_property_changed_handler control_protocol_property_changed;
+            experimental::control_protocol_method_handler get_lost_packet_method_handler;
+            experimental::control_protocol_method_handler get_late_packet_method_handler;
+            experimental::control_protocol_method_handler reset_packet_counters_method_handler;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API
