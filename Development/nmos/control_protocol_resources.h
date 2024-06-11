@@ -29,6 +29,8 @@ namespace nmos
     //
     // create Receiver Monitor resource
     control_protocol_resource make_receiver_monitor(nc_oid oid, bool constant_oid, nmos::nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints = web::json::value::null(), const web::json::value& runtime_property_constraints = web::json::value::null(), bool enabled = true,
+        nc_overall_status::status overall_status = nc_overall_status::healthy, 
+        const utility::string_t& overall_status_message = U(""),
         nc_link_status::status link_status = nc_link_status::all_up, 
         const utility::string_t& link_status_message = U(""), 
         nc_connection_status::status connection_status = nc_connection_status::status::inactive,

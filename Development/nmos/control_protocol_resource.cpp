@@ -738,12 +738,24 @@ namespace nmos
             return data;
         }
 
-        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
-        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& grand_master_clock_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        // TODO: add link
+        web::json::value make_nc_status_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message)
         {
             using web::json::value;
 
             auto data = make_nc_worker(class_id, oid, constant_oid, owner, role, value::string(user_label), description, touchpoints, runtime_property_constraints, enabled);
+            data[nmos::fields::nc::overall_status] = value::number(overall_status);
+            data[nmos::fields::nc::overall_status_message] = value::string(overall_status_message);
+
+            return data;
+        }
+
+        // See https://specs.amwa.tv/nmos-control-feature-sets/branches/main/monitoring/#ncreceivermonitor
+        web::json::value make_receiver_monitor(const nc_class_id& class_id, nc_oid oid, bool constant_oid, nc_oid owner, const utility::string_t& role, const utility::string_t& user_label, const utility::string_t& description, const web::json::value& touchpoints, const web::json::value& runtime_property_constraints, bool enabled, nc_overall_status::status overall_status, const utility::string_t& overall_status_message, nc_link_status::status link_status, const utility::string_t& link_status_message, nc_connection_status::status connection_status, const utility::string_t& connection_status_message, nc_synchronization_status::status synchronization_status, const utility::string_t& synchronization_status_message, const utility::string_t& grand_master_clock_id, nc_stream_status::status stream_status, const utility::string_t& stream_status_message)
+        {
+            using web::json::value;
+
+            auto data = make_nc_status_monitor(class_id, oid, constant_oid, owner, role, user_label, description, touchpoints, runtime_property_constraints, enabled, overall_status, overall_status_message);
 
             data[nmos::fields::nc::link_status] = value::number(link_status);
             data[nmos::fields::nc::link_status_message] = value::string(link_status_message);
